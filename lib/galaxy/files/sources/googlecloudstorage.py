@@ -7,9 +7,8 @@ except ImportError:
 
 from typing import (
     cast,
+    Optional,
 )
-
-from typing_extensions import Unpack
 
 from . import (
     FilesSourceOptions,
@@ -30,10 +29,10 @@ class GoogleCloudStorageFilesSource(PyFilesystem2FilesSource):
     required_module = GCSFS
     required_package = "fs-gcsfs"
 
-    def _open_fs(self, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
+    def _open_fs(self, user_context=None, opts: Optional[FilesSourceOptions] = None):
         props = self._serialization_props(user_context)
         extra_props: GoogleCloudStorageFilesSourceProperties = cast(
-            GoogleCloudStorageFilesSourceProperties, kwargs.get("extra_props") or {}
+            GoogleCloudStorageFilesSourceProperties, opts.extra_props or {} if opts else {}
         )
         bucket_name = props.pop("bucket_name", None)
         root_path = props.pop("root_path", None)

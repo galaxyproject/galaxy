@@ -6,9 +6,8 @@ from typing import (
     cast,
     Dict,
     List,
+    Optional,
 )
-
-from typing_extensions import Unpack
 
 from . import (
     FilesSourceOptions,
@@ -49,8 +48,8 @@ class S3FsFilesSource(BaseFilesSource):
         if self._endpoint_url:
             self._props.update({"client_kwargs": {"endpoint_url": self._endpoint_url}})
 
-    def _list(self, path="/", recursive=True, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
-        fs = self._open_fs(user_context=user_context, **kwargs)
+    def _list(self, path="/", recursive=True, user_context=None, opts: Optional[FilesSourceOptions] = None):
+        fs = self._open_fs(user_context=user_context, opts=opts)
         if recursive:
             res: List[Dict[str, Any]] = []
             bucket_path = self._bucket_path(path)
@@ -65,11 +64,11 @@ class S3FsFilesSource(BaseFilesSource):
             to_dict = functools.partial(self._resource_info_to_dict, path)
             return list(map(to_dict, res))
 
-    def _realize_to(self, source_path, native_path, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
+    def _realize_to(self, source_path, native_path, user_context=None, opts: Optional[FilesSourceOptions] = None):
         bucket_path = self._bucket_path(source_path)
-        self._open_fs(user_context=user_context, **kwargs).download(bucket_path, native_path)
+        self._open_fs(user_context=user_context, opts=opts).download(bucket_path, native_path)
 
-    def _write_from(self, target_path, native_path, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
+    def _write_from(self, target_path, native_path, user_context=None, opts: Optional[FilesSourceOptions] = None):
         raise NotImplementedError()
 
     def _bucket_path(self, path: str):
@@ -79,8 +78,8 @@ class S3FsFilesSource(BaseFilesSource):
             path = f"/{path}"
         return f"{self._bucket}{path}"
 
-    def _open_fs(self, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
-        extra_props = kwargs.get("extra_props") or {}
+    def _open_fs(self, user_context=None, opts: Optional[FilesSourceOptions] = None):
+        extra_props = opts.extra_props or {} if opts else {}
         fs = s3fs.S3FileSystem(**{**self._props, **extra_props})
         return fs
 

@@ -1,7 +1,6 @@
 import base64
 import logging
-
-from typing_extensions import Unpack
+from typing import Optional
 
 from . import (
     BaseFilesSource,
@@ -25,15 +24,19 @@ class Base64FilesSource(BaseFilesSource):
         props = self._parse_common_config_opts(kwds)
         self._props = props
 
-    def _realize_to(self, source_path: str, native_path: str, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
+    def _realize_to(
+        self, source_path: str, native_path: str, user_context=None, opts: Optional[FilesSourceOptions] = None
+    ):
         with open(native_path, "wb") as temp:
             temp.write(base64.b64decode(source_path[len("base64://") :]))
             temp.flush()
 
-    def _write_from(self, target_path: str, native_path: str, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
+    def _write_from(
+        self, target_path: str, native_path: str, user_context=None, opts: Optional[FilesSourceOptions] = None
+    ):
         raise NotImplementedError()
 
-    def score_url_match(self, url: str, **kwargs: Unpack[FilesSourceOptions]):
+    def score_url_match(self, url: str):
         if url.startswith("base64://"):
             return len("base64://")
         else:

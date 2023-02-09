@@ -10,6 +10,8 @@ import requests
 
 from galaxy import exceptions
 from galaxy.files import FileSourceDictifiable
+from galaxy.files.sources import FilesSourceOptions
+from galaxy.files.sources.http import HTTPFilesSourceProperties
 from galaxy.files.uris import stream_url_to_file
 from galaxy.util import DEFAULT_SOCKET_TIMEOUT
 
@@ -100,16 +102,19 @@ def fetch_drs_to_file(
     downloaded = False
     for access_method in access_methods:
         access_url, access_headers = _get_access_info(get_url, access_method, headers=headers)
-        extra_props = {}
+        opts = FilesSourceOptions()
         if access_method["type"] == "https":
-            extra_props["http_headers"] = access_headers or {}
+            extra_props: HTTPFilesSourceProperties = {"http_headers": access_headers or {}}
+            opts.extra_props = extra_props
+        else:
+            opts.extra_props = {}
         try:
             stream_url_to_file(
                 access_url,
                 target_path=str(target_path),
                 file_sources=user_context.file_sources,
                 user_context=user_context,
-                extra_props=extra_props,
+                file_source_opts=opts,
             )
             downloaded = True
             break

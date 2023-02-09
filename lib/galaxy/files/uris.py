@@ -18,6 +18,7 @@ from galaxy.files import (
     ConfiguredFileSources,
     NoMatchingFileSource,
 )
+from galaxy.files.sources import FilesSourceOptions
 from galaxy.util import (
     stream_to_open_named_file,
     unicodify,
@@ -44,7 +45,7 @@ def stream_url_to_file(
     dir: Optional[str] = None,
     user_context=None,
     target_path: Optional[str] = None,
-    **kwargs: dict,
+    file_source_opts: Optional[FilesSourceOptions] = None,
 ) -> str:
     if file_sources is None:
         file_sources = ConfiguredFileSources.from_dict(None, load_stock_plugins=True)
@@ -53,7 +54,7 @@ def stream_url_to_file(
         if not target_path:
             with tempfile.NamedTemporaryFile(prefix=prefix, delete=False, dir=dir) as temp:
                 target_path = temp.name
-        file_source.realize_to(rel_path, target_path, user_context=user_context, **kwargs)
+        file_source.realize_to(rel_path, target_path, user_context=user_context, opts=file_source_opts)
         return target_path
     else:
         raise NoMatchingFileSource(f"Could not find a matching handler for: {url}")

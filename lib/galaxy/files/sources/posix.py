@@ -5,10 +5,8 @@ from typing import (
     Any,
     Dict,
     List,
-    Union,
+    Optional,
 )
-
-from typing_extensions import Unpack
 
 from galaxy import exceptions
 from galaxy.util.path import (
@@ -51,7 +49,7 @@ class PosixFilesSource(BaseFilesSource):
         self.delete_on_realize = props.get("delete_on_realize", DEFAULT_DELETE_ON_REALIZE)
         self.allow_subdir_creation = props.get("allow_subdir_creation", DEFAULT_ALLOW_SUBDIR_CREATION)
 
-    def _list(self, path="/", recursive=True, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
+    def _list(self, path="/", recursive=True, user_context=None, opts: Optional[FilesSourceOptions] = None):
         dir_path = self._to_native_path(path, user_context=user_context)
         if not self._safe_directory(dir_path):
             raise exceptions.ObjectNotFound(f"The specified directory does not exist [{dir_path}].")
@@ -69,7 +67,9 @@ class PosixFilesSource(BaseFilesSource):
             to_dict = functools.partial(self._resource_info_to_dict, path, user_context=user_context)
             return list(map(to_dict, res))
 
-    def _realize_to(self, source_path: str, native_path: str, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
+    def _realize_to(
+        self, source_path: str, native_path: str, user_context=None, opts: Optional[FilesSourceOptions] = None
+    ):
         effective_root = self._effective_root(user_context)
         source_native_path = self._to_native_path(source_path, user_context=user_context)
         if self.enforce_symlink_security:
@@ -84,7 +84,9 @@ class PosixFilesSource(BaseFilesSource):
         else:
             shutil.move(source_native_path, native_path)
 
-    def _write_from(self, target_path: str, native_path: str, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
+    def _write_from(
+        self, target_path: str, native_path: str, user_context=None, opts: Optional[FilesSourceOptions] = None
+    ):
         effective_root = self._effective_root(user_context)
         target_native_path = self._to_native_path(target_path, user_context=user_context)
         if self.enforce_symlink_security:

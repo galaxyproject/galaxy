@@ -7,10 +7,9 @@ except ImportError:
 
 from typing import (
     cast,
+    Optional,
     Tuple,
 )
-
-from typing_extensions import Unpack
 
 from . import (
     FilesSourceOptions,
@@ -31,21 +30,35 @@ class FtpFilesSource(PyFilesystem2FilesSource):
     required_module = FTPFS
     required_package = "fs.ftpfs"
 
-    def _open_fs(self, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
+    def _open_fs(self, user_context=None, opts: Optional[FilesSourceOptions] = None):
         props = self._serialization_props(user_context)
-        extra_props: FTPFilesSourceProperties = cast(FTPFilesSourceProperties, kwargs.get("extra_props") or {})
+        extra_props: FTPFilesSourceProperties = cast(FTPFilesSourceProperties, opts.extra_props or {} if opts else {})
         handle = FTPFS(**{**props, **extra_props})
         return handle
 
-    def _realize_to(self, source_path: str, native_path: str, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
-        extra_props: FTPFilesSourceProperties = cast(FTPFilesSourceProperties, kwargs.get("extra_props") or {})
-        path, kwargs["extra_props"] = self._get_props_and_rel_path(extra_props, source_path)
-        super()._realize_to(path, native_path, user_context=user_context, **kwargs)
+    def _realize_to(
+        self, source_path: str, native_path: str, user_context=None, opts: Optional[FilesSourceOptions] = None
+    ):
+        extra_props: FTPFilesSourceProperties
+        if opts and opts.extra_props:
+            extra_props = cast(FTPFilesSourceProperties, opts.extra_props)
+        else:
+            opts = FilesSourceOptions()
+            extra_props = {}
+        path, opts.extra_props = self._get_props_and_rel_path(extra_props, source_path)
+        super()._realize_to(path, native_path, user_context=user_context, opts=opts)
 
-    def _write_from(self, target_path: str, native_path: str, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
-        extra_props: FTPFilesSourceProperties = cast(FTPFilesSourceProperties, kwargs.get("extra_props") or {})
-        path, kwargs["extra_props"] = self._get_props_and_rel_path(extra_props, target_path)
-        super()._write_from(path, native_path, user_context=user_context, **kwargs)
+    def _write_from(
+        self, target_path: str, native_path: str, user_context=None, opts: Optional[FilesSourceOptions] = None
+    ):
+        extra_props: FTPFilesSourceProperties
+        if opts and opts.extra_props:
+            extra_props = cast(FTPFilesSourceProperties, opts.extra_props)
+        else:
+            opts = FilesSourceOptions()
+            extra_props = {}
+        path, opts.extra_props = self._get_props_and_rel_path(extra_props, target_path)
+        super()._write_from(path, native_path, user_context=user_context, opts=opts)
 
     def _get_props_and_rel_path(
         self, extra_props: FTPFilesSourceProperties, url: str

@@ -13,7 +13,6 @@ from typing import (
 
 import fs
 from fs.base import FS
-from typing_extensions import Unpack
 
 from . import (
     BaseFilesSource,
@@ -36,13 +35,13 @@ class PyFilesystem2FilesSource(BaseFilesSource):
         self._props = props
 
     @abc.abstractmethod
-    def _open_fs(self, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
+    def _open_fs(self, user_context=None, opts: Optional[FilesSourceOptions] = None):
         """Subclasses must instantiate a PyFilesystem2 handle for this file system."""
 
-    def _list(self, path="/", recursive=False, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
+    def _list(self, path="/", recursive=False, user_context=None, opts: Optional[FilesSourceOptions] = None):
         """Return dictionary of 'Directory's and 'File's."""
 
-        with self._open_fs(user_context=user_context, **kwargs) as h:
+        with self._open_fs(user_context=user_context, opts=opts) as h:
             if recursive:
                 res: List[Dict[str, Any]] = []
                 for p, dirs, files in h.walk(path):
@@ -55,13 +54,13 @@ class PyFilesystem2FilesSource(BaseFilesSource):
                 to_dict = functools.partial(self._resource_info_to_dict, path)
                 return list(map(to_dict, res))
 
-    def _realize_to(self, source_path, native_path, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
+    def _realize_to(self, source_path, native_path, user_context=None, opts: Optional[FilesSourceOptions] = None):
         with open(native_path, "wb") as write_file:
-            self._open_fs(user_context=user_context, **kwargs).download(source_path, write_file)
+            self._open_fs(user_context=user_context, opts=opts).download(source_path, write_file)
 
-    def _write_from(self, target_path, native_path, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
+    def _write_from(self, target_path, native_path, user_context=None, opts: Optional[FilesSourceOptions] = None):
         with open(native_path, "rb") as read_file:
-            openfs = self._open_fs(user_context=user_context, **kwargs)
+            openfs = self._open_fs(user_context=user_context, opts=opts)
             dirname = fs.path.dirname(target_path)
             if not openfs.isdir(dirname):
                 openfs.makedirs(dirname)

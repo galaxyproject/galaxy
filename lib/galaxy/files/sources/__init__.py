@@ -13,7 +13,6 @@ from typing import (
 from typing_extensions import (
     NotRequired,
     TypedDict,
-    Unpack,
 )
 
 from galaxy.exceptions import (
@@ -44,9 +43,8 @@ class FilesSourceProperties(TypedDict):
     requires_groups: NotRequired[List[str]]
 
 
-class FilesSourceOptions(TypedDict):
-    # Overridees for file source initialization properties
-    extra_props: NotRequired[FilesSourceProperties]
+class FilesSourceOptions:
+    extra_props: Optional[FilesSourceProperties]
 
 
 class SingleFileSource(metaclass=abc.ABCMeta):
@@ -59,11 +57,15 @@ class SingleFileSource(metaclass=abc.ABCMeta):
         """Return a boolean indicating if the user can access the FileSource."""
 
     @abc.abstractmethod
-    def realize_to(self, source_path: str, native_path: str, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
+    def realize_to(
+        self, source_path: str, native_path: str, user_context=None, opts: Optional[FilesSourceOptions] = None
+    ):
         """Realize source path (relative to uri root) to local file system path."""
 
     @abc.abstractmethod
-    def write_from(self, target_path: str, native_path: str, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
+    def write_from(
+        self, target_path: str, native_path: str, user_context=None, opts: Optional[FilesSourceOptions] = None
+    ):
         """Write file at native path to target_path (relative to uri root)."""
 
     @abc.abstractmethod
@@ -112,7 +114,7 @@ class SupportsBrowsing(metaclass=abc.ABCMeta):
         """Return a prefix for the root (e.g. gxfiles://prefix/)."""
 
     @abc.abstractmethod
-    def list(self, path="/", recursive=False, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
+    def list(self, path="/", recursive=False, user_context=None, opts: Optional[FilesSourceOptions] = None):
         """Return dictionary of 'Directory's and 'File's."""
 
 
@@ -220,29 +222,29 @@ class BaseFilesSource(FilesSource):
         Used in to_dict method if for_serialization is True.
         """
 
-    def list(self, path="/", recursive=False, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
+    def list(self, path="/", recursive=False, user_context=None, opts: Optional[FilesSourceOptions] = None):
         self._check_user_access(user_context)
-        return self._list(path, recursive, user_context, **kwargs)
+        return self._list(path, recursive, user_context, opts)
 
-    def _list(self, path="/", recursive=False, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
+    def _list(self, path="/", recursive=False, user_context=None, opts: Optional[FilesSourceOptions] = None):
         pass
 
-    def write_from(self, target_path, native_path, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
+    def write_from(self, target_path, native_path, user_context=None, opts: Optional[FilesSourceOptions] = None):
         if not self.get_writable():
             raise Exception("Cannot write to a non-writable file source.")
         self._check_user_access(user_context)
-        self._write_from(target_path, native_path, user_context=user_context, **kwargs)
+        self._write_from(target_path, native_path, user_context=user_context, opts=opts)
 
     @abc.abstractmethod
-    def _write_from(self, target_path, native_path, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
+    def _write_from(self, target_path, native_path, user_context=None, opts: Optional[FilesSourceOptions] = None):
         pass
 
-    def realize_to(self, source_path, native_path, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
+    def realize_to(self, source_path, native_path, user_context=None, opts: Optional[FilesSourceOptions] = None):
         self._check_user_access(user_context)
-        self._realize_to(source_path, native_path, user_context, **kwargs)
+        self._realize_to(source_path, native_path, user_context, opts=opts)
 
     @abc.abstractmethod
-    def _realize_to(self, source_path, native_path, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
+    def _realize_to(self, source_path, native_path, user_context=None, opts: Optional[FilesSourceOptions] = None):
         pass
 
     def _check_user_access(self, user_context):
