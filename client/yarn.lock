@@ -7876,9 +7876,9 @@ lodash.uniqby@4.5.0:
     lodash._baseiteratee "~4.7.0"
     lodash._baseuniq "~4.6.0"
 
-lodash@^4.17.15, lodash@^4.17.19, lodash@^4.17.21:
+lodash@^4.17.15, lodash@^4.17.19, lodash@^4.17.21, lodash@latest:
   version "4.17.21"
-  resolved "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz"
+  resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.21.tgz#679591c564c3bffaae8454cf0b3df370c3d6911c"
   integrity sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==
 
 lower-case@^2.0.2:
@@ -8487,6 +8487,11 @@ obuf@^1.0.0, obuf@^1.1.2:
   version "1.1.2"
   resolved "https://registry.npmjs.org/obuf/-/obuf-1.1.2.tgz"
   integrity sha512-PX1wu0AmAdPqOL1mWhqmlOd8kOIZQwGZw6rh7uby9fTc5lhaOWFLX3I6R1hrF9k3zUY40e6igsLGkDXK92LJNg==
+
+odometer@^0.4.8:
+  version "0.4.8"
+  resolved "https://registry.yarnpkg.com/odometer/-/odometer-0.4.8.tgz#2f6703bf4c6b384c278236d04d4bc8171abe4374"
+  integrity sha512-bfKuAhWE/qMCiX9bwX90c5bTpt7MDVeq1e6YsOHQrYokNhv9jhS5JbR9kg6i+FeWmDgalf3VUtwNx1aVaZ8cgg==
 
 on-finished@2.4.1:
   version "2.4.1"
@@ -11192,10 +11197,26 @@ vue-multiselect@^2.1.7:
   resolved "https://registry.yarnpkg.com/vue-multiselect/-/vue-multiselect-2.1.7.tgz#f27afe3d46482b94810382af7a4826219255c47d"
   integrity sha512-KIegcN+Ntwg3cbkY/jhw2s/+XJUM0Lpi/LcKFYCS8PrZHcWBl2iKCVze7ZCnRj3w8H7/lUJ9v7rj9KQiNxApBw==
 
+vue-notification-bell@^0.9.12:
+  version "0.9.12"
+  resolved "https://registry.yarnpkg.com/vue-notification-bell/-/vue-notification-bell-0.9.12.tgz#f0098c16a8e4405dd506467da08c22079b3a836e"
+  integrity sha512-5HyYg0hpeJRRAax6vslfF/yA3qt5soUxnNozhbWIvwlSntv99HM7zSD5a9gWJ5wKYpgpXm/svf0GfxIBkw8jXw==
+  dependencies:
+    odometer "^0.4.8"
+    vue "^2.6.10"
+    vue-odometer "^1.0.2"
+
 vue-observe-visibility@^1.0.0:
   version "1.0.0"
   resolved "https://registry.npmjs.org/vue-observe-visibility/-/vue-observe-visibility-1.0.0.tgz"
   integrity sha512-s5TFh3s3h3Mhd3jaz3zGzkVHKHnc/0C/gNr30olO99+yw2hl3WBhK3ng3/f9OF+qkW4+l7GkmwfAzDAcY3lCFg==
+
+vue-odometer@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/vue-odometer/-/vue-odometer-1.0.2.tgz#ccd43c4a6edae2c432959ea4bd63ece2cfe01a34"
+  integrity sha512-xQj1kdRrQDGhjZ9nb66I6wykR9lG5yvy74PLBpTHw7raGqahBgZOCvPWvC4nol8B8bJQeFWmpCBUidVjtouyng==
+  dependencies:
+    lodash latest
 
 vue-prismjs@^1.2.0:
   version "1.2.0"

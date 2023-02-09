@@ -234,7 +234,6 @@ export function fetchMenu(options = {}) {
                 {
                     title: _l("Notifications"),
                     url: "/notifications",
-                    target: "__use_router__",
                 },
             ],
         };

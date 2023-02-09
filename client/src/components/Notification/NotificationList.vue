@@ -3,15 +3,15 @@
         <h3>Pending notifications</h3>
         <!-- <notification-bell @click="loadNotifications()"> Notification Bell</notification-bell> -->
         <!-- <button v-on:click="loadNotifications()"> Notification Bell</button> -->
-        <b-alert variant="error" v-if="errorMessage" show> </b-alert>
+        <b-alert v-if="errorMessage" variant="error" show> </b-alert>
         <loading-span v-if="loading" message="Loading notifications" />
         <ul v-else id="notifications">
-            <li v-for="notification in notifications" v-bind:key="notification.id">
+            <li v-for="notification in notifications" :key="notification.id">
                 <span>
                     <div class="ui success message">
                         <i class="close icon"></i>
                         <div class="header">
-                            {{ notification.message_text }}
+                            {{ notification.message }}
                         </div>
                     </div>
                 </span>
@@ -20,7 +20,7 @@
         <h3>Create new notification</h3>
         <p>Notification Message is: {{ message }}</p>
         <input v-model="message" placeholder="edit me" @keyup.enter="putNotification($event)" />
-        <button v-on:click="putNotification(message)">Create Message</button>
+        <button @click="putNotification(message)">Create Message</button>
     </div>
 </template>
 
@@ -32,7 +32,7 @@ import { errorMessageAsString } from "utils/simple-error";
 
 export default {
     components: {
-        LoadingSpan
+        LoadingSpan,
     },
     data() {
         const Galaxy = getGalaxyInstance();
@@ -43,13 +43,13 @@ export default {
             message: "",
         };
     },
-    created() {
-        this.loadNotifications();
-    },
     computed: {
         loading() {
             return this.notifications == null;
         },
+    },
+    created() {
+        this.loadNotifications();
     },
     methods: {
         loadNotifications() {
@@ -61,7 +61,7 @@ export default {
                 .catch(this.handleError);
         },
         putNotification(message) {
-            const payload = { message_text: message };
+            const payload = { message };
             axios
                 .post(this.notificationsUrl, payload)
                 .then((response) => {

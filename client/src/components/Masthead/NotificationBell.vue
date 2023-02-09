@@ -1,24 +1,20 @@
 <template>
-    <div v-on:click="printNotifications()">
+    <div @click="printNotifications()">
         <b-nav-item> <notification-bell icon-color="white" :count="count" :size="20"> </notification-bell> </b-nav-item>
     </div>
 </template>
 
 <script>
 import axios from "axios";
-import { BNav, BNavItemDropdown, BNavItem } from "bootstrap-vue";
+import { BNavItem } from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
-import LoadingSpan from "components/LoadingSpan";
 import NotificationBell from "vue-notification-bell";
 import { errorMessageAsString } from "utils/simple-error";
 
 export default {
     components: {
-        LoadingSpan,
         NotificationBell,
         BNavItem,
-        BNavItemDropdown,
-        BNav,
     },
     data() {
         const Galaxy = getGalaxyInstance();
@@ -29,9 +25,6 @@ export default {
             showNotifications: false,
         };
     },
-    created() {
-        this.loadNotifications();
-    },
     computed: {
         loading() {
             return this.notifications == null;
@@ -39,6 +32,9 @@ export default {
         count() {
             return this.notifications ? this.notifications.length : 0;
         },
+    },
+    created() {
+        this.loadNotifications();
     },
     methods: {
         loadNotifications() {
