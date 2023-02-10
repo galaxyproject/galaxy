@@ -1,4 +1,4 @@
-import { mount, type WrapperArray } from "@vue/test-utils";
+import { mount, type Wrapper, type WrapperArray } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 import { CleanableSummary, type CleanupOperation, CleanupResult, type CleanableItem } from "./model";
@@ -48,6 +48,11 @@ async function mountReviewCleanupDialogWith(operation: CleanupOperation, totalIt
     return wrapper;
 }
 
+async function setAllItemsChecked(wrapper: Wrapper<Vue>) {
+    await wrapper.find(SELECT_ALL_CHECKBOX).setChecked();
+    await flushPromises();
+}
+
 describe("ReviewCleanupDialog.vue", () => {
     it("should display a table with items to review", async () => {
         const wrapper = await mountReviewCleanupDialogWith(FAKE_OPERATION);
@@ -59,12 +64,11 @@ describe("ReviewCleanupDialog.vue", () => {
     it("should disable the delete button if no items are selected", async () => {
         const wrapper = await mountReviewCleanupDialogWith(FAKE_OPERATION);
         const deleteButton = wrapper.find(DELETE_BUTTON);
-        const selectAllCheckbox = wrapper.find(SELECT_ALL_CHECKBOX);
 
         expect(deleteButton.attributes().disabled).toBeTruthy();
         // TODO: explicit any because the type of the vm is not correctly inferred, remove when fixed
         expect((wrapper.vm as any).selectedItems.length).toBe(0);
-        await selectAllCheckbox.setChecked();
+        await setAllItemsChecked(wrapper);
         // TODO: explicit any because the type of the vm is not correctly inferred, remove when fixed
         expect((wrapper.vm as any).selectedItems.length).toBe(EXPECTED_TOTAL_ITEMS);
         expect(deleteButton.attributes().disabled).toBeFalsy();
@@ -72,7 +76,7 @@ describe("ReviewCleanupDialog.vue", () => {
 
     it("should show a confirmation message when deleting items", async () => {
         const wrapper = await mountReviewCleanupDialogWith(FAKE_OPERATION);
-        await wrapper.find(SELECT_ALL_CHECKBOX).setChecked();
+        await setAllItemsChecked(wrapper);
         const confirmationModal = wrapper.find(CONFIRMATION_MODAL);
 
         expect(confirmationModal.attributes("aria-hidden")).toBeTruthy();
@@ -82,7 +86,7 @@ describe("ReviewCleanupDialog.vue", () => {
 
     it("should disable the confirmation button until the agreement has been accepted", async () => {
         const wrapper = await mountReviewCleanupDialogWith(FAKE_OPERATION);
-        await wrapper.find(SELECT_ALL_CHECKBOX).setChecked();
+        await setAllItemsChecked(wrapper);
         await wrapper.find(DELETE_BUTTON).trigger("click");
         const allButtons = wrapper.findAll(".btn");
         const permanentlyDeleteBtn = withNameFilter(allButtons).hasText("Permanently delete").at(0);
@@ -94,7 +98,7 @@ describe("ReviewCleanupDialog.vue", () => {
 
     it("should emit the confirmation event when the agreement and deletion has been confirmed", async () => {
         const wrapper = await mountReviewCleanupDialogWith(FAKE_OPERATION);
-        await wrapper.find(SELECT_ALL_CHECKBOX).setChecked();
+        await setAllItemsChecked(wrapper);
         await wrapper.find(DELETE_BUTTON).trigger("click");
         await wrapper.find(AGREEMENT_CHECKBOX).setChecked();
         const allButtons = wrapper.findAll(".btn");
