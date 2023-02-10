@@ -8,14 +8,20 @@
 Highlights
 ===========================================================
 
-**Feature1**
-  Feature description.
+Feature1
+--------
 
-**Feature2**
-  Feature description.
+Feature description.
 
-**Feature3**
-  Feature description.
+Feature2
+--------
+
+Feature description.
+
+Feature3
+--------
+
+Feature description.
 
 Also check out the `23.0 user release notes <23.0_announce_user.html>`__. Are you an admin? Check out `some admin relevant PRs <https://github.com/galaxyproject/galaxy/pulls?q=label%3Ahighlight%2Fadmin+milestone%3A23.0+is%3Aclosed++is%3Apr+>`__.
 
