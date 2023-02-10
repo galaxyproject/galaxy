@@ -57,24 +57,6 @@ Builtin Tool Updates
 ===========================================================
 
 .. tools
-* Support empty compressed dataset in  filter_empty_datasets tool
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 14360`_
-* Feature: Advanced Tool Search Menu
-  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
-  `Pull Request 14391`_
-* interval2maf remove from unversioned or deprecate
-  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
-  `Pull Request 14573`_
-* Unit tests and type fixes for tool data tables code
-  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
-  `Pull Request 14582`_
-* Misc fixes 202209
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 14592`_
-* Type annotations for base toolbox functionality.
-  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
-  `Pull Request 14629`_
 * Simplify head wrapper - same functionality, no pipe
   (thanks to `@wm75 <https://github.com/wm75>`__).
   `Pull Request 14895`_
@@ -84,15 +66,9 @@ Builtin Tool Updates
 * Add interactive tool for Mgnify Jupyter lab
   (thanks to `@bebatut <https://github.com/bebatut>`__).
   `Pull Request 14950`_
-*  Add interactive tool for Pavian
+* Add interactive tool for Pavian
   (thanks to `@bebatut <https://github.com/bebatut>`__).
   `Pull Request 15068`_
-* Fix add value tool, bump linter level for ``format="input"`` to error
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 15304`_
-* Add linting with ruff
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 15315`_
 
 Release Testing Team
 ===========================================================
