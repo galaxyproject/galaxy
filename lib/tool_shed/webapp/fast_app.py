@@ -5,6 +5,7 @@ from galaxy.webapps.base.api import (
     add_empty_response_middleware,
     add_exception_handler,
     add_request_id_middleware,
+    add_sentry_middleware,
     include_all_package_routers,
 )
 
@@ -22,6 +23,8 @@ def initialize_fast_app(gx_webapp, tool_shed_app):
     tool_shed_app.haltables.append(("WSGI Middleware threadpool", wsgi_handler.executor.shutdown))
     app.mount("/", wsgi_handler)
     add_empty_response_middleware(app)
+    if tool_shed_app.config.sentry_dsn:
+        add_sentry_middleware(app=app)
     return app
 
 

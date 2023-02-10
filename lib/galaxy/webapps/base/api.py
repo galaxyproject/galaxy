@@ -171,6 +171,11 @@ def add_empty_response_middleware(app: FastAPI) -> None:
     app.add_middleware(SuppressNoResponseReturnedMiddleware)
 
 
+def add_sentry_middleware(app: FastAPI) -> None:
+    from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
+    app.add_middleware(SentryAsgiMiddleware)
+
+
 def add_exception_handler(app: FastAPI) -> None:
     @app.exception_handler(RequestValidationError)
     async def validate_exception_middleware(request: Request, exc: RequestValidationError) -> Response:

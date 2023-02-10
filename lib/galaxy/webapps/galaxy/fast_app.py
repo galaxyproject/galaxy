@@ -11,6 +11,7 @@ from galaxy.webapps.base.api import (
     add_empty_response_middleware,
     add_exception_handler,
     add_request_id_middleware,
+    add_sentry_middleware,
     GalaxyFileResponse,
     include_all_package_routers,
 )
@@ -103,11 +104,6 @@ def add_galaxy_middleware(app: FastAPI, gx_app):
     GalaxyFileResponse.nginx_x_accel_redirect_base = gx_app.config.nginx_x_accel_redirect_base
     GalaxyFileResponse.apache_xsendfile = gx_app.config.apache_xsendfile
 
-    if gx_app.config.sentry_dsn:
-        from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
-
-        app.add_middleware(SentryAsgiMiddleware)
-
     if gx_app.config.get("allowed_origin_hostnames", None):
         app.add_middleware(
             GalaxyCORSMiddleware,
@@ -158,6 +154,8 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
     gx_app.haltables.append(("WSGI Middleware threadpool", wsgi_handler.executor.shutdown))
     app.mount("/", wsgi_handler)
     add_empty_response_middleware(app)
+    if gx_app.config.sentry_dsn:
+        add_sentry_middleware(app)
     if gx_app.config.galaxy_url_prefix != "/":
         parent_app = FastAPI()
         parent_app.mount(gx_app.config.galaxy_url_prefix, app=app)
