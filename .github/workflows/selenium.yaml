@@ -63,9 +63,11 @@ jobs:
         with:
           path: 'galaxy root/.venv'
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-selenium
-      - uses: mvdbeek/gha-yarn-cache@master
+      - uses: actions/setup-node@v3
         with:
-          yarn-lock-file: 'galaxy root/client/yarn.lock'
+          node-version: '18.12.1'
+          cache: 'yarn'
+          cache-dependency-path: 'galaxy root/client/yarn.lock'
       - uses: nanasess/setup-chromedriver@v1
       - name: Run tests
         run: ./run_tests.sh --coverage -selenium lib/galaxy_test/selenium -- --num-shards=3 --shard-id=${{ matrix.chunk }}
