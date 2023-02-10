@@ -46,9 +46,11 @@ const fields = [
     },
 ];
 
+const MAXIMUM_REVIEWABLE_ITEM_LIMIT = 200;
+const MAXIMUM_ITEMS_PER_PAGE = 25;
+
 const sortBy = ref<SortableKey>("size");
 const sortDesc = ref(true);
-const perPage = ref(50);
 const currentPage = ref(1);
 const totalRows = ref(1);
 const allSelected = ref(false);
@@ -56,7 +58,6 @@ const indeterminate = ref(false);
 const showDialog = ref(false);
 const items = ref<CleanableItem[]>([]);
 const selectedItems = ref<CleanableItem[]>([]);
-const itemLimit = ref(500);
 const confirmChecked = ref(false);
 const isBusy = ref(false);
 
@@ -69,7 +70,7 @@ const hasItemsSelected = computed(() => {
 });
 
 const hasPages = computed(() => {
-    return totalRows.value > perPage.value;
+    return totalRows.value > MAXIMUM_ITEMS_PER_PAGE;
 });
 
 const title = computed(() => {
@@ -93,25 +94,26 @@ const confirmButtonVariant = computed(() => {
 });
 
 const rowLimitReached = computed(() => {
-    return totalRows.value >= itemLimit.value;
+    return totalRows.value >= MAXIMUM_REVIEWABLE_ITEM_LIMIT;
 });
 
 const rowLimitReachedText = computed(() => {
     return localize(
-        `Displaying a maximum of ${itemLimit.value} items here. If there are more, you can rerun this operation after deleting some.`
+        `Displaying a maximum of ${MAXIMUM_REVIEWABLE_ITEM_LIMIT} items here. If there are more, you can rerun this operation after deleting some.`
     );
 });
 
 watch(props, (newVal) => {
     currentPage.value = 1;
-    totalRows.value = newVal.totalItems;
+    totalRows.value =
+        newVal.totalItems > MAXIMUM_REVIEWABLE_ITEM_LIMIT ? MAXIMUM_REVIEWABLE_ITEM_LIMIT : newVal.totalItems;
 });
 
 watch(selectedItems, (newVal) => {
     if (newVal.length === 0) {
         indeterminate.value = false;
         allSelected.value = false;
-    } else if (newVal.length === items.value.length) {
+    } else if (newVal.length === totalRows.value) {
         indeterminate.value = false;
         allSelected.value = true;
     } else {
@@ -124,8 +126,12 @@ function toNiceSize(sizeInBytes: number) {
     return bytesToString(sizeInBytes, true, undefined);
 }
 
-function toggleSelectAll(checked: boolean) {
-    selectedItems.value = checked ? items.value : [];
+async function toggleSelectAll(checked: boolean) {
+    if (checked) {
+        await onSelectAllItems();
+    } else {
+        unselectAll();
+    }
 }
 
 function openModal() {
@@ -141,7 +147,7 @@ function onShowModal() {
 }
 
 function resetModal() {
-    selectedItems.value = [];
+    unselectAll();
 }
 
 function resetConfirmationModal() {
@@ -185,8 +191,13 @@ async function onSelectAllItems() {
             sortDesc: sortDesc.value,
         })
     );
+    items.value = allItems;
     selectedItems.value = allItems;
     isBusy.value = false;
+}
+
+function unselectAll() {
+    selectedItems.value = [];
 }
 
 defineExpose({
@@ -199,12 +210,12 @@ defineExpose({
     <b-modal v-model="showDialog" title-tag="h2" :static="modalStatic" centered @show="onShowModal">
         <template v-slot:modal-title>
             {{ title }}
-            <span class="text-primary h3">{{ totalItems }}<span v-if="rowLimitReached">+</span> items</span>
+            <span class="text-primary h3">{{ totalRows }}<span v-if="rowLimitReached">+</span> items</span>
         </template>
         <div>
             {{ captionText }}
             <b>
-                <b-link @click="onSelectAllItems">select all {{ totalItems }} items</b-link>
+                <b-link @click="onSelectAllItems">select all {{ totalRows }} items</b-link>
             </b>
         </div>
         <b-table
@@ -212,7 +223,7 @@ defineExpose({
             v-model="items"
             :fields="fields"
             :items="itemsProvider"
-            :per-page="perPage"
+            :per-page="MAXIMUM_ITEMS_PER_PAGE"
             :current-page="currentPage"
             :busy="isBusy"
             hover
@@ -238,7 +249,11 @@ defineExpose({
         </b-table>
         <template v-slot:modal-footer>
             <span v-if="rowLimitReached" class="font-italic">{{ rowLimitReachedText }}</span>
-            <b-pagination v-if="hasPages" v-model="currentPage" :total-rows="totalRows" :per-page="perPage" />
+            <b-pagination
+                v-if="hasPages"
+                v-model="currentPage"
+                :total-rows="totalRows"
+                :per-page="MAXIMUM_ITEMS_PER_PAGE" />
             <b-button
                 v-b-modal.confirmation-modal
                 :disabled="!hasItemsSelected"
