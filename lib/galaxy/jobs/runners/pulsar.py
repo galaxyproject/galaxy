@@ -99,6 +99,10 @@ PULSAR_PARAM_SPECS = dict(
         map=specs.to_str_or_none,
         default=None,
     ),
+    amqp_key_prefix=dict(
+        map=specs.to_str_or_none,
+        default=None,
+    ),
     galaxy_url=dict(
         map=specs.to_str_or_none,
         default=None,
@@ -968,7 +972,7 @@ class PulsarMQJobRunner(PulsarJobRunner):
     )
 
 
-DEFAULT_PULSAR_CONTAINER = "galaxy/pulsar-pod-staging:0.15.0.1"
+DEFAULT_PULSAR_CONTAINER = "galaxy/pulsar-pod-staging:0.15.0.2"
 COEXECUTION_DESTENTATION_DEFAULTS = {
     "default_file_action": "remote_transfer",
     "rewrite_parameters": "true",

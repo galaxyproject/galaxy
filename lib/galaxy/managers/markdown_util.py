@@ -110,13 +110,7 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
                 raise MalformedContents(f"Missing object identifier [{line}].")
 
         def _remap(container, line):
-            id_match = re.search(UNENCODED_ID_PATTERN, line)
-            object_id = None
-            encoded_id = None
-            if id_match:
-                object_id = int(id_match.group(2))
-                encoded_id = trans.security.encode_id(object_id)
-                line = line.replace(id_match.group(), f"{id_match.group(1)}={encoded_id}")
+            line, object_id, encoded_id = self._encode_line(trans, line)
             if container == "history_link":
                 _check_object(object_id, line)
                 history = history_manager.get_accessible(object_id, trans.user)
@@ -196,10 +190,21 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
             try:
                 return _remap(container, line)
             except Exception as e:
+                line, *_ = self._encode_line(trans, line)
                 return self.handle_error(container, line, str(e))
 
         export_markdown = _remap_galaxy_markdown_calls(_remap_container, internal_galaxy_markdown)
         return export_markdown
+
+    def _encode_line(self, trans, line):
+        id_match = re.search(UNENCODED_ID_PATTERN, line)
+        object_id = None
+        encoded_id = None
+        if id_match:
+            object_id = int(id_match.group(2))
+            encoded_id = trans.security.encode_id(object_id)
+            line = line.replace(id_match.group(), f"{id_match.group(1)}={encoded_id}")
+        return line, object_id, encoded_id
 
     @abc.abstractmethod
     def handle_history_link(self, line, history):
