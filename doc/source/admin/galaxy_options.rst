@@ -2914,6 +2914,19 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``sentry_traces_sample_rate``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set to a number between 0 and 1. With this option set, every
+    transaction created will have that percentage chance of being sent
+    to Sentry. A value higher than 0 is required to analyze
+    performance.
+:Default: ``0.0``
+:Type: float
+
+
 ~~~~~~~~~~~~~~~
 ``statsd_host``
 ~~~~~~~~~~~~~~~
@@ -5076,14 +5089,15 @@
 :Type: str
 
 
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``enable_beacon_integration``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Enables user preferences and api endpoint for the beacon integration.
+    Enables user preferences and api endpoint for the beacon
+    integration.
 :Default: ``false``
 :Type: bool
+
 
 
