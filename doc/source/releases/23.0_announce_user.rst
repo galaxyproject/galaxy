@@ -18,90 +18,34 @@ Highlights
   Feature description.
 
 
-New Visualizations
-===========================================================
-
-.. visualizations
-* Fix path for history contents API request
-  (thanks to `@reid-wagner <https://github.com/reid-wagner>`__).
-  `Pull Request 14437`_
-* visjs-based transition system visualization
-  (thanks to `@xtrojak <https://github.com/xtrojak>`__).
-  `Pull Request 14766`_
-* Fix ``x-accel-redirect`` handling and implement byte-range handling
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 14990`_
-* Prepend Galaxy root to dataset download URLs in visualization plugins
-  (thanks to `@mahendrapaipuri <https://github.com/mahendrapaipuri>`__).
-  `Pull Request 15064`_
-* Visualization mounting fix & test
-  (thanks to `@dannon <https://github.com/dannon>`__).
-  `Pull Request 15332`_
-
 New Datatypes
 ===========================================================
 
 .. datatypes
-* Replace pysam in converters by command line tools
-  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
-  `Pull Request 13411`_
-* Combine "as" imports with other "from" imports
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 14119`_
-* save one call to datatype_by_extension
-  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
-  `Pull Request 14209`_
-* Code cleanups from pyupgrade
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 14313`_
-* Add datatypes for Sybila tools
-  (thanks to `@xtrojak <https://github.com/xtrojak>`__).
-  `Pull Request 14362`_
 * Add "Datatypes" Page
   (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
   `Pull Request 14464`_
+* Add datatypes for Sybila tools
+  (thanks to `@xtrojak <https://github.com/xtrojak>`__).
+  `Pull Request 14362`_
 * Add CASTEP datatypes
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 14504`_
-* Remove legacy tool shed datatype handling
-  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
-  `Pull Request 14617`_
-* do not split "." but the path
-  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
-  `Pull Request 14760`_
 * Add support for the PSL data format
   (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
   `Pull Request 14813`_
-* Misc. fixes to datatypes modules
-  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
-  `Pull Request 14817`_
 * Add ludwig report datatype
   (thanks to `@qiagu <https://github.com/qiagu>`__).
   `Pull Request 14903`_
-* Fix indentation level on SnpSiftDbNSFP.set_peek()
-  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
-  `Pull Request 14953`_
 * Display model diagram for h5mlm datatype
   (thanks to `@qiagu <https://github.com/qiagu>`__).
   `Pull Request 14992`_
-* Refactor, add type hints to get_chunk() in datatypes
-  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
-  `Pull Request 14993`_
 * Enable Tabix download + New datatype JuicerMediumTabix in 22.05
   (thanks to `@lldelisle <https://github.com/lldelisle>`__).
   `Pull Request 15024`_
-* Type hints for datatypes
-  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
-  `Pull Request 15052`_
-* fix interval_to_bgzip for sub gff classes
-  (thanks to `@lldelisle <https://github.com/lldelisle>`__).
-  `Pull Request 15053`_
 * Add wiff2 composite/tar datatypes
   (thanks to `@neoformit <https://github.com/neoformit>`__).
   `Pull Request 15249`_
-* Add linting with ruff
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 15315`_
 * Add ecology type section + hdr and bil datatypes
   (thanks to `@yvanlebras <https://github.com/yvanlebras>`__).
   `Pull Request 15337`_
