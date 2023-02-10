@@ -68,10 +68,12 @@ export function useFileDrop(
     );
 
     /** Reset all variables */
-    const reset = () => {
+    const reset = (continueBlock = false) => {
         isFileOverDocument.value = false;
         isFileOverDropZone.value = false;
-        dragBlocked = false;
+        if (!continueBlock) {
+            dragBlocked = false;
+        }
         hasExited = true;
     };
 
@@ -86,7 +88,7 @@ export function useFileDrop(
         await wait(100);
 
         if (hasExited) {
-            reset();
+            reset(dragBlocked);
         }
     });
 
