@@ -86,6 +86,8 @@ Laila Los <https://github.com/ElectronicBlueberry>
 Release Notes
 ===========================================================
 
+User facing release notes compiled and written by `Helena Rasche <https://github.com/hexylena>`_.
+
 Please see the :doc:`full release notes <23.0_announce>` for more details.
 
 .. include:: 23.0_prs.rst
