@@ -2,13 +2,11 @@
 import { getGalaxyInstance } from "app";
 import CenterFrame from "./CenterFrame";
 import { useUserStore } from "@/stores/userStore";
-import HistoryIndex from "@/components/History/Index";
+import HistoryIndex from "@/components/History/Index.vue";
+import ActivityBar from "@/components/Masthead/ActivityBar.vue";
 import { WindowManager } from "@/layout/window-manager";
-import ToolBox from "@/components/Panels/ProviderAwareToolBox";
-import { UploadButton } from "@/components/Upload";
 import { useRoute, useRouter } from "vue-router/composables";
 import { computed, ref, onMounted, onUnmounted } from "vue";
-import DragAndDropModal from "@/components/Upload/DragAndDropModal";
 
 const route = useRoute();
 const router = useRouter();
@@ -22,12 +20,6 @@ const showPanels = computed(() => {
         return panels.toLowerCase() != "true";
     }
     return true;
-});
-const toolBoxProperties = computed(() => {
-    const Galaxy = getGalaxyInstance();
-    return {
-        storedWorkflowMenuEntries: Galaxy.config.stored_workflow_menu_entries,
-    };
 });
 
 // methods
@@ -59,26 +51,7 @@ onUnmounted(() => {
 </script>
 <template>
     <div id="columns" class="d-flex">
-        <b-nav v-if="showPanels" vertical class="side-bar pt-1">
-            <b-nav-item
-                id="tool-search"
-                v-b-tooltip.hover.right
-                class="my-1"
-                :class="{ 'active-sidebar': sidebarIsActive('search') }"
-                :title="'Search Tools and Workflows' | l"
-                @click="onToggleSidebar('search')">
-                <template>
-                    <span class="fa fa-wrench nav-icon" />
-                    <span v-if="sidebarIsActive('search')" class="fa fa-caret-right nav-icon-active" />
-                </template>
-            </b-nav-item>
-            <upload-button />
-        </b-nav>
-        <transition-group name="panels">
-            <div v-if="showPanels" v-show="sidebarIsActive('search')" key="search">
-                <ToolBox v-bind="toolBoxProperties" class="left-column" />
-            </div>
-        </transition-group>
+        <ActivityBar v-if="showPanels" class="left-column" />
         <div class="center-column overflow-auto p-3 w-100">
             <CenterFrame v-show="showCenter" id="galaxy_main" @load="onLoad" />
             <router-view v-show="!showCenter" :key="$route.fullPath" class="h-100" />
@@ -87,6 +60,7 @@ onUnmounted(() => {
         <DragAndDropModal />
     </div>
 </template>
+
 
 <style scoped>
 @import "theme/blue.scss";
