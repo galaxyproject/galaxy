@@ -135,6 +135,7 @@ LOGGING_CONFIG_DEFAULT: Dict[str, Any] = {
 """Default value for logging configuration, passed to :func:`logging.config.dictConfig`"""
 
 VERSION_JSON_FILE = "version.json"
+DEFAULT_EMAIL_FROM_LOCAL_PART = "galaxy-no-reply"
 
 
 def configure_logging(config, facts=None):
@@ -1046,6 +1047,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                 self.server_names.append(section.replace("server:", "", 1))
 
         self._set_galaxy_infrastructure_url(kwargs)
+        # _set_email_from() should be called AFTER _set_galaxy_infrastructure_url()
+        self._set_email_from()
 
         # Asynchronous execution process pools - limited functionality for now, attach_to_pools is designed to allow
         # webless Galaxy server processes to attach to arbitrary message queues (e.g. as job handlers) so they do not
@@ -1225,6 +1228,11 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             )
         if "UWSGI_PORT" in self.galaxy_infrastructure_url:
             raise Exception("UWSGI_PORT is not supported anymore")
+
+    def _set_email_from(self):
+        if not self.email_from:
+            hostname = self.galaxy_infrastructure_url or socket.getfqdn()
+            self.email_from = f"{DEFAULT_EMAIL_FROM_LOCAL_PART}@{hostname}"
 
     def reload_sanitize_allowlist(self, explicit=True):
         self.sanitize_allowlist = []
