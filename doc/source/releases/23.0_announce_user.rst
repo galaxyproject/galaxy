@@ -11,7 +11,7 @@ Highlights
 Themes!
 -------
 
-Galaxy has themes! As as a user you will be able to select between a number of built-in themes. Server administrators may choose to provide additional themes for their users. If your admin has enabled this feature, you will find it under User → Preferences, just look for the bright red "New!"
+Show off your colours in Galaxy 23.0 with the ability to choose your own theme! As as a user you will be able to select between a number of built-in themes. Server administrators may choose to provide additional themes for their users. If your admin has enabled this feature, you will find it under User → Preferences, just look for the bright red "New!"
 
 .. figure:: images/23.0-themes.png
    :alt: The top bar of Galaxy is shown across four different themes in a single image, diagonal cuts joining the images so it looks like a continuous Galaxy screenshot. The four themes shown are the progress pride flag in the masthead, the classic Galaxy dark blue, a black theme with pink highlights, and then a lighter blue theme.
@@ -19,7 +19,7 @@ Galaxy has themes! As as a user you will be able to select between a number of b
 New Font
 --------
 
-You might have noticed Galaxy looking a wee bit different. The 0s and Os are now more distinctive, as well as a host of other characters, thanks to us switching to `Atkinson Hyperlegible <https://brailleinstitute.org/freefont>`__, a font that should be a _lot_ friendlier for folks with visual impairments. In general this font is a lot easier to read for everyone and we're excited for it!
+You might have noticed Galaxy looking a wee bit different. The 0s and Os are now more distinctive, as well as a host of other characters, thanks to us switching to `Atkinson Hyperlegible <https://brailleinstitute.org/freefont>`__, a font that should be a *lot* friendlier for folks with visual impairments. In general this font is much easier to read for everyone and we're excited for it!
 
 New History Multi-view
 ----------------------
@@ -75,7 +75,7 @@ It's easier than ever to change the datatype of every dataset in a collection us
 RO-Crate / Biocompute Export
 ----------------------------
 
-Are you interested in publishing workflow artefacts? You can do that in one of two formats now, RO-Crate and BioCompute Object. These are both standards based efforts to package research data and metadata. Read more about [RO-Crate](https://www.researchobject.org/ro-crate/) and [BioCompute Objects](https://biocomputeobject.org/). You'll need to have a remote file source configured (e.g. FTP or Dropbox) to use it.
+Are you interested in publishing workflow artefacts? You can do that in one of two formats now, RO-Crate and BioCompute Object. These are both standards based efforts to package research data and metadata. Read more about `RO-Crate <https://www.researchobject.org/ro-crate/>`__ and `BioCompute Objects <https://biocomputeobject.org/>`__. You'll need to have a remote file source configured (e.g. FTP or Dropbox) to use it.
 
 
 
@@ -142,13 +142,13 @@ Release Testing Team
 
 A special thanks to the release testing team for testing many of the new features and reporting many bugs:
 
-Alireza Heidari <https://github.com/itisAliRH>
-Bryan Raubenolt <https://github.com/thepineapplepirate>
-Cameron Hyde <https://github.com/neoformit>
-Jennifer Hillman-Jackson <https://github.com/jennaj>
-John Chilton <https://github.com/jmchilton>
-John Davis <https://github.com/jdavcs>
-Laila Los <https://github.com/ElectronicBlueberry>
+* `Alireza Heidari <https://github.com/itisAliRH>`__
+* `Bryan Raubenolt <https://github.com/thepineapplepirate>`__
+* `Cameron Hyde <https://github.com/neoformit>`__
+* `Jennifer Hillman-Jackson <https://github.com/jennaj>`__
+* `John Chilton <https://github.com/jmchilton>`__
+* `John Davis <https://github.com/jdavcs>`__
+* `Laila Los <https://github.com/ElectronicBlueberry>`__
 
 Release Notes
 ===========================================================
