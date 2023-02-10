@@ -156,7 +156,7 @@
     "css-minimizer-webpack-plugin": "^4.0.0",
     "del": "^6.0.0",
     "eslint": "^8.33.0",
-    "eslint-plugin-compat": "^4.0.2",
+    "eslint-plugin-compat": "^4.1.1",
     "eslint-plugin-vue": "^9.9.0",
     "eslint-plugin-vuejs-accessibility": "^2.1.0",
     "expose-loader": "^4.0.0",
