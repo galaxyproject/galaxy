@@ -311,6 +311,11 @@ tool_shed:
   # Sentry. Possible values are DEBUG, INFO, WARNING, ERROR or CRITICAL.
   #sentry_event_level: ERROR
 
+  # Set to a number between 0 and 1. With this option set, every
+  # transaction created will have that percentage chance of being sent
+  # to Sentry. A value higher than 0 is required to analyze performance.
+  #sentry_traces_sample_rate: 0.0
+
   # Galaxy Session Timeout This provides a timeout (in minutes) after
   # which a user will have to log back in. A duration of 0 disables this
   # feature.

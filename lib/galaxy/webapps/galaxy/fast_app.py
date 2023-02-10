@@ -107,11 +107,6 @@ def add_galaxy_middleware(app: FastAPI, gx_app):
     GalaxyFileResponse.nginx_x_accel_redirect_base = gx_app.config.nginx_x_accel_redirect_base
     GalaxyFileResponse.apache_xsendfile = gx_app.config.apache_xsendfile
 
-    if gx_app.config.sentry_dsn:
-        from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
-
-        app.add_middleware(SentryAsgiMiddleware)
-
     if gx_app.config.get("allowed_origin_hostnames", None):
         app.add_middleware(
             GalaxyCORSMiddleware,

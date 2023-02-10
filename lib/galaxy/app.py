@@ -202,6 +202,7 @@ class SentryClientMixin:
                     self.config.sentry_dsn,
                     release=f"{self.config.version_major}.{self.config.version_minor}",
                     integrations=[sentry_logging],
+                    traces_sample_rate=self.config.sentry_traces_sample_rate,
                 )
 
             self.application_stack.register_postfork_function(postfork_sentry_client)
