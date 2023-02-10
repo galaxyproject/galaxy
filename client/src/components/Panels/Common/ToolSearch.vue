@@ -4,6 +4,7 @@
         <DelayedInput
             :class="!showAdvanced && 'mb-3'"
             :query="query"
+            :delay="100"
             :show-advanced="showAdvanced"
             :enable-advanced="enableAdvanced"
             :placeholder="showAdvanced ? 'any name' : placeholder"

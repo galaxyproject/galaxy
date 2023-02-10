@@ -2,16 +2,17 @@
     <div>
         <div class="donemessagelarge">
             <p>
-                Successfully invoked workflow <b>{{ workflowName }}</b
-                ><em v-if="multipleInvocations"> - {{ timesExecuted }} times</em>.
+                Successfully invoked workflow <b>{{ workflowName }}</b>
+                <em v-if="multipleInvocations"> - {{ timesExecuted }} times</em>.
             </p>
-            <p v-if="multipleInvocations">
+
+            <p v-if="multipleHistoryTargets">
                 This workflow will generate results in multiple histories. You can observe progress in the
-                <a :href="historyTarget">history multi-view</a>.
+                <a :href="multiHistoryView">history multi-view</a>.
             </p>
             <p v-else-if="wasNewHistoryTarget">
                 This workflow will generate results in a new history.
-                <a class="workflow-new-history-target-link" :href="historyTarget">Switch to that history now</a>.
+                <a class="workflow-new-history-target-link" :href="newHistoryTarget">Switch to that history now</a>.
             </p>
             <p v-else>You can check the status of queued jobs and view the resulting data the History panel.</p>
         </div>
@@ -53,12 +54,22 @@ export default {
         multipleInvocations() {
             return this.timesExecuted > 1;
         },
-        historyTarget() {
-            if (this.multipleInvocations) {
-                return `${getAppRoot()}histories/view_multiple`;
-            } else {
-                return `${getAppRoot()}history/switch_to_history?hist_id=${this.invocations[0].history_id}`;
-            }
+        multipleHistoryTargets() {
+            return this.targetHistories.length > 1;
+        },
+        targetHistories() {
+            return this.invocations.reduce((histories, invocation) => {
+                if (invocation.history_id && !histories.includes(invocation.history_id)) {
+                    histories.push(invocation.history_id);
+                }
+                return histories;
+            }, []);
+        },
+        multiHistoryView() {
+            return `${getAppRoot()}histories/view_multiple`;
+        },
+        newHistoryTarget() {
+            return `${getAppRoot()}history/switch_to_history?hist_id=${this.invocations[0].history_id}`;
         },
         wasNewHistoryTarget() {
             if (this.invocations.length < 1) {
