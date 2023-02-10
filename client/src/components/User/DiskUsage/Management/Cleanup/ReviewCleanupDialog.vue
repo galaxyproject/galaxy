@@ -46,7 +46,6 @@ const fields = [
     },
 ];
 
-const MAXIMUM_REVIEWABLE_ITEM_LIMIT = 200;
 const MAXIMUM_ITEMS_PER_PAGE = 25;
 
 const sortBy = ref<SortableKey>("size");
@@ -93,20 +92,9 @@ const confirmButtonVariant = computed(() => {
     return confirmChecked.value ? "danger" : "";
 });
 
-const rowLimitReached = computed(() => {
-    return totalRows.value >= MAXIMUM_REVIEWABLE_ITEM_LIMIT;
-});
-
-const rowLimitReachedText = computed(() => {
-    return localize(
-        `Displaying a maximum of ${MAXIMUM_REVIEWABLE_ITEM_LIMIT} items here. If there are more, you can rerun this operation after deleting some.`
-    );
-});
-
 watch(props, (newVal) => {
     currentPage.value = 1;
-    totalRows.value =
-        newVal.totalItems > MAXIMUM_REVIEWABLE_ITEM_LIMIT ? MAXIMUM_REVIEWABLE_ITEM_LIMIT : newVal.totalItems;
+    totalRows.value = newVal.totalItems;
 });
 
 watch(selectedItems, (newVal) => {
@@ -210,7 +198,7 @@ defineExpose({
     <b-modal v-model="showDialog" title-tag="h2" :static="modalStatic" centered @show="onShowModal">
         <template v-slot:modal-title>
             {{ title }}
-            <span class="text-primary h3">{{ totalRows }}<span v-if="rowLimitReached">+</span> items</span>
+            <span class="text-primary h3">{{ totalRows }} items</span>
         </template>
         <div>
             {{ captionText }}
@@ -248,7 +236,6 @@ defineExpose({
             </template>
         </b-table>
         <template v-slot:modal-footer>
-            <span v-if="rowLimitReached" class="font-italic">{{ rowLimitReachedText }}</span>
             <b-pagination
                 v-if="hasPages"
                 v-model="currentPage"
