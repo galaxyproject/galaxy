@@ -20,6 +20,8 @@ export async function buildCollectionModal(collectionType, selectedContent, hist
     let createFunc;
     if (collectionType == "list") {
         createFunc = LIST_COLLECTION_CREATOR.createListCollection;
+    } else if (collectionType == "list:all") {
+        createFunc = PAIR_COLLECTION_CREATOR.createListAllCollection;
     } else if (collectionType == "paired") {
         createFunc = PAIR_COLLECTION_CREATOR.createPairCollection;
     } else if (collectionType == "list:paired") {
