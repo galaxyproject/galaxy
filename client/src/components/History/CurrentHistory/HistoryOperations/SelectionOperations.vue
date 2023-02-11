@@ -51,6 +51,11 @@
                     <span v-localize>Build Collection from Rules</span>
                 </b-dropdown-item>
                 <b-dropdown-divider />
+                <b-dropdown-divider v-if="!showBuildOptions && selectionMatchesQuery">
+                    <b-dropdown-item v-if="showBuildOptions" data-description="build list" @click="buildDatasetListForAllElements">
+                    <span v-localize>Build Dataset List</span>
+                </b-dropdown-item>
+                </b-dropdown-divider>
                 <b-dropdown-item v-b-modal:change-dbkey-of-selected-content data-description="change database build">
                     <span v-localize>Change Database/Build</span>
                 </b-dropdown-item>
@@ -303,6 +308,9 @@ export default {
         // collection creation, fires up a modal
         async buildDatasetList() {
             await this.buildNewCollection("list");
+        },
+        async buildDatasetListForAllElements() {
+            await this.buildNewCollection("list:all");
         },
         async buildDatasetPair() {
             await this.buildNewCollection("paired");
