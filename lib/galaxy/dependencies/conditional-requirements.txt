@@ -2,7 +2,7 @@
 psycopg2-binary==2.9.5
 mysqlclient
 fluent-logger
-sentry-sdk
+sentry-sdk[fastapi]
 pbs_python
 drmaa
 statsd

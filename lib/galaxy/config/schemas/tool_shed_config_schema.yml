@@ -557,6 +557,15 @@ mapping:
           Determines the minimum log level that will be sent as an event to Sentry.
           Possible values are DEBUG, INFO, WARNING, ERROR or CRITICAL.
 
+      sentry_traces_sample_rate:
+        type: float
+        default: 0.0
+        required: false
+        desc: |
+          Set to a number between 0 and 1. With this option set, every transaction created
+          will have that percentage chance of being sent to Sentry. A value higher than 0
+          is required to analyze performance.
+
       session_duration:
         type: int
         default: 0
