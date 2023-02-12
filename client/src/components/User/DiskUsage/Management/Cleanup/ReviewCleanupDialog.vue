@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import localize from "@/utils/localization";
 import { bytesToString } from "@/utils/utils";
-import { BModal, BTable, BFormCheckbox, BLink, BPagination, BButton } from "bootstrap-vue";
+import { BModal, BTable, BFormCheckbox, BPagination, BButton } from "bootstrap-vue";
 import UtcDate from "@/components/UtcDate.vue";
 import { type CleanableItem, type CleanupOperation, type SortableKey, PaginationOptions } from "./model";
 import { computed, ref, watch } from "vue";
@@ -22,7 +22,7 @@ const emit = defineEmits<{
 }>();
 
 const permanentlyDeleteText = localize("Permanently delete");
-const captionText = localize("To free up account space, review and select items to be permanently deleted or");
+const captionText = localize("To free up account space, review and select items to be permanently deleted here.");
 const agreementText = localize("I understand that once I delete the items, they cannot be recovered.");
 const fields = [
     {
@@ -116,9 +116,9 @@ function toNiceSize(sizeInBytes: number) {
 
 async function toggleSelectAll(checked: boolean) {
     if (checked) {
-        await onSelectAllItems();
+        await selectAllItems();
     } else {
-        unselectAll();
+        unselectAllItems();
     }
 }
 
@@ -135,7 +135,7 @@ function onShowModal() {
 }
 
 function resetModal() {
-    unselectAll();
+    unselectAllItems();
 }
 
 function resetConfirmationModal() {
@@ -169,7 +169,7 @@ async function itemsProvider(ctx: { currentPage: number; perPage: number }) {
     }
 }
 
-async function onSelectAllItems() {
+async function selectAllItems() {
     isBusy.value = true;
     const allItems = await props.operation.fetchItems(
         new PaginationOptions({
@@ -184,7 +184,7 @@ async function onSelectAllItems() {
     isBusy.value = false;
 }
 
-function unselectAll() {
+function unselectAllItems() {
     selectedItems.value = [];
 }
 
@@ -202,9 +202,6 @@ defineExpose({
         </template>
         <div>
             {{ captionText }}
-            <b>
-                <b-link @click="onSelectAllItems">select all {{ totalRows }} items</b-link>
-            </b>
         </div>
         <b-table
             v-if="operation"
