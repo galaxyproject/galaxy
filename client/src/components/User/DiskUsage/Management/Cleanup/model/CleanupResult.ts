@@ -98,14 +98,22 @@ export class CleanupResult {
      * The number of items successfully cleaned.
      */
     get totalCleaned(): number {
-        return this._data.total_item_count - this._data.errors.length;
+        return this._data.success_item_count;
     }
 
     /**
      * Whether the cleanup operation managed to free some items but not all of them.
      */
     get isPartialSuccess(): boolean {
-        return this._data.errors.length > 0 && this.totalCleaned > 0;
+        return this.hasSomeErrors && this._data.success_item_count > 0;
+    }
+
+    /**
+     * Whether the cleanup operation managed to free some space or remove some items.
+     * It can happen that only "copy" items were removed effectively recovering 0 bytes.
+     */
+    get hasUpdatedResults(): boolean {
+        return this.totalFreeBytes > 0 || this.totalCleaned > 0;
     }
 
     /**
