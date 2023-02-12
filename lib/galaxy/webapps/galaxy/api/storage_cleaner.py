@@ -58,7 +58,7 @@ class FastAPIStorageCleaner:
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> CleanableItemsSummary:
-        return self.service.get_discarded_histories_summary(trans)
+        return self.service.get_discarded_summary(trans, stored_item_type="history")
 
     @router.get(
         "/api/storage/histories/discarded",
@@ -71,7 +71,7 @@ class FastAPIStorageCleaner:
         limit: Optional[int] = LimitQueryParam,
         order: Optional[StoredItemOrderBy] = OrderQueryParam,
     ) -> List[StoredItem]:
-        return self.service.get_discarded_histories(trans, offset, limit, order)
+        return self.service.get_discarded(trans, "history", offset, limit, order)
 
     @router.delete(
         "/api/storage/histories",
@@ -83,7 +83,7 @@ class FastAPIStorageCleaner:
         """
         **Warning**: This operation cannot be undone. All objects will be deleted permanently from the disk.
         """
-        return self.service.cleanup_histories(trans, set(payload.item_ids))
+        return self.service.cleanup_items(trans, stored_item_type="history", item_ids=set(payload.item_ids))
 
     @router.get(
         "/api/storage/datasets/discarded/summary",
@@ -93,7 +93,7 @@ class FastAPIStorageCleaner:
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> CleanableItemsSummary:
-        return self.service.get_discarded_datasets_summary(trans)
+        return self.service.get_discarded_summary(trans, stored_item_type="dataset")
 
     @router.get(
         "/api/storage/datasets/discarded",
@@ -106,7 +106,7 @@ class FastAPIStorageCleaner:
         limit: Optional[int] = LimitQueryParam,
         order: Optional[StoredItemOrderBy] = OrderQueryParam,
     ) -> List[StoredItem]:
-        return self.service.get_discarded_datasets(trans, offset, limit, order)
+        return self.service.get_discarded(trans, "dataset", offset, limit, order)
 
     @router.delete(
         "/api/storage/datasets",
@@ -118,4 +118,4 @@ class FastAPIStorageCleaner:
         """
         **Warning**: This operation cannot be undone. All objects will be deleted permanently from the disk.
         """
-        return self.service.cleanup_datasets(trans, set(payload.item_ids))
+        return self.service.cleanup_items(trans, stored_item_type="dataset", item_ids=set(payload.item_ids))
