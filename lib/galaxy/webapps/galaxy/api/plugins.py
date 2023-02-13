@@ -41,6 +41,7 @@ log = logging.getLogger(__name__)
 
 router = Router(tags=["plugins"])
 
+
 class VisualizationPlugin(BaseModel):
     name: str = Field(title="Name", description="Name of the plugin")
     html: str = Field(title="HTML", description="HTML of the plugin")
@@ -48,6 +49,7 @@ class VisualizationPlugin(BaseModel):
     logo: Optional[str] = Field(title="Logo", description="Logo of the plugin")
     title: Optional[str] = Field(title="Title", description="Title of the plugin")
     target: str = Field(title="Target", description="Target frame of the plugin")
+    # TODO: formalize these Any types, document remainder.
     embeddable: bool
     entry_point: Dict[str, Any]
     settings: Optional[List[Dict[str, Any]]]
@@ -81,7 +83,7 @@ class FastAPIPlugins:  # type: ignore
     ) -> List[VisualizationPlugin]:
         registry = self._get_registry()
         if dataset_id is not None:
-            hda = self.hda_manager.get_accessible(self.decode_id(dataset_id), trans.user)
+            hda = self.hda_manager.get_accessible(dataset_id, trans.user)
             return registry.get_visualizations(trans, hda)
         else:
             plugins = registry.get_plugins(embeddable=embeddable)
@@ -103,9 +105,7 @@ class FastAPIPlugins:  # type: ignore
     ) -> VisualizationPlugin:
         registry = self._get_registry()
         if history_id is not None:
-            history = self.history_manager.get_owned(
-                trans.security.decode_id(history_id), trans.user, current_history=trans.history
-            )
+            history = self.history_manager.get_owned(history_id, trans.user, current_history=trans.history)
             result = {"hdas": []}
             for hda in history.contents_iter(types=["dataset"], deleted=False, visible=True):
                 if registry.get_visualization(trans, id, hda):
