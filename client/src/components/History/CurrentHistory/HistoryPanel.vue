@@ -189,9 +189,9 @@ export default {
         filterable: { type: Boolean, default: false },
     },
     setup() {
-        const { lastCheckedTime, totalMatchesCount, isWatching, getHistoryItems, fetchHistoryItems } = storeToRefs(
-            useHistoryItemsStore()
-        );
+        const historyStore = useHistoryItemsStore();
+        const { getHistoryItems, fetchHistoryItems } = historyStore;
+        const { lastCheckedTime, totalMatchesCount, isWatching } = storeToRefs(historyStore);
 
         return { lastCheckedTime, totalMatchesCount, isWatching, getHistoryItems, fetchHistoryItems };
     },
