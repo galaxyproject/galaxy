@@ -112,12 +112,11 @@ class FastAPIPlugins:  # type: ignore
         "/api/plugins",
         summary="Get a list of all available plugins",
         response_description="List of plugins",
-        response_model=List[VisualizationPlugin],
     )
     def index(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> List[List[str]]:
+    ) -> List[VisualizationPlugin]:
         registry = self._get_registry()
         kwargs = {}  # transfer
         dataset_id = kwargs.get("dataset_id")
@@ -126,13 +125,13 @@ class FastAPIPlugins:  # type: ignore
             return registry.get_visualizations(trans, hda)
         else:
             embeddable = asbool(kwargs.get("embeddable"))
-            return registry.get_plugins(embeddable=embeddable)
+            plugins = registry.get_plugins(embeddable=embeddable)
+            return plugins
 
     @router.get(
         "/api/plugins/{id}",
         summary="Get a plugin by id",
         response_description="Plugin",
-        response_model=VisualizationPlugin,
     )
     def show(
         self,
