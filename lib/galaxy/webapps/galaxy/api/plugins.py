@@ -44,7 +44,7 @@ router = Router(tags=["plugins"])
 class VisualizationPlugin(BaseModel):
     name: str = Field(title="Name", description="Name of the plugin")
     html: str = Field(title="HTML", description="HTML of the plugin")
-    description: str = Field(title="Description", description="Description of the plugin")
+    description: Optional[str] = Field(title="Description", description="Description of the plugin")
     logo: Optional[str] = Field(title="Logo", description="Logo of the plugin")
     title: Optional[str] = Field(title="Title", description="Title of the plugin")
     target: str = Field(title="Target", description="Target frame of the plugin")
