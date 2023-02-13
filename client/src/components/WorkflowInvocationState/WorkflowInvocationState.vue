@@ -17,7 +17,7 @@
         <!-- <b-tab title="Workflow Overview">
             <p>TODO: Insert readonly version of workflow editor here</p>
         </b-tab> -->
-        <b-tab title="Export">
+        <b-tab v-if="canExecuteTasks" title="Export">
             <div v-if="invocationAndJobTerminal">
                 <workflow-invocation-export-options :invocation-id="invocation.id" />
             </div>
@@ -39,6 +39,7 @@ import WorkflowInvocationExportOptions from "./WorkflowInvocationExportOptions.v
 import JOB_STATES_MODEL from "utils/job-states-model";
 import mixin from "components/JobStates/mixin";
 import { mapGetters, mapActions } from "vuex";
+import { useConfig } from "composables/config";
 
 export default {
     components: {
@@ -58,6 +59,13 @@ export default {
             required: false,
             default: null,
         },
+    },
+    setup() {
+        const { config, isLoaded: isConfigLoaded } = useConfig();
+        return {
+            config,
+            isConfigLoaded,
+        };
     },
     data() {
         return {
@@ -93,6 +101,9 @@ export default {
         jobStatesSummary() {
             const jobsSummary = this.getInvocationJobsSummaryById(this.invocationId);
             return !jobsSummary ? null : new JOB_STATES_MODEL.JobStatesSummary(jobsSummary);
+        },
+        canExecuteTasks() {
+            return this.isConfigLoaded && this.config.enable_celery_tasks;
         },
     },
     created: function () {
