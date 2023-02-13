@@ -138,8 +138,7 @@
 <script>
 import Vue from "vue";
 import { Toast } from "composables/toast";
-import { mapActions as vuexMapActions } from "vuex";
-import { mapActions, mapState } from "pinia";
+import { mapActions } from "vuex";
 import { useHistoryItemsStore } from "stores/history/historyItemsStore";
 import LoadingSpan from "components/LoadingSpan";
 import ContentItem from "components/History/Content/ContentItem";
@@ -189,9 +188,10 @@ export default {
         filterable: { type: Boolean, default: false },
     },
     setup() {
-        const { lastCheckedTime, totalMatchesCount, isWatching } = useHistoryItemsStore();
+        const { lastCheckedTime, totalMatchesCount, isWatching, getHistoryItems, fetchHistoryItems } =
+            useHistoryItemsStore();
 
-        return { lastCheckedTime, totalMatchesCount, isWatching };
+        return { lastCheckedTime, totalMatchesCount, isWatching, getHistoryItems, fetchHistoryItems };
     },
     data() {
         return {
@@ -209,7 +209,6 @@ export default {
         };
     },
     computed: {
-        ...mapState(useHistoryItemsStore, ["getHistoryItems"]),
         /** @returns {String} */
         historyId() {
             return this.history.id;
@@ -264,8 +263,7 @@ export default {
         await this.loadHistoryItems();
     },
     methods: {
-        ...vuexMapActions("history", ["loadHistoryById"]),
-        ...mapActions(useHistoryItemsStore, ["fetchHistoryItems"]),
+        ...mapActions("history", ["loadHistoryById"]),
         getHighlight(item) {
             if (this.filterText.includes("related:" + item.hid)) {
                 this.highlightsKey = item.hid;
