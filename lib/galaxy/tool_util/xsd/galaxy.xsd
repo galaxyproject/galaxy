@@ -1542,15 +1542,19 @@ of ``type`` ``data``.</xs:documentation>
         <xs:documentation xml:lang="en">Comma separated list of tags to apply to the dataset (only works for elements of collections - e.g. ``element`` XML tags).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="location" type="xs:anyURI">
+    <xs:attribute name="location" type="xs:anyURI" gxdocs:added="23.1">
       <xs:annotation>
         <xs:documentation xml:lang="en">URL that points to a remote input file that will be directly uploaded to Galaxy.
 Please use this option only when is not possible to include the files in the `test-data` folder, since
 this is more error prone due to external factors like remote availability.
-You don't need to specify the `value` attribute in this case.</xs:documentation>
+You can use it in two ways:
+- In combination with `value` it will look for the input file specified in `value`, if it's not available on disk it will
+download the file pointed by `location` using the same name as in `value` and then use it as input.
+- Specifiying the `location` without a `value`, the location will be directly pasted to the Galaxy upload tool.
+Consider also specifiying a `checksum` for integrity check.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="checksum" type="xs:string">
+    <xs:attribute name="checksum" type="xs:string" gxdocs:added="23.1">
       <xs:annotation>
         <xs:documentation xml:lang="en">If specified in combination with `location`, after downloading the test input file, the checksum should match the value specified
 here. This value should have the form ``hash_type$hash_value`` (e.g. ``sha1$8156d7ca0f46ed7abac98f82e36cfaddb2aca041``).</xs:documentation>
