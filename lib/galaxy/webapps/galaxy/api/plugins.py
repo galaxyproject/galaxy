@@ -70,15 +70,20 @@ class FastAPIPlugins:  # type: ignore
     def index(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
+        dataset_id: Optional[DecodedDatabaseIdField] = Query(
+            default=None,
+            description="The encoded database identifier of the Dataset to get appropriate plugins for.",
+        ),
+        embeddable: Optional[bool] = Query(
+            default=False,
+            description="Whether to return only embeddable plugins.",
+        ),
     ) -> List[VisualizationPlugin]:
         registry = self._get_registry()
-        kwargs = {}  # transfer
-        dataset_id = kwargs.get("dataset_id")
         if dataset_id is not None:
             hda = self.hda_manager.get_accessible(self.decode_id(dataset_id), trans.user)
             return registry.get_visualizations(trans, hda)
         else:
-            embeddable = asbool(kwargs.get("embeddable"))
             plugins = registry.get_plugins(embeddable=embeddable)
             return plugins
 
@@ -97,8 +102,6 @@ class FastAPIPlugins:  # type: ignore
         ),
     ) -> VisualizationPlugin:
         registry = self._get_registry()
-        kwargs = {}  # transfer
-        history_id = kwargs.get("history_id")
         if history_id is not None:
             history = self.history_manager.get_owned(
                 trans.security.decode_id(history_id), trans.user, current_history=trans.history
