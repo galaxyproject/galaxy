@@ -547,7 +547,7 @@ export default {
         },
         onSetData(stepId, newData) {
             this.lastQueue
-                .enqueue(() => getModule(newData, stepId, this.stateStore.setLoadingState))
+                .enqueue(() => getModule(newData, [stepId], this.stateStore.setLoadingState))
                 .then((data) => {
                     const step = {
                         ...this.steps[stepId],
@@ -695,7 +695,7 @@ export default {
             this.resetStores();
             this.onWorkflowMessage("Loading workflow...", "progress");
             this.lastQueue
-                .enqueue(loadWorkflow, { id, version })
+                .enqueue(loadWorkflow, [{ id, version }])
                 .then((data) => {
                     fromSimple(data);
                     this._loadEditorData(data);

@@ -44,7 +44,7 @@ export async function watchHistoryOnce(store) {
     // get current history
     const checkForUpdate = new Date();
     const history = await getCurrentHistoryFromServer(lastUpdateTime);
-    historyItemsStore.setLastCheckedTime(checkForUpdate);
+    historyItemsStore.lastCheckedTime = checkForUpdate;
     if (!history || !history.id) {
         return;
     }
@@ -93,7 +93,7 @@ export async function watchHistory(store = defaultStore) {
     // Only set up visibility listeners once, whenever a watch is first started
     if (watchingVisibility === false) {
         watchingVisibility = true;
-        historyItemsStore.setWatchingVisibility(watchingVisibility);
+        historyItemsStore.isWatching = watchingVisibility;
         document.addEventListener("visibilitychange", setVisibilityThrottle);
     }
     try {
@@ -102,7 +102,7 @@ export async function watchHistory(store = defaultStore) {
         // error alerting the user that watch history failed
         console.warn(error);
         watchingVisibility = false;
-        historyItemsStore.setWatchingVisibility(watchingVisibility);
+        historyItemsStore.isWatching = watchingVisibility;
     } finally {
         watchTimeout = setTimeout(() => {
             watchHistory(store);

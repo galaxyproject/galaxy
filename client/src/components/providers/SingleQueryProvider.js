@@ -76,7 +76,7 @@ export const SingleQueryProvider = (lookup, stopRefresh = (result) => false) => 
                         promiseCache.set(this.cacheKey, lookupPromise);
                     }
                 } else {
-                    lookupPromise = this.queue.enqueue(lookup, this.attributes);
+                    lookupPromise = this.queue.enqueue(lookup, [this.attributes]);
                 }
                 lookupPromise.then(
                     (result) => {

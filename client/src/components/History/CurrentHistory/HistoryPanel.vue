@@ -18,7 +18,7 @@
             :scope-key="queryKey"
             :get-item-key="(item) => item.type_id"
             :filter-text="filterText"
-            :total-items-in-query="totalItemsInQuery"
+            :total-items-in-query="totalMatchesCount"
             @query-selection-break="querySelectionBreak = true">
             <section
                 class="history-layout d-flex flex-column w-100"
@@ -42,7 +42,7 @@
                         v-if="showControls"
                         :history="history"
                         :is-watching="isWatching"
-                        :last-checked="lastChecked"
+                        :last-checked="lastCheckedTime"
                         :filter-text.sync="filterText"
                         @reloadContents="reloadContents" />
                     <HistoryOperations
@@ -61,7 +61,7 @@
                                 :content-selection="selectedItems"
                                 :selection-size="selectionSize"
                                 :is-query-selection="isQuerySelection"
-                                :total-items-in-query="totalItemsInQuery"
+                                :total-items-in-query="totalMatchesCount"
                                 :operation-running.sync="operationRunning"
                                 @update:show-selection="setShowSelection"
                                 @operation-error="onOperationError"
@@ -139,7 +139,7 @@
 import Vue from "vue";
 import { Toast } from "composables/toast";
 import { mapActions as vuexMapActions } from "vuex";
-import { mapActions, mapState, storeToRefs } from "pinia";
+import { mapActions, mapState } from "pinia";
 import { useHistoryItemsStore } from "stores/history/historyItemsStore";
 import LoadingSpan from "components/LoadingSpan";
 import ContentItem from "components/History/Content/ContentItem";
@@ -188,6 +188,11 @@ export default {
         showControls: { type: Boolean, default: true },
         filterable: { type: Boolean, default: false },
     },
+    setup() {
+        const { lastCheckedTime, totalMatchesCount, isWatching } = useHistoryItemsStore();
+
+        return { lastCheckedTime, totalMatchesCount, isWatching };
+    },
     data() {
         return {
             error: null,
@@ -232,21 +237,6 @@ export default {
         /** @returns {Array} */
         itemsLoaded() {
             return this.getHistoryItems(this.historyId, this.filterText);
-        },
-        /** @returns {Date} */
-        lastChecked() {
-            const { getLastCheckedTime } = storeToRefs(useHistoryItemsStore());
-            return getLastCheckedTime.value;
-        },
-        /** @returns {Number} */
-        totalItemsInQuery() {
-            const { getTotalMatchesCount } = storeToRefs(useHistoryItemsStore());
-            return getTotalMatchesCount.value;
-        },
-        /** @returns {Boolean} */
-        isWatching() {
-            const { getWatchingVisibility } = storeToRefs(useHistoryItemsStore());
-            return getWatchingVisibility.value;
         },
     },
     watch: {

@@ -20,6 +20,7 @@
         </virtual-list>
     </div>
 </template>
+
 <script>
 import VirtualList from "vue-virtual-scroll-list";
 import LoadingSpan from "components/LoadingSpan";
@@ -75,13 +76,16 @@ export default {
 </script>
 
 <style scoped lang="scss">
-@import "scss/mixins.scss";
 .listing-layout {
     .listing {
-        @include absfill();
-        scroll-behavior: smooth;
-        overflow-y: scroll;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
         overflow-x: hidden;
+        overflow-y: scroll;
+        scroll-behavior: smooth;
     }
 }
 </style>
