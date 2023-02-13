@@ -41,7 +41,6 @@ log = logging.getLogger(__name__)
 
 router = Router(tags=["plugins"])
 
-
 class VisualizationPlugin(BaseModel):
     name: str = Field(title="Name", description="Name of the plugin")
     html: str = Field(title="HTML", description="HTML of the plugin")
@@ -51,55 +50,10 @@ class VisualizationPlugin(BaseModel):
     target: str = Field(title="Target", description="Target frame of the plugin")
     embeddable: bool
     entry_point: Dict[str, Any]
-    settings: Optional[Dict[str, Any]]
-    groups: Optional[List[str]]
+    settings: Optional[List[Dict[str, Any]]]
+    groups: Optional[List[Dict]]
     specs: Optional[Dict[str, Any]]
     href: str
-
-
-# Sample response, mako:
-#   {
-#     "name": "audio_player",
-#     "html": "Audio player",
-#     "description": "Audio player",
-#     "logo": null,
-#     "title": null,
-#     "target": "galaxy_main",
-#     "embeddable": true,
-#     "entry_point": {
-#       "type": "mako",
-#       "file": "audio_player.mako",
-#       "attr": {}
-#     },
-#     "settings": null,
-#     "groups": null,
-#     "specs": null,
-#     "href": "/plugins/visualizations/audio_player/show"
-#   },
-
-
-# Sample response, chart:
-#   {
-#     "name": "annotate_image",
-#     "html": "Image annotator",
-#     "description": "An image annotater built using PaperJS at https://github.com/paperjs/paper.js.",
-#     "logo": "./static/plugins/visualizations/annotate_image/static/logo.png",
-#     "title": null,
-#     "target": "galaxy_main",
-#     "embeddable": false,
-#     "entry_point": {
-#       "type": "chart",
-#       "file": null,
-#       "attr": {
-#         "src": "script.js",
-#         "css": "jquery.contextMenu.css"
-#       }
-#     },
-#     "settings": null,
-#     "groups": null,
-#     "specs": null,
-#     "href": "/plugins/visualizations/annotate_image/show"
-#   },
 
 
 @router.cbv
