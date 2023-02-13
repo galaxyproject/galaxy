@@ -159,6 +159,7 @@ import SelectionChangeWarning from "./HistoryOperations/SelectionChangeWarning";
 import OperationErrorDialog from "./HistoryOperations/OperationErrorDialog";
 import { rewatchHistory } from "store/historyStore/model/watchHistory";
 import { copyDataset } from "components/Dataset/services";
+import { storeToRefs } from "pinia";
 
 export default {
     components: {
@@ -188,8 +189,9 @@ export default {
         filterable: { type: Boolean, default: false },
     },
     setup() {
-        const { lastCheckedTime, totalMatchesCount, isWatching, getHistoryItems, fetchHistoryItems } =
-            useHistoryItemsStore();
+        const { lastCheckedTime, totalMatchesCount, isWatching, getHistoryItems, fetchHistoryItems } = storeToRefs(
+            useHistoryItemsStore()
+        );
 
         return { lastCheckedTime, totalMatchesCount, isWatching, getHistoryItems, fetchHistoryItems };
     },

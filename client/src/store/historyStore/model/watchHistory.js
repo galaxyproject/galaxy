@@ -45,6 +45,7 @@ export async function watchHistoryOnce(store) {
     const checkForUpdate = new Date();
     const history = await getCurrentHistoryFromServer(lastUpdateTime);
     historyItemsStore.lastCheckedTime = checkForUpdate;
+
     if (!history || !history.id) {
         return;
     }
