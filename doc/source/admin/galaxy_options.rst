@@ -1289,7 +1289,7 @@
     When biotools_service_cache_type = ext:database, this is
     the database table name used by beaker for
     bio.tools web service request related caching.
-:Default: ``biotools_service_beaker_cache``
+:Default: ``beaker_cache``
 :Type: str
 
 
@@ -1369,7 +1369,7 @@
     When citation_cache_type = ext:database, this is
     the database table name used by beaker for
     citation related caching.
-:Default: ``citation_beaker_cache``
+:Default: ``beaker_cache``
 :Type: str
 
 
@@ -1455,7 +1455,7 @@
     When mulled_resolution_cache_type = ext:database, this is
     the database table name used by beaker for
     caching mulled resolution requests. 
-:Default: ``mulled_resolution_beaker_cache``
+:Default: ``beaker_cache``
 :Type: str
 
 

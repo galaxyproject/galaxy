@@ -20,7 +20,7 @@ def get_galaxy_biotools_metadata_source(config) -> BiotoolsMetadataSource:
         "cache.data_dir": getattr(config, "biotools_service_cache_data_dir", None),
         "cache.lock_dir": getattr(config, "biotools_service_cache_lock_dir", None),
         "cache.url": getattr(config, "biotools_service_cache_url", config.database_connection),
-        "cache.table_name": getattr(config, "biotools_service_cache_table_name", "biotools_service_beaker_cache"),
+        "cache.table_name": getattr(config, "biotools_service_cache_table_name", None),
         "cache.schema_name": getattr(config, "biotools_service_cache_schema_name", None),
     }
     cache = CacheManager(**parse_cache_config_options(cache_opts)).get_cache("doi")

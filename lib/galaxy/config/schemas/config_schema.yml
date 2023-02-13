@@ -914,7 +914,7 @@ mapping:
 
       biotools_service_cache_table_name:
         type: str
-        default: biotools_service_beaker_cache
+        default: beaker_cache
         required: false
         desc: |
           Database table used by beaker for bio.tools web service request 
@@ -964,7 +964,7 @@ mapping:
 
       citation_cache_table_name:
         type: str
-        default: citation_beaker_cache
+        default: beaker_cache
         required: false
         desc: |
           Database table used by beaker for citation related caching.
@@ -1014,7 +1014,7 @@ mapping:
 
       mulled_resolution_cache_table_name:
         type: str
-        default: mulled_resolution_beaker_cache
+        default: beaker_cache
         required: false
         desc: |
           Database table used by beaker for caching mulled resolution requests.
