@@ -27,7 +27,6 @@
             <div>
                 <small class="text-muted"> Download an image of the workflow in SVG format. </small>
             </div>
-            <hr />
         </div>
         <b-alert v-else-if="!!error" variant="danger" show>
             <span>
