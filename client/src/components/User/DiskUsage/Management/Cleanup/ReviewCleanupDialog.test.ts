@@ -57,9 +57,11 @@ describe("ReviewCleanupDialog.vue", () => {
         const selectAllCheckbox = wrapper.find(SELECT_ALL_CHECKBOX);
 
         expect(deleteButton.attributes().disabled).toBeTruthy();
-        expect(wrapper.vm.selectedItems.length).toBe(0);
+        // TODO: explicit any because the type of the vm is not correctly inferred, remove when fixed
+        expect((wrapper.vm as any).selectedItems.length).toBe(0);
         await selectAllCheckbox.setChecked();
-        expect(wrapper.vm.selectedItems.length).toBe(EXPECTED_TOTAL_ITEMS);
+        // TODO: explicit any because the type of the vm is not correctly inferred, remove when fixed
+        expect((wrapper.vm as any).selectedItems.length).toBe(EXPECTED_TOTAL_ITEMS);
         expect(deleteButton.attributes().disabled).toBeFalsy();
     });
 

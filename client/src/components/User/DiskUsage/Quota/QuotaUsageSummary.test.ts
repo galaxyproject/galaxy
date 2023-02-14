@@ -35,8 +35,8 @@ describe("QuotaUsageSummary.vue", () => {
     it("should calculate the total amount of quotas without the unlimited", () => {
         const wrapper = mountQuotaUsageSummaryWith(FAKE_QUOTA_USAGES_LIST);
         const expectedTotalBytes = QUOTA_1_BYTES + QUOTA_2_BYTES;
-
-        expect(wrapper.vm.totalQuotaInBytes).toBe(expectedTotalBytes);
+        // TODO: explicit any because the type of the vm is not correctly inferred, remove when fixed
+        expect((wrapper.vm as any).totalQuotaInBytes).toBe(expectedTotalBytes);
     });
 
     it("should display a quota bar for each quota", () => {

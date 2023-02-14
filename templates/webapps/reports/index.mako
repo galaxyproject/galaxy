@@ -12,7 +12,7 @@
 <%def name="stylesheets()">
     ${parent.stylesheets()}
     ## Include "base.css" for styling tool menu and forms (details)
-    ${h.css( "base" )}
+    ${h.dist_css( "base" )}
 
     ## But make sure styles for the layout take precedence
     ${parent.stylesheets()}
