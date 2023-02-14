@@ -1655,6 +1655,8 @@ class MinimalJobWrapper(HasResourceParameters):
                     ]
 
                 def split_object_stores(output_name):
+                    if "|__part__|" in output_name:
+                        output_name = output_name.split("|__part__|", 1)[0]
                     if output_name in output_names:
                         return outputs_object_store_populator
                     else:

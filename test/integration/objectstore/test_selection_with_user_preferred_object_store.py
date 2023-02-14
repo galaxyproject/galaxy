@@ -83,25 +83,34 @@ outer_input:
   name: fasta1
 """
 
-
-TEST_WORKFLOW_MAPPED_COLLECTION_OUTPUT = """
+# dynamic collections and mapping are both covered here I think
+WORKFLOW_WITH_COLLECTIONS_1 = """
 class: GalaxyWorkflow
 inputs:
-  input1:
-    type: data_collection_input
-    collection_type: list
+  text_input1: data
 outputs:
   wf_output_1:
-    outputSource: second_cat/out_file1
+    outputSource: collection_creates_list/list_output
 steps:
-  first_cat:
-    tool_id: cat
+  cat_inputs:
+    tool_id: cat1
     in:
-      input1: input1
-  second_cat:
-    tool_id: cat
+      input1: text_input1
+      queries_0|input2: text_input1
+  split_up:
+    tool_id: collection_split_on_column
     in:
-      input1: first_cat/out_file1
+      input1: cat_inputs/out_file1
+  collection_creates_list:
+    tool_id: collection_creates_list
+    in:
+      input1: split_up/split_output
+"""
+
+WORKFLOW_WITH_COLLECTIONS_1_TEST_DATA = """
+text_input1: |
+  samp1\t10.0
+  samp2\t20.0
 """
 
 
@@ -257,6 +266,50 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
             )
             assert_storage_name_is(output_dict, "Static Storage")
             assert_storage_name_is(intermediate_dict, "Dynamic EBS")
+
+    def test_workflow_collection(self):
+        with self.dataset_populator.test_history() as history_id:
+            intermediate_dict, output_info = self._run_workflow_with_collections_1(history_id)
+            assert_storage_name_is(intermediate_dict, "Default Store")
+            assert_storage_name_is(output_info, "Default Store")
+
+        with self.dataset_populator.test_history() as history_id:
+            intermediate_dict, output_info = self._run_workflow_with_collections_1(
+                history_id, {"preferred_object_store_id": "static"}
+            )
+            assert_storage_name_is(intermediate_dict, "Static Storage")
+            assert_storage_name_is(output_info, "Static Storage")
+
+    def test_workflow_collection_mixed(self):
+        with self.dataset_populator.test_history() as history_id:
+            intermediate_dict, output_info = self._run_workflow_with_collections_1(
+                history_id,
+                {
+                    "preferred_outputs_object_store_id": "static",
+                    "preferred_intermediate_object_store_id": "dynamic_ebs",
+                },
+            )
+            assert_storage_name_is(output_info, "Static Storage")
+            assert_storage_name_is(intermediate_dict, "Dynamic EBS")
+
+    def _run_workflow_with_collections_1(self, history_id: str, extra_invocation_kwds: Optional[Dict[str, Any]] = None):
+        wf_run = self.workflow_populator.run_workflow(
+            WORKFLOW_WITH_COLLECTIONS_1,
+            test_data=WORKFLOW_WITH_COLLECTIONS_1_TEST_DATA,
+            history_id=history_id,
+            extra_invocation_kwds=extra_invocation_kwds,
+        )
+        jobs = wf_run.jobs_for_tool("cat1")
+        intermediate_info = self._storage_info_for_job_id(jobs[0]["id"])
+        list_jobs = wf_run.jobs_for_tool("collection_creates_list")
+        assert len(list_jobs) == 1
+        output_list_dict = self.dataset_populator.get_job_details(list_jobs[0]["id"], full=True).json()
+        output_collections = output_list_dict["output_collections"]
+        output_collection = output_collections["list_output"]
+        hdca = self.dataset_populator.get_history_collection_details(history_id, content_id=output_collection["id"])
+        objects = [e["object"] for e in hdca["elements"]]
+        output_info = self._storage_info(objects[0])
+        return intermediate_info, output_info
 
     def _run_simple_nested_workflow_get_output_storage_info_dicts(
         self, history_id: str, extra_invocation_kwds: Optional[Dict[str, Any]] = None
