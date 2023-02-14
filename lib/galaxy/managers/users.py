@@ -655,7 +655,6 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
             usage["quota_percent"] = self.user_manager.quota(user, quota_source_label=quota_source_label)
             usage["quota"] = self.user_manager.quota(user, total=True, quota_source_label=quota_source_label)
             usage["quota_bytes"] = self.user_manager.quota_bytes(user, quota_source_label=quota_source_label)
-            usage["nice_total_disk_usage"] = util.nice_size(usage["total_disk_usage"])
         return rval
 
     def serialize_disk_usage_for(self, user: model.User, label: Optional[str]) -> Dict[str, Any]:
@@ -664,7 +663,6 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
         usage["quota_percent"] = self.user_manager.quota(user, quota_source_label=quota_source_label)
         usage["quota"] = self.user_manager.quota(user, total=True, quota_source_label=quota_source_label)
         usage["quota_bytes"] = self.user_manager.quota_bytes(user, quota_source_label=quota_source_label)
-        usage["nice_total_disk_usage"] = util.nice_size(usage["total_disk_usage"])
         return usage
 
 
