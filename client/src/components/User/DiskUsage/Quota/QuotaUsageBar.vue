@@ -5,7 +5,7 @@ import { DEFAULT_QUOTA_SOURCE_LABEL, QuotaUsage } from "./model/QuotaUsage";
 
 interface QuotaUsageBarProps {
     quotaUsage: QuotaUsage;
-    embedded: boolean;
+    embedded?: boolean;
 }
 
 const props = withDefaults(defineProps<QuotaUsageBarProps>(), {
