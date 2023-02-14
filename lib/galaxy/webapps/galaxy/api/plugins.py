@@ -23,16 +23,16 @@ from galaxy.managers import (
     hdas,
     histories,
 )
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.util import asbool
 from galaxy.web import (
-    expose_api,
     expose_api_anonymous_and_sessionless,
 )
 from . import (
     depends,
-    DependsOnApp,
     DependsOnTrans,
     Router,
 )
@@ -59,7 +59,7 @@ class VisualizationPlugin(BaseModel):
 
 
 @router.cbv
-class FastAPIPlugins:  # type: ignore
+class FastAPIPlugins:
     hda_manager: hdas.HDAManager = depends(hdas.HDAManager)
     history_manager: histories.HistoryManager = depends(histories.HistoryManager)
 
@@ -96,7 +96,7 @@ class FastAPIPlugins:  # type: ignore
     )
     def show(
         self,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: ProvidesHistoryContext = DependsOnTrans,
         id: str = Path(title="Plugin ID", description="The plugin ID"),
         history_id: Optional[DecodedDatabaseIdField] = Query(
             default=None,
