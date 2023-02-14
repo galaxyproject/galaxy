@@ -53,9 +53,9 @@ class JobConnectionsManager:
             # Add found related items' hids to result list
             for val in graph["outputs"] + graph["inputs"]:
                 item_class = get_class(val["src"])
-                item = self.sa_session.query(item_class).get(val["id"])
-                if item:
-                    result.append(item.hid)
+                item_hid = self.sa_session.execute(select(item_class.hid).where(item_class.id == val["id"])).scalar()
+                if item_hid:
+                    result.append(item_hid)
         return result
 
     def _get_union_results(self, *selects):
@@ -76,7 +76,12 @@ class JobConnectionsManager:
                 model.JobToInputDatasetAssociation,
                 model.JobToInputDatasetAssociation.job_id == model.JobToOutputDatasetAssociation.job_id,
             )
-            .where(model.JobToInputDatasetAssociation.dataset_id == input_hda_id)
+            .where(
+                expression.and_(
+                    model.JobToInputDatasetAssociation.dataset_id != None,
+                    model.JobToInputDatasetAssociation.dataset_id == input_hda_id,
+                )
+            )
         )
         hdca_select = (
             select(
@@ -89,7 +94,12 @@ class JobConnectionsManager:
                 model.JobToInputDatasetAssociation,
                 model.JobToInputDatasetAssociation.job_id == model.JobToOutputDatasetCollectionAssociation.job_id,
             )
-            .where(model.JobToInputDatasetAssociation.dataset_id == input_hda_id)
+            .where(
+                expression.and_(
+                    model.JobToInputDatasetAssociation.dataset_id != None,
+                    model.JobToInputDatasetAssociation.dataset_id == input_hda_id,
+                )
+            )
         )
         return hda_select, hdca_select
 
@@ -105,7 +115,12 @@ class JobConnectionsManager:
                 model.JobToInputDatasetCollectionAssociation,
                 model.JobToInputDatasetCollectionAssociation.job_id == model.JobToOutputDatasetAssociation.job_id,
             )
-            .where(model.JobToInputDatasetCollectionAssociation.dataset_collection_id == input_hdca_id)
+            .where(
+                expression.and_(
+                    model.JobToInputDatasetCollectionAssociation.dataset_collection_id != None,
+                    model.JobToInputDatasetCollectionAssociation.dataset_collection_id == input_hdca_id,
+                )
+            )
         )
         hdca_select = (
             select(
@@ -119,7 +134,12 @@ class JobConnectionsManager:
                 model.JobToInputDatasetCollectionAssociation.job_id
                 == model.JobToOutputDatasetCollectionAssociation.job_id,
             )
-            .where(model.JobToInputDatasetCollectionAssociation.dataset_collection_id == input_hdca_id)
+            .where(
+                expression.and_(
+                    model.JobToInputDatasetCollectionAssociation.dataset_collection_id != None,
+                    model.JobToInputDatasetCollectionAssociation.dataset_collection_id == input_hdca_id,
+                )
+            )
         )
         return hda_select, hdca_select
 
@@ -135,7 +155,12 @@ class JobConnectionsManager:
                 model.JobToOutputDatasetAssociation,
                 model.JobToOutputDatasetAssociation.job_id == model.JobToInputDatasetAssociation.job_id,
             )
-            .where(model.JobToOutputDatasetAssociation.dataset_id == input_hda_id)
+            .where(
+                expression.and_(
+                    model.JobToOutputDatasetAssociation.dataset_id != None,
+                    model.JobToOutputDatasetAssociation.dataset_id == input_hda_id,
+                )
+            )
         )
         input_hdcas = (
             select(
@@ -148,7 +173,12 @@ class JobConnectionsManager:
                 model.JobToOutputDatasetAssociation,
                 model.JobToOutputDatasetAssociation.job_id == model.JobToInputDatasetCollectionAssociation.job_id,
             )
-            .where(model.JobToOutputDatasetAssociation.dataset_id == input_hda_id)
+            .where(
+                expression.and_(
+                    model.JobToOutputDatasetAssociation.dataset_id != None,
+                    model.JobToOutputDatasetAssociation.dataset_id == input_hda_id,
+                )
+            )
         )
         return input_hdas, input_hdcas
 
@@ -164,7 +194,12 @@ class JobConnectionsManager:
                 model.JobToOutputDatasetCollectionAssociation,
                 model.JobToOutputDatasetCollectionAssociation.job_id == model.JobToInputDatasetAssociation.job_id,
             )
-            .where(model.JobToOutputDatasetCollectionAssociation.dataset_collection_id == input_hdca_id)
+            .where(
+                expression.and_(
+                    model.JobToOutputDatasetCollectionAssociation.dataset_collection_id != None,
+                    model.JobToOutputDatasetCollectionAssociation.dataset_collection_id == input_hdca_id,
+                )
+            )
         )
         input_hdcas = (
             select(
@@ -178,6 +213,11 @@ class JobConnectionsManager:
                 model.JobToOutputDatasetCollectionAssociation.job_id
                 == model.JobToInputDatasetCollectionAssociation.job_id,
             )
-            .where(model.JobToOutputDatasetCollectionAssociation.dataset_collection_id == input_hdca_id)
+            .where(
+                expression.and_(
+                    model.JobToOutputDatasetCollectionAssociation.dataset_collection_id != None,
+                    model.JobToOutputDatasetCollectionAssociation.dataset_collection_id == input_hdca_id,
+                )
+            )
         )
         return input_hdas, input_hdcas
