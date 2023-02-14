@@ -100,7 +100,10 @@ from sqlalchemy.orm import (
 )
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.sql import exists
-from typing_extensions import Protocol
+from typing_extensions import (
+    Protocol,
+    TypedDict,
+)
 
 import galaxy.exceptions
 import galaxy.model.metadata
@@ -7768,21 +7771,6 @@ class StoredWorkflowMenuEntry(Base, RepresentById):
     )
 
 
-class WorkflowInvocationObjectStores(NamedTuple):
-    preferred_object_store_id: Optional[str]
-    preferred_outputs_object_store_id: Optional[str]
-    preferred_intermediate_object_store_id: Optional[str]
-
-    @property
-    def is_split_configuration(self):
-        preferred_outputs_object_store_id = self.preferred_outputs_object_store_id
-        preferred_intermediate_object_store_id = self.preferred_intermediate_object_store_id
-        has_typed_preferences = (
-            preferred_outputs_object_store_id is not None or preferred_intermediate_object_store_id is not None
-        )
-        return has_typed_preferences and preferred_outputs_object_store_id != preferred_intermediate_object_store_id
-
-
 class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     __tablename__ = "workflow_invocation"
 
@@ -8238,27 +8226,6 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
 
         return _resource_parameters
 
-    @property
-    def preferred_object_stores(self) -> WorkflowInvocationObjectStores:
-        meta_type = WorkflowRequestInputParameter.types.META_PARAMETERS
-        preferred_object_store_id = None
-        preferred_outputs_object_store_id = None
-        preferred_intermediate_object_store_id = None
-
-        for input_parameter in self.input_parameters:
-            if input_parameter.type != meta_type:
-                continue
-            if input_parameter.name == "preferred_object_store_id":
-                preferred_object_store_id = input_parameter.value
-            elif input_parameter.name == "preferred_outputs_object_store_id":
-                preferred_outputs_object_store_id = input_parameter.value
-            elif input_parameter.name == "preferred_intermediate_object_store_id":
-                preferred_intermediate_object_store_id = input_parameter.value
-
-        return WorkflowInvocationObjectStores(
-            preferred_object_store_id, preferred_outputs_object_store_id, preferred_intermediate_object_store_id
-        )
-
     def has_input_for_step(self, step_id):
         for content in self.input_datasets:
             if content.workflow_step_id == step_id:
@@ -8338,6 +8305,48 @@ class WorkflowInvocationMessage(Base, Dictifiable, Serializable):
     @property
     def history_id(self):
         return self.workflow_invocation.history_id
+
+
+class EffectiveOutput(TypedDict):
+    """An output for the sake or determining full workflow outputs.
+
+    A workflow output might not be an effective output if it is an
+    output on a subworkflow or a parent workflow that doesn't declare
+    it an output.
+
+    This is currently only used for determining object store selections.
+    We don't want to capture subworkflow outputs that the user would like
+    to ignore and discard as effective workflow outputs.
+    """
+
+    output_name: str
+    step_id: int
+
+
+class WorkflowInvocationStepObjectStores(NamedTuple):
+    preferred_object_store_id: Optional[str]
+    preferred_outputs_object_store_id: Optional[str]
+    preferred_intermediate_object_store_id: Optional[str]
+    step_effective_outputs: Optional[List["EffectiveOutput"]]
+
+    def is_output_name_an_effective_output(self, output_name: str) -> bool:
+        if self.step_effective_outputs is None:
+            return True
+        else:
+            for effective_output in self.step_effective_outputs:
+                if effective_output["output_name"] == output_name:
+                    return True
+
+            return False
+
+    @property
+    def is_split_configuration(self):
+        preferred_outputs_object_store_id = self.preferred_outputs_object_store_id
+        preferred_intermediate_object_store_id = self.preferred_intermediate_object_store_id
+        has_typed_preferences = (
+            preferred_outputs_object_store_id is not None or preferred_intermediate_object_store_id is not None
+        )
+        return has_typed_preferences and preferred_outputs_object_store_id != preferred_intermediate_object_store_id
 
 
 class WorkflowInvocationStep(Base, Dictifiable, Serializable):
@@ -8435,6 +8444,38 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
             return self.implicit_collection_jobs.job_list
         else:
             return []
+
+    @property
+    def preferred_object_stores(self) -> WorkflowInvocationStepObjectStores:
+        meta_type = WorkflowRequestInputParameter.types.META_PARAMETERS
+        preferred_object_store_id = None
+        preferred_outputs_object_store_id = None
+        preferred_intermediate_object_store_id = None
+        step_effective_outputs: Optional[List["EffectiveOutput"]] = None
+
+        workflow_invocation = self.workflow_invocation
+        for input_parameter in workflow_invocation.input_parameters:
+            if input_parameter.type != meta_type:
+                continue
+            if input_parameter.name == "preferred_object_store_id":
+                preferred_object_store_id = input_parameter.value
+            elif input_parameter.name == "preferred_outputs_object_store_id":
+                preferred_outputs_object_store_id = input_parameter.value
+            elif input_parameter.name == "preferred_intermediate_object_store_id":
+                preferred_intermediate_object_store_id = input_parameter.value
+            elif input_parameter.name == "effective_outputs":
+                log.info(f"\n\n\n\n\n\nENCOUNTERED effective_outputs stored!!!!")
+                all_effective_outputs = json.loads(input_parameter.value)
+                step_id = self.workflow_step_id
+                log.info(f"\n\n\n\n\n\naeo {all_effective_outputs}")
+                step_effective_outputs = [e for e in all_effective_outputs if e["step_id"] == step_id]
+
+        return WorkflowInvocationStepObjectStores(
+            preferred_object_store_id,
+            preferred_outputs_object_store_id,
+            preferred_intermediate_object_store_id,
+            step_effective_outputs,
+        )
 
     def _serialize(self, id_encoder, serialization_options):
         step_attrs = dict_for(self)

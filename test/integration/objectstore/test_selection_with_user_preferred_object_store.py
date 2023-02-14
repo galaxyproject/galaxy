@@ -5,10 +5,15 @@ import string
 from typing import (
     Any,
     Dict,
+    Optional,
 )
 
 from galaxy.model import Dataset
 from galaxy_test.base.populators import WorkflowPopulator
+from galaxy_test.base.workflow_fixtures import (
+    WORKFLOW_NESTED_OUTPUT,
+    WORKFLOW_NESTED_SIMPLE,
+)
 from ._base import BaseObjectStoreIntegrationTestCase
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
@@ -71,6 +76,14 @@ input1:
   name: fasta1
 """
 
+TEST_NESTED_WORKFLOW_TEST_DATA = """
+outer_input:
+  value: 1.fasta
+  type: File
+  name: fasta1
+"""
+
+
 TEST_WORKFLOW_MAPPED_COLLECTION_OUTPUT = """
 class: GalaxyWorkflow
 inputs:
@@ -98,6 +111,8 @@ def assert_storage_name_is(storage_dict: Dict[str, Any], name: str):
 
 
 class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectStoreIntegrationTestCase):
+    framework_tool_and_types = True
+
     # populated by config_object_store
     files_default_path: str
     files_static_path: str
@@ -201,7 +216,91 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
             assert_storage_name_is(output_dict, "Static Storage")
             assert_storage_name_is(intermediate_dict, "Dynamic EBS")
 
-    def _run_workflow_get_output_storage_info_dicts(self, history_id, extra_invocation_kwds=None):
+    def test_simple_subworkflow_objectstore_selection(self):
+        with self.dataset_populator.test_history() as history_id:
+            output_dict, intermediate_dict = self._run_simple_nested_workflow_get_output_storage_info_dicts(
+                history_id,
+            )
+            assert_storage_name_is(output_dict, "Default Store")
+            assert_storage_name_is(intermediate_dict, "Default Store")
+
+        with self.dataset_populator.test_history() as history_id:
+            output_dict, intermediate_dict = self._run_simple_nested_workflow_get_output_storage_info_dicts(
+                history_id, {"preferred_object_store_id": "static"}
+            )
+            assert_storage_name_is(output_dict, "Static Storage")
+            assert_storage_name_is(intermediate_dict, "Static Storage")
+
+    def test_non_effective_subworkflow_outputs_ignored(self):
+        with self.dataset_populator.test_history() as history_id:
+            output_dict, intermediate_dict = self._run_simple_nested_workflow_get_output_storage_info_dicts(
+                history_id,
+                {
+                    "preferred_outputs_object_store_id": "static",
+                    "preferred_intermediate_object_store_id": "dynamic_ebs",
+                },
+            )
+            assert_storage_name_is(output_dict, "Static Storage")
+            assert_storage_name_is(intermediate_dict, "Dynamic EBS")
+
+    def test_effective_subworkflow_outputs(self):
+        with self.dataset_populator.test_history() as history_id:
+            (
+                output_dict,
+                intermediate_dict,
+            ) = self._run_nested_workflow_with_effective_output_get_output_storage_info_dicts(
+                history_id,
+                {
+                    "preferred_outputs_object_store_id": "static",
+                    "preferred_intermediate_object_store_id": "dynamic_ebs",
+                },
+            )
+            assert_storage_name_is(output_dict, "Static Storage")
+            assert_storage_name_is(intermediate_dict, "Dynamic EBS")
+
+    def _run_simple_nested_workflow_get_output_storage_info_dicts(
+        self, history_id: str, extra_invocation_kwds: Optional[Dict[str, Any]] = None
+    ):
+        wf_run = self.workflow_populator.run_workflow(
+            WORKFLOW_NESTED_SIMPLE,
+            test_data=TEST_NESTED_WORKFLOW_TEST_DATA,
+            history_id=history_id,
+            extra_invocation_kwds=extra_invocation_kwds,
+        )
+        jobs = wf_run.jobs_for_tool("cat1")
+        print(jobs)
+        assert len(jobs) == 2
+
+        output_info = self._storage_info_for_job_id(jobs[0]["id"])
+        # nested workflow step... a non-output
+        randomlines_jobs = self.dataset_populator.history_jobs_for_tool(history_id, "random_lines1")
+        assert len(randomlines_jobs) == 1
+        intermediate_info = self._storage_info_for_job_id(randomlines_jobs[0]["id"])
+        return output_info, intermediate_info
+
+    def _run_nested_workflow_with_effective_output_get_output_storage_info_dicts(
+        self, history_id: str, extra_invocation_kwds: Optional[Dict[str, Any]] = None
+    ):
+        wf_run = self.workflow_populator.run_workflow(
+            WORKFLOW_NESTED_OUTPUT,
+            test_data=TEST_NESTED_WORKFLOW_TEST_DATA,
+            history_id=history_id,
+            extra_invocation_kwds=extra_invocation_kwds,
+        )
+        jobs = wf_run.jobs_for_tool("cat1")
+        print(jobs)
+        assert len(jobs) == 2
+
+        intermediate_info = self._storage_info_for_job_id(jobs[1]["id"])
+        # nested workflow step... a non-output
+        randomlines_jobs = self.dataset_populator.history_jobs_for_tool(history_id, "random_lines1")
+        assert len(randomlines_jobs) == 1
+        output_info = self._storage_info_for_job_id(randomlines_jobs[0]["id"])
+        return output_info, intermediate_info
+
+    def _run_workflow_get_output_storage_info_dicts(
+        self, history_id: str, extra_invocation_kwds: Optional[Dict[str, Any]] = None
+    ):
         wf_run = self.workflow_populator.run_workflow(
             TEST_WORKFLOW,
             test_data=TEST_WORKFLOW_TEST_DATA,
@@ -211,13 +310,15 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
         jobs = wf_run.jobs_for_tool("cat")
         print(jobs)
         assert len(jobs) == 2
-        output_cat = self.dataset_populator.get_job_details(jobs[0]["id"], full=True).json()
-        intermediate_cat = self.dataset_populator.get_job_details(jobs[1]["id"], full=True).json()
-        output_info = self._storage_info_for_job_output(output_cat)
-        intermediate_info = self._storage_info_for_job_output(intermediate_cat)
+        output_info = self._storage_info_for_job_id(jobs[0]["id"])
+        intermediate_info = self._storage_info_for_job_id(jobs[1]["id"])
         return output_info, intermediate_info
 
-    def _storage_info_for_job_output(self, job_dict):
+    def _storage_info_for_job_id(self, job_id: str) -> Dict[str, Any]:
+        job_dict = self.dataset_populator.get_job_details(job_id, full=True).json()
+        return self._storage_info_for_job_output(job_dict)
+
+    def _storage_info_for_job_output(self, job_dict) -> Dict[str, Any]:
         outputs = job_dict["outputs"]  # could be a list or dictionary depending on source
         try:
             output = outputs[0]

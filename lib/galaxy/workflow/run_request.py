@@ -11,6 +11,7 @@ from typing import (
 
 from galaxy import exceptions
 from galaxy.model import (
+    EffectiveOutput,
     History,
     HistoryDatasetAssociation,
     LibraryDataset,
@@ -75,6 +76,7 @@ class WorkflowRunConfig:
         preferred_object_store_id: Optional[str] = None,
         preferred_outputs_object_store_id: Optional[str] = None,
         preferred_intermediate_object_store_id: Optional[str] = None,
+        effective_outputs: Optional[List[EffectiveOutput]] = None,
     ) -> None:
         self.target_history = target_history
         self.replacement_dict = replacement_dict or {}
@@ -87,6 +89,7 @@ class WorkflowRunConfig:
         self.preferred_object_store_id = preferred_object_store_id
         self.preferred_outputs_object_store_id = preferred_outputs_object_store_id
         self.preferred_intermediate_object_store_id = preferred_intermediate_object_store_id
+        self.effective_outputs = effective_outputs
 
 
 def _normalize_inputs(
@@ -440,6 +443,10 @@ def build_workflow_run_configs(
         preferred_object_store_id = payload.get("preferred_object_store_id")
         preferred_outputs_object_store_id = payload.get("preferred_outputs_object_store_id")
         preferred_intermediate_object_store_id = payload.get("preferred_intermediate_object_store_id")
+        if payload.get("effective_outputs"):
+            raise exceptions.RequestParameterInvalidException(
+                "Cannot declare effective outputs on invocation in this fashion."
+            )
         split_object_store_config = bool(
             preferred_outputs_object_store_id is not None or preferred_intermediate_object_store_id is not None
         )
@@ -495,6 +502,20 @@ def workflow_run_config_to_request(
         workflow_invocation.step_states.append(step_state)
 
         if step.type == "subworkflow":
+            step.workflow_outputs
+            assert step.subworkflow
+            subworkflow: Workflow = step.subworkflow
+            effective_outputs: Optional[List[EffectiveOutput]] = None
+            if run_config.preferred_intermediate_object_store_id or run_config.preferred_outputs_object_store_id:
+                step_outputs = step.workflow_outputs
+                effective_outputs = []
+                for step_output in step_outputs:
+                    subworkflow_output = subworkflow.workflow_output_for(step_output.output_name)
+                    if subworkflow_output is not None:
+                        output_dict = EffectiveOutput(
+                            output_name=subworkflow_output.output_name, step_id=subworkflow_output.workflow_step_id
+                        )
+                        effective_outputs.append(output_dict)
             subworkflow_run_config = WorkflowRunConfig(
                 target_history=run_config.target_history,
                 replacement_dict=run_config.replacement_dict,
@@ -507,12 +528,12 @@ def workflow_run_config_to_request(
                 preferred_object_store_id=run_config.preferred_object_store_id,
                 preferred_intermediate_object_store_id=run_config.preferred_intermediate_object_store_id,
                 preferred_outputs_object_store_id=run_config.preferred_outputs_object_store_id,
+                effective_outputs=effective_outputs,
             )
-            assert step.subworkflow
             subworkflow_invocation = workflow_run_config_to_request(
                 trans,
                 subworkflow_run_config,
-                step.subworkflow,
+                subworkflow,
             )
             workflow_invocation.attach_subworkflow_invocation_for_step(
                 step,
@@ -550,6 +571,9 @@ def workflow_run_config_to_request(
         value = getattr(run_config, param)
         if value:
             add_parameter(param, value, param_types.META_PARAMETERS)
+    if run_config.effective_outputs is not None:
+        # empty list needs to come through here...
+        add_parameter("effective_outputs", json.dumps(run_config.effective_outputs), param_types.META_PARAMETERS)
 
     return workflow_invocation
 
@@ -568,6 +592,7 @@ def workflow_request_to_run_config(
     preferred_object_store_id = None
     preferred_outputs_object_store_id = None
     preferred_intermediate_object_store_id = None
+    effective_outputs = None
     for parameter in workflow_invocation.input_parameters:
         parameter_type = parameter.type
 
@@ -584,6 +609,8 @@ def workflow_request_to_run_config(
                 preferred_outputs_object_store_id = parameter.value
             if parameter.name == "preferred_intermediate_object_store_id":
                 preferred_intermediate_object_store_id = parameter.value
+            if parameter.name == "effective_outputs":
+                effective_outputs = json.loads(parameter.value)
         elif parameter_type == param_types.RESOURCE_PARAMETERS:
             resource_params[parameter.name] = parameter.value
         elif parameter_type == param_types.STEP_PARAMETERS:
@@ -613,5 +640,6 @@ def workflow_request_to_run_config(
         preferred_object_store_id=preferred_object_store_id,
         preferred_outputs_object_store_id=preferred_outputs_object_store_id,
         preferred_intermediate_object_store_id=preferred_intermediate_object_store_id,
+        effective_outputs=effective_outputs,
     )
     return workflow_run_config

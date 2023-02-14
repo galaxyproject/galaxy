@@ -368,6 +368,48 @@ steps:
       queries_0|input2: nested_workflow/workflow_output
 """
 
+# WORKFLOW_NESTED_SIMPLE with a nested workflow output marked as an
+# output on the outer workflow.
+WORKFLOW_NESTED_OUTPUT = """
+class: GalaxyWorkflow
+inputs:
+  outer_input: data
+outputs:
+  outer_output:
+    outputSource: second_cat/out_file1
+  nested_output: 
+    outputSource: nested_workflow/workflow_output
+steps:
+  first_cat:
+    tool_id: cat1
+    in:
+      input1: outer_input
+  nested_workflow:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        inner_input: data
+      outputs:
+        workflow_output:
+          outputSource: random_lines/out_file1
+      steps:
+        random_lines:
+          tool_id: random_lines1
+          state:
+            num_lines: 1
+            input:
+              $link: inner_input
+            seed_source:
+              seed_source_selector: set_seed
+              seed: asdf
+    in:
+      inner_input: first_cat/out_file1
+  second_cat:
+    tool_id: cat1
+    in:
+      input1: nested_workflow/workflow_output
+      queries_0|input2: nested_workflow/workflow_output
+"""
 
 WORKFLOW_NESTED_RUNTIME_PARAMETER = """
 class: GalaxyWorkflow

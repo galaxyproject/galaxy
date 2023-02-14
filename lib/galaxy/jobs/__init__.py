@@ -1632,8 +1632,7 @@ class MinimalJobWrapper(HasResourceParameters):
             object_store_id = job.preferred_object_store_id
         if object_store_id is None and job.workflow_invocation_step:
             workflow_invocation_step = job.workflow_invocation_step
-            workflow_invocation = job.workflow_invocation_step.workflow_invocation
-            invocation_object_stores = workflow_invocation.preferred_object_stores
+            invocation_object_stores = workflow_invocation_step.preferred_object_stores
             if invocation_object_stores.is_split_configuration:
                 # Redo for subworkflows...
                 outputs_object_store_populator = ObjectStorePopulator(self.app, user)
@@ -1650,6 +1649,10 @@ class MinimalJobWrapper(HasResourceParameters):
                 object_store_id = invocation_object_stores.preferred_outputs_object_store_id
                 object_store_populator = intermediate_object_store_populator
                 output_names = [o.output_name for o in workflow_invocation_step.workflow_step.unique_workflow_outputs]
+                if invocation_object_stores.step_effective_outputs is not None:
+                    output_names = [
+                        o for o in output_names if invocation_object_stores.is_output_name_an_effective_output(o)
+                    ]
 
                 def split_object_stores(output_name):
                     if output_name in output_names:

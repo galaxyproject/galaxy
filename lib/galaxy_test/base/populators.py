@@ -652,6 +652,10 @@ class BaseDatasetPopulator(BasePopulator):
         assert jobs_response.status_code == 200
         return jobs_response.json()
 
+    def history_jobs_for_tool(self, history_id: str, tool_id: str) -> List[Dict[str, Any]]:
+        jobs = self.history_jobs(history_id)
+        return [j for j in jobs if j["tool_id"] == tool_id]
+
     def invocation_jobs(self, invocation_id: str) -> List[Dict[str, Any]]:
         query_params = {"invocation_id": invocation_id, "order_by": "create_time"}
         jobs_response = self._get("jobs", query_params)
