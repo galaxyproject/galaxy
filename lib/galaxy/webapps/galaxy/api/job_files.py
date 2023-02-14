@@ -122,7 +122,7 @@ class JobFilesAPIController(BaseGalaxyAPIController):
 
         job_id = trans.security.decode_id(encoded_job_id)
         job_key = trans.security.encode_id(job_id, kind="jobs_files")
-        if not util.safe_str_cmp(kwargs["job_key"], job_key):
+        if not util.safe_str_cmp(str(kwargs["job_key"]), job_key):
             raise exceptions.ItemAccessibilityException("Invalid job_key supplied.")
 
         # Verify job is active. Don't update the contents of complete jobs.
