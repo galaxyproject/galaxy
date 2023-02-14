@@ -8464,10 +8464,8 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
             elif input_parameter.name == "preferred_intermediate_object_store_id":
                 preferred_intermediate_object_store_id = input_parameter.value
             elif input_parameter.name == "effective_outputs":
-                log.info(f"\n\n\n\n\n\nENCOUNTERED effective_outputs stored!!!!")
                 all_effective_outputs = json.loads(input_parameter.value)
                 step_id = self.workflow_step_id
-                log.info(f"\n\n\n\n\n\naeo {all_effective_outputs}")
                 step_effective_outputs = [e for e in all_effective_outputs if e["step_id"] == step_id]
 
         return WorkflowInvocationStepObjectStores(
