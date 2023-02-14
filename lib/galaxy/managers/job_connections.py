@@ -78,7 +78,7 @@ class JobConnectionsManager:
             )
             .where(
                 expression.and_(
-                    model.JobToInputDatasetAssociation.dataset_id != None,
+                    model.JobToInputDatasetAssociation.dataset_id is not None,
                     model.JobToInputDatasetAssociation.dataset_id == input_hda_id,
                 )
             )
@@ -96,7 +96,7 @@ class JobConnectionsManager:
             )
             .where(
                 expression.and_(
-                    model.JobToInputDatasetAssociation.dataset_id != None,
+                    model.JobToInputDatasetAssociation.dataset_id is not None,
                     model.JobToInputDatasetAssociation.dataset_id == input_hda_id,
                 )
             )
@@ -117,7 +117,7 @@ class JobConnectionsManager:
             )
             .where(
                 expression.and_(
-                    model.JobToInputDatasetCollectionAssociation.dataset_collection_id != None,
+                    model.JobToInputDatasetCollectionAssociation.dataset_collection_id is not None,
                     model.JobToInputDatasetCollectionAssociation.dataset_collection_id == input_hdca_id,
                 )
             )
@@ -136,7 +136,7 @@ class JobConnectionsManager:
             )
             .where(
                 expression.and_(
-                    model.JobToInputDatasetCollectionAssociation.dataset_collection_id != None,
+                    model.JobToInputDatasetCollectionAssociation.dataset_collection_id is not None,
                     model.JobToInputDatasetCollectionAssociation.dataset_collection_id == input_hdca_id,
                 )
             )
@@ -157,7 +157,7 @@ class JobConnectionsManager:
             )
             .where(
                 expression.and_(
-                    model.JobToOutputDatasetAssociation.dataset_id != None,
+                    model.JobToOutputDatasetAssociation.dataset_id is not None,
                     model.JobToOutputDatasetAssociation.dataset_id == input_hda_id,
                 )
             )
@@ -175,7 +175,7 @@ class JobConnectionsManager:
             )
             .where(
                 expression.and_(
-                    model.JobToOutputDatasetAssociation.dataset_id != None,
+                    model.JobToOutputDatasetAssociation.dataset_id is not None,
                     model.JobToOutputDatasetAssociation.dataset_id == input_hda_id,
                 )
             )
@@ -196,7 +196,7 @@ class JobConnectionsManager:
             )
             .where(
                 expression.and_(
-                    model.JobToOutputDatasetCollectionAssociation.dataset_collection_id != None,
+                    model.JobToOutputDatasetCollectionAssociation.dataset_collection_id is not None,
                     model.JobToOutputDatasetCollectionAssociation.dataset_collection_id == input_hdca_id,
                 )
             )
@@ -215,7 +215,7 @@ class JobConnectionsManager:
             )
             .where(
                 expression.and_(
-                    model.JobToOutputDatasetCollectionAssociation.dataset_collection_id != None,
+                    model.JobToOutputDatasetCollectionAssociation.dataset_collection_id is not None,
                     model.JobToOutputDatasetCollectionAssociation.dataset_collection_id == input_hdca_id,
                 )
             )
