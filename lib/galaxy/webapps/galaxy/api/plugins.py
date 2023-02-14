@@ -97,7 +97,7 @@ class FastAPIPlugins:
     def show(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        id: str = Path(title="Plugin ID", description="The plugin ID"),
+        plugin_id: str = Path(title="Plugin ID", description="The plugin ID"),
         history_id: Optional[DecodedDatabaseIdField] = Query(
             default=None,
             description="The encoded database identifier of the History.",
@@ -108,10 +108,10 @@ class FastAPIPlugins:
             history = self.history_manager.get_owned(history_id, trans.user, current_history=trans.history)
             result = {"hdas": []}
             for hda in history.contents_iter(types=["dataset"], deleted=False, visible=True):
-                if registry.get_visualization(trans, id, hda):
+                if registry.get_visualization(trans, plugin_id, hda):
                     result["hdas"].append({"id": trans.security.encode_id(hda.id), "name": hda.name})
         else:
-            result = registry.get_plugin(id).to_dict()
+            result = registry.get_plugin(plugin_id).to_dict()
         return result
 
     def _get_registry(self):
