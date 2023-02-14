@@ -51,11 +51,11 @@
                     <span v-localize>Build Collection from Rules</span>
                 </b-dropdown-item>
                 <b-dropdown-divider />
-                <b-dropdown-divider v-if="!showBuildOptions && selectionMatchesQuery">
-                    <b-dropdown-item v-if="showBuildOptions" data-description="build list" @click="buildDatasetListForAllElements">
+                <b-dropdown-divider v-if="!showBuildOptions && selectionMatchesQuery" />
+                <b-dropdown-item data-description="build list" @click="buildDatasetListForAllElements">
                     <span v-localize>Build Dataset List</span>
                 </b-dropdown-item>
-                </b-dropdown-divider>
+                <b-dropdown-divider />
                 <b-dropdown-item v-b-modal:change-dbkey-of-selected-content data-description="change database build">
                     <span v-localize>Change Database/Build</span>
                 </b-dropdown-item>
@@ -310,6 +310,7 @@ export default {
             await this.buildNewCollection("list");
         },
         async buildDatasetListForAllElements() {
+            //TODO "/api/histories/{history_id}/contents" HDCA / "list" / all selected elements passed / name / hide-source-items = false
             await this.buildNewCollection("list:all");
         },
         async buildDatasetPair() {
