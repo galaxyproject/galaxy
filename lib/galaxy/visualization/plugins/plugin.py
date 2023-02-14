@@ -16,7 +16,6 @@ from galaxy.visualization.plugins import (
     resource_parser,
     utils,
 )
-from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
 
@@ -131,8 +130,8 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
 
     def _get_url(self):
         if self.name in self.app.visualizations_registry.BUILT_IN_VISUALIZATIONS:
-            return url_for(controller="visualization", action=self.name)
-        return url_for("visualization_plugin", visualization_name=self.name)
+            return self.app.url_for(controller="visualization", action=self.name)
+        return self.app.url_for("visualization_plugin", visualization_name=self.name)
 
     def _get_static_path(self, path):
         if "/config/" in path:
@@ -255,7 +254,7 @@ class ScriptVisualizationPlugin(VisualizationPlugin):
         template.
         """
         render_vars["embedded"] = self._parse_embedded(embedded)
-        render_vars["static_url"] = url_for(f"/{self.static_path}/")
+        render_vars["static_url"] = self.app.url_for(f"/{self.static_path}/")
         render_vars.update(vars={})
         render_vars.update({"script_attributes": self.config["entry_point"]["attr"]})
         template_filename = os.path.join(self.MAKO_TEMPLATE)
