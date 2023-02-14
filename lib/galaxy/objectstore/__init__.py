@@ -1425,7 +1425,7 @@ class QuotaSourceMap:
 
     def ids_per_quota_source(self):
         quota_sources: Dict[str, List[str]] = {}
-        for (object_id, quota_source_label) in self.get_id_to_source_pairs():
+        for object_id, quota_source_label in self.get_id_to_source_pairs():
             if quota_source_label not in quota_sources:
                 quota_sources[quota_source_label] = []
             quota_sources[quota_source_label].append(object_id)
