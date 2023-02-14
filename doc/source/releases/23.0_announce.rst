@@ -42,6 +42,12 @@ To update an existing Galaxy repository run:
 
 See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details on source code locations.
 
+Deprecation Notice
+===========================================================
+
+Trackster is deprecated and will be removed in the next release.  This functionality will be provided by other visualization plugins (IGV.js, JBrowse).
+
+
 Release Notes
 ===========================================================
 
