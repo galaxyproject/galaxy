@@ -1,4 +1,4 @@
-<tool id="bigwigtowig" name="bigWigToWig" version="@TOOL_VERSION@+galaxy@SUFFIX_VERSION@" profile="20.01">
+<tool id="bigwigtowig" name="Convert BigWig to Wiggle" version="@TOOL_VERSION@+galaxy@SUFFIX_VERSION@" profile="20.01">
     <description>Convert bigWig to wig</description>
     <macros>
         <token name="@TOOL_VERSION@">377</token>
