@@ -47,6 +47,7 @@ Deprecation Notice
 
 Trackster is deprecated and will be removed in the next release.  This functionality will be provided by other visualization plugins (IGV.js, JBrowse).
 
+Workflow exports to myexperiment.org are deprecated and will be removed in the next release.
 
 Release Notes
 ===========================================================
