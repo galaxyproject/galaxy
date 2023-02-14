@@ -504,6 +504,9 @@ def workflow_run_config_to_request(
                 param_map=run_config.param_map.get(step.order_index),
                 allow_tool_state_corrections=run_config.allow_tool_state_corrections,
                 resource_params=run_config.resource_params,
+                preferred_object_store_id=run_config.preferred_object_store_id,
+                preferred_intermediate_object_store_id=run_config.preferred_intermediate_object_store_id,
+                preferred_outputs_object_store_id=run_config.preferred_outputs_object_store_id,
             )
             assert step.subworkflow
             subworkflow_invocation = workflow_run_config_to_request(
