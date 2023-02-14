@@ -1,6 +1,7 @@
 <template>
     <div>
         <b-link
+            v-b-tooltip.hover
             class="workflow-dropdown font-weight-bold"
             data-toggle="dropdown"
             :title="getWorkflowTooltip(sourceType, workflow)"
@@ -8,16 +9,13 @@
             aria-expanded="false">
             <font-awesome-icon icon="caret-down" />
             <span class="workflow-dropdown-name">{{ workflow.name }}</span>
+            <span v-if="sourceType.includes('trs')">
+                <font-awesome-icon icon="check" class="workflow-trs-icon" />
+            </span>
+            <span v-if="sourceType == 'url'">
+                <font-awesome-icon class="workflow-external-link" icon="link" />
+            </span>
         </b-link>
-        <span
-            v-if="sourceType.includes('trs')"
-            v-b-tooltip.hover
-            :title="`Imported from TRS ID (version ${workflow.source_metadata.trs_version_id})`">
-            <font-awesome-icon icon="check" class="workflow-trs-icon" />
-        </span>
-        <span v-if="sourceType == 'url'" v-b-tooltip.hover :title="`Imported from ${workflow.source_metadata.url}`">
-            <font-awesome-icon class="workflow-external-link" icon="link" />
-        </span>
         <p v-if="workflow.description" class="workflow-dropdown-description">{{ workflow.description }}</p>
         <div class="dropdown-menu" aria-labelledby="workflow-dropdown">
             <a
