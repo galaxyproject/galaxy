@@ -567,68 +567,6 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         workflow_contents_manager = self.app.workflow_contents_manager
         return workflow_contents_manager.workflow_to_dict(trans, stored, style="editor", version=version)
 
-    @web.expose
-    @web.require_login("use workflows")
-    def export_to_myexp(self, trans, id, myexp_username, myexp_password):
-        """
-        Exports a workflow to myExperiment website.
-        """
-        trans.workflow_building_mode = workflow_building_modes.ENABLED
-        stored = self.get_stored_workflow(trans, id, check_ownership=False, check_accessible=True)
-
-        # Convert workflow to dict.
-        workflow_dict = self._workflow_to_dict(trans, stored)
-
-        #
-        # Create and submit workflow myExperiment request.
-        #
-
-        # Create workflow content JSON.
-        workflow_content = json.dumps(workflow_dict, indent=4, sort_keys=True)
-
-        # Create myExperiment request.
-        request_raw = trans.fill_template(
-            "workflow/myexp_export.mako",
-            workflow_name=workflow_dict["name"],
-            workflow_description=workflow_dict["annotation"],
-            workflow_content=workflow_content,
-            workflow_svg=self._workflow_to_svg_canvas(trans, stored).tostring(),
-        )
-        # strip() b/c myExperiment XML parser doesn't allow white space before XML; utf-8 handles unicode characters.
-        request = unicodify(request_raw.strip(), "utf-8")
-
-        # Do request and get result.
-        auth_header = base64.b64encode(f"{myexp_username}:{myexp_password}")
-        headers = {"Content-type": "text/xml", "Accept": "text/xml", "Authorization": f"Basic {auth_header}"}
-        myexp_url = trans.app.config.myexperiment_target_url
-        conn = HTTPConnection(myexp_url)
-        # NOTE: blocks web thread.
-        conn.request("POST", "/workflow.xml", request, headers)
-        response = conn.getresponse()
-        response_data = response.read()
-        conn.close()
-
-        # Do simple parse of response to see if export successful and provide user feedback.
-        parser = SingleTagContentsParser("id")
-        parser.feed(response_data)
-        myexp_workflow_id = parser.tag_content
-        workflow_list_str = f" <br>Return to <a href='{url_for(controller='workflows', action='list')}'>workflow list."
-        if myexp_workflow_id:
-            return trans.show_message(
-                """Workflow '{}' successfully exported to myExperiment. <br/>
-                <a href="http://{}/workflows/{}">Click here to view the workflow on myExperiment</a> {}
-                """.format(
-                    stored.name, myexp_url, myexp_workflow_id, workflow_list_str
-                ),
-                use_panels=True,
-            )
-        else:
-            return trans.show_error_message(
-                "Workflow '%s' could not be exported to myExperiment. Error: %s %s"
-                % (stored.name, response_data, workflow_list_str),
-                use_panels=True,
-            )
-
     @web.json_pretty
     def for_direct_import(self, trans, id):
         """
