@@ -1,8 +1,5 @@
-import base64
-import json
 import logging
 from html.parser import HTMLParser
-from http.client import HTTPConnection
 
 from markupsafe import escape
 from sqlalchemy import desc
@@ -25,10 +22,7 @@ from galaxy.managers.workflows import (
 )
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.tools.parameters.basic import workflow_building_modes
-from galaxy.util import (
-    FILENAME_VALID_CHARS,
-    unicodify,
-)
+from galaxy.util import FILENAME_VALID_CHARS
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import url_for
 from galaxy.web.framework.helpers import (
