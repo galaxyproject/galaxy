@@ -394,7 +394,7 @@ class RequiresDiskUsageRecalculation:
             quota_source_map = self.object_store.get_quota_source_map()
             statements = calculate_user_disk_usage_statements(user_id, quota_source_map)
 
-            for (sql, args) in statements:
+            for sql, args in statements:
                 sql, _ = re.subn(r"\:([\w]+)", r"%(\1)s", sql)
                 new_args = {}
                 for key, val in args.items():

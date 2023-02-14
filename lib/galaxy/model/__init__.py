@@ -581,7 +581,7 @@ WHERE id = :id
     source = quota_source_map.ids_per_quota_source()
     # TODO: Merge a lot of these settings together by generating a temp table for
     # the object_store_id to quota_source_label into a temp table of values
-    for (quota_source_label, object_store_ids) in source.items():
+    for quota_source_label, object_store_ids in source.items():
         label_usage = UNIQUE_DATASET_USER_USAGE.format(
             dataset_condition="dataset.object_store_id IN :include_object_store_ids"
         )
@@ -948,7 +948,7 @@ ON CONFLICT
         sa_session = object_session(self)
         for_sqlite = "sqlite" in sa_session.bind.dialect.name
         statements = calculate_user_disk_usage_statements(self.id, quota_source_map, for_sqlite)
-        for (sql, args) in statements:
+        for sql, args in statements:
             statement = text(sql)
             binds = []
             for key, _ in args.items():

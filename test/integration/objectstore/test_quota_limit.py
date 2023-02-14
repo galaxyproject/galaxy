@@ -16,7 +16,6 @@ class TestQuotaIntegration(BaseObjectStoreIntegrationTestCase):
 
     def test_selection_limit(self):
         with self.dataset_populator.test_history() as history_id:
-
             hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3\n4 5 6\n7 8 9\n")
             self.dataset_populator.wait_for_history(history_id)
             hda1_input = {"src": "hda", "id": hda1["id"]}
