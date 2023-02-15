@@ -59,8 +59,8 @@ class TestDataResolver:
                 return os.path.abspath(filename)
         raise TestDataNotFoundError(f"Failed to find test file {name} against any test data resolvers")
 
-    def get_filecontent(self, name: str) -> bytes:
-        filename = self.get_filename(name=name)
+    def get_filecontent(self, name: str, context: Optional[TestDataContext] = None) -> bytes:
+        filename = self.get_filename(name=name, context=context)
         with open(filename, mode="rb") as f:
             return f.read()
 
@@ -164,14 +164,13 @@ class RemoteLocationDataResolver(FileDataResolver):
         exists_now = super().exists(filename, context)
         if exists_now or not self.fetch_data or context is None:
             return exists_now
-        self._try_download_from_location(context)
+        self._try_download_from_location(filename, context)
         exists_now = super().exists(filename, context)
         if exists_now:
             self._verify_checksum(filename, context)
         return exists_now
 
-    def _try_download_from_location(self, context: TestDataContext):
-        filename = context.get("value")
+    def _try_download_from_location(self, filename: str, context: TestDataContext):
         location = context.get("location")
         if location is None:
             return

@@ -696,6 +696,8 @@ def __parse_test_attributes(output_elem, attrib, parse_elements=False, parse_dis
     attributes["delta_frac"] = float(attrib["delta_frac"]) if "delta_frac" in attrib else DEFAULT_DELTA_FRAC
     attributes["sort"] = string_as_bool(attrib.pop("sort", False))
     attributes["decompress"] = string_as_bool(attrib.pop("decompress", False))
+    # `location` may contain an URL to a remote file that will be used to download `file` (if not already present on disk).
+    attributes["location"] = attrib.get("location")
     try:
         attributes["count"] = int(attrib.pop("count"))
     except KeyError:
