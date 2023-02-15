@@ -46,5 +46,7 @@ def test_base_config_if_running_not_from_source(monkeypatch):
 
 
 def test_assign_email_from(monkeypatch):
-    appconfig = config.GalaxyAppConfiguration(override_tempdir=False, galaxy_infrastructure_url="myhost")
+    appconfig = config.GalaxyAppConfiguration(
+        override_tempdir=False, galaxy_infrastructure_url="http://myhost:8080/galaxy/"
+    )
     assert appconfig.email_from == f"{DEFAULT_EMAIL_FROM_LOCAL_PART}@myhost"
