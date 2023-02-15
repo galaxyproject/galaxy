@@ -120,7 +120,6 @@ class ConfigSerializer(base.ModelSerializer):
             "logo_src": _use_config,
             "logo_src_secondary": _use_config,
             "terms_url": _use_config,
-            "myexperiment_target_url": _use_config,
             "wiki_url": _use_config,
             "screencasts_url": _use_config,
             "citation_url": _use_config,

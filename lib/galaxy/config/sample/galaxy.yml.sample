@@ -2170,10 +2170,6 @@ galaxy:
   # 'show-selection' can be added later.
   #simplified_workflow_run_ui_job_cache: 'off'
 
-  # The URL to the myExperiment instance being used (omit scheme but
-  # include port).
-  #myexperiment_target_url: www.myexperiment.org:80
-
   # Enable Galaxy's "Upload via FTP" interface.  You'll need to install
   # and configure an FTP server (we've used ProFTPd since it can use
   # Galaxy's database for authentication) and set the following two

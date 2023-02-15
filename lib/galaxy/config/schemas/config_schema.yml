@@ -2906,13 +2906,6 @@ mapping:
           When the simplified workflow run form is rendered, should the invocation use job
           caching. This isn't a boolean so an option for 'show-selection' can be added later.
 
-      myexperiment_target_url:
-        type: str
-        default: www.myexperiment.org:80
-        required: false
-        desc: |
-          The URL to the myExperiment instance being used (omit scheme but include port).
-
       ftp_upload_site:
         type: str
         required: false
