@@ -622,6 +622,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         "user_library_import_symlink_whitelist",
         "fetch_url_whitelist",
         "containers_resolvers_config_file",
+        "activation_email",
     )
     renamed_options = {
         "blacklist_file": "email_domain_blocklist_file",
