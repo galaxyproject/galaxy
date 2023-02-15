@@ -5,10 +5,7 @@ import { WindowManager } from "@/layout/window-manager";
 import { UploadButton } from "@/components/Upload";
 import { useRoute, useRouter } from "vue-router/composables";
 import { computed, ref } from "vue";
-import CenterFrame from "@/entry/analysis/modules/CenterFrame.vue";
-import HistoryIndex from "@/components/History/Index.vue";
 import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
-import DragAndDropModal from "@/components/Upload/DragAndDropModal.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -22,9 +19,16 @@ const toolBoxProperties = computed(() => {
     };
 });
 
+function sidebarIsActive(menuKey) {
+    return userStore.toggledSideBar === menuKey;
+}
+
+function onToggleSidebar(toggle) {
+    userStore.toggleSideBar(toggle);
+}
 </script>
 <template>
-    <div>
+    <div class="d-flex">
         <b-nav vertical class="side-bar pt-1">
             <b-nav-item
                 id="tool-search"
@@ -40,11 +44,9 @@ const toolBoxProperties = computed(() => {
             </b-nav-item>
             <upload-button />
         </b-nav>
-        <transition-group name="panels">
-            <div v-show="sidebarIsActive('search')" key="search">
-                <ToolBox v-bind="toolBoxProperties" class="left-column" />
-            </div>
-        </transition-group>
+        <div v-show="!sidebarIsActive('search')" key="search">
+            <ToolBox v-bind="toolBoxProperties" />
+        </div>
     </div>
 </template>
 
@@ -57,7 +59,7 @@ const toolBoxProperties = computed(() => {
     list-style-type: none;
 }
 
-.left-column {
+.left-column-disable {
     min-width: 15.2rem;
     max-width: 15.2rem;
     width: 15.2rem;
@@ -71,9 +73,9 @@ const toolBoxProperties = computed(() => {
 
 .side-bar {
     z-index: 100;
-    width: 2.8rem;
-    min-width: 2.8rem;
-    max-width: 2.8rem;
+    //width: 2.8rem;
+    //min-width: 2.8rem;
+    //max-width: 2.8rem;
     background: $panel-bg-color;
 }
 

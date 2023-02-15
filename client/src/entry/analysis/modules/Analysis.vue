@@ -51,7 +51,7 @@ onUnmounted(() => {
 </script>
 <template>
     <div id="columns" class="d-flex">
-        <ActivityBar v-if="showPanels" class="left-column" />
+        <ActivityBar v-if="showPanels" />
         <div class="center-column overflow-auto p-3 w-100">
             <CenterFrame v-show="showCenter" id="galaxy_main" @load="onLoad" />
             <router-view v-show="!showCenter" :key="$route.fullPath" class="h-100" />
@@ -61,65 +61,12 @@ onUnmounted(() => {
     </div>
 </template>
 
-
 <style scoped>
 @import "theme/blue.scss";
-
-.nav-item {
-    cursor: pointer;
-    text-decoration: none;
-    list-style-type: none;
-}
-
-.left-column {
-    min-width: 15.2rem;
-    max-width: 15.2rem;
-    width: 15.2rem;
-}
 
 .right-column {
     min-width: 18rem;
     max-width: 18rem;
     width: 18rem;
-}
-
-.side-bar {
-    z-index: 100;
-    width: 2.8rem;
-    min-width: 2.8rem;
-    max-width: 2.8rem;
-    background: $panel-bg-color;
-}
-
-.active-sidebar {
-    border-radius: 10px;
-    background: $gray-300;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-}
-
-.nav-icon {
-    height: 2rem;
-    display: flex;
-    align-items: center;
-    align-content: center;
-}
-
-.nav-icon-active {
-    top: 40%;
-    left: 100%;
-    position: absolute;
-}
-
-.panels-enter-active,
-.panels-leave-active {
-    transition: all 0.3s;
-}
-
-.panels-enter,
-.panels-leave-to {
-    transform: translateX(-100%);
 }
 </style>
