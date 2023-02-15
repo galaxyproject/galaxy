@@ -113,7 +113,7 @@
     "xml-beautifier": "^0.5.0"
   },
   "scripts": {
-    "develop": "export NODE_OPTIONS=--max_old_space_size=4096 NODE_ENV=development gulp && webpack-dev-server",
+    "develop": "export NODE_OPTIONS=--max_old_space_size=4096 && NODE_ENV=development gulp && webpack-dev-server",
     "build": "NODE_ENV=development gulp && webpack && yarn run stage-build",
     "build-production": "NODE_ENV=production gulp && yarn run webpack-production && yarn run stage-build",
     "build-production-maps": "NODE_ENV=production gulp && yarn run webpack-production-maps && yarn run stage-build",
