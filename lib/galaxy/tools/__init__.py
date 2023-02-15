@@ -3578,7 +3578,7 @@ class SortTool(DatabaseOperationTool):
         sorttype = incoming["sort_type"]["sort_type"]
         new_elements = {}
         elements = hdca.collection.elements
-        presort_elements = []
+        presort_elements = None
         if sorttype == "alpha":
             presort_elements = [(dce.element_identifier, dce) for dce in elements]
         elif sorttype == "numeric":
@@ -3603,7 +3603,7 @@ class SortTool(DatabaseOperationTool):
         else:
             raise Exception(f"Unknown sort_type '{sorttype}'")
 
-        if presort_elements:
+        if presort_elements is not None:
             sorted_elements = [x[1] for x in sorted(presort_elements, key=lambda x: x[0])]
 
         for dce in sorted_elements:
