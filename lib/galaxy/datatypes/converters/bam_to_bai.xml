@@ -1,4 +1,4 @@
-<tool id="CONVERTER_Bam_Bai_0" name="Bam to Bai" version="1.0.0" hidden="true" profile="16.04">
+<tool id="CONVERTER_Bam_Bai_0" name="Convert Bam to Bai" version="1.0.0" hidden="true" profile="16.04">
     <requirements>
         <requirement type="package" version="1.10">samtools</requirement>
     </requirements>

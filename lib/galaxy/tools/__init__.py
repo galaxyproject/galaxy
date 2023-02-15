@@ -425,13 +425,13 @@ class ToolBox(AbstractToolBox):
         id = "builtin_converters"
         section = ToolSection({"name": "Built-in Converters", "id": id})
         self._tool_panel[id] = section
-        converters = self.app.datatypes_registry.datatype_converters
-        for source, targets in converters.items():
-            for target, tool in targets.items():
-                tool.name = f"{source}-to-{target}"
-                tool.description = "converter"
-                tool.hidden = False
-                section.elems.append_tool(tool)
+
+        converters = {
+            tool for target in self.app.datatypes_registry.datatype_converters.values() for tool in target.values()
+        }
+        for tool in converters:
+            tool.hidden = False
+            section.elems.append_tool(tool)
 
     def persist_cache(self, register_postfork=False):
         """
