@@ -613,17 +613,6 @@ class CommonConfigurationMixin:
 
 
 class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
-    deprecated_options = (
-        "database_file",
-        "track_jobs_in_database",
-        "blacklist_file",
-        "whitelist_file",
-        "sanitize_whitelist_file",
-        "user_library_import_symlink_whitelist",
-        "fetch_url_whitelist",
-        "containers_resolvers_config_file",
-        "activation_email",
-    )
     renamed_options = {
         "blacklist_file": "email_domain_blocklist_file",
         "whitelist_file": "email_domain_allowlist_file",
@@ -633,6 +622,12 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         "containers_resolvers_config_file": "container_resolvers_config_file",
         "activation_email": "email_from",
     }
+
+    deprecated_options = list(renamed_options.keys()) + [
+        "database_file",
+        "track_jobs_in_database",
+    ]
+
     default_config_file_name = "galaxy.yml"
     deprecated_dirs = {"config_dir": "config", "data_dir": "database"}
 
