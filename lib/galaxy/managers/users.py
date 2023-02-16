@@ -5,7 +5,6 @@ import hashlib
 import logging
 import random
 import re
-import socket
 import time
 from datetime import datetime
 from typing import Optional
@@ -534,10 +533,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         else:
             reset_user, prt = self.get_reset_token(trans, email)
             if prt:
-                host = self.__get_host(trans)
                 reset_url = url_for(controller="login", action="start", token=prt.token)
                 body = PASSWORD_RESET_TEMPLATE % (
-                    host,
+                    trans.app.config.hostname,
                     prt.expiration_time.strftime(trans.app.config.pretty_datetime_format),
                     trans.request.host,
                     reset_url,
@@ -570,12 +568,6 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             trans.sa_session.flush()
             return reset_user, prt
         return None, None
-
-    def __get_host(self, trans):
-        host = trans.request.host.split(":")[0]
-        if host in ["localhost", "127.0.0.1", "0.0.0.0"]:
-            host = socket.getfqdn()
-        return host
 
     def send_subscription_email(self, email):
         if self.app.config.smtp_server is None:
