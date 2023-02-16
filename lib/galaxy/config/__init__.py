@@ -30,6 +30,7 @@ from typing import (
     TypeVar,
     Union,
 )
+from urllib.parse import urlparse
 
 import yaml
 
@@ -1042,9 +1043,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             if section.startswith("server:"):
                 self.server_names.append(section.replace("server:", "", 1))
 
-        self._set_galaxy_infrastructure_url(kwargs)
-        # _set_email_from() should be called AFTER _set_galaxy_infrastructure_url()
-        self._set_email_from()
+        self._set_host_related_options(kwargs)
 
         # Asynchronous execution process pools - limited functionality for now, attach_to_pools is designed to allow
         # webless Galaxy server processes to attach to arbitrary message queues (e.g. as job handlers) so they do not
@@ -1207,6 +1206,12 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         with open(filepath) as f:
             return [line.strip() for line in f]
 
+    def _set_host_related_options(self, kwargs):
+        # The following 3 method calls must be made in sequence
+        self._set_galaxy_infrastructure_url(kwargs)
+        self._set_hostname()
+        self._set_email_from()
+
     def _set_galaxy_infrastructure_url(self, kwargs):
         # indicate if this was not set explicitly, so dependending on the context a better default
         # can be used (request url in a web thread, Docker parent in IE stuff, etc.)
@@ -1225,10 +1230,15 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         if "UWSGI_PORT" in self.galaxy_infrastructure_url:
             raise Exception("UWSGI_PORT is not supported anymore")
 
+    def _set_hostname(self):
+        if self.galaxy_infrastructure_url_set:
+            self.hostname = urlparse(self.galaxy_infrastructure_url).hostname
+        else:
+            self.hostname = socket.getfqdn()
+
     def _set_email_from(self):
         if not self.email_from:
-            hostname = self.galaxy_infrastructure_url or socket.getfqdn()
-            self.email_from = f"{DEFAULT_EMAIL_FROM_LOCAL_PART}@{hostname}"
+            self.email_from = f"{DEFAULT_EMAIL_FROM_LOCAL_PART}@{self.hostname}"
 
     def reload_sanitize_allowlist(self, explicit=True):
         self.sanitize_allowlist = []
