@@ -8,6 +8,7 @@ from abc import (
     abstractmethod,
 )
 from typing import (
+    List,
     NamedTuple,
     Optional,
     TYPE_CHECKING,
@@ -37,6 +38,7 @@ from ..mulled.util import (
     default_mulled_conda_channels_from_env,
     mulled_tags_for,
     split_tag,
+    Target,
     v1_image_name,
     v2_image_name,
     version_sorted,
@@ -287,8 +289,13 @@ def find_best_matching_cached_image(targets, cached_images, hash_func):
 
 
 def docker_cached_container_description(
-    targets, namespace, hash_func="v2", shell=DEFAULT_CONTAINER_SHELL, resolution_cache=None
+    targets: List[Target],
+    namespace: str,
+    hash_func: str = "v2",
+    shell: str = DEFAULT_CONTAINER_SHELL,
+    resolution_cache: Optional[ResolutionCache] = None,
 ):
+    log.error(f"{targets}")
     if len(targets) == 0:
         return None
 
@@ -528,7 +535,9 @@ class MulledDockerContainerResolver(CliContainerResolver):
 
     def cached_container_description(self, targets, namespace, hash_func, resolution_cache):
         try:
-            return docker_cached_container_description(targets, namespace, hash_func=hash_func, resolution_cache=resolution_cache)
+            return docker_cached_container_description(
+                targets, namespace, hash_func=hash_func, resolution_cache=resolution_cache
+            )
         except subprocess.CalledProcessError:
             # We should only get here if a docker binary is available, but command quits with a non-zero exit code,
             # e.g if the docker daemon is not available
