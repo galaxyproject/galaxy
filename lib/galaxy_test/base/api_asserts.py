@@ -85,7 +85,7 @@ def assert_error_message_contains(response: Union[Response, dict], expected_cont
     as_dict = _as_dict(response)
     assert_has_keys(as_dict, "err_msg")
     err_msg = as_dict["err_msg"]
-    assert expected_contains in err_msg
+    assert expected_contains in err_msg, f"Expected error message [{err_msg}] to contain [{expected_contains}]."
 
 
 def _as_dict(response: Union[Response, dict]) -> Dict[str, Any]:
