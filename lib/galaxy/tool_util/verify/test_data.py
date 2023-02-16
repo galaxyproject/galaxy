@@ -176,12 +176,11 @@ class RemoteLocationDataResolver(FileDataResolver):
             return
         if not is_url(location):
             raise ValueError(f"Invalid 'location' URL for remote test data provided: {location}")
-        if filename:
-            if self._is_direct_url_paste_upload(filename, location):
-                return  # No pre-download required
-            self._ensure_base_dir_exists()
-            dest_file_path = self.path(filename)
-            download_to_file(location, dest_file_path)
+        if not self._is_valid_filename(filename):
+            raise ValueError(f"Invalid 'filename' provided: '{filename}'")
+        self._ensure_base_dir_exists()
+        dest_file_path = self.path(filename)
+        download_to_file(location, dest_file_path)
 
     def _ensure_base_dir_exists(self):
         if not os.path.exists(self.file_dir):
@@ -201,6 +200,10 @@ class RemoteLocationDataResolver(FileDataResolver):
                 f"Failed to validate test data '{filename}' with [{hash_function}] - expected [{expected_hash_value}] got [{calculated_hash_value}]"
             )
 
-    def _is_direct_url_paste_upload(self, filename: str, location: Optional[str]):
-        """Checks if the test data file is an URL and will be directly url_pasted to Galaxy."""
-        return location and filename == location and is_url(location)
+    def _is_valid_filename(self, filename: str):
+        """
+        Checks that the filename does not contain the following
+        characters: <, >, :, ", /, \\, |, ?, *, or any control characters.
+        """
+        pattern = r"^[^<>:\"/\\|?*\x00-\x1F]+$"
+        return bool(re.match(pattern, filename))

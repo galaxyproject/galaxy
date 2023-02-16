@@ -10,7 +10,8 @@
     </outputs>
     <tests>
         <test>
-            <!-- When only the `location` is defined, it will be directly URL pasted to Galaxy -->
+            <!-- When only the `location` is defined, the name of the input file will be infered from the last component of the URL.
+                In this example, it will be equivalent to `value="hello.txt"`. -->
             <param name="input" location="https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt"/>
             <output name="output">
                 <assert_contents>
@@ -52,6 +53,12 @@
                 The `checksum` will be also used to check the integrity of the download. -->
             <param name="input" value="not_local_input.txt" location="https://raw.githubusercontent.com/galaxyproject/planemo/master/tests/data/not_hello.txt" checksum="sha1$3436387a8a45b00ef11e621e501ba23b52f06101"/>
             <output name="output" file="not_local_output.txt" location="https://raw.githubusercontent.com/galaxyproject/planemo/master/tests/data/not_hello.txt" checksum="sha1$3436387a8a45b00ef11e621e501ba23b52f06101"/>
+        </test>
+        <test>
+            <!-- If the output `file` or `value` is not specified, the last component of the location URL will be used
+                as filename. In this example, this will be equivalent to `file="not_hello.txt"`. -->
+            <param name="input" value="not_local_input.txt" location="https://raw.githubusercontent.com/galaxyproject/planemo/master/tests/data/not_hello.txt" checksum="sha1$3436387a8a45b00ef11e621e501ba23b52f06101"/>
+            <output name="output" location="https://raw.githubusercontent.com/galaxyproject/planemo/master/tests/data/not_hello.txt" checksum="sha1$3436387a8a45b00ef11e621e501ba23b52f06101"/>
         </test>
     </tests>
 </tool>
