@@ -1,19 +1,27 @@
 <tool id="CONVERTER_uncompressed_to_gz" name="Convert uncompressed file to compressed" hidden="true" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="20.01">
     <macros>
-        <token name="@TOOL_VERSION@">1.15.1</token>
+        <token name="@TOOL_VERSION@">1.16</token>
         <token name="@VERSION_SUFFIX@">0</token>
     </macros>
     <requirements>
         <requirement type="package" version="@TOOL_VERSION@">htslib</requirement>
+        <requirement type="package" version="1.0.8">bzip2</requirement>
     </requirements>
     <command><![CDATA[
 cp '$ext_config' galaxy.json &&
-bgzip -@ "\${GALAXY_SLOTS:-1}" -c '$input1' > '$output1'
+#if $input1.ext.endswith(".bz2"):
+    bzcat '$input1' | bgzip -@ "\${GALAXY_SLOTS:-1}" -c > '$output1'
+#else:
+    bgzip -@ "\${GALAXY_SLOTS:-1}" -c '$input1' > '$output1'
+#end if
     ]]></command>
     <configfiles>
-        <configfile name="ext_config">{"output1": {
-  "name": "${input1.name + '.gz' if not $input1.name.endswith('.vcf') else $input1.name + '.bgzip'} compressed",
-  "ext": "${input1.ext + '.gz' if $input1.ext != 'vcf' else 'vcf_bgzip'}"
+        <configfile name="ext_config">
+#silent ext = $input1.ext[:-4] if $input1.ext.endswith(".bz2") else $input1.ext
+#silent ext = ext + '.gz' if ext != 'vcf' else 'vcf_bgzip'
+{"output1": {
+  "name": "${input1.name} compressed",
+  "ext": "${ext}"
 }}</configfile>
     </configfiles>
     <inputs>
@@ -31,6 +39,10 @@ bgzip -@ "\${GALAXY_SLOTS:-1}" -c '$input1' > '$output1'
         <test>
             <param name="input1" value="1.fasta" ftype="fasta"/>
             <output name="output1" file="1.fasta.gz" ftype="fasta.gz" decompress="true"/>
+        </test>
+        <test>
+            <param name="input1" value="1.fastqsanger.bz2" ftype="fastqsanger.bz2"/>
+            <output name="output1" file="1.fastqsanger.gz" ftype="fastqsanger.gz" decompress="true"/>
         </test>
     </tests>
     <help>
