@@ -30,6 +30,7 @@ from typing import (
     TypeVar,
     Union,
 )
+from urllib.parse import urlparse
 
 import yaml
 
@@ -135,6 +136,7 @@ LOGGING_CONFIG_DEFAULT: Dict[str, Any] = {
 """Default value for logging configuration, passed to :func:`logging.config.dictConfig`"""
 
 VERSION_JSON_FILE = "version.json"
+DEFAULT_EMAIL_FROM_LOCAL_PART = "galaxy-no-reply"
 
 
 def configure_logging(config, facts=None):
@@ -612,16 +614,6 @@ class CommonConfigurationMixin:
 
 
 class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
-    deprecated_options = (
-        "database_file",
-        "track_jobs_in_database",
-        "blacklist_file",
-        "whitelist_file",
-        "sanitize_whitelist_file",
-        "user_library_import_symlink_whitelist",
-        "fetch_url_whitelist",
-        "containers_resolvers_config_file",
-    )
     renamed_options = {
         "blacklist_file": "email_domain_blocklist_file",
         "whitelist_file": "email_domain_allowlist_file",
@@ -629,7 +621,14 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         "user_library_import_symlink_whitelist": "user_library_import_symlink_allowlist",
         "fetch_url_whitelist": "fetch_url_allowlist",
         "containers_resolvers_config_file": "container_resolvers_config_file",
+        "activation_email": "email_from",
     }
+
+    deprecated_options = list(renamed_options.keys()) + [
+        "database_file",
+        "track_jobs_in_database",
+    ]
+
     default_config_file_name = "galaxy.yml"
     deprecated_dirs = {"config_dir": "config", "data_dir": "database"}
 
@@ -895,8 +894,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.nodejs_path = kwargs.get("nodejs_path")
         self.container_image_cache_path = self._in_data_dir(kwargs.get("container_image_cache_path", "container_cache"))
         self.output_size_limit = int(kwargs.get("output_size_limit", 0))
-        # activation_email was used until release_15.03
-        self.email_from = self.email_from or kwargs.get("activation_email")
 
         self.email_domain_blocklist_content = (
             self._load_list_from_file(self._in_config_dir(self.email_domain_blocklist_file))
@@ -1046,7 +1043,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             if section.startswith("server:"):
                 self.server_names.append(section.replace("server:", "", 1))
 
-        self._set_galaxy_infrastructure_url(kwargs)
+        self._set_host_related_options(kwargs)
 
         # Asynchronous execution process pools - limited functionality for now, attach_to_pools is designed to allow
         # webless Galaxy server processes to attach to arbitrary message queues (e.g. as job handlers) so they do not
@@ -1209,6 +1206,12 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         with open(filepath) as f:
             return [line.strip() for line in f]
 
+    def _set_host_related_options(self, kwargs):
+        # The following 3 method calls must be made in sequence
+        self._set_galaxy_infrastructure_url(kwargs)
+        self._set_hostname()
+        self._set_email_from()
+
     def _set_galaxy_infrastructure_url(self, kwargs):
         # indicate if this was not set explicitly, so dependending on the context a better default
         # can be used (request url in a web thread, Docker parent in IE stuff, etc.)
@@ -1226,6 +1229,16 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             )
         if "UWSGI_PORT" in self.galaxy_infrastructure_url:
             raise Exception("UWSGI_PORT is not supported anymore")
+
+    def _set_hostname(self):
+        if self.galaxy_infrastructure_url_set:
+            self.hostname = urlparse(self.galaxy_infrastructure_url).hostname
+        else:
+            self.hostname = socket.getfqdn()
+
+    def _set_email_from(self):
+        if not self.email_from:
+            self.email_from = f"{DEFAULT_EMAIL_FROM_LOCAL_PART}@{self.hostname}"
 
     def reload_sanitize_allowlist(self, explicit=True):
         self.sanitize_allowlist = []

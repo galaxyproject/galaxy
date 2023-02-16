@@ -3,6 +3,7 @@ import os
 import pytest
 
 from galaxy import config
+from galaxy.config import DEFAULT_EMAIL_FROM_LOCAL_PART
 from galaxy.util.properties import running_from_source
 
 
@@ -42,3 +43,10 @@ def test_base_config_if_running_not_from_source(monkeypatch):
     assert appconfig.config_dir == os.getcwd()
     assert appconfig.data_dir == os.path.join(appconfig.config_dir, "data")
     assert appconfig.managed_config_dir == os.path.join(appconfig.data_dir, "config")
+
+
+def test_assign_email_from(monkeypatch):
+    appconfig = config.GalaxyAppConfiguration(
+        override_tempdir=False, galaxy_infrastructure_url="http://myhost:8080/galaxy/"
+    )
+    assert appconfig.email_from == f"{DEFAULT_EMAIL_FROM_LOCAL_PART}@myhost"

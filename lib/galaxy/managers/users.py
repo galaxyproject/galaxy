@@ -5,7 +5,6 @@ import hashlib
 import logging
 import random
 import re
-import socket
 import time
 from datetime import datetime
 from typing import Optional
@@ -484,7 +483,6 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         activation_link = url_for(
             controller="user", action="activate", activation_token=activation_token, email=escape(email), qualified=True
         )
-        host = self.__get_host(trans)
         template_context = {
             "name": escape(username),
             "user_email": escape(email),
@@ -500,10 +498,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         body = templates.render(TXT_ACTIVATION_EMAIL_TEMPLATE_RELPATH, template_context, self.app.config.templates_dir)
         html = templates.render(HTML_ACTIVATION_EMAIL_TEMPLATE_RELPATH, template_context, self.app.config.templates_dir)
         to = email
-        frm = self.app.config.email_from or f"galaxy-no-reply@{host}"
         subject = "Galaxy Account Activation"
         try:
-            util.send_mail(frm, to, subject, body, self.app.config, html=html)
+            util.send_mail(self.app.config.email_from, to, subject, body, self.app.config, html=html)
             return True
         except Exception:
             log.debug(body)
@@ -536,18 +533,16 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         else:
             reset_user, prt = self.get_reset_token(trans, email)
             if prt:
-                host = self.__get_host(trans)
                 reset_url = url_for(controller="login", action="start", token=prt.token)
                 body = PASSWORD_RESET_TEMPLATE % (
-                    host,
+                    trans.app.config.hostname,
                     prt.expiration_time.strftime(trans.app.config.pretty_datetime_format),
                     trans.request.host,
                     reset_url,
                 )
-                frm = trans.app.config.email_from or f"galaxy-no-reply@{host}"
                 subject = "Galaxy Password Reset"
                 try:
-                    util.send_mail(frm, email, subject, body, self.app.config)
+                    util.send_mail(trans.app.config.email_from, email, subject, body, self.app.config)
                     trans.sa_session.add(reset_user)
                     trans.sa_session.flush()
                     trans.log_event(f"User reset password: {email}")
@@ -573,12 +568,6 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             trans.sa_session.flush()
             return reset_user, prt
         return None, None
-
-    def __get_host(self, trans):
-        host = trans.request.host.split(":")[0]
-        if host in ["localhost", "127.0.0.1", "0.0.0.0"]:
-            host = socket.getfqdn()
-        return host
 
     def send_subscription_email(self, email):
         if self.app.config.smtp_server is None:
