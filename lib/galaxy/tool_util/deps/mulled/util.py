@@ -10,8 +10,8 @@ import tarfile
 import threading
 from io import BytesIO
 from typing import (
-    NamedTuple,
     List,
+    NamedTuple,
     Optional,
     TYPE_CHECKING,
 )
