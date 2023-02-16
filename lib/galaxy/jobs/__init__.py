@@ -366,7 +366,7 @@ class JobConfiguration(ConfiguresHandlers):
             else:
                 job_config_file = self.app.config.job_config_file
                 if not self.app.config.is_set("job_config_file") and not os.path.exists(job_config_file):
-                    job_config_file = os.path.join(os.path.dirname(self.app.config.config_file), "job_conf.xml")
+                    job_config_file = os.path.join(self.app.config.config_dir, "job_conf.xml")
                     if os.path.exists(job_config_file):
                         log.warning(
                             "Implicit loading of job_conf.xml has been deprecated and will be removed in a future"
