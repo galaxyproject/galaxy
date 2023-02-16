@@ -552,17 +552,7 @@ class GalaxyInteractorApi:
                 )
             name = test_data["name"]
         else:
-            file_name = None
-            file_name_exists = False
-            location: Optional[str] = test_data.get("location")
-            has_valid_location = location and util.is_url(location)
-            if location and not has_valid_location:
-                raise ValueError(f"Invalid `location` URL: `{location}`")
-            if fname:
-                file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
-                file_name_exists = os.path.exists(f"{file_name}")
-            upload_from_location = not file_name_exists
-            name = os.path.basename(location if upload_from_location else fname)
+            name = os.path.basename(fname)
             tool_input.update(
                 {
                     "files_0|NAME": name,
@@ -570,11 +560,8 @@ class GalaxyInteractorApi:
                 }
             )
             files = {}
-
-            if upload_from_location:
-                tool_input.update({"files_0|url_paste": location})
-            elif force_path_paste:
-                file_name = file_name or self.test_data_path(tool_id, fname, tool_version=tool_version)
+            if force_path_paste:
+                file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
                 tool_input.update({"files_0|url_paste": f"file://{file_name}"})
             else:
                 file_content = self.test_data_download(tool_id, fname, is_output=False, tool_version=tool_version)
