@@ -1228,6 +1228,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     params = Column(TrimmedString(255), index=True)
     handler = Column(TrimmedString(255), index=True)
     preferred_object_store_id = Column(String(255), nullable=True)
+    object_store_id_overrides = Column(JSONType)
 
     user = relationship("User")
     galaxy_session = relationship("GalaxySession")

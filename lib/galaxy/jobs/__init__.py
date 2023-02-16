@@ -1628,6 +1628,8 @@ class MinimalJobWrapper(HasResourceParameters):
         user = job.user
         object_store_id = self.get_destination_configuration("object_store_id", None)
         split_object_stores = None
+        object_store_id_overrides = None
+
         if object_store_id is None:
             object_store_id = job.preferred_object_store_id
         if object_store_id is None and job.workflow_invocation_step:
@@ -1636,13 +1638,12 @@ class MinimalJobWrapper(HasResourceParameters):
             if invocation_object_stores.is_split_configuration:
                 # Redo for subworkflows...
                 outputs_object_store_populator = ObjectStorePopulator(self.app, user)
-                outputs_object_store_populator.object_store_id = (
-                    invocation_object_stores.preferred_outputs_object_store_id
-                )
+                preferred_outputs_object_store_id = invocation_object_stores.preferred_outputs_object_store_id
+                outputs_object_store_populator.object_store_id = preferred_outputs_object_store_id
+
                 intermediate_object_store_populator = ObjectStorePopulator(self.app, user)
-                intermediate_object_store_populator.object_store_id = (
-                    invocation_object_stores.preferred_intermediate_object_store_id
-                )
+                preferred_intermediate_object_store_id = invocation_object_stores.preferred_intermediate_object_store_id
+                intermediate_object_store_populator.object_store_id = preferred_intermediate_object_store_id
 
                 # default for the job... probably isn't used in anyway but for job working
                 # directory?
@@ -1653,6 +1654,11 @@ class MinimalJobWrapper(HasResourceParameters):
                     output_names = [
                         o for o in output_names if invocation_object_stores.is_output_name_an_effective_output(o)
                     ]
+
+                # we resolve the precreated datasets here with object store populators
+                # but for dynamically created datasets after the job we need to record
+                # the outputs and set them accordingly
+                object_store_id_overrides = {o: preferred_outputs_object_store_id for o in output_names}
 
                 def split_object_stores(output_name):
                     if "|__part__|" in output_name:
@@ -1692,6 +1698,7 @@ class MinimalJobWrapper(HasResourceParameters):
                 dataset_object_store_populator = split_object_stores(dataset_assoc.name)
                 dataset_object_store_populator.set_object_store_id(dataset, require_shareable=require_shareable)
             job.object_store_id = object_store_populator.object_store_id
+            job.object_store_id_overrides = object_store_id_overrides
             self._setup_working_directory(job=job)
 
     def _finish_dataset(self, output_name, dataset, job, context, final_job_state, remote_metadata_directory):

@@ -11,6 +11,7 @@ from sqlalchemy import (
     String,
 )
 
+from galaxy.model.custom_types import JSONType
 from galaxy.model.migrations.util import drop_column
 
 # revision identifiers, used by Alembic.
@@ -25,9 +26,11 @@ def upgrade():
     op.add_column("galaxy_user", Column("preferred_object_store_id", preferred_object_store_type, default=None))
     op.add_column("history", Column("preferred_object_store_id", preferred_object_store_type, default=None))
     op.add_column("job", Column("preferred_object_store_id", preferred_object_store_type, default=None))
+    op.add_column("job", Column("object_store_id_overrides", JSONType))
 
 
 def downgrade():
     drop_column("galaxy_user", "preferred_object_store_id")
     drop_column("history", "preferred_object_store_id")
     drop_column("job", "preferred_object_store_id")
+    drop_column("job", "object_store_id_overrides")
