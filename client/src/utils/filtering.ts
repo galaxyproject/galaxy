@@ -55,7 +55,7 @@ export function toBool<T>(value: T): boolean {
  * @returns {string} Lowercase value without quotation marks
  * */
 export function toLowerNoQuotes<T>(value: T): string {
-    return toLower(value).split("'").join("");
+    return toLower(value).replace(/('|")/g, "");
 }
 
 /** Converts name tags starting with '#' to 'name:'
@@ -231,7 +231,7 @@ export default class Filtering<T> {
      * @returns {object} Filters as dict of field->value pairs
      * */
     getFilters(filterText: string): [string, T][] {
-        const pairSplitRE = /[^\s']+(?:'[^']*'[^\s']*)*|(?:'[^']*'[^\s']*)+/g;
+        const pairSplitRE = /[^\s'"]+(?:['"][^'"]*['"][^\s'"]*)*|(?:['"][^'"]*['"][^\s'"]*)+/g;
         const matches = filterText.match(pairSplitRE);
         let result: Record<string, any> = {};
         let hasMatches = false;
@@ -354,7 +354,7 @@ export default class Filtering<T> {
      * */
     getFilterValue(filterText: string, filterName: string, alias = "eq"): string | boolean {
         const op = getOperatorForAlias(alias);
-        const reString = `${filterName}(?:${op}|[-|_]${alias}:)(?:'([^']*[^\\s']*)'|(\\S+))`;
+        const reString = `${filterName}(?:${op}|[-|_]${alias}:)(?:['"]([^'"]*[^\\s'"]*)['"]|(\\S+))`;
         const re = new RegExp(reString);
         const reMatch = re.exec(filterText);
         let filterVal = null;
