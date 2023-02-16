@@ -13,6 +13,7 @@ from galaxy_test.base.populators import WorkflowPopulator
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_OUTPUT,
     WORKFLOW_NESTED_SIMPLE,
+    WORKFLOW_NESTED_TWICE_OUTPUT,
 )
 from ._base import BaseObjectStoreIntegrationTestCase
 
@@ -182,7 +183,6 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
         assert "dynamic_s3" not in selectable_object_store_ids
 
     def test_objectstore_selection(self):
-
         with self.dataset_populator.test_history() as history_id:
 
             def _run_tool(tool_id, inputs, preferred_object_store_id=None):
@@ -224,7 +224,6 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
             self._reset_user_preferred_object_store_id()
 
     def test_objectstore_selection_dynamic_output_tools(self):
-
         with self.dataset_populator.test_history() as history_id:
 
             def _run_tool(tool_id, inputs, preferred_object_store_id=None):
@@ -245,7 +244,6 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
             self._reset_user_preferred_object_store_id()
 
     def test_workflow_objectstore_selection(self):
-
         with self.dataset_populator.test_history() as history_id:
             output_dict, intermediate_dict = self._run_workflow_get_output_storage_info_dicts(history_id)
             assert_storage_name_is(output_dict, "Default Store")
@@ -305,6 +303,22 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
                     "preferred_outputs_object_store_id": "static",
                     "preferred_intermediate_object_store_id": "dynamic_ebs",
                 },
+            )
+            assert_storage_name_is(output_dict, "Static Storage")
+            assert_storage_name_is(intermediate_dict, "Dynamic EBS")
+
+    def test_effective_subworkflow_outputs_twice_nested(self):
+        with self.dataset_populator.test_history() as history_id:
+            (
+                output_dict,
+                intermediate_dict,
+            ) = self._run_nested_workflow_with_effective_output_get_output_storage_info_dicts(
+                history_id,
+                {
+                    "preferred_outputs_object_store_id": "static",
+                    "preferred_intermediate_object_store_id": "dynamic_ebs",
+                },
+                twice_nested=True,
             )
             assert_storage_name_is(output_dict, "Static Storage")
             assert_storage_name_is(intermediate_dict, "Dynamic EBS")
@@ -405,10 +419,11 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
         return output_info, intermediate_info
 
     def _run_nested_workflow_with_effective_output_get_output_storage_info_dicts(
-        self, history_id: str, extra_invocation_kwds: Optional[Dict[str, Any]] = None
+        self, history_id: str, extra_invocation_kwds: Optional[Dict[str, Any]] = None, twice_nested=False
     ):
+        worklfow_data = WORKFLOW_NESTED_OUTPUT if not twice_nested else WORKFLOW_NESTED_TWICE_OUTPUT
         wf_run = self.workflow_populator.run_workflow(
-            WORKFLOW_NESTED_OUTPUT,
+            worklfow_data,
             test_data=TEST_NESTED_WORKFLOW_TEST_DATA,
             history_id=history_id,
             extra_invocation_kwds=extra_invocation_kwds,
