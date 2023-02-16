@@ -367,21 +367,28 @@ export default {
         },
         onDrop(evt) {
             this.showDropZone = false;
-            const data = JSON.parse(evt.dataTransfer.getData("text"))[0];
-            const dataSource = data.history_content_type === "dataset" ? "hda" : "hdca";
-            if (data.history_id != this.historyId) {
-                copyDataset(data.id, this.historyId, data.history_content_type, dataSource)
-                    .then(() => {
-                        if (data.history_content_type === "dataset") {
-                            Toast.info("Dataset copied to history");
-                        } else {
-                            Toast.info("Collection copied to history");
-                        }
-                        this.loadHistoryById(this.historyId);
-                    })
-                    .catch((error) => {
-                        this.onError(error);
-                    });
+            let data;
+            try {
+                data = JSON.parse(evt.dataTransfer.getData("text"))[0];
+            } catch (error) {
+                // this was not a valid object for this dropzone, ignore
+            }
+            if (data) {
+                const dataSource = data.history_content_type === "dataset" ? "hda" : "hdca";
+                if (data.history_id != this.historyId) {
+                    copyDataset(data.id, this.historyId, data.history_content_type, dataSource)
+                        .then(() => {
+                            if (data.history_content_type === "dataset") {
+                                Toast.info("Dataset copied to history");
+                            } else {
+                                Toast.info("Collection copied to history");
+                            }
+                            this.loadHistoryById(this.historyId);
+                        })
+                        .catch((error) => {
+                            this.onError(error);
+                        });
+                }
             }
         },
         onError(error) {
