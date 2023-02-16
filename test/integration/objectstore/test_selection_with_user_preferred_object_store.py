@@ -185,11 +185,6 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
 
         with self.dataset_populator.test_history() as history_id:
 
-            def _create_hda_get_storage_info():
-                hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3")
-                self.dataset_populator.wait_for_history(history_id)
-                return self._storage_info(hda1), hda1
-
             def _run_tool(tool_id, inputs, preferred_object_store_id=None):
                 response = self.dataset_populator.run_tool(
                     tool_id,
@@ -200,19 +195,18 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
                 self.dataset_populator.wait_for_history(history_id)
                 return response
 
-            user_properties = self.dataset_populator.update_user({"preferred_object_store_id": "static"})
-            assert user_properties["preferred_object_store_id"] == "static"
+            self._set_user_preferred_object_store_id("static")
 
-            storage_info, hda1 = _create_hda_get_storage_info()
+            storage_info, hda1 = self._create_hda_get_storage_info(history_id)
             assert_storage_name_is(storage_info, "Static Storage")
 
-            user_properties = self.dataset_populator.update_user({"preferred_object_store_id": None})
+            self._reset_user_preferred_object_store_id()
 
-            storage_info, _ = _create_hda_get_storage_info()
+            storage_info, _ = self._create_hda_get_storage_info(history_id)
             assert_storage_name_is(storage_info, "Default Store")
 
             self.dataset_populator.update_history(history_id, {"preferred_object_store_id": "static"})
-            storage_info, _ = _create_hda_get_storage_info()
+            storage_info, _ = self._create_hda_get_storage_info(history_id)
             assert_storage_name_is(storage_info, "Static Storage")
 
             hda1_input = {"src": "hda", "id": hda1["id"]}
@@ -227,8 +221,28 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
             storage_info = self._storage_info_for_job_output(response)
             assert_storage_name_is(storage_info, "Default Store")
 
-            # reset preferred object store...
-            self.dataset_populator.update_user({"preferred_object_store_id": None})
+            self._reset_user_preferred_object_store_id()
+
+    def test_objectstore_selection_dynamic_output_tools(self):
+
+        with self.dataset_populator.test_history() as history_id:
+
+            def _run_tool(tool_id, inputs, preferred_object_store_id=None):
+                response = self.dataset_populator.run_tool(
+                    tool_id,
+                    inputs,
+                    history_id,
+                    preferred_object_store_id=preferred_object_store_id,
+                )
+                return response
+
+            self._set_user_preferred_object_store_id("static")
+            response = _run_tool("collection_creates_dynamic_list_of_pairs", {"foo": "bar"})
+            self.dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
+            some_dataset = self.dataset_populator.get_history_dataset_details(history_id)
+            storage_dict = self._storage_info(some_dataset)
+            assert_storage_name_is(storage_dict, "Static Storage")
+            self._reset_user_preferred_object_store_id()
 
     def test_workflow_objectstore_selection(self):
 
@@ -441,6 +455,18 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
 
     def _storage_info(self, hda):
         return self.dataset_populator.dataset_storage_info(hda["id"])
+
+    def _set_user_preferred_object_store_id(self, store_id: Optional[str]):
+        user_properties =self.dataset_populator.update_user({"preferred_object_store_id": store_id})
+        assert user_properties["preferred_object_store_id"] == store_id
+
+    def _reset_user_preferred_object_store_id(self):
+        self._set_user_preferred_object_store_id(None)
+
+    def _create_hda_get_storage_info(self, history_id: str):
+        hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3")
+        self.dataset_populator.wait_for_history(history_id)
+        return self._storage_info(hda1), hda1
 
     @property
     def _latest_dataset(self):

@@ -206,7 +206,10 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
     def finalize_storage(self, primary_data, dataset_attributes, extra_files, filename, link_data):
         # Move data from temp location to dataset location
         if not link_data:
-            self.object_store.update_from_file(primary_data.dataset, file_name=filename, create=True)
+            dataset = primary_data.dataset
+            if self.object_store_id:
+                dataset.object_store_id = self.object_store_id
+            self.object_store.update_from_file(dataset, file_name=filename, create=True)
         else:
             primary_data.link_to(filename)
         if extra_files:
@@ -390,6 +393,9 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
 
     def update_object_store_with_datasets(self, datasets, paths, extra_files):
         for dataset, path, extra_file in zip(datasets, paths, extra_files):
+            if self.object_store_id:
+                dataset.dataset.object_store_id = self.object_store_id
+
             self.object_store.update_from_file(dataset.dataset, file_name=path, create=True)
             if extra_file:
                 persist_extra_files(self.object_store, extra_files, dataset)
@@ -434,6 +440,11 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def job(self) -> Optional[galaxy.model.Job]:
         """Return associated job object if bound to a job finish context connected to a database."""
+
+    @property
+    def object_store_id(self) -> Optional[str]:
+        """Object store ID to assign to a dataset before populating its contents."""
+        return self.job and self.job.object_store_id
 
     @property
     @abc.abstractmethod
