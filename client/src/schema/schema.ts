@@ -889,6 +889,14 @@ export interface paths {
          */
         post: operations["create_api_metrics_post"];
     };
+    "/api/object_store": {
+        /** Index */
+        get: operations["index_api_object_store_get"];
+    };
+    "/api/object_store/{object_store_id}": {
+        /** Return boolean to indicate if Galaxy's default object store allows selection. */
+        get: operations["show_info_api_object_store__object_store_id__get"];
+    };
     "/api/pages": {
         /**
          * Lists all Pages viewable by the user.
@@ -2455,6 +2463,11 @@ export interface components {
          * @description Base model definition with common configuration used by all derived models.
          */
         DatasetStorageDetails: {
+            /**
+             * Badges
+             * @description A mapping of object store labels to badges describing object store properties.
+             */
+            badges: Record<string, never>[];
             /**
              * Dataset State
              * @description The model state of the supplied dataset instance.
@@ -12541,6 +12554,59 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    index_api_object_store_get: {
+        /** Index */
+        parameters?: {
+            /** @description Restrict index query to user selectable object stores. */
+            query?: {
+                selectable?: boolean;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            200: {
+                content: {
+                    "application/json": Record<string, never>[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    show_info_api_object_store__object_store_id__get: {
+        /** Return boolean to indicate if Galaxy's default object store allows selection. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The concrete object store ID. */
+            path: {
+                object_store_id: string;
+            };
+        };
+        responses: {
+            /** @description A list with details about the remote files available to the user. */
             200: {
                 content: {
                     "application/json": Record<string, never>;
