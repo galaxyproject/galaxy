@@ -295,7 +295,6 @@ def docker_cached_container_description(
     shell: str = DEFAULT_CONTAINER_SHELL,
     resolution_cache: Optional[ResolutionCache] = None,
 ):
-    log.error(f"{targets}")
     if len(targets) == 0:
         return None
 
