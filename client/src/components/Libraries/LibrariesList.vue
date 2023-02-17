@@ -45,6 +45,7 @@
             <b-table
                 id="libraries_list"
                 ref="libraries_list"
+                no-sort-reset
                 striped
                 hover
                 :fields="fields"

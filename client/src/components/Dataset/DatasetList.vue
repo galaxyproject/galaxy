@@ -4,7 +4,14 @@
         <div v-else>
             <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
             <delayed-input class="m-1 mb-3" placeholder="Search Datasets" @change="onQuery" />
-            <b-table id="dataset-table" striped no-local-sorting :fields="fields" :items="rows" @sort-changed="onSort">
+            <b-table
+                id="dataset-table"
+                striped
+                no-sort-reset
+                no-local-sorting
+                :fields="fields"
+                :items="rows"
+                @sort-changed="onSort">
                 <template v-slot:cell(name)="row">
                     <DatasetName :item="row.item" @showDataset="onShowDataset" @copyDataset="onCopyDataset" />
                 </template>

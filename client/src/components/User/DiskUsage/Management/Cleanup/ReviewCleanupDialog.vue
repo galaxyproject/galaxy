@@ -216,6 +216,7 @@ defineExpose({
             :current-page="currentPage"
             :busy="isBusy"
             hover
+            no-sort-reset
             no-local-sorting
             no-provider-filtering
             sticky-header="50vh"
