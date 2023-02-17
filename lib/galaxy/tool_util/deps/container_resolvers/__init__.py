@@ -6,6 +6,7 @@ from abc import (
 )
 from typing import (
     Any,
+    List,
     Optional,
     TYPE_CHECKING,
 )
@@ -16,7 +17,11 @@ from galaxy.util.dictifiable import Dictifiable
 if TYPE_CHECKING:
     from beaker.cache import Cache
 
-    from ..dependencies import AppInfo
+    from ..dependencies import (
+        AppInfo,
+        ToolInfo,
+    )
+    from ..requirements import ContainerDescription
 
 
 class ResolutionCache(Bunch):
@@ -53,7 +58,13 @@ class ContainerResolver(Dictifiable, metaclass=ABCMeta):
             return default
 
     @abstractmethod
-    def resolve(self, enabled_container_types, tool_info, resolution_cache=None, **kwds):
+    def resolve(
+        self,
+        enabled_container_types: List[str],
+        tool_info: "ToolInfo",
+        # resolution_cache: Optional[ResolutionCache] = None,
+        **kwds,
+    ) -> Optional["ContainerDescription"]:
         """Find a container matching all supplied requirements for tool.
 
         The supplied argument is a :class:`galaxy.tool_util.deps.containers.ToolInfo` description
@@ -64,7 +75,9 @@ class ContainerResolver(Dictifiable, metaclass=ABCMeta):
     def resolver_type(self):
         """Short label for the type of container resolution."""
 
-    def _container_type_enabled(self, container_description, enabled_container_types):
+    def _container_type_enabled(
+        self, container_description: "ContainerDescription", enabled_container_types: List[str]
+    ):
         """Return a boolean indicating if the specified container type is enabled."""
         return container_description.type in enabled_container_types
 
