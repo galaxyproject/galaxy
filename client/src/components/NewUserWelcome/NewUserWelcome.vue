@@ -73,11 +73,11 @@ export default {
     async mounted() {
         // todo, move to config, use non-webpack import and load like a plugin
         const resource = await getResource();
-        if (resource.newUserDict) {
+        if (resource?.newUserDict) {
             this.newUser = resource.newUserDict;
             this.loaded = true;
         } else {
-            console.error("NewUserWelcome: No new user dictionary found");
+            // Custom contents in component if this happens to fail, redirecting to tours or something?
         }
     },
     methods: {

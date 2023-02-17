@@ -14,19 +14,15 @@ getResource.mockImplementation(() => null);
 
 describe("New user first view", () => {
     let wrapper;
-    let propsData;
 
     beforeEach(async () => {
-        propsData = {
-            newUser: testData,
-        };
         wrapper = mount(NewUserWelcome, {
-            propsData,
             localVue,
             stubs: {
                 ConfigProvider: MockConfigProvider({ id: "fakeconfig" }),
             },
         });
+        wrapper.setData({ loaded: true, newUser: testData });
     });
 
     it("Contains standard header", async () => {
@@ -42,16 +38,12 @@ describe("New user first view", () => {
 
 describe("New user first view", () => {
     let wrapper;
-    let propsData;
 
     beforeEach(async () => {
-        propsData = {
-            newUser: testData,
-        };
         wrapper = shallowMount(NewUserWelcome, {
-            propsData,
             localVue,
         });
+        wrapper.setData({ loaded: true, newUser: testData });
     });
 
     it("Displays second tier of topics", async () => {
@@ -64,16 +56,12 @@ describe("New user first view", () => {
 
 describe("New user first view", () => {
     let wrapper;
-    let propsData;
 
     beforeEach(async () => {
-        propsData = {
-            newUser: testData,
-        };
         wrapper = shallowMount(NewUserWelcome, {
-            propsData,
             localVue,
         });
+        wrapper.setData({ loaded: true, newUser: testData });
     });
 
     it("Goes into subtopic", async () => {
