@@ -3,12 +3,27 @@
         <ConfigProvider v-slot="config">
             <component
                 :is="viewElement"
-                v-if="loaded"
+                v-if="loaded === true"
                 v-bind="currentNode"
                 :image-loc="config.welcome_directory"
                 @select="down"
                 @back="up">
             </component>
+            <div v-else-if="loaded === false">
+                <!--
+                    this shouldn't ever show unless the load actually fails,
+                    which shouldn't happen -- just a barebones failsafe 
+                -->
+                <Heading h1>Welcome to Galaxy!</Heading>
+                <p>
+                    Galaxy is web-based platform for reproducible computational analysis. Research in Galaxy is
+                    supported by 3 pillars: data, tools, and workflows.
+                </p>
+                <p>
+                    If this is your first time using Galaxy we strongly recommend looking at the introductory materials
+                    available at <a href="https://training.galaxyproject.org">training.galaxyproject.org</a>.
+                </p>
+            </div>
         </ConfigProvider>
     </div>
 </template>
@@ -20,9 +35,11 @@ import Topics from "components/NewUserWelcome/components/Topics";
 import Subtopics from "components/NewUserWelcome/components/Subtopics";
 import Slides from "components/NewUserWelcome/components/Slides";
 import ConfigProvider from "components/providers/ConfigProvider";
+import Heading from "components/Common/Heading";
 
 export default {
     components: {
+        Heading,
         BCard,
         BCardGroup,
         BTabs,
@@ -39,7 +56,7 @@ export default {
     },
     data() {
         return {
-            loaded: false,
+            loaded: undefined,
             position: [],
             newUser: {},
         };
