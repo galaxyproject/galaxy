@@ -15,7 +15,6 @@
 <script>
 import { BCard, BCardGroup, BTabs, BTab, BCarousel, BCarouselSlide, BButton, BRow, BCol } from "bootstrap-vue";
 import { getAppRoot } from "onload/loadConfig";
-import { withPrefix } from "@/utils/redirect";
 import Topics from "components/NewUserWelcome/components/Topics";
 import Subtopics from "components/NewUserWelcome/components/Subtopics";
 import Slides from "components/NewUserWelcome/components/Slides";
@@ -49,7 +48,7 @@ export default {
             return this.position.length;
         },
         currentNode() {
-            const userDict = this.newUser || getResource();
+            const userDict = this.newUser;
             return this.position.reduce((node, i) => {
                 return node.topics[i];
             }, userDict);
@@ -70,16 +69,15 @@ export default {
             return element;
         },
     },
-    mounted() {
+    async mounted() {
         // todo, move to config, use non-webpack import and load like a plugin
         // const welcomeAssets = withPrefix("/static/plugins/welcome_page/new_user/dist/static/topics/index.js")
         // import(/* webpackIgnore: true */ welcomeAssets).then((resource) => {
-        import("../../../../static/plugins/welcome_page/new_user/dist/static/topics/index.js").then((resource) => {
-            if (resource.newUserDict) {
-                this.newUser = resource.newUserDict;
-                this.loaded = true;
-            }
-        });
+        const resource = await import("../../../../static/plugins/welcome_page/new_user/dist/static/topics/index.js")
+        if (resource.newUserDict) {
+            this.newUser = resource.newUserDict;
+            this.loaded = true;
+        }
     },
     methods: {
         imgUrl(src) {
