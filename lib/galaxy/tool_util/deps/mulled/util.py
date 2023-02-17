@@ -239,6 +239,17 @@ def _simple_image_name(targets, image_build=None):
     return f"{target.package_name}{suffix}"
 
 
+def sort_build_targets(build_targets):
+    """Sort build targets by package name.
+    
+    >>> ordered_targets = [Target(package_name='bioblend=1.0.0', version=None, build=None, package='bioblend=1.0.0'), Target(package_name='galaxyxml=0.4.14', version=None, build=None, package='galaxyxml=0.4.14')]
+    >>> unordered_targets = reversed(ordered_targets)
+    >>> assert ordered_targets == sort_build_targets(ordered_targets)
+    >>> assert ordered_targets == sort_build_targets(unordered_targets)
+    """
+    return sorted(build_targets, key=lambda t: t.package_name)
+
+
 def v1_image_name(targets, image_build=None, name_override=None):
     """Generate mulled hash version 1 container identifier for supplied arguments.
 
@@ -270,7 +281,7 @@ def v1_image_name(targets, image_build=None, name_override=None):
     if len(targets) == 1:
         return _simple_image_name(targets, image_build=image_build)
     else:
-        targets_order = sorted(targets, key=lambda t: t.package_name)
+        targets_order = sort_build_targets(targets)
         requirements_buffer = "\n".join(map(conda_build_target_str, targets_order))
         m = hashlib.sha1()
         m.update(requirements_buffer.encode())
@@ -318,7 +329,7 @@ def v2_image_name(targets, image_build=None, name_override=None):
     if len(targets) == 1:
         return _simple_image_name(targets, image_build=image_build)
     else:
-        targets_order = sorted(targets, key=lambda t: t.package_name)
+        targets_order = sort_build_targets(targets)
         package_name_buffer = "\n".join(map(lambda t: t.package_name, targets_order))
         package_hash = hashlib.sha1()
         package_hash.update(package_name_buffer.encode())
