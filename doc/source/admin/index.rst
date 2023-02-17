@@ -21,6 +21,7 @@ This documentation is in the midst of being ported and unified based on resource
    tool_panel
    mq
    dependency_resolvers
+   container_resolvers
    conda_faq
    db_migration
    reports
