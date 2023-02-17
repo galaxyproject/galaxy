@@ -82,14 +82,13 @@ class DatabaseHeartbeat:
     def update_watcher_designation(self):
         expression = self._worker_process_identifying_clause()
         stmt = select(WorkerProcess).with_for_update(of=WorkerProcess).where(expression)
-        with self.sa_session() as session:
-            with session.begin():
-                worker_process = session.scalars(stmt).first()
-                if not worker_process:
-                    worker_process = WorkerProcess(server_name=self.server_name, hostname=self.hostname)
-                worker_process.update_time = now()
-                worker_process.pid = self.pid
-                session.add(worker_process)
+        with self.sa_session() as session, session.begin():
+            worker_process = session.scalars(stmt).first()
+            if not worker_process:
+                worker_process = WorkerProcess(server_name=self.server_name, hostname=self.hostname)
+            worker_process.update_time = now()
+            worker_process.pid = self.pid
+            session.add(worker_process)
         # We only want a single process watching the various config files on the file system.
         # We just pick the max server name for simplicity
         is_config_watcher = self.server_name == max(
