@@ -9,6 +9,7 @@ from abc import (
 )
 from typing import (
     Callable,
+    Container as TypingContainer,
     Dict,
     List,
     NamedTuple,
@@ -124,17 +125,19 @@ class CacheDirectory(metaclass=ABCMeta):
 class UncachedCacheDirectory(CacheDirectory):
     cacher_type = "uncached"
 
-    def list_cached_mulled_images_from_path(self):
+    def list_cached_mulled_images_from_path(
+        self,
+    ) -> List[CachedTarget]:
         return self._list_cached_mulled_images_from_path()
 
-    def invalidate_cache(self):
+    def invalidate_cache(self) -> None:
         pass
 
 
 class DirMtimeCacheDirectory(CacheDirectory):
     cacher_type = "dir_mtime"
 
-    def __init__(self, path, **kwargs):
+    def __init__(self, path: str, **kwargs):
         super().__init__(path, **kwargs)
         self.invalidate_cache()
 
@@ -146,7 +149,9 @@ class DirMtimeCacheDirectory(CacheDirectory):
         self.__mtime = self.__get_mtime()
         log.debug(f"Cached images in path {self.path} at directory mtime {self.__mtime}")
 
-    def list_cached_mulled_images_from_path(self):
+    def list_cached_mulled_images_from_path(
+        self,
+    ) -> List[CachedTarget]:
         mtime = self.__get_mtime()
         if mtime != self.__mtime:
             if mtime < self.__mtime:
@@ -157,8 +162,8 @@ class DirMtimeCacheDirectory(CacheDirectory):
             self.__cache()
         return self.__contents
 
-    def invalidate_cache(self):
-        self.__mtime = -1
+    def invalidate_cache(self) -> None:
+        self.__mtime = -1.0
         self.__contents = []
 
 
@@ -352,7 +357,6 @@ def singularity_cached_container_description(
             type="singularity",
             shell=shell,
         )
-
     return container
 
 
@@ -497,12 +501,16 @@ class CachedMulledDockerContainerResolver(CliContainerResolver):
     resolver_type = "cached_mulled"
     shell = "/bin/bash"
 
-    def __init__(self, app_info=None, namespace: str = "biocontainers", hash_func: str = "v2", **kwds):
+    def __init__(
+        self, app_info: Optional["AppInfo"] = None, namespace: str = "biocontainers", hash_func: str = "v2", **kwds
+    ):
         super().__init__(app_info=app_info, **kwds)
         self.namespace = namespace
         self.hash_func = hash_func
 
-    def resolve(self, enabled_container_types, tool_info, **kwds) -> Optional[ContainerDescription]:
+    def resolve(
+        self, enabled_container_types: TypingContainer[str], tool_info: "ToolInfo", **kwds
+    ) -> Optional[ContainerDescription]:
         if (
             not self.cli_available
             or tool_info.requires_galaxy_python_environment
@@ -525,7 +533,9 @@ class CachedMulledSingularityContainerResolver(SingularityCliContainerResolver):
     resolver_type = "cached_mulled_singularity"
     shell = "/bin/bash"
 
-    def resolve(self, enabled_container_types, tool_info, **kwds) -> Optional[ContainerDescription]:
+    def resolve(
+        self, enabled_container_types: TypingContainer[str], tool_info: "ToolInfo", **kwds
+    ) -> Optional[ContainerDescription]:
         if tool_info.requires_galaxy_python_environment or self.container_type not in enabled_container_types:
             return None
 
@@ -560,7 +570,11 @@ class MulledDockerContainerResolver(CliContainerResolver):
         self.auto_install = string_as_bool(auto_install)
 
     def cached_container_description(
-        self, targets: List[CondaTarget], namespace: str, hash_func: str, resolution_cache: Optional[ResolutionCache]
+        self,
+        targets: List[CondaTarget],
+        namespace: str,
+        hash_func: str,
+        resolution_cache: Optional[ResolutionCache] = None,
     ) -> Optional[ContainerDescription]:
         try:
             return docker_cached_container_description(
@@ -583,7 +597,12 @@ class MulledDockerContainerResolver(CliContainerResolver):
         return self.cli_available
 
     def resolve(
-        self, enabled_container_types, tool_info, install: bool = False, session: Optional[Session] = None, **kwds
+        self,
+        enabled_container_types: TypingContainer[str],
+        tool_info: "ToolInfo",
+        install: bool = False,
+        session: Optional[Session] = None,
+        **kwds,
     ) -> Optional[ContainerDescription]:
         resolution_cache = kwds.get("resolution_cache")
         if tool_info.requires_galaxy_python_environment or self.container_type not in enabled_container_types:
@@ -663,13 +682,19 @@ class MulledSingularityContainerResolver(SingularityCliContainerResolver, Mulled
         self.namespace = namespace
         self.auto_install = string_as_bool(auto_install)
 
-    def cached_container_description(self, targets, namespace, hash_func, resolution_cache):
+    def cached_container_description(
+        self,
+        targets: List[CondaTarget],
+        namespace: str,
+        hash_func: str,
+        resolution_cache: Optional[ResolutionCache] = None,
+    ) -> Optional[ContainerDescription]:
         return singularity_cached_container_description(
             targets, cache_directory=self.cache_directory, hash_func=hash_func
         )
 
     @property
-    def can_list_containers(self):
+    def can_list_containers(self) -> bool:
         # Only needs access to path, doesn't require CLI
         return True
 
@@ -720,7 +745,7 @@ class BuildMulledDockerContainerResolver(CliContainerResolver):
         self.enabled = ensure_installed(self.involucro_context, auto_init)
 
     def resolve(
-        self, enabled_container_types, tool_info, install: bool = False, **kwds
+        self, enabled_container_types: TypingContainer[str], tool_info: "ToolInfo", install: bool = False, **kwds
     ) -> Optional[ContainerDescription]:
         if tool_info.requires_galaxy_python_environment or self.container_type not in enabled_container_types:
             return None
@@ -763,7 +788,7 @@ class BuildMulledSingularityContainerResolver(SingularityCliContainerResolver):
         self.enabled = ensure_installed(self.involucro_context, auto_init)
 
     def resolve(
-        self, enabled_container_types, tool_info, install: bool = False, **kwds
+        self, enabled_container_types: TypingContainer[str], tool_info: "ToolInfo", install: bool = False, **kwds
     ) -> Optional[ContainerDescription]:
         if tool_info.requires_galaxy_python_environment or self.container_type not in enabled_container_types:
             return None

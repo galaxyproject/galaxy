@@ -359,7 +359,7 @@ class ContainerRegistry:
                 f"Checking with container resolver [{container_resolver}] found description [{container_description}]"
             )
             if container_description:
-                assert container_description.type in enabled_container_types
+                assert container_resolver._container_type_enabled(container_description, enabled_container_types)
                 return ResolvedContainerDescription(container_resolver, container_description)
 
         return None

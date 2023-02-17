@@ -7,7 +7,6 @@ from abc import (
 from typing import (
     Any,
     Container,
-    List,
     Optional,
     TYPE_CHECKING,
 )
@@ -60,7 +59,7 @@ class ContainerResolver(Dictifiable, metaclass=ABCMeta):
 
     @abstractmethod
     def resolve(
-        self, enabled_container_types: List[str], tool_info: "ToolInfo", **kwds
+        self, enabled_container_types: Container[str], tool_info: "ToolInfo", **kwds
     ) -> Optional["ContainerDescription"]:
         """Find a container matching all supplied requirements for tool.
 
