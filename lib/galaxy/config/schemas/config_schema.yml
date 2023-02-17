@@ -570,7 +570,7 @@ mapping:
           container resolvers to use when discovering containers for Galaxy. If
           this is set to None, the default container resolvers loaded is
           determined by enable_mulled_containers.
-          For available options see config/container_resolvers_conf.xml.sample.
+          For available options see https://docs.galaxyproject.org/en/master/admin/container_resolvers.rst.
 
       container_resolvers:
         type: seq
