@@ -34,34 +34,12 @@ describe("New user first view", () => {
         expect(wrapper.vm.depth).toBe(0);
         expect(wrapper.vm.currentNode.topics).toHaveLength(1);
     });
-});
-
-describe("New user first view", () => {
-    let wrapper;
-
-    beforeEach(async () => {
-        wrapper = shallowMount(NewUserWelcome, {
-            localVue,
-        });
-        wrapper.setData({ loaded: true, newUser: testData });
-    });
 
     it("Displays second tier of topics", async () => {
         wrapper.setData({ position: [0] });
         expect(wrapper.vm.depth).toBe(1);
         expect(wrapper.vm.currentNode.topics).toHaveLength(2);
         expect(wrapper.vm.currentNode.title).toBe("testTopic");
-    });
-});
-
-describe("New user first view", () => {
-    let wrapper;
-
-    beforeEach(async () => {
-        wrapper = shallowMount(NewUserWelcome, {
-            localVue,
-        });
-        wrapper.setData({ loaded: true, newUser: testData });
     });
 
     it("Goes into subtopic", async () => {
