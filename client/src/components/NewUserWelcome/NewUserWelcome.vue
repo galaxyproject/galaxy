@@ -15,6 +15,7 @@
 <script>
 import { BCard, BCardGroup, BTabs, BTab, BCarousel, BCarouselSlide, BButton, BRow, BCol } from "bootstrap-vue";
 import { getAppRoot } from "onload/loadConfig";
+import { getResource } from "./getResource";
 import Topics from "components/NewUserWelcome/components/Topics";
 import Subtopics from "components/NewUserWelcome/components/Subtopics";
 import Slides from "components/NewUserWelcome/components/Slides";
@@ -71,12 +72,12 @@ export default {
     },
     async mounted() {
         // todo, move to config, use non-webpack import and load like a plugin
-        // const welcomeAssets = withPrefix("/static/plugins/welcome_page/new_user/dist/static/topics/index.js")
-        // import(/* webpackIgnore: true */ welcomeAssets).then((resource) => {
-        const resource = await import("../../../../static/plugins/welcome_page/new_user/dist/static/topics/index.js")
+        const resource = await getResource();
         if (resource.newUserDict) {
             this.newUser = resource.newUserDict;
             this.loaded = true;
+        } else {
+            console.error("NewUserWelcome: No new user dictionary found");
         }
     },
     methods: {
