@@ -26,7 +26,9 @@ New History Multi-view
 
 The old history multi-view which loaded every history and every dataset is now gone. In its place is a much faster and easier to navigate history multi-view which lets you select just the histories you want to look at, without the distraction of your other analyses! Now you can focus on the relevant data.
 
-TODO: VIDEO
+.. raw:: html
+
+   <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/EeIlGO1kfbo" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen alt="Video steps through the new multi-view history, working through several different operations like switching, adding and removing histories, and moving datasets between them."></iframe>
 
 New Tool Search
 ---------------
