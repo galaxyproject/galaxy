@@ -3,6 +3,7 @@
         <ConfigProvider v-slot="config">
             <component
                 :is="viewElement"
+                v-if="loaded"
                 v-bind="currentNode"
                 :image-loc="config.welcome_directory"
                 @select="down"
@@ -14,11 +15,11 @@
 <script>
 import { BCard, BCardGroup, BTabs, BTab, BCarousel, BCarouselSlide, BButton, BRow, BCol } from "bootstrap-vue";
 import { getAppRoot } from "onload/loadConfig";
+import { withPrefix } from "@/utils/redirect";
 import Topics from "components/NewUserWelcome/components/Topics";
 import Subtopics from "components/NewUserWelcome/components/Subtopics";
 import Slides from "components/NewUserWelcome/components/Slides";
 import ConfigProvider from "components/providers/ConfigProvider";
-import { getResource } from "./getResource";
 
 export default {
     components: {
@@ -36,15 +37,11 @@ export default {
         Slides,
         ConfigProvider,
     },
-    props: {
-        newUser: {
-            type: Object,
-            required: true,
-        },
-    },
     data() {
         return {
+            loaded: false,
             position: [],
+            newUser: {},
         };
     },
     computed: {
@@ -72,6 +69,17 @@ export default {
             }
             return element;
         },
+    },
+    mounted() {
+        // todo, move to config, use non-webpack import and load like a plugin
+        // const welcomeAssets = withPrefix("/static/plugins/welcome_page/new_user/dist/static/topics/index.js")
+        // import(/* webpackIgnore: true */ welcomeAssets).then((resource) => {
+        import("../../../../static/plugins/welcome_page/new_user/dist/static/topics/index.js").then((resource) => {
+            if (resource.newUserDict) {
+                this.newUser = resource.newUserDict;
+                this.loaded = true;
+            }
+        });
     },
     methods: {
         imgUrl(src) {
