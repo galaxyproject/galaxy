@@ -305,7 +305,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
                 return trans.show_ok_message(
                     "Your account is already active. Nothing has changed. <br><a href='%s'>Go to login page.</a>"
                 ) % web.url_for(controller="root", action="index")
-            if user.activation_token == activation_token:
+            if user.activation_token == activation_token[:64]:
                 user.activation_token = None
                 self.user_manager.activate(user)
                 return trans.show_ok_message(
