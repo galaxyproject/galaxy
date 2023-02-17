@@ -1,3 +1,5 @@
+import os
+import tempfile
 from subprocess import CalledProcessError
 
 import pytest
@@ -7,6 +9,7 @@ from galaxy.tool_util.deps.container_resolvers.mulled import (
     CachedMulledDockerContainerResolver,
     CachedMulledSingularityContainerResolver,
     MulledDockerContainerResolver,
+    MulledSingularityContainerResolver,
 )
 from galaxy.tool_util.deps.containers import ContainerRegistry
 from galaxy.tool_util.deps.dependencies import (
@@ -51,6 +54,9 @@ def test_docker_container_resolver_detects_docker_cli_absent(mocker):
 
 
 def test_docker_container_resolver_detects_docker_cli(mocker):
+    """
+    - CachedMulledDockerContainerResolver properly detects present docker binary
+    """
     mocker.patch("galaxy.tool_util.deps.container_resolvers.mulled", return_value="/bin/docker")
     resolver = CachedMulledDockerContainerResolver()
     assert resolver.cli_available
@@ -60,7 +66,7 @@ def test_cached_docker_container_docker_cli_absent_resolve(mocker):
     mocker.patch("galaxy.tool_util.deps.container_resolvers.mulled.which", return_value=None)
     resolver = CachedMulledDockerContainerResolver()
     assert resolver.cli_available is False
-    assert resolver.resolve(enabled_container_types=[], tool_info={}) is None
+    assert resolver.resolve(enabled_container_types=[], tool_info=ToolInfo()) is None
 
 
 def test_docker_container_docker_cli_absent_resolve(mocker):
@@ -74,6 +80,7 @@ def test_docker_container_docker_cli_absent_resolve(mocker):
         return_value="samtools:1.10--h2e538c0_3",
     )
     container_description = resolver.resolve(enabled_container_types=["docker"], tool_info=tool_info)
+    assert container_description
     assert container_description.type == "docker"
     assert container_description.identifier == "quay.io/biocontainers/samtools:1.10--h2e538c0_3"
 
@@ -94,8 +101,92 @@ def test_docker_container_docker_cli_exception_resolve(mocker):
     )
     container_description = resolver.resolve(enabled_container_types=["docker"], tool_info=tool_info, install=True)
     assert resolver.cli_available is True
+    assert container_description
     assert container_description.type == "docker"
     assert container_description.identifier == "quay.io/biocontainers/samtools:1.10--h2e538c0_3"
+
+
+def test_singularity_container_resolver_uncached(mocker):
+    """
+    test MulledSingularityContainerResolver with defaults (i.e. auto_install=True)
+
+    - resolver should always resolve to docker:///
+    - image is still downloaded so cache_path! TODO makes no sense to me
+    """
+    with tempfile.TemporaryDirectory() as tmpd:
+        resolver = MulledSingularityContainerResolver(app_info=mocker.Mock(container_image_cache_path=tmpd))
+        requirement = ToolRequirement(name="samtools", version="1.16.1", type="package")
+        tool_info = ToolInfo(requirements=[requirement])
+
+        # test resolver with install=True (which happens when hitting build in the Admin UI and on tool run)
+        container_description = resolver.resolve(
+            enabled_container_types=["singularity"], tool_info=tool_info, install=True
+        )
+        assert os.listdir(tmpd) == ["singularity"]
+        cached_images = os.listdir(os.path.join(tmpd, "singularity", "mulled"))
+        assert len(cached_images) == 1 and cached_images[0].startswith("samtools:1.16.1--")
+        assert container_description
+        assert container_description.type == "singularity"
+        assert container_description.identifier and container_description.identifier.startswith(
+            "docker://quay.io/biocontainers/samtools:1.16.1--"
+        )
+
+        # use the resolver again to check if the cached image is returned
+        mocker.patch("galaxy.tool_util.deps.container_resolvers.mulled.which", return_value="")
+        container_description = resolver.resolve(
+            enabled_container_types=["singularity"], tool_info=tool_info, install=True
+        )
+        assert os.listdir(tmpd) == ["singularity"]
+        cached_images = os.listdir(os.path.join(tmpd, "singularity", "mulled"))
+        assert len(cached_images) == 1 and cached_images[0].startswith("samtools:1.16.1--")
+        assert container_description
+        assert container_description.type == "singularity"
+        assert container_description.identifier and container_description.identifier.startswith(
+            "docker://quay.io/biocontainers/samtools:1.16.1--"
+        )
+
+
+def test_singularity_container_resolver_noautoinstall_uncached(mocker):
+    """
+    test MulledSingularityContainerResolver with auto_install=False)
+
+    - image is downloaded (as for auto_install=True)
+    - resolver should always resolve to image in cache dir (ie /tmp/... in the test)
+    """
+    with tempfile.TemporaryDirectory() as tmpd:
+        print(f"tmpd{tmpd}")
+        resolver = MulledSingularityContainerResolver(
+            app_info=mocker.Mock(container_image_cache_path=tmpd), auto_install=False
+        )
+        requirement = ToolRequirement(name="samtools", version="1.16.1", type="package")
+        tool_info = ToolInfo(requirements=[requirement])
+
+        # test resolver with install=True (which happens when hitting build in the Admin UI and on tool run)
+        container_description = resolver.resolve(
+            enabled_container_types=["singularity"], tool_info=tool_info, install=True
+        )
+        assert os.listdir(tmpd) == ["singularity"]
+        cached_images = os.listdir(os.path.join(tmpd, "singularity", "mulled"))
+        assert len(cached_images) == 1 and cached_images[0].startswith("samtools:1.16.1--")
+        assert container_description
+        assert container_description.type == "singularity"
+        assert container_description.identifier and container_description.identifier.startswith(
+            os.path.join(tmpd, "singularity/mulled/") + "samtools:1.16.1--"
+        )
+
+        # use the resolver again to check if the cached image is returned
+        mocker.patch("galaxy.tool_util.deps.container_resolvers.mulled.which", return_value="")
+        container_description = resolver.resolve(
+            enabled_container_types=["singularity"], tool_info=tool_info, install=True
+        )
+        assert os.listdir(tmpd) == ["singularity"]
+        cached_images = os.listdir(os.path.join(tmpd, "singularity", "mulled"))
+        assert len(cached_images) == 1 and cached_images[0].startswith("samtools:1.16.1--")
+        assert container_description
+        assert container_description.type == "singularity"
+        assert container_description.identifier and container_description.identifier.startswith(
+            os.path.join(tmpd, "singularity/mulled/") + "samtools:1.16.1--"
+        )
 
 
 def test_cached_singularity_container_resolver_uncached(mocker):
@@ -106,6 +197,7 @@ def test_cached_singularity_container_resolver_uncached(mocker):
     requirement = ToolRequirement(name="foo", version="1.0", type="package")
     tool_info = ToolInfo(requirements=[requirement])
     container_description = resolver.resolve(enabled_container_types=["singularity"], tool_info=tool_info)
+    assert container_description
     assert container_description.type == "singularity"
     assert container_description.identifier == "/singularity/mulled/foo:1.0--bar"
 
@@ -121,11 +213,13 @@ def test_cached_singularity_container_resolver_dir_mtime_cached(mocker):
     requirement = ToolRequirement(name="baz", version="2.22", type="package")
     tool_info = ToolInfo(requirements=[requirement])
     container_description = resolver.resolve(enabled_container_types=["singularity"], tool_info=tool_info)
+    assert container_description
     assert container_description.type == "singularity"
     assert container_description.identifier == "/singularity/mulled/baz:2.22"
     requirement = ToolRequirement(name="foo", version="1.0", type="package")
     tool_info.requirements.append(requirement)
     container_description = resolver.resolve(enabled_container_types=["singularity"], tool_info=tool_info)
+    assert container_description
     assert container_description.type == "singularity"
     assert (
         container_description.identifier
