@@ -1336,8 +1336,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 "id": step.order_index,
                 "type": module.type,
                 "content_id": content_id,
-                "tool_id": content_id,  # For workflows exported to older Galaxies,
-                # eliminate after a few years...
+                "tool_id": None,
                 "tool_version": module.get_version() if allow_upgrade else step.tool_version,
                 "name": module.get_name(),
                 "tool_state": json.dumps(tool_state),
@@ -1346,6 +1345,8 @@ class WorkflowContentsManager(UsesAnnotations):
                 "label": step.label or None,
                 "annotation": annotation_str,
             }
+            if step.type == "tool":
+                step_dict["tool_id"] = content_id if allow_upgrade else step.tool_id
             # Add tool shed repository information and post-job actions to step dict.
             if module.type == "tool":
                 if module.tool and module.tool.tool_shed:
