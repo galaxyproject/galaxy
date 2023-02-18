@@ -19,6 +19,7 @@ log = logging.getLogger(__name__)
 class DatabaseHeartbeat:
     def __init__(self, application_stack, heartbeat_interval=60):
         self.application_stack = application_stack
+        self.new_session = self.application_stack.app.model.new_session
         self.heartbeat_interval = heartbeat_interval
         self.hostname = socket.gethostname()
         self._engine = application_stack.app.model.engine
@@ -62,7 +63,7 @@ class DatabaseHeartbeat:
             last_seen_seconds = self.heartbeat_interval
         seconds_ago = now() - datetime.timedelta(seconds=last_seen_seconds)
         stmt = select(WorkerProcess).filter(WorkerProcess.update_time > seconds_ago)
-        with self.sa_session() as session:
+        with self.new_session() as session:
             return session.scalars(stmt).all()
 
     def add_change_callback(self, callback):
@@ -82,7 +83,7 @@ class DatabaseHeartbeat:
     def update_watcher_designation(self):
         expression = self._worker_process_identifying_clause()
         stmt = select(WorkerProcess).with_for_update(of=WorkerProcess).where(expression)
-        with self.sa_session() as session, session.begin():
+        with self.new_session() as session, session.begin():
             worker_process = session.scalars(stmt).first()
             if not worker_process:
                 worker_process = WorkerProcess(server_name=self.server_name, hostname=self.hostname)
