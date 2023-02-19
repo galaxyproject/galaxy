@@ -24,7 +24,6 @@ def resolution_cache(tmpdir, appconfig):
     resolution_cache = ResolutionCache()
     cache_opts = {
         "cache.type": "ext:database",
-        "cache.lock_dir": str(tmpdir / "lock"),
         "cache.expire": "1",
         "cache.url": "sqlite://",
         "cache.schema_name": appconfig.mulled_resolution_cache_schema_name,

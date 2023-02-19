@@ -1225,7 +1225,7 @@
 :Description:
     bio.tools web service request related caching. The type of beaker
     cache used.
-:Default: ``ext:database``
+:Default: ``file``
 :Type: str
 
 
@@ -1302,7 +1302,7 @@
     fetched from external sources such as https://doi.org/ by Galaxy -
     the following parameters can be used to control the caching used
     to store this information.
-:Default: ``ext:database``
+:Default: ``file``
 :Type: str
 
 
@@ -1381,7 +1381,7 @@
     Mulled resolution caching. Mulled resolution uses external APIs of
     quay.io, these requests are caching using this and the following
     parameters
-:Default: ``ext:database``
+:Default: ``file``
 :Type: str
 
 

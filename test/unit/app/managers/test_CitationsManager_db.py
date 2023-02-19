@@ -11,7 +11,6 @@ class MockDoiCache(DoiCache):
         cache_opts = {
             "cache.type": getattr(config, "citation_cache_type", "ext:database"),
             "cache.data_dir": getattr(config, "citation_cache_data_dir", None),
-            "cache.lock_dir": getattr(config, "citation_cache_lock_dir", None),
             "cache.url": "sqlite://",
             "cache.table_name": getattr(config, "citation_cache_table_name", None),
             "cache.schema_name": getattr(config, "citation_cache_schema_name", None),

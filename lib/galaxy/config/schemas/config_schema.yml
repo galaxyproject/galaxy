@@ -882,7 +882,7 @@ mapping:
 
       biotools_service_cache_type:
         type: str
-        default: ext:database
+        default: file
         required: false
         desc: |
           bio.tools web service request related caching. The type of beaker cache used.
@@ -929,7 +929,7 @@ mapping:
 
       citation_cache_type:
         type: str
-        default: ext:database
+        default: file
         required: false
         desc: |
           Citation related caching.  Tool citations information maybe fetched from
@@ -977,7 +977,7 @@ mapping:
 
       mulled_resolution_cache_type:
         type: str
-        default: ext:database
+        default: file
         required: false
         desc: |
           Mulled resolution caching. Mulled resolution uses external APIs of quay.io, these
