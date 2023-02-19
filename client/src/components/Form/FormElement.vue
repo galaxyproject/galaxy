@@ -148,6 +148,7 @@ const isHiddenType = computed(
         ["hidden", "hidden_data", "baseurl"].includes(props.type ?? "") ||
         (props.attributes && props.attributes.titleonly)
 );
+const isRadioSelectionType = computed(() => props.type === "select" && attrs.value["display"] == "radio");
 
 const collapseText = computed(() => (collapsed.value ? props.collapsedEnableText : props.collapsedDisableText));
 const connectText = computed(() => (connected.value ? props.connectedEnableText : props.connectedDisableText));
@@ -203,7 +204,7 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
             <span v-else-if="props.title" class="ui-form-title-text">{{ props.title }}</span>
 
             <span
-                v-if="isRequired && isRequiredType && props.title"
+                v-if="isRequired && isRequiredType && props.title && !isRadioSelectionType"
                 v-b-tooltip.hover
                 class="ui-form-title-star"
                 title="required"
