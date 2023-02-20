@@ -256,10 +256,10 @@ def delete_jwd(jwd_path):
     Args:
         jwd_path (str): Path to the JWD folder
     """
-    # try:
-    #     shutil.rmtree(jwd_path)
-    # except OSError as e:
-    #     print(f"Error deleting JWD: {jwd_path} : {e.strerror}")
+    try:
+        shutil.rmtree(jwd_path)
+    except OSError as e:
+        print(f"Error deleting JWD: {jwd_path} : {e.strerror}")
 
 
 class Database:
