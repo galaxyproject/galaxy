@@ -2711,7 +2711,10 @@ class Notification(Base, Dictifiable, RepresentById):
     id = Column(Integer, primary_key=True)
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, default=now, onupdate=now)
-    content = Column(String(512), index=True)
+    source = Column(String(64), index=True)
+    category = Column(String(64), index=True)
+    priority_level = Column(Integer, index=True)
+    content = Column(JSONType)
     deleted = Column(Boolean, index=True, default=False)
     user_notification_associations = relationship("UserNotificationAssociation", back_populates="notification")
 
@@ -2728,7 +2731,8 @@ class UserNotificationAssociation(Base, RepresentById):
     notification_id = Column(Integer, ForeignKey("notification.id"), index=True)
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, default=now, onupdate=now)
-    seen = Column(Boolean, index=True, default=False)
+    seen = Column(DateTime, nullable=True)
+    custom_data = Column(JSONType)
     user = relationship("User", back_populates="all_notifications")
     notification = relationship("Notification", back_populates="user_notification_associations")
 
