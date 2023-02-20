@@ -1,5 +1,14 @@
 .. _container_resolvers:
 
+Containers in Galaxy
+====================
+
+TODO Advantages / disadvantages (docker vs singularity).
+
+bioconda, quay.org, namespaces
+
+mulled 
+
 Container Resolvers in Galaxy
 =============================
 
@@ -33,6 +42,8 @@ the job fails in this case (TODO to be tested? or is it already).
 Configuration:
 --------------
 
+TODO: per destination container resolvers
+
 The list of container resolvers is defined using YAML that can be
 specified in an extra file (``container_resolvers_config_file``) or
 inline the Galaxy configuration (``container_resolvers``). 
@@ -52,6 +63,38 @@ This might look as follows:
 
 would define a list of three container resolvers, and the last setting an option
 of this resolver.
+
+By default (if neither ``container_resolvers_config_file`` nor
+``container_resolvers`` is specified) the following resolvers are loaded:
+
+.. code-block:: yaml
+
+   - type: "explicit"
+   - type: "explicit_singularity"
+
+In addition if ``enable_mulled_containers`` is set in ``galaxy.yml``
+
+.. code-block:: yaml
+
+   - type: "cached_mulled"
+     namespace: "biocontainers"
+   - type: "cached_mulled"
+     namespace: "local"
+   - type: "cached_mulled_singularity"
+     namespace: "biocontainers"
+   - type: "cached_mulled_singularity"
+     namespace: "local"
+   - type: "mulled"
+     namespace: "biocontainers"
+   - type: "mulled_singularity"
+     namespace: "local"
+
+And if ``docker`` is available also the following resolvers are added to the defaults.
+
+   - type: "build_mulled"
+   - type: "build_mulled_singularity"
+
+
 
 The available container resolver types are described below.
 The properties depend on the resolver type (see documentation
@@ -78,7 +121,13 @@ The main types of container resolvers follow this naming scheme:
 
 Galaxy can execute tools in containers using  ``docker`` or ``singularity``.
 The corresponding container resolvers yield container descriptions suitable
-for the corresponding "executor".
+for the corresponding "executor" (i.e. that is, docker (singularity, resp.)
+container resolvers will resolve a container only in compute environments
+with enabled docker (singularity, resp.). Thus, if only compute environments
+with docker (resp. singularity) are present then only docker (resp. singularity)
+container resolvers need to be listed. If compute environments for both
+container types are in use both types of container resolvers are needed.
+
 Note that for the execution with ``singularity`` Galaxy relies mostly on
 docker containers that are either executed directly or are converted
 to singularity images (except for explicit container requirements of
