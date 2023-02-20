@@ -1,3 +1,4 @@
+import Vue from 'vue' //TODO confirm if need to bring in Vue at this location
 import _l from "utils/localization";
 import $ from "jquery";
 import Select2 from "components/Select2";
@@ -6,7 +7,8 @@ import UploadExtension from "mvc/upload/upload-extension";
 import UploadModel from "mvc/upload/upload-model";
 import UploadWrapper from "./UploadWrapper";
 import { defaultNewFileName, uploadModelsToPayload } from "./helpers";
-import UploadFtp from "mvc/upload/upload-ftp";
+// import UploadFtp from "mvc/upload/upload-ftp"; //TODO file marked for deprecation
+import { default as FormFTP } from "components/Form/Elements/FormFTP";
 import LazyLimited from "./lazy-limited";
 import { findExtension } from "./utils";
 import { filesDialog, refreshContentsWrapper } from "utils/data";
@@ -259,24 +261,11 @@ export default {
                 );
             } else {
                 this.ftp.show(
-                    new UploadFtp({
-                        collection: this.collection,
-                        ftp_upload_site: this.ftpUploadSite,
-                        onadd: (ftp_file) => {
-                            return this.uploadbox.add([
-                                {
-                                    mode: "ftp",
-                                    name: ftp_file.path,
-                                    size: ftp_file.size,
-                                    path: ftp_file.path,
-                                    uri: ftp_file.uri,
-                                },
-                            ]);
-                        },
-                        onremove: function (model_index) {
-                            this.collection.remove(model_index);
-                        },
-                    }).$el
+                    new Vue({
+                        //TODO add back parameters
+                        el: '#FormFTP',
+                        render: h => h(FormFTP)
+                      }).$mount('#FormFTP').$el
                 );
             }
         },
