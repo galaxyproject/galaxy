@@ -283,8 +283,7 @@ class ContainerRegistry:
                 [
                     CachedMulledDockerContainerResolver(self.app_info, namespace="biocontainers"),
                     CachedMulledDockerContainerResolver(self.app_info, namespace="local"),
-                    CachedMulledSingularityContainerResolver(self.app_info, namespace="biocontainers"),
-                    CachedMulledSingularityContainerResolver(self.app_info, namespace="local"),
+                    CachedMulledSingularityContainerResolver(self.app_info),
                     MulledDockerContainerResolver(self.app_info, namespace="biocontainers"),
                     MulledSingularityContainerResolver(self.app_info, namespace="biocontainers"),
                 ]
