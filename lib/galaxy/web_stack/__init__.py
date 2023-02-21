@@ -13,6 +13,8 @@ from typing import (
     Type,
 )
 
+from sqlalchemy import update
+
 from galaxy.util.facts import get_facts
 from .handlers import HANDLER_ASSIGNMENT_METHODS
 
@@ -58,10 +60,11 @@ class ApplicationStack:
 
     def supports_returning(self):
         if self._supports_returning is None:
-            job_table = self.app.model.Job.__table__
-            stmt = job_table.update().where(job_table.c.id == -1).returning(job_table.c.id)
+            Job = self.app.model.Job
+            stmt = update(Job).where(Job.id == -1).values(create_time=None).returning(Job.id)
             try:
-                self.app.model.session.execute(stmt)
+                with self.app.model.engine.begin() as conn:
+                    conn.execute(stmt)
                 self._supports_returning = True
             except Exception:
                 self._supports_returning = False
