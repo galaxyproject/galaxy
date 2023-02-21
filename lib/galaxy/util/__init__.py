@@ -172,9 +172,9 @@ def is_binary(value):
     This may fail for utf-16 files, but so would ASCII encoding.
     >>> is_binary( string.printable )
     False
-    >>> is_binary( b'\\xce\\x94' )
+    >>> is_binary( b'\xce\x94' )
     False
-    >>> is_binary( b'\\x00' )
+    >>> is_binary( b'\x00' )
     True
     """
     value = smart_str(value)
@@ -1228,9 +1228,9 @@ def smart_str(s, encoding=DEFAULT_ENCODING, strings_only=False, errors="strict")
     >>> s = b'a bytes string'; assert smart_str(s) == s
     >>> s = bytearray(b'a bytes string'); assert smart_str(s) == s
     >>> assert smart_str('a simple unicode string') == b'a simple unicode string'
-    >>> assert smart_str('à strange ünicode ڃtring') == b'\\xc3\\xa0 strange \\xc3\\xbcnicode \\xda\\x83tring'
-    >>> assert smart_str(b'\\xc3\\xa0n \\xc3\\xabncoded utf-8 string', encoding='latin-1') == b'\\xe0n \\xebncoded utf-8 string'
-    >>> assert smart_str(bytearray(b'\\xc3\\xa0n \\xc3\\xabncoded utf-8 string'), encoding='latin-1') == b'\\xe0n \\xebncoded utf-8 string'
+    >>> assert smart_str('à strange ünicode ڃtring') == b'\xc3\xa0 strange \xc3\xbcnicode \xda\x83tring'
+    >>> assert smart_str(b'\xc3\xa0n \xc3\xabncoded utf-8 string', encoding='latin-1') == b'\xe0n \xebncoded utf-8 string'
+    >>> assert smart_str(bytearray(b'\xc3\xa0n \xc3\xabncoded utf-8 string'), encoding='latin-1') == b'\xe0n \xebncoded utf-8 string'
     """
     if strings_only and isinstance(s, (type(None), int)):
         return s
