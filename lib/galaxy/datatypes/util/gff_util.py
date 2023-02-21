@@ -516,8 +516,8 @@ def read_unordered_gtf(iterator, strict=False):
     or clustered for reader to work. Reader returns GFFFeature objects sorted
     by transcript_id, chrom, and start position.
     """
-    # -- Get function that generates line/feature key. --
     def get_transcript_id(fields):
+        """Get function that generates line/feature key."""
         return parse_gff_attributes(fields[8])["transcript_id"]
 
     if strict:

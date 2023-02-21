@@ -415,8 +415,10 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         Return diagnostic information to help debug panel
         and dependency related problems.
         """
-        # TODO: Move this into tool.
         def to_dict(x):
+            """
+            TODO: Move this into tool.
+            """
             return x.to_dict()
 
         tool = self.service._get_tool(trans, id, user=trans.user)

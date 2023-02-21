@@ -2334,7 +2334,6 @@ class DataToolParameter(BaseDataToolParameter):
 
 
 class DataCollectionToolParameter(BaseDataToolParameter):
-
     def __init__(self, tool, input_source, trans=None):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source, trans)

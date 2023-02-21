@@ -12,7 +12,6 @@ log = logging.getLogger(__name__)
 
 
 class BaseItemTagsController(BaseGalaxyAPIController, UsesTagsMixin):
-
     @expose_api
     def index(self, trans, **kwd):
         tags = self._get_user_tags(trans, self.tagged_item_class, kwd[self.tagged_item_id])

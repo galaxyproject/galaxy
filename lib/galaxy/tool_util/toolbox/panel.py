@@ -19,7 +19,6 @@ class panel_item_types(str, Enum):
 
 
 class HasPanelItems:
-
     @abstractmethod
     def panel_items(self):
         """Return an ordered dictionary-like object describing tool panel

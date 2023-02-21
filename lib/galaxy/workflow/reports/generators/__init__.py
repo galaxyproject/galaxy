@@ -15,7 +15,6 @@ from galaxy.schema import PdfDocumentType
 
 
 class WorkflowReportGeneratorPlugin(metaclass=ABCMeta):
-
     @property
     @abstractmethod
     def plugin_type(self):

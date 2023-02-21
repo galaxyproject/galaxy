@@ -143,7 +143,6 @@ class BaseController:
         return list(zip(attrs, ops, values))
 
     def parse_limit_offset(self, qdict):
-
         def _parse_pos_int(i):
             try:
                 new_val = int(i)
@@ -902,8 +901,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         return {"vis_id": encoded_id, "url": url_for(controller="visualization", action=vis.type, id=encoded_id)}
 
     def get_tool_def(self, trans, hda):
-        """Returns definition of an interactive tool for an HDA.
-        """
+        """Returns definition of an interactive tool for an HDA."""
         # Get dataset's job.
         job = None
         for job_output_assoc in hda.creating_job_associations:

@@ -1272,7 +1272,6 @@ def clean_multiline_string(multiline_string, sep="\n"):
 
 
 class ParamsWithSpecs(collections.defaultdict):
-
     def __init__(self, specs=None, params=None):
         self.specs = specs or dict()
         self.params = params or dict()

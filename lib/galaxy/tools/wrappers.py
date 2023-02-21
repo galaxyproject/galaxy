@@ -548,7 +548,6 @@ class HasDatasets:
 
 
 class DatasetListWrapper(List[DatasetFilenameWrapper], ToolParameterValueWrapper, HasDatasets):
-
     def __init__(
         self,
         job_working_directory: Optional[str],
