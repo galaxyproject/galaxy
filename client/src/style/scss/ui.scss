@@ -416,6 +416,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
     display: inline;
     line-height: unset;
     vertical-align: unset;
+    user-select: text;
 
     &:hover {
         text-decoration: underline;
