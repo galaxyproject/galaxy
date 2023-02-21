@@ -10,7 +10,7 @@ def env_to_statement(env):
     >>> env_to_statement(dict(name='X', value='Y', raw=True))
     'X=Y; export X'
     >>> env_to_statement(dict(name='X', value='"A","B","C"'))
-    'X="\\\\"A\\\\",\\\\"B\\\\",\\\\"C\\\\""; export X'
+    'X="\\"A\\",\\"B\\",\\"C\\""; export X'
     >>> env_to_statement(dict(file="Y"))
     '. "Y"'
     >>> env_to_statement(dict(file="'RAW $FILE'", raw=True))

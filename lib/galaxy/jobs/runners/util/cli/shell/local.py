@@ -41,7 +41,7 @@ class LocalShell(BaseShellExec):
     True
     >>> exec_result.returncode == TIMEOUT_RETURN_CODE
     True
-    >>> shell.execute('echo hi').stdout == "hi\\n"
+    >>> shell.execute('echo hi').stdout == "hi\n"
     True
     """
 
