@@ -8,6 +8,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { useUid } from "@/composables/utils/uid";
 import slugify from "slugify";
+import { computed } from "vue";
 
 const props = defineProps<{
     name: string;
@@ -31,6 +32,14 @@ function idForCategory(category: string) {
 function tutorialsInCategory(category: string) {
     return tutorialDetails.value.filter((tut) => tut.category === category);
 }
+
+const tutorialText = computed(() => {
+    if (tutorialDetails.value.length > 1) {
+        return `There are ${tutorialDetails.value.length} tutorials available which use this tool.`;
+    } else {
+        return "There is 1 tutorial available which uses this tool.";
+    }
+});
 </script>
 
 <template>
@@ -38,7 +47,7 @@ function tutorialsInCategory(category: string) {
         <Heading h2 separator bold size="sm">Tutorials</Heading>
 
         <p>
-            There are {{ tutorialDetails.length }} tutorials available which use this tool.
+            {{ tutorialText }}
             <span v-if="versionAvailable"> These tutorials include training for the current version of the tool. </span>
 
             <ExternalLink v-if="allTutorialsUrl" :href="allTutorialsUrl">
