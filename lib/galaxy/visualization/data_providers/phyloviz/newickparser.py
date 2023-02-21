@@ -8,7 +8,9 @@ from .baseparser import (
 
 class Newick_Parser(Base_Parser):
     """For parsing trees stored in the newick format (.nhx)
-    It is necessarily more complex because this parser is later extended by Nexus for parsing newick as well.."""
+
+    It is necessarily more complex because this parser is later extended by Nexus for parsing newick as well..
+    """
 
     def __init__(self):
         super().__init__()
@@ -26,7 +28,8 @@ class Newick_Parser(Base_Parser):
 
     def _parseNewickToJson(self, newickString, treeName=None, nameMap=None):
         """parses a newick representation of a tree into a PhyloTree data structure,
-        which can be easily converted to json"""
+        which can be easily converted to json
+        """
         self.phyloTree = PhyloTree()
         newickString = self.cleanNewickString(newickString)
         if nameMap:
@@ -44,7 +47,6 @@ class Newick_Parser(Base_Parser):
 
     def _makeNodesFromString(self, string, depth):
         """elements separated by comma could be empty"""
-
         if string.find("(") != -1:
             raise Exception(f"Tree is not well form, location: {string}")
 
@@ -116,7 +118,6 @@ class Newick_Parser(Base_Parser):
         We will make the preceeding nodes first A, B, then the internal node C, its children D, E,
         and finally the succeeding nodes F, G
         """
-
         # Base case where there is only an empty string
         if string == "":
             return

@@ -100,8 +100,10 @@ class _Isa(Data):
     ################################################################
 
     def _get_main_file(self, dataset: HasExtraFilesPath) -> Optional[str]:
-        """Get the main file of the ISA archive. Either the investigation file i_*.txt for ISA-Tab, or the JSON file for ISA-JSON."""
+        """Get the main file of the ISA archive.
 
+        Either the investigation file i_*.txt for ISA-Tab, or the JSON file for ISA-JSON.
+        """
         main_file = None
         isa_folder = self._get_isa_folder_path(dataset)
 
@@ -126,8 +128,8 @@ class _Isa(Data):
 
     def _get_investigation(self, dataset: HasExtraFilesPath) -> Optional["Investigation"]:
         """Create a contained instance specific to the exact ISA type (Tab or Json).
-        We will use it to parse and access information from the archive."""
-
+        We will use it to parse and access information from the archive.
+        """
         investigation = None
         main_file = self._get_main_file(dataset)
         if main_file is not None:
@@ -140,7 +142,6 @@ class _Isa(Data):
 
     def _find_main_file_in_archive(self, files_list: List) -> Optional[str]:
         """Find the main file inside the ISA archive."""
-
         found_file = None
 
         for f in files_list:
@@ -163,7 +164,6 @@ class _Isa(Data):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text. Get first lines of the main file and set it as the peek."""
-
         main_file = self._get_main_file(dataset)
 
         if main_file is None:
@@ -189,7 +189,6 @@ class _Isa(Data):
 
     def display_peek(self, dataset: DatasetProtocol) -> str:
         """Create the HTML table used for displaying peek, from the peek text found by set_peek() method."""
-
         out = ['<table cellspacing="0" cellpadding="3">']
         try:
             if not dataset.peek:
@@ -210,8 +209,8 @@ class _Isa(Data):
 
     def generate_primary_file(self, dataset: HasExtraFilesAndMetadata) -> str:
         """Generate the primary file. It is an HTML file containing description of the composite dataset
-        as well as a list of the composite files that it contains."""
-
+        as well as a list of the composite files that it contains.
+        """
         if dataset:
             rval = ["<html><head><title>ISA Dataset </title></head><p/>"]
             if hasattr(dataset, "extra_files_path"):
@@ -277,8 +276,8 @@ class _Isa(Data):
     ):
         """Downloads the ISA dataset if `preview` is `False`;
         if `preview` is `True`, it returns a preview of the ISA dataset as a HTML page.
-        The preview is triggered when user clicks on the eye icon of the composite dataset."""
-
+        The preview is triggered when user clicks on the eye icon of the composite dataset.
+        """
         headers = kwd.get("headers", {})
         # if it is not required a preview use the default behaviour of `display_data`
         if not preview:

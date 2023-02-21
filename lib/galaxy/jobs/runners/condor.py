@@ -54,7 +54,6 @@ class CondorJobRunner(AsynchronousJobRunner):
 
     def queue_job(self, job_wrapper):
         """Create job script and submit it to the DRM"""
-
         # prepare the job
         include_metadata = asbool(job_wrapper.job_destination.params.get("embed_metadata_in_job", True))
         if not self.prepare_job(job_wrapper, include_metadata=include_metadata):

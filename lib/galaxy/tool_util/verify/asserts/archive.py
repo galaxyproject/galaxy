@@ -66,7 +66,8 @@ def assert_has_archive_member(
 ):
     """Recursively checks the specified children assertions against the text of
     the first element matching the specified path found within the archive.
-    Currently supported formats: .zip, .tar, .tar.gz."""
+    Currently supported formats: .zip, .tar, .tar.gz.
+    """
     all = asbool(all)
     extract_foo = None
     # from python 3.9 is_tarfile supports file like objects then we do not need

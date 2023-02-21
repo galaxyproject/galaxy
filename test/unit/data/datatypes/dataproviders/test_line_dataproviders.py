@@ -287,7 +287,6 @@ class Test_BlockDataProvider(test_base_dataproviders.Test_FilteredDataProvider):
         self.assertCounters(provider, 3, 2, 1)
 
     def test_simple_example(self):
-        """ """
         file_contents = """
             >One
             ABCD

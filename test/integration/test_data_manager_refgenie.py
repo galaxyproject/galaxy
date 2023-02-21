@@ -49,7 +49,6 @@ REFGENIE_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "refgenie.yml")
 
 
 class TestDataManagerIntegration(integration_util.IntegrationTestCase, UsesShed):
-
     """Test data manager installation and table reload through the API"""
 
     framework_tool_and_types = True

@@ -223,7 +223,6 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         """
         Display workflow based on a username and slug. Format can be html, json, or json-download.
         """
-
         # Get workflow by username and slug. Security is handled by the display methods below.
         session = trans.sa_session
         user = session.query(model.User).filter_by(username=username).first()
@@ -330,7 +329,6 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
     @web.expose
     def get_embed_html_async(self, trans, id):
         """Returns HTML for embedding a workflow in a page."""
-
         # TODO: user should be able to embed any item he has access to. see display_by_username_and_slug for security code.
         stored = self.get_stored_workflow(trans, id)
         if stored:
@@ -584,7 +582,6 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         it does not attempt to decode forms and build UIs, it just stores
         the raw state.
         """
-
         # Get workflow.
         stored = self.get_stored_workflow(trans, id, check_ownership=False, check_accessible=True)
 

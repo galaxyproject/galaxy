@@ -819,7 +819,6 @@ class Gff(Tabular, _RemoteCallMixin):
         """
         Sets metadata elements for dataset's attributes.
         """
-
         # Use first N lines to set metadata for dataset attributes. Attributes
         # not found in the first N lines will not have metadata.
         num_lines = 200

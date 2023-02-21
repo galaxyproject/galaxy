@@ -171,7 +171,6 @@ class RequirementMapping:
         the supplied requirement must be unversioned (i.e. its version must be
         set to ``None``).
         """
-
         if requirement.name != self.from_name:
             return False
         elif self.from_version is None:

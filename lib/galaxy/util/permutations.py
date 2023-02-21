@@ -1,4 +1,4 @@
-""" There is some shared logic between matching/multiplying inputs in workflows
+"""There is some shared logic between matching/multiplying inputs in workflows
 and tools. This module is meant to capture some general permutation logic that
 can be applicable for both cases but will only be used in the newer tools case
 first.
@@ -25,8 +25,7 @@ T = TypeVar("T")
 
 
 class InputMatchedException(MessageException):
-    """Indicates problem matching inputs while building up inputs
-    permutations."""
+    """Indicates problem matching inputs while building up inputs permutations."""
 
 
 def expand_multi_inputs(inputs: Dict[str, T], classifier, key_filter=None):
@@ -68,9 +67,7 @@ def __extend_with_matched_combos(single_inputs, multi_inputs):
     Becomes
 
     [ {a => 1, b => 2, c => 3, d => 5}, {a => 1, b => 2, c => 4, d => 6}, ]
-
     """
-
     if len(multi_inputs) == 0:
         return [single_inputs]
 

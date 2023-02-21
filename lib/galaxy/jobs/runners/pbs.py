@@ -118,7 +118,6 @@ class PBSJobRunner(AsynchronousJobRunner):
 
     def url_to_destination(self, url):
         """Convert a legacy URL to a job destination"""
-
         if not url:
             return
 

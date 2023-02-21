@@ -14,7 +14,6 @@ def get_ref_based_read_seq_and_cigar(read_seq, read_start, ref_seq, ref_seq_star
     Ms with =s and Xs because the M operation can denote a sequence match or
     mismatch.
     """
-
     if not ref_seq:
         return read_seq, cigar
 
@@ -80,7 +79,6 @@ def _match_mismatch_counter(s1, p1, s2, p2):
     Count consecutive matches/mismatches between strings s1 and s2
     starting at p1 and p2, respectively.
     """
-
     # Do initial comparison to determine whether to count matches or
     # mismatches.
     if s1[p1] == s2[p2]:

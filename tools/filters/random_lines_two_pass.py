@@ -19,7 +19,6 @@ def randint(a, b):
 
 def sample(population, k):
     """Copied straight from python 2.7."""
-
     # Sampling without replacement entails tracking either potential
     # selections (the pool) in a list or previous selections in a set.
 

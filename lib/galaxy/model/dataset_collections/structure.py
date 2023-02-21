@@ -1,4 +1,4 @@
-""" Module for reasoning about structure of and matching hierarchical collections of data.
+"""Module for reasoning about structure of and matching hierarchical collections of data.
 """
 import logging
 

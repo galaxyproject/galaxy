@@ -179,7 +179,6 @@ class CloudAuthzController(BaseGalaxyAPIController):
         :rtype  JSON
         :return The cloudauthz record marked as deleted, serialized as a JSON object.
         """
-
         msg_template = f"Rejected user `{str(trans.user.id)}`'s request to delete cloudauthz config because of {{}}."
         try:
             authz_id = self.decode_id(encoded_authz_id)
@@ -250,7 +249,6 @@ class CloudAuthzController(BaseGalaxyAPIController):
                                         *   deleted:    a boolean type marking the specified cloudauthz as (un)deleted.
 
         """
-
         msg_template = f"Rejected user `{str(trans.user.id)}`'s request to delete cloudauthz config because of {{}}."
         try:
             authz_id = self.decode_id(encoded_authz_id)

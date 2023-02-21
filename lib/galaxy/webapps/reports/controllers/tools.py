@@ -72,7 +72,6 @@ class Tools(BaseUIController):
             - the number of jobs using this tool in state 'ok'
             - the number of jobs using this tool in error
         """
-
         message = escape(restore_text(kwd.get("message", "")))
         user_cutoff = int(kwd.get("user_cutoff", 60))
 
@@ -132,7 +131,6 @@ class Tools(BaseUIController):
             - the number of jobs using this tool in state 'ok'
             - the number of jobs using this tool in error
         """
-
         message = escape(restore_text(kwd.get("message", "")))
         user_cutoff = int(kwd.get("user_cutoff", 60))
 
@@ -200,7 +198,6 @@ class Tools(BaseUIController):
             - last job execution time
             - min and max execution time
         """
-
         # liste des tools + temps moyen d'exec du job + temps d'execution du dernier job + tps min et max / mois (?)
         user_cutoff = int(kwd.get("user_cutoff", 60))
         sort_by = kwd.get("sort_by", "tool")
@@ -269,7 +266,6 @@ class Tools(BaseUIController):
             - last job execution time
             - min and max execution time
         """
-
         # liste des tools + temps moyen d'exec du job + temps d'execution du dernier job + tps min et max / mois(?)
         user_cutoff = int(kwd.get("user_cutoff", 60))
         sort_by = kwd.get("sort_by", "month")

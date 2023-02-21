@@ -48,7 +48,6 @@ log = logging.getLogger(__name__)
 
 
 class ObjectStore(metaclass=abc.ABCMeta):
-
     """ObjectStore interface.
 
     FIELD DESCRIPTIONS (these apply to all the methods in this class):
@@ -739,7 +738,6 @@ class DiskObjectStore(ConcreteObjectStore):
 
 
 class NestedObjectStore(BaseObjectStore):
-
     """
     Base for ObjectStores that use other ObjectStores.
 
@@ -832,7 +830,6 @@ class NestedObjectStore(BaseObjectStore):
 
 
 class DistributedObjectStore(NestedObjectStore):
-
     """
     ObjectStore that defers to a list of backends.
 
@@ -1034,7 +1031,6 @@ class DistributedObjectStore(NestedObjectStore):
 
 
 class HierarchicalObjectStore(NestedObjectStore):
-
     """
     ObjectStore that defers to a list of backends.
 

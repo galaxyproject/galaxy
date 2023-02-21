@@ -19,7 +19,6 @@ class panel_item_types(str, Enum):
 
 
 class HasPanelItems:
-    """ """
 
     @abstractmethod
     def panel_items(self):
@@ -75,7 +74,6 @@ class ToolSection(Dictifiable, HasPanelItems):
 
     def to_dict(self, trans, link_details=False, tool_help=False, toolbox=None):
         """Return a dict that includes section's attributes."""
-
         section_dict = super().to_dict()
         section_elts = []
         kwargs = dict(trans=trans, link_details=link_details, tool_help=tool_help)

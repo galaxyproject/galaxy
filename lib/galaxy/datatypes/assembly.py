@@ -118,7 +118,6 @@ class Roadmaps(data.Text):
           ROADMAP 2
           ...
         """
-
         fh = file_prefix.string_io()
         for line in fh:
             line = line.strip()

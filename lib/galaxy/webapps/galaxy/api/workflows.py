@@ -416,7 +416,7 @@ class WorkflowsAPIController(
 
     @expose_api
     def update(self, trans: GalaxyWebTransaction, id, payload, **kwds):
-        """
+        r"""
         PUT /api/workflows/{id}
 
         Update the workflow stored with ``id``.

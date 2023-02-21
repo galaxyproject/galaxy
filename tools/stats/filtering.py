@@ -101,8 +101,7 @@ def __check_call(ast_node):
 
 
 def check_expression(text):
-    """
-
+    r"""
     >>> check_expression("c1=='chr1' and c3-c2>=2000 and c6=='+'")
     True
     >>> check_expression("eval('1+1')")

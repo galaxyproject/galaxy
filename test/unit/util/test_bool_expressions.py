@@ -48,7 +48,8 @@ def contained_evaluator() -> BooleanExpressionEvaluator:
     """Boolean expression evaluator using the TokenContainedEvaluator.
 
     All the tokens in TOKENS_THAT_ARE_TRUE will be evaluated to True and
-    any other token to False."""
+    any other token to False.
+    """
     token_evaluator = TokenContainedEvaluator(TOKENS_THAT_ARE_TRUE)
     evaluator = BooleanExpressionEvaluator(token_evaluator, TOKEN_FORMAT)
     return evaluator

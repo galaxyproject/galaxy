@@ -719,7 +719,6 @@ class User(Base, Dictifiable, RepresentById):
         return roles
 
     def all_roles_exploiting_cache(self):
-        """ """
         roles = [ura.role for ura in self.roles]
         for group in [uga.group for uga in self.groups]:
             for role in [gra.role for gra in group.roles]:
@@ -842,7 +841,6 @@ class User(Base, Dictifiable, RepresentById):
 
     @staticmethod
     def expand_user_properties(user, in_string):
-        """ """
         environment = User.user_template_environment(user)
         return Template(in_string).safe_substitute(environment)
 
@@ -4399,7 +4397,6 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
         status of the conversion. None is returned to indicate that dataset
         was converted successfully.
         """
-
         # Get converted dataset; this will start the conversion if necessary.
         try:
             converted_dataset = self.get_converted_dataset(trans, target_type)
@@ -4651,7 +4648,6 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         return ldda
 
     def clear_associated_files(self, metadata_safe=False, purge=False):
-        """ """
         # metadata_safe = True means to only clear when assoc.metadata_safe == False
         for assoc in self.implicitly_converted_datasets:
             if not assoc.deleted and (not metadata_safe or not assoc.metadata_safe):
@@ -6347,7 +6343,8 @@ class HistoryDatasetCollectionAssociation(
     def contains_collection(self, collection_id):
         """Checks to see that the indicated collection is a member of the
         hdca by using a recursive CTE sql query to find the collection's parents
-        and checking to see if any of the parents are associated with this hdca"""
+        and checking to see if any of the parents are associated with this hdca
+        """
         if collection_id == self.collection_id:
             # collection_id is root collection
             return True

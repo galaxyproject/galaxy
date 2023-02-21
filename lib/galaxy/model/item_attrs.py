@@ -107,7 +107,6 @@ class UsesAnnotations:
 
 def get_item_annotation_obj(db_session, user, item):
     """Returns a user's annotation object for an item."""
-
     # Get annotation association class.
     annotation_assoc_class = _get_annotation_assoc_class(item)
     if not annotation_assoc_class or item.id is None:

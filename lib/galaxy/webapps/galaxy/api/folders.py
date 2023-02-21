@@ -125,7 +125,8 @@ class FastAPILibraryFolders:
         ),
     ) -> Union[LibraryFolderCurrentPermissions, LibraryAvailablePermissions]:
         """Gets the current or available permissions of a particular library.
-        The results can be paginated and additionally filtered by a query."""
+        The results can be paginated and additionally filtered by a query.
+        """
         return self.service.get_permissions(
             trans,
             id,

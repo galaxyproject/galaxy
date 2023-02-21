@@ -1403,7 +1403,7 @@ class Anndata(H5):
             dataset.metadata.layers_names = list(anndata_file.keys())
 
             def _layercountsize(tmp, lennames=0):
-                "From TMP and LENNAMES, return layers, their number, and the length of one of the layers (all equal)."
+                """From TMP and LENNAMES, return layers, their number, and the length of one of the layers (all equal)."""
                 if hasattr(tmp, "dtype"):
                     layers = list(tmp.dtype.names)
                     count = len(tmp.dtype)
@@ -1499,7 +1499,7 @@ class Anndata(H5):
             tmp = dataset.metadata
 
             def _makelayerstrings(layer, count, names):
-                "Format the layers."
+                """Format the layers."""
                 if layer in tmp.layers_names:
                     return "\n[%s]: %d %s\n    %s" % (
                         layer,
@@ -1815,7 +1815,6 @@ class Cool(H5):
         >>> Cool().sniff(fname)
         False
         """
-
         MAGIC = "HDF5::Cooler"
         URL = "https://github.com/mirnylab/cooler"
 
@@ -1871,7 +1870,6 @@ class MCool(H5):
         >>> MCool().sniff(fname)
         False
         """
-
         MAGIC = "HDF5::Cooler"
         URL = "https://github.com/mirnylab/cooler"
 
@@ -3204,7 +3202,7 @@ class RDS(CompressedArchive):
         return True
 
     def _parse_rds_header(self, header_bytes):
-        """
+        r"""
         get the header info from a rds file
         - starts with b'X\n' or 'A\n'
         - then 3 integers (each 4bytes) encoded with base 10, e.g. b"\x00\x03\x06\x03" for version "3.6.3"
@@ -3250,7 +3248,7 @@ class OxliBinary(Binary):
 
 
 class OxliCountGraph(OxliBinary):
-    """
+    r"""
     OxliCountGraph starts with "OXLI" + one byte version number +
     8-bit binary '1'
     Test file generated via::
@@ -3276,7 +3274,7 @@ class OxliCountGraph(OxliBinary):
 
 
 class OxliNodeGraph(OxliBinary):
-    """
+    r"""
     OxliNodeGraph starts with "OXLI" + one byte version number +
     8-bit binary '2'
     Test file generated via::
@@ -3302,7 +3300,7 @@ class OxliNodeGraph(OxliBinary):
 
 
 class OxliTagSet(OxliBinary):
-    """
+    r"""
     OxliTagSet starts with "OXLI" + one byte version number +
     8-bit binary '3'
     Test file generated via::
@@ -3378,7 +3376,7 @@ class OxliSubset(OxliBinary):
 
 
 class OxliGraphLabels(OxliBinary):
-    """
+    r"""
     OxliGraphLabels starts with "OXLI" + one byte version number +
     8-bit binary '6'
     Test file generated via::

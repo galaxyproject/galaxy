@@ -37,7 +37,6 @@ show profile output: <a href="javascript:show_inline();">inline</a> | <a href="j
 
 
 class ProfileMiddleware:
-
     """
     Middleware that profiles all requests.
 

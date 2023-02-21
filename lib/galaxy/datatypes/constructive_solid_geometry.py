@@ -193,6 +193,7 @@ class Vtk:
     TODO: only legacy formats are currently supported and support for XML formats
     should be added.
     """
+
     subtype = ""
     # Add metadata elements.
     MetadataElement(name="vtk_version", default=None, desc="Vtk version", readonly=True, optional=True, visible=True)

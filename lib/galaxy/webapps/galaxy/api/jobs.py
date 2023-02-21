@@ -414,7 +414,6 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         :rtype:     dictionary
         :returns:   dictionary containing output dataset associations
         """
-
         job = self.__get_job(trans, id)
         if not job:
             raise exceptions.ObjectNotFound(f"Could not access job with id '{id}'")

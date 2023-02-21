@@ -590,7 +590,8 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     def adjust_hidden(self, trans, id=None, **kwd):
         """THIS METHOD IS A TEMPORARY ADDITION. It'll allow us to fix the
         regression in history-wide actions, and will be removed in the first
-        release after 17.01"""
+        release after 17.01
+        """
         action = kwd.get("user_action", None)
         if action == "delete":
             for hda in trans.history.datasets:

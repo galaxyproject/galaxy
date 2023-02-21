@@ -829,7 +829,7 @@ class InstalledRepositoryManager:
     def _update_existing_tool_dependency(
         self, repository: ToolShedRepository, original_dependency_dict, new_dependencies_dict
     ):
-        """
+        r"""
         Update an exsiting tool dependency whose definition was updated in a change set
         pulled by a Galaxy administrator when getting updates to an installed tool shed
         repository.  The original_dependency_dict is a single tool dependency definition,

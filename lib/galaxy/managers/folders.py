@@ -386,7 +386,8 @@ class FolderManager:
         payload: LibraryFolderContentsIndexQueryPayload,
     ) -> Tuple[List[Union[model.LibraryFolder, model.LibraryDataset]], int]:
         """Retrieves the contents of the given folder that match the provided filters and pagination parameters.
-        Returns a tuple with the list of paginated contents and the total number of items contained in the folder."""
+        Returns a tuple with the list of paginated contents and the total number of items contained in the folder.
+        """
         limit = payload.limit
         offset = payload.offset
         sa_session = trans.sa_session

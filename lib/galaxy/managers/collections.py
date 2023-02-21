@@ -666,7 +666,6 @@ class DatasetCollectionManager:
     def get_dataset_collection_instance(
         self, trans, instance_type: DatasetCollectionInstanceType, id, **kwds: Any
     ) -> Union[model.HistoryDatasetCollectionAssociation, model.LibraryDatasetCollectionAssociation]:
-        """ """
         if instance_type == "history":
             return self.__get_history_collection_instance(trans, id, **kwds)
         elif instance_type == "library":

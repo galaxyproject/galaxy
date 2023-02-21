@@ -89,7 +89,6 @@ def _parse_ldap_options(options_unparsed):
 
 
 class LDAP(AuthProvider):
-
     """
     Attempts to authenticate users against an LDAP server.
 
@@ -445,7 +444,8 @@ class LDAP3(LDAP):
 
 class ActiveDirectory(LDAP):
     """Effectively just an alias for LDAP auth, but may contain active directory specific
-    logic in the future."""
+    logic in the future.
+    """
 
     plugin_type = "activedirectory"
 

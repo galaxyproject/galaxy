@@ -45,8 +45,8 @@ class RemoteFilesManager:
         recursive: Optional[bool],
         disable: Optional[RemoteFilesDisableMode],
     ) -> List[Dict[str, Any]]:
-        """Returns a list of remote files available to the user."""
-
+        """Returns a list of remote files available to the user.
+        """
         user_file_source_context = ProvidesUserFileSourcesUserContext(user_ctx)
         default_recursive = False
         default_format = RemoteFilesFormat.uri

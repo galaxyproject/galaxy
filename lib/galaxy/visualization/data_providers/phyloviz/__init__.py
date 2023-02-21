@@ -1,4 +1,4 @@
-""" Data providers code for PhyloViz """
+"""Data providers code for PhyloViz"""
 from typing import (
     Any,
     Dict,
@@ -21,7 +21,6 @@ class PhylovizDataProvider(BaseDataProvider):
         Returns trees.
         Trees are actually an array of JsonDicts. It's usually one tree, except in the case of Nexus
         """
-
         file_ext = self.original_dataset.datatype.file_ext
         file_name = self.original_dataset.file_name
         parseMsg = None

@@ -42,7 +42,6 @@ DATA_MANAGER_MANUAL_INPUT = {
 
 
 class TestDataManagerIntegration(integration_util.IntegrationTestCase, UsesShed):
-
     """Test data manager installation and table reload through the API"""
 
     framework_tool_and_types = True

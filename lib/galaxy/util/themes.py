@@ -8,7 +8,8 @@ Theme = Dict[str, Union["Theme", str]]
 
 def flatten_theme(theme: Theme, prefix: str = "-") -> Dict[str, str]:
     """Transforms a nested theme dictionary into a flat dictionary,
-    containing keys compatible with css variables. e.g. '--masthead-background-color'"""
+    containing keys compatible with css variables. e.g. '--masthead-background-color'
+    """
     flat_attributes: Dict[str, str] = {}
 
     for key, val in theme.items():

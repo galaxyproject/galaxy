@@ -131,7 +131,6 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         :param tool_id: if present the given tool_id will be searched for
                         all installed versions
         """
-
         # Read params.
         in_panel = util.string_as_bool(kwds.get("in_panel", "True"))
         trackster = util.string_as_bool(kwds.get("trackster", "False"))
@@ -330,7 +329,6 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         GET /api/tools/all_requirements
         Return list of unique requirements for all tools.
         """
-
         return trans.app.toolbox.all_requirements
 
     @web.require_admin
@@ -417,7 +415,6 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         Return diagnostic information to help debug panel
         and dependency related problems.
         """
-
         # TODO: Move this into tool.
         def to_dict(x):
             return x.to_dict()

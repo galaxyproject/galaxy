@@ -32,7 +32,8 @@ for assertion_module_name in assertion_module_names:
 
 def verify_assertions(data: bytes, assertion_description_list):
     """This function takes a list of assertions and a string to check
-    these assertions against."""
+    these assertions against.
+    """
     for assertion_description in assertion_description_list:
         verify_assertion(data, assertion_description)
 

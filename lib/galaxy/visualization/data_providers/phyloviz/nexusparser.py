@@ -19,7 +19,6 @@ class Nexus_Parser(Newick_Parser):
         For more information: http://wiki.christophchamp.com/index.php/NEXUS_file_format
         Nexus can store multiple trees
         """
-
         with open(filename) as nex_file:
             nexlines = nex_file.readlines()
 

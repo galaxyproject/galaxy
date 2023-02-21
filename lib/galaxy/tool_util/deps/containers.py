@@ -66,7 +66,8 @@ class ContainerFinder:
     def find_best_container_description(self, enabled_container_types, tool_info, **kwds):
         """Regardless of destination properties - find best container for tool.
 
-        Given container types and container.ToolInfo description of the tool."""
+        Given container types and container.ToolInfo description of the tool.
+        """
         return self.default_container_registry.find_best_container_description(
             enabled_container_types, tool_info, **kwds
         )

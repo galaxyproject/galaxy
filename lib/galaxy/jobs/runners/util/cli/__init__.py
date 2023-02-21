@@ -1,5 +1,3 @@
-"""
-"""
 import json
 
 from galaxy.util.plugin_config import plugins_dict
@@ -17,7 +15,6 @@ class CliInterface:
     """
 
     def __init__(self):
-        """ """
         module_prefix = self.__module__
         self.cli_shells = plugins_dict(f"{module_prefix}.shell", "__name__")
         self.cli_job_interfaces = plugins_dict(f"{module_prefix}.job", "__name__")

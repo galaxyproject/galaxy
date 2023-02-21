@@ -418,7 +418,7 @@ class Lped(Rgenetics):
 
 
 class Pphe(Rgenetics):
-    """
+    r"""
     Plink phenotype file - header must have FID\tIID... Rgenetics data collections
     """
 
@@ -746,7 +746,7 @@ class RexpBase(Html):
         return res
 
     def get_pheno(self, dataset):
-        """
+        r"""
         expects a .pheno file in the extra_files_dir - ugh
         note that R is wierd and adds the row.name in
         the header so the columns are all wrong - unless you tell it not to.
@@ -768,7 +768,8 @@ class RexpBase(Html):
         """
         expects a .pheno file in the extra_files_dir - ugh
         note that R is weird and does not include the row.name in
-        the header. why?"""
+        the header. why?
+        """
         if not dataset.dataset.purged:
             pp = os.path.join(dataset.extra_files_path, f"{dataset.metadata.base_name}.pheno")
             try:

@@ -80,8 +80,8 @@ VALID_CONTAINER_START_PATTERN = re.compile(r"^```\s+[\w]+.*$")
 
 
 def ready_galaxy_markdown_for_import(trans, external_galaxy_markdown):
-    """Convert from encoded IDs to decoded numeric IDs for storing in the DB."""
-
+    """Convert from encoded IDs to decoded numeric IDs for storing in the DB.
+    """
     _validate(external_galaxy_markdown, internal=False)
 
     def _remap(container, line):

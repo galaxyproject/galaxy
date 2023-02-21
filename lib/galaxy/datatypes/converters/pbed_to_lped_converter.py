@@ -33,7 +33,6 @@ def timenow():
 
 
 def rgConv(inpedfilepath, outhtmlname, outfilepath, plink):
-    """ """
     basename = os.path.split(inpedfilepath)[-1]  # get basename
     outroot = os.path.join(outfilepath, basename)
     subprocess.check_call([plink, "--noweb", "--bfile", inpedfilepath, "--recode", "--out", outroot], cwd=outfilepath)

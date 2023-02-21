@@ -61,7 +61,7 @@ OPTIONAL_TEMPLATE_PARAMS: Dict[str, Any] = {
 
 
 def job_script(template=DEFAULT_JOB_FILE_TEMPLATE, **kwds):
-    """
+    r"""
 
     >>> has_exception = False
     >>> try: job_script()

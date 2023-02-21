@@ -70,7 +70,6 @@ class DataProviderRegistry:
         Returns data provider matching parameter values. For standalone data
         sources, source parameter is ignored.
         """
-
         data_provider: Optional[BaseDataProvider]
         data_provider_class: Type[BaseDataProvider]
 

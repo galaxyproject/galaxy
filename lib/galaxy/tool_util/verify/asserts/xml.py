@@ -13,7 +13,8 @@ from galaxy.util import (
 
 def assert_is_valid_xml(output):
     """Simple assertion that just verifies the specified output
-    is valid XML."""
+    is valid XML.
+    """
     try:
         parse_xml_string(output)
     except XMLSyntaxError as e:
@@ -24,7 +25,8 @@ def assert_has_element_with_path(output, path, negate: bool = False):
     """Asserts the specified output has at least one XML element with a
     path matching the specified path argument. Valid paths are the
     simplified subsets of XPath implemented by lxml.etree;
-    https://lxml.de/xpathxslt.html for more information."""
+    https://lxml.de/xpathxslt.html for more information.
+    """
     assert_xml_element(output, path, negate=negate)
 
 
@@ -38,39 +40,45 @@ def assert_has_n_elements_with_path(
     negate: bool = False,
 ):
     """Asserts the specified output has exactly n elements matching the
-    path specified."""
+    path specified.
+    """
     assert_xml_element(output, path, n=n, delta=delta, min=min, max=max, negate=negate)
 
 
 def assert_element_text_matches(output, path, expression, negate: bool = False):
     """Asserts the text of the first element matching the specified
-    path matches the specified regular expression."""
+    path matches the specified regular expression.
+    """
     sub = {"tag": "has_text_matching", "attributes": {"expression": expression, "negate": negate}}
     assert_xml_element(output, path, asserts.verify_assertions, [sub])
 
 
 def assert_element_text_is(output, path, text, negate: bool = False):
     """Asserts the text of the first element matching the specified
-    path matches exactly the specified text."""
+    path matches exactly the specified text.
+    """
     assert_element_text_matches(output, path, re.escape(text) + "$", negate=negate)
 
 
 def assert_attribute_matches(output, path, attribute, expression, negate: bool = False):
     """Asserts the specified attribute of the first element matching
-    the specified path matches the specified regular expression."""
+    the specified path matches the specified regular expression.
+    """
     sub = {"tag": "has_text_matching", "attributes": {"expression": expression, "negate": negate}}
     assert_xml_element(output, path, asserts.verify_assertions, [sub], attribute=attribute)
 
 
 def assert_attribute_is(output, path, attribute, text, negate: bool = False):
     """Asserts the specified attribute of the first element matching
-    the specified path matches exactly the specified text."""
+    the specified path matches exactly the specified text.
+    """
     assert_attribute_matches(output, path, attribute, re.escape(text) + "$", negate=negate)
 
 
 def assert_element_text(output, path, verify_assertions_function, children, negate: bool = False):
     """Recursively checks the specified assertions against the text of
-    the first element matching the specified path."""
+    the first element matching the specified path.
+    """
     assert_xml_element(output, path, verify_assertions_function, children, negate=negate)
 
 

@@ -216,7 +216,7 @@ def validate_tabular(fname_or_file_prefix, validate_row, sep, comment_designator
 
 
 def get_headers(fname_or_file_prefix, sep, count=60, comment_designator=None):
-    """
+    r"""
     Returns a list with the first 'count' lines split by 'sep', ignoring lines
     starting with 'comment_designator'
 

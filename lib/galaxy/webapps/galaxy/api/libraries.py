@@ -147,7 +147,8 @@ class FastAPILibraries:
         payload: Optional[DeleteLibraryPayload] = Body(default=None),
     ) -> LibrarySummary:
         """Marks the specified library as deleted (or undeleted).
-        Currently, only admin users can delete or restore libraries."""
+        Currently, only admin users can delete or restore libraries.
+        """
         if payload:
             undelete = payload.undelete
         return self.service.delete(trans, id, undelete)
@@ -181,7 +182,8 @@ class FastAPILibraries:
         ),
     ) -> Union[LibraryCurrentPermissions, LibraryAvailablePermissions]:
         """Gets the current or available permissions of a particular library.
-        The results can be paginated and additionally filtered by a query."""
+        The results can be paginated and additionally filtered by a query.
+        """
         return self.service.get_permissions(
             trans,
             id,

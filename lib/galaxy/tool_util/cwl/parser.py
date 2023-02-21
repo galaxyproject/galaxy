@@ -1,4 +1,4 @@
-""" This module provides proxy objects around objects from the common
+"""This module provides proxy objects around objects from the common
 workflow language reference implementation library cwltool. These proxies
 adapt cwltool to Galaxy features and abstract the library away from the rest
 of the framework.
@@ -165,8 +165,10 @@ class ToolProxy(metaclass=ABCMeta):
         """Return label for tool."""
 
     def to_persistent_representation(self):
-        """Return a JSON representation of this tool. Not for serialization
-        over the wire, but serialization in a database."""
+        """Return a JSON representation of this tool.
+
+        Not for serialization over the wire, but serialization in a database.
+        """
         persisted_obj = self._tool.tool
         persisted_obj["requirements"] = self.requirements
         if not persisted_obj.get("cwlVersion"):

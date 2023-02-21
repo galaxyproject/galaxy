@@ -301,7 +301,8 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
 
     def _get_bucket(self, bucket_name):
         """Sometimes a handle to a bucket is not established right away so try
-        it a few times. Raise error is connection is not established."""
+        it a few times. Raise error is connection is not established.
+        """
         for i in range(5):
             try:
                 bucket = self.conn.get_bucket(bucket_name)

@@ -1207,7 +1207,7 @@ def get_test_fname(fname):
 
 
 def get_file_peek(file_name, width=256, line_count=5, skipchars=None, line_wrap=True):
-    """
+    r"""
     Returns the first line_count lines wrapped to width.
 
     >>> def assert_peek_is(file_name, expected, *args, **kwd):

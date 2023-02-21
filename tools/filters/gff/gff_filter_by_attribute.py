@@ -72,7 +72,7 @@ def __check_name(ast_node):
 
 
 def check_simple_name(text):
-    """
+    r"""
 
     >>> check_simple_name("col_name")
     True
@@ -133,7 +133,7 @@ def check_simple_name(text):
 
 
 def check_expression(text):
-    """
+    r"""
 
     >>> check_expression("c1=='chr1' and c3-c2>=2000 and c6=='+'")
     True

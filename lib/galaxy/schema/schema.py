@@ -2905,7 +2905,8 @@ class DeleteHistoryContentPayload(Model):
 class DeleteHistoryContentResult(CustomHistoryItem):
     """Contains minimum information about the deletion state of a history item.
 
-    Can also contain any other properties of the item."""
+    Can also contain any other properties of the item.
+    """
 
     id: DecodedDatabaseIdField = Field(
         ...,

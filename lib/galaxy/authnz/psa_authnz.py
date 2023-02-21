@@ -425,7 +425,6 @@ def disconnect(
     Additionally, returning any value except for a(n) (empty) dictionary, will break the
     disconnect pipeline, and that value will be returned as a result of calling the `do_disconnect` function.
     """
-
     sa_session = user_storage.sa_session
     user_authnz = (
         sa_session.query(user_storage)

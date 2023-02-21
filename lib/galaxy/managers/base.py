@@ -88,7 +88,6 @@ def security_check(trans, item, check_ownership=False, check_accessible=False):
     the managers for a particular model should be used to perform security
     checks.
     """
-
     # all items are accessible to an admin
     if trans.user_is_admin:
         return item
@@ -756,7 +755,6 @@ class ModelSerializer(HasAModelManager[T]):
             no `view` or `keys`: use the `default_view` if any
             `view` and `keys`: combine both into one list of keys
         """
-
         # TODO: default view + view makes no sense outside the API.index context - move default view there
         all_keys = []
         keys = keys or []
@@ -1286,7 +1284,6 @@ def raise_filter_err(attr, op, val, msg):
 
 def is_valid_slug(slug):
     """Returns true iff slug is valid."""
-
     VALID_SLUG_RE = re.compile(r"^[a-z0-9\-]+$")
     return VALID_SLUG_RE.match(slug)
 
@@ -1296,5 +1293,6 @@ class SortableManager:
 
     def parse_order_by(self, order_by_string, default=None):
         """Return an ORM compatible order_by clause using the given string (i.e.: 'name-dsc,create_time').
-        This must be implemented by the manager."""
+        This must be implemented by the manager.
+        """
         raise NotImplementedError

@@ -25,7 +25,6 @@ def get_timestamp_install_sql(variant):
     """
     Generate a list of SQL statements for installation of timestamp triggers
     """
-
     sql = get_timestamp_drop_sql(variant)
 
     if "postgres" in variant:
@@ -63,7 +62,6 @@ def get_timestamp_drop_sql(variant):
     """
     Generate a list of statements to drop the timestamp update triggers
     """
-
     sql = []
 
     if "postgres" in variant:
@@ -79,7 +77,6 @@ def get_timestamp_drop_sql(variant):
 
 def build_pg_timestamp_fn(fn_name, target_table, source_key, target_key="id"):
     """Generates a PostgreSQL history update timestamp function"""
-
     return f"""
         CREATE OR REPLACE FUNCTION {fn_name}()
             RETURNS trigger
@@ -122,7 +119,6 @@ def build_pg_trigger(source_table, fn_name, when="AFTER"):
 
 def build_timestamp_trigger(operation, source_table, target_table, source_key, target_key="id", when="AFTER"):
     """Creates a non-PostgreSQL update_time trigger"""
-
     trigger_name = get_trigger_name(operation, source_table, when)
 
     # three different update clauses depending on update/insert/delete

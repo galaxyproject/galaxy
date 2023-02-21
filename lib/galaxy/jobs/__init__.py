@@ -1144,7 +1144,8 @@ class MinimalJobWrapper(HasResourceParameters):
     def disable_commands_in_new_shell(self):
         """Provide an extension point to disable this isolation,
         Pulsar builds its own job script so this is not needed for
-        remote jobs."""
+        remote jobs.
+        """
         self.__commands_in_new_shell = False
 
     @property
@@ -2566,7 +2567,6 @@ class TaskWrapper(JobWrapper):
         the output datasets based on stderr and stdout from the command, and
         the contents of the output files.
         """
-
         # This may have ended too soon
         log.debug(
             "task %s for job %d ended; exit code: %d"

@@ -8,7 +8,6 @@ from galaxy.datatypes.util.gff_util import parse_gff_attributes
 
 def get_bed_line(chrom, name, strand, blocks):
     """Returns a BED line for given data."""
-
     if len(blocks) == 1:
         # Use simple BED format if there is only a single block:
         #   chrom, chromStart, chromEnd, name, score, strand

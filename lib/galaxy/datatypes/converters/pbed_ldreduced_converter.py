@@ -31,7 +31,6 @@ def timenow():
 
 
 def pruneLD(plinktasks=None, cd="./", vclbase=None):
-    """ """
     plinktasks = plinktasks or []
     vclbase = vclbase or []
     alog = ["## Rgenetics: http://rgenetics.org Galaxy Tools rgQC.py Plink pruneLD runner\n"]

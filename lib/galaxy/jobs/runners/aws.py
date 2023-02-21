@@ -1,4 +1,4 @@
-""" Galaxy job runners to use Amazon AWS native compute resources, such as AWS Batch.
+"""Galaxy job runners to use Amazon AWS native compute resources, such as AWS Batch.
 """
 import bisect
 import hashlib
@@ -300,8 +300,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         return volumes, mount_points
 
     def _get_retry_strategy(self, destination_params):
-        """ Make a simple one-condition retry strategy
-        """
+        """Make a simple one-condition retry strategy"""
         # TODO make multi-condition retry strategies
         attemps = destination_params.get("retry_attempts")
         status_reason = destination_params.get("retry_on_exit_statusReason")

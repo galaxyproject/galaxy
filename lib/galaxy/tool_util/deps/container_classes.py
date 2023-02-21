@@ -139,7 +139,6 @@ def preprocess_volumes(volumes_raw_str, container_type):
     >>> preprocess_volumes("/a/b:default_ro,/a/b/c:rw", SINGULARITY_CONTAINER_TYPE)
     ['/a/b', '/a/b/c']
     """
-
     if not volumes_raw_str:
         return []
 

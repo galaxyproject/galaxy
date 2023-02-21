@@ -37,7 +37,6 @@ class Godocker:
 
     def http_post_request(self, query, data, header):
         """post request with query"""
-
         verify_ssl = not self.noCert
         try:
             url = self.server + query
@@ -51,7 +50,6 @@ class Godocker:
 
     def http_get_request(self, query, header):
         """get request with query, server and header required"""
-
         # remove warnings if using --no-certificate
         requests.packages.urllib3.disable_warnings()
         verify_ssl = not self.noCert
@@ -67,7 +65,6 @@ class Godocker:
 
     def http_delete_request(self, query, header):
         """delete request with query, server and header required"""
-
         # remove warnings if using --no-certificate
         requests.packages.urllib3.disable_warnings()
         verify_ssl = not self.noCert
@@ -83,7 +80,6 @@ class Godocker:
 
     def http_put_request(self, query, data, header):
         """put request with query"""
-
         # remove warnings if using --no-certificate
         requests.packages.urllib3.disable_warnings()
         verify_ssl = not self.noCert

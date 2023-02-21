@@ -538,7 +538,6 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
     @web.expose
     def display_by_username_and_slug(self, trans, username, slug):
         """Display page based on a username and slug."""
-
         # Get page.
         session = trans.sa_session
         user = session.query(model.User).filter_by(username=username).first()
@@ -580,7 +579,6 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
     @web.expose
     def get_embed_html_async(self, trans, id):
         """Returns HTML for embedding a workflow in a page."""
-
         # TODO: user should be able to embed any item he has access to. see display_by_username_and_slug for security code.
         page = self.get_page(trans, id)
         if page:

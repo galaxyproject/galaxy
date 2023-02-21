@@ -42,8 +42,8 @@ class Phyloxml_Parser(Base_Parser):
 
     def parseNode(self, node, depth):
         """Parses any node within a phyloxml tree and looks out for claude, which signals the creation of
-        nodes - internal OR leaf"""
-
+        nodes - internal OR leaf
+        """
         tag = self.cleanTag(node.tag)
         if not tag == "clade":
             return None
@@ -84,8 +84,10 @@ class Phyloxml_Parser(Base_Parser):
         """Gets the name of a claude. It handles the case where a taxonomy node is involved"""
 
         def getTagFromTaxonomyNode(node):
-            """Returns the name of a taxonomy node. A taxonomy node have to be treated differently as the name
-            is embedded one level deeper"""
+            """Returns the name of a taxonomy node.
+
+            A taxonomy node have to be treated differently as the name is embedded one level deeper
+            """
             phyloxmlTaxoNames = {"common_name": "", "scientific_name": "", "code": ""}
             for child in node:
                 childTag = self.cleanTag(child.tag)

@@ -8,7 +8,8 @@ class TestCase:
     description of the pytest setup/teardown methods.
 
     Most assert*() methods of unittest.TestCase are not reimplemented here on
-    purpose, normal assert statements should be used instead."""
+    purpose, normal assert statements should be used instead.
+    """
 
     @classmethod
     def setUpClass(cls):

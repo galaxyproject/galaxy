@@ -2,7 +2,7 @@ RAW_VALUE_BY_DEFAULT = False
 
 
 def env_to_statement(env):
-    """Return the abstraction description of an environment variable definition
+    r"""Return the abstraction description of an environment variable definition
     into a statement for shell script.
 
     >>> env_to_statement(dict(name='X', value='Y'))

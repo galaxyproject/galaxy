@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-""" Entry point for starting Galaxy without starting as part of a web server.
+"""Entry point for starting Galaxy without starting as part of a web server.
 
 Example Usage: Start a job/workflow handler without a web server and with
 a given name using.
@@ -15,7 +15,6 @@ a loggers section in Galaxy's ini file - this can be overridden with sensible
 defaults logging to a single file with the following:
 
 galaxy-main -d --server-name handler0 --daemon-log-file=handler0-daemon.log --pid-file handler0.pid --log-file handler0.log
-
 """
 import functools
 import logging

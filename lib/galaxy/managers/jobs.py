@@ -825,7 +825,6 @@ def summarize_destination_params(trans, job):
     Precondition: the caller has verified the job is accessible to the user
     represented by the trans parameter.
     """
-
     destination_params = {
         "Runner": job.job_runner_name,
         "Runner Job ID": job.job_runner_external_id,

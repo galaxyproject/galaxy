@@ -486,7 +486,8 @@ class Gifti(GenericXml):
 class Star(data.Text):
     """Base format class for Relion STAR (Self-defining
     Text Archiving and Retrieval) image files.
-    https://relion.readthedocs.io/en/latest/Reference/Conventions.html"""
+    https://relion.readthedocs.io/en/latest/Reference/Conventions.html
+    """
 
     file_ext = "star"
 
@@ -538,7 +539,8 @@ class Star(data.Text):
 
 class Html(HtmlFromText):
     """Deprecated class. This class should not be used anymore, but the galaxy.datatypes.text:Html one.
-    This is for backwards compatibilities only."""
+    This is for backwards compatibilities only.
+    """
 
 
 class Laj(data.Text):

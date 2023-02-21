@@ -256,7 +256,8 @@ class Genomes:
 
     def get_dbkeys(self, user, chrom_info=False):
         """Returns all known dbkeys. If chrom_info is True, only dbkeys with
-        chromosome lengths are returned."""
+        chromosome lengths are returned.
+        """
         self.check_and_reload()
         dbkeys = []
 

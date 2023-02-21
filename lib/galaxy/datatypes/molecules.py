@@ -1024,7 +1024,6 @@ class CIF(GenericMolFile):
         >>> CIF().sniff(fname)
         False
         """
-
         # check for optional CIF version marker '#\#CIF_<version>' at start of file
         if file_prefix.startswith("#\\#CIF_"):
             return True
@@ -1193,7 +1192,6 @@ class XYZ(GenericMolFile):
         >>> XYZ().sniff(fname)
         False
         """
-
         try:
             self.read_blocks(list(file_prefix.line_iterator()))
             return True

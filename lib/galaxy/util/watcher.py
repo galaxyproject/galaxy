@@ -24,7 +24,6 @@ log = logging.getLogger(__name__)
 
 
 def get_observer_class(config_name, config_value, default, monitor_what_str):
-    """ """
     config_value = config_value or default
     config_value = str(config_value).lower()
     if config_value in ("true", "yes", "on", "auto"):

@@ -187,7 +187,6 @@ def expand_meta_parameters(trans, tool, incoming) -> ExpandedT:
     of expanded incoming parameters (one set of parameters per tool
     execution).
     """
-
     for key in list(incoming.keys()):
         if key.endswith("|__identifier__"):
             incoming.pop(key)

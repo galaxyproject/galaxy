@@ -89,7 +89,8 @@ class Uploader:
 
     def recursively_build_path(self, path_parts, parent_folder_id, ids=None):
         """Given an iterable of path components and a parent folder id, recursively
-        create directories below parent_folder_id"""
+        create directories below parent_folder_id
+        """
         if ids is None:
             ids = []
         if len(path_parts) == 0:

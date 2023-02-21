@@ -151,7 +151,6 @@ class LibraryFoldersService(ServiceBase):
         :rtype:     dictionary
         :raises: RequestParameterInvalidException, InsufficientPermissionsException, RequestParameterMissingException
         """
-
         is_admin = trans.user_is_admin
         current_user_roles = trans.get_current_user_roles()
         folder = self.folder_manager.get(trans, folder_id)
