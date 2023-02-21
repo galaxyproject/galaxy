@@ -4,7 +4,7 @@
             <template v-if="!confirmURL">
                 <div class="col col-lg-6">
                     <b-alert :show="!!messageText" :variant="messageVariant">
-                        {{ messageText }}
+                        <span v-html="messageText" />
                     </b-alert>
                     <b-form id="login" @submit.prevent="submitLogin()">
                         <b-card no-body :header="headerWelcome">
