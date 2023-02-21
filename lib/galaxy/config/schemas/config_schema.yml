@@ -3705,7 +3705,8 @@ mapping:
         desc: |
           Displays a link to training material, if any includes the current tool.
           When activated the following options also need to be set:
-            - tool_training_recommendations_link
+            tool_training_recommendations_link,
+            tool_training_recommendations_api_url
 
       tool_training_recommendations_link:
         type: str

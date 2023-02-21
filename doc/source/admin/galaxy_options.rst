@@ -5087,7 +5087,8 @@
 :Description:
     Displays a link to training material, if any includes the current
     tool. When activated the following options also need to be set:
-    - tool_training_recommendations_link
+    tool_training_recommendations_link,
+    tool_training_recommendations_api_url
 :Default: ``true``
 :Type: bool
 
@@ -5098,9 +5099,9 @@
 
 :Description:
     Template URL to display all tutorials containing current tool.
-    Valid template inputs are:   {repository}   {name}   {id}
-    {version}
-:Default: ``https://training.galaxyproject.org/training-material/by-tool/{repository}/{name}.html``
+    Valid template inputs are:   {repository}   {name}   {tool_id}
+    {training_tool_identifier}   {version}
+:Default: ``https://training.galaxyproject.org/training-material/by-tool/{training_tool_identifier}.html``
 :Type: str
 
 
