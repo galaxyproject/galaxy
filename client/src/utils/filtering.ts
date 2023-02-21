@@ -59,7 +59,7 @@ export function toBool<T>(value: T): boolean {
  * @returns Lowercase value without quotation marks
  * */
 export function toLowerNoQuotes<T>(value: T): string {
-    return toLower(value).replace(/'/g, "");
+    return toLower(value).replace(/('|")/g, "");
 }
 
 /** Converts name tags starting with '#' to 'name:'
@@ -239,7 +239,7 @@ export default class Filtering<T> {
      * @returns Filters as dict of field->value pairs
      * */
     getFilters(filterText: string): [string, T][] {
-        const pairSplitRE = /[^\s']+(?:'[^']*'[^\s']*)*|(?:'[^']*'[^\s']*)+/g;
+        const pairSplitRE = /[^\s'"]+(?:['"][^'"]*['"][^\s'"]*)*|(?:['"][^'"]*['"][^\s'"]*)+/g;
         const matches = filterText.match(pairSplitRE);
         let result: Record<string, any> = {};
         let hasMatches = false;
@@ -362,7 +362,7 @@ export default class Filtering<T> {
      * */
     getFilterValue(filterText: string, filterName: string, alias: Alias = "eq"): string | boolean | undefined {
         const op = getOperatorForAlias(alias);
-        const reString = `${filterName}(?:${op}|[-|_]${alias}:)(?:'([^']*[^\\s']*)'|(\\S+))`;
+        const reString = `${filterName}(?:${op}|[-|_]${alias}:)(?:['"]([^'"]*[^\\s'"]*)['"]|(\\S+))`;
         const re = new RegExp(reString);
         const reMatch = re.exec(filterText);
         let filterVal = null;
