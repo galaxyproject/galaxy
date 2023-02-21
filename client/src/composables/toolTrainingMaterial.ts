@@ -59,7 +59,7 @@ export function useToolTrainingMaterial(id: ID, name: Name, version: string, rep
                 return;
             }
 
-            if (apiEnabled.value) {
+            if (apiEnabled.value && !cachedResponse.value) {
                 const res = await fetch(config.value.tool_training_recommendations_api_url);
 
                 if (res.ok) {
