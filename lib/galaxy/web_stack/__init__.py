@@ -13,7 +13,10 @@ from typing import (
     Type,
 )
 
-from sqlalchemy import update
+from sqlalchemy import (
+    select,
+    update,
+)
 
 from galaxy.util.facts import get_facts
 from .handlers import HANDLER_ASSIGNMENT_METHODS
@@ -72,10 +75,11 @@ class ApplicationStack:
 
     def supports_skip_locked(self):
         if self._supports_skip_locked is None:
-            job_table = self.app.model.Job.__table__
-            stmt = job_table.select().where(job_table.c.id == -1).with_for_update(skip_locked=True)
+            Job = self.app.model.Job
+            stmt = select(Job).where(Job.id == -1).with_for_update(skip_locked=True)
             try:
-                self.app.model.session.execute(stmt)
+                with self.app.model.engine.begin() as conn:
+                    conn.execute(stmt)
                 self._supports_skip_locked = True
             except Exception:
                 self._supports_skip_locked = False
