@@ -92,7 +92,6 @@
                 <UserPreferredObjectStore
                     v-if="config && config.object_store_allows_id_selection"
                     :preferred-object-store-id="user.preferred_object_store_id"
-                    :root="root"
                     :user-id="userId">
                 </UserPreferredObjectStore>
             </CurrentUser>
@@ -130,8 +129,6 @@ import { userLogoutAll } from "utils/logout";
 import UserDeletion from "./UserDeletion";
 import UserPreferencesElement from "./UserPreferencesElement";
 import UserPreferredObjectStore from "./UserPreferredObjectStore";
-
-import { getAppRoot } from "onload/loadConfig";
 
 import "@fortawesome/fontawesome-svg-core";
 import UserBeaconSettings from "./UserBeaconSettings";
@@ -181,9 +178,6 @@ export default {
             const Galaxy = getGalaxyInstance();
             const themes = Object.keys(Galaxy.config.themes);
             return themes?.length > 1 ?? false;
-        },
-        root() {
-            return getAppRoot();
         },
     },
     created() {

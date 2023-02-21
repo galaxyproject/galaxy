@@ -5,7 +5,7 @@
         <ShowSelectedObjectStore
             v-if="invocationPreferredObjectStoreId"
             :preferred-object-store-id="invocationPreferredObjectStoreId"
-            forWhat="Galaxy will default to storing this tool run's output in">
+            for-what="Galaxy will default to storing this tool run's output in">
         </ShowSelectedObjectStore>
         <div v-else>
             No selection has been made for this worklfow invocation. Defaults from history, user, or Galaxy will be

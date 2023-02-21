@@ -26,7 +26,7 @@
                             @click="handleSubmit(object_store.object_store_id)"
                             >{{ object_store.name }}
                             <ObjectStoreBadges :badges="object_store.badges" size="lg" :more-on-hover="false" />
-                            <ProvidedQuotaSourceUsageBar :objectStore="object_store" :compact="true">
+                            <ProvidedQuotaSourceUsageBar :object-store="object_store" :compact="true">
                             </ProvidedQuotaSourceUsageBar>
                         </b-button>
                     </b-button-group>
@@ -58,6 +58,7 @@
 
 <script>
 import axios from "axios";
+import { prependPath } from "utils/redirect";
 import LoadingSpan from "components/LoadingSpan";
 import DescribeObjectStore from "components/ObjectStore/DescribeObjectStore";
 import { errorMessageAsString } from "utils/simple-error";
@@ -72,10 +73,6 @@ export default {
         ProvidedQuotaSourceUsageBar,
     },
     props: {
-        root: {
-            type: String,
-            required: true,
-        },
         selectedObjectStoreId: {
             type: String,
             default: null,
@@ -125,8 +122,9 @@ is not stored in the correct place, contact your Galaxy adminstrator for more in
         },
     },
     async mounted() {
+        const url = prependPath("api/object_store?selectable=true");
         try {
-            const { data } = await axios.get(`${this.root}api/object_store?selectable=true`);
+            const { data } = await axios.get(url);
             this.objectStores = data;
             this.loading = false;
         } catch (e) {

@@ -10,7 +10,6 @@ describe("WorkflowStorageConfiguration.vue", () => {
 
     async function doMount(split) {
         const propsData = {
-            root: "/root/",
             splitObjectStore: split,
             invocationPreferredObjectStoreId: null,
             invocationPreferredIntermediateObjectStoreId: null,

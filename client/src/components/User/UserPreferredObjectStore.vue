@@ -24,12 +24,11 @@
                 @show="resetModal"
                 @hidden="resetModal">
                 <SelectObjectStore
-                    :root="root"
                     :parent-error="error"
                     :for-what="newDatasetsDescription"
                     :selected-object-store-id="selectedObjectStoreId"
-                    :default-option-title="galaxySelectionDefalutTitle"
-                    :default-option-description="galaxySelectionDefalutDescription"
+                    :default-option-title="galaxySelectionDefaultTitle"
+                    :default-option-description="galaxySelectionDefaultDescription"
                     @onSubmit="handleSubmit" />
             </b-modal>
         </div>
@@ -38,6 +37,7 @@
 
 <script>
 import axios from "axios";
+import { prependPath } from "utils/redirect";
 import Vue from "vue";
 import { BModal, BRow, VBModal } from "bootstrap-vue";
 import SelectObjectStore from "components/ObjectStore/SelectObjectStore";
@@ -52,10 +52,6 @@ export default {
         SelectObjectStore,
     },
     props: {
-        root: {
-            type: String,
-            required: true,
-        },
         userId: {
             type: String,
             required: true,
@@ -74,8 +70,8 @@ export default {
             modalSize: "sm",
             showModal: false,
             selectedObjectStoreId: this.preferredObjectStoreId,
-            galaxySelectionDefalutTitle: "Use Galaxy Defaults",
-            galaxySelectionDefalutDescription:
+            galaxySelectionDefaultTitle: "Use Galaxy Defaults",
+            galaxySelectionDefaultDescription:
                 "Selecting this will reset Galaxy to default behaviors configured by your Galaxy administrator.",
         };
     },
@@ -83,8 +79,9 @@ export default {
         resetModal() {},
         async handleSubmit(preferredObjectStoreId) {
             const payload = { preferred_object_store_id: preferredObjectStoreId };
+            const url = prependPath("api/users/current");
             try {
-                await axios.put(`${this.root}api/users/current`, payload);
+                await axios.put(url, payload);
             } catch (e) {
                 this.error = errorMessageAsString(e);
             }

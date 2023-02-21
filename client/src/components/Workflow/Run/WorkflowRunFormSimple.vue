@@ -32,7 +32,6 @@
                             <WorkflowStorageConfiguration
                                 v-if="config.object_store_allows_id_selection"
                                 :split-object-store="splitObjectStore"
-                                :root="root"
                                 :invocation-preferred-object-store-id="preferredObjectStoreId"
                                 :invocation-intermediate-preferred-object-store-id="preferredIntermediateObjectStoreId"
                                 @updated="onStorageUpdate">
@@ -60,7 +59,6 @@ import { isWorkflowInput } from "components/Workflow/constants";
 import { errorMessageAsString } from "utils/simple-error";
 import { allowCachedJobs } from "components/Tool/utilities";
 import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration";
-import { getAppRoot } from "onload/loadConfig";
 
 export default {
     components: {
@@ -87,7 +85,6 @@ export default {
     data() {
         const newHistory = this.targetHistory == "new" || this.targetHistory == "prefer_new";
         return {
-            root: getAppRoot(),
             formData: {},
             inputTypes: {},
             sendToNewHistory: newHistory,

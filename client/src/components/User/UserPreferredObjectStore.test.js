@@ -8,11 +8,10 @@ import flushPromises from "flush-promises";
 const localVue = getLocalVue(true);
 
 const TEST_USER_ID = "myTestUserId";
-const TEST_ROOT = "/";
 
 function mountComponent() {
     const wrapper = mount(UserPreferredObjectStore, {
-        propsData: { userId: TEST_USER_ID, root: TEST_ROOT },
+        propsData: { userId: TEST_USER_ID },
         localVue,
         stubs: { "b-popover": true },
     });

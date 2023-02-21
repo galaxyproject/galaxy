@@ -18,7 +18,6 @@
             hide-footer>
             <WorkflowSelectPreferredObjectStore
                 :invocation-preferred-object-store-id="selectedObjectStoreId"
-                :root="root"
                 @updated="onUpdate" />
         </b-modal>
         <b-button
@@ -42,7 +41,6 @@
             hide-footer>
             <WorkflowSelectPreferredObjectStore
                 :invocation-preferred-object-store-id="selectedIntermediateObjectStoreId"
-                :root="root"
                 @updated="onUpdateIntermediate" />
         </b-modal>
     </span>
@@ -58,10 +56,6 @@ export default {
         WorkflowTargetPreferredObjectStorePopover,
     },
     props: {
-        root: {
-            type: String,
-            required: true,
-        },
         splitObjectStore: {
             type: Boolean,
             required: true,

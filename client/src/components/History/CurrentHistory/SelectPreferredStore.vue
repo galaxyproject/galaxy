@@ -1,6 +1,5 @@
 <template>
     <SelectObjectStore
-        :root="root"
         :parent-error="error"
         :for-what="newDatasetsDescription"
         :selected-object-store-id="selectedObjectStoreId"
@@ -12,6 +11,7 @@
 <script>
 import axios from "axios";
 import SelectObjectStore from "components/ObjectStore/SelectObjectStore";
+import { prependPath } from "utils/redirect";
 import { errorMessageAsString } from "utils/simple-error";
 
 export default {
@@ -25,10 +25,6 @@ export default {
         },
         history: {
             type: Object,
-            required: true,
-        },
-        root: {
-            type: String,
             required: true,
         },
     },
@@ -66,8 +62,9 @@ export default {
     methods: {
         async handleSubmit(preferredObjectStoreId) {
             const payload = { preferred_object_store_id: preferredObjectStoreId };
+            const url = prependPath(`api/histories/${this.history.id}`);
             try {
-                await axios.put(`${this.root}api/histories/${this.history.id}`, payload);
+                await axios.put(url, payload);
             } catch (e) {
                 this.error = errorMessageAsString(e);
             }

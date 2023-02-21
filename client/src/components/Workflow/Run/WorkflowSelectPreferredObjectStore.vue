@@ -1,6 +1,5 @@
 <template>
     <SelectObjectStore
-        :root="root"
         :for-what="newDatasetsDescription"
         :selected-object-store-id="selectedObjectStoreId"
         :default-option-title="defaultOptionTitle"
@@ -15,10 +14,6 @@ export default {
         SelectObjectStore,
     },
     props: {
-        root: {
-            type: String,
-            required: true,
-        },
         invocationPreferredObjectStoreId: {
             type: String,
             default: null,

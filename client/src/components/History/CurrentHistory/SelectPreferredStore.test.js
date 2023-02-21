@@ -1,13 +1,12 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
-import HistorySelectPreferredObjectStore from "./HistorySelectPreferredObjectStore";
+import SelectPreferredStore from "./SelectPreferredStore";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 
 const localVue = getLocalVue(true);
 
-const TEST_ROOT = "/";
 const TEST_HISTORY_ID = "myTestHistoryId";
 
 const TEST_HISTORY = {
@@ -16,8 +15,8 @@ const TEST_HISTORY = {
 };
 
 function mountComponent() {
-    const wrapper = mount(HistorySelectPreferredObjectStore, {
-        propsData: { userPreferredObjectStoreId: null, history: TEST_HISTORY, root: TEST_ROOT },
+    const wrapper = mount(SelectPreferredStore, {
+        propsData: { userPreferredObjectStoreId: null, history: TEST_HISTORY },
         localVue,
     });
     return wrapper;
@@ -30,7 +29,7 @@ const OBJECT_STORES = [
     { object_store_id: "object_store_2", badges: [], quota: { enabled: false } },
 ];
 
-describe("HistorySelectPreferredObjectStore.vue", () => {
+describe("SelectPreferredStore.vue", () => {
     let axiosMock;
 
     beforeEach(async () => {

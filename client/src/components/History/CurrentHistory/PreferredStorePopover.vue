@@ -32,6 +32,7 @@ export default {
         },
         historyPreferredObjectStoreId: {
             type: String,
+            default: null,
         },
         user: { type: Object, required: true },
     },

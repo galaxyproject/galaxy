@@ -20,11 +20,11 @@
                     @click="showPreferredObjectStoreModal = true">
                     <icon icon="hdd" />
                 </b-button>
-                <HistoryTargetPreferredObjectStorePopover
+                <PreferredStorePopover
                     :history-id="history.id"
                     :history-preferred-object-store-id="historyPreferredObjectStoreId"
                     :user="user">
-                </HistoryTargetPreferredObjectStorePopover>
+                </PreferredStorePopover>
                 <b-button-group>
                     <b-button
                         v-b-tooltip.hover
@@ -75,10 +75,9 @@
                     title-tag="h3"
                     size="sm"
                     hide-footer>
-                    <HistorySelectPreferredObjectStore
+                    <SelectPreferredStore
                         :user-preferred-object-store-id="user.preferred_object_store_id"
                         :history="history"
-                        :root="root"
                         @updated="onUpdatePreferredObjectStoreId" />
                 </b-modal>
             </b-button-group>
@@ -91,15 +90,14 @@ import prettyBytes from "pretty-bytes";
 import { formatDistanceToNowStrict } from "date-fns";
 import { usesDetailedHistoryMixin } from "./usesDetailedHistoryMixin.js";
 import CurrentUser from "components/providers/CurrentUser";
-import HistoryTargetPreferredObjectStorePopover from "./HistoryTargetPreferredObjectStorePopover";
-import HistorySelectPreferredObjectStore from "./HistorySelectPreferredObjectStore";
-import { getAppRoot } from "onload/loadConfig";
+import PreferredStorePopover from "./PreferredStorePopover";
+import SelectPreferredStore from "./SelectPreferredStore";
 
 export default {
     components: {
         CurrentUser,
-        HistoryTargetPreferredObjectStorePopover,
-        HistorySelectPreferredObjectStore,
+        PreferredStorePopover,
+        SelectPreferredStore,
     },
     filters: {
         niceFileSize(rawSize = 0) {
@@ -119,7 +117,6 @@ export default {
             reloadButtonVariant: "link",
             showPreferredObjectStoreModal: false,
             historyPreferredObjectStoreId: this.history.preferred_object_store_id,
-            root: getAppRoot(),
         };
     },
     mounted() {
