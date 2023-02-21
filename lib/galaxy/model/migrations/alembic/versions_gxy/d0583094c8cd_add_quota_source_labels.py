@@ -17,7 +17,6 @@ from sqlalchemy import (
 from galaxy.model.migrations.util import (
     add_unique_constraint,
     drop_column,
-    drop_unique_constraint,
 )
 
 # revision identifiers, used by Alembic.
@@ -39,12 +38,12 @@ def upgrade():
         Column("disk_usage", Numeric(15, 0)),
     )
     add_unique_constraint("uqsu_unique_label_per_user", "user_quota_source_usage", ["user_id", "quota_source_label"])
-    drop_unique_constraint("ix_default_quota_association_type", "default_quota_association")
+    op.drop_index("ix_default_quota_association_type", "default_quota_association")
     op.create_index("ix_quota_quota_source_label", "quota", ["quota_source_label"])
 
 
 def downgrade():
-    add_unique_constraint("ix_default_quota_association_type", "default_quota_association", ["type"])
+    op.create_index("ix_default_quota_association_type", "default_quota_association", ["type"], unique=True)
     op.drop_table("user_quota_source_usage")
     op.drop_index("ix_quota_quota_source_label", "quota")
     drop_column("quota", "quota_source_label")
