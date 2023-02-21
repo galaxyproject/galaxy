@@ -5080,4 +5080,36 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_training_recommendations``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+:Description:
+    Displays a link to training material, if any includes the current
+    tool. When activated the following options also need to be set:
+    - tool_training_recommendations_link
+:Default: ``true``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_training_recommendations_link``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Template URL to display all tutorials containing current tool.
+    Valid template inputs are:   {repository}   {name}   {id}
+    {version}
+:Default: ``https://training.galaxyproject.org/training-material/by-tool/{repository}/{name}.html``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_training_recommendations_api_url``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    URL to API describing tutorials containing specific tools. When
+    CORS is used, make sure to add this host.
+:Default: ``https://training.galaxyproject.org/training-material/api/top-tools.json``
+:Type: str

@@ -382,6 +382,10 @@ $ui-margin-horizontal-large: $margin-v * 2;
     column-gap: 0.25rem;
 }
 
+.flex-gapy-1 {
+    row-gap: 0.25rem;
+}
+
 /* Heading Sizes */
 .h-xl {
     font-size: $h1-font-size;

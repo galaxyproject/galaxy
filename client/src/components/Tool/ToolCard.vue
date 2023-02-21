@@ -9,6 +9,7 @@ import Heading from "components/Common/Heading";
 import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore";
 import ToolTargetPreferredObjectStorePopover from "./ToolTargetPreferredObjectStorePopover";
 import { getAppRoot } from "onload/loadConfig";
+import ToolTutorialRecommendations from "./ToolTutorialRecommendations.vue";
 
 import { computed, ref, watch } from "vue";
 import { useCurrentUser } from "composables/user";
@@ -165,6 +166,12 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
         <slot name="buttons" />
 
         <div>
+            <ToolTutorialRecommendations
+                :id="props.options.id"
+                :name="props.options.name"
+                :version="props.options.version"
+                :repository="props.options.tool_shed_repository?.owner" />
+
             <div class="mt-2 mb-4">
                 <Heading h2 separator bold size="sm"> Help </Heading>
                 <ToolHelp :content="props.options.help" />
