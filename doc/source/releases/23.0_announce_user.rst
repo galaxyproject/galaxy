@@ -91,15 +91,6 @@ New Datatypes
 ===========================================================
 
 .. datatypes
-* Format Python code with black 23.1.0
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 15488`_
-* Fix large_file.mako arguments
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 15503`_
-* Enable conversion of bz2 files to gz in converter
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 15590`_
 * Add "Datatypes" Page
   (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
   `Pull Request 14464`_
@@ -138,9 +129,6 @@ Builtin Tool Updates
 * Update interactivetool_ml_jupyter_notebook.xml
   (thanks to `@anuprulez <https://github.com/anuprulez>`__).
   `Pull Request 15297`_
-* Format Python code with black 23.1.0
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 15488`_
 * Fix wrong tool converter names
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 15579`_
