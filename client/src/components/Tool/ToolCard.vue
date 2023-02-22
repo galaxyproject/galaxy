@@ -166,13 +166,7 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
         <slot name="buttons" />
 
         <div>
-            <ToolTutorialRecommendations
-                :id="props.options.id"
-                :name="props.options.name"
-                :version="props.options.version"
-                :owner="props.options.tool_shed_repository?.owner" />
-
-            <div class="mt-2 mb-4">
+            <div v-if="props.options.help" class="mt-2 mb-4">
                 <Heading h2 separator bold size="sm"> Help </Heading>
                 <ToolHelp :content="props.options.help" />
             </div>
@@ -184,6 +178,12 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
                 :license="props.options.license"
                 :creators="props.options.creators"
                 :requirements="props.options.requirements" />
+
+            <ToolTutorialRecommendations
+                :id="props.options.id"
+                :name="props.options.name"
+                :version="props.options.version"
+                :owner="props.options.tool_shed_repository?.owner" />
         </div>
     </div>
 </template>
