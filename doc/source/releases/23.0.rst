@@ -96,6 +96,9 @@ Enhancements
   `Pull Request 14990`_
 .. enhancement_tag_datatypes
 
+* Enable conversion of bz2 files to gz in converter
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15590`_
 * Replace pysam in converters by command line tools
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 13411`_
@@ -137,6 +140,9 @@ Enhancements
   `Pull Request 15344`_
 .. enhancement_tag_tools
 
+* Update interactivetool_ml_jupyter_notebook.xml
+  (thanks to `@anuprulez <https://github.com/anuprulez>`__).
+  `Pull Request 15297`_
 * Support empty compressed dataset in  filter_empty_datasets tool
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 14360`_
@@ -145,6 +151,9 @@ Enhancements
   `Pull Request 14629`_
 .. enhancement_tag_workflows
 
+* Mark disconnected required inputs in editor
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15357`_
 * Add workflow invocations link to email template
   (thanks to `@hujambo-dunia <https://github.com/hujambo-dunia>`__).
   `Pull Request 14062`_
@@ -183,6 +192,12 @@ Enhancements
   `Pull Request 15275`_
 .. enhancement_tag_ui
 
+* Allow configuring webpack devserver port
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15379`_
+* Client README updates, watch/serve tweaks
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 15380`_
 * Convert Client to Single Page application
   (thanks to `@guerler <https://github.com/guerler>`__).
   `Pull Request 13984`_
@@ -289,6 +304,9 @@ Enhancements
   `Pull Request 15018`_
 .. enhancement_tag_admin
 
+* Use sentry-fastapi integration, expose sampling rate
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15553`_
 * Add documentation how to avoid data modification by tools
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 14239`_
@@ -315,6 +333,24 @@ Enhancements
   `Pull Request 15256`_
 .. enhancement
 
+* Make options text clear for datasets list
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 15410`_
+* Reduce workflow tool form request frequency
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 15426`_
+* Workflow editor minimap rework
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 15463`_
+* More comfortable initial pan for workflow editor
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 15466`_
+* Test validators for optional parameters
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 15491`_
+* More responsive clientside search
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 15545`_
 * Automatically sort tools in sections by name
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 12288`_
@@ -815,6 +851,9 @@ Enhancements
   `Pull Request 15346`_
 .. small_enhancement
 
+* Update default GALAXY_URL for webpack-dev-server
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 15391`_
 * Refactor _FieldText to vue.js
   (thanks to `@neoformit <https://github.com/neoformit>`__).
   `Pull Request 13375`_
@@ -1169,6 +1208,12 @@ Fixes
   `Pull Request 15332`_
 .. bug_tag_datatypes
 
+* Format Python code with black 23.1.0
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 15488`_
+* Fix large_file.mako arguments
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15503`_
 * do not split "." but the path
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 14760`_
@@ -1180,6 +1225,12 @@ Fixes
   `Pull Request 15053`_
 .. bug_tag_tools
 
+* Fix wrong tool converter names
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15579`_
+* Fix unbound local error in sort collection tool
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15583`_
 * interval2maf remove from unversioned or deprecate
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 14573`_
@@ -1194,6 +1245,27 @@ Fixes
   `Pull Request 15304`_
 .. bug_tag_workflows
 
+* Adding more directive to the Invalid Input tooltip
+  (thanks to `@assuntad23 <https://github.com/assuntad23>`__).
+  `Pull Request 15406`_
+* Fix node input map over status
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15408`_
+* Resolve ``collection_type_source`` in workflow editor
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15430`_
+* Fix data_column and empty_file filters when DCE is passed
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15465`_
+* Fix multi-input connection handling in workflow editor
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15472`_
+* Fix incorrect warning for workflow output duplicate label
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 15475`_
+* Fix inserting inputs through repeats
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15500`_
 * Fix refactor action dropping outputs on subworkflow connection
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 14494`_
@@ -1232,6 +1304,9 @@ Fixes
   `Pull Request 15343`_
 .. bug_tag_ui
 
+* Provide d3@3 for older visualization compatibility
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 15462`_
 * Fix run client dev server in Gitpod
   (thanks to `@itisAliRH <https://github.com/itisAliRH>`__).
   `Pull Request 14111`_
@@ -1255,6 +1330,15 @@ Fixes
   `Pull Request 15103`_
 .. bug_tag_jobs
 
+* Fix visible handling for exisiting datasets on discovery
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15525`_
+* Fixes for Pulsar 0.15.0 discovered on usegalaxy.org
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 15535`_
+* Cast ``job_key`` to string
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15578`_
 * Synchronize job runner utils with fixes from and for Pulsar's version
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 14727`_
@@ -1272,6 +1356,12 @@ Fixes
   `Pull Request 14968`_
 .. bug_tag_admin
 
+* Change Field Method for Tool Table Columns to a Map
+  (thanks to `@assuntad23 <https://github.com/assuntad23>`__).
+  `Pull Request 15529`_
+* Drop SentryWSGIMiddleware
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15548`_
 * Disallow indexing of the /training-materials/ proxy used for "Tutorial Mode"
   (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
   `Pull Request 14283`_
@@ -1283,6 +1373,159 @@ Fixes
   `Pull Request 15322`_
 .. bug
 
+* Ensure that tool form is initialized before attempting updates
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 15325`_
+* Use ``galaxy.util.download_to_file`` instead of wget/curl
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15356`_
+* Add failed metadata info
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 15359`_
+* Reset confirmation state when unmounting workflow editor
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15378`_
+* Fix history modal selection highlight
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 15381`_
+* Fix workflow editing route for workflows created from history
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 15384`_
+* Fix Datatypes Page
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 15398`_
+* Fix Workflow Editor Zoom
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 15399`_
+* Redirect anonymous users on histories/list
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 15400`_
+* Disable create and switch histories anonymously
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 15403`_
+* Sort tool sections in a way that works for both Chrome and Firefox
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 15419`_
+* Hide metadata auto-detection option if dataset is in improper state
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 15422`_
+* Move workflow node loading indicator
+  (thanks to `@martenson <https://github.com/martenson>`__).
+  `Pull Request 15423`_
+* Clarify info messages for Collection Edit tabs
+  (thanks to `@assuntad23 <https://github.com/assuntad23>`__).
+  `Pull Request 15431`_
+* ToolBoxWorkflow fix tool compatibility and search
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 15432`_
+* Add name+description ToolSearch
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 15434`_
+* fix looks_like_yaml_or_cwl_with_class
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 15439`_
+* Serialize CWL tools via json, not pickle
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15441`_
+* Adjust to bleach.ALLOWED_PROTOCOLS being frozenset
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15442`_
+* fix password reset url
+  (thanks to `@martenson <https://github.com/martenson>`__).
+  `Pull Request 15453`_
+* Fix workflow toolbox sorting of workflows
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 15455`_
+* restore rst_invalid function
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 15457`_
+* Strip EDAM Quotes
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 15474`_
+* Fix workflow output activiting on activating node
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15478`_
+* Create ToolSuccess route and refactor component
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 15484`_
+* ToolSearch trim whitespace in query
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 15485`_
+* ToolBox remove Expression Tools section
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 15486`_
+* Add support for Python 3.11
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 15487`_
+* Update Collection Element in Collection View
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 15501`_
+* Add Database filter to HistoryFilters
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 15505`_
+* xsd fixes for output actions
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 15508`_
+* Fix phyloviz
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 15516`_
+* Fix webhook backbone view
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15522`_
+* Fix `histories shared with me` navigation
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 15531`_
+* prevent leaking decoded ids through markdown error handling
+  (thanks to `@martenson <https://github.com/martenson>`__).
+  `Pull Request 15536`_
+* Fix workflow success banner history target display
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 15541`_
+* Add new release tags to manage_db.sh script
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 15543`_
+* Refactor and fix file dragging
+  (thanks to `@martenson <https://github.com/martenson>`__).
+  `Pull Request 15544`_
+* Switch to official setup-node action for cache
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15547`_
+* Disable invocation export when Celery is disabled
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 15556`_
+* fix hostname parsing for newer Docker versions
+  (thanks to `@SergeyYakubov <https://github.com/SergeyYakubov>`__).
+  `Pull Request 15561`_
+* Fix db migration release tag migration hashes for 23.0
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 15571`_
+* Update gravity dependency to 1.0 PyPI release
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 15577`_
+* Fix job completion email from tool form
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15585`_
+* Backport of `#15517 <https://github.com/galaxyproject/galaxy/issues/15517>`__
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 15586`_
+* Allow anonymous access to tool source view
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 15589`_
+* History scroller fixes
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 15595`_
+* Fix masthead/ribbon alerts to use Alert component, update variant
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 15603`_
+* check only first 64 chars of the activation token
+  (thanks to `@martenson <https://github.com/martenson>`__).
+  `Pull Request 15605`_
+* Fix new user welcome resource loading
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 15615`_
+* Fix duplicated Copy History dialog in Shared Histories
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 15619`_
 * linter: warn if expect_num_outputs is missing
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 12975`_

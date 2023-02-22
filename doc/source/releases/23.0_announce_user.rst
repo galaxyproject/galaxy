@@ -91,6 +91,15 @@ New Datatypes
 ===========================================================
 
 .. datatypes
+* Format Python code with black 23.1.0
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 15488`_
+* Fix large_file.mako arguments
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15503`_
+* Enable conversion of bz2 files to gz in converter
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15590`_
 * Add "Datatypes" Page
   (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
   `Pull Request 14464`_
@@ -126,6 +135,18 @@ Builtin Tool Updates
 ===========================================================
 
 .. tools
+* Update interactivetool_ml_jupyter_notebook.xml
+  (thanks to `@anuprulez <https://github.com/anuprulez>`__).
+  `Pull Request 15297`_
+* Format Python code with black 23.1.0
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 15488`_
+* Fix wrong tool converter names
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15579`_
+* Fix unbound local error in sort collection tool
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15583`_
 * Simplify head wrapper - same functionality, no pipe
   (thanks to `@wm75 <https://github.com/wm75>`__).
   `Pull Request 14895`_
