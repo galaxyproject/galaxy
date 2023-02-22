@@ -60,9 +60,9 @@ define({
     "Log in here.": false,
     "Create a Galaxy account": false,
     "Or, register with email": false,
-    "Forgot password?": false,
-    "Register here.": false,
-    "Click here to reset your password.": false,
+    "Forgot password?": "¿Olvidó su contraseña?",
+    "Register here.": "Regístrese aquí.",
+    "Click here to reset your password.": "Haga clic aquí para restablecer su contraseña.",
     "Logged in as": "Se ha conectado como",
 
     Preferences: "Preferencias",
