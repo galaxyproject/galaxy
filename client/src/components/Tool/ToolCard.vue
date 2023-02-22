@@ -171,6 +171,12 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
                 <ToolHelp :content="props.options.help" />
             </div>
 
+            <ToolTutorialRecommendations
+                :id="props.options.id"
+                :name="props.options.name"
+                :version="props.options.version"
+                :owner="props.options.tool_shed_repository?.owner" />
+
             <ToolFooter
                 :id="props.id"
                 :has-citations="props.options.citations"
@@ -178,12 +184,6 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
                 :license="props.options.license"
                 :creators="props.options.creators"
                 :requirements="props.options.requirements" />
-
-            <ToolTutorialRecommendations
-                :id="props.options.id"
-                :name="props.options.name"
-                :version="props.options.version"
-                :owner="props.options.tool_shed_repository?.owner" />
         </div>
     </div>
 </template>
