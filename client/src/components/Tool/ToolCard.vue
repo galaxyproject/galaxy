@@ -170,7 +170,7 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
                 :id="props.options.id"
                 :name="props.options.name"
                 :version="props.options.version"
-                :repository="props.options.tool_shed_repository?.owner" />
+                :owner="props.options.tool_shed_repository?.owner" />
 
             <div class="mt-2 mb-4">
                 <Heading h2 separator bold size="sm"> Help </Heading>

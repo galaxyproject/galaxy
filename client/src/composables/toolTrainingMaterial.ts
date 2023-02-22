@@ -1,16 +1,11 @@
 import { useConfig } from "./config";
 import { computed, ref, watch, type Ref } from "vue";
-
-type Name = string;
-type Repo = string;
-type ID = string;
-
-type TrainingId = `${Repo}/${Name}` | ID;
+import { escapeRegExp } from "@/utils/regExp";
 
 type TrainingDetails = {
     tool_id: Array<
         [
-            string, // ID (unused)
+            string, // toolshed tool ID
             string // Version
         ]
     >;
@@ -25,7 +20,7 @@ type TrainingDetails = {
 };
 
 type TrainingMaterialResponse = {
-    [id: TrainingId]: TrainingDetails;
+    [id: string]: TrainingDetails;
 };
 
 type Config = {
@@ -40,9 +35,30 @@ export type TutorialDetails = {
     url: URL;
 };
 
+/** caches the response of the training material api */
 const cachedResponse: Ref<TrainingMaterialResponse | null> = ref(null);
 
-export function useToolTrainingMaterial(id: ID, name: Name, version: string, repo?: Repo) {
+/** maps toolshed tool ids to training tool ids */
+const toolIdMap: Map<string, string> = new Map();
+
+function mapToolIds() {
+    Object.entries(cachedResponse.value ?? {}).forEach(([trainingId, details]) => {
+        details.tool_id.forEach(([id, version]) => {
+            if (id === version) {
+                // built-in tool
+                toolIdMap.set(id, trainingId);
+            } else {
+                const regEx = new RegExp(`${escapeRegExp(version)}$`);
+                const trimmedId = id.replace(regEx, "");
+
+                toolIdMap.set(trimmedId, trainingId);
+            }
+        });
+    });
+}
+
+/** Training information about given tool */
+export function useToolTrainingMaterial(id: string, name: string, version: string, owner?: string) {
     const { config, isLoaded }: { config: Ref<Config>; isLoaded: Ref<boolean> } = useConfig();
     const apiEnabled = computed(() => {
         return Boolean(
@@ -51,6 +67,8 @@ export function useToolTrainingMaterial(id: ID, name: Name, version: string, rep
                 config.value.tool_training_recommendations_api_url
         );
     });
+
+    const cacheLoaded = ref(false);
 
     watch(
         () => isLoaded.value,
@@ -64,17 +82,23 @@ export function useToolTrainingMaterial(id: ID, name: Name, version: string, rep
 
                 if (res.ok) {
                     cachedResponse.value = await res.json();
+                    mapToolIds();
                 }
             }
+
+            cacheLoaded.value = true;
         },
         { immediate: true }
     );
 
     const identifier = computed(() => {
-        if (repo) {
-            return `${repo}/${name.toLowerCase()}`;
+        const regEx = new RegExp(`${escapeRegExp(version)}$`);
+        const trimmedId = id.replace(regEx, "");
+
+        if (!cacheLoaded.value) {
+            return trimmedId;
         } else {
-            return id;
+            return toolIdMap.get(trimmedId) ?? trimmedId;
         }
     });
 
@@ -127,7 +151,7 @@ export function useToolTrainingMaterial(id: ID, name: Name, version: string, rep
     });
 
     const allTutorialsUrl = computed<string | undefined>(() => {
-        if (!isLoaded.value || !config.value.tool_training_recommendations_link) {
+        if (!cacheLoaded.value || !config.value.tool_training_recommendations_link) {
             return;
         }
 
@@ -136,7 +160,7 @@ export function useToolTrainingMaterial(id: ID, name: Name, version: string, rep
         url = url.replace("{training_tool_identifier}", identifier.value);
         url = url.replace("{tool_id}", id);
         url = url.replace("{name}", name);
-        url = url.replace("{repository}", repo ?? "");
+        url = url.replace("{repository_owner}", owner ?? "");
         url = url.replace("{version}", version);
 
         return url;

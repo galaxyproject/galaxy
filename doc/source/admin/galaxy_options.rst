@@ -5099,8 +5099,8 @@
 
 :Description:
     Template URL to display all tutorials containing current tool.
-    Valid template inputs are:   {repository}   {name}   {tool_id}
-    {training_tool_identifier}   {version}
+    Valid template inputs are:   {repository_owner}   {name}
+    {tool_id}   {training_tool_identifier}   {version}
 :Default: ``https://training.galaxyproject.org/training-material/by-tool/{training_tool_identifier}.html``
 :Type: str
 

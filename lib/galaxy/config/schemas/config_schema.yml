@@ -3715,7 +3715,7 @@ mapping:
         desc: |
           Template URL to display all tutorials containing current tool.
           Valid template inputs are:
-            {repository}
+            {repository_owner}
             {name}
             {tool_id}
             {training_tool_identifier}

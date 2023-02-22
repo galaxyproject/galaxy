@@ -14,14 +14,14 @@ const props = defineProps<{
     name: string;
     id: string;
     version: string;
-    repository?: string;
+    owner?: string;
 }>();
 
 //@ts-ignore: bad library types
 library.add(faCaretDown);
 
 const { trainingAvailable, trainingCategories, tutorialDetails, allTutorialsUrl, versionAvailable } =
-    useToolTrainingMaterial(props.id, props.name, props.version, props.repository);
+    useToolTrainingMaterial(props.id, props.name, props.version, props.owner);
 
 const collapseId = useUid("collapse-");
 
