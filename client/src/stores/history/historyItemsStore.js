@@ -18,9 +18,10 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
     state: () => ({
         items: {},
         itemKey: "hid",
-        latestCreateTime: new Date(),
+        latestCreateTime: undefined,
         totalMatchesCount: undefined,
         lastCheckedTime: new Date(),
+        lastUpdateTime: new Date(),
         relatedItems: {},
         isWatching: false,
     }),
@@ -55,6 +56,9 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
         getLastCheckedTime: (state) => {
             return state.lastCheckedTime;
         },
+        getLastUpdateTime: (state) => {
+            return state.lastUpdateTime;
+        },
         getWatchingVisibility: (state) => {
             return state.isWatching;
         },
@@ -82,8 +86,10 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
                 payload.forEach((item) => {
                     if (item.state == "ok") {
                         const itemCreateTime = new Date(item.create_time);
-                        if (itemCreateTime > state.latestCreateTime) {
+                        if (!state.latestCreateTime || itemCreateTime > state.latestCreateTime) {
                             state.latestCreateTime = itemCreateTime;
+                        } else if (itemCreateTime > state.lastUpdateTime) {
+                            state.lastUpdateTime = itemCreateTime;
                         }
                     }
                     if (relatedHid) {
@@ -95,6 +101,9 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
         },
         setLastCheckedTime(checkForUpdate) {
             this.lastCheckedTime = checkForUpdate;
+        },
+        setLastUpdateTime(lastUpdateTime = new Date()) {
+            this.lastUpdateTime = lastUpdateTime;
         },
         setWatchingVisibility(watchingVisibility) {
             this.isWatching = watchingVisibility;
