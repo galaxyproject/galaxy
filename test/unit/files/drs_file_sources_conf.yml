@@ -1,0 +1,10 @@
+- type: drs
+  id: test1
+  doc: Test drs repository filesource
+  http_headers:
+    Authorization: "Bearer ${user.preferences['oidc|bearer_token']}"
+
+- type: s3fs
+  id: test2
+  doc: Generic s3 handler
+  anon: true
