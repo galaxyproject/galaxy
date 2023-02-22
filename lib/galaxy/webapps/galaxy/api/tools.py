@@ -222,7 +222,10 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         kwd = _kwd_or_payload(kwd)
         tool_version = kwd.get("tool_version", None)
         tool = self.service._get_tool(trans, id, tool_version=tool_version, user=trans.user)
-        path = tool.test_data_path(kwd.get("filename"))
+        try:
+            path = tool.test_data_path(kwd.get("filename"))
+        except ValueError as e:
+            raise exceptions.MessageException(str(e))
         if path:
             return path
         else:
