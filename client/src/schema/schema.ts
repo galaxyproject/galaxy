@@ -3083,7 +3083,7 @@ export interface components {
              * @description The URI root used by this type of plugin.
              * @example gximport://
              */
-            uri_root: string;
+            uri_root?: string;
             /**
              * Writeable
              * @description Whether this files source plugin allows write access.
@@ -3097,6 +3097,7 @@ export interface components {
          * @default []
          * @example [
          *   {
+         *     "browsable": true,
          *     "doc": "Galaxy's library import directory",
          *     "id": "_import",
          *     "label": "Library Import Directory",
@@ -13215,6 +13216,10 @@ export interface operations {
          * @description Display plugin information for each of the gxfiles:// URI targets available.
          */
         parameters?: {
+            /** @description Whether to return browsable filesources only. The default is `True`, which will omit filesourceslike `http` and `base64` that do not implement a list method. */
+            query?: {
+                browsable_only?: boolean;
+            };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
                 "run-as"?: string;

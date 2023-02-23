@@ -182,6 +182,10 @@ def _process_raw_inputs(
                 name = raw_input_dict["name"]
                 param_value = raw_input_dict["value"]
                 param_extra = raw_input_dict["attributes"]
+                location = param_extra.get("location")
+                if param_value is None and location:
+                    # If no value is given, we try to get the file name directly from the URL
+                    param_value = os.path.basename(location)
                 if not value.type == "text":
                     param_value = _split_if_str(param_value)
                 if isinstance(value, galaxy.tools.parameters.basic.DataToolParameter):

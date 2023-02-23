@@ -11,6 +11,8 @@ import threading
 from io import BytesIO
 from typing import (
     List,
+    NamedTuple,
+    Optional,
     TYPE_CHECKING,
 )
 
@@ -199,7 +201,11 @@ def version_sorted(elements):
     return [e.tag for e in elements]
 
 
-Target = collections.namedtuple("Target", ["package_name", "version", "build", "package"])
+class Target(NamedTuple):
+    package_name: str
+    version: Optional[str]
+    build: Optional[str]
+    package: Optional[str]
 
 
 def build_target(package_name, version=None, build=None, tag=None):

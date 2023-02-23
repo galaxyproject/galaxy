@@ -445,7 +445,10 @@ class GalaxyInteractorApi:
     def test_data_path(self, tool_id, filename, tool_version=None):
         version_fragment = f"&tool_version={tool_version}" if tool_version else ""
         response = self._get(f"tools/{tool_id}/test_data_path?filename={filename}{version_fragment}", admin=True)
-        return response.json()
+        result = response.json()
+        if response.status_code in [200, 404]:
+            return result
+        raise Exception(result["err_msg"])
 
     def test_data_download(self, tool_id, filename, mode="file", is_output=True, tool_version=None):
         result = None
@@ -1692,6 +1695,8 @@ def test_data_iter(required_files):
             composite_data=extra.get("composite_data", []),
             ftype=extra.get("ftype", DEFAULT_FTYPE),
             dbkey=extra.get("dbkey", DEFAULT_DBKEY),
+            location=extra.get("location", None),
+            md5=extra.get("md5", None),
         )
         edit_attributes = extra.get("edit_attributes", [])
 
