@@ -160,9 +160,9 @@ def supports_skip_locked(engine: Engine) -> bool:
 def _statement_executed_without_error(statement: ClauseElement, engine: Engine) -> bool:
     # Execute statement against database, then issue a rollback.
     try:
-        with engine.begin() as conn:
+        with engine.connect() as conn, conn.begin() as trans:
             conn.execute(statement)
-            conn.rollback()  # ensure no changes to database
+            trans.rollback()  # ensure no changes to database
             return True
     except Exception:
         return False
