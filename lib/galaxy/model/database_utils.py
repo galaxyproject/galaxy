@@ -2,12 +2,21 @@ import sqlite3
 from contextlib import contextmanager
 from typing import Optional
 
-from sqlalchemy import create_engine
+from sqlalchemy import (
+    create_engine,
+    select,
+    update,
+)
+from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.sql.compiler import IdentifierPreparer
-from sqlalchemy.sql.expression import text
+from sqlalchemy.sql.expression import (
+    ClauseElement,
+    text,
+)
 
 from galaxy.exceptions import ConfigurationError
+from galaxy.model import Job
 
 
 def database_exists(db_url, database=None):
@@ -130,3 +139,30 @@ def is_one_database(db1_url: str, db2_url: Optional[str]):
     # TODO: Consider more aggressive check here that this is not the same
     # database file under the hood.
     return not (db1_url and db2_url and db1_url != db2_url)
+
+
+def supports_returning(engine: Engine) -> bool:
+    """
+    Return True if the database bound to `engine` supports the `RETURNING` SQL clause.
+    """
+    stmt = update(Job).where(Job.id == -1).values(create_time=None).returning(Job.id)
+    return _statement_executed_without_error(stmt, engine)
+
+
+def supports_skip_locked(engine: Engine) -> bool:
+    """
+    Return True if the database bound to `engine` supports the `SKIP_LOCKED` parameter.
+    """
+    stmt = select(Job).where(Job.id == -1).with_for_update(skip_locked=True)
+    return _statement_executed_without_error(stmt, engine)
+
+
+def _statement_executed_without_error(statement: ClauseElement, engine: Engine) -> bool:
+    # Execute statement against database, then issue a rollback.
+    try:
+        with engine.connect() as conn, conn.begin() as trans:
+            conn.execute(statement)
+            trans.rollback()  # ensure no changes to database
+            return True
+    except Exception:
+        return False
