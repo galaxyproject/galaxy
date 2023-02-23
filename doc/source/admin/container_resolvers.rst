@@ -3,11 +3,30 @@
 Containers in Galaxy
 ====================
 
+Galaxy can run tools using containers using ``docker`` or ``singularity``.
+
 TODO Advantages / disadvantages (docker vs singularity).
 
-bioconda, quay.org, namespaces
+The containers can be either explicit or (so called) mulled. The former
+are given by ``<container>`` requirements pointing to a specific container.
+The later are containers built for a set of requirements of type package.
+Mulled containers are described by a hash that is unique for a set of
+packages and versions (for mulled v2), e.g. 
+``mulled-v2-0d814cbcd5aa81b280ecadbee9e4aba8d9ab33f7:0fb38379c04f2a8a345a2c8f74b190ea9a51b6f3-0``
+(mulled-v2-PACKAGEHASH:VERSIONHASH-BUILDNUMBER). For mulled containers
+for single packages simply the package name and version are used instead of the hashes,
+e.g. ``ucsc-liftover:357--h446ed27_4``
 
-mulled 
+The bioconda and the Galaxy project provide infrastructure to make mulled
+containers globally available on the ``quay.io/biocontainers`` container registry.
+
+1. For each bioconda package a container is deployed
+2. Mulled containers are created and deployed by the infrastructure provided by the
+`multi-package-containers <https://github.com/BioContainers/multi-package-containers>`_
+repository. Mulled containers are added automatically to this repository for all tools
+in tool repositories that are crawled by the 
+`planemo monitor <https://github.com/galaxyproject/planemo-monitor>`_ repo (e.g.
+which includes IUC and many other tool repositories).
 
 Container Resolvers in Galaxy
 =============================
