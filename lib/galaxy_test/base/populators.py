@@ -70,7 +70,7 @@ from uuid import UUID
 import cwltest.compare
 import requests
 import yaml
-from bioblend.galaxy import GalaxyClient
+from bioblend.galaxyclient import GalaxyClient
 from gxformat2 import (
     convert_and_import_workflow,
     ImporterGalaxyInterface,
