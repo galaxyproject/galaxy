@@ -2711,16 +2711,20 @@ class Notification(Base, Dictifiable, RepresentById):
     id = Column(Integer, primary_key=True)
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, default=now, onupdate=now)
-    source = Column(String(64), index=True)
+    publication_time = Column(DateTime, default=now)
+    expiration_time = Column(DateTime, default=now() + timedelta(days=30 * 6))
+    source = Column(String(32), index=True)
     category = Column(String(64), index=True)
-    priority_level = Column(Integer, index=True)
+    variant = Column(String(16), index=True)
     content = Column(JSONType)
-    deleted = Column(Boolean, index=True, default=False)
+
     user_notification_associations = relationship("UserNotificationAssociation", back_populates="notification")
 
-    def __init__(self, content):
+    def __init__(self, source: str, category: str, variant: str, content):
+        self.source = source
+        self.category = category
+        self.variant = variant
         self.content = content
-        self.deleted = False
 
 
 class UserNotificationAssociation(Base, RepresentById):
@@ -2729,10 +2733,10 @@ class UserNotificationAssociation(Base, RepresentById):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("galaxy_user.id"), index=True)
     notification_id = Column(Integer, ForeignKey("notification.id"), index=True)
-    create_time = Column(DateTime, default=now)
-    update_time = Column(DateTime, default=now, onupdate=now)
-    seen = Column(DateTime, nullable=True)
-    custom_data = Column(JSONType)
+    seen_time = Column(DateTime, nullable=True)
+    favorite = Column(Boolean, index=True, default=False)
+    deleted = Column(Boolean, index=True, default=False)
+
     user = relationship("User", back_populates="all_notifications")
     notification = relationship("Notification", back_populates="user_notification_associations")
 
