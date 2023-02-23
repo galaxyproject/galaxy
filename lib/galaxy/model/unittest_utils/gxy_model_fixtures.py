@@ -897,7 +897,12 @@ def page_rating_association_factory():
 
 @pytest.fixture
 def notification() -> model.Notification:
-    new_notification = model.Notification(content="new_content")
+    new_notification = model.Notification(
+        source="test_fixture",
+        category="tests",
+        variant="info",
+        content='{"subject":"Test Notification","content":"The content"}',
+    )
     return new_notification
 
 
@@ -934,9 +939,9 @@ def stored_workflow_tag_association_factory():
 
 
 @pytest.fixture
-def user_notification_association() -> model.UserNotificationAssociation:
+def user_notification_association(notification) -> model.UserNotificationAssociation:
     user = model.User(email="test" + "@test.com", password="abcde", username="notification_user")
-    new_notification = model.Notification(content="new_content")
+    new_notification = notification
     una = model.UserNotificationAssociation(user, new_notification)
     return una
 
