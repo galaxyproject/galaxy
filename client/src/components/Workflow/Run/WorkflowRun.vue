@@ -97,14 +97,15 @@ export default {
     computed: {
         ...mapState(useHistoryItemsStore, ["getLastUpdateTime"]),
         ...mapGetters("history", ["currentHistoryId"]),
-        rerenderKey() {
+        historyStatusKey() {
             return `${this.currentHistoryId}_${this.getLastUpdateTime}`;
         },
     },
     watch: {
-        rerenderKey() {
-            this.loading = true;
-            this.loadRun();
+        historyStatusKey() {
+            if (!this.invocations) {
+                this.loadRun();
+            }
         },
     },
     created() {
