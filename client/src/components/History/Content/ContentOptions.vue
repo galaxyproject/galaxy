@@ -46,6 +46,8 @@ const editDisabled = computed(() =>
 
 const displayUrl = computed(() => prependPath(props.itemUrls.display));
 
+const viewUrl = computed(() => prependPath(props.itemUrls.view));
+
 const editUrl = computed(() => prependPath(props.itemUrls.edit));
 
 const isCollection = computed(() => !props.isDataset);
@@ -125,7 +127,7 @@ function onDisplay($event: MouseEvent) {
             class="display-btn px-1"
             size="sm"
             variant="link"
-            :href="displayUrl"
+            :href="viewUrl"
             @click.prevent.stop="onDisplay($event)">
             <icon icon="eye" />
         </BButton>

@@ -187,6 +187,7 @@ const itemUrls = computed<ItemUrls>(() => {
         reportError: `/datasets/${id}/error`,
         rerun: `/tool_runner/rerun?id=${id}`,
         visualize: `/visualizations?dataset_id=${id}`,
+        view: `/datasets/${id}`,
     };
 });
 
@@ -300,6 +301,9 @@ function onEdit() {
     router.push(itemUrls.value.edit!);
 }
 
+function onView() {
+    router.push(itemUrls.value.view!);
+}
 function onShowCollectionInfo() {
     router.push(itemUrls.value.showDetails!);
 }
@@ -429,6 +433,7 @@ function unexpandedClick(event: Event) {
                         "
                         @delete="onDelete"
                         @display="onDisplay"
+                        @view="onView"
                         @showCollectionInfo="onShowCollectionInfo"
                         @edit="onEdit"
                         @undelete="onUndelete"

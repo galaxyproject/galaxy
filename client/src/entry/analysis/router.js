@@ -5,6 +5,7 @@ import CollectionEditView from "components/Collections/common/CollectionEditView
 import DatasetList from "components/Dataset/DatasetList";
 import DatasetAttributes from "components/DatasetInformation/DatasetAttributes";
 import DatasetDetails from "components/DatasetInformation/DatasetDetails";
+import DatasetView from "components/Dataset/DatasetView";
 import DatasetError from "components/DatasetInformation/DatasetError";
 import FormGeneric from "components/Form/FormGeneric";
 import GalaxyWizard from "components/GalaxyWizard";
@@ -267,6 +268,11 @@ export function getRouter(Galaxy) {
                     {
                         path: "datasets/:datasetId/error",
                         component: DatasetError,
+                        props: true,
+                    },
+                    {
+                        path: "datasets/:datasetId",
+                        component: DatasetView,
                         props: true,
                     },
                     {
