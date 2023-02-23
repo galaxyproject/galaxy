@@ -218,7 +218,7 @@ return a container description that points to the image file in the
 
 2. Mulled resolvers
 
-All mulled resolvers compute a mulled hash that desribes the reuirements and
+All mulled resolvers compute a mulled hash that describes the requirements and
 corresponds (TODO corresponds not really clear) to the image name.
 
 For the cached mulled resolvers (``cached_mulled`` and ``cached_mulled_singularity``)
@@ -292,7 +292,7 @@ Parameters:
   the directory where to save images.
 - ``cache_directory_cacher_type``: ``"uncached"`` (default) or ``"dir_mtime"``.
   The singularity resolvers iterate over the contents of the cache directory. The contents
-  of the directory can be accessed uncached (thn the file listing is computed for each access)
+  of the directory can be accessed uncached (in which case, the file listing is computed for each access)
   or cached (then the listing is computed only if the mtime of the cache dir changes and on first access).
   (applies to all singularity resolvers, except explicit_singularity TODO)
 
