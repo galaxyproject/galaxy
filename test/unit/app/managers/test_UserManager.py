@@ -3,9 +3,14 @@ User Manager testing.
 
 Executable directly using: python -m test.unit.managers.test_UserManager
 """
-from datetime import datetime
+from datetime import (
+    datetime,
+    timedelta,
+)
 
 from sqlalchemy import desc
+
+from unittest import mock
 
 from galaxy import (
     exceptions,
@@ -186,6 +191,35 @@ class TestUserManager(BaseTestCase):
         # should not be able to login with a null or empty password
         assert not check_password("", user.password)
         assert not check_password(None, user.password)
+
+    def testable_url_for(*a, **k):
+        return f"(url_for): {k}"
+
+    @mock.patch("routes.url_for", testable_url_for)
+    def test_activation_email(self):
+        self.log("should produce the activation email")
+        self.user_manager.create(email="user@nopassword.com", username="nopassword")
+        self.trans.request.host = "request.host"
+        self.trans.app.config.terms_url = "terms_url"
+        self.trans.app.config.instance_resource_url = "instance_resource_url"
+        self.trans.app.config.custom_activation_email_message = "custom_activation_email_message"
+        self.trans.app.config.activation_grace_period = timedelta(days=1)
+        self.trans.app.config.templates_dir = "templates"
+        self.trans.app.config.email_from = "email_from"
+
+        def validate_send_email(frm, to, subject, body, config, html=None):
+            assert frm == "email_from"
+            assert to == "user@nopassword.com"
+            assert subject == "Galaxy Account Activation"
+            assert "Hello nopassword" in body
+            assert "(url_for): {'controller': 'user', 'action': 'activate', 'activation_token': 'activation_token', 'email': Markup('user@nopassword.com'), 'qualified': True}" in body
+
+        with mock.patch("galaxy.util.send_mail", side_effect=validate_send_email) as mock_send_mail:
+            with mock.patch("galaxy.util.hash_util.new_secure_hash_v2", return_value="activation_token") as mock_hash_util:           
+                result = self.user_manager.send_activation_email(self.trans, "user@nopassword.com", "nopassword")
+                mock_send_mail.assert_called_once()
+                mock_hash_util.assert_called_once()
+        assert result is True
 
     def test_get_user_by_identity(self):
         # return None if username/email not found
