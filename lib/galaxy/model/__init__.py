@@ -7170,9 +7170,16 @@ class WorkflowStep(Base, RepresentById):
                     if inferred_order_index.isdigit():
                         input_subworkflow_steps = [self.subworkflow.step_by_index(int(inferred_order_index))]
                 if len(input_subworkflow_steps) != 1:
-                    raise galaxy.exceptions.MessageException(
-                        f"Invalid subworkflow connection at step index {self.order_index + 1}"
-                    )
+                    # `when` expression inputs don't need to be passed into subworkflow
+                    # In the absence of formal extra step inputs this seems like the best we can do.
+                    # A better way to do these validations is to validate that all required subworkflow inputs
+                    # are connected.
+                    if input_name not in (self.when_expression or ""):
+                        raise galaxy.exceptions.MessageException(
+                            f"Invalid subworkflow connection at step index {self.order_index + 1}"
+                        )
+                    else:
+                        input_subworkflow_steps = [None]
                 input_subworkflow_step = input_subworkflow_steps[0]
             conn.input_subworkflow_step = input_subworkflow_step
         return conn

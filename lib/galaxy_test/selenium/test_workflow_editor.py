@@ -691,6 +691,9 @@ steps:
 
     @selenium_test
     def test_editor_embed_workflow(self):
+        self.setup_subworkflow()
+
+    def setup_subworkflow(self):
         workflow_populator = self.workflow_populator
         child_workflow_name = self._get_random_name()
         workflow_populator.upload_yaml_workflow(WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION, name=child_workflow_name)
@@ -728,6 +731,7 @@ steps:
         workflow = self.workflow_populator.download_workflow(parent_workflow_id)
         subworkflow_step = workflow["steps"]["2"]
         assert subworkflow_step["input_connections"]["input1"]["input_subworkflow_step_id"] == 0
+        return child_workflow_name
 
     @selenium_test
     def test_editor_insert_steps(self):
@@ -803,6 +807,25 @@ steps:
         save_button.wait_for_visible()
         # TODO: hook up best practice panel, disable save when "when" not connected
         # assert save_button.has_class("disabled")
+
+    def test_conditional_subworkflow_step(self):
+        child_workflow_name = self.setup_subworkflow()
+        editor = self.components.workflow_editor
+        # Insert a boolean parameter
+        self.workflow_editor_add_input(item_name="parameter_input")
+        param_type_element = editor.param_type_form.wait_for_present()
+        self.switch_param_type(param_type_element, "Boolean")
+        editor.label_input.wait_for_and_send_keys("param_input")
+        self.workflow_editor_click_option("Auto Layout")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        conditional_node = editor.node._(label=child_workflow_name)
+        conditional_node.wait_for_and_click()
+        conditional_toggle = editor.step_when.wait_for_present()
+        self.action_chains().move_to_element(conditional_toggle).click().perform()
+        conditional_node.input_terminal(name="when").wait_for_present()
+        self.workflow_editor_connect("param_input#output", f"{child_workflow_name}#when")
+        self.assert_connected("param_input#output", f"{child_workflow_name}#when")
+        self.assert_workflow_has_changes_and_save()
 
     def switch_param_type(self, element, param_type):
         self.action_chains().move_to_element(element).click().send_keys(param_type).send_keys(Keys.ENTER).perform()
