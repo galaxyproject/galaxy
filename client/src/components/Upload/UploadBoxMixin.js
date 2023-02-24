@@ -1,4 +1,4 @@
-import Vue from 'vue' //TODO confirm if need to bring in Vue at this location
+import Vue from "vue"; //TODO confirm if need to bring in Vue at this location
 import _l from "utils/localization";
 import $ from "jquery";
 import Select2 from "components/Select2";
@@ -263,9 +263,9 @@ export default {
                 this.ftp.show(
                     new Vue({
                         //TODO add back parameters
-                        el: '#FormFTP',
-                        render: h => h(FormFTP)
-                      }).$mount('#FormFTP').$el
+                        el: "#FormFTP",
+                        render: (h) => h(FormFTP),
+                    }).$mount("#FormFTP").$el
                 );
             }
         },
