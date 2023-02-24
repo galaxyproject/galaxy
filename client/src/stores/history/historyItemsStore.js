@@ -78,13 +78,13 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
             this.$patch((state) => {
                 // merges incoming payload into existing state
                 mergeArray(historyId, payload, state.items, state.itemKey);
-                // keep track of latest create time for items
-                payload.forEach((item) => {
-                    if (relatedHid) {
+                // if related filter is included, set keys in state
+                if (relatedHid) {
+                    payload.forEach((item) => {
                         const relationKey = `${historyId}-${relatedHid}-${item.hid}`;
                         Vue.set(state.relatedItems, relationKey, true);
-                    }
-                });
+                    });
+                }
             });
         },
         setLastCheckedTime(checkForUpdate) {
