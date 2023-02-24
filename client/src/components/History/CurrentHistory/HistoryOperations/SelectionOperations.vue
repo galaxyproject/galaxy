@@ -310,8 +310,7 @@ export default {
             await this.buildNewCollection("list");
         },
         async buildDatasetListForAllElements() {
-            //TODO "/api/histories/{history_id}/contents" HDCA / "list" / all selected elements passed / name / hide-source-items = false
-            await this.buildNewCollection("list:all");
+            this.$emit("create-list-for-all", this.contentSelection);
         },
         async buildDatasetPair() {
             await this.buildNewCollection("paired");

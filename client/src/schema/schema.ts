@@ -2005,6 +2005,12 @@ export interface components {
              */
             copy_elements?: boolean;
             /**
+             * Get All Elements
+             * @description Boolean to determine whether to get all elements in a collection
+             * @default false
+             */
+            get_all_elements?: boolean;
+            /**
              * Element Identifiers
              * @description List of elements that should be in the new collection.
              */

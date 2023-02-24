@@ -66,7 +66,8 @@
                                 @update:show-selection="setShowSelection"
                                 @operation-error="onOperationError"
                                 @hide-selection="onHideSelection"
-                                @reset-selection="resetSelection" />
+                                @reset-selection="resetSelection"
+                                @create-list-for-all="createListForAllElements" />
                             <HistorySelectionStatus
                                 v-if="showSelection"
                                 :selection-size="selectionSize"
@@ -160,6 +161,8 @@ import SelectionChangeWarning from "./HistoryOperations/SelectionChangeWarning";
 import OperationErrorDialog from "./HistoryOperations/OperationErrorDialog";
 import { rewatchHistory } from "store/historyStore/model/watchHistory";
 import { copyDataset } from "components/Dataset/services";
+import { getAppRoot } from "onload/loadConfig";
+import axios from "axios";
 
 export default {
     components: {
@@ -317,6 +320,19 @@ export default {
             selectedItems.forEach((item) => {
                 this.setInvisible(item);
             });
+        },
+        async createListForAllElements(selectedItems) {
+            const uri = `${getAppRoot()}api/histories/${this.history.id}/contents?type=dataset_collection`;
+
+            console.log("SC: ", selectedItems);
+
+            const data = {
+                name: "test",
+                collection_type: "list",
+                get_all_elements: true,
+                hide_source_items: false,
+            };
+            await axios.post(uri, data);
         },
         onScroll(offset) {
             this.offset = offset;

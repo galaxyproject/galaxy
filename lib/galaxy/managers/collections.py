@@ -28,6 +28,7 @@ from galaxy.managers.hdas import (
 )
 from galaxy.managers.hdcas import write_dataset_collection
 from galaxy.managers.histories import HistoryManager
+from galaxy.managers.history_contents import HistoryContentsManager, HistoryContentsFilters
 from galaxy.managers.lddas import LDDAManager
 from galaxy.model.dataset_collections import builder
 from galaxy.model.dataset_collections.matching import MatchingCollections
@@ -35,6 +36,7 @@ from galaxy.model.dataset_collections.registry import DATASET_COLLECTION_TYPES_R
 from galaxy.model.dataset_collections.type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
 from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.model.tags import GalaxyTagHandler
+from galaxy.schema import FilterQueryParams
 from galaxy.schema.schema import DatasetCollectionInstanceType
 from galaxy.schema.tasks import PrepareDatasetCollectionDownload
 from galaxy.security.idencoding import IdEncodingHelper
@@ -64,6 +66,8 @@ class DatasetCollectionManager:
         security: IdEncodingHelper,
         hda_manager: HDAManager,
         history_manager: HistoryManager,
+        history_contents_manager: HistoryContentsManager,
+        history_contents_filters: HistoryContentsFilters,
         tag_handler: GalaxyTagHandler,
         ldda_manager: LDDAManager,
         short_term_storage_monitor: ShortTermStorageMonitor,
@@ -76,6 +80,8 @@ class DatasetCollectionManager:
 
         self.hda_manager = hda_manager
         self.history_manager = history_manager
+        self.history_contents_manager = history_contents_manager
+        self.history_contents_filters = history_contents_filters
         self.tag_handler = tag_handler.create_tag_handler_session()
         self.ldda_manager = ldda_manager
 
@@ -162,6 +168,7 @@ class DatasetCollectionManager:
         name,
         collection_type,
         element_identifiers=None,
+        get_all_elements=False,
         elements=None,
         implicit_collection_info=None,
         trusted_identifiers=None,
@@ -181,6 +188,19 @@ class DatasetCollectionManager:
         # Trust embedded, newly created objects created by tool subsystem.
         if trusted_identifiers is None:
             trusted_identifiers = implicit_collection_info is not None
+
+        if get_all_elements: # should we also check if element_identifiers is empty?
+            container = None
+            if history:
+                container = self.history_manager.get_accessible(history.id, history.user_id) #TODO will the real user please stand up -- use debugger! (bitch)
+            # filter out collections
+            filter_query_params = FilterQueryParams(
+                q=["history_content_type"],
+                qv=["dataset"]
+            )
+            filters = self.history_contents_filters.parse_query_filters_with_relations(filter_query_params, history.id)
+            element_identifiers = self.history_contents_manager.contents(container=container,filters=filters)
+            
 
         if element_identifiers and not trusted_identifiers:
             validate_input_element_identifiers(element_identifiers)
