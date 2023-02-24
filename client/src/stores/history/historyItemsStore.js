@@ -18,7 +18,6 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
     state: () => ({
         items: {},
         itemKey: "hid",
-        latestCreateTime: undefined,
         totalMatchesCount: undefined,
         lastCheckedTime: new Date(),
         lastUpdateTime: new Date(),
@@ -46,9 +45,6 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
                 });
                 return reverse(filtered);
             };
-        },
-        getLatestCreateTime: (state) => {
-            return state.latestCreateTime;
         },
         getTotalMatchesCount: (state) => {
             return state.totalMatchesCount;
@@ -84,14 +80,6 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
                 mergeArray(historyId, payload, state.items, state.itemKey);
                 // keep track of latest create time for items
                 payload.forEach((item) => {
-                    if (item.state == "ok") {
-                        const itemCreateTime = new Date(item.create_time);
-                        if (!state.latestCreateTime || itemCreateTime > state.latestCreateTime) {
-                            state.latestCreateTime = itemCreateTime;
-                        } else if (itemCreateTime > state.lastUpdateTime) {
-                            state.lastUpdateTime = itemCreateTime;
-                        }
-                    }
                     if (relatedHid) {
                         const relationKey = `${historyId}-${relatedHid}-${item.hid}`;
                         Vue.set(state.relatedItems, relationKey, true);
