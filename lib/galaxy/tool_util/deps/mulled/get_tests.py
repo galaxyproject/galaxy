@@ -8,7 +8,6 @@ A shallow search (default for singularity and conda generation scripts) just che
 # import doctest
 import json
 import logging
-import tarfile
 from glob import glob
 from typing import (
     Dict,

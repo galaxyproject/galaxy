@@ -6,9 +6,7 @@ import logging
 import os
 import re
 import sys
-import tarfile
 import threading
-from io import BytesIO
 from typing import (
     Iterable,
     List,
