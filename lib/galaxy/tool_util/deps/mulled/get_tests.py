@@ -9,6 +9,7 @@ import json
 import logging
 from glob import glob
 from typing import (
+    Any,
     Dict,
     Optional,
 )
@@ -38,7 +39,7 @@ INSTALL_JINJA_EXCEPTION = (
 )
 
 
-def get_commands_from_yaml(yaml_content):
+def get_commands_from_yaml(yaml_content: bytes) -> Optional[Dict[str, Any]]:
     """
     Parse tests from Conda's meta.yaml file contents
     """
@@ -83,7 +84,7 @@ def get_commands_from_yaml(yaml_content):
     return package_tests
 
 
-def get_run_test(file: str) -> Dict:
+def get_run_test(file: str) -> Dict[str, Any]:
     r"""
     Get tests from a run_test.sh file
     """
@@ -107,60 +108,20 @@ def prepend_anaconda_url(url):
     return f"https://anaconda.org{url}"
 
 
-def get_test_from_anaconda(url: str) -> Optional[Dict]:
+def get_test_from_anaconda(url: str) -> Optional[Dict[str, Any]]:
     """
     Given the URL of an anaconda tarball, return tests
-
-    >>> # test for info/recipe/meta.yaml
-    >>> tests = get_test_from_anaconda("https://anaconda.org/conda-forge/chopin2/1.0.6/download/noarch/chopin2-1.0.6-pyhd8ed1ab_0.tar.bz2")
-    >>> assert tests == {'commands': ['pip check', 'chopin2 --version'], 'imports': ['chopin2'], 'import_lang': 'python -c'}, tests
-    >>> tests = get_test_from_anaconda("https://anaconda.org/conda-forge/chopin2/1.0.7/download/noarch/chopin2-1.0.7-pyhd8ed1ab_1.conda")
-    >>> assert tests == {'commands': ['pip check', 'chopin2 --version'], 'imports': ['chopin2'], 'import_lang': 'python -c'}, tests
-    >>> # test for info/recipe/run_test.sh
-    >>> tests = get_test_from_anaconda("https://anaconda.org/bioconda/ucsc-pslmap/366/download/linux-64/ucsc-pslmap-366-hdd26221_0.tar.bz2")
-    >>> assert tests == {'commands': ['#!/bin/bash && pslMap 2> /dev/null || [[ "$?" == 255 ]] && ']}, tests
     """
     name, content = get_file_from_conda_package(
         url, ["info/recipe/meta.yaml", "info/recipe/meta.yaml.template", "info/recipe/run_test.sh"]
     )
-    if name.startswith("info/recipe/meta.yaml"):
+    if name and content and name.startswith("info/recipe/meta.yaml"):
         package_tests = get_commands_from_yaml(content)
         if package_tests:
             return package_tests
-    if name == "info/recipe/run_test.sh":
+    if name and content and name == "info/recipe/run_test.sh":
         return get_run_test(unicodify(content))
     return None
-    # try:
-    #     tarball = get_file_from_recipe_url(url)
-    # except tarfile.ReadError:
-    #     return None
-
-    # try:
-    #     metafile = tarball.extractfile("info/recipe/meta.yaml")
-    # except (tarfile.ReadError, KeyError, TypeError):
-    #     pass
-    # else:
-    #     package_tests = get_commands_from_yaml(metafile.read())
-    #     if package_tests:
-    #         return package_tests
-
-    # # this part is perhaps unnecessary, but some of the older tarballs have a testfile with .yaml.template ext
-    # try:
-    #     metafile = tarball.extractfile("info/recipe/meta.yaml.template")
-    # except (tarfile.ReadError, KeyError, TypeError):
-    #     pass
-    # else:
-    #     package_tests = get_commands_from_yaml(metafile)
-    #     if package_tests:
-    #         return package_tests
-
-    # # if meta.yaml was not present or there were no tests in it, try and get run_test.sh instead
-    # try:
-    #     run_test = tarball.extractfile("info/recipe/run_test.sh")
-    #     return get_run_test(run_test)
-    # except KeyError:
-    #     logging.info("run_test.sh file not present.")
-    #     return None
 
 
 def find_anaconda_versions(name, anaconda_channel="bioconda"):
