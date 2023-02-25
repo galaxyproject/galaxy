@@ -4,7 +4,7 @@
             v-if="showCalloutActiveOutput"
             v-b-tooltip
             :class="['callout-terminal', output.name]"
-            title="Unchecked outputs will be hidden and are not available as subworkflow outputs."
+            title="Checked outputs will become primary workflow outputs and are available as subworkflow outputs."
             @keyup="onToggleActive"
             @click="onToggleActive">
             <i :class="['mark-terminal', activeClass]" />
