@@ -1,0 +1,107 @@
+# Sample file for container resolvers. Default configuration is uncommented.
+
+# Explicit container resolvers
+# ============================
+
+# get a container description (URI) for docker 
+- type: explicit
+
+# get a container description (URI) for singularity 
+- type: explicit_singularity
+
+# get a cached container description (path) for singularity
+# - pulls the container into a cache directory if not yet there  
+#- type: cached_explicit_singularity
+  # set the cache directory for storing images
+  #cache_directory: data/singularity/explicit
+
+# Mulled container resolvers
+# ==========================
+
+# get a container description to a cached mulled docker container
+# - checks in the docker cache if the image is there
+- type: cached_mulled
+  namespace: biocontainers
+- type: cached_mulled
+  namespace: local
+  # This container resolver has two arguments
+  # the resolver will check the image cache for `quay.io/NAMESPACE/containername`
+  # so if one (or another container resolver) did a
+  # `docker pull quay.io/NAMESPACE/containername` then the image should be found
+  # Note the local namespace is currently "abused" to refer to locally built
+  # images (since there is no quay.io/local/)
+  #namespace: biocontainers
+  # 
+  # the version of the mulled hashing function (v2/v1)
+  #hash_func: v2
+
+
+# get a container description for a cached mulled singularity container
+# - checks in the local cache directory if the image file exists and returns the path if so
+- type: cached_mulled_singularity
+  namespace: biocontainers
+- type: cached_mulled_singularity
+  namespace: local
+  # TODO CHECK check note that the namespace is currently not used 
+  # cache_directory: data/singularity/explicit
+  #
+  # the method for caching directory listings (not the method for image caching)
+  # can be uncached, dir_mtime (the latter only determines the directory listing
+  # if the mtime of the directory changed)
+  # cache_directory_cacher_type: dir_mtime
+  #
+  # the version of the mulled hashing function (v2/v1)
+  #hash_func: v2
+
+# Build a mulled container description to quay.io/NAMESPACE/MULLED_HASH where the
+# mulled hash describes which packages and versions should be in the container
+#
+# if the corresponding CLI (docker) is available also the image
+# will also be pulled, i.e. the image will be in dockers image cache
+# 
+# depending on the value of auto_install the container resolver will point
+# to the cached image or quay.io/NAMESPACE/MULLED_HASH
+# Note that this makes no difference for docker.
+- type: mulled
+  namespace: biocontainers
+  # see `cached_mulled`
+  #namespace: biocontainers
+  # see `cached_mulled`
+  #hash_func: v2
+  # If true return quay.io/NAMESPACE/MULLED_HASH otherwise to the cached image
+  # which is also quay.io/NAMESPACE/MULLED_HASH in case of docker
+  #auto_install: true
+
+# Nearly the same as mulled, but
+# - when pulling the image file will be stored in the configured cache dir
+# - if auto_install is True the result will point to the cached image file
+# and to quay.io/NAMESPACE/MULLED_HASH otherwise)
+- type: mulled_singularity
+  namespace: biocontainers
+  # In addition to the arguments of `mulled` there are cache_directory
+  # and cache_directory_cacher_type. See the description at `cached_explict_mulled`
+  # and note the minor different in the default for the directory 
+  # cache_directory: data/singularity/mulled
+  # 
+  # cache_directory_cacher_type: dir_mtime
+
+# Building container resolvers
+# ----------------------------
+
+- type: build_mulled
+- type: build_mulled_singularity
+
+# Other explicit container resolvers
+# ----------------------------------
+
+# -type: fallback
+# -type: fallback_singularity
+# -type: fallback_no_requirements
+# -type: fallback_no_requirements_singularity
+# -type: requires_galaxy_environment
+# -type: requires_galaxy_environment_singularity
+# -type: mapping
+#  mappings:
+#    - container_type: docker
+#      tool_id: mulled_example_broken_no_requirements
+#      identifier: 'quay.io/biocontainers/bwa:0.7.15--0'
