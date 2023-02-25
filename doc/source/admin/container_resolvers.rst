@@ -15,7 +15,7 @@ packages and versions (for mulled v2), e.g.
 ``mulled-v2-0d814cbcd5aa81b280ecadbee9e4aba8d9ab33f7:0fb38379c04f2a8a345a2c8f74b190ea9a51b6f3-0``
 (mulled-v2-PACKAGEHASH:VERSIONHASH-BUILDNUMBER). For mulled containers
 for single packages simply the package name and version are used instead of the hashes,
-e.g. ``ucsc-liftover:357--h446ed27_4``
+e.g. ``ucsc-liftover:357--h446ed27_4``.
 
 The bioconda and the Galaxy project provide infrastructure to make mulled
 containers globally available on the ``quay.io/biocontainers`` container registry.
@@ -61,17 +61,18 @@ the job fails in this case (TODO to be tested? or is it already).
 Configuration:
 --------------
 
-TODO: per destination container resolvers
-
-The list of container resolvers is defined using YAML that can be
+The list of container resolvers is defined globally using YAML that can be
 specified in an extra file (``container_resolvers_config_file``) or
 inline the Galaxy configuration (``container_resolvers``). 
 During the container resolution the resolvers specified in this
 list are sequentially applied stopping at the first resolver that
 yields a container description. 
 
-The YAML defines a list of container resolvers and their properties.
-This might look as follows:
+In addition container resolvers can be defined per execution environment 
+using ``container_resolvers_config_file`` or ``container_resolvers``.
+TODO Link to job_conf.yaml.sample
+This will overwrite any globally defined container resolvers for this
+execution environment.
 
 .. code-block:: yaml
 
@@ -88,32 +89,30 @@ By default (if neither ``container_resolvers_config_file`` nor
 
 .. code-block:: yaml
 
-   - type: "explicit"
-   - type: "explicit_singularity"
+   - type: explicit
+   - type: explicit_singularity
 
 In addition if ``enable_mulled_containers`` is set in ``galaxy.yml``
 
 .. code-block:: yaml
 
-   - type: "cached_mulled"
-     namespace: "biocontainers"
-   - type: "cached_mulled"
-     namespace: "local"
-   - type: "cached_mulled_singularity"
-     namespace: "biocontainers"
-   - type: "cached_mulled_singularity"
-     namespace: "local"
-   - type: "mulled"
-     namespace: "biocontainers"
-   - type: "mulled_singularity"
-     namespace: "local"
+   - type: cached_mulled
+     namespace: biocontainers
+   - type: cached_mulled
+     namespace: local
+   - type: cached_mulled_singularity
+     namespace: biocontainers
+   - type: cached_mulled_singularity
+     namespace: local
+   - type: mulled
+     namespace: biocontainers
+   - type: mulled_singularity
+     namespace: biocontainers
 
 And if ``docker`` is available also the following resolvers are added to the defaults.
 
-   - type: "build_mulled"
-   - type: "build_mulled_singularity"
-
-
+   - type: build_mulled
+   - type: build_mulled_singularity
 
 The available container resolver types are described below.
 The properties depend on the resolver type (see documentation
@@ -306,8 +305,8 @@ Parameters:
 
 - auto_install TODO no idea what this is doing / what it is good for
 
-- ``cache_directory``: defaults to ``container_image_cache_path`` set in galaxy.yml,
-  i.e. ``"database/container_cache/"``. Applies to all singularity resolvers and sets
+- ``cache_directory``: defaults to 
+  i.e. ``"database/container_cache/"`` (TODO container_image_cache_path not in galaxy.yml?). Applies to all singularity resolvers and sets
   the directory where to save images.
 - ``cache_directory_cacher_type``: ``"uncached"`` (default) or ``"dir_mtime"``.
   The singularity resolvers iterate over the contents of the cache directory. The contents

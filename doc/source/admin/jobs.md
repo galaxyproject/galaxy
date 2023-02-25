@@ -114,7 +114,7 @@ work.
 The images used for containers can either be specified explicitely in the ``<destination>`` using the *docker_default_container_id*, *docker_container_id_override*, *singularity_default_container_id* and
 *singularity_container_id_override* parameters, but (perhaps more commonly) the image to use can be derived from the
 tool requirements of the Galaxy tool being executed. In this latter case the image is specified by the
-tool using a ``<container>`` tag in the ``<requirements>`` section.
+tool using a ``<container>`` tag in the ``<requirements>`` section see <admin/jobs>.
 
 ### Running jobs on a Kubernetes cluster via Pulsar
 
