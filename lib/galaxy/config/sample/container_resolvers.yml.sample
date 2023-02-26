@@ -1,22 +1,29 @@
-# Sample file for container resolvers. Default configuration is uncommented.
+# Sample file for container resolvers. Resolvers that are used by default are uncommented.
+# (comments describe under which premises they are in the defaults)
+
+# Note that commented yaml does not have a space after the #
+# while additional explanations do.
 
 # Explicit container resolvers
 # ============================
 
-# get a container description (URI) for docker 
+# get a container description (URI) for docker
 - type: explicit
 
-# get a container description (URI) for singularity 
+# get a container description (URI) for singularity
 - type: explicit_singularity
 
 # get a cached container description (path) for singularity
-# - pulls the container into a cache directory if not yet there  
+# pulls the container into a cache directory if not yet there
 #- type: cached_explicit_singularity
   # set the cache directory for storing images
   #cache_directory: data/singularity/explicit
 
 # Mulled container resolvers
 # ==========================
+
+# The following uncommented container resolvers are in the defaults
+# if ``enable_mulled_containers`` is set in ``galaxy.yml``.
 
 # get a container description to a cached mulled docker container
 # - checks in the docker cache if the image is there
@@ -31,7 +38,6 @@
   # Note the local namespace is currently "abused" to refer to locally built
   # images (since there is no quay.io/local/)
   #namespace: biocontainers
-  # 
   # the version of the mulled hashing function (v2/v1)
   #hash_func: v2
 
@@ -42,13 +48,13 @@
   namespace: biocontainers
 - type: cached_mulled_singularity
   namespace: local
-  # TODO CHECK check note that the namespace is currently not used 
+  # TODO CHECK check note that the namespace is currently not used
   # cache_directory: data/singularity/explicit
   #
   # the method for caching directory listings (not the method for image caching)
   # can be uncached, dir_mtime (the latter only determines the directory listing
   # if the mtime of the directory changed)
-  # cache_directory_cacher_type: dir_mtime
+  # cache_directory_cacher_type: uncached
   #
   # the version of the mulled hashing function (v2/v1)
   #hash_func: v2
@@ -58,7 +64,7 @@
 #
 # if the corresponding CLI (docker) is available also the image
 # will also be pulled, i.e. the image will be in dockers image cache
-# 
+#
 # depending on the value of auto_install the container resolver will point
 # to the cached image or quay.io/NAMESPACE/MULLED_HASH
 # Note that this makes no difference for docker.
@@ -80,28 +86,52 @@
   namespace: biocontainers
   # In addition to the arguments of `mulled` there are cache_directory
   # and cache_directory_cacher_type. See the description at `cached_explict_mulled`
-  # and note the minor different in the default for the directory 
-  # cache_directory: data/singularity/mulled
-  # 
-  # cache_directory_cacher_type: dir_mtime
+  # and note the minor different in the default for the directory
+  #cache_directory: data/singularity/mulled
+  #cache_directory_cacher_type: uncached
 
 # Building container resolvers
 # ----------------------------
+#
+# The following uncommented container resolvers are included in the default
+# if ``docker`` is available
+
 
 - type: build_mulled
+  #namespace: local
+  #hash_func: v2
+  #auto_install: true
 - type: build_mulled_singularity
+  #hash_func: v2
+  #auto_install: true
+  #cache_directory: data/singularity/mulled
+  #cache_directory_cacher_type: uncached
+
 
 # Other explicit container resolvers
 # ----------------------------------
 
-# -type: fallback
-# -type: fallback_singularity
-# -type: fallback_no_requirements
-# -type: fallback_no_requirements_singularity
-# -type: requires_galaxy_environment
-# -type: requires_galaxy_environment_singularity
-# -type: mapping
-#  mappings:
-#    - container_type: docker
-#      tool_id: mulled_example_broken_no_requirements
-#      identifier: 'quay.io/biocontainers/bwa:0.7.15--0'
+#-type: fallback
+  #identifier: A_VALID_CONTAINER_IDENTIFIER
+#-type: fallback_singularity
+  #identifier: A_VALID_CONTAINER_IDENTIFIER
+#-type: fallback_no_requirements
+  #identifier: A_VALID_CONTAINER_IDENTIFIER
+#-type: fallback_no_requirements_singularity
+  #identifier: A_VALID_CONTAINER_IDENTIFIER
+#-type: requires_galaxy_environment
+  #identifier: A_VALID_CONTAINER_IDENTIFIER
+#-type: requires_galaxy_environment_singularity
+  #identifier: A_VALID_CONTAINER_IDENTIFIER
+
+# mapping container resolver allows to specify a list of mappings from map tools
+# (tool_id) to containers (identifier).
+
+#-type: mapping
+  #mappings:
+  #- container_type: docker
+     #tool_id: A_TOOL_ID
+     #identifier: A_VALID_CONTAINER_IDENTIFIER
+  #- container_type: singularity
+     #tool_id: A_TOOL_ID
+     #identifier: A_VALID_CONTAINER_IDENTIFIER
