@@ -4,9 +4,6 @@ Containers in Galaxy
 ====================
 
 Galaxy can run tools using containers using ``docker`` or ``singularity``.
-
-TODO Advantages / disadvantages (docker vs singularity).
-
 The containers can be either explicit or (so called) mulled. The former
 are given by ``<container>`` requirements pointing to a specific container.
 The later are containers built for a set of requirements of type package.
@@ -25,16 +22,16 @@ containers globally available on the ``quay.io/biocontainers`` container registr
 `multi-package-containers <https://github.com/BioContainers/multi-package-containers>`_
 repository. Mulled containers are added automatically to this repository for all tools
 in tool repositories that are crawled by the 
-`planemo monitor <https://github.com/galaxyproject/planemo-monitor>`_ repo (e.g.
-which includes IUC and many other tool repositories).
+`planemo monitor <https://github.com/galaxyproject/planemo-monitor>`_ repository
+(which includes for instance IUC and many other tool repositories).
 
 Container Resolvers in Galaxy
-=============================
+-----------------------------
 
 A container resolver tries to get a container description, i.e. the information
-(URI/path to the container image, ...) that is needed to execute a tool, given the
-requirements specified in this tool. Galaxy implements various container resolvers
-that are suitable for different needs. 
+(URI/path to the container image, ...) that is needed to execute a tool in a
+container, given the requirements specified in this tool. Galaxy implements
+various container resolvers that are suitable for different needs. 
 
 Galaxy tries to execute jobs using containers if they are send
 to execution environments (previously called destinations) with either 
@@ -42,87 +39,41 @@ to execution environments (previously called destinations) with either
 - `docker_enabled <https://github.com/galaxyproject/galaxy/blob/0742d6e27702c60d1b8fe358ae03a267e3f252c3/lib/galaxy/config/sample/job_conf.sample.yml#L419>`_ or
 - `singularity_enabled <https://github.com/galaxyproject/galaxy/blob/0742d6e27702c60d1b8fe358ae03a267e3f252c3/lib/galaxy/config/sample/job_conf.sample.yml#L556>`_
 
-enabled. Note the while the links above examplify this for local execution
-environments this works for any environment as long as ``docker`` or ``singularity``
-are available.
+enabled. Note, the links above exemplify this for local execution environments,
+but this works for any environment as long as ``docker`` or ``singularity`` are
+available.
 
-For jobs that are sent to such an execution environment Galaxy tries
-to obtain a container description by sequentially executing the container
-resolvers that are configured for the Galaxy instance (see below).
-The job is then executed using the description returned by the first successful
-container resolver.
+For jobs that are sent to such an execution environment Galaxy tries to obtain a
+container description by sequentially executing the configured container
+resolvers (see below). The job is then executed using the description returned
+by the first successful container resolver.
 If all configured container resolvers failed, i.e. no container description
-could be obtained, the tool is by default excuted using 
+could be obtained, the tool is by default executed using 
 :doc:`standard dependency resolvers <dependency_resolvers>`, e.g. ``conda``.
-Alternatively, if the excution environment specifies
-`require_container <https://github.com/galaxyproject/galaxy/blob/0742d6e27702c60d1b8fe358ae03a267e3f252c3/lib/galaxy/config/sample/job_conf.sample.yml#L528>`_
+Alternatively, if the execution environment specifies
+`require_container <https://github.com/galaxyproject/galaxy/blob/0742d6e27702c60d1b8fe358ae03a267e3f252c3/lib/galaxy/config/sample/job_conf.yml.sample#L528>`_
 the job fails in this case (TODO to be tested? or is it already).
 
 Configuration:
 --------------
 
-The list of container resolvers is defined globally using YAML that can be
-specified in an extra file (``container_resolvers_config_file``) or
-inline the Galaxy configuration (``container_resolvers``). 
-During the container resolution the resolvers specified in this
-list are sequentially applied stopping at the first resolver that
-yields a container description. 
+The list of container resolvers is defined using YAML. This can be
+either
 
-In addition container resolvers can be defined per execution environment 
-using ``container_resolvers_config_file`` or ``container_resolvers``.
-TODO Link to job_conf.yaml.sample
-This will overwrite any globally defined container resolvers for this
-execution environment.
+- globally in an extra file (``container_resolvers_config_file``) or
+inline the Galaxy configuration (``container_resolvers``) or
+- per execution environment using ``container_resolvers_config_file``
+or ``container_resolvers``
 
-.. code-block:: yaml
+Container resolvers defined for the execution environment
+take precedence over globally defined container resolvers.
+A sample YAML file showing the default configuration which is active
+if neither a global or local configuration is given in
+`container_resolvers.yml.sample <https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/config/sample/container_resolvers.yml.sample>`_.
 
-   - type: "cached_explicit_singularity"
-   - type: "cached_mulled_singularity"
-   - type: "mulled_singularity"
-     auto_install: False
-
-would define a list of three container resolvers, and the last setting an option
-of this resolver.
-
-By default (if neither ``container_resolvers_config_file`` nor
-``container_resolvers`` is specified) the following resolvers are loaded:
-
-.. code-block:: yaml
-
-   - type: explicit
-   - type: explicit_singularity
-
-In addition if ``enable_mulled_containers`` is set in ``galaxy.yml``
-
-.. code-block:: yaml
-
-   - type: cached_mulled
-     namespace: biocontainers
-   - type: cached_mulled
-     namespace: local
-   - type: cached_mulled_singularity
-     namespace: biocontainers
-   - type: cached_mulled_singularity
-     namespace: local
-   - type: mulled
-     namespace: biocontainers
-   - type: mulled_singularity
-     namespace: biocontainers
-
-And if ``docker`` is available also the following resolvers are added to the defaults.
-
-   - type: build_mulled
-   - type: build_mulled_singularity
-
-The available container resolver types are described below.
-The properties depend on the resolver type (see documentation
-of the resolvers). Properties that do not apply to the resolver
-are ignored.
-
-.. note::
-
-   Its's important to note that similarities in the names not necessarily
-   imply any similarity in the function of the container resolvers.
+During the container resolution the configured container resolvers
+are sequentially applied, stopping at the first resolver that
+yields a container description.
 
 Main resolver types:
 --------------------
@@ -132,14 +83,19 @@ The main types of container resolvers follow this naming scheme:
 
 - a container resolver is either ``explicit`` or ``mulled``
 - cached if it is prefixed with ``cached_`` and non-cached otherwise. 
-- yield a container discription suitable for singularity if
+- yield a container description suitable for singularity if
   suffixed by ``_singularity`` and docker otherwise.
+
+.. note::
+
+   It's important to note that similarities in the names not necessarily
+   imply any similarity in the function of the container resolvers.
 
 1. docker vs singularity
 
-Galaxy can execute tools in containers using  ``docker`` or ``singularity``.
+Galaxy can execute tools in containers using ``docker`` or ``singularity``.
 The corresponding container resolvers yield container descriptions suitable
-for the corresponding "executor" (i.e. that is, docker (singularity, resp.)
+for the corresponding "executor", i.e., docker (singularity, resp.)
 container resolvers will resolve a container only in compute environments
 with enabled docker (singularity, resp.). Thus, if only compute environments
 with docker (resp. singularity) are present then only docker (resp. singularity)
@@ -169,7 +125,7 @@ compute nodes.
    https://docs.docker.com/registry/recipes/mirror/.
 
 
-2. mulled vs explict
+2. mulled vs explicit
 
 Mulled container resolvers apply for requirements defined by tools that are
 a set of packages:
@@ -194,7 +150,12 @@ container requirement:
 
 While non-cached resolvers will yield a container description pointing to an online
 available docker container cached resolvers will store container images on disk and
-use those.
+use those. 
+
+This distinction is the weakest: some (by name) non-cached container resolvers
+can also resolve cached containers and are even responsible for the caching itself,
+i.e. they execute the ``pull``.
+
 
 There are the following mulled container resolvers:
 
@@ -203,7 +164,7 @@ There are the following mulled container resolvers:
 - ``cached_mulled``
 - ``cached_mulled_singularity``
 
-Furthermore there are the following excplit container resolvers:
+Furthermore there are the following explicit container resolvers:
 
 - ``explicit``
 - ``explicit_singularity``
@@ -217,7 +178,7 @@ Function of the ``resolve`` function of the main resolver types:
 The resolve function is called when 
 
 - opening the container tab in the dependency admin UI (with ``install=False``)
-- triggering a build from the admin UI (``with install=True``)
+- triggering a build from the admin UI (with ``install=True``)
 - when a job is prepared (with ``install=True``)
 
 If the ``resolve`` function implements the caching of images then this only
@@ -230,14 +191,14 @@ compute a container description using an URI that suites the ``docker`` or
 ``singularity``, resp.
 
 The cached explicit resolver, i.e. ``cached_explicit_singularity`` (no docker
-analogon available), will download the image to the ``cache_directory`` and
+analog available), will download the image to the ``cache_directory`` and
 return a container description that points to the image file in the
 ``cache_directory``.
 
 2. Mulled resolvers
 
 All mulled resolvers compute a mulled hash that describes the requirements and
-corresponds (TODO corresponds not really clear) to the image name.
+is included in the container name (see above).
 
 For the cached mulled resolvers (``cached_mulled`` and ``cached_mulled_singularity``)
 the ``resolve`` function only queries if the required image is already cached
@@ -250,19 +211,23 @@ cache directory is queried.
     In contrast to the cached explicit resolver the cached mulled resolvers do not
     cache images, but they only query the available cached images.
 
-The "uncached" mulled resolvers (``mulled`` and ``mulled_singularity``) by default just return a container description containing
-the URI of the container and download the image to the cache if ``install=True``.
-The caching is done by a call to ``docker pull`` and ``singularity pull``, resp.
-Note that the URI is returned even if the image is in the cache. 
-Only if the resolvers are initialized with ``auto_install=True`` the ``resolve``
-function returns a container description pointing to the image (TODO which makes a difference only for singularity?)
+The "uncached" mulled resolvers (``mulled`` and ``mulled_singularity``) by
+default just return a container description containing the URI of the container
+and download the image to the cache if ``install=True``. The caching is done by
+a call to ``docker pull`` and ``singularity pull``, resp. Note that, by default
+the URI is returned in any case, i.e. even if the image just has been downloaded
+or if the image is already in the cache. Only if the resolvers are initialized
+with ``auto_install=True`` the ``resolve`` function returns a container
+description pointing to the image. Note that this makes a difference only for
+singularity (since for docker the URI is identical to the name of the cached
+image).
 
 .. note::
 
-    In contrast to the uncached explict resolver the uncached mulled resolvers do
-    cache images, but the returned container description points to the uncached URI
-    (if the default of ``auto_install=True`` is used; otherwise the cached image
-    is used).
+    In contrast to the uncached explicit resolver the uncached mulled resolvers
+    do cache images, but the returned container description by default points to
+    the uncached URI (if the default of ``auto_install=True`` is used; otherwise
+    the cached image is used).
 
 Additional resolver types
 -------------------------
@@ -285,34 +250,55 @@ There are two container resolvers that locally create a mulled container.
 - ``build_mulled``
 - ``build_mulled_singularity``
 
-Note that at the moment ``build_mulled_singularity`` requires docker for building.
+Note that at the moment ``build_mulled_singularity`` also requires docker for
+building.
 
-Instead of using these, it might be better to create multi package containers
+.. note::
+
+    Instead of using these locally, it might be better to create multi package containers
 that are deployed to biocontainers using the infrastructure provided by the
 `multi-package-containers <https://github.com/BioContainers/multi-package-containers>`_
-repository.
-
-This allready happens automatically for the tools in many tool repositories, see
+repository, e.g. by adding more tool repositories to the
 `planemo monitor <https://github.com/galaxyproject/planemo-monitor>`_
 
 
 Parameters:
 -----------
 
-- namespace
-- hash_func
-- shell
+- ``namespace`` defaults to ``"biocontainers"`` for the non-building and
+  ``"local"`` for the building mulled resolvers. Available for all mulled
+  container resolvers **except** ``cached_mulled_singularity``.
+  Used to set the namespace that is used to query quay.io. Note that there
+  is no `"local"` namespace at quay.io, but Galaxy uses it to refer
+  to locally built images (that's why it is the default for the building
+  resolvers).
+- ``hash_func``: ``"v1"`` or ``"v2"`` (default)
+  Applies to all mulled container resolvers. Sets the version of the mulled
+  hash that is used in the image name.
+- ``shell`` Defaults to ``/bin/bash`` and sets the shell to be used in the container.
+  Applies only to the resolvers listed in `Additional resolver types`_.
+- ``auto_install``: defaults to ``True``. 
+  Applies to ``mulled``, ``mulled_singularity``, ``build_mulled``, and ``build_mulled_singularity``.
+  For the non-building resolvers this controls if a contained description pointing to the
+  cached image shall be returned (``auto_install==False``). For the building
+  for the building resolvers the parameter controls if the container should be built
+  also if the resolve function is called with ``install=False`` (e.g. when listing
+  the container in the Admin UI and no other container resolver worked for a tool).
 
-- auto_install TODO no idea what this is doing / what it is good for
+.. note::
+
+    Admins certainly should think carefully about ``auto_install``, since there are
+    many scenarios where the default is not desirable.
+
 
 - ``cache_directory``: defaults to 
-  i.e. ``"database/container_cache/"`` (TODO container_image_cache_path not in galaxy.yml?). Applies to all singularity resolvers and sets
-  the directory where to save images.
+  ``"database/container_cache/singularity/[explicit|mulled]"``.
+  Applies to all singularity resolvers and sets the directory where to save images.
 - ``cache_directory_cacher_type``: ``"uncached"`` (default) or ``"dir_mtime"``.
   The singularity resolvers iterate over the contents of the cache directory. The contents
-  of the directory can be accessed uncached (in which case, the file listing is computed for each access)
+  of the directory can be accessed uncached (in which case the file listing is computed for each access)
   or cached (then the listing is computed only if the mtime of the cache dir changes and on first access).
-  (applies to all singularity resolvers, except explicit_singularity TODO)
+  (applies to all singularity resolvers, except explicit_singularity)
 
 Note on the built in caching of singularity and docker
 ------------------------------------------------------
@@ -320,11 +306,14 @@ Note on the built in caching of singularity and docker
 It is important to note that docker as well as singularity have their own builtin
 caching mechanism.
 
-In case of docker Galaxy's container resolvers relies on this mechanism, i.e.
-``docker pull`` commands executed on the node running Galaxy (when using the
-``cached_mulled`` resolver) of the compute nodes will create entries in docker's
-container cache. Admins might want to control these caches, e.g. prune them
-regularly.
+In case of docker a ``docker pull`` (e.g. executed from a container resolver) or
+``docker run`` (e.g. executed on the compute node running the job) will add the
+image to the **local** image cache.
+Galaxy's docker container resolvers rely on docker's built it image cache,
+i.e. they query the image cache on the node that is executing Galaxy.
+If the nodes that execute jobs are different from the node executing Galaxy
+it's important to note that these nodes will have independent caches that
+admins might want to control.
 
 .. note::
 
@@ -332,11 +321,11 @@ regularly.
    tarballs of container images
    <https://github.com/galaxyproject/galaxy/blob/c517e805771cc16807dfe675075a13fe6343f01f/lib/galaxy/tool_util/deps/container_classes.py#L319>`_.
    from ``container_image_cache_path`` (set in galaxy.yml) or the destination
-   property docker_container_image_cache_path. But at the moment non of the
+   property ``docker_container_image_cache_path``. But at the moment none of the
    docker container resolvers creates these image tarballs.
 
 Also singularity has its own caching mechanism and caches by default to ``$HOME/.singularity``.
-It may be cleaned regularly using ``singularity cache`` of be disabled by using the
+It may be cleaned regularly using ``singularity cache`` or be disabled by using the
 ``SINGULARITY_DISABLE_CACHE``. Environment variable.
 
 Setting up Galaxy using docker / singularity on distributed compute resources

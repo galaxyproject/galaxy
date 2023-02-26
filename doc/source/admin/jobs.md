@@ -111,10 +111,13 @@ In the case of Docker, containers are run using **sudo** unless ``<param id="doc
 the user that Galaxy runs as should be able to run ``sudo docker`` without a password prompt for Docker containers to
 work.
 
-The images used for containers can either be specified explicitely in the ``<destination>`` using the *docker_default_container_id*, *docker_container_id_override*, *singularity_default_container_id* and
-*singularity_container_id_override* parameters, but (perhaps more commonly) the image to use can be derived from the
-tool requirements of the Galaxy tool being executed. In this latter case the image is specified by the
-tool using a ``<container>`` tag in the ``<requirements>`` section see <admin/jobs>.
+The images used for containers can either be specified explicitely in the ``<destination>`` using the ``docker_default_container_id``, ``docker_container_id_override``, ``singularity_default_container_id`` and
+``singularity_container_id_override`` parameters, but (perhaps more commonly) the image to use can be derived from the
+``<requirements>`` of the Galaxy tool being executed. In the latter case the image is specified either explicitly
+using a ``<container>`` tag or a mulled (multi package) container is implied for the set 
+of packages specified by the tool's ``<requirement>`` tags. 
+In either case the container to be used is determined using container resolvers that can be specified
+globally for an instance of locally per instrance, see [Container resolvers](container_resolvers.md).
 
 ### Running jobs on a Kubernetes cluster via Pulsar
 
