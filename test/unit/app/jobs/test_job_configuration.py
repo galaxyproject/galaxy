@@ -366,8 +366,9 @@ def test_yaml_advanced_validation():
         os.path.join(integration_tests_dir, "resubmission_default_job_conf.yml"),
     ]
     for valid_file in valid_files:
-        c = Core(
-            source_file=valid_file,
-            schema_files=[str(schema)],
-        )
-        c.validate()
+        with open(valid_file) as valid_file_handle:
+            c = Core(
+                data_file_obj=valid_file_handle,
+                schema_files=[str(schema)],
+            )
+            c.validate()
