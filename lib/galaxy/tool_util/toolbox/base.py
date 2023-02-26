@@ -121,7 +121,6 @@ class AbstractToolTagManager(metaclass=abc.ABCMeta):
 
 
 class NullToolTagManager(AbstractToolTagManager):
-
     def reset_tags(self) -> None:
         return None
 

@@ -1978,10 +1978,9 @@ class ShedTwillTestCase(ShedApiTestCase):
         changeset: Optional[str] = None,
     ) -> None:
         json = self.display_installed_repository_manage_json(installed_repository)
-        assert "repository_dependencies" in json, "No repository dependencies were defined in %s. manage json is %s" % (
-            installed_repository.name,
-            json,
-        )
+        if "repository_dependencies" not in json:
+            name = installed_repository.name
+            raise AssertionError(f"No repository dependencies were defined in {name}. manage json is {json}")
         repository_dependencies = json["repository_dependencies"]
         found = False
         for folder in repository_dependencies.get("folders"):
