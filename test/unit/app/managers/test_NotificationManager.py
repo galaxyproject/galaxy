@@ -1,4 +1,12 @@
+import json
+
 from galaxy.managers.notification import NotificationManager
+from galaxy.schema.notifications import (
+    NotificationCreateData,
+    NotificationCreateRequest,
+    NotificationMessageContent,
+    NotificationRecipients,
+)
 from .base import BaseTestCase
 
 # =============================================================================
@@ -12,23 +20,28 @@ class TestNotificationManager(BaseTestCase):
         super().set_up_managers()
         self.notification_manager = NotificationManager(self.trans.sa_session)
 
-    def test_create_notification(self):
-        notification = self.notification_manager.create(content="New notification")
-        assert notification.id
-        assert notification.content == "New notification"
-
-    def test_update_notification(self):
-        notification = self.notification_manager.create(content="New notification")
-        updated_content = "Updated notification"
-        self.notification_manager.update(notification.id, updated_content)
-        assert notification.content == updated_content
-
-    def test_associate_user_notification(self):
+    def test_create_notification_for_users(self):
         user = self.user_manager.create(**user2_data)
-        notification = self.notification_manager.create(content="New notification")
-        self.notification_manager.associate_user_notification([user.id], notification)
-        assert len(user.all_notifications) == 1
-        assert len(notification.user_notification_associations) == 1
-        for association in notification.user_notification_associations:
-            assert association.user_id == user.id
-            assert association.notification_id == notification.id
+        request = NotificationCreateRequest(
+            recipients=NotificationRecipients.construct(
+                user_ids=[user.id],
+            ),
+            notification=NotificationCreateData(
+                source="testing",
+                variant="info",
+                category="message",
+                content=NotificationMessageContent(subject="Testing Subject", message="Testing Message"),
+                publication_time=None,
+                expiration_time=None,
+            ),
+        )
+        notification, notifications_sent = self.notification_manager.create_notification_for_users(request)
+        assert notifications_sent == 1
+        assert notification.id
+        assert notification.category == "message"
+        notification_content = json.loads(notification.content)
+        assert notification_content["category"] == "message"
+        assert notification_content["subject"] == "Testing Subject"
+        assert notification_content["message"] == "Testing Message"
+
+    # TODO: Fix everything and test _get_all_recipient_users
