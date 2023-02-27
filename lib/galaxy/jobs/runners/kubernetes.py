@@ -741,10 +741,12 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             if succeeded > 0 or job_state == model.Job.states.STOPPED:
                 job_state.running = False
                 self.mark_as_finished(job_state)
+                log.debug("k8s job succeeded")
                 return None
             elif active > 0 and failed < max_pod_retries + 1:
                 if not job_state.running:
                     if self.__job_pending_due_to_unschedulable_pod(job_state):
+                        log.debug("k8s job pending..")
                         if self.runner_params.get("k8s_unschedulable_walltime_limit"):
                             creation_time_str = job.obj["metadata"].get("creationTimestamp")
                             creation_time = datetime.strptime(creation_time_str, "%Y-%m-%dT%H:%M:%SZ")
@@ -756,19 +758,28 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                         else:
                             pass
                     else:
+                        log.debug("k8s job is running..")
                         job_state.running = True
                         job_state.job_wrapper.change_state(model.Job.states.RUNNING)
                 return job_state
             elif job_persisted_state == model.Job.states.DELETED:
                 # Job has been deleted via stop_job and job has not been deleted,
                 # remove from watched_jobs by returning `None`
+                log.debug("PP Job is DELETED..")
                 if job_state.job_wrapper.cleanup_job in ("always", "onsuccess"):
                     job_state.job_wrapper.cleanup()
                 return None
             else:
+                log.debug("k8s job is failed and not deleted, looking at failure")
                 self._handle_job_failure(job, job_state)
                 # changes for resubmission (removed self.mark_as_failed from handle_job_failure)
                 self.work_queue.put((self.mark_as_failed, job_state))
+                # If the job was not resubmitted after being put in the failed queue,
+                # we mark it as finished as well for stderr / stdout detection. 
+                # Otherwise, the user doesn't see any stdout/stderr in the UI.
+                if job_state.job_wrapper.get_state() != model.Job.states.RESUBMITTED:
+                    self.mark_as_finished(job_state)
+
                 return None
 
         elif len(jobs.response["items"]) == 0:
@@ -807,22 +818,21 @@ class KubernetesJobRunner(AsynchronousJobRunner):
     def _handle_job_failure(self, job, job_state):
         # Figure out why job has failed
         with open(job_state.error_file, "a") as error_file:
-            # TODO we need to remove probably these error_file.writes, as they remove the stderr / stdout capture
-            # from failed Galaxy k8s jobs.
+            log.debug("Trying with error file in _handle_job_failure")
             if self.__job_failed_due_to_low_memory(job_state):
+                log.debug("OOM condition reached")
                 error_file.write("Job killed after running out of memory. Try with more memory.\n")
                 job_state.fail_message = "Tool failed due to insufficient memory. Try with more memory."
                 job_state.runner_state = JobState.runner_states.MEMORY_LIMIT_REACHED
             elif self.__job_failed_due_to_walltime_limit(job):
+                log.debug("Walltime condition reached")
                 error_file.write("DeadlineExceeded")
                 job_state.fail_message = "Job was active longer than specified deadline"
                 job_state.runner_state = JobState.runner_states.WALLTIME_REACHED
             else:
-                error_file.write("Exceeded max number of Kubernetes pod retries allowed for job\n")
-                job_state.fail_message = "More pods failed than allowed. See stdout for pods details."
-        # changes for resubmission, to mimick what happens in the LSF-cli runner
-        # job_state.running = False
-        # self.mark_as_failed(job_state)
+                log.debug("Runner cannot detect a specific reason for failure, must be a tool failure.")
+                error_file.write("Exceeded max number of job retries allowed for job\n")
+                job_state.fail_message = "More job retries failed than allowed. See standard output and standard error within the info section for details."
         try:
             if self.__has_guest_ports(job_state.job_wrapper):
                 self.__cleanup_k8s_guest_ports(job_state.job_wrapper, job)
@@ -962,6 +972,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             ajs.old_state = model.Job.states.QUEUED
             ajs.running = False
             self.monitor_queue.put(ajs)
+        
 
     def finish_job(self, job_state):
         self._handle_metadata_externally(job_state.job_wrapper, resolve_requirements=True)
