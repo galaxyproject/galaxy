@@ -5,8 +5,10 @@ import copy
 import json
 import logging
 import re
-from typing import Any, Dict, List, Optional
-
+from typing import (
+    List,
+    Optional,
+)
 
 from fastapi import (
     Body,
@@ -35,6 +37,7 @@ from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import (
     User,
     UserAddress,
+    UserQuotaUsage,
 )
 from galaxy.schema import APIKeyModel
 from galaxy.schema.fields import DecodedDatabaseIdField
@@ -158,7 +161,7 @@ class FastAPIUsers:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         user_id: str = FlexibleUserIdPathParam,
-    ) -> List[Dict[str, Any]]:
+    ) -> List[UserQuotaUsage]:
         user = get_user_full(trans, user_id, False)
         if user:
             rval = self.user_serializer.serialize_disk_usage(user)
@@ -176,7 +179,7 @@ class FastAPIUsers:
         trans: ProvidesUserContext = DependsOnTrans,
         user_id: str = FlexibleUserIdPathParam,
         label: str = QuotaSourceLabelPathParam,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[UserQuotaUsage]:
         user = get_user_full(trans, user_id, False)
         effective_label: Optional[str] = label
         if label == "__null__":

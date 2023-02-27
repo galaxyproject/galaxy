@@ -34,6 +34,7 @@ from galaxy.managers import (
     base,
     deletable,
 )
+from galaxy.model import UserQuotaUsage
 from galaxy.security.validate_user_input import (
     VALID_EMAIL_RE,
     validate_email,
@@ -650,22 +651,38 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
             }
         )
 
-    def serialize_disk_usage(self, user: model.User) -> List[Dict[str, Any]]:
-        rval = user.dictify_usage(self.app.object_store)
-        for usage in rval:
-            quota_source_label = usage["quota_source_label"]
-            usage["quota_percent"] = self.user_manager.quota(user, quota_source_label=quota_source_label)
-            usage["quota"] = self.user_manager.quota(user, total=True, quota_source_label=quota_source_label)
-            usage["quota_bytes"] = self.user_manager.quota_bytes(user, quota_source_label=quota_source_label)
+    def serialize_disk_usage(self, user: model.User) -> List[UserQuotaUsage]:
+        usages = user.dictify_usage(self.app.object_store)
+        rval: List[UserQuotaUsage] = []
+        for usage in usages:
+            quota_source_label = usage.quota_source_label
+            quota_percent = self.user_manager.quota(user, quota_source_label=quota_source_label)
+            quota = self.user_manager.quota(user, total=True, quota_source_label=quota_source_label)
+            quota_bytes = self.user_manager.quota_bytes(user, quota_source_label=quota_source_label)
+            rval.append(
+                UserQuotaUsage(
+                    quota_source_label=quota_source_label,
+                    total_disk_usage=usage.total_disk_usage,
+                    quota_percent=quota_percent,
+                    quota=quota,
+                    quota_bytes=quota_bytes,
+                )
+            )
         return rval
 
-    def serialize_disk_usage_for(self, user: model.User, label: Optional[str]) -> Dict[str, Any]:
+    def serialize_disk_usage_for(self, user: model.User, label: Optional[str]) -> UserQuotaUsage:
         usage = user.dictify_usage_for(label)
-        quota_source_label = usage["quota_source_label"]
-        usage["quota_percent"] = self.user_manager.quota(user, quota_source_label=quota_source_label)
-        usage["quota"] = self.user_manager.quota(user, total=True, quota_source_label=quota_source_label)
-        usage["quota_bytes"] = self.user_manager.quota_bytes(user, quota_source_label=quota_source_label)
-        return usage
+        quota_source_label = usage.quota_source_label
+        quota_percent = self.user_manager.quota(user, quota_source_label=quota_source_label)
+        quota = self.user_manager.quota(user, total=True, quota_source_label=quota_source_label)
+        quota_bytes = self.user_manager.quota_bytes(user, quota_source_label=quota_source_label)
+        return UserQuotaUsage(
+            quota_source_label=quota_source_label,
+            total_disk_usage=usage.total_disk_usage,
+            quota_percent=quota_percent,
+            quota=quota,
+            quota_bytes=quota_bytes,
+        )
 
 
 class UserDeserializer(base.ModelDeserializer):

@@ -1189,6 +1189,14 @@ export interface paths {
          */
         post: operations["set_beacon_api_users__user_id__beacon_post"];
     };
+    "/api/users/{user_id}/usage": {
+        /** Return the user's quota usage summary broken down by quota source */
+        get: operations["get_user_usage_api_users__user_id__usage_get"];
+    };
+    "/api/users/{user_id}/usage/{label}": {
+        /** Return the user's quota usage summary for a given quota source label */
+        get: operations["get_user_usage_for_label_api_users__user_id__usage__label__get"];
+    };
     "/api/version": {
         /**
          * Return Galaxy version information: major/minor version, optional extra info
@@ -7385,6 +7393,19 @@ export interface components {
              * @description Information about a user associated with a quota.
              */
             user: components["schemas"]["UserModel"];
+        };
+        /** UserQuotaUsage */
+        UserQuotaUsage: {
+            /** Quota */
+            quota?: string;
+            /** Quota Bytes */
+            quota_bytes?: number;
+            /** Quota Percent */
+            quota_percent?: number;
+            /** Quota Source Label */
+            quota_source_label?: string;
+            /** Total Disk Usage */
+            total_disk_usage: number;
         };
         /** ValidationError */
         ValidationError: {
@@ -14139,6 +14160,62 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["UserBeaconSetting"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_user_usage_api_users__user_id__usage_get: {
+        /** Return the user's quota usage summary broken down by quota source */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the user to get or __current__. */
+            path: {
+                user_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["UserQuotaUsage"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_user_usage_for_label_api_users__user_id__usage__label__get: {
+        /** Return the user's quota usage summary for a given quota source label */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the user to get or __current__. */
+            /** @description The label corresponding to the quota source to fetch usage information about. */
+            path: {
+                user_id: string;
+                label: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["UserQuotaUsage"];
                 };
             };
             /** @description Validation Error */
