@@ -69,7 +69,7 @@
                     <b-dropdown-divider></b-dropdown-divider>
 
                     <b-dropdown-item
-                        v-b-modal:copy-history-modal
+                        v-b-modal:copy-current-history-modal
                         :disabled="currentUser.isAnonymous"
                         :title="userTitle('Copy History to a New History')">
                         <Icon fixed-width icon="copy" class="mr-1" />
@@ -140,7 +140,7 @@
             :current-history-id="history.id"
             @selectHistory="$emit('setCurrentHistory', $event)" />
 
-        <CopyModal id="copy-history-modal" :history="history" />
+        <CopyModal id="copy-current-history-modal" :history="history" />
 
         <b-modal
             id="history-privacy-modal"

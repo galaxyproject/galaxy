@@ -4,7 +4,7 @@
             <template v-if="!confirmURL">
                 <div class="col col-lg-6">
                     <b-alert :show="!!messageText" :variant="messageVariant">
-                        {{ messageText }}
+                        <span v-html="messageText" />
                     </b-alert>
                     <b-form id="login" @submit.prevent="submitLogin()">
                         <b-card no-body :header="headerWelcome">
@@ -16,8 +16,8 @@
                                     </b-form-group>
                                     <b-form-group :label="labelPassword">
                                         <b-form-input v-model="password" name="password" type="password" />
-                                        <b-form-text v-localize>
-                                            Forgot password?
+                                        <b-form-text>
+                                            <span v-localize>Forgot password?</span>
                                             <a
                                                 v-localize
                                                 href="javascript:void(0)"
