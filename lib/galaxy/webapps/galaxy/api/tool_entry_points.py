@@ -56,7 +56,12 @@ class ToolEntryPointsAPIController(BaseGalaxyAPIController):
                 raise exceptions.ItemAccessibilityException()
             entry_points = job.interactivetool_entry_points
         if running:
-            entry_points = self.interactivetool_manager.get_nonterminal_for_user_by_trans(trans)
+            if trans.user is None and trans.get_galaxy_session() is None:
+                raise exceptions.RequestParameterMissingException(
+                    "You have to specify user or have a valid Galaxy session in order to access running entry points."
+                )
+            else:
+                entry_points = self.interactivetool_manager.get_nonterminal_for_user_by_trans(trans)
 
         rval = []
         for entry_point in entry_points:
