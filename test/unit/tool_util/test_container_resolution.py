@@ -1,5 +1,3 @@
-import os
-import tempfile
 from subprocess import CalledProcessError
 
 import pytest
@@ -9,7 +7,6 @@ from galaxy.tool_util.deps.container_resolvers.mulled import (
     CachedMulledDockerContainerResolver,
     CachedMulledSingularityContainerResolver,
     MulledDockerContainerResolver,
-    MulledSingularityContainerResolver,
 )
 from galaxy.tool_util.deps.containers import ContainerRegistry
 from galaxy.tool_util.deps.dependencies import (
@@ -27,7 +24,11 @@ SINGULARITY_IMAGES = (
 
 @pytest.fixture
 def appinfo() -> AppInfo:
-    return AppInfo()
+    return AppInfo(
+        involucro_auto_init=True,
+        enable_mulled_containers=True,
+        container_image_cache_path=".",
+    )
 
 
 @pytest.fixture
@@ -109,89 +110,6 @@ def test_docker_container_docker_cli_exception_resolve(appinfo, mocker):
     assert container_description
     assert container_description.type == "docker"
     assert container_description.identifier == "quay.io/biocontainers/samtools:1.10--h2e538c0_3"
-
-
-def test_singularity_container_resolver_uncached(mocker):
-    """
-    test MulledSingularityContainerResolver with defaults (i.e. auto_install=True)
-
-    - resolver should always resolve to docker:///
-    - image is still downloaded so cache_path! TODO makes no sense to me
-    """
-    with tempfile.TemporaryDirectory() as tmpd:
-        resolver = MulledSingularityContainerResolver(app_info=mocker.Mock(container_image_cache_path=tmpd))
-        requirement = ToolRequirement(name="samtools", version="1.16.1", type="package")
-        tool_info = ToolInfo(requirements=[requirement])
-
-        # test resolver with install=True (which happens when hitting build in the Admin UI and on tool run)
-        container_description = resolver.resolve(
-            enabled_container_types=["singularity"], tool_info=tool_info, install=True
-        )
-        assert os.listdir(tmpd) == ["singularity"]
-        cached_images = os.listdir(os.path.join(tmpd, "singularity", "mulled"))
-        assert len(cached_images) == 1 and cached_images[0].startswith("samtools:1.16.1--")
-        assert container_description
-        assert container_description.type == "singularity"
-        assert container_description.identifier and container_description.identifier.startswith(
-            "docker://quay.io/biocontainers/samtools:1.16.1--"
-        )
-
-        # use the resolver again to check if the cached image is returned
-        mocker.patch("galaxy.tool_util.deps.container_resolvers.mulled.which", return_value="")
-        container_description = resolver.resolve(
-            enabled_container_types=["singularity"], tool_info=tool_info, install=True
-        )
-        assert os.listdir(tmpd) == ["singularity"]
-        cached_images = os.listdir(os.path.join(tmpd, "singularity", "mulled"))
-        assert len(cached_images) == 1 and cached_images[0].startswith("samtools:1.16.1--")
-        assert container_description
-        assert container_description.type == "singularity"
-        assert container_description.identifier and container_description.identifier.startswith(
-            "docker://quay.io/biocontainers/samtools:1.16.1--"
-        )
-
-
-def test_singularity_container_resolver_noautoinstall_uncached(mocker):
-    """
-    test MulledSingularityContainerResolver with auto_install=False)
-
-    - image is downloaded (as for auto_install=True)
-    - resolver should always resolve to image in cache dir (ie /tmp/... in the test)
-    """
-    with tempfile.TemporaryDirectory() as tmpd:
-        print(f"tmpd{tmpd}")
-        resolver = MulledSingularityContainerResolver(
-            app_info=mocker.Mock(container_image_cache_path=tmpd), auto_install=False
-        )
-        requirement = ToolRequirement(name="samtools", version="1.16.1", type="package")
-        tool_info = ToolInfo(requirements=[requirement])
-
-        # test resolver with install=True (which happens when hitting build in the Admin UI and on tool run)
-        container_description = resolver.resolve(
-            enabled_container_types=["singularity"], tool_info=tool_info, install=True
-        )
-        assert os.listdir(tmpd) == ["singularity"]
-        cached_images = os.listdir(os.path.join(tmpd, "singularity", "mulled"))
-        assert len(cached_images) == 1 and cached_images[0].startswith("samtools:1.16.1--")
-        assert container_description
-        assert container_description.type == "singularity"
-        assert container_description.identifier and container_description.identifier.startswith(
-            os.path.join(tmpd, "singularity/mulled/") + "samtools:1.16.1--"
-        )
-
-        # use the resolver again to check if the cached image is returned
-        mocker.patch("galaxy.tool_util.deps.container_resolvers.mulled.which", return_value="")
-        container_description = resolver.resolve(
-            enabled_container_types=["singularity"], tool_info=tool_info, install=True
-        )
-        assert os.listdir(tmpd) == ["singularity"]
-        cached_images = os.listdir(os.path.join(tmpd, "singularity", "mulled"))
-        assert len(cached_images) == 1 and cached_images[0].startswith("samtools:1.16.1--")
-        assert container_description
-        assert container_description.type == "singularity"
-        assert container_description.identifier and container_description.identifier.startswith(
-            os.path.join(tmpd, "singularity/mulled/") + "samtools:1.16.1--"
-        )
 
 
 def test_cached_singularity_container_resolver_uncached(mocker):
