@@ -57,6 +57,7 @@ class OptionalNotificationCategory(str, Enum):
     displayed in the notification preferences.
     """
 
+    message = "message"
     near_quota_limit = "near_quota_limit"
     new_history_shared = "new_history_shared"
     new_workflow_shared = "new_workflow_shared"
@@ -83,12 +84,16 @@ class ActionLink(Model):
 
 
 class BroadcastNotificationContent(NotificationContentBase):
-    category: Literal[MandatoryNotificationCategory.broadcast]
+    category: Literal[MandatoryNotificationCategory.broadcast] = MandatoryNotificationCategory.broadcast
     action_links: List[ActionLink]
 
 
+class NotificationMessageContent(NotificationContentBase):
+    category: Literal[OptionalNotificationCategory.message] = OptionalNotificationCategory.message
+
+
 class NearQuotaLimitNotificationContent(Model):
-    category: Literal[OptionalNotificationCategory.near_quota_limit]
+    category: Literal[OptionalNotificationCategory.near_quota_limit] = OptionalNotificationCategory.near_quota_limit
 
 
 class NewSharedItemNotificationContent(Model):
@@ -96,23 +101,29 @@ class NewSharedItemNotificationContent(Model):
 
 
 class NewHistorySharedNotificationContent(NewSharedItemNotificationContent):
-    category: Literal[OptionalNotificationCategory.new_history_shared]
+    category: Literal[OptionalNotificationCategory.new_history_shared] = OptionalNotificationCategory.new_history_shared
 
 
 class NewWorkflowSharedNotificationContent(NewSharedItemNotificationContent):
-    category: Literal[OptionalNotificationCategory.new_workflow_shared]
+    category: Literal[
+        OptionalNotificationCategory.new_workflow_shared
+    ] = OptionalNotificationCategory.new_workflow_shared
 
 
 class NewPageSharedNotificationContent(NewSharedItemNotificationContent):
-    category: Literal[OptionalNotificationCategory.new_page_shared]
+    category: Literal[OptionalNotificationCategory.new_page_shared] = OptionalNotificationCategory.new_page_shared
 
 
 class NewVisualizationSharedNotificationContent(NewSharedItemNotificationContent):
-    category: Literal[OptionalNotificationCategory.new_visualization_shared]
+    category: Literal[
+        OptionalNotificationCategory.new_visualization_shared
+    ] = OptionalNotificationCategory.new_visualization_shared
 
 
 class WorkflowExecutionCompletedNotificationContent(Model):
-    category: Literal[OptionalNotificationCategory.workflow_execution_completed]
+    category: Literal[
+        OptionalNotificationCategory.workflow_execution_completed
+    ] = OptionalNotificationCategory.workflow_execution_completed
     workflow_id: EncodedDatabaseIdField
     invocation_id: EncodedDatabaseIdField
 
@@ -120,6 +131,7 @@ class WorkflowExecutionCompletedNotificationContent(Model):
 AnyNotificationContent = Annotated[
     Union[
         BroadcastNotificationContent,
+        NotificationMessageContent,
         NearQuotaLimitNotificationContent,
     ],
     Field(discriminator="category"),
@@ -157,7 +169,7 @@ class NotificationResponse(Model):
 
 
 class UserNotificationResponse(NotificationResponse):
-    seen: bool
+    seen_time: Optional[datetime]
     favorite: bool
     deleted: bool
 
