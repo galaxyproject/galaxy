@@ -5,7 +5,8 @@ import copy
 import json
 import logging
 import re
-from typing import Optional
+from typing import Any, Dict, List, Optional
+
 
 from fastapi import (
     Body,
@@ -74,11 +75,18 @@ router = Router(tags=["users"])
 
 UserIdPathParam: DecodedDatabaseIdField = Path(..., title="User ID", description="The ID of the user to get.")
 APIKeyPathParam: str = Path(..., title="API Key", description="The API key of the user.")
+FlexibleUserIdPathParam: str = Path(..., title="User ID", description="The ID of the user to get or __current__.")
+QuotaSourceLabelPathParam: str = Path(
+    ...,
+    title="Quota Source Label",
+    description="The label corresponding to the quota source to fetch usage information about.",
+)
 
 
 @router.cbv
 class FastAPIUsers:
     service: UsersService = depends(UsersService)
+    user_serializer: users.UserSerializer = depends(users.UserSerializer)
 
     @router.put(
         "/api/users/recalculate_disk_usage",
@@ -140,6 +148,44 @@ class FastAPIUsers:
     ):
         self.service.delete_api_key(trans, user_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @router.get(
+        "/api/users/{user_id}/usage",
+        name="get_user_usage",
+        summary="Return the user's quota usage summary broken down by quota source",
+    )
+    def usage(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_id: str = FlexibleUserIdPathParam,
+    ) -> List[Dict[str, Any]]:
+        user = get_user_full(trans, user_id, False)
+        if user:
+            rval = self.user_serializer.serialize_disk_usage(user)
+            return rval
+        else:
+            return []
+
+    @router.get(
+        "/api/users/{user_id}/usage/{label}",
+        name="get_user_usage_for_label",
+        summary="Return the user's quota usage summary for a given quota source label",
+    )
+    def usage_for(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_id: str = FlexibleUserIdPathParam,
+        label: str = QuotaSourceLabelPathParam,
+    ) -> Optional[Dict[str, Any]]:
+        user = get_user_full(trans, user_id, False)
+        effective_label: Optional[str] = label
+        if label == "__null__":
+            effective_label = None
+        if user:
+            rval = self.user_serializer.serialize_disk_usage_for(user, effective_label)
+            return rval
+        else:
+            return None
 
     @router.get(
         "/api/users/{user_id}/beacon",
@@ -287,65 +333,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         """Return referenced user or None if anonymous user is referenced."""
         deleted = kwd.get("deleted", "False")
         deleted = util.string_as_bool(deleted)
-        try:
-            # user is requesting data about themselves
-            if user_id == "current":
-                # ...and is anonymous - return usage and quota (if any)
-                if not trans.user:
-                    return None
-
-                # ...and is logged in - return full
-                else:
-                    user = trans.user
-            else:
-                return managers_base.get_object(
-                    trans,
-                    user_id,
-                    "User",
-                    deleted=deleted,
-                )
-            # check that the user is requesting themselves (and they aren't del'd) unless admin
-            if not trans.user_is_admin:
-                if trans.user != user or user.deleted:
-                    raise exceptions.InsufficientPermissionsException(
-                        "You are not allowed to perform action on that user", id=user_id
-                    )
-            return user
-        except exceptions.MessageException:
-            raise
-        except Exception:
-            raise exceptions.RequestParameterInvalidException("Invalid user id specified", id=user_id)
-
-    @expose_api
-    def usage(self, trans, user_id: str, **kwd):
-        """
-        GET /api/users/{user_id}/usage
-
-        Get user's disk usage broken down by quota source.
-        """
-        user = self._get_user_full(trans, user_id, **kwd)
-        if user:
-            rval = self.user_serializer.serialize_disk_usage(user)
-            return rval
-        else:
-            return []
-
-    @expose_api
-    def usage_for(self, trans, user_id: str, label: str, **kwd):
-        """
-        GET /api/users/{user_id}/usage/{label}
-
-        Get user's disk usage for supplied quota source label.
-        """
-        user = self._get_user_full(trans, user_id, **kwd)
-        effective_label: Optional[str] = label
-        if label == "__null__":
-            effective_label = None
-        if user:
-            rval = self.user_serializer.serialize_disk_usage_for(user, effective_label)
-            return rval
-        else:
-            return None
+        return get_user_full(trans, user_id, deleted)
 
     @expose_api
     def create(self, trans: GalaxyWebTransaction, payload: dict, **kwd):
@@ -1153,3 +1141,34 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         if user != trans.user and not trans.user_is_admin:
             raise exceptions.InsufficientPermissionsException("Access denied.")
         return user
+
+
+def get_user_full(trans: ProvidesUserContext, user_id: str, deleted: bool) -> Optional[User]:
+    try:
+        # user is requesting data about themselves
+        if user_id == "current":
+            # ...and is anonymous - return usage and quota (if any)
+            if not trans.user:
+                return None
+
+            # ...and is logged in - return full
+            else:
+                user = trans.user
+        else:
+            return managers_base.get_object(
+                trans,
+                user_id,
+                "User",
+                deleted=deleted,
+            )
+        # check that the user is requesting themselves (and they aren't del'd) unless admin
+        if not trans.user_is_admin:
+            if trans.user != user or user.deleted:
+                raise exceptions.InsufficientPermissionsException(
+                    "You are not allowed to perform action on that user", id=user_id
+                )
+        return user
+    except exceptions.MessageException:
+        raise
+    except Exception:
+        raise exceptions.RequestParameterInvalidException("Invalid user id specified", id=user_id)
