@@ -57,8 +57,7 @@
 </template>
 
 <script>
-import axios from "axios";
-import { prependPath } from "utils/redirect";
+import { fetcher } from "schema/fetcher";
 import LoadingSpan from "components/LoadingSpan";
 import DescribeObjectStore from "components/ObjectStore/DescribeObjectStore";
 import { errorMessageAsString } from "utils/simple-error";
@@ -122,9 +121,9 @@ is not stored in the correct place, contact your Galaxy adminstrator for more in
         },
     },
     async mounted() {
-        const url = prependPath("api/object_store?selectable=true");
+        const get = fetcher.path("/api/object_store").method("get").create();
         try {
-            const { data } = await axios.get(url);
+            const { data } = await get({ selectable: true });
             this.objectStores = data;
             this.loading = false;
         } catch (e) {
