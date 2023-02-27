@@ -211,6 +211,7 @@ class TestUserManager(BaseTestCase):
             assert frm == "email_from"
             assert to == "user@nopassword.com"
             assert subject == "Galaxy Account Activation"
+            assert "custom_activation_email_message" in body
             assert "Hello nopassword" in body
             assert "(url_for): {'controller': 'user', 'action': 'activate', 'activation_token': 'activation_token', 'email': Markup('user@nopassword.com'), 'qualified': True}" in body
 
@@ -220,6 +221,32 @@ class TestUserManager(BaseTestCase):
                 mock_send_mail.assert_called_once()
                 mock_hash_util.assert_called_once()
         assert result is True
+
+    @mock.patch("routes.url_for", testable_url_for)
+    def test_reset_email(self):
+        self.log("should produce the password reset email")
+        self.user_manager.create(email="user@nopassword.com", username="nopassword")
+        self.trans.request.host = "request.host"
+        self.trans.app.config.hostname = "hostname"
+        self.trans.app.config.pretty_datetime_format = "today"
+        self.trans.app.config.instance_resource_url = "instance_resource_url"
+        self.trans.app.config.templates_dir = "templates"
+        self.trans.app.config.email_from = "email_from"
+        self.trans.app.config.smtp_server = True
+
+        def validate_send_email(frm, to, subject, body, config, html=None):
+            assert frm == "email_from"
+            assert to == "user@nopassword.com"
+            assert subject == "Galaxy Password Reset"
+            assert "reset your Galaxy password" in body
+            assert "'controller': 'login', 'action': 'start'" in body
+
+        with mock.patch("galaxy.util.send_mail", side_effect=validate_send_email) as mock_send_mail:
+            with mock.patch("galaxy.util.unique_id", return_value="reset_token") as mock_unique_id:
+                result = self.user_manager.send_reset_email(self.trans, dict(email="user@nopassword.com"))
+                mock_send_mail.assert_called_once()
+                mock_unique_id.assert_called_once()
+        assert result is None
 
     def test_get_user_by_identity(self):
         # return None if username/email not found
