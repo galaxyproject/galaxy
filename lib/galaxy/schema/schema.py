@@ -3267,27 +3267,6 @@ class PageSummaryBase(Model):
     )
 
 
-class NotificationResponseModel(BaseModel):
-    id: EncodedDatabaseIdField
-    content: str
-
-    class Config:
-        orm_mode = True
-
-
-class NotificationListResponseModel(BaseModel):
-    __root__: List[NotificationResponseModel]
-
-
-class NotificationCreateRequestModel(BaseModel):
-    content: str
-    user_ids: List[DecodedDatabaseIdField]
-
-
-class NotificationUpdateRequestModel(BaseModel):
-    content: str
-
-
 class MaterializeDatasetInstanceAPIRequest(Model):
     source: DatasetSourceType = Field(
         title="Source",
