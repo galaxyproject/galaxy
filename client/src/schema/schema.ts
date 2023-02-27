@@ -890,11 +890,11 @@ export interface paths {
         post: operations["create_api_metrics_post"];
     };
     "/api/object_store": {
-        /** Index */
+        /** Get a list of (currently only concrete) object stores configured with this Galaxy instance. */
         get: operations["index_api_object_store_get"];
     };
     "/api/object_store/{object_store_id}": {
-        /** Return boolean to indicate if Galaxy's default object store allows selection. */
+        /** Get information about a concrete object store configured with Galaxy. */
         get: operations["show_info_api_object_store__object_store_id__get"];
     };
     "/api/pages": {
@@ -1432,6 +1432,34 @@ export interface components {
             /** Queue of task being done derived from Celery AsyncResult */
             queue?: string;
         };
+        /** BadgeDict */
+        BadgeDict: {
+            /** Message */
+            message: string;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "admin" | "galaxy";
+            /**
+             * Type
+             * @enum {string}
+             */
+            type:
+                | "faster"
+                | "slower"
+                | "short_term"
+                | "cloud"
+                | "backed_up"
+                | "not_backed_up"
+                | "more_secure"
+                | "less_secure"
+                | "more_stable"
+                | "less_stable"
+                | "quota"
+                | "no_quota"
+                | "restricted";
+        };
         /**
          * BasicRoleModel
          * @description Base model definition with common configuration used by all derived models.
@@ -1717,6 +1745,20 @@ export interface components {
              * @default MD5
              */
             hash_function?: components["schemas"]["HashFunctionNameEnum"];
+        };
+        /** ConcreteObjectStoreModel */
+        ConcreteObjectStoreModel: {
+            /** Badges */
+            badges: components["schemas"]["BadgeDict"][];
+            /** Description */
+            description?: string;
+            /** Name */
+            name?: string;
+            /** Object Store Id */
+            object_store_id?: string;
+            /** Private */
+            private: boolean;
+            quota: components["schemas"]["QuotaModel"];
         };
         /** ContentsObject */
         ContentsObject: {
@@ -6242,6 +6284,13 @@ export interface components {
              * @default []
              */
             users?: components["schemas"]["UserQuota"][];
+        };
+        /** QuotaModel */
+        QuotaModel: {
+            /** Enabled */
+            enabled: boolean;
+            /** Source */
+            source?: string;
         };
         /**
          * QuotaOperation
@@ -12568,9 +12617,9 @@ export interface operations {
         };
     };
     index_api_object_store_get: {
-        /** Index */
+        /** Get a list of (currently only concrete) object stores configured with this Galaxy instance. */
         parameters?: {
-            /** @description Restrict index query to user selectable object stores. */
+            /** @description Restrict index query to user selectable object stores, the current implementation requires this to be true. */
             query?: {
                 selectable?: boolean;
             };
@@ -12580,9 +12629,10 @@ export interface operations {
             };
         };
         responses: {
+            /** @description A list of the configured object stores. */
             200: {
                 content: {
-                    "application/json": Record<string, never>[];
+                    "application/json": components["schemas"]["ConcreteObjectStoreModel"][];
                 };
             };
             /** @description Validation Error */
@@ -12594,7 +12644,7 @@ export interface operations {
         };
     };
     show_info_api_object_store__object_store_id__get: {
-        /** Return boolean to indicate if Galaxy's default object store allows selection. */
+        /** Get information about a concrete object store configured with Galaxy. */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -12606,10 +12656,10 @@ export interface operations {
             };
         };
         responses: {
-            /** @description A list with details about the remote files available to the user. */
+            /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["ConcreteObjectStoreModel"];
                 };
             };
             /** @description Validation Error */

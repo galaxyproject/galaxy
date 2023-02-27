@@ -24,6 +24,11 @@ from typing import (
 )
 
 import yaml
+from pydantic import BaseModel
+from typing_extensions import (
+    Literal,
+    TypedDict,
+)
 
 from galaxy.exceptions import (
     ObjectInvalid,
@@ -52,6 +57,22 @@ DEFAULT_QUOTA_ENABLED = True  # enable quota tracking in object stores by defaul
 
 log = logging.getLogger(__name__)
 
+BadgeSourceT = Literal["admin", "galaxy"]
+BadgeT = Literal[
+    "faster",
+    "slower",
+    "short_term",
+    "cloud",
+    "backed_up",
+    "not_backed_up",
+    "more_secure",
+    "less_secure",
+    "more_stable",
+    "less_stable",
+    "quota",
+    "no_quota",
+    "restricted",
+]
 
 BADGE_SPECIFICATION = [
     {"type": "faster", "conflicts": ["slower"]},
@@ -67,6 +88,12 @@ BADGE_SPECIFICATION = [
 ]
 KNOWN_BADGE_TYPES = [s["type"] for s in BADGE_SPECIFICATION]
 BADGE_SPECIFCATION_BY_TYPE = {s["type"]: s for s in BADGE_SPECIFICATION}
+
+
+class BadgeDict(TypedDict):
+    type: BadgeT
+    message: Optional[str]
+    source: BadgeSourceT
 
 
 class ObjectStore(metaclass=abc.ABCMeta):
@@ -270,7 +297,7 @@ class ObjectStore(metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def get_concrete_store_badges(self, obj):
+    def get_concrete_store_badges(self, obj) -> List[BadgeDict]:
         """Return a list of dictified badges summarizing the object store configuration."""
 
     @abc.abstractmethod
@@ -443,7 +470,7 @@ class BaseObjectStore(ObjectStore):
     def get_concrete_store_description_markdown(self, obj):
         return self._invoke("get_concrete_store_description_markdown", obj)
 
-    def get_concrete_store_badges(self, obj) -> List[Dict[str, Any]]:
+    def get_concrete_store_badges(self, obj) -> List[BadgeDict]:
         return self._invoke("get_concrete_store_badges", obj)
 
     def get_store_usage_percent(self):
@@ -549,14 +576,27 @@ class ConcreteObjectStore(BaseObjectStore):
         rval["badges"] = self._get_concrete_store_badges(None)
         return rval
 
-    def _get_concrete_store_badges(self, obj) -> List[Dict[str, Any]]:
-        badge_dicts: List[Dict[str, Any]] = []
+    def to_model(self, object_store_id: str) -> "ConcreteObjectStoreModel":
+        return ConcreteObjectStoreModel(
+            object_store_id=object_store_id,
+            private=self.private,
+            name=self.name,
+            description=self.description,
+            quota=QuotaModel(source=self.quota_source, enabled=self.quota_enabled),
+            badges=self._get_concrete_store_badges(None),
+        )
+
+    def _get_concrete_store_badges(self, obj) -> List[BadgeDict]:
+        badge_dicts: List[BadgeDict] = []
         for badge in self.badges:
-            badge_dict = badge.copy()
-            badge_dict["source"] = "admin"
+            badge_dict: BadgeDict = {
+                "source": "admin",
+                "type": badge["type"],
+                "message": badge["message"],
+            }
             badge_dicts.append(badge_dict)
 
-        quota_badge_dict: Dict[str, Any]
+        quota_badge_dict: BadgeDict
         if self.galaxy_enable_quotas and self.quota_enabled:
             quota_badge_dict = {
                 "type": "quota",
@@ -571,7 +611,7 @@ class ConcreteObjectStore(BaseObjectStore):
             }
         badge_dicts.append(quota_badge_dict)
         if self.private:
-            restricted_badge_dict = {
+            restricted_badge_dict: BadgeDict = {
                 "type": "restricted",
                 "message": None,
                 "source": "galaxy",
@@ -981,7 +1021,7 @@ class NestedObjectStore(BaseObjectStore):
     def _get_concrete_store_description_markdown(self, obj):
         return self._call_method("_get_concrete_store_description_markdown", obj, None, False)
 
-    def _get_concrete_store_badges(self, obj):
+    def _get_concrete_store_badges(self, obj) -> List[BadgeDict]:
         return self._call_method("_get_concrete_store_badges", obj, [], False)
 
     def _is_private(self, obj):
@@ -1346,6 +1386,20 @@ class HierarchicalObjectStore(NestedObjectStore):
             self.quota_enabled,
         )
         return quota_source_map
+
+
+class QuotaModel(BaseModel):
+    source: Optional[str]
+    enabled: bool
+
+
+class ConcreteObjectStoreModel(BaseModel):
+    object_store_id: Optional[str]
+    private: bool
+    name: Optional[str]
+    description: Optional[str]
+    quota: QuotaModel
+    badges: List[BadgeDict]
 
 
 def type_to_object_store_class(store: str, fsmon: bool = False) -> Tuple[Type[BaseObjectStore], Dict[str, Any]]:
