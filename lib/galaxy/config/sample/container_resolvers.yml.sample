@@ -23,7 +23,7 @@
 # ==========================
 
 # The following uncommented container resolvers are in the defaults
-# if ``enable_mulled_containers`` is set in ``galaxy.yml``.
+# if ``enable_mulled_containers`` is set in ``galaxy.yml`` (which is the default).
 
 # get a container description to a cached mulled docker container
 # - checks in the docker cache if the image is there
