@@ -95,9 +95,9 @@ export default {
         setUrl({ url }) {
             this.url = new URL(url);
             // split path and keep only valid entries
-            this.pathChunks = this.url.pathname
-                .split("/")
-                .filter((pathChunk) => pathChunk)
+            this.pathChunks = this.url.href
+                .split(/[/\\]/)
+                .splice(2)
                 .map((x) => ({ pathChunk: x, editable: false }));
 
             if (url) {

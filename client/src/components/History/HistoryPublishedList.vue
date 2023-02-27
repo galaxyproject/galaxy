@@ -206,6 +206,7 @@ watch([filterText, sortBy, sortDesc], () => {
             <b-table
                 v-if="items.length"
                 id="published-histories-table"
+                no-sort-reset
                 no-local-sorting
                 striped
                 :fields="fields"

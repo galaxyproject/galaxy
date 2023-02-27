@@ -7,6 +7,7 @@
             :filter="filter"
             hover
             responsive
+            no-sort-reset
             striped
             caption-top
             :busy="busy"

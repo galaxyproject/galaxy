@@ -27,6 +27,7 @@
         <template v-slot:body>
             <FormElement
                 id="__label"
+                :key="stepId"
                 :value="label"
                 title="Label"
                 help="Add a step label."
@@ -34,6 +35,7 @@
                 @input="onLabel" />
             <FormElement
                 id="__annotation"
+                :key="stepId"
                 :value="annotation"
                 title="Step Annotation"
                 :area="true"
