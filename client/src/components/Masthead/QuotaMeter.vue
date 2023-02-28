@@ -78,34 +78,31 @@ export default {
 
 <style lang="scss" scoped>
 .quota-meter {
+    background: var(--masthead-link-color);
     position: relative;
-    right: 0.8rem;
-    width: 100px;
     height: 100%;
-
+    margin-right: 0.5rem;
+    padding-right: 0.5rem;
+    padding-left: 0.5rem;
     .quota-progress {
         width: 100%;
         height: 16px;
         position: relative;
-
         & > * {
             position: absolute;
             width: 100%;
             height: 100%;
             text-align: center;
         }
-
         & > span {
             line-height: 1em;
             pointer-events: none;
         }
     }
-
     .quota-text {
         color: var(--masthead-text-color);
         text-decoration: none;
     }
-
     :deep(a) {
         &:focus-visible {
             outline: 2px solid var(--masthead-text-hover);
