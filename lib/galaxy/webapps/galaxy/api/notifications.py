@@ -48,7 +48,9 @@ class FastAPINotifications:
         summary="Returns the current status summary of the user's notifications.",
     )
     def get_notifications_status(
-        self, trans: ProvidesUserContext = DependsOnTrans, since: Optional[datetime] = Query()
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        since: datetime = Query(),
     ) -> NotificationStatusSummary:
         return self.service.get_notifications_status(trans, since)
 
@@ -129,7 +131,9 @@ class FastAPINotifications:
         summary="Deletes a list of notifications.",
     )
     def delete_notifications(
-        self, trans: ProvidesUserContext = DependsOnTrans, payload: NotificationsBatchRequest = Body()
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        payload: NotificationsBatchRequest = Body(),
     ) -> UserNotificationResponse:
         user = self.service.get_authenticated_user(trans)
         delete_request = NotificationUpdateRequest(deleted=True)
