@@ -87,7 +87,7 @@ describe("JobParameters/JobParameters.vue", () => {
         expect(elements.length).toBe(3);
 
         checkTableParameter(elements.at(0), "Add this value", "22");
-        checkTableParameter(elements.at(1), linkParam.text, `${raw.hid} : ${raw.name}`);
+        checkTableParameter(elements.at(1), linkParam.text, `${raw.hid}: ${raw.name}`);
         checkTableParameter(elements.at(2), "Iterate?", "NO");
     });
 
