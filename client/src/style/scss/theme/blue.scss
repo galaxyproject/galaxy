@@ -22,6 +22,7 @@ $masthead-link-active: darken($masthead-color, 10%);
 $text-color: $brand-dark;
 $text-muted: lighten($text-color, 10%);
 $text-light: lighten($text-color, 20%);
+$text-shadow: drop-shadow(0 0 0.2rem $brand-dark);
 
 // Light grays for backgrounds
 $white: lighten($brand-light, 15%); // body background

@@ -187,14 +187,14 @@ onMounted(() => {
     .navbar-brand {
         cursor: pointer;
         img {
-            filter: drop-shadow(0 0 0.3rem $masthead-color);
+            filter: $text-shadow;
             display: inline;
             border: none;
             height: 2.3rem;
         }
     }
     .navbar-text {
-        filter: drop-shadow(0 0 0.3rem $masthead-color);
+        filter: $text-shadow;
         font-weight: bold;
         font-family: Verdana, sans-serif;
         font-size: 1rem;

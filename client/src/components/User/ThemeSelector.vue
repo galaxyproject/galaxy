@@ -80,7 +80,7 @@ watch(
     background: var(--masthead-link-active);
 }
 img {
-    filter: drop-shadow(0 0 0.3rem $masthead-color);
+    filter: $text-shadow;
     cursor: pointer;
     display: inline;
     border: none;
