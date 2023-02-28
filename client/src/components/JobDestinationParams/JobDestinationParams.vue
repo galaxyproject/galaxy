@@ -1,27 +1,23 @@
 <template>
-    <CurrentUser v-slot="{ user }">
-        <div v-if="user.is_admin">
-            <h2 class="h-md">Destination Parameters</h2>
-            <table id="destination_parameters" class="tabletip info_data_table">
-                <tbody>
-                    <tr v-for="(value, title) in jobDestinationParams" :key="title">
-                        <td>{{ title }}</td>
-                        <td>{{ value }}</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </CurrentUser>
+    <div v-if="currentUser.is_admin">
+        <h2 class="h-md">Destination Parameters</h2>
+        <table id="destination_parameters" class="tabletip info_data_table">
+            <tbody>
+                <tr v-for="(value, title) in jobDestinationParams" :key="title">
+                    <td>{{ title }}</td>
+                    <td>{{ value }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </template>
 
 <script>
 import { mapCacheActions } from "vuex-cache";
-import CurrentUser from "components/providers/CurrentUser";
+import { mapState } from "pinia";
+import { useUserStore } from "@/stores/userStore";
 
 export default {
-    components: {
-        CurrentUser,
-    },
     props: {
         jobId: {
             type: String,
@@ -29,6 +25,7 @@ export default {
         },
     },
     computed: {
+        ...mapState(useUserStore, ["currentUser"]),
         jobDestinationParams: function () {
             return this.$store.getters.jobDestinationParams(this.jobId);
         },
