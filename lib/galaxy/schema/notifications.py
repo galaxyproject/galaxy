@@ -52,7 +52,7 @@ class MandatoryNotificationCategory(str, Enum):
     broadcast = "broadcast"
 
 
-class OptionalNotificationCategory(str, Enum):
+class PersonalNotificationCategory(str, Enum):
     """These notification categories can be opt-out by the user and will be
     displayed in the notification preferences.
     """
@@ -66,7 +66,7 @@ class OptionalNotificationCategory(str, Enum):
     workflow_execution_completed = "workflow_execution_completed"
 
 
-NotificationCategory = Union[MandatoryNotificationCategory, OptionalNotificationCategory]
+NotificationCategory = Union[MandatoryNotificationCategory, PersonalNotificationCategory]
 
 
 class NotificationContentBase(Model):
@@ -85,15 +85,15 @@ class ActionLink(Model):
 
 class BroadcastNotificationContent(NotificationContentBase):
     category: Literal[MandatoryNotificationCategory.broadcast] = MandatoryNotificationCategory.broadcast
-    action_links: List[ActionLink]
+    action_links: Optional[List[ActionLink]]
 
 
 class NotificationMessageContent(NotificationContentBase):
-    category: Literal[OptionalNotificationCategory.message] = OptionalNotificationCategory.message
+    category: Literal[PersonalNotificationCategory.message] = PersonalNotificationCategory.message
 
 
 class NearQuotaLimitNotificationContent(Model):
-    category: Literal[OptionalNotificationCategory.near_quota_limit] = OptionalNotificationCategory.near_quota_limit
+    category: Literal[PersonalNotificationCategory.near_quota_limit] = PersonalNotificationCategory.near_quota_limit
 
 
 class NewSharedItemNotificationContent(Model):
@@ -101,29 +101,29 @@ class NewSharedItemNotificationContent(Model):
 
 
 class NewHistorySharedNotificationContent(NewSharedItemNotificationContent):
-    category: Literal[OptionalNotificationCategory.new_history_shared] = OptionalNotificationCategory.new_history_shared
+    category: Literal[PersonalNotificationCategory.new_history_shared] = PersonalNotificationCategory.new_history_shared
 
 
 class NewWorkflowSharedNotificationContent(NewSharedItemNotificationContent):
     category: Literal[
-        OptionalNotificationCategory.new_workflow_shared
-    ] = OptionalNotificationCategory.new_workflow_shared
+        PersonalNotificationCategory.new_workflow_shared
+    ] = PersonalNotificationCategory.new_workflow_shared
 
 
 class NewPageSharedNotificationContent(NewSharedItemNotificationContent):
-    category: Literal[OptionalNotificationCategory.new_page_shared] = OptionalNotificationCategory.new_page_shared
+    category: Literal[PersonalNotificationCategory.new_page_shared] = PersonalNotificationCategory.new_page_shared
 
 
 class NewVisualizationSharedNotificationContent(NewSharedItemNotificationContent):
     category: Literal[
-        OptionalNotificationCategory.new_visualization_shared
-    ] = OptionalNotificationCategory.new_visualization_shared
+        PersonalNotificationCategory.new_visualization_shared
+    ] = PersonalNotificationCategory.new_visualization_shared
 
 
 class WorkflowExecutionCompletedNotificationContent(Model):
     category: Literal[
-        OptionalNotificationCategory.workflow_execution_completed
-    ] = OptionalNotificationCategory.workflow_execution_completed
+        PersonalNotificationCategory.workflow_execution_completed
+    ] = PersonalNotificationCategory.workflow_execution_completed
     workflow_id: EncodedDatabaseIdField
     invocation_id: EncodedDatabaseIdField
 
@@ -169,18 +169,28 @@ class NotificationResponse(Model):
 
 
 class UserNotificationResponse(NotificationResponse):
+    category: PersonalNotificationCategory
     seen_time: Optional[datetime]
     favorite: bool
     deleted: bool
 
 
-class NotificationListResponse(Model):
+class BroadcastNotificationResponse(NotificationResponse):
+    category: Literal[MandatoryNotificationCategory.broadcast] = MandatoryNotificationCategory.broadcast
+
+
+class UserNotificationListResponse(Model):
     __root__: List[UserNotificationResponse]
 
 
+class BroadcastNotificationListResponse(Model):
+    __root__: List[BroadcastNotificationResponse]
+
+
 class NotificationStatusSummary(Model):
-    unread_count: int
+    total_unread_count: int
     updated_notifications: List[UserNotificationResponse]
+    updated_broadcasts: List[BroadcastNotificationListResponse]
 
 
 class NotificationCreateData(Model):
@@ -204,7 +214,8 @@ class NotificationCreateRequest(Model):
 
 
 class NotificationBroadcastCreateRequest(NotificationCreateData):
-    category: Literal[MandatoryNotificationCategory.broadcast]
+    category: Literal[MandatoryNotificationCategory.broadcast] = MandatoryNotificationCategory.broadcast
+    content: BroadcastNotificationContent
 
 
 class NotificationCreateResponse(Model):
@@ -237,7 +248,7 @@ class NotificationChannels(Model):
 
 
 class NotificationChannelSettings(Model):
-    category: OptionalNotificationCategory
+    category: PersonalNotificationCategory
     channels: NotificationChannels
 
 

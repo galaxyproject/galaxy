@@ -15,15 +15,16 @@ from fastapi import (
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.notifications import (
+    BroadcastNotificationListResponse,
     NotificationBroadcastCreateRequest,
     NotificationCreateRequest,
     NotificationCreateResponse,
-    NotificationListResponse,
     NotificationsBatchRequest,
     NotificationsBatchUpdateRequest,
     NotificationStatusSummary,
     NotificationUpdateRequest,
     NotificationUserPreferences,
+    UserNotificationListResponse,
     UserNotificationResponse,
 )
 from galaxy.webapps.galaxy.services.notifications import NotificationService
@@ -42,26 +43,38 @@ router = Router(tags=["notifications"])
 class FastAPINotifications:
     service: NotificationService = depends(NotificationService)
 
-    @router.get("/api/notifications/status", summary="Returns the current status summary of the user's notifications.")
+    @router.get(
+        "/api/notifications/status",
+        summary="Returns the current status summary of the user's notifications.",
+    )
     def get_notifications_status(
         self, trans: ProvidesUserContext = DependsOnTrans, since: Optional[datetime] = Query()
     ) -> NotificationStatusSummary:
-        user = self.service.get_authenticated_user(trans)
-        return self.service.get_user_notifications_status(user, since)
+        return self.service.get_notifications_status(trans, since)
 
-    @router.get("/api/notifications", summary="Returns the list of notifications associated with the user.")
-    def get_notifications(
+    @router.get(
+        "/api/notifications",
+        summary="Returns the list of notifications associated with the user.",
+    )
+    def get_user_notifications(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         limit: Optional[int] = 20,
         offset: Optional[int] = None,
-    ) -> NotificationListResponse:
-        """Anonymous users only get the broadcasted notifications."""
-        return self.service.get_notifications(trans.user, limit=limit, offset=offset)
+    ) -> UserNotificationListResponse:
+        """Anonymous users cannot receive personal notifications, only broadcasted notifications."""
+        return self.service.get_user_notifications(trans, limit=limit, offset=offset)
+
+    @router.get(
+        "/api/notifications/broadcast",
+        summary="Returns all currently active broadcasted notifications.",
+    )
+    def get_broadcasted(self) -> BroadcastNotificationListResponse:
+        return self.service.get_broadcasted_notifications()
 
     @router.get(
         "/api/notifications/{notification_id}",
-        summary="Displays detailed information about a notification.",
+        summary="Displays information about a notification.",
     )
     def show_notification(
         self,
@@ -71,7 +84,10 @@ class FastAPINotifications:
         user = self.service.get_authenticated_user(trans)
         return self.service.get_user_notification_detail(user, notification_id)
 
-    @router.put("/api/notifications/{notification_id}", summary="Updates the state of a notification.")
+    @router.put(
+        "/api/notifications/{notification_id}",
+        summary="Updates the state of a notification.",
+    )
     def update_notification(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
@@ -82,7 +98,10 @@ class FastAPINotifications:
         user = self.service.get_authenticated_user(trans)
         return self.service.update_notification(user, notification_id, payload)
 
-    @router.put("/api/notifications", summary="Updates a list of notifications with the requested values.")
+    @router.put(
+        "/api/notifications",
+        summary="Updates a list of notifications with the requested values.",
+    )
     def update_notifications(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
@@ -92,7 +111,10 @@ class FastAPINotifications:
         user = self.service.get_authenticated_user(trans)
         return self.service.update_notifications(user, set(payload.notification_ids), payload.changes)
 
-    @router.delete("/api/notifications/{notification_id}", summary="Deletes a notification.")
+    @router.delete(
+        "/api/notifications/{notification_id}",
+        summary="Deletes a notification.",
+    )
     def delete_notification(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
@@ -102,7 +124,10 @@ class FastAPINotifications:
         delete_request = NotificationUpdateRequest(deleted=True)
         return self.service.update_notification(user, notification_id, delete_request)
 
-    @router.delete("/api/notifications", summary="Deletes a list of notifications.")
+    @router.delete(
+        "/api/notifications",
+        summary="Deletes a list of notifications.",
+    )
     def delete_notifications(
         self, trans: ProvidesUserContext = DependsOnTrans, payload: NotificationsBatchRequest = Body()
     ) -> UserNotificationResponse:
@@ -121,7 +146,7 @@ class FastAPINotifications:
         payload: NotificationCreateRequest = Body(),
     ) -> NotificationCreateResponse:
         """Sends a notification to a list of recipients (users, groups or roles)."""
-        return self.service.send_notification(sender=trans, payload=payload)
+        return self.service.send_notification(sender_context=trans, payload=payload)
 
     @router.post(
         "/api/notifications/broadcast",
@@ -134,7 +159,7 @@ class FastAPINotifications:
         payload: NotificationBroadcastCreateRequest = Body(),
     ) -> NotificationCreateResponse:
         """These special kind of notifications will be always included in every notification list request of the user."""
-        return self.service.broadcast(sender=trans, payload=payload)
+        return self.service.broadcast(sender_context=trans, payload=payload)
 
     @router.get(
         "/api/notifications/preferences",
