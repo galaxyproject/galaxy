@@ -688,7 +688,7 @@ class BuildMulledDockerContainerResolver(CliContainerResolver):
         if len(targets) == 0:
             return None
         if self.auto_install or install:
-            mull_targets(targets, involucro_context=self.involucro_context, namespace=self.namespace, **self._mulled_kwds)
+            mull_targets(targets, involucro_context=self.involucro_context, **self._mulled_kwds)
         return docker_cached_container_description(targets, self.namespace, hash_func=self.hash_func, shell=self.shell)
 
     def __str__(self):
