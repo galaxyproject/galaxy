@@ -18,9 +18,9 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
     state: () => ({
         items: {},
         itemKey: "hid",
-        latestCreateTime: new Date(),
         totalMatchesCount: undefined,
         lastCheckedTime: new Date(),
+        lastUpdateTime: new Date(),
         relatedItems: {},
         isWatching: false,
     }),
@@ -46,14 +46,14 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
                 return reverse(filtered);
             };
         },
-        getLatestCreateTime: (state) => {
-            return state.latestCreateTime;
-        },
         getTotalMatchesCount: (state) => {
             return state.totalMatchesCount;
         },
         getLastCheckedTime: (state) => {
             return state.lastCheckedTime;
+        },
+        getLastUpdateTime: (state) => {
+            return state.lastUpdateTime;
         },
         getWatchingVisibility: (state) => {
             return state.isWatching;
@@ -78,23 +78,20 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
             this.$patch((state) => {
                 // merges incoming payload into existing state
                 mergeArray(historyId, payload, state.items, state.itemKey);
-                // keep track of latest create time for items
-                payload.forEach((item) => {
-                    if (item.state == "ok") {
-                        const itemCreateTime = new Date(item.create_time);
-                        if (itemCreateTime > state.latestCreateTime) {
-                            state.latestCreateTime = itemCreateTime;
-                        }
-                    }
-                    if (relatedHid) {
+                // if related filter is included, set keys in state
+                if (relatedHid) {
+                    payload.forEach((item) => {
                         const relationKey = `${historyId}-${relatedHid}-${item.hid}`;
                         Vue.set(state.relatedItems, relationKey, true);
-                    }
-                });
+                    });
+                }
             });
         },
         setLastCheckedTime(checkForUpdate) {
             this.lastCheckedTime = checkForUpdate;
+        },
+        setLastUpdateTime(lastUpdateTime = new Date()) {
+            this.lastUpdateTime = lastUpdateTime;
         },
         setWatchingVisibility(watchingVisibility) {
             this.isWatching = watchingVisibility;
