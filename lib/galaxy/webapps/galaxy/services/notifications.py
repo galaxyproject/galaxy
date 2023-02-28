@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import (
+    List,
     Optional,
     Set,
 )
@@ -51,14 +52,22 @@ class NotificationService(ServiceBase):
             total_notifications_sent=1, notification=NotificationResponse.from_orm(notification)
         )
 
-    def get_notifications_status(
-        self, user_context: ProvidesUserContext, since: Optional[datetime] = None
-    ) -> NotificationStatusSummary:
-        """Returns the status (unread or updated) of notifications received by the user **since** a particular date and time.
+    def get_notifications_status(self, user_context: ProvidesUserContext, since: datetime) -> NotificationStatusSummary:
+        """Returns the status of (unread or updated) notifications received by the user **since** a particular date and time.
 
         If the user is **anonymous**, only the `broadcasted notifications` will be returned.
         """
-        raise NotImplementedError
+        total_unread_count = 0
+        broadcasts = self._get_all_broadcasted(since)
+        user_notifications = []
+        if not user_context.anonymous:
+            total_unread_count = self.notification_manager.get_user_total_unread_notification_count(user_context.user)
+            user_notifications = self._get_user_notifications(user_context, since=since)
+        return NotificationStatusSummary(
+            total_unread_count=total_unread_count,
+            broadcasts=broadcasts,
+            notifications=user_notifications,
+        )
 
     def get_user_notifications(
         self, user_context: ProvidesUserContext, limit: Optional[int] = None, offset: Optional[int] = None
@@ -69,16 +78,12 @@ class NotificationService(ServiceBase):
         """
         if user_context.anonymous:
             return UserNotificationListResponse(__root__=[])
-        notifications = self.notification_manager.get_user_notifications(user_context.user, limit, offset)
-        user_notifications = [UserNotificationResponse.from_orm(notification) for notification in notifications]
+        user_notifications = self._get_user_notifications(user_context, limit, offset)
         return UserNotificationListResponse(__root__=user_notifications)
 
     def get_broadcasted_notifications(self) -> BroadcastNotificationListResponse:
         """Gets all the `broadcasted` notifications currently published."""
-        notifications = self.notification_manager.get_all_broadcasted_notifications()
-        broadcasted_notifications = [
-            BroadcastNotificationResponse.from_orm(notification) for notification in notifications
-        ]
+        broadcasted_notifications = self._get_all_broadcasted()
         return BroadcastNotificationListResponse(__root__=broadcasted_notifications)
 
     def get_user_notification_detail(self, user: User, notification_id: int) -> UserNotificationResponse:
@@ -114,3 +119,21 @@ class NotificationService(ServiceBase):
         # TODO implement and check permissions for non-admin users?
         if not sender_context.user_is_admin:
             raise AdminRequiredException("Only administrators can broadcast notifications.")
+
+    def _get_all_broadcasted(self, since: Optional[datetime] = None) -> List[BroadcastNotificationResponse]:
+        notifications = self.notification_manager.get_all_broadcasted_notifications(since)
+        broadcasted_notifications = [
+            BroadcastNotificationResponse.from_orm(notification) for notification in notifications
+        ]
+        return broadcasted_notifications
+
+    def _get_user_notifications(
+        self,
+        user_context: ProvidesUserContext,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        since: Optional[datetime] = None,
+    ) -> List[UserNotificationResponse]:
+        notifications = self.notification_manager.get_user_notifications(user_context.user, limit, offset, since)
+        user_notifications = [UserNotificationResponse.from_orm(notification) for notification in notifications]
+        return user_notifications
