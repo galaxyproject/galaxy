@@ -24,7 +24,5 @@ def get_galaxy_biotools_metadata_source(config) -> BiotoolsMetadataSource:
         "cache.schema_name": config.biotools_service_cache_schema_name,
     }
     cache = CacheManager(**parse_cache_config_options(cache_opts)).get_cache("doi")
-    # If using database cache clear cache table contents
-    cache.clear()
     biotools_metadata_source_config.cache = cache
     return get_biotools_metadata_source(biotools_metadata_source_config)

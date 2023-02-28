@@ -46,8 +46,6 @@ class DoiCache:
             "cache.schema_name": config.citation_cache_schema_name,
         }
         self._cache = CacheManager(**parse_cache_config_options(cache_opts)).get_cache("doi")
-        # If using database cache clear cache table contents
-        self._cache.clear()
 
     def _raw_get_bibtex(self, doi):
         doi_url = f"https://doi.org/{doi}"

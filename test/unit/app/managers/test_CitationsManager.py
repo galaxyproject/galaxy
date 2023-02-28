@@ -11,6 +11,9 @@ def test_DoiCache():
             citation_cache_type="file",
             citation_cache_data_dir=os.path.join(tmp_database_dir, "data"),
             citation_cache_lock_dir=os.path.join(tmp_database_dir, "locks"),
+            citation_cache_url=None,
+            citation_cache_table_name=None,
+            citation_cache_schema_name=None,
         )
         doi_cache = DoiCache(config)
         assert "Jörg" in doi_cache.get_bibtex("10.1093/bioinformatics/bts252")
