@@ -62,7 +62,7 @@ class PersonalNotificationCategory(str, Enum):
     new_history_shared = "new_history_shared"
     new_workflow_shared = "new_workflow_shared"
     new_page_shared = "new_page_shared"
-    new_visualization_shared = "new_page_shared"
+    new_visualization_shared = "new_visualization_shared"
     workflow_execution_completed = "workflow_execution_completed"
 
 
