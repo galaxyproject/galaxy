@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import (
     List,
     Optional,
@@ -6,6 +7,7 @@ from typing import (
 )
 
 from sqlalchemy import (
+    and_,
     bindparam,
     select,
     union,
@@ -19,6 +21,8 @@ from galaxy.exceptions import ObjectNotFound
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.notifications import (
+    MandatoryNotificationCategory,
+    NotificationBroadcastCreateRequest,
     NotificationCreateData,
     NotificationCreateRequest,
     NotificationRecipients,
@@ -30,14 +34,31 @@ class NotificationManager:
 
     def __init__(self, sa_session: galaxy_scoped_session):
         self.sa_session = sa_session
+        self.notification_columns = [
+            model.Notification.id,
+            model.Notification.source,
+            model.Notification.category,
+            model.Notification.variant,
+            model.Notification.create_time,
+            model.Notification.update_time,
+            model.Notification.publication_time,
+            model.Notification.expiration_time,
+            model.Notification.content,
+        ]
+        self.user_notification_columns = self.notification_columns + [
+            model.UserNotificationAssociation.seen_time,
+            model.UserNotificationAssociation.favorite,
+            model.UserNotificationAssociation.deleted,
+        ]
+        self.broadcast_notification_columns = self.notification_columns
 
-    def create_notification_for_users(self, payload: NotificationCreateRequest) -> Tuple[model.Notification, int]:
+    def create_notification_for_users(self, request: NotificationCreateRequest) -> Tuple[model.Notification, int]:
         """
         Creates a new notification and associates it with all the recipient users.
         """
-        recipient_users = self._get_all_recipient_users(payload.recipients)
+        recipient_users = self._get_all_recipient_users(request.recipients)
         with self.sa_session.begin():
-            notification = self._create_notification_model(payload.notification)
+            notification = self._create_notification_model(request.notification)
             self.sa_session.add(notification)
             for user in recipient_users:
                 # TODO: check user notification settings before?
@@ -46,41 +67,37 @@ class NotificationManager:
 
         return notification, len(recipient_users)
 
-    def get_user_notifications(self, user: model.User, limit: Optional[int] = None, offset: Optional[int] = None):
+    def create_broadcast_notification(self, request: NotificationBroadcastCreateRequest):
+        """Creates a broadcasted notification.
+
+        This kind of notification is not explicitly associated with any specific user but it is accessible by all users.
+        """
+        with self.sa_session.begin():
+            notification = self._create_notification_model(request)
+            self.sa_session.add(notification)
+        return notification
+
+    def get_user_notifications(
+        self,
+        user: model.User,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        since: Optional[datetime] = None,
+    ):
         """
         Displays the list of notifications belonging to the user.
         """
-        stmt = (
-            select(
-                [
-                    model.Notification.id,
-                    model.Notification.source,
-                    model.Notification.category,
-                    model.Notification.variant,
-                    model.Notification.create_time,
-                    model.Notification.update_time,
-                    model.Notification.publication_time,
-                    model.Notification.expiration_time,
-                    model.Notification.content,
-                    model.UserNotificationAssociation.seen_time,
-                    model.UserNotificationAssociation.favorite,
-                    model.UserNotificationAssociation.deleted,
-                ]
-            )
-            .select_from(model.Notification)
-            .join(
-                model.UserNotificationAssociation,
-                model.UserNotificationAssociation.notification_id == model.Notification.id,
-            )
-            .where(
-                model.UserNotificationAssociation.user_id == user.id,
-            )
-        )
+        stmt = self._all_user_notifications_query(user, since)
         if offset:
             stmt = stmt.offset(offset)
         if limit:
             stmt = stmt.limit(limit)
 
+        result = self.sa_session.execute(stmt).fetchall()
+        return result
+
+    def get_all_broadcasted_notifications(self, since: Optional[datetime] = None):
+        stmt = self._all_broadcasted_notifications_query(since)
         result = self.sa_session.execute(stmt).fetchall()
         return result
 
@@ -140,6 +157,45 @@ class NotificationManager:
         notification.publication_time = payload.publication_time
         notification.expiration_time = payload.expiration_time
         return notification
+
+    def _all_user_notifications_query(self, user: model.User, since: Optional[datetime] = None):
+        now = datetime.utcnow()
+        stmt = (
+            select(self.user_notification_columns)
+            .select_from(model.Notification)
+            .join(
+                model.UserNotificationAssociation,
+                model.UserNotificationAssociation.notification_id == model.Notification.id,
+            )
+            .where(
+                and_(
+                    model.UserNotificationAssociation.user_id == user.id,
+                    model.Notification.publication_time < now,
+                    model.Notification.expiration_time > now,
+                )
+            )
+        )
+        if since is not None:
+            stmt = stmt.where(model.Notification.publication_time > since)
+
+        return stmt
+
+    def _all_broadcasted_notifications_query(self, since: Optional[datetime] = None):
+        now = datetime.utcnow()
+        stmt = (
+            select(self.broadcast_notification_columns)
+            .select_from(model.Notification)
+            .where(
+                and_(
+                    model.Notification.category == MandatoryNotificationCategory.broadcast,
+                    model.Notification.publication_time < now,
+                    model.Notification.expiration_time > now,
+                )
+            )
+        )
+        if since is not None:
+            stmt = stmt.where(model.Notification.publication_time > since)
+        return stmt
 
     def _get_all_recipient_users(self, recipients: NotificationRecipients) -> List[model.User]:
         """Gets all the users from all the individual user ids, group ids and roles ids
