@@ -192,14 +192,14 @@ class DatasetCollectionManager:
         if get_all_elements: # should we also check if element_identifiers is empty?
             container = None
             if history:
-                container = self.history_manager.get_accessible(history.id, history.user_id) #TODO will the real user please stand up -- use debugger! (bitch)
+                container = self.history_manager.get_accessible(history.id, trans.user)
             # filter out collections
             filter_query_params = FilterQueryParams(
                 q=["history_content_type"],
                 qv=["dataset"]
             )
             filters = self.history_contents_filters.parse_query_filters_with_relations(filter_query_params, history.id)
-            element_identifiers = self.history_contents_manager.contents(container=container,filters=filters)
+            elements = self.history_contents_manager.contents(container=container,filters=filters)
             
 
         if element_identifiers and not trusted_identifiers:
