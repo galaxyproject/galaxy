@@ -7,7 +7,7 @@
                 <h1 id="dataset-details-heading" class="sr-only">Dataset Details</h1>
                 <LoadingSpan v-if="isDatasetLoading" />
                 <Alert v-else-if="datasetLoadingError" :message="datasetLoadingError" variant="error" />
-                <CurrentUser v-else v-slot="{ user }">
+                <div v-else>
                     <JobDetailsProvider
                         v-if="!isDatasetLoading && dataset.creating_job !== null"
                         v-slot="{ result: job, loading: isJobLoading }"
@@ -20,7 +20,7 @@
                             <dataset-storage :dataset-id="datasetId" />
                             <inheritance-chain :dataset-id="datasetId" :dataset-name="dataset.name" />
                             <job-metrics v-if="config" :aws_estimate="config.aws_estimate" :dataset-id="datasetId" />
-                            <job-destination-params v-if="user.is_admin" :job-id="dataset.creating_job" />
+                            <job-destination-params v-if="currentUser.is_admin" :job-id="dataset.creating_job" />
                             <job-dependencies :dependencies="job.dependencies"></job-dependencies>
                             <div v-if="dataset.peek">
                                 <h2 class="h-md">Dataset Peek</h2>
@@ -39,13 +39,15 @@
                             </p>
                         </div>
                     </div>
-                </CurrentUser>
+                </div>
             </div>
         </DatasetProvider>
     </ConfigProvider>
 </template>
 
 <script>
+import { mapState } from "pinia";
+import { useUserStore } from "@/stores/userStore";
 import DatasetInformation from "components/DatasetInformation/DatasetInformation";
 import JobInformation from "components/JobInformation/JobInformation";
 import JobDestinationParams from "components/JobDestinationParams/JobDestinationParams";
@@ -58,13 +60,11 @@ import JobDependencies from "components/JobDependencies/JobDependencies";
 import { DatasetProvider } from "components/providers";
 import { JobDetailsProvider } from "components/providers/JobProvider";
 import ConfigProvider from "components/providers/ConfigProvider";
-import CurrentUser from "components/providers/CurrentUser";
 import Alert from "components/Alert";
 
 export default {
     components: {
         Alert,
-        CurrentUser,
         JobParameters,
         InheritanceChain,
         LoadingSpan,
@@ -83,6 +83,9 @@ export default {
             type: String,
             required: true,
         },
+    },
+    computed: {
+        ...mapState(useUserStore, ["currentUser"]),
     },
 };
 </script>
