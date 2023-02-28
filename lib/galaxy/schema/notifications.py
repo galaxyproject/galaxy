@@ -189,8 +189,8 @@ class BroadcastNotificationListResponse(Model):
 
 class NotificationStatusSummary(Model):
     total_unread_count: int
-    updated_notifications: List[UserNotificationResponse]
-    updated_broadcasts: List[BroadcastNotificationListResponse]
+    notifications: List[UserNotificationResponse]
+    broadcasts: List[BroadcastNotificationResponse]
 
 
 class NotificationCreateData(Model):

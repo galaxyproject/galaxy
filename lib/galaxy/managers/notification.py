@@ -9,6 +9,7 @@ from typing import (
 from sqlalchemy import (
     and_,
     bindparam,
+    func,
     select,
     union,
     union_all,
@@ -52,6 +53,10 @@ class NotificationManager:
         ]
         self.broadcast_notification_columns = self.notification_columns
 
+    @property
+    def now(self):
+        return datetime.utcnow()
+
     def create_notification_for_users(self, request: NotificationCreateRequest) -> Tuple[model.Notification, int]:
         """
         Creates a new notification and associates it with all the recipient users.
@@ -80,7 +85,7 @@ class NotificationManager:
     def get_user_notifications(
         self,
         user: model.User,
-        limit: Optional[int] = None,
+        limit: Optional[int] = 50,
         offset: Optional[int] = None,
         since: Optional[datetime] = None,
     ):
@@ -94,6 +99,31 @@ class NotificationManager:
             stmt = stmt.limit(limit)
 
         result = self.sa_session.execute(stmt).fetchall()
+        return result
+
+    def get_user_total_unread_notification_count(self, user: model.User) -> int:
+        """
+        Returns the total number of unread notifications of the user.
+        Only published and not expired notifications are accounted.
+        """
+        stmt = (
+            select([func.count(model.UserNotificationAssociation.id)])
+            .select_from(model.UserNotificationAssociation)
+            .join(
+                model.Notification,
+                model.Notification.id == model.UserNotificationAssociation.notification_id,
+            )
+            .where(
+                and_(
+                    model.UserNotificationAssociation.user_id == user.id,
+                    model.UserNotificationAssociation.seen_time.is_(None),
+                    model.Notification.publication_time < self.now,
+                    model.Notification.expiration_time > self.now,
+                )
+            )
+        )
+
+        result = self.sa_session.execute(stmt).scalar()
         return result
 
     def get_all_broadcasted_notifications(self, since: Optional[datetime] = None):
@@ -159,7 +189,6 @@ class NotificationManager:
         return notification
 
     def _all_user_notifications_query(self, user: model.User, since: Optional[datetime] = None):
-        now = datetime.utcnow()
         stmt = (
             select(self.user_notification_columns)
             .select_from(model.Notification)
@@ -170,8 +199,8 @@ class NotificationManager:
             .where(
                 and_(
                     model.UserNotificationAssociation.user_id == user.id,
-                    model.Notification.publication_time < now,
-                    model.Notification.expiration_time > now,
+                    model.Notification.publication_time < self.now,
+                    model.Notification.expiration_time > self.now,
                 )
             )
         )
@@ -181,15 +210,14 @@ class NotificationManager:
         return stmt
 
     def _all_broadcasted_notifications_query(self, since: Optional[datetime] = None):
-        now = datetime.utcnow()
         stmt = (
             select(self.broadcast_notification_columns)
             .select_from(model.Notification)
             .where(
                 and_(
                     model.Notification.category == MandatoryNotificationCategory.broadcast,
-                    model.Notification.publication_time < now,
-                    model.Notification.expiration_time > now,
+                    model.Notification.publication_time < self.now,
+                    model.Notification.expiration_time > self.now,
                 )
             )
         )
