@@ -104,6 +104,7 @@ import { getGalaxyInstance } from "app";
 import { useHistoryItemsStore } from "stores/history/historyItemsStore";
 import { useJobStore } from "stores/jobStore";
 import { mapState, mapActions } from "pinia";
+import { mapGetters } from "vuex";
 import { getToolFormData, updateToolFormData, submitJob } from "./services";
 import { allowCachedJobs } from "./utilities";
 import { refreshContentsWrapper } from "utils/data";
@@ -182,7 +183,8 @@ export default {
         };
     },
     computed: {
-        ...mapState(useHistoryItemsStore, ["getLatestCreateTime"]),
+        ...mapState(useHistoryItemsStore, ["getLastUpdateTime"]),
+        ...mapGetters("history", ["currentHistoryId"]),
         toolName() {
             return this.formConfig.name;
         },
@@ -214,12 +216,11 @@ export default {
         },
     },
     watch: {
-        getLatestCreateTime() {
-            const Galaxy = getGalaxyInstance();
-            if (this.initialized && Galaxy && Galaxy.currHistoryPanel) {
-                console.debug("History change watcher detected a change.");
-                this.onHistoryChange();
-            }
+        currentHistoryId() {
+            this.onHistoryChange();
+        },
+        getLastUpdateTime() {
+            this.onHistoryChange();
         },
     },
     created() {
@@ -237,8 +238,11 @@ export default {
             return allowCachedJobs(user.preferences);
         },
         onHistoryChange() {
-            console.debug(`ToolForm::created - Loading history changes. [${this.id}]`);
-            this.onUpdate();
+            const Galaxy = getGalaxyInstance();
+            if (this.initialized && Galaxy && Galaxy.currHistoryPanel) {
+                console.debug(`ToolForm::onHistoryChange - Loading history changes. [${this.id}]`);
+                this.onUpdate();
+            }
         },
         onValidation(validationInternal) {
             this.validationInternal = validationInternal;
