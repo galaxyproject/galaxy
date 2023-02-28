@@ -61,25 +61,23 @@
                         show
                         >{{ resultMessage[0] }}</b-alert
                     >
-                    <CurrentUser v-slot="{ user }">
-                        <div v-if="showForm" id="fieldsAndButton">
-                            <span class="mr-2 font-weight-bold">{{ emailTitle }}</span>
-                            <span v-if="!!user.email">{{ user.email }}</span>
-                            <span v-else>{{ "You must be logged in to receive emails" | l }}</span>
-                            <FormElement
-                                id="dataset-error-message"
-                                v-model="message"
-                                :area="true"
-                                title="Please provide detailed information on the activities leading to this issue:" />
-                            <b-button
-                                id="dataset-error-submit"
-                                variant="primary"
-                                class="mt-3"
-                                @click="submit(dataset, jobDetails.user_email)">
-                                <font-awesome-icon icon="bug" class="mr-1" />Report
-                            </b-button>
-                        </div>
-                    </CurrentUser>
+                    <div v-if="showForm" id="fieldsAndButton">
+                        <span class="mr-2 font-weight-bold">{{ emailTitle }}</span>
+                        <span v-if="!!currentUser.email">{{ user.email }}</span>
+                        <span v-else>{{ "You must be logged in to receive emails" | l }}</span>
+                        <FormElement
+                            id="dataset-error-message"
+                            v-model="message"
+                            :area="true"
+                            title="Please provide detailed information on the activities leading to this issue:" />
+                        <b-button
+                            id="dataset-error-submit"
+                            variant="primary"
+                            class="mt-3"
+                            @click="submit(dataset, jobDetails.user_email)">
+                            <font-awesome-icon icon="bug" class="mr-1" />Report
+                        </b-button>
+                    </div>
                 </div>
             </JobDetailsProvider>
         </DatasetProvider>
@@ -87,6 +85,8 @@
 </template>
 
 <script>
+import { mapState } from "pinia";
+import { useUserStore } from "@/stores/userStore";
 import DatasetErrorDetails from "./DatasetErrorDetails";
 import FormElement from "components/Form/FormElement";
 import { DatasetProvider } from "components/providers";
@@ -95,7 +95,6 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBug } from "@fortawesome/free-solid-svg-icons";
 import { sendErrorReport } from "./services";
-import CurrentUser from "components/providers/CurrentUser";
 
 library.add(faBug);
 
@@ -107,7 +106,6 @@ export default {
         FormElement,
         JobDetailsProvider,
         JobProblemProvider,
-        CurrentUser,
     },
     props: {
         datasetId: {
@@ -124,6 +122,7 @@ export default {
         };
     },
     computed: {
+        ...mapState(useUserStore, ["currentUser"]),
         showForm() {
             const noResult = !this.resultMessages.length;
             const hasError = this.resultMessages.some((msg) => msg[1] === "danger");
