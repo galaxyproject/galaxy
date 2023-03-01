@@ -155,7 +155,16 @@ class TestDockerizedJobsIntegration(BaseJobEnvironmentIntegrationTestCase, Mulle
         status = response[0]["status"]
         assert status[0]["model_class"] == "ContainerDependency"
         assert status[0]["dependency_type"] == self.container_type
-        assert status[0]["container_description"]["identifier"].startswith("quay.io/local/mulled-v2-")
+        self._assert_container_description_identifier(
+            status[0]["container_description"]["identifier"],
+            "mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0",
+        )
+
+    def _assert_container_description_identifier(self, identifier, expected_hash):
+        """
+        Helper function to assert a correct container identifier.
+        """
+        assert identifier.startswith(f"quay.io/local/{expected_hash}")
 
 
 class TestMappingContainerResolver(integration_util.IntegrationTestCase):
@@ -256,11 +265,11 @@ class TestInlineJobEnvironmentContainerResolver(integration_util.IntegrationTest
         assert "0.7.15-r1140" in output
 
 
-# Singularity 2.4 in the official Vagrant issue has some problems running this test
-# case by default because subdirectories of /tmp don't bind correctly. Overridding
-# TMPDIR can fix this.
-# TMPDIR=/home/vagrant/tmp/ pytest test/integration/test_containerized_jobs.py::TestSingularityJobsIntegration
 class TestSingularityJobsIntegration(TestDockerizedJobsIntegration):
     job_config_file = SINGULARITY_JOB_CONFIG_FILE
     build_mulled_resolver = "build_mulled_singularity"
     container_type = "singularity"
+
+    def _assert_container_description_identifier(self, identifier, expected_hash):
+        assert os.path.exists(identifier)
+        assert identifier.endswith(f"singularity/mulled/{expected_hash}")
