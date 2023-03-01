@@ -1,102 +1,108 @@
 <template>
-    <div
-        :id="contentId"
-        :class="['content-item m-1 p-0 rounded btn-transparent-background', contentCls]"
-        :data-hid="id"
-        :data-state="state"
-        tabindex="0"
-        role="button"
-        @keydown="onKeyDown">
-        <div class="p-1 cursor-pointer" draggable @dragstart="onDragStart" @click.stop="onClick">
-            <div class="d-flex justify-content-between">
-                <span class="p-1 font-weight-bold">
-                    <b-button v-if="selectable" class="selector p-0" @click.stop="$emit('update:selected', !selected)">
-                        <icon v-if="selected" fixed-width size="lg" :icon="['far', 'check-square']" />
-                        <icon v-else fixed-width size="lg" :icon="['far', 'square']" />
-                    </b-button>
-                    <b-button
-                        v-if="highlight == 'input'"
-                        v-b-tooltip.hover
-                        variant="link"
-                        class="p-0"
-                        title="Input"
-                        @click.stop="toggleHighlights">
-                        <font-awesome-icon class="text-info" icon="arrow-circle-up" />
-                    </b-button>
-                    <b-button
-                        v-else-if="highlight == 'active'"
-                        v-b-tooltip.hover
-                        variant="link"
-                        class="p-0"
-                        title="Inputs/Outputs highlighted for this item"
-                        @click.stop="toggleHighlights"
-                        @keypress="toggleHighlights">
-                        <font-awesome-icon icon="check-circle" />
-                    </b-button>
-                    <b-button
-                        v-else-if="highlight == 'output'"
-                        v-b-tooltip.hover
-                        variant="link"
-                        class="p-0"
-                        title="Output"
-                        @click.stop="toggleHighlights">
-                        <font-awesome-icon class="text-info" icon="arrow-circle-down" />
-                    </b-button>
-                    <span v-if="hasStateIcon" class="state-icon">
-                        <icon fixed-width :icon="contentState.icon" :spin="contentState.spin" />
+    <div class="content-item-spacer">
+        <div
+            :id="contentId"
+            :class="['content-item p-0 rounded btn-transparent-background', contentCls]"
+            :data-hid="id"
+            :data-state="state"
+            tabindex="0"
+            role="button"
+            @keydown="onKeyDown">
+            <div class="p-1 cursor-pointer" draggable @dragstart="onDragStart" @click.stop="onClick">
+                <div class="d-flex justify-content-between">
+                    <span class="p-1 font-weight-bold">
+                        <b-button
+                            v-if="selectable"
+                            class="selector p-0"
+                            @click.stop="$emit('update:selected', !selected)">
+                            <icon v-if="selected" fixed-width size="lg" :icon="['far', 'check-square']" />
+                            <icon v-else fixed-width size="lg" :icon="['far', 'square']" />
+                        </b-button>
+                        <b-button
+                            v-if="highlight == 'input'"
+                            v-b-tooltip.hover
+                            variant="link"
+                            class="p-0"
+                            title="Input"
+                            @click.stop="toggleHighlights">
+                            <font-awesome-icon class="text-info" icon="arrow-circle-up" />
+                        </b-button>
+                        <b-button
+                            v-else-if="highlight == 'active'"
+                            v-b-tooltip.hover
+                            variant="link"
+                            class="p-0"
+                            title="Inputs/Outputs highlighted for this item"
+                            @click.stop="toggleHighlights"
+                            @keypress="toggleHighlights">
+                            <font-awesome-icon icon="check-circle" />
+                        </b-button>
+                        <b-button
+                            v-else-if="highlight == 'output'"
+                            v-b-tooltip.hover
+                            variant="link"
+                            class="p-0"
+                            title="Output"
+                            @click.stop="toggleHighlights">
+                            <font-awesome-icon class="text-info" icon="arrow-circle-down" />
+                        </b-button>
+                        <span v-if="hasStateIcon" class="state-icon">
+                            <icon fixed-width :icon="contentState.icon" :spin="contentState.spin" />
+                        </span>
+                        <span class="id hid">{{ id }}</span>
+                        <span>:</span>
+                        <span class="content-title name">{{ name }}</span>
                     </span>
-                    <span class="id hid">{{ id }}:</span>
-                    <span class="content-title name">{{ name }}</span>
-                </span>
-                <span v-if="item.purged" class="align-self-start btn-group p-1">
-                    <b-badge variant="secondary" title="This dataset has been permanently deleted">
-                        <icon icon="burn" /> Purged
-                    </b-badge>
-                </span>
-                <ContentOptions
-                    v-else
-                    :writable="writable"
-                    :is-dataset="isDataset"
-                    :is-deleted="item.deleted"
-                    :is-history-item="isHistoryItem"
-                    :is-visible="item.visible"
-                    :state="state"
-                    :item-urls="itemUrls"
-                    :keyboard-selectable="expandDataset"
-                    @delete="$emit('delete')"
-                    @display="onDisplay"
-                    @showCollectionInfo="onShowCollectionInfo"
-                    @edit="onEdit"
-                    @undelete="$emit('undelete')"
-                    @unhide="$emit('unhide')" />
+                    <span v-if="item.purged" class="align-self-start btn-group p-1">
+                        <b-badge variant="secondary" title="This dataset has been permanently deleted">
+                            <icon icon="burn" /> Purged
+                        </b-badge>
+                    </span>
+                    <ContentOptions
+                        v-else
+                        :writable="writable"
+                        :is-dataset="isDataset"
+                        :is-deleted="item.deleted"
+                        :is-history-item="isHistoryItem"
+                        :is-visible="item.visible"
+                        :state="state"
+                        :item-urls="itemUrls"
+                        :keyboard-selectable="expandDataset"
+                        @delete="$emit('delete')"
+                        @display="onDisplay"
+                        @showCollectionInfo="onShowCollectionInfo"
+                        @edit="onEdit"
+                        @undelete="$emit('undelete')"
+                        @unhide="$emit('unhide')" />
+                </div>
             </div>
+            <CollectionDescription
+                v-if="!isDataset"
+                class="px-2 pb-2"
+                :job-state-summary="jobState"
+                :collection-type="item.collection_type"
+                :element-count="item.element_count"
+                :elements-datatypes="item.elements_datatypes" />
+            <StatelessTags
+                v-if="!tagsDisabled || hasTags"
+                :value="tags"
+                :disabled="tagsDisabled"
+                :clickable="filterable"
+                :use-toggle-link="false"
+                @input="onTags"
+                @tag-click="onTagClick" />
+            <!-- collections are not expandable, so we only need the DatasetDetails component here -->
+            <b-collapse :visible="expandDataset">
+                <DatasetDetails
+                    v-if="expandDataset"
+                    :dataset="item"
+                    :writable="writable"
+                    :show-highlight="isHistoryItem && filterable"
+                    :item-urls="itemUrls"
+                    @edit="onEdit"
+                    @toggleHighlights="toggleHighlights" />
+            </b-collapse>
         </div>
-        <CollectionDescription
-            v-if="!isDataset"
-            class="px-2 pb-2"
-            :job-state-summary="jobState"
-            :collection-type="item.collection_type"
-            :element-count="item.element_count"
-            :elements-datatypes="item.elements_datatypes" />
-        <StatelessTags
-            v-if="!tagsDisabled || hasTags"
-            :value="tags"
-            :disabled="tagsDisabled"
-            :clickable="filterable"
-            :use-toggle-link="false"
-            @input="onTags"
-            @tag-click="onTagClick" />
-        <!-- collections are not expandable, so we only need the DatasetDetails component here -->
-        <b-collapse :visible="expandDataset">
-            <DatasetDetails
-                v-if="expandDataset"
-                :dataset="item"
-                :writable="writable"
-                :show-highlight="isHistoryItem && filterable"
-                :item-urls="itemUrls"
-                @edit="onEdit"
-                @toggleHighlights="toggleHighlights" />
-        </b-collapse>
     </div>
 </template>
 
@@ -274,5 +280,9 @@ export default {
     &:deep(.btn:focus) {
         box-shadow: 0 0 0 0.2rem transparentize($brand-primary, 0.75);
     }
+}
+
+.content-item-spacer {
+    padding: 0.125rem 0.25rem;
 }
 </style>
