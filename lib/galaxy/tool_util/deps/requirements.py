@@ -182,7 +182,7 @@ DEFAULT_CONTAINER_SHELL = "/bin/sh"  # Galaxy assumes bash, but containers are u
 class ContainerDescription:
     def __init__(
         self,
-        identifier: Optional[str] = None,
+        identifier: str,
         type: str = DEFAULT_CONTAINER_TYPE,
         resolve_dependencies: bool = DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES,
         shell: str = DEFAULT_CONTAINER_SHELL,
@@ -190,7 +190,7 @@ class ContainerDescription:
         # Force to lowercase because container image names must be lowercase.
         # Cached singularity images include the path on disk, so only lowercase
         # the image identifier portion.
-        self.identifier = None
+        self.identifier = ""
         if identifier:
             parts = identifier.rsplit(os.sep, 1)
             parts[-1] = parts[-1].lower()

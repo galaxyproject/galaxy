@@ -78,14 +78,13 @@ class CachedExplicitSingularityContainerResolver(CliContainerResolver):
     container_type = "singularity"
     cli = "singularity"
 
-    def __init__(self, app_info: Optional["AppInfo"] = None, **kwargs) -> None:
+    def __init__(self, app_info: "AppInfo", **kwargs) -> None:
         super().__init__(app_info=app_info, **kwargs)
-        self.cache_directory_path = kwargs.get(
-            "cache_directory", os.path.join(kwargs["app_info"].container_image_cache_path, "singularity", "explicit")
-        )
-        self._init_cache_directory()
-
-    def _init_cache_directory(self) -> None:
+        cache_directory_path = kwargs.get("cache_directory")
+        if not cache_directory_path:
+            assert self.app_info.container_image_cache_path
+            cache_directory_path = os.path.join(self.app_info.container_image_cache_path, "singularity", "explicit")
+        self.cache_directory_path = cache_directory_path
         os.makedirs(self.cache_directory_path, exist_ok=True)
 
     def resolve(
@@ -114,12 +113,12 @@ class CachedExplicitSingularityContainerResolver(CliContainerResolver):
                 if destination_for_container_type:
                     destination_info = destination_for_container_type(self.container_type)
                 container = SingularityContainer(
-                    container_description.identifier,
-                    self.app_info,
-                    tool_info,
-                    destination_info,
-                    {},
-                    container_description,
+                    container_id=container_description.identifier,
+                    app_info=self.app_info,
+                    tool_info=tool_info,
+                    destination_info=destination_info,
+                    job_info=None,
+                    container_description=container_description,
                 )
                 command = container.build_singularity_pull_command(cache_path=cache_path)
                 shell(command)
@@ -134,7 +133,7 @@ class CachedExplicitSingularityContainerResolver(CliContainerResolver):
 
 
 class BaseAdminConfiguredContainerResolver(ContainerResolver):
-    def __init__(self, app_info: Optional["AppInfo"] = None, shell: str = DEFAULT_SHELL, **kwds) -> None:
+    def __init__(self, app_info: "AppInfo", shell: str = DEFAULT_SHELL, **kwds) -> None:
         super().__init__(app_info=app_info, **kwds)
         self.shell = shell
 
@@ -153,7 +152,7 @@ class FallbackContainerResolver(BaseAdminConfiguredContainerResolver):
     resolver_type = "fallback"
     container_type = "docker"
 
-    def __init__(self, app_info: Optional["AppInfo"] = None, identifier: str = "", **kwds) -> None:
+    def __init__(self, app_info: "AppInfo", identifier: str = "", **kwds) -> None:
         super().__init__(app_info=app_info, **kwds)
         assert identifier, "fallback container resolver must be specified with non-empty identifier"
         self.identifier = identifier
@@ -223,7 +222,7 @@ class RequiresGalaxyEnvironmentSingularityContainerResolver(RequiresGalaxyEnviro
 class MappingContainerResolver(BaseAdminConfiguredContainerResolver):
     resolver_type = "mapping"
 
-    def __init__(self, app_info: Optional["AppInfo"] = None, **kwds) -> None:
+    def __init__(self, app_info: "AppInfo", **kwds) -> None:
         super().__init__(app_info=app_info, **kwds)
         mappings = self.resolver_kwds["mappings"]
         assert isinstance(mappings, list), "mapping container resolver must be specified with mapping list"
