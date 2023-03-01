@@ -9,9 +9,20 @@ import { LastQueue } from "@/utils/promise-queue";
 import { urlData } from "@/utils/url";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 
-// TODO: stricter type
+import type { StateKey } from "@/components/History/Content/model/states";
+
+// Temporary Typedef. Replace with API types, as soon as endpoint is migrated
 export type HistoryItem = {
     hid: number;
+    id: string;
+    job_state_summary: Record<StateKey, number>;
+    state?: StateKey;
+    tags?: string[];
+    deleted?: boolean;
+    visible?: boolean;
+    collection_type: string;
+    element_count?: number;
+    elements_datatypes?: string[];
     [key: string]: unknown;
 };
 

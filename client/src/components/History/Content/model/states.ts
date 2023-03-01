@@ -11,7 +11,9 @@ export const hierarchicalCollectionJobStates = [
     "new",
 ] as const;
 
-type State = {
+export type HierarchicalCollectionJobStates = typeof hierarchicalCollectionJobStates;
+
+export type State = {
     status: string;
     text?: string;
     icon?: string;
@@ -19,17 +21,19 @@ type State = {
 };
 
 type MappedStates = {
-    [state in (typeof hierarchicalCollectionJobStates)[number]]: State;
+    [state in HierarchicalCollectionJobStates[number]]: State;
 };
 
 type States = {
     [key: string]: State;
 } & MappedStates;
 
-/*
-    Client representation of state and state messages. See: https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/model/__init__.py#L3292
-    for a list of available states.
-*/
+/**
+ * Client representation of state and state messages.
+ *
+ * @see https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/model/__init__.py#L3292
+ * for a list of available states.
+ */
 export const states = {
     /** deleted while uploading */
     discarded: {
@@ -108,3 +112,5 @@ export const states = {
         spin: true,
     },
 } as const satisfies States;
+
+export type StateKey = keyof typeof states;

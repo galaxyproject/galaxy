@@ -1,8 +1,180 @@
+<script setup lang="ts">
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
+import CollectionDescription from "./Collection/CollectionDescription.vue";
+import ContentOptions from "./ContentOptions.vue";
+import DatasetDetails from "./Dataset/DatasetDetails.vue";
+
+import { states, hierarchicalCollectionJobStates, type StateKey, type State } from "./model/states";
+import { updateContentFields } from "@/components/History/model/queries";
+import { JobStateSummary } from "./Collection/JobStateSummary";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { faArrowCircleUp, faArrowCircleDown, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
+import { useEntryPointStore } from "@/stores/entryPointStore";
+import { computed } from "vue";
+import { useRouter } from "vue-router/composables";
+
+import type { PropType, ComputedRef } from "vue";
+import type { HistoryItem } from "@/stores/history/historyItemsStore";
+
+const props = defineProps({
+    writable: { type: Boolean, default: true },
+    expandDataset: { type: Boolean, required: true },
+    highlight: { type: String as PropType<string | null>, default: null },
+    id: { type: Number, required: true },
+    isDataset: { type: Boolean, default: true },
+    isHistoryItem: { type: Boolean, default: false },
+    item: { type: Object as PropType<HistoryItem>, required: true },
+    name: { type: String, required: true },
+    selected: { type: Boolean, default: false },
+    selectable: { type: Boolean, default: false },
+    filterable: { type: Boolean, default: false },
+});
+
+const emit = defineEmits<{
+    (e: "update:expand-dataset", isExpanded: boolean): void;
+    (e: "view-collection", item: HistoryItem, name: string): void;
+    (e: "tag-change", item: HistoryItem, newTag: string[]): void;
+    (e: "tag-click", tag: string): void;
+    (e: "toggle-highlights", item: HistoryItem): void;
+}>();
+
+//@ts-ignore bad library types
+library.add(faArrowCircleUp, faArrowCircleDown, faCheckCircle);
+
+const jobState = computed(() => new JobStateSummary(props.item));
+const contentId = computed(() => `dataset-${props.item.id}`);
+
+const state: ComputedRef<StateKey> = computed(() => {
+    if (props.item.job_state_summary) {
+        hierarchicalCollectionJobStates.forEach((state) => {
+            if (props.item.job_state_summary[state] ?? 0 > 0) {
+                return state;
+            }
+        });
+    }
+
+    return props.item.state ?? "ok";
+});
+
+const contentState: ComputedRef<State> = computed(() => states[state.value]);
+const contentClass = computed(() => {
+    const status = contentState.value?.status;
+    if (props.selected) {
+        return "alert-info";
+    } else if (!status) {
+        return `alert-success`;
+    } else {
+        return `alert-${status}`;
+    }
+});
+const hasTags = computed(() => props.item.tags?.length ?? 0 > 0);
+const tagsDisabled = computed(() => !props.writable || !props.expandDataset || !props.isHistoryItem);
+const hasStateIcon = computed(() => Object.keys(contentState.value ?? {}).includes("icon"));
+
+/** Relative URLs for history item actions */
+const itemUrls = computed(() => {
+    const id = props.item.id;
+    const isCollection = Object.keys(props.item).includes("collection_type");
+
+    if (isCollection) {
+        return {
+            edit: `/collection/${id}/edit`,
+            showDetails:
+                props.item.job_source_id && props.item.job_source_type === "Job"
+                    ? `/jobs/${props.item.job_source_id}/view`
+                    : null,
+        };
+    } else {
+        return {
+            display: `/datasets/${id}/preview`,
+            edit: `/datasets/${id}/edit`,
+            showDetails: `/datasets/${id}/details`,
+            reportError: `/datasets/${id}/error`,
+            rerun: `/tool_runner/rerun?id=${id}`,
+            visualize: `/visualizations?dataset_id=${id}`,
+        };
+    }
+});
+
+function onClick() {
+    if (props.isDataset) {
+        emit("update:expand-dataset", !props.expandDataset);
+    } else {
+        emit("view-collection", props.item, props.name);
+    }
+}
+
+function onKeyDown(event: KeyboardEvent) {
+    if (!(event.target as Element).classList.contains("content-item")) {
+        return;
+    } else if (event.key === "Enter" || event.key === " ") {
+        onClick();
+    }
+}
+
+const { getEntryPointsForHda } = useEntryPointStore();
+const router = useRouter();
+
+function onDisplay() {
+    const entryPointsForHda = getEntryPointsForHda(props.item.id);
+    const firstEntryPoint = entryPointsForHda?.[0];
+
+    if (firstEntryPoint) {
+        const url = firstEntryPoint.target;
+        window.open(url, "_blank");
+    } else {
+        if (itemUrls.value.display) {
+            router.push({ path: itemUrls.value.display, params: { title: props.name } });
+        } else {
+            console.error(`Error on Display. Item name: ${props.name}. Items Display URL is empty`);
+        }
+    }
+}
+
+function onDragStart(event: DragEvent) {
+    if (!event.dataTransfer) {
+        return;
+    }
+
+    event.dataTransfer.dropEffect = "move";
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text", JSON.stringify([props.item]));
+}
+
+function onEdit() {
+    router.push(itemUrls.value.edit);
+}
+
+function onShowCollectionInfo() {
+    if (itemUrls.value.showDetails) {
+        router.push(itemUrls.value.showDetails);
+    } else {
+        console.error(`Error on Show Collection Info. Item name: ${props.name}. Items Details URL is empty`);
+    }
+}
+
+function onTags(newTags: string[]) {
+    emit("tag-change", props.item, newTags);
+    updateContentFields(props.item, { tags: newTags });
+}
+
+function onTagClick(tag: string) {
+    if (props.filterable) {
+        emit("tag-click", tag);
+    }
+}
+
+function toggleHighlights() {
+    emit("toggle-highlights", props.item);
+}
+</script>
+
 <template>
     <div class="content-item-spacer">
         <div
             :id="contentId"
-            :class="['content-item p-0 rounded btn-transparent-background', contentCls]"
+            :class="['content-item p-0 rounded btn-transparent-background', contentClass]"
             :data-hid="id"
             :data-state="state"
             tabindex="0"
@@ -85,7 +257,7 @@
                 :elements-datatypes="item.elements_datatypes" />
             <StatelessTags
                 v-if="!tagsDisabled || hasTags"
-                :value="tags"
+                :value="props.item.tags"
                 :disabled="tagsDisabled"
                 :clickable="filterable"
                 :use-toggle-link="false"
@@ -105,165 +277,6 @@
         </div>
     </div>
 </template>
-
-<script>
-import StatelessTags from "components/TagsMultiselect/StatelessTags";
-import { STATES, HIERARCHICAL_COLLECTION_JOB_STATES } from "./model/states";
-import CollectionDescription from "./Collection/CollectionDescription";
-import ContentOptions from "./ContentOptions";
-import DatasetDetails from "./Dataset/DatasetDetails";
-import { updateContentFields } from "components/History/model/queries";
-import { JobStateSummary } from "./Collection/JobStateSummary";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faArrowCircleUp, faArrowCircleDown, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
-import { useEntryPointStore } from "stores/entryPointStore";
-
-library.add(faArrowCircleUp, faArrowCircleDown, faCheckCircle);
-export default {
-    components: {
-        CollectionDescription,
-        ContentOptions,
-        DatasetDetails,
-        StatelessTags,
-        FontAwesomeIcon,
-    },
-    props: {
-        writable: { type: Boolean, default: true },
-        expandDataset: { type: Boolean, required: true },
-        highlight: { type: String, default: null },
-        id: { type: Number, required: true },
-        isDataset: { type: Boolean, default: true },
-        isHistoryItem: { type: Boolean, default: false },
-        item: { type: Object, required: true },
-        name: { type: String, required: true },
-        selected: { type: Boolean, default: false },
-        selectable: { type: Boolean, default: false },
-        filterable: { type: Boolean, default: false },
-    },
-    computed: {
-        jobState() {
-            return new JobStateSummary(this.item);
-        },
-        contentId() {
-            return `dataset-${this.item.id}`;
-        },
-        contentCls() {
-            const status = this.contentState && this.contentState.status;
-            if (this.selected) {
-                return "alert-info";
-            } else if (!status) {
-                return `alert-success`;
-            } else {
-                return `alert-${status}`;
-            }
-        },
-        contentState() {
-            return STATES[this.state] && STATES[this.state];
-        },
-        hasTags() {
-            return this.tags && this.tags.length > 0;
-        },
-        hasStateIcon() {
-            return this.contentState && this.contentState.icon;
-        },
-        state() {
-            if (this.item.job_state_summary) {
-                for (const state of HIERARCHICAL_COLLECTION_JOB_STATES) {
-                    if (this.item.job_state_summary[state] > 0) {
-                        return state;
-                    }
-                }
-            } else if (this.item.state) {
-                return this.item.state;
-            }
-            return "ok";
-        },
-        tags() {
-            return this.item.tags;
-        },
-        tagsDisabled() {
-            return !this.writable || !this.expandDataset || !this.isHistoryItem;
-        },
-        isCollection() {
-            return "collection_type" in this.item;
-        },
-        /** Relative URLs for history item actions */
-        itemUrls() {
-            const id = this.item.id;
-            if (this.isCollection) {
-                return {
-                    edit: `/collection/${id}/edit`,
-                    showDetails:
-                        this.item.job_source_id && this.item.job_source_type === "Job"
-                            ? `/jobs/${this.item.job_source_id}/view`
-                            : null,
-                };
-            }
-            return {
-                display: `/datasets/${id}/preview`,
-                edit: `/datasets/${id}/edit`,
-                showDetails: `/datasets/${id}/details`,
-                reportError: `/datasets/${id}/error`,
-                rerun: `/tool_runner/rerun?id=${id}`,
-                visualize: `/visualizations?dataset_id=${id}`,
-            };
-        },
-    },
-    methods: {
-        onKeyDown(event) {
-            if (!event.target.classList.contains("content-item")) {
-                return;
-            }
-
-            if (event.key === "Enter" || event.key === " ") {
-                this.onClick();
-            }
-        },
-        onClick() {
-            if (this.isDataset) {
-                this.$emit("update:expand-dataset", !this.expandDataset);
-            } else {
-                this.$emit("view-collection", this.item, this.name);
-            }
-        },
-        onDisplay() {
-            const entryPointStore = useEntryPointStore();
-            const entryPointsForHda = entryPointStore.entryPointsForHda(this.item.id);
-            if (entryPointsForHda && entryPointsForHda.length > 0) {
-                // there can be more than one entry point, choose the first
-                const url = entryPointsForHda[0].target;
-                window.open(url, "_blank");
-            } else {
-                this.$router.push(this.itemUrls.display, { title: this.name });
-            }
-        },
-        onDragStart(evt) {
-            evt.dataTransfer.dropEffect = "move";
-            evt.dataTransfer.effectAllowed = "move";
-            evt.dataTransfer.setData("text", JSON.stringify([this.item]));
-        },
-        onEdit() {
-            this.$router.push(this.itemUrls.edit);
-        },
-        onShowCollectionInfo() {
-            this.$router.push(this.itemUrls.showDetails);
-        },
-        onTags(newTags) {
-            this.$emit("tag-change", this.item, newTags);
-            updateContentFields(this.item, { tags: newTags });
-        },
-        onTagClick(tag) {
-            if (this.filterable) {
-                this.$emit("tag-click", tag);
-            }
-        },
-        toggleHighlights() {
-            this.$emit("toggleHighlights", this.item);
-        },
-    },
-};
-</script>
 
 <style lang="scss" scoped>
 @import "~bootstrap/scss/_functions.scss";
