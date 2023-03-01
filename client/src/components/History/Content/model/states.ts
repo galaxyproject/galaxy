@@ -1,8 +1,36 @@
+/** We want to display a single state for a dataset collection whose elements may have mixed states.
+ * This list is ordered from highest to lowest priority. If any element is in error state the whole collection should be in error.
+ */
+export const hierarchicalCollectionJobStates = [
+    "error",
+    "failed",
+    "upload",
+    "paused",
+    "running",
+    "queued",
+    "new",
+] as const;
+
+type State = {
+    status: string;
+    text?: string;
+    icon?: string;
+    spin?: boolean;
+};
+
+type MappedStates = {
+    [state in (typeof hierarchicalCollectionJobStates)[number]]: State;
+};
+
+type States = {
+    [key: string]: State;
+} & MappedStates;
+
 /*
     Client representation of state and state messages. See: https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/model/__init__.py#L3292
     for a list of available states.
 */
-export const STATES = {
+export const states = {
     /** deleted while uploading */
     discarded: {
         status: "danger",
@@ -79,9 +107,4 @@ export const STATES = {
         icon: "spinner",
         spin: true,
     },
-};
-
-/** We want to display a single state for a dataset collection whose elements may have mixed states.
- * This list is ordered from highest to lowest priority. If any element is in error state the whole collection should be in error.
- */
-export const HIERARCHICAL_COLLECTION_JOB_STATES = ["error", "failed", "upload", "paused", "running", "queued", "new"];
+} as const satisfies States;

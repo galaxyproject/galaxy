@@ -86,10 +86,10 @@
 </template>
 
 <script>
-import DebouncedInput from "components/DebouncedInput";
+import DebouncedInput from "@/components/DebouncedInput";
 import HistoryFiltersDefault from "./HistoryFiltersDefault";
-import { STATES } from "components/History/Content/model/states";
-import { HistoryFilters } from "components/History/HistoryFilters";
+import { states } from "@/components/History/Content/model/states";
+import { HistoryFilters } from "@/components/History/HistoryFilters";
 
 export default {
     components: {
@@ -121,7 +121,7 @@ export default {
             },
         },
         states() {
-            return Object.keys(STATES);
+            return Object.keys(states);
         },
     },
     watch: {

@@ -4,7 +4,7 @@
  *
  * Logic stolen from job-state-model.js and hdca-li.js
  */
-import { STATES } from "../model/states";
+import { states } from "../model/states";
 
 const NON_TERMINAL_STATES = ["new", "waiting", "queued", "running", "resubmitted", "upload"];
 const ERROR_STATES = ["error", "failed", "deleted"];
@@ -28,18 +28,18 @@ export class JobStateSummary extends Map {
     get state() {
         if (this.jobCount) {
             if (this.isErrored) {
-                return STATES.error;
+                return states.error;
             }
             if (this.isRunning) {
-                return STATES.running;
+                return states.running;
             }
             if (this.isNew) {
-                return STATES.loading;
+                return states.loading;
             }
             if (this.isTerminal) {
-                return STATES.ok;
+                return states.ok;
             }
-            return STATES.queued;
+            return states.queued;
         }
         return this.populated_state;
     }
@@ -47,11 +47,11 @@ export class JobStateSummary extends Map {
     // Flags
 
     get isNew() {
-        return !this.populated_state || this.populated_state == STATES.new;
+        return !this.populated_state || this.populated_state == states.new;
     }
 
     get isErrored() {
-        return this.populated_state == STATES.error || this.anyHasJobs(...ERROR_STATES);
+        return this.populated_state == states.error || this.anyHasJobs(...ERROR_STATES);
     }
 
     get isTerminal() {
@@ -62,7 +62,7 @@ export class JobStateSummary extends Map {
     }
 
     get isRunning() {
-        return this.hasJobs(STATES.running);
+        return this.hasJobs(states.running);
     }
 
     // Counts

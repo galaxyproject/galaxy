@@ -85,8 +85,8 @@
 </template>
 
 <script>
-import { STATES } from "components/History/Content/model/states";
-import { DatasetProvider } from "components/providers/storeProviders";
+import { states } from "@/components/History/Content/model/states";
+import { DatasetProvider } from "@/components/providers/storeProviders";
 import DatasetActions from "./DatasetActions";
 import { BLink } from "bootstrap-vue";
 
@@ -104,7 +104,7 @@ export default {
     },
     computed: {
         stateText() {
-            return STATES[this.dataset.state] && STATES[this.dataset.state].text;
+            return states[this.dataset.state] && states[this.dataset.state].text;
         },
     },
     methods: {
