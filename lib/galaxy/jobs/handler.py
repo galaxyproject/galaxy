@@ -1097,13 +1097,15 @@ class JobHandlerStopQueue(Monitors):
             final_state = job.states.ERROR
             job.info = error_msg
         job.set_final_state(final_state, supports_skip_locked=self.app.application_stack.supports_skip_locked())
-        self.sa_session.add(job)
-        self.sa_session.flush()
+        with self.sa_session() as session, session.begin():
+            session.add(job)
+            session.commit()
 
     def __stop(self, job):
         job.set_state(job.states.STOPPED)
-        self.sa_session.add(job)
-        self.sa_session.flush()
+        with self.sa_session() as session, session.begin():
+            session.add(job)
+            session.commit()
 
     def monitor_step(self):
         """
@@ -1113,22 +1115,7 @@ class JobHandlerStopQueue(Monitors):
         # Pull all new jobs from the queue at once
         jobs_to_check = []
         if self.app.config.track_jobs_in_database:
-            # Clear the session so we get fresh states for job and all datasets
-            self.sa_session.expunge_all()
-            # Fetch all new jobs
-            newly_deleted_jobs = (
-                self.sa_session.query(model.Job)
-                .enable_eagerloads(False)
-                .filter(
-                    (
-                        model.Job.state.in_(
-                            (model.Job.states.DELETED_NEW, model.Job.states.DELETING, model.Job.states.STOPPING)
-                        )
-                    )
-                    & (model.Job.handler == self.app.config.server_name)
-                )
-                .all()
-            )
+            newly_deleted_jobs = self._get_new_jobs()
             for job in newly_deleted_jobs:
                 # job.stderr is always a string (job.job_stderr + job.tool_stderr, possibly `''`),
                 # while any `not None` message returned in self.queue.get_nowait() is interpreted
@@ -1143,7 +1130,8 @@ class JobHandlerStopQueue(Monitors):
                 # Unpack the message
                 job_id, error_msg = message
                 # Get the job object and append to watch queue
-                jobs_to_check.append((self.sa_session.query(model.Job).get(job_id), error_msg))
+                jobs_to_check.append((self._get_job(job_id), error_msg))
+
         except Empty:
             pass
         for job, error_msg in jobs_to_check:
@@ -1186,6 +1174,18 @@ class JobHandlerStopQueue(Monitors):
                 self.queue.put(self.STOP_SIGNAL)
             self.shutdown_monitor()
             log.info("job handler stop queue stopped")
+
+    def _get_new_jobs(self):
+        states = (model.Job.states.DELETED_NEW, model.Job.states.DELETING, model.Job.states.STOPPING)
+        stmt = select(model.Job).filter(
+            model.Job.state.in_(states) & (model.Job.handler == self.app.config.server_name)
+        )
+        with self.sa_session() as session:
+            return session.scalars(stmt).all()
+
+    def _get_job(self, job_id):
+        with self.sa_session() as session:
+            return session.get(model.Job, job_id)
 
 
 class DefaultJobDispatcher:
