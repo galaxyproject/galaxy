@@ -194,8 +194,11 @@ class ItemGrabber:
                     trans.rollback()
 
 
-class BaseJobHandlerQueue(Monitors):
+class StopSignalException(Exception):
+    """Exception raised when queue returns a stop signal."""
 
+
+class BaseJobHandlerQueue(Monitors):
     STOP_SIGNAL = object()
 
     def __init__(self, app: MinimalManagerApp, dispatcher):
@@ -380,7 +383,10 @@ class JobHandlerQueue(BaseJobHandlerQueue):
         )
         if self.job_grabber is not None:
             self.job_grabber.grab_unhandled_items()
-        self.__handle_waiting_jobs()
+        try:
+            self.__handle_waiting_jobs()
+        except StopSignalException:
+            pass
         log.trace(monitor_step_timer.to_str())
 
     def __handle_waiting_jobs(self):
@@ -479,7 +485,7 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                 while 1:
                     message = self.queue.get_nowait()
                     if message is self.STOP_SIGNAL:
-                        return
+                        raise StopSignalException()
                     # Unpack the message
                     job_id, tool_id = message
                     # Get the job object and append to watch queue
@@ -1090,7 +1096,9 @@ class JobHandlerStopQueue(BaseJobHandlerQueue):
         jobs_to_check = []
         with self.sa_session() as session, session.begin():
             self._add_newly_deleted_jobs(session, jobs_to_check)
-            if not self._pull_from_queue(session, jobs_to_check):
+            try:
+                self._pull_from_queue(session, jobs_to_check)
+            except StopSignalException:
                 return
             self._check_jobs(session, jobs_to_check)
 
@@ -1111,16 +1119,6 @@ class JobHandlerStopQueue(BaseJobHandlerQueue):
             self.shutdown_monitor()
             log.info("job handler stop queue stopped")
 
-    def _get_new_jobs(self, session):
-        states = (model.Job.states.DELETED_NEW, model.Job.states.DELETING, model.Job.states.STOPPING)
-        stmt = select(model.Job).filter(
-            model.Job.state.in_(states) & (model.Job.handler == self.app.config.server_name)
-        )
-        return session.scalars(stmt).all()
-
-    def _get_job(self, job_id, session):
-        return session.get(model.Job, job_id)
-
     def _add_newly_deleted_jobs(self, session, jobs_to_check):
         if self.track_jobs_in_database:
             newly_deleted_jobs = self._get_new_jobs(session)
@@ -1130,21 +1128,25 @@ class JobHandlerStopQueue(BaseJobHandlerQueue):
                 # as an error, so here we use None if job.stderr is false-y
                 jobs_to_check.append((job, job.stderr or None))
 
+    def _get_new_jobs(self, session):
+        states = (model.Job.states.DELETED_NEW, model.Job.states.DELETING, model.Job.states.STOPPING)
+        stmt = select(model.Job).filter(
+            model.Job.state.in_(states) & (model.Job.handler == self.app.config.server_name)
+        )
+        return session.scalars(stmt).all()
+
     def _pull_from_queue(self, session, jobs_to_check):
-        # Also pull from the queue (in the case of Administrative stopped jobs)
+        # Pull jobs from the queue (in the case of Administrative stopped jobs)
         try:
             while 1:
                 message = self.queue.get_nowait()
                 if message is self.STOP_SIGNAL:
-                    return False
-                # Unpack the message
+                    raise StopSignalException()
                 job_id, error_msg = message
-                # Get the job object and append to watch queue
-                this_job = session.get(model.Job, job_id)
-                jobs_to_check.append((this_job, error_msg))
-                return True
+                job = session.get(model.Job, job_id)
+                jobs_to_check.append((job, error_msg))
         except Empty:
-            return True
+            pass
 
     def _check_jobs(self, session, jobs_to_check):
         for job, error_msg in jobs_to_check:
