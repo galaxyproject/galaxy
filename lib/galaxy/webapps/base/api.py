@@ -11,6 +11,7 @@ from fastapi import (
 )
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from pydantic import ValidationError
 from starlette.responses import (
     FileResponse,
     Response,
@@ -171,9 +172,10 @@ def get_error_response_for_request(request: Request, exc: MessageException) -> J
 
 
 def add_exception_handler(app: FastAPI) -> None:
-    @app.exception_handler(RequestValidationError)
-    async def validate_exception_middleware(request: Request, exc: RequestValidationError) -> Response:
-        message_exception = validation_error_to_message_exception(exc)
+    @app.exception_handler(ValidationError)
+    async def validate_exception_middleware(request: Request, exc: ValidationError) -> Response:
+        from_request = isinstance(exc, RequestValidationError)
+        message_exception = validation_error_to_message_exception(exc, from_request)
         return get_error_response_for_request(request, message_exception)
 
     @app.exception_handler(MessageException)

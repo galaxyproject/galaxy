@@ -381,7 +381,7 @@ def format_return_as_json(rval, jsonp_callback=None, pretty=False):
     return json
 
 
-def validation_error_to_message_exception(e: ValidationError) -> MessageException:
+def validation_error_to_message_exception(e: ValidationError, from_request: bool = True) -> MessageException:
     invalid_found = False
     missing_found = False
     for error in e.errors():
@@ -389,10 +389,12 @@ def validation_error_to_message_exception(e: ValidationError) -> MessageExceptio
             missing_found = True
         elif error["type"].startswith("type_error"):
             invalid_found = True
-    if missing_found and not invalid_found:
-        return RequestParameterMissingException(str(e), validation_errors=loads(e.json()))
-    else:
-        return RequestParameterInvalidException(str(e), validation_errors=loads(e.json()))
+    if from_request:
+        if missing_found and not invalid_found:
+            return RequestParameterMissingException(str(e), validation_errors=loads(e.json()))
+        else:
+            return RequestParameterInvalidException(str(e), validation_errors=loads(e.json()))
+    return MessageException(str(e), validation_errors=loads(e.json()))
 
 
 def api_error_message(trans, **kwds):
