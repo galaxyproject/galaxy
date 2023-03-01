@@ -57,13 +57,13 @@ describe("stores/EntryPointStore", () => {
         expect(entryPointForId.length).toBe(0);
     });
     it("retrieves entry point for a given job", async () => {
-        const entryPointForJob = store.entryPointsForJob("6fc9fbb81c497f69");
+        const entryPointForJob = store.getEntryPointsForJob("6fc9fbb81c497f69");
         expect(entryPointForJob.length).toBe(1);
         expect(entryPointForJob[0].id === "52e496b945151ee8").toBeTruthy();
         expect(entryPointForJob[0].active).toBeTruthy();
     });
     it("retrieves entry points for a given hda", async () => {
-        const entryPointForHda = store.entryPointsForHda("4e9e0c7225b0bb81");
+        const entryPointForHda = store.getEntryPointsForHda("4e9e0c7225b0bb81");
         expect(entryPointForHda.length).toBe(1);
         expect(entryPointForHda[0].id === "52e496b945151ee8").toBeTruthy();
         expect(entryPointForHda[0].active).toBeTruthy();

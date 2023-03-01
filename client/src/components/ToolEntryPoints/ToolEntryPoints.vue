@@ -1,12 +1,16 @@
 <template>
     <div class="infomessagelarge">
-        <p v-if="entryPointsForJob(jobId).length == 0">
+        <p v-if="getEntryPointsForJob(jobId).length == 0">
             Waiting for InteractiveTool result view(s) to become available.
         </p>
-        <p v-else-if="entryPointsForJob(jobId).length == 1">
-            <span v-if="entryPointsForJob(jobId)[0].active">
+        <p v-else-if="getEntryPointsForJob(jobId).length == 1">
+            <span v-if="getEntryPointsForJob(jobId)[0].active">
                 There is an InteractiveTool result view available,
-                <a v-b-tooltip title="Open Interactive Tool" :href="entryPointsForJob(jobId)[0].target" target="_blank">
+                <a
+                    v-b-tooltip
+                    title="Open Interactive Tool"
+                    :href="getEntryPointsForJob(jobId)[0].target"
+                    target="_blank">
                     Open
                     <font-awesome-icon icon="external-link-alt" />
                 </a>
@@ -18,7 +22,7 @@
         <div v-else>
             There are multiple InteractiveTool result views available:
             <ul>
-                <li v-for="entryPoint of entryPointsForJob(jobId)" :key="entryPoint.id">
+                <li v-for="entryPoint of getEntryPointsForJob(jobId)" :key="entryPoint.id">
                     {{ entryPoint.name }}
                     <span v-if="entryPoint.active">
                         <a v-b-tooltip title="Open Interactive Tool" :href="entryPoint.target" target="_blank">
@@ -37,8 +41,7 @@
 </template>
 
 <script>
-import { mapActions, mapState } from "pinia";
-import { useEntryPointStore } from "stores/entryPointStore";
+import { useEntryPointStore } from "@/stores/entryPointStore";
 import { getAppRoot } from "onload/loadConfig";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -56,17 +59,17 @@ export default {
             required: true,
         },
     },
+    setup() {
+        const { getEntryPointsForJob, ensurePollingEntryPoints } = useEntryPointStore();
+        return { getEntryPointsForJob, ensurePollingEntryPoints };
+    },
     computed: {
-        ...mapState(useEntryPointStore, ["entryPointsForJob"]),
         interactiveToolsLink: function () {
             return getAppRoot() + "interactivetool_entry_points/list";
         },
     },
     created: function () {
         this.ensurePollingEntryPoints();
-    },
-    methods: {
-        ...mapActions(useEntryPointStore, ["ensurePollingEntryPoints"]),
     },
 };
 </script>
