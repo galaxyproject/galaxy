@@ -19,7 +19,7 @@ def main():
     try:
         subprocess.run([f"{os.environ['AMP_ROOT']}/galaxy/run.sh", "start"], check=True)
     except Exception as e:
-        logging.error(f"Cannot start tomcat: {e}")
+        logging.error(f"Cannot start galaxy: {e}")
 
 
 if __name__ == "__main__":
