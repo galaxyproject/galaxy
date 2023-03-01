@@ -11,6 +11,7 @@ import { HistoryFilters } from "@/components/History/HistoryFilters";
 
 // TODO: stricter type
 export type HistoryItem = {
+    hid: number;
     [key: string]: unknown;
 };
 
@@ -81,20 +82,26 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", () => {
             set(items.value, historyId, ref([]));
         }
 
-        const itemArray = items.value[historyId];
+        let itemArray = items.value[historyId];
+
+        if (!itemArray) {
+            items.value[historyId] = [];
+            itemArray = items.value[historyId];
+        }
+
         payload.forEach((item) => {
             const itemIndex = item[itemKey] as number;
 
-            if (itemArray[itemIndex]) {
-                const localItem = itemArray[itemIndex];
+            if (itemArray![itemIndex]) {
+                const localItem = itemArray![itemIndex];
 
-                if (localItem.id == item.id) {
+                if (localItem && localItem.id === item.id) {
                     Object.keys(localItem).forEach((key) => {
                         localItem[key] = item[key];
                     });
                 }
             } else {
-                set(itemArray, itemIndex, reactive(item));
+                set(itemArray!, itemIndex, reactive(item));
             }
         });
 
