@@ -1,9 +1,13 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
-import SelectPreferredStore from "./SelectPreferredStore";
+import { setupSelectableMock } from "../../ObjectStore/mockServices";
+setupSelectableMock();
+
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
+
+import SelectPreferredStore from "./SelectPreferredStore.vue";
 
 const localVue = getLocalVue(true);
 
@@ -22,19 +26,15 @@ function mountComponent() {
     return wrapper;
 }
 
-import { ROOT_COMPONENT } from "utils/navigation";
+import { ROOT_COMPONENT } from "@/utils/navigation";
 
-const OBJECT_STORES = [
-    { object_store_id: "object_store_1", badges: [], quota: { enabled: false } },
-    { object_store_id: "object_store_2", badges: [], quota: { enabled: false } },
-];
+const PREFERENCES = ROOT_COMPONENT.preferences;
 
 describe("SelectPreferredStore.vue", () => {
     let axiosMock;
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
-        axiosMock.onGet("/api/object_store?selectable=true").reply(200, OBJECT_STORES);
     });
 
     afterEach(async () => {
@@ -44,10 +44,10 @@ describe("SelectPreferredStore.vue", () => {
     it("updates object store to default on selection null", async () => {
         const wrapper = mountComponent();
         await flushPromises();
-        const els = wrapper.findAll(ROOT_COMPONENT.preferences.object_store_selection.option_buttons.selector);
+        const els = wrapper.findAll(PREFERENCES.object_store_selection.option_buttons.selector);
         expect(els.length).toBe(3);
         const galaxyDefaultOption = wrapper.find(
-            ROOT_COMPONENT.preferences.object_store_selection.option_button({ object_store_id: "__null__" }).selector
+            PREFERENCES.object_store_selection.option_button({ object_store_id: "__null__" }).selector
         );
         expect(galaxyDefaultOption.exists()).toBeTruthy();
         axiosMock

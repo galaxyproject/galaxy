@@ -57,12 +57,12 @@
 </template>
 
 <script>
-import { fetcher } from "schema/fetcher";
 import LoadingSpan from "components/LoadingSpan";
 import DescribeObjectStore from "components/ObjectStore/DescribeObjectStore";
 import { errorMessageAsString } from "utils/simple-error";
 import ObjectStoreBadges from "components/ObjectStore/ObjectStoreBadges";
 import ProvidedQuotaSourceUsageBar from "components/User/DiskUsage/Quota/ProvidedQuotaSourceUsageBar";
+import { getSelectableObjectStores } from "./services";
 
 export default {
     components: {
@@ -121,9 +121,8 @@ is not stored in the correct place, contact your Galaxy adminstrator for more in
         },
     },
     async mounted() {
-        const get = fetcher.path("/api/object_store").method("get").create();
         try {
-            const { data } = await get({ selectable: true });
+            const data = await getSelectableObjectStores();
             this.objectStores = data;
             this.loading = false;
         } catch (e) {
