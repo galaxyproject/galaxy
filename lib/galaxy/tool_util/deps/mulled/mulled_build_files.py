@@ -23,7 +23,7 @@ from .mulled_build import (
     args_to_mull_targets_kwds,
     BuildExistsException,
     mull_targets,
-    target_str_to_targets,
+    parse_targets,
 )
 
 KNOWN_FIELDS = ["targets", "image_build", "name_override", "base_image"]
@@ -101,7 +101,7 @@ def line_to_targets(line_str, line_tuple):
         len(line_parts) <= n_fields
     ), f"Too many fields in line [{line_str}], expect at most {n_fields} - targets, image build number, and name override."
     line_parts += [None] * (n_fields - len(line_parts))
-    line_parts[targets_column] = target_str_to_targets(line_parts[targets_column])
+    line_parts[targets_column] = parse_targets(line_parts[targets_column])
     return line_tuple(*line_parts)
 
 

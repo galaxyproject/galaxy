@@ -513,7 +513,7 @@ def add_single_image_arguments(parser):
     )
 
 
-def target_str_to_targets(targets_raw):
+def parse_targets(targets_raw):
     def parse_target(target_str):
         if "=" in target_str:
             package_name, version = target_str.split("=", 1)
@@ -596,7 +596,7 @@ def main(argv=None):
         "The source:dest docker syntax is respected. If relative file paths are given, files will be mounted in /source/<relative_file_path>",
     )
     args = parser.parse_args()
-    targets = target_str_to_targets(args.targets)
+    targets = parse_targets(args.targets)
     sys.exit(mull_targets(targets, **args_to_mull_targets_kwds(args)))
 
 
