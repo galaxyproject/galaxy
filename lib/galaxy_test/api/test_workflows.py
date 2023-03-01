@@ -362,6 +362,13 @@ class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
         response.raise_for_status()
         assert response.json()["a_galaxy_workflow"] == "true"
 
+    def test_anon_can_see_workflow_preview(self):
+        workflow_id = self.workflow_populator.simple_workflow(name="test_preview", importable=True)
+        workflows_url = self._api_url(f"workflows/{workflow_id}/download", params={"style": "preview"})
+        response = get(workflows_url)
+        response.raise_for_status()
+        assert response.json()["name"] == "test_preview"
+
     def test_delete(self):
         workflow_id = self.workflow_populator.simple_workflow("test_delete")
         workflow_name = "test_delete"
