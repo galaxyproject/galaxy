@@ -6,6 +6,15 @@ from abc import (
 )
 from logging import getLogger
 from uuid import uuid4
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Type,
+    TYPE_CHECKING,
+)
+from typing_extensions import Protocol
 
 from galaxy.util import (
     asbool,
@@ -21,13 +30,19 @@ from .requirements import (
     DEFAULT_CONTAINER_SHELL,
 )
 
+if TYPE_CHECKING:
+    from .dependencies import AppInfo, JobInfo, ToolInfo
+    from .requirements import (
+        ContainerDescription,
+    )
+
 log = getLogger(__name__)
 
-DOCKER_CONTAINER_TYPE = "docker"
-SINGULARITY_CONTAINER_TYPE = "singularity"
-TRAP_KILL_CONTAINER = "trap _on_exit EXIT"
+DOCKER_CONTAINER_TYPE: str = "docker"
+SINGULARITY_CONTAINER_TYPE: str = "singularity"
+TRAP_KILL_CONTAINER: str = "trap _on_exit EXIT"
 
-LOAD_CACHED_IMAGE_COMMAND_TEMPLATE = r"""
+LOAD_CACHED_IMAGE_COMMAND_TEMPLATE: str = r"""
 python << EOF
 from __future__ import print_function
 
@@ -71,25 +86,58 @@ fi
 """
 
 
-class Container(metaclass=ABCMeta):
-    def __init__(
-        self, container_id, app_info, tool_info, destination_info, job_info, container_description, container_name=None
-    ):
-        self.container_id = container_id
-        self.app_info = app_info
-        self.tool_info = tool_info
-        self.destination_info = destination_info
-        self.job_info = job_info
-        self.container_description = container_description
-        self.container_name = container_name or uuid4().hex
-        self.container_info = {}
+class ContainerProtocol(Protocol):
+    """
+    Helper class to allow typing for the HasDockerLikeVolumes mixin
+    """
 
-    def prop(self, name, default):
+    @property
+    def app_info(self) -> "AppInfo":
+        ...
+
+    @property
+    def tool_info(self) -> "ToolInfo":
+        ...
+
+    @property
+    def job_info(self) -> Optional["JobInfo"]:
+        ...
+
+
+class Container(metaclass=ABCMeta):
+    """
+    TODO The container resolvers currently initialize job_info as None,
+    ContainerFinder.find_container fixes this by constructing a new container
+    with job_info (see __destination_container)
+    """
+
+    container_type: str
+
+    def __init__(
+        self,
+        container_id: str,
+        app_info: "AppInfo",
+        tool_info: "ToolInfo",
+        destination_info: Dict[str, Any],
+        job_info: Optional["JobInfo"],
+        container_description: Optional["ContainerDescription"],
+        container_name: Optional[str] = None,
+    ):
+        self.container_id: str = container_id
+        self.app_info: "AppInfo" = app_info
+        self.tool_info: "ToolInfo" = tool_info
+        self.destination_info: Dict[str, Any] = destination_info
+        self.job_info: Optional["JobInfo"] = job_info
+        self.container_description: Optional["ContainerDescription"] = container_description
+        self.container_name: str = container_name or uuid4().hex
+        self.container_info: Dict = {}
+
+    def prop(self, name: str, default: Any) -> Any:
         destination_name = f"{self.container_type}_{name}"
         return self.destination_info.get(destination_name, default)
 
     @property
-    def resolve_dependencies(self):
+    def resolve_dependencies(self) -> bool:
         return (
             DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES
             if not self.container_description
@@ -97,17 +145,17 @@ class Container(metaclass=ABCMeta):
         )
 
     @property
-    def shell(self):
+    def shell(self) -> str:
         return DEFAULT_CONTAINER_SHELL if not self.container_description else self.container_description.shell
 
     @property
-    def source_environment(self):
+    def source_environment(self) -> str:
         if self.container_description and not self.container_description.explicit:
             return SOURCE_CONDA_ACTIVATE
         return ""
 
     @abstractmethod
-    def containerize_command(self, command):
+    def containerize_command(self, command: str) -> str:
         """
         Use destination supplied container configuration parameters,
         container_id, and command to build a new command that runs
@@ -115,7 +163,7 @@ class Container(metaclass=ABCMeta):
         """
 
 
-def preprocess_volumes(volumes_raw_str, container_type):
+def preprocess_volumes(volumes_raw_str: Optional[str], container_type: str) -> List[str]:
     """Process Galaxy volume specification string to either Docker or Singularity specification.
 
     Galaxy allows the mount try "default_ro" which translates to ro for Docker and
@@ -189,8 +237,12 @@ class HasDockerLikeVolumes:
     Singularity seems to have a fairly compatible syntax for volume handling.
     """
 
-    def _expand_volume_str(self, value):
+    def _expand_volume_str(self: ContainerProtocol, value: str) -> str:
         if not value:
+            return value
+
+        # TODO may be None, see comment in Container
+        if self.job_info is None:
             return value
 
         template = string.Template(value)
@@ -271,10 +323,10 @@ class HasDockerLikeVolumes:
 
 
 class DockerContainer(Container, HasDockerLikeVolumes):
-    container_type = DOCKER_CONTAINER_TYPE
+    container_type: str = DOCKER_CONTAINER_TYPE
 
     @property
-    def docker_host_props(self):
+    def docker_host_props(self) -> Dict[str, Any]:
         docker_host_props = dict(
             docker_cmd=self.prop("cmd", docker_util.DEFAULT_DOCKER_COMMAND),
             sudo=asbool(self.prop("sudo", docker_util.DEFAULT_SUDO)),
@@ -284,13 +336,13 @@ class DockerContainer(Container, HasDockerLikeVolumes):
         return docker_host_props
 
     @property
-    def connection_configuration(self):
+    def connection_configuration(self) -> Dict[str, Any]:
         return self.docker_host_props
 
-    def build_pull_command(self):
+    def build_pull_command(self) -> List[str]:
         return docker_util.build_pull_command(self.container_id, **self.docker_host_props)
 
-    def containerize_command(self, command):
+    def containerize_command(self, command: str) -> str:
         env_directives = []
         for pass_through_var in self.tool_info.env_pass_through:
             env_directives.append(f'"{pass_through_var}=${pass_through_var}"')
@@ -302,6 +354,9 @@ class DockerContainer(Container, HasDockerLikeVolumes):
             if key.startswith("docker_env_"):
                 env = key[len("docker_env_") :]
                 env_directives.append(f'"{env}={value}"')
+
+        if self.job_info is None:
+            raise Exception("Cannot containerize command job_info is not defined.")
 
         working_directory = self.job_info.working_directory
         if not working_directory:
@@ -353,7 +408,7 @@ _on_exit() {{
 {cache_command}
 {run_command}"""
 
-    def __cache_from_file_command(self, cached_image_file, docker_host_props):
+    def __cache_from_file_command(self, cached_image_file: str, docker_host_props: Dict[str, Any]) -> str:
         images_cmd = docker_util.build_docker_images_command(truncate=False, **docker_host_props)
         load_cmd = docker_util.build_docker_load_command(**docker_host_props)
 
@@ -361,13 +416,13 @@ _on_exit() {{
             cached_image_file=cached_image_file, images_cmd=images_cmd, load_cmd=load_cmd
         )
 
-    def __get_cached_image_file(self):
+    def __get_cached_image_file(self) -> Optional[str]:
         container_id = self.container_id
         cache_directory = os.path.abspath(self.__get_destination_overridable_property("container_image_cache_path"))
         cache_path = docker_cache_path(cache_directory, container_id)
         return cache_path if os.path.exists(cache_path) else None
 
-    def __get_destination_overridable_property(self, name):
+    def __get_destination_overridable_property(self, name: str) -> Any:
         prop_name = f"docker_{name}"
         if prop_name in self.destination_info:
             return self.destination_info[prop_name]
@@ -375,7 +430,7 @@ _on_exit() {{
             return getattr(self.app_info, name)
 
 
-def docker_cache_path(cache_directory, container_id):
+def docker_cache_path(cache_directory: str, container_id: str) -> str:
     file_container_id = container_id.replace("/", "_slash_")
     cache_file_name = f"docker_{file_container_id}.tar"
     return os.path.join(cache_directory, cache_file_name)
@@ -384,7 +439,7 @@ def docker_cache_path(cache_directory, container_id):
 class SingularityContainer(Container, HasDockerLikeVolumes):
     container_type = SINGULARITY_CONTAINER_TYPE
 
-    def get_singularity_target_kwds(self):
+    def get_singularity_target_kwds(self) -> Dict[str, Any]:
         return dict(
             singularity_cmd=self.prop("cmd", singularity_util.DEFAULT_SINGULARITY_COMMAND),
             sudo=asbool(self.prop("sudo", singularity_util.DEFAULT_SUDO)),
@@ -392,10 +447,12 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
         )
 
     @property
-    def connection_configuration(self):
+    def connection_configuration(self) -> Dict[str, Any]:
         return self.get_singularity_target_kwds()
 
-    def build_mulled_singularity_pull_command(self, cache_directory, namespace="biocontainers"):
+    def build_mulled_singularity_pull_command(
+        self, cache_directory: str, namespace: str = "biocontainers"
+    ) -> List[str]:
         return singularity_util.pull_mulled_singularity_command(
             docker_image_identifier=self.container_id,
             cache_directory=cache_directory,
@@ -403,12 +460,12 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             **self.get_singularity_target_kwds(),
         )
 
-    def build_singularity_pull_command(self, cache_path):
+    def build_singularity_pull_command(self, cache_path: str) -> List[str]:
         return singularity_util.pull_singularity_command(
             image_identifier=self.container_id, cache_path=cache_path, **self.get_singularity_target_kwds()
         )
 
-    def containerize_command(self, command):
+    def containerize_command(self, command: str) -> str:
         env = []
         for pass_through_var in self.tool_info.env_pass_through:
             env.append((pass_through_var, f"${pass_through_var}"))
@@ -420,6 +477,9 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             if key.startswith("singularity_env_"):
                 real_key = key[len("singularity_env_") :]
                 env.append((real_key, value))
+
+        if self.job_info is None:
+            raise Exception("Cannot containerize command job_info is not defined.")
 
         working_directory = self.job_info.working_directory
         if not working_directory:
@@ -444,7 +504,7 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
         return run_command
 
 
-CONTAINER_CLASSES = dict(
+CONTAINER_CLASSES: Dict[str, Type[Container]] = dict(
     docker=DockerContainer,
     singularity=SingularityContainer,
 )

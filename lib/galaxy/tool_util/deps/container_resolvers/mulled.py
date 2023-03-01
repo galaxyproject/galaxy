@@ -18,6 +18,7 @@ from typing import (
     TYPE_CHECKING,
     Union,
 )
+from typing_extensions import Literal
 
 from galaxy.util import (
     safe_makedirs,
@@ -105,7 +106,7 @@ class CachedV2MulledImageMultiTarget(NamedTuple):
 
 
 class CacheDirectory(metaclass=ABCMeta):
-    def __init__(self, path: str, hash_func: str = "v2"):
+    def __init__(self, path: str, hash_func: Literal["v1", "v2"] = "v2"):
         self.path = path
         self.hash_func = hash_func
 
@@ -184,7 +185,9 @@ def get_cache_directory_cacher(cacher_type: Optional[str]) -> Type[CacheDirector
 
 
 def list_docker_cached_mulled_images(
-    namespace: Optional[str] = None, hash_func: str = "v2", resolution_cache: Optional[ResolutionCache] = None
+    namespace: Optional[str] = None,
+    hash_func: Literal["v1", "v2"] = "v2",
+    resolution_cache: Optional[ResolutionCache] = None,
 ) -> List[Union[CachedMulledImageSingleTarget, CachedV1MulledImageMultiTarget, CachedV2MulledImageMultiTarget]]:
     cache_key = "galaxy.tool_util.deps.container_resolvers.mulled:cached_images"
     if resolution_cache is not None and cache_key in resolution_cache:
@@ -211,7 +214,7 @@ def list_docker_cached_mulled_images(
 
 
 def identifier_to_cached_target(
-    identifier: str, hash_func: str, namespace: Optional[str] = None
+    identifier: str, hash_func: Literal["v1", "v2"], namespace: Optional[str] = None
 ) -> Optional[Union[CachedMulledImageSingleTarget, CachedV1MulledImageMultiTarget, CachedV2MulledImageMultiTarget]]:
     if ":" in identifier:
         image_name, version = identifier.rsplit(":", 1)
@@ -272,7 +275,7 @@ def find_best_matching_cached_image(
     cached_images: List[
         Union[CachedMulledImageSingleTarget, CachedV1MulledImageMultiTarget, CachedV2MulledImageMultiTarget]
     ],
-    hash_func: str,
+    hash_func: Literal["v1", "v2"],
 ) -> Optional[Union[CachedMulledImageSingleTarget, CachedV1MulledImageMultiTarget, CachedV2MulledImageMultiTarget]]:
     if len(targets) == 0:
         return None
@@ -327,7 +330,7 @@ def find_best_matching_cached_image(
 def docker_cached_container_description(
     targets: List[Target],
     namespace: str,
-    hash_func: str = "v2",
+    hash_func: Literal["v1", "v2"] = "v2",
     shell: str = DEFAULT_CONTAINER_SHELL,
     resolution_cache: Optional[ResolutionCache] = None,
 ) -> Optional[ContainerDescription]:
@@ -349,7 +352,10 @@ def docker_cached_container_description(
 
 
 def singularity_cached_container_description(
-    targets: List[Target], cache_directory: CacheDirectory, hash_func: str = "v2", shell: str = DEFAULT_CONTAINER_SHELL
+    targets: List[Target],
+    cache_directory: CacheDirectory,
+    hash_func: Literal["v1", "v2"] = "v2",
+    shell: str = DEFAULT_CONTAINER_SHELL,
 ) -> Optional[ContainerDescription]:
     if len(targets) == 0:
         return None
@@ -372,7 +378,7 @@ def singularity_cached_container_description(
 
 def targets_to_mulled_name(
     targets: List[Target],
-    hash_func: str,
+    hash_func: Literal["v1", "v2"],
     namespace: str,
     resolution_cache: Optional[ResolutionCache] = None,
     session: Optional["Session"] = None,
@@ -470,8 +476,8 @@ def targets_to_mulled_name(
 
 
 class CliContainerResolver(ContainerResolver):
-    container_type = "docker"
-    cli = "docker"
+    container_type: str = "docker"
+    cli: str = "docker"
 
     def __init__(self, *args, **kwargs):
         self._cli_available: bool = bool(which(self.cli))
@@ -491,8 +497,8 @@ class CliContainerResolver(ContainerResolver):
 
 
 class SingularityCliContainerResolver(CliContainerResolver):
-    container_type = "singularity"
-    cli = "singularity"
+    container_type: str = "singularity"
+    cli: str = "singularity"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -514,7 +520,7 @@ class CachedMulledDockerContainerResolver(CliContainerResolver):
     shell = "/bin/bash"
 
     def __init__(
-        self, app_info: Optional["AppInfo"] = None, namespace: str = "biocontainers", hash_func: str = "v2", **kwds
+        self, app_info: "AppInfo", namespace: str = "biocontainers", hash_func: Literal["v1", "v2"] = "v2", **kwds
     ):
         super().__init__(app_info=app_info, **kwds)
         self.namespace = namespace
@@ -545,7 +551,7 @@ class CachedMulledSingularityContainerResolver(SingularityCliContainerResolver):
     resolver_type = "cached_mulled_singularity"
     shell = "/bin/bash"
 
-    def __init__(self, app_info: Optional["AppInfo"] = None, hash_func: str = "v2", **kwds):
+    def __init__(self, app_info: "AppInfo", hash_func: Literal["v1", "v2"] = "v2", **kwds):
         super().__init__(app_info=app_info, **kwds)
         self.hash_func = hash_func
         self._init_cache_directory()
@@ -575,9 +581,9 @@ class MulledDockerContainerResolver(CliContainerResolver):
 
     def __init__(
         self,
-        app_info: Optional["AppInfo"] = None,
+        app_info: "AppInfo",
         namespace: str = "biocontainers",
-        hash_func: str = "v2",
+        hash_func: Literal["v1", "v2"] = "v2",
         auto_install: bool = True,
         **kwds,
     ):
@@ -587,7 +593,11 @@ class MulledDockerContainerResolver(CliContainerResolver):
         self.auto_install = string_as_bool(auto_install)
 
     def cached_container_description(
-        self, targets: List[Target], namespace: str, hash_func: str, resolution_cache: Optional[ResolutionCache] = None
+        self,
+        targets: List[Target],
+        namespace: str,
+        hash_func: Literal["v1", "v2"],
+        resolution_cache: Optional[ResolutionCache] = None,
     ) -> Optional[ContainerDescription]:
         try:
             return docker_cached_container_description(targets, namespace, hash_func, resolution_cache)
@@ -657,7 +667,7 @@ class MulledDockerContainerResolver(CliContainerResolver):
                         self.app_info,
                         tool_info,
                         destination_info,
-                        {},
+                        None,
                         container_description,
                     )
                     self.pull(container)
@@ -684,9 +694,9 @@ class MulledSingularityContainerResolver(SingularityCliContainerResolver, Mulled
 
     def __init__(
         self,
-        app_info: Optional["AppInfo"] = None,
+        app_info: "AppInfo",
         namespace: str = "biocontainers",
-        hash_func: str = "v2",
+        hash_func: Literal["v1", "v2"] = "v2",
         auto_install: bool = True,
         **kwds,
     ):
@@ -700,7 +710,7 @@ class MulledSingularityContainerResolver(SingularityCliContainerResolver, Mulled
         self,
         targets: List[Target],
         namespace: str,
-        hash_func: str,
+        hash_func: Literal["v1", "v2"],
         resolution_cache: Optional[ResolutionCache] = None,
     ) -> Optional[ContainerDescription]:
         return singularity_cached_container_description(
@@ -734,9 +744,9 @@ class BuildMulledDockerContainerResolver(CliContainerResolver):
 
     def __init__(
         self,
-        app_info: Optional["AppInfo"] = None,
+        app_info: "AppInfo",
         namespace: str = "local",
-        hash_func: str = "v2",
+        hash_func: Literal["v1", "v2"] = "v2",
         auto_install: bool = True,
         **kwds,
     ):
@@ -782,7 +792,7 @@ class BuildMulledSingularityContainerResolver(SingularityCliContainerResolver):
     shell = "/bin/bash"
     builds_on_resolution = True
 
-    def __init__(self, app_info: Optional["AppInfo"] = None, hash_func: str = "v2", auto_install: bool = True, **kwds):
+    def __init__(self, app_info: "AppInfo", hash_func: Literal["v1", "v2"] = "v2", auto_install: bool = True, **kwds):
         super().__init__(app_info=app_info, **kwds)
         self._involucro_context_kwds = {"involucro_bin": self._get_config_option("involucro_path", None)}
         self.hash_func = hash_func
@@ -824,7 +834,7 @@ def mulled_targets(tool_info: "ToolInfo") -> List[Target]:
     return requirements_to_mulled_targets(tool_info.requirements)
 
 
-def image_name(targets: List[Target], hash_func: str) -> Optional[str]:
+def image_name(targets: List[Target], hash_func: Literal["v1", "v2"]) -> Optional[str]:
     if len(targets) == 0:
         return "no targets"
     elif hash_func == "v2":

@@ -6,6 +6,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Type,
     TYPE_CHECKING,
 )
 
@@ -36,17 +37,21 @@ from .requirements import ContainerDescription
 
 if TYPE_CHECKING:
     from beaker.cache import Cache
+    from requests import Session
 
     from .dependencies import (
         AppInfo,
         ToolInfo,
+        JobInfo,
     )
+    from .container_resolvers import ContainerResolver
+    from galaxy.util.plugin_config import PluginConfigSource
 
 log = logging.getLogger(__name__)
 
 
 DEFAULT_CONTAINER_TYPE = DOCKER_CONTAINER_TYPE
-ALL_CONTAINER_TYPES = [DOCKER_CONTAINER_TYPE, SINGULARITY_CONTAINER_TYPE]
+ALL_CONTAINER_TYPES: List[str] = [DOCKER_CONTAINER_TYPE, SINGULARITY_CONTAINER_TYPE]
 
 ResolvedContainerDescription = collections.namedtuple(
     "ResolvedContainerDescription", ["container_resolver", "container_description"]
@@ -60,10 +65,12 @@ class ContainerFinder:
         self.default_container_registry = ContainerRegistry(app_info, mulled_resolution_cache=mulled_resolution_cache)
         self.destination_container_registeries: Dict[str, "ContainerRegistry"] = {}
 
-    def _enabled_container_types(self, destination_info):
+    def _enabled_container_types(self, destination_info: Dict[str, Any]) -> List[str]:
         return [t for t in ALL_CONTAINER_TYPES if self.__container_type_enabled(t, destination_info)]
 
-    def find_best_container_description(self, enabled_container_types, tool_info, **kwds):
+    def find_best_container_description(
+        self, enabled_container_types: List[str], tool_info: "ToolInfo", **kwds
+    ) -> Optional[ContainerDescription]:
         """Regardless of destination properties - find best container for tool.
 
         Given container types and container.ToolInfo description of the tool."""
@@ -71,11 +78,13 @@ class ContainerFinder:
             enabled_container_types, tool_info, **kwds
         )
 
-    def resolve(self, enabled_container_types, tool_info, **kwds):
+    def resolve(
+        self, enabled_container_types: List[str], tool_info: "ToolInfo", **kwds
+    ) -> Optional[ResolvedContainerDescription]:
         """Regardless of destination properties - find ResolvedContainerDescription for tool."""
         return self.default_container_registry.resolve(enabled_container_types, tool_info, **kwds)
 
-    def _container_registry_for_destination(self, destination_info):
+    def _container_registry_for_destination(self, destination_info: Dict[str, Any]) -> "ContainerRegistry":
         destination_id = destination_info.get("id")  # Probably not the way to get the ID?
         destination_container_registry = None
         if destination_id and destination_id not in self.destination_container_registeries:
@@ -100,17 +109,28 @@ class ContainerFinder:
 
         return destination_container_registry or self.default_container_registry
 
-    def find_container(self, tool_info, destination_info, job_info) -> Optional[Container]:
+    def find_container(
+        self, tool_info: "ToolInfo", destination_info: Dict[str, Any], job_info: "JobInfo"
+    ) -> Optional[Container]:
         enabled_container_types = self._enabled_container_types(destination_info)
 
         # Short-cut everything else and just skip checks if no container type is enabled.
         if not enabled_container_types:
             return None
 
-        def __destination_container(container_description=None, container_id=None, container_type=None):
+        def __destination_container(
+            container_description: Optional[ContainerDescription] = None,
+            container_id: Optional[str] = None,
+            container_type: Optional[str] = None,
+        ) -> Optional[Container]:
+            """
+            either container_description or container_id and container_type must me given
+            """
             if container_description:
                 container_id = container_description.identifier
                 container_type = container_description.type
+            assert container_id
+            assert container_type
             container = self.__destination_container(
                 container_id,
                 container_type,
@@ -121,13 +141,16 @@ class ContainerFinder:
             )
             return container
 
-        def container_from_description_from_dicts(destination_container_dicts):
+        def container_from_description_from_dicts(
+            destination_container_dicts: List[Dict[str, Any]]
+        ) -> Optional[Container]:
             for destination_container_dict in destination_container_dicts:
                 container_description = ContainerDescription.from_dict(destination_container_dict)
                 if container_description:
                     container = __destination_container(container_description)
                     if container:
                         return container
+            return None
 
         if "container_override" in destination_info:
             container = container_from_description_from_dicts(destination_info["container_override"])
@@ -167,18 +190,19 @@ class ContainerFinder:
 
         return None
 
-    def resolution_cache(self):
+    def resolution_cache(self) -> ResolutionCache:
         return self.default_container_registry.get_resolution_cache()
 
-    def __overridden_container_id(self, container_type, destination_info):
+    def __overridden_container_id(self, container_type: str, destination_info: Dict[str, Any]) -> Optional[str]:
         if not self.__container_type_enabled(container_type, destination_info):
             return None
         if f"{container_type}_container_id_override" in destination_info:
             return destination_info.get(f"{container_type}_container_id_override")
         if f"{container_type}_image_override" in destination_info:
             return self.__build_container_id_from_parts(container_type, destination_info, mode="override")
+        return None
 
-    def __build_container_id_from_parts(self, container_type, destination_info, mode):
+    def __build_container_id_from_parts(self, container_type: str, destination_info: Dict[str, Any], mode) -> str:
         repo = ""
         owner = ""
         repo_key = f"{container_type}_repo_{mode}"
@@ -193,7 +217,7 @@ class ContainerFinder:
             cont_id += f":{destination_info[tag_key]}"
         return cont_id
 
-    def __default_container_id(self, container_type, destination_info):
+    def __default_container_id(self, container_type: str, destination_info: Dict[str, Any]) -> Optional[str]:
         if not self.__container_type_enabled(container_type, destination_info):
             return None
         key = f"{container_type}_default_container_id"
@@ -207,8 +231,14 @@ class ContainerFinder:
         return None
 
     def __destination_container(
-        self, container_id, container_type, tool_info, destination_info, job_info, container_description=None
-    ):
+        self,
+        container_id: str,
+        container_type: str,
+        tool_info: "ToolInfo",
+        destination_info: Dict[str, Any],
+        job_info: "JobInfo",
+        container_description: Optional[ContainerDescription] = None,
+    ) -> Optional[Container]:
         # TODO: ensure destination_info is dict-like
         if not self.__container_type_enabled(container_type, destination_info):
             return None
@@ -221,12 +251,14 @@ class ContainerFinder:
             container_id, self.app_info, tool_info, destination_info, job_info, container_description
         )
 
-    def __container_type_enabled(self, container_type, destination_info):
+    def __container_type_enabled(self, container_type: str, destination_info: Dict[str, Any]) -> bool:
         return asbool(destination_info.get(f"{container_type}_enabled", False))
 
 
 class NullContainerFinder:
-    def find_container(self, tool_info, destination_info, job_info):
+    def find_container(
+        self, tool_info: "ToolInfo", destination_info: Optional[Dict[str, Any]], job_info: "JobInfo"
+    ) -> None:
         return None
 
 
@@ -239,13 +271,15 @@ class ContainerRegistry:
         destination_info: Optional[Dict[str, Any]] = None,
         mulled_resolution_cache: Optional["Cache"] = None,
     ) -> None:
-        self.resolver_classes = self.__resolvers_dict()
+        self.resolver_classes: Dict[str, Type["ContainerResolver"]] = self.__resolvers_dict()
         self.enable_mulled_containers = app_info.enable_mulled_containers
         self.app_info = app_info
         self.container_resolvers = self.__build_container_resolvers(app_info, destination_info)
         self.mulled_resolution_cache = mulled_resolution_cache
 
-    def __build_container_resolvers(self, app_info, destination_info):
+    def __build_container_resolvers(
+        self, app_info: "AppInfo", destination_info: Optional[Dict[str, Any]]
+    ) -> List["ContainerResolver"]:
         app_conf_file = getattr(app_info, "container_resolvers_config_file", None)
         app_conf_dict = getattr(app_info, "container_resolvers_config_dict", None)
 
@@ -269,11 +303,12 @@ class ContainerRegistry:
             return self._parse_resolver_conf(plugin_source)
         return self.__default_container_resolvers()
 
-    def _parse_resolver_conf(self, plugin_source):
+    def _parse_resolver_conf(self, plugin_source: "PluginConfigSource") -> List["ContainerResolver"]:
         extra_kwds = {"app_info": self.app_info}
         return plugin_config.load_plugins(self.resolver_classes, plugin_source, extra_kwds)
 
-    def __default_container_resolvers(self):
+    def __default_container_resolvers(self) -> List["ContainerResolver"]:
+        default_resolvers: List["ContainerResolver"]
         default_resolvers = [
             ExplicitContainerResolver(self.app_info),
             ExplicitSingularityContainerResolver(self.app_info),
@@ -301,12 +336,12 @@ class ContainerRegistry:
                 )
         return default_resolvers
 
-    def __resolvers_dict(self):
+    def __resolvers_dict(self) -> Dict[str, Type["ContainerResolver"]]:
         import galaxy.tool_util.deps.container_resolvers
 
         return plugin_config.plugins_dict(galaxy.tool_util.deps.container_resolvers, "resolver_type")
 
-    def get_resolution_cache(self):
+    def get_resolution_cache(self) -> ResolutionCache:
         cache = ResolutionCache()
         if self.mulled_resolution_cache is not None:
             cache.mulled_resolution_cache = self.mulled_resolution_cache
@@ -325,14 +360,14 @@ class ContainerRegistry:
 
     def resolve(
         self,
-        enabled_container_types,
-        tool_info,
-        index=None,
-        resolver_type=None,
-        install=True,
-        resolution_cache=None,
-        session=None,
-    ):
+        enabled_container_types: List[str],
+        tool_info: "ToolInfo",
+        index: Optional[int] = None,
+        resolver_type: Optional[str] = None,
+        install: bool = True,
+        resolution_cache: Optional[ResolutionCache] = None,
+        session: Optional["Session"] = None,
+    ) -> Optional[ResolvedContainerDescription]:
         resolution_cache = resolution_cache or self.get_resolution_cache()
         for i, container_resolver in enumerate(self.container_resolvers):
             if index is not None and i != index:

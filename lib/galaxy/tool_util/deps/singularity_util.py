@@ -1,5 +1,9 @@
 import os
 import shlex
+from typing import List, Optional, Tuple, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .container_volumes import DockerVolume
 
 DEFAULT_WORKING_DIRECTORY = None
 DEFAULT_SINGULARITY_COMMAND = "singularity"
@@ -10,13 +14,13 @@ DEFAULT_RUN_EXTRA_ARGUMENTS = None
 
 
 def pull_mulled_singularity_command(
-    docker_image_identifier,
-    cache_directory,
-    namespace=None,
-    singularity_cmd=DEFAULT_SINGULARITY_COMMAND,
-    sudo=DEFAULT_SUDO,
-    sudo_cmd=DEFAULT_SUDO_COMMAND,
-):
+    docker_image_identifier: str,
+    cache_directory: str,
+    namespace: Optional[str] = None,
+    singularity_cmd: str = DEFAULT_SINGULARITY_COMMAND,
+    sudo: bool = DEFAULT_SUDO,
+    sudo_cmd: str = DEFAULT_SUDO_COMMAND,
+) -> List[str]:
     command_parts = []
     command_parts += _singularity_prefix(
         singularity_cmd=singularity_cmd,
@@ -38,7 +42,7 @@ def pull_singularity_command(
     singularity_cmd: str = DEFAULT_SINGULARITY_COMMAND,
     sudo: bool = DEFAULT_SUDO,
     sudo_cmd: str = DEFAULT_SUDO_COMMAND,
-):
+) -> List[str]:
     # Make sure cache dir exists
     dirname = os.path.dirname(os.path.normpath(cache_path))
     os.makedirs(dirname, exist_ok=True)
@@ -48,19 +52,19 @@ def pull_singularity_command(
 
 
 def build_singularity_run_command(
-    container_command,
-    image,
-    volumes=None,
-    env=None,
+    container_command: str,
+    image: str,
+    volumes: Optional[List["DockerVolume"]] = None,
+    env: Optional[List[Tuple[str, str]]] = None,
     working_directory=DEFAULT_WORKING_DIRECTORY,
-    singularity_cmd=DEFAULT_SINGULARITY_COMMAND,
-    run_extra_arguments=DEFAULT_RUN_EXTRA_ARGUMENTS,
-    sudo=DEFAULT_SUDO,
-    sudo_cmd=DEFAULT_SUDO_COMMAND,
+    singularity_cmd: str = DEFAULT_SINGULARITY_COMMAND,
+    run_extra_arguments: Optional[str] = DEFAULT_RUN_EXTRA_ARGUMENTS,
+    sudo: bool = DEFAULT_SUDO,
+    sudo_cmd: str = DEFAULT_SUDO_COMMAND,
     guest_ports=False,
-    container_name=None,
-    cleanenv=DEFAULT_CLEANENV,
-):
+    container_name: Optional[str] = None,
+    cleanenv: bool = DEFAULT_CLEANENV,
+) -> str:
     volumes = volumes or []
     env = env or []
     command_parts = []
@@ -92,8 +96,11 @@ def build_singularity_run_command(
 
 
 def _singularity_prefix(
-    singularity_cmd=DEFAULT_SINGULARITY_COMMAND, sudo=DEFAULT_SUDO, sudo_cmd=DEFAULT_SUDO_COMMAND, **kwds
-):
+    singularity_cmd: str = DEFAULT_SINGULARITY_COMMAND,
+    sudo: bool = DEFAULT_SUDO,
+    sudo_cmd: str = DEFAULT_SUDO_COMMAND,
+    **kwds,
+) -> List[str]:
     """Prefix to issue a singularity command."""
     command_parts = []
     if sudo:

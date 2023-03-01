@@ -43,19 +43,16 @@ class ContainerResolver(Dictifiable, metaclass=ABCMeta):
     builds_on_resolution = False
     read_only = True  # not used for containers, but set for when they are used like dependency resolvers
 
-    def __init__(self, app_info: Optional["AppInfo"] = None, **kwds) -> None:
+    def __init__(self, app_info: "AppInfo", **kwds) -> None:
         """Default initializer for ``ContainerResolver`` subclasses."""
-        self.app_info = app_info
+        self.app_info: "AppInfo" = app_info
         self.resolver_kwds = kwds
 
     def _get_config_option(self, key: str, default: Any = None) -> Any:
         """Look in resolver-specific settings for option and then fallback to
         global settings.
         """
-        if self.app_info:
-            return getattr(self.app_info, key, default)
-        else:
-            return default
+        return getattr(self.app_info, key, default)
 
     @abstractmethod
     def resolve(
@@ -77,7 +74,7 @@ class ContainerResolver(Dictifiable, metaclass=ABCMeta):
 
     def _container_type_enabled(
         self, container_description: "ContainerDescription", enabled_container_types: List[str]
-    ):
+    ) -> bool:
         """Return a boolean indicating if the specified container type is enabled."""
         return container_description.type in enabled_container_types
 

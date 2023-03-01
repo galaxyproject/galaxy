@@ -175,7 +175,7 @@ class ToolRequirementsException(Exception):
     pass
 
 
-DEFAULT_CONTAINER_TYPE = "docker"
+DEFAULT_CONTAINER_TYPE: str = "docker"
 DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES = False
 DEFAULT_CONTAINER_SHELL = "/bin/sh"  # Galaxy assumes bash, but containers are usually thinner.
 
@@ -183,7 +183,7 @@ DEFAULT_CONTAINER_SHELL = "/bin/sh"  # Galaxy assumes bash, but containers are u
 class ContainerDescription:
     def __init__(
         self,
-        identifier: Optional[str] = None,
+        identifier: str,
         type: str = DEFAULT_CONTAINER_TYPE,
         resolve_dependencies: bool = DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES,
         shell: str = DEFAULT_CONTAINER_SHELL,
@@ -191,15 +191,15 @@ class ContainerDescription:
         # Force to lowercase because container image names must be lowercase.
         # Cached singularity images include the path on disk, so only lowercase
         # the image identifier portion.
-        self.identifier = None
+        self.identifier: str = ""
         if identifier:
             parts = identifier.rsplit(os.sep, 1)
             parts[-1] = parts[-1].lower()
             self.identifier = os.sep.join(parts)
-        self.type = type
-        self.resolve_dependencies = resolve_dependencies
-        self.shell = shell
-        self.explicit = False
+        self.type: str = type
+        self.resolve_dependencies: bool = resolve_dependencies
+        self.shell: str = shell
+        self.explicit: bool = False
 
     def to_dict(self, *args, **kwds):
         return dict(
@@ -210,7 +210,7 @@ class ContainerDescription:
         )
 
     @staticmethod
-    def from_dict(dict):
+    def from_dict(dict: Dict[str, Any]):
         identifier = dict["identifier"]
         type = dict.get("type", DEFAULT_CONTAINER_TYPE)
         resolve_dependencies = dict.get("resolve_dependencies", DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES)
