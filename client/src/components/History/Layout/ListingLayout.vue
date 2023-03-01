@@ -42,7 +42,7 @@ export default {
         const listing = ref(null);
         const { height } = useElementBounding(listing);
 
-        const estimatedItemHeight = 40;
+        const estimatedItemHeight = 40.4;
         const estimatedItemCount = computed(() => {
             const baseCount = Math.ceil(height.value / estimatedItemHeight);
             return baseCount + 20;
