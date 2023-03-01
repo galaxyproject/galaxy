@@ -13,6 +13,7 @@ from galaxy.exceptions import (
     MessageException,
     RequestParameterInvalidException,
     RequestParameterMissingException,
+    UnprocessableContent,
 )
 from galaxy.util import (
     parse_non_hex_float,
@@ -394,7 +395,8 @@ def validation_error_to_message_exception(e: ValidationError, from_request: bool
             return RequestParameterMissingException(str(e), validation_errors=loads(e.json()))
         else:
             return RequestParameterInvalidException(str(e), validation_errors=loads(e.json()))
-    return MessageException(str(e), validation_errors=loads(e.json()))
+    # The validation of the response object failed
+    return UnprocessableContent(str(e), validation_errors=loads(e.json()))
 
 
 def api_error_message(trans, **kwds):

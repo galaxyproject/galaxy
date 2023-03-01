@@ -150,6 +150,11 @@
       "message": "This API method or call signature has been deprecated and is no longer available"
    },
    {
+      "name": "UNPROCESSABLE_CONTENT",
+      "code": 422001,
+      "message": "The server understands the content type of the request entity, and the syntax of the request entity is correct, but it was unable to process the contained instructions."
+   },
+   {
       "name": "INTERNAL_SERVER_ERROR",
       "code": 500001,
       "message": "Internal server error."

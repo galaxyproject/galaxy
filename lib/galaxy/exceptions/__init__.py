@@ -223,6 +223,16 @@ class DeprecatedMethod(MessageException):
     err_code = error_codes_by_name["DEPRECATED_API_CALL"]
 
 
+class UnprocessableContent(MessageException):
+    """
+    The server understands the content type of the request entity, and the syntax of
+    the request entity is correct, but it was unable to process the contained instructions.
+    """
+
+    status_code = 422
+    err_code = error_codes_by_name["UNPROCESSABLE_CONTENT"]
+
+
 class ConfigurationError(Exception):
     status_code = 500
     err_code = error_codes_by_name["CONFIG_ERROR"]
