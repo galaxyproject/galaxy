@@ -1,8 +1,61 @@
+<script setup lang="ts">
+import { prependPath } from "@/utils/redirect";
+import { computed } from "vue";
+import type { PropType } from "vue";
+import type { StateKey } from "./model/states";
+
+interface ItemUrls {
+    display?: string;
+    edit: string;
+    showDetails: string | null;
+    reportError?: string;
+    rerun?: string;
+    visualize?: string;
+}
+
+const props = defineProps({
+    writable: { type: Boolean, default: true },
+    isDataset: { type: Boolean, required: true },
+    isDeleted: { type: Boolean, default: false },
+    isHistoryItem: { type: Boolean, required: true },
+    isVisible: { type: Boolean, default: true },
+    state: { type: String as PropType<StateKey | "">, default: "" },
+    itemUrls: { type: Object as PropType<ItemUrls>, required: true },
+    keyboardSelectable: { type: Boolean, default: true },
+});
+
+const displayDisabled = computed(() => ["discarded", "new", "upload", "queued"].includes(props.state));
+const displayButtonTitle = computed(() => {
+    if (displayDisabled.value) {
+        return "This dataset is not yet viewable";
+    } else {
+        return "Display";
+    }
+});
+
+const editDisabled = computed(() =>
+    ["discarded", "new", "upload", "queued", "running", "waiting"].includes(props.state)
+);
+const editButtonTitle = computed(() => {
+    if (editDisabled.value) {
+        return "This dataset is not yet editable";
+    } else {
+        return "Edit attributes";
+    }
+});
+
+const displayUrl = computed(() => prependPath(props.itemUrls.display ?? ""));
+const editUrl = computed(() => prependPath(props.itemUrls.edit));
+const showCollectionDetailsUrl = computed(() => prependPath(props.itemUrls.showDetails ?? ""));
+
+const tabindex = computed(() => (props.keyboardSelectable ? "0" : "1"));
+</script>
+
 <template>
     <span class="align-self-start btn-group">
         <!-- Special case for collections -->
         <b-button
-            v-if="isCollection && canShowCollectionDetails"
+            v-if="!props.isDataset && Boolean(props.itemUrls.showDetails)"
             class="collection-job-details-btn px-1"
             title="Show Details"
             size="sm"
@@ -69,57 +122,3 @@
         </b-button>
     </span>
 </template>
-
-<script>
-import { prependPath } from "@/utils/redirect";
-export default {
-    props: {
-        writable: { type: Boolean, default: true },
-        isDataset: { type: Boolean, required: true },
-        isDeleted: { type: Boolean, default: false },
-        isHistoryItem: { type: Boolean, required: true },
-        isVisible: { type: Boolean, default: true },
-        state: { type: String, default: "" },
-        itemUrls: { type: Object, required: true },
-        keyboardSelectable: { type: Boolean, default: true },
-    },
-    computed: {
-        displayButtonTitle() {
-            if (this.displayDisabled) {
-                return "This dataset is not yet viewable.";
-            }
-            return "Display";
-        },
-        displayDisabled() {
-            return ["discarded", "new", "upload", "queued"].includes(this.state);
-        },
-        editButtonTitle() {
-            if (this.editDisabled) {
-                return "This dataset is not yet editable.";
-            }
-            return "Edit attributes";
-        },
-        editDisabled() {
-            return ["discarded", "new", "upload", "queued", "running", "waiting"].includes(this.state);
-        },
-        displayUrl() {
-            return prependPath(this.itemUrls.display);
-        },
-        editUrl() {
-            return prependPath(this.itemUrls.edit);
-        },
-        isCollection() {
-            return !this.isDataset;
-        },
-        canShowCollectionDetails() {
-            return !!this.itemUrls.showDetails;
-        },
-        showCollectionDetailsUrl() {
-            return prependPath(this.itemUrls.showDetails);
-        },
-        tabindex() {
-            return this.keyboardSelectable ? "0" : "-1";
-        },
-    },
-};
-</script>

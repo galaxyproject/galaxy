@@ -3,6 +3,7 @@ import { rethrowSimple } from "@/utils/simple-error";
 import axios from "axios";
 import isEqual from "lodash.isequal";
 import { ref, type Ref } from "vue";
+import { prependPath } from "@/utils/redirect";
 
 // Temporary Typedef. Replace with API types, as soon as endpoint is migrated
 export type EntryPoint = {
@@ -40,11 +41,11 @@ export const useEntryPointStore = defineStore("entryPointStore", () => {
 
     async function fetchEntryPoints() {
         stopPollingEntryPoints();
-        const url = new URL(`api/entry_points`);
+        const url = prependPath("api/entry_points");
         const params = { running: true };
 
         try {
-            const response = await axios.get(url.toString(), { params: params });
+            const response = await axios.get(url, { params: params });
             updateEntryPoints(response.data);
         } catch (e) {
             rethrowSimple(e);
@@ -90,6 +91,7 @@ export const useEntryPointStore = defineStore("entryPointStore", () => {
     }
 
     return {
+        entryPoints,
         getEntryPointsForJob,
         getEntryPointsForHda,
         ensurePollingEntryPoints,

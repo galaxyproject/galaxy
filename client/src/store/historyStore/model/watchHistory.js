@@ -54,7 +54,7 @@ export async function watchHistoryOnce(store) {
     if (!lastUpdateTime || lastUpdateTime < history.update_time) {
         const historyId = history.id;
         lastUpdateTime = history.update_time;
-        historyItemsStore.setLastUpdateTime();
+        historyItemsStore.lastUpdateTime = new Date();
         // execute request to obtain recently changed items
         const params = {
             v: "dev",
