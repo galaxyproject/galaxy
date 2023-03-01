@@ -979,12 +979,13 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         """
         # There must be a user to fetch histories, and without a user we have
         # no recent history.
-        if not self.galaxy_session.user:
+        user = self.get_user()
+        if not user:
             return None
         try:
             recent_history = (
                 self.sa_session.query(self.app.model.History)
-                .filter_by(user=self.galaxy_session.user, deleted=False)
+                .filter_by(user=user, deleted=False)
                 .order_by(self.app.model.History.update_time.desc())
                 .first()
             )
