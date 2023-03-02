@@ -25,7 +25,7 @@ const labels = new Map([
 const collectionLabel = computed(() => labels.get(props.collectionType) ?? "nested list");
 const hasSingleElement = computed(() => props.elementCount === 1);
 const isHomogeneous = computed(() => props.elementsDatatypes.length === 1);
-const homogeneousDatatype = computed(() => (isHomogeneous.value ? props.elementsDatatypes[0] : ""));
+const homogeneousDatatype = computed(() => (isHomogeneous.value ? " " + props.elementsDatatypes[0] : ""));
 const pluralizedItem = computed(() => {
     if (props.collectionType === "list:list") {
         return pluralize("list");
