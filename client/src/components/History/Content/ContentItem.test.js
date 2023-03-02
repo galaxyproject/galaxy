@@ -1,19 +1,36 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
-import ContentItem from "./ContentItem";
-import { updateContentFields } from "components/History/model/queries";
-
-jest.mock("components/History/model/queries");
+import ContentItem from "./ContentItem.vue";
+import { updateContentFields } from "@/components/History/model/queries";
+import { useRouter } from "vue-router/composables";
+import { createTestingPinia } from "@pinia/testing";
+import { setActivePinia } from "pinia";
+import { useDataset } from "@/composables/dataset";
 
 const localVue = getLocalVue();
 
 // mock queries
+jest.mock("@/components/History/model/queries");
 updateContentFields.mockImplementation(async () => {});
+
+jest.mock("vue-router/composables");
+useRouter.mockReturnValue({
+    push: () => {},
+});
+
+jest.mock("@/composables/dataset");
+useDataset.mockReturnValue({
+    isLoading: true,
+    dataset: null,
+});
 
 describe("ContentItem", () => {
     let wrapper;
 
     beforeEach(() => {
+        const testPinia = createTestingPinia();
+        setActivePinia(testPinia);
+
         wrapper = mount(ContentItem, {
             propsData: {
                 expandDataset: true,
@@ -35,7 +52,6 @@ describe("ContentItem", () => {
             localVue,
             stubs: {
                 DatasetDetails: true,
-                vueTagsInput: false,
             },
             provide: {
                 store: {
@@ -43,11 +59,14 @@ describe("ContentItem", () => {
                     getters: {},
                 },
             },
+            pinia: testPinia,
         });
     });
 
     it("check basics", async () => {
-        expect(wrapper.attributes("data-hid")).toBe("1");
+        const contentItem = wrapper.find(".content-item");
+
+        expect(contentItem.attributes("data-hid")).toBe("1");
         expect(wrapper.find(".content-title").text()).toBe("name");
         const tags = wrapper.find(".stateless-tags").findAll(".tag");
 
@@ -82,7 +101,7 @@ describe("ContentItem", () => {
         expect(noSelector.exists()).toBe(false);
 
         await wrapper.setProps({ selectable: true });
-        expect(wrapper.classes()).toEqual(expect.arrayContaining(["alert-success"]));
+        expect(contentItem.classes()).toEqual(expect.arrayContaining(["alert-success"]));
 
         const selector = wrapper.find(".selector > svg");
         expect(selector.attributes("data-icon")).toBe("square");
@@ -96,7 +115,7 @@ describe("ContentItem", () => {
 
         await localVue.nextTick();
         expect(wrapper.emitted()["update:selected"][1][0]).toBe(false);
-        expect(wrapper.classes()).toEqual(expect.arrayContaining(["alert-info"]));
+        expect(contentItem.classes()).toEqual(expect.arrayContaining(["alert-info"]));
         expect(selector.attributes("data-icon")).toBe("check-square");
     });
 });

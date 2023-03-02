@@ -190,7 +190,7 @@ function toggleHighlights() {
                         <b-button
                             v-if="selectable"
                             class="selector p-0"
-                            @click.stop="emit('update:selected', !selected)">
+                            @click.stop="() => emit('update:selected', !selected)">
                             <icon v-if="selected" fixed-width size="lg" :icon="['far', 'check-square']" />
                             <icon v-else fixed-width size="lg" :icon="['far', 'square']" />
                         </b-button>
@@ -229,7 +229,7 @@ function toggleHighlights() {
                         <span>:</span>
                         <span class="content-title name">{{ name }}</span>
                     </span>
-                    <span v-if="item.purged" class="align-self-start btn-group p-1">
+                    <span v-if="props.item.purged" class="align-self-start btn-group p-1">
                         <b-badge variant="secondary" title="This dataset has been permanently deleted">
                             <icon icon="burn" /> Purged
                         </b-badge>
@@ -238,9 +238,9 @@ function toggleHighlights() {
                         v-else
                         :writable="writable"
                         :is-dataset="isDataset"
-                        :is-deleted="item.deleted"
+                        :is-deleted="props.item.deleted"
                         :is-history-item="isHistoryItem"
-                        :is-visible="item.visible"
+                        :is-visible="props.item.visible"
                         :state="state"
                         :item-urls="itemUrls"
                         :keyboard-selectable="expandDataset"
@@ -256,9 +256,9 @@ function toggleHighlights() {
                 v-if="!isDataset"
                 class="px-2 pb-2"
                 :job-state-summary="jobState"
-                :collection-type="item.collection_type"
-                :element-count="item.element_count"
-                :elements-datatypes="item.elements_datatypes" />
+                :collection-type="props.item.collection_type"
+                :element-count="props.item.element_count"
+                :elements-datatypes="props.item.elements_datatypes" />
             <StatelessTags
                 v-if="!tagsDisabled || hasTags"
                 :value="props.item.tags"
