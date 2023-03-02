@@ -130,7 +130,7 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
                             size="sm"
                             class="float-right"
                             @click="onShowObjectStoreSelect">
-                            <span class="fa fa-database" />
+                            <span class="fa fa-hdd" />
                         </b-button>
                         <ToolTargetPreferredObjectStorePopover
                             v-if="allowObjectStoreSelection"
