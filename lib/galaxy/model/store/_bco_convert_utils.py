@@ -14,7 +14,7 @@ from galaxy.schema.bco import (
 )
 
 
-class SoftwarePrerequisteTracker:
+class SoftwarePrerequisiteTracker:
     _recorded_tools: Set[str] = set()
     _software_prerequisites: List[SoftwarePrerequisite] = []
 

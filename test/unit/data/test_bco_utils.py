@@ -2,7 +2,7 @@ import json
 
 from galaxy.model import WorkflowStep
 from galaxy.model.orm.now import now
-from galaxy.model.store._bco_convert_utils import SoftwarePrerequisteTracker
+from galaxy.model.store._bco_convert_utils import SoftwarePrerequisiteTracker
 from galaxy.schema.bco import (
     BioComputeObjectCore,
     ContributionEnum,
@@ -93,8 +93,8 @@ def test_bco_writing(tmp_path):
     assert final_bco_object["object_id"] == object_id
 
 
-def test_software_prerequiste_tracker():
-    tracker = SoftwarePrerequisteTracker()
+def test_software_prerequisite_tracker():
+    tracker = SoftwarePrerequisiteTracker()
     step_0 = WorkflowStep()
     step_0.tool_id = "toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.73+galaxy0"
     step_0.type = "tool"
