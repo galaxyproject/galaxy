@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 import { rethrowSimple } from "@/utils/simple-error";
 import axios from "axios";
 import isEqual from "lodash.isequal";
-import { ref, type Ref } from "vue";
+import { computed, ref, type Ref } from "vue";
 import { prependPath } from "@/utils/redirect";
 
 // Temporary Typedef. Replace with API types, as soon as endpoint is migrated
@@ -17,13 +17,13 @@ export const useEntryPointStore = defineStore("entryPointStore", () => {
     const entryPoints: Ref<EntryPoint[]> = ref([]);
     const pollTimeout: Ref<ReturnType<typeof setTimeout> | null> = ref(null);
 
-    function getEntryPointsForJob(jobId: string) {
+    const getEntryPointsForJob = computed(() => (jobId: string) => {
         return entryPoints.value.filter((entryPoint) => entryPoint["job_id"] === jobId);
-    }
+    });
 
-    function getEntryPointsForHda(hdaId: string) {
+    const getEntryPointsForHda = computed(() => (hdaId: string) => {
         return entryPoints.value.filter((entryPoint) => entryPoint["output_datasets_ids"].includes(hdaId));
-    }
+    });
 
     async function ensurePollingEntryPoints() {
         await fetchEntryPoints();

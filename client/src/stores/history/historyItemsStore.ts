@@ -4,7 +4,7 @@
  */
 
 import { defineStore } from "pinia";
-import { ref, type Ref, set, reactive } from "vue";
+import { ref, type Ref, set, reactive, computed } from "vue";
 import { LastQueue } from "@/utils/promise-queue";
 import { urlData } from "@/utils/url";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
@@ -45,7 +45,7 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", () => {
     const relatedItems: Ref<Record<string, boolean>> = ref({});
     const isWatching = ref(false);
 
-    function getHistoryItems(historyId: string, filterText: string) {
+    const getHistoryItems = computed(() => (historyId: string, filterText: string) => {
         const itemArray = items.value[historyId] || [];
         const filters = HistoryFilters.getFilters(filterText).filter((filter: string) => !filter.includes("related"));
         const relatedHid = HistoryFilters.getFilterValue(filterText, "related");
@@ -69,7 +69,7 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", () => {
         });
 
         return filtered.reverse();
-    }
+    });
 
     async function fetchHistoryItems(historyId: string, filterText: string, offset: number) {
         const queryString = HistoryFilters.getQueryString(filterText);
