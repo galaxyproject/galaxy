@@ -2756,6 +2756,7 @@ class UserNotificationAssociation(Base, RepresentById):
     seen_time = Column(DateTime, nullable=True)
     favorite = Column(Boolean, index=True, default=False)
     deleted = Column(Boolean, index=True, default=False)
+    update_time = Column(DateTime, default=now, onupdate=now)
 
     user = relationship("User", back_populates="all_notifications")
     notification = relationship("Notification", back_populates="user_notification_associations")
