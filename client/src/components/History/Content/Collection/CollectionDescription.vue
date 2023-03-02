@@ -31,7 +31,7 @@ const pluralizedItem = computed(() => {
         return pluralize("list");
     } else if (props.collectionType === "list:paired") {
         return pluralize("pair");
-    } else if (labels.has(props.collectionType)) {
+    } else if (!labels.has(props.collectionType)) {
         return pluralize("dataset collection");
     } else {
         return pluralize("dataset");
