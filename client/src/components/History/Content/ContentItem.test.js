@@ -26,11 +26,10 @@ useDataset.mockReturnValue({
 
 describe("ContentItem", () => {
     let wrapper;
+    const testPinia = createTestingPinia();
+    setActivePinia(testPinia);
 
     beforeEach(() => {
-        const testPinia = createTestingPinia();
-        setActivePinia(testPinia);
-
         wrapper = mount(ContentItem, {
             propsData: {
                 expandDataset: true,
@@ -63,11 +62,14 @@ describe("ContentItem", () => {
         });
     });
 
-    it("check basics", async () => {
+    it("applies id and name", () => {
         const contentItem = wrapper.find(".content-item");
 
         expect(contentItem.attributes("data-hid")).toBe("1");
         expect(wrapper.find(".content-title").text()).toBe("name");
+    });
+
+    it("adds and removes tags", async () => {
         const tags = wrapper.find(".stateless-tags").findAll(".tag");
 
         // verify tags
@@ -80,7 +82,7 @@ describe("ContentItem", () => {
             expect(wrapper.emitted()["tag-click"][i][0]).toBe(`tag${i + 1}`);
         }
 
-        // close all tags
+        // remove all tags
         for (let i = 0; i < 3; i++) {
             const tagRemover = wrapper.find(`.tag[data-option=tag${i + 1}] button`);
 
@@ -90,16 +92,19 @@ describe("ContentItem", () => {
 
         await wrapper.setProps({ isHistoryItem: false, item: { tags: [] } });
         expect(wrapper.find(".stateless-tags").exists()).toBe(false);
+    });
 
-        // expansion button
+    it("expands", async () => {
         const $el = wrapper.find(".cursor-pointer");
         $el.trigger("click");
         expect(wrapper.emitted()["update:expand-dataset"]).toBeDefined();
+    });
 
-        // select and unselect
+    it("is selectable", async () => {
         const noSelector = wrapper.find(".selector > svg");
         expect(noSelector.exists()).toBe(false);
 
+        const contentItem = wrapper.find(".content-item");
         await wrapper.setProps({ selectable: true });
         expect(contentItem.classes()).toEqual(expect.arrayContaining(["alert-success"]));
 
