@@ -1,5 +1,5 @@
 import { resolveUnref, type MaybeComputedRef } from "@vueuse/core";
-import { ref, onScopeDispose, type Ref } from "vue";
+import { ref, onScopeDispose, watch, type Ref } from "vue";
 import { rethrowSimple } from "@/utils/simple-error";
 import { LastQueue } from "@/utils/promise-queue";
 import { fetcher } from "@/schema";
@@ -42,6 +42,7 @@ export function useDataset(datasetId: MaybeComputedRef<string>, autoRefresh = fa
     const enqueueFetch = async () => {
         try {
             dataset.value = (await queue.enqueue(getDataset, [])) as Dataset;
+            isLoading.value = false;
             if (autoRefresh && !stateIsTerminal(dataset.value)) {
                 timeout = setTimeout(enqueueFetch, refreshPeriod);
             }
@@ -57,6 +58,20 @@ export function useDataset(datasetId: MaybeComputedRef<string>, autoRefresh = fa
             clearTimeout(timeout);
         }
     });
+
+    watch(
+        () => resolveUnref(datasetId),
+        () => {
+            isLoading.value = true;
+            dataset.value = null;
+
+            if (timeout) {
+                clearTimeout(timeout);
+            }
+
+            enqueueFetch();
+        }
+    );
 
     return {
         isLoading,
