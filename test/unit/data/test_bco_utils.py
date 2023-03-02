@@ -110,7 +110,7 @@ def test_software_prerequisite_tracker():
     step_3 = WorkflowStep()
     step_3.tool_id = "toolshed.g2.bx.psu.edu/repos/iuc/extract_genomic_dna/Extract genomic DNA 1/3.0.3+galaxy2"
     step_3.type = "tool"
-    step_3.tool_version = "0.1.1"
+    step_3.tool_version = "3.0.3+galaxy2"
 
     # subworkflow step
     step_4 = WorkflowStep()
