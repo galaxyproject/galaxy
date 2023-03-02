@@ -1,3 +1,4 @@
+import urllib.parse
 from typing import (
     List,
     Set,
@@ -31,7 +32,7 @@ class SoftwarePrerequisteTracker:
             # tool shed tool - give them a link...
             uri = f"https://{tool_id}"
         else:
-            uri = f"gxstocktools://{tool_id}"
+            uri = f"gxstocktools://galaxyproject.org/{urllib.parse.quote(tool_id)}"
 
         access_time = None  # used to be uuid - but Pydanic validation... rightfully... disallows this
         software_prerequisite = SoftwarePrerequisite(
