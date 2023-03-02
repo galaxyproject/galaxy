@@ -3,10 +3,7 @@ User Manager testing.
 
 Executable directly using: python -m test.unit.managers.test_UserManager
 """
-from datetime import (
-    datetime,
-    timedelta,
-)
+from datetime import datetime
 
 from sqlalchemy import desc
 
