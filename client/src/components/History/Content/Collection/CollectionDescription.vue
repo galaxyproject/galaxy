@@ -1,3 +1,48 @@
+<script setup lang="ts">
+import CollectionProgress from "./CollectionProgress.vue";
+import { computed } from "vue";
+import type { JobStateSummary } from "./JobStateSummary";
+
+const props = withDefaults(
+    defineProps<{
+        jobStateSummary: JobStateSummary;
+        collectionType: string;
+        elementCount?: number;
+        elementsDatatypes?: string[];
+    }>(),
+    {
+        elementsDatatypes: () => [],
+    }
+);
+
+const labels = new Map([
+    ["list", "list"],
+    ["list:paired", "list"],
+    ["list:list", "list"],
+    ["paired", "pair"],
+]);
+
+const collectionLabel = computed(() => labels.get(props.collectionType) ?? "nested list");
+const hasSingleElement = computed(() => props.elementCount === 1);
+const isHomogeneous = computed(() => props.elementsDatatypes.length === 1);
+const homogeneousDatatype = computed(() => (isHomogeneous.value ? props.elementsDatatypes[0] : ""));
+const pluralizedItem = computed(() => {
+    if (props.collectionType === "list:list") {
+        return pluralize("list");
+    } else if (props.collectionType === "list:paired") {
+        return pluralize("pair");
+    } else if (labels.has(props.collectionType)) {
+        return pluralize("dataset collection");
+    } else {
+        return pluralize("dataset");
+    }
+});
+
+function pluralize(word: string): string {
+    return hasSingleElement.value ? word : `${word}s`;
+}
+</script>
+
 <template>
     <div>
         <span class="description mt-1 mb-1">
@@ -6,68 +51,6 @@
         <CollectionProgress v-if="jobStateSummary.size != 0" :summary="jobStateSummary" />
     </div>
 </template>
-
-<script>
-import CollectionProgress from "./CollectionProgress";
-import { JobStateSummary } from "./JobStateSummary";
-
-export default {
-    components: { CollectionProgress },
-    props: {
-        jobStateSummary: { type: JobStateSummary, required: true },
-        collectionType: { type: String, required: true },
-        elementCount: { type: Number, required: false, default: undefined },
-        elementsDatatypes: { type: Array, required: false, default: () => [] },
-    },
-    data() {
-        return {
-            labels: {
-                list: "list",
-                "list:paired": "list",
-                "list:list": "list",
-                paired: "pair",
-            },
-        };
-    },
-    computed: {
-        /**@return {String} */
-        collectionLabel() {
-            return this.labels[this.collectionType] || "nested list";
-        },
-        /**@return {Boolean} */
-        hasSingleElement() {
-            return this.elementCount === 1;
-        },
-        /**@return {Boolean} */
-        isHomogeneous() {
-            return this.elementsDatatypes.length === 1;
-        },
-        /**@return {String} */
-        homogeneousDatatype() {
-            return this.isHomogeneous ? ` ${this.elementsDatatypes[0]}` : "";
-        },
-        /**@return {String} */
-        pluralizedItem() {
-            if (this.collectionType === "list:list") {
-                return this.pluralize("list");
-            }
-            if (this.collectionType === "list:paired") {
-                return this.pluralize("pair");
-            }
-            if (!Object.keys(this.labels).includes(this.collectionType)) {
-                //Any other kind of nested collection
-                return this.pluralize("dataset collection");
-            }
-            return this.pluralize("dataset");
-        },
-    },
-    methods: {
-        pluralize(word) {
-            return this.hasSingleElement ? word : `${word}s`;
-        },
-    },
-};
-</script>
 
 <style lang="scss" scoped>
 @import "scss/theme/blue.scss";
