@@ -118,11 +118,17 @@ def test_software_prerequiste_tracker():
     step_4.tool_id = "cat1"
     step_4.tool_version = "1.0.0"
 
+    step_5 = WorkflowStep()
+    step_5.type = "tool"
+    step_5.tool_id = "Tool ID With Spaces"
+    step_5.tool_version = "1.0.0"
+
     tracker.register_step(step_0)
     tracker.register_step(step_1)
     tracker.register_step(step_2)
     tracker.register_step(step_3)
     tracker.register_step(step_4)
+    tracker.register_step(step_5)
 
     sps = tracker.software_prerequisites
-    assert len(sps) == 3
+    assert len(sps) == 4
