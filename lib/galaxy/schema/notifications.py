@@ -58,18 +58,18 @@ class PersonalNotificationCategory(str, Enum):
     """
 
     message = "message"
-    near_quota_limit = "near_quota_limit"
     new_history_shared = "new_history_shared"
     new_workflow_shared = "new_workflow_shared"
     new_page_shared = "new_page_shared"
     new_visualization_shared = "new_visualization_shared"
-    workflow_execution_completed = "workflow_execution_completed"
+    # TODO: enable this and create content model when we have a hook for completed workflows
+    # workflow_execution_completed = "workflow_execution_completed"
 
 
 NotificationCategory = Union[MandatoryNotificationCategory, PersonalNotificationCategory]
 
 
-class NotificationContentBase(Model):
+class NotificationMessageContentBase(Model):
     subject: str
     message: str  # markdown?
 
@@ -83,21 +83,18 @@ class ActionLink(Model):
 # add it to AnyNotificationContent Union.
 
 
-class BroadcastNotificationContent(NotificationContentBase):
+class BroadcastNotificationContent(NotificationMessageContentBase):
     category: Literal[MandatoryNotificationCategory.broadcast] = MandatoryNotificationCategory.broadcast
     action_links: Optional[List[ActionLink]]
 
 
-class NotificationMessageContent(NotificationContentBase):
+class NotificationMessageContent(NotificationMessageContentBase):
     category: Literal[PersonalNotificationCategory.message] = PersonalNotificationCategory.message
 
 
-class NearQuotaLimitNotificationContent(Model):
-    category: Literal[PersonalNotificationCategory.near_quota_limit] = PersonalNotificationCategory.near_quota_limit
-
-
 class NewSharedItemNotificationContent(Model):
-    share_link: AnyUrl
+    item_id: EncodedDatabaseIdField
+    owner_id: EncodedDatabaseIdField
 
 
 class NewHistorySharedNotificationContent(NewSharedItemNotificationContent):
@@ -120,19 +117,14 @@ class NewVisualizationSharedNotificationContent(NewSharedItemNotificationContent
     ] = PersonalNotificationCategory.new_visualization_shared
 
 
-class WorkflowExecutionCompletedNotificationContent(Model):
-    category: Literal[
-        PersonalNotificationCategory.workflow_execution_completed
-    ] = PersonalNotificationCategory.workflow_execution_completed
-    workflow_id: EncodedDatabaseIdField
-    invocation_id: EncodedDatabaseIdField
-
-
 AnyNotificationContent = Annotated[
     Union[
         BroadcastNotificationContent,
         NotificationMessageContent,
-        NearQuotaLimitNotificationContent,
+        NewHistorySharedNotificationContent,
+        NewWorkflowSharedNotificationContent,
+        NewPageSharedNotificationContent,
+        NewVisualizationSharedNotificationContent,
     ],
     Field(discriminator="category"),
 ]
@@ -241,14 +233,14 @@ class NotificationsBatchUpdateRequest(NotificationsBatchRequest):
 
 
 class NotificationChannels(Model):
-    galaxy: bool
-    popup: bool
+    push: bool
     # email: bool # Not supported for now
     # matrix: bool # Possible future Matrix.org integration?
 
 
 class NotificationChannelSettings(Model):
     category: PersonalNotificationCategory
+    enabled: bool
     channels: NotificationChannels
 
 
