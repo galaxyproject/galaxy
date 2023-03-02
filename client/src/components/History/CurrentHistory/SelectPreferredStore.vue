@@ -35,27 +35,27 @@ export default {
             selectedObjectStoreId: selectedObjectStoreId,
             newDatasetsDescription: "New dataset outputs from tools and workflows executed in this history",
             popoverPlacement: "left",
-            galaxySelectionDefalutTitle: "Use Galaxy Defaults",
-            galaxySelectionDefalutDescription:
+            galaxySelectionDefaultTitle: "Use Galaxy Defaults",
+            galaxySelectionDefaultDescription:
                 "Selecting this will reset Galaxy to default behaviors configured by your Galaxy administrator.",
-            userSelectionDefalutTitle: "Use Your User Preference Defaults",
-            userSelectionDefalutDescription:
+            userSelectionDefaultTitle: "Use Your User Preference Defaults",
+            userSelectionDefaultDescription:
                 "Selecting this will cause the history to not set a default and to fallback to your user preference defined default.",
         };
     },
     computed: {
         defaultOptionTitle() {
             if (this.userPreferredObjectStoreId) {
-                return this.userSelectionDefalutTitle;
+                return this.userSelectionDefaultTitle;
             } else {
-                return this.galaxySelectionDefalutTitle;
+                return this.galaxySelectionDefaultTitle;
             }
         },
         defaultOptionDescription() {
             if (this.userPreferredObjectStoreId) {
-                return this.userSelectionDefalutDescription;
+                return this.userSelectionDefaultDescription;
             } else {
-                return this.galaxySelectionDefalutDescription;
+                return this.galaxySelectionDefaultDescription;
             }
         },
     },
