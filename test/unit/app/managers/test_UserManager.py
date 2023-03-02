@@ -213,7 +213,7 @@ class TestUserManager(BaseTestCase):
             assert subject == "Galaxy Account Activation"
             assert "custom_activation_email_message" in body
             assert "Hello nopassword" in body
-            assert "(url_for): {'controller': 'user', 'action': 'activate', 'activation_token': 'activation_token', 'email': Markup('user@nopassword.com'), 'qualified': True}" in body
+            assert "{'controller': 'user', 'action': 'activate', 'activation_token': 'activation_token', 'email': Markup('user@nopassword.com'), 'qualified': True}" in body
 
         with mock.patch("galaxy.util.send_mail", side_effect=validate_send_email) as mock_send_mail:
             with mock.patch("galaxy.util.hash_util.new_secure_hash_v2", return_value="activation_token") as mock_hash_util:           
@@ -239,10 +239,10 @@ class TestUserManager(BaseTestCase):
             assert to == "user@nopassword.com"
             assert subject == "Galaxy Password Reset"
             assert "reset your Galaxy password" in body
-            assert "'controller': 'login', 'action': 'start'" in body
+            assert "{'controller': 'login', 'action': 'start', 'token': 'reset_token'}" in body
 
         with mock.patch("galaxy.util.send_mail", side_effect=validate_send_email) as mock_send_mail:
-            with mock.patch("galaxy.util.unique_id", return_value="reset_token") as mock_unique_id:
+            with mock.patch("galaxy.model.unique_id", return_value="reset_token") as mock_unique_id:
                 result = self.user_manager.send_reset_email(self.trans, dict(email="user@nopassword.com"))
                 mock_send_mail.assert_called_once()
                 mock_unique_id.assert_called_once()
