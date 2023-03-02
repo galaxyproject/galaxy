@@ -1998,6 +1998,11 @@ class NavigatesGalaxy(HasDriver):
             self.wait_for_xpath_visible(xpath)
         self.screenshot_if(screenshot_after_submit)
 
+    def tutorial_mode_activate(self):
+        search_selector = "#gtn a"
+        self.wait_for_and_click_selector(search_selector)
+        self.wait_for_selector_visible("#gtn-screen")
+
 
 class NotLoggedInException(SeleniumTimeoutException):
     def __init__(self, timeout_exception, user_info, dom_message):

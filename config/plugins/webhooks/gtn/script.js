@@ -121,6 +121,9 @@
                     if (safe) {
                         persistLocation();
                     }
+                    // Add the class to the entire GTN page
+                    var body = $("body").addClass("galaxy-proxy-active");
+
                     var gtn_tools = $("#gtn-embed").contents().find("span[data-tool]");
                     // Buttonify
                     gtn_tools.addClass("galaxy-proxy-active");
