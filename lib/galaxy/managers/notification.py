@@ -82,6 +82,30 @@ class NotificationManager:
             self.sa_session.add(notification)
         return notification
 
+    def get_user_notification(self, user: model.User, notification_id: int):
+        """
+        Displays a notification belonging to the user.
+        """
+        stmt = (
+            select(self.user_notification_columns)
+            .select_from(model.Notification)
+            .join(
+                model.UserNotificationAssociation,
+                model.UserNotificationAssociation.notification_id == notification_id,
+            )
+            .where(
+                and_(
+                    model.UserNotificationAssociation.user_id == user.id,
+                    model.Notification.publication_time < self.now,
+                    model.Notification.expiration_time > self.now,
+                )
+            )
+        )
+        result = self.sa_session.execute(stmt).fetchone()
+        if result is None:
+            self._raise_notification_not_found(notification_id)
+        return result
+
     def get_user_notifications(
         self,
         user: model.User,
@@ -358,3 +382,8 @@ class NotificationManager:
         unique_user_ids = user_ids.union(group_and_role_user_ids)
         unique_recipient_users = self.sa_session.query(model.User).filter(model.User.id.in_(unique_user_ids)).all()
         return unique_recipient_users
+
+    def _raise_notification_not_found(self, notification_id: int):
+        raise ObjectNotFound(
+            f"The requested notification with id '{DecodedDatabaseIdField.encode(notification_id)}' was not found."
+        )
