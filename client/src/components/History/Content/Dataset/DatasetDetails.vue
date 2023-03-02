@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import DatasetActions from "./DatasetActions.vue";
 import { states, type State } from "../model/states";
 import { useDataset } from "@/composables/dataset";
 import { computed } from "vue";
@@ -14,6 +15,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
     (e: "toggleHighlights"): void;
+    (e: "edit"): void;
 }>();
 
 const { isLoading, dataset: result } = useDataset(props.dataset.id, true);
@@ -34,7 +36,7 @@ const stateText = computed(() => props.dataset.state && (states[props.dataset.st
                 </span>
                 <span v-if="result?.genome_build" class="dbkey">
                     <label v-localize class="prompt">database</label>
-                    <b-link class="value" data-label="Database/Build" @click.stop="$emit('edit')">{{
+                    <b-link class="value" data-label="Database/Build" @click.stop="() => emit('edit')">{{
                         result.genome_build
                     }}</b-link>
                 </span>
