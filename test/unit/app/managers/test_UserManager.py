@@ -216,7 +216,7 @@ class TestUserManager(BaseTestCase):
             assert "{'controller': 'user', 'action': 'activate', 'activation_token': 'activation_token', 'email': Markup('user@nopassword.com'), 'qualified': True}" in body
 
         with mock.patch("galaxy.util.send_mail", side_effect=validate_send_email) as mock_send_mail:
-            with mock.patch("galaxy.util.hash_util.new_secure_hash_v2", return_value="activation_token") as mock_hash_util:           
+            with mock.patch("galaxy.util.hash_util.new_secure_hash_v2", return_value="activation_token") as mock_hash_util:
                 result = self.user_manager.send_activation_email(self.trans, "user@nopassword.com", "nopassword")
                 mock_send_mail.assert_called_once()
                 mock_hash_util.assert_called_once()
