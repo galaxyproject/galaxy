@@ -92,6 +92,7 @@ export const useEntryPointStore = defineStore("entryPointStore", () => {
 
     return {
         entryPoints,
+        pollTimeout,
         getEntryPointsForJob,
         getEntryPointsForHda,
         ensurePollingEntryPoints,

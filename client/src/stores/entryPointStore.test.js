@@ -28,7 +28,7 @@ describe("stores/EntryPointStore", () => {
     it("stops polling", async () => {
         expect(store.pollTimeout >= 0).toBeTruthy();
         store.stopPollingEntryPoints();
-        expect(store.pollTimeout === undefined).toBeTruthy();
+        expect(store.pollTimeout == undefined).toBeTruthy();
     });
     it("performs a partial update", async () => {
         store.stopPollingEntryPoints();
