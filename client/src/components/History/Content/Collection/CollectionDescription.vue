@@ -46,9 +46,9 @@ function pluralize(word: string): string {
 <template>
     <div>
         <span class="description mt-1 mb-1">
-            a {{ collectionLabel }} with {{ elementCount }}<b>{{ homogeneousDatatype }}</b> {{ pluralizedItem }}
+            a {{ collectionLabel }} with {{ props.elementCount }}<b>{{ homogeneousDatatype }}</b> {{ pluralizedItem }}
         </span>
-        <CollectionProgress v-if="jobStateSummary.size != 0" :summary="jobStateSummary" />
+        <CollectionProgress v-if="props.jobStateSummary.size !== 0" :summary="props.jobStateSummary" />
     </div>
 </template>
 
