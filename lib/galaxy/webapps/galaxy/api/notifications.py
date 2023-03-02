@@ -76,7 +76,7 @@ class FastAPINotifications:
 
     @router.get(
         "/api/notifications/{notification_id}",
-        summary="Displays information about a notification.",
+        summary="Displays information about a notification received by the user.",
     )
     def show_notification(
         self,
@@ -84,7 +84,7 @@ class FastAPINotifications:
         notification_id: DecodedDatabaseIdField = Path(),
     ) -> UserNotificationResponse:
         user = self.service.get_authenticated_user(trans)
-        return self.service.get_user_notification_detail(user, notification_id)
+        return self.service.get_user_notification(user, notification_id)
 
     @router.put(
         "/api/notifications/{notification_id}",

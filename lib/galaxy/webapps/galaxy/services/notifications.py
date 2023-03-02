@@ -86,9 +86,10 @@ class NotificationService(ServiceBase):
         broadcasted_notifications = self._get_all_broadcasted()
         return BroadcastNotificationListResponse(__root__=broadcasted_notifications)
 
-    def get_user_notification_detail(self, user: User, notification_id: int) -> UserNotificationResponse:
-        """TODO"""
-        raise NotImplementedError
+    def get_user_notification(self, user: User, notification_id: int) -> UserNotificationResponse:
+        """Gets the information of the notification received by the user with the given ID."""
+        notification = self.notification_manager.get_user_notification(user, notification_id)
+        return UserNotificationResponse.from_orm(notification)
 
     def update_notification(self, user: User, notification_id: int, request: NotificationUpdateRequest):
         """Updates a single notification with the requested values."""
