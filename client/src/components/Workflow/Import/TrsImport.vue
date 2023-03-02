@@ -41,7 +41,9 @@ const trsSelection: Ref<TrsSelection | null> = ref(null);
 const errorMessage: Ref<string | null> = ref(null);
 const toolId = ref(props.queryTrsId);
 const isAnonymous: Ref<boolean> = getGalaxyInstance().user?.isAnonymous();
-const isAutoImport = ref(Boolean(props.queryTrsVersionId && props.queryTrsServer && props.queryTrsId));
+const isAutoImport = ref(
+    Boolean((props.queryTrsVersionId && props.queryTrsServer && props.queryTrsId) || props.queryTrsUrl)
+);
 
 const toolIdTrimmed = computed(() => {
     return toolId.value?.trim() || null;
@@ -186,7 +188,9 @@ async function importVersionFromUrl(url: string, isRunFormRedirect = false) {
             </div>
             <hr />
             <div>
-                <TrsUrlImport :query-trs-url="props.queryTrsUrl" @onImport="(url) => importVersionFromUrl(url)" />
+                <TrsUrlImport
+                    :query-trs-url="props.queryTrsUrl"
+                    @onImport="(url) => importVersionFromUrl(url, isRun)" />
             </div>
         </b-card>
         <b-alert v-else class="text-center my-2" show variant="danger">
