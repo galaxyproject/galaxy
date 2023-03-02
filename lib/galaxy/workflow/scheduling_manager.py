@@ -352,10 +352,9 @@ class WorkflowRequestMonitor(Monitors):
         return True
 
     def __active_invocation_ids(self, scheduler_id):
-        sa_session = self.app.model.context
         handler = self.app.config.server_name
         return model.WorkflowInvocation.poll_active_workflow_ids(
-            sa_session,
+            self.app.model.engine,
             scheduler=scheduler_id,
             handler=handler,
         )
