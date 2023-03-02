@@ -12,19 +12,25 @@
                 <span>{{ historySize | niceFileSize }}</span>
             </b-button>
             <b-button-group>
-                <b-button
-                    :id="`history-storage-${history.id}`"
-                    variant="link"
-                    size="sm"
-                    class="rounded-0 text-decoration-none"
-                    @click="showPreferredObjectStoreModal = true">
-                    <icon icon="hdd" />
-                </b-button>
-                <PreferredStorePopover
-                    :history-id="history.id"
-                    :history-preferred-object-store-id="historyPreferredObjectStoreId"
-                    :user="user">
-                </PreferredStorePopover>
+                <ConfigProvider v-slot="{ config }">
+                    <b-button
+                        v-if="config && config.object_store_allows_id_selection"
+                        :id="`history-storage-${history.id}`"
+                        variant="link"
+                        size="sm"
+                        class="rounded-0 text-decoration-none"
+                        @click="showPreferredObjectStoreModal = true">
+                        <icon icon="hdd" />
+                    </b-button>
+                </ConfigProvider>
+                <ConfigProvider v-slot="{ config }">
+                    <PreferredStorePopover
+                        v-if="config && config.object_store_allows_id_selection"
+                        :history-id="history.id"
+                        :history-preferred-object-store-id="historyPreferredObjectStoreId"
+                        :user="user">
+                    </PreferredStorePopover>
+                </ConfigProvider>
                 <b-button-group>
                     <b-button
                         v-b-tooltip.hover
@@ -90,11 +96,13 @@ import prettyBytes from "pretty-bytes";
 import { formatDistanceToNowStrict } from "date-fns";
 import { usesDetailedHistoryMixin } from "./usesDetailedHistoryMixin.js";
 import CurrentUser from "components/providers/CurrentUser";
+import ConfigProvider from "components/providers/ConfigProvider";
 import PreferredStorePopover from "./PreferredStorePopover";
 import SelectPreferredStore from "./SelectPreferredStore";
 
 export default {
     components: {
+        ConfigProvider,
         CurrentUser,
         PreferredStorePopover,
         SelectPreferredStore,
