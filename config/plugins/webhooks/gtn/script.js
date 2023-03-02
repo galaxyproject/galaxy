@@ -142,6 +142,26 @@
                         }
                         removeOverlay();
                     });
+
+                    var gtn_workflows = $("#gtn-embed").contents().find("span[data-workflow]");
+                    // Buttonify
+                    gtn_workflows.addClass("galaxy-proxy-active");
+
+                    gtn_workflows.click((e) => {
+                        var target = e.target;
+
+                        // Sometimes we get the i or the strong, not the parent.
+                        if (e.target.tagName.toLowerCase() !== "span") {
+                            target = e.target.parentElement;
+                        }
+
+                        trs_url = $(target).data("trs_url");
+
+                        Galaxy.router.push("/workflows/trs_import", { trs_url: encodeURIComponent(trs_url), run_form: true });
+                        removeOverlay();
+                    });
+
+
                 });
             });
     }
