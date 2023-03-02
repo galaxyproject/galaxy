@@ -45,7 +45,7 @@ class FastAPINotifications:
 
     @router.get(
         "/api/notifications/status",
-        summary="Returns the current status summary of the user's notifications.",
+        summary="Returns the current status summary of the user's notifications since a particular date.",
     )
     def get_notifications_status(
         self,
@@ -115,7 +115,7 @@ class FastAPINotifications:
 
     @router.delete(
         "/api/notifications/{notification_id}",
-        summary="Deletes a notification.",
+        summary="Deletes a notification received by the user.",
     )
     def delete_notification(
         self,
@@ -128,7 +128,7 @@ class FastAPINotifications:
 
     @router.delete(
         "/api/notifications",
-        summary="Deletes a list of notifications.",
+        summary="Deletes a list of notifications received by the user.",
     )
     def delete_notifications(
         self,
@@ -162,12 +162,12 @@ class FastAPINotifications:
         trans: ProvidesUserContext = DependsOnTrans,
         payload: NotificationBroadcastCreateRequest = Body(),
     ) -> NotificationCreateResponse:
-        """These special kind of notifications will be always included in every notification list request of the user."""
+        """These special kind of notifications will be always accessible to the user."""
         return self.service.broadcast(sender_context=trans, payload=payload)
 
     @router.get(
         "/api/notifications/preferences",
-        summary="Displays the user's preferences for notifications.",
+        summary="Returns the current user's preferences for notifications.",
     )
     def get_notification_preferences(
         self,

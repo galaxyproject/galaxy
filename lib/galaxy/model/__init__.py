@@ -2710,13 +2710,21 @@ class Notification(Base, Dictifiable, RepresentById):
 
     id = Column(Integer, primary_key=True)
     create_time = Column(DateTime, default=now)
-    update_time = Column(DateTime, default=now, onupdate=now)
-    publication_time = Column(DateTime, default=now)
-    expiration_time = Column(DateTime, default=now() + timedelta(days=30 * 6))
-    source = Column(String(32), index=True)
-    category = Column(String(64), index=True)
-    variant = Column(String(16), index=True)
-    content = Column(JSONType)
+    update_time = Column(DateTime, default=now, onupdate=now)  # The last time the notification content was updated
+    publication_time = Column(
+        DateTime, default=now
+    )  # The date of publication, can be a future date to allow scheduling
+    expiration_time = Column(
+        DateTime, default=now() + timedelta(days=30 * 6)
+    )  # The expiration date, expired notifications will be permanently removed from DB regularly
+    source = Column(String(32), index=True)  # Who (or what) generated the notification
+    category = Column(
+        String(64), index=True
+    )  # Category of the notification, defines its contents. Used for filtering, un/subscribing, etc
+    variant = Column(
+        String(16), index=True
+    )  # Defines the 'importance' of the notification ('info', 'warning', 'urgent', etc.). Used for filtering, highlight rendering, etc
+    content = Column(JSONType)  # Structured content in JSON. Depending on the category of the notification
 
     user_notification_associations = relationship("UserNotificationAssociation", back_populates="notification")
 
