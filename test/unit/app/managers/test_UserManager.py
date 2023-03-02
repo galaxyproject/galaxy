@@ -200,12 +200,6 @@ class TestUserManager(BaseTestCase):
         self.log("should produce the activation email")
         self.user_manager.create(email="user@nopassword.com", username="nopassword")
         self.trans.request.host = "request.host"
-        self.trans.app.config.terms_url = "terms_url"
-        self.trans.app.config.instance_resource_url = "instance_resource_url"
-        self.trans.app.config.custom_activation_email_message = "custom_activation_email_message"
-        self.trans.app.config.activation_grace_period = timedelta(days=1)
-        self.trans.app.config.templates_dir = "templates"
-        self.trans.app.config.email_from = "email_from"
 
         def validate_send_email(frm, to, subject, body, config, html=None):
             assert frm == "email_from"
@@ -227,12 +221,6 @@ class TestUserManager(BaseTestCase):
         self.log("should produce the password reset email")
         self.user_manager.create(email="user@nopassword.com", username="nopassword")
         self.trans.request.host = "request.host"
-        self.trans.app.config.hostname = "hostname"
-        self.trans.app.config.pretty_datetime_format = "today"
-        self.trans.app.config.instance_resource_url = "instance_resource_url"
-        self.trans.app.config.templates_dir = "templates"
-        self.trans.app.config.email_from = "email_from"
-        self.trans.app.config.smtp_server = True
 
         def validate_send_email(frm, to, subject, body, config, html=None):
             assert frm == "email_from"

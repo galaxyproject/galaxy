@@ -195,6 +195,15 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.auth_config_file = "config/auth_conf.xml.sample"
         self.error_email_to = "admin@email.to"
         self.password_expiration_period = 0
+        self.terms_url = "terms_url"
+        self.instance_resource_url = "instance_resource_url"
+        self.custom_activation_email_message = "custom_activation_email_message"
+        self.activation_grace_period = 0
+        self.templates_dir = "templates"
+        self.email_from = "email_from"
+        self.pretty_datetime_format = "pretty_datetime_format"
+        self.smtp_server = True
+        self.hostname = "hostname"
 
         self.umask = 0o77
         self.flush_per_n_datasets = 0
