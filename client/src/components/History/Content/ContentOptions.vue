@@ -16,6 +16,15 @@ const props = defineProps({
     keyboardSelectable: { type: Boolean, default: true },
 });
 
+const emit = defineEmits<{
+    (e: "showCollectionInfo"): void;
+    (e: "display"): void;
+    (e: "edit"): void;
+    (e: "delete"): void;
+    (e: "undelete"): void;
+    (e: "unhide"): void;
+}>();
+
 const displayDisabled = computed(() => ["discarded", "new", "upload", "queued"].includes(props.state));
 const displayButtonTitle = computed(() => {
     if (displayDisabled.value) {
@@ -53,7 +62,7 @@ const tabindex = computed(() => (props.keyboardSelectable ? "0" : "1"));
             size="sm"
             variant="link"
             :href="showCollectionDetailsUrl"
-            @click.prevent.stop="$emit('showCollectionInfo')">
+            @click.prevent.stop="() => emit('showCollectionInfo')">
             <icon icon="info-circle" />
         </b-button>
 
@@ -67,7 +76,7 @@ const tabindex = computed(() => (props.keyboardSelectable ? "0" : "1"));
             size="sm"
             variant="link"
             :href="displayUrl"
-            @click.prevent.stop="$emit('display')">
+            @click.prevent.stop="() => emit('display')">
             <icon icon="eye" />
         </b-button>
         <b-button
@@ -79,7 +88,7 @@ const tabindex = computed(() => (props.keyboardSelectable ? "0" : "1"));
             size="sm"
             variant="link"
             :href="editUrl"
-            @click.prevent.stop="$emit('edit')">
+            @click.prevent.stop="() => emit('edit')">
             <icon icon="pen" />
         </b-button>
         <b-button
@@ -89,7 +98,7 @@ const tabindex = computed(() => (props.keyboardSelectable ? "0" : "1"));
             title="Delete"
             size="sm"
             variant="link"
-            @click.stop="$emit('delete')">
+            @click.stop="() => emit('delete')">
             <icon icon="trash" />
         </b-button>
         <b-button
@@ -99,7 +108,7 @@ const tabindex = computed(() => (props.keyboardSelectable ? "0" : "1"));
             title="Undelete"
             size="sm"
             variant="link"
-            @click.stop="$emit('undelete')">
+            @click.stop="() => emit('undelete')">
             <icon icon="trash-restore" />
         </b-button>
         <b-button
@@ -109,7 +118,7 @@ const tabindex = computed(() => (props.keyboardSelectable ? "0" : "1"));
             title="Unhide"
             size="sm"
             variant="link"
-            @click.stop="$emit('unhide')">
+            @click.stop="() => emit('unhide')">
             <icon icon="eye-slash" />
         </b-button>
     </span>

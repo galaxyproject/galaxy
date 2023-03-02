@@ -33,10 +33,14 @@ const props = defineProps({
 
 const emit = defineEmits<{
     (e: "update:expand-dataset", isExpanded: boolean): void;
+    (e: "update:selected", isSelected: boolean): void;
     (e: "view-collection", item: HistoryItem, name: string): void;
     (e: "tag-change", item: HistoryItem, newTag: string[]): void;
     (e: "tag-click", tag: string): void;
     (e: "toggle-highlights", item: HistoryItem): void;
+    (e: "delete"): void;
+    (e: "undelete"): void;
+    (e: "unhide"): void;
 }>();
 
 //@ts-ignore bad library types
@@ -186,7 +190,7 @@ function toggleHighlights() {
                         <b-button
                             v-if="selectable"
                             class="selector p-0"
-                            @click.stop="$emit('update:selected', !selected)">
+                            @click.stop="emit('update:selected', !selected)">
                             <icon v-if="selected" fixed-width size="lg" :icon="['far', 'check-square']" />
                             <icon v-else fixed-width size="lg" :icon="['far', 'square']" />
                         </b-button>
@@ -240,12 +244,12 @@ function toggleHighlights() {
                         :state="state"
                         :item-urls="itemUrls"
                         :keyboard-selectable="expandDataset"
-                        @delete="$emit('delete')"
+                        @delete="() => emit('delete')"
                         @display="onDisplay"
                         @showCollectionInfo="onShowCollectionInfo"
                         @edit="onEdit"
-                        @undelete="$emit('undelete')"
-                        @unhide="$emit('unhide')" />
+                        @undelete="() => emit('undelete')"
+                        @unhide="() => emit('unhide')" />
                 </div>
             </div>
             <CollectionDescription
