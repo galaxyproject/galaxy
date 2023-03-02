@@ -107,21 +107,25 @@ def test_software_prerequisite_tracker():
     step_2.tool_id = "toolshed.g2.bx.psu.edu/repos/iuc/compose_text_param/compose_text_param/0.1.1"
     step_2.type = "tool"
     step_2.tool_version = "0.1.1"
+    step_3 = WorkflowStep()
+    step_3.tool_id = "toolshed.g2.bx.psu.edu/repos/iuc/extract_genomic_dna/Extract genomic DNA 1/3.0.3+galaxy2"
+    step_3.type = "tool"
+    step_3.tool_version = "0.1.1"
 
     # subworkflow step
-    step_3 = WorkflowStep()
-    step_3.type = "subworkflow"
+    step_4 = WorkflowStep()
+    step_4.type = "subworkflow"
 
     # stock tool
-    step_4 = WorkflowStep()
-    step_4.type = "tool"
-    step_4.tool_id = "cat1"
-    step_4.tool_version = "1.0.0"
-
     step_5 = WorkflowStep()
     step_5.type = "tool"
-    step_5.tool_id = "Tool ID With Spaces"
+    step_5.tool_id = "cat1"
     step_5.tool_version = "1.0.0"
+
+    step_6 = WorkflowStep()
+    step_6.type = "tool"
+    step_6.tool_id = "Tool ID With Spaces"
+    step_6.tool_version = "1.0.0"
 
     tracker.register_step(step_0)
     tracker.register_step(step_1)
@@ -129,6 +133,7 @@ def test_software_prerequisite_tracker():
     tracker.register_step(step_3)
     tracker.register_step(step_4)
     tracker.register_step(step_5)
+    tracker.register_step(step_6)
 
     sps = tracker.software_prerequisites
-    assert len(sps) == 4
+    assert len(sps) == 5
