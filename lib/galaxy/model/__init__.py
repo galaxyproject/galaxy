@@ -7648,7 +7648,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         return [wid for wid in query.all()]
 
     @staticmethod
-    def poll_active_workflow_ids(sa_session, scheduler=None, handler=None):
+    def poll_active_workflow_ids(engine, scheduler=None, handler=None):
         and_conditions = [
             or_(
                 WorkflowInvocation.state == WorkflowInvocation.states.NEW,
@@ -7660,14 +7660,11 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         if handler is not None:
             and_conditions.append(WorkflowInvocation.handler == handler)
 
-        query = (
-            sa_session.query(WorkflowInvocation.id)
-            .filter(and_(*and_conditions))
-            .order_by(WorkflowInvocation.table.c.id.asc())
-        )
+        stmt = select(WorkflowInvocation.id).filter(and_(*and_conditions)).order_by(WorkflowInvocation.id.asc())
         # Immediately just load all ids into memory so time slicing logic
         # is relatively intutitive.
-        return [wid for wid in query.all()]
+        with engine.connect() as conn:
+            return conn.scalars(stmt).all()
 
     def add_output(self, workflow_output, step, output_object):
         if not hasattr(output_object, "history_content_type"):
