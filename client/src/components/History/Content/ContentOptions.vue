@@ -3,15 +3,7 @@ import { prependPath } from "@/utils/redirect";
 import { computed } from "vue";
 import type { PropType } from "vue";
 import type { StateKey } from "./model/states";
-
-interface ItemUrls {
-    display?: string;
-    edit: string;
-    showDetails: string | null;
-    reportError?: string;
-    rerun?: string;
-    visualize?: string;
-}
+import type { ItemUrls } from "./types";
 
 const props = defineProps({
     writable: { type: Boolean, default: true },
