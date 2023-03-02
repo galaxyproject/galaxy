@@ -105,7 +105,7 @@ const stateText = computed(() => props.dataset.state && (states[props.dataset.st
 </template>
 
 <style scoped>
-.details .summary div.info {
+.details .summary .info {
     max-height: 4rem;
     overflow-y: auto;
 }
