@@ -69,7 +69,7 @@ class PersonalNotificationCategory(str, Enum):
 NotificationCategory = Union[MandatoryNotificationCategory, PersonalNotificationCategory]
 
 
-class NotificationMessageContentBase(Model):
+class MessageNotificationContentBase(Model):
     subject: str
     message: str  # markdown?
 
@@ -83,12 +83,12 @@ class ActionLink(Model):
 # add it to AnyNotificationContent Union.
 
 
-class BroadcastNotificationContent(NotificationMessageContentBase):
+class BroadcastNotificationContent(MessageNotificationContentBase):
     category: Literal[MandatoryNotificationCategory.broadcast] = MandatoryNotificationCategory.broadcast
     action_links: Optional[List[ActionLink]]
 
 
-class NotificationMessageContent(NotificationMessageContentBase):
+class MessageNotificationContent(MessageNotificationContentBase):
     category: Literal[PersonalNotificationCategory.message] = PersonalNotificationCategory.message
 
 
@@ -120,7 +120,7 @@ class NewVisualizationSharedNotificationContent(NewSharedItemNotificationContent
 AnyNotificationContent = Annotated[
     Union[
         BroadcastNotificationContent,
-        NotificationMessageContent,
+        MessageNotificationContent,
         NewHistorySharedNotificationContent,
         NewWorkflowSharedNotificationContent,
         NewPageSharedNotificationContent,
@@ -205,12 +205,12 @@ class NotificationCreateRequest(Model):
     notification: NotificationCreateData
 
 
-class NotificationBroadcastCreateRequest(NotificationCreateData):
+class BroadcastNotificationCreateRequest(NotificationCreateData):
     category: Literal[MandatoryNotificationCategory.broadcast] = MandatoryNotificationCategory.broadcast
     content: BroadcastNotificationContent
 
 
-class NotificationCreateResponse(Model):
+class NotificationCreatedResponse(Model):
     total_notifications_sent: int
     notification: NotificationResponse
 
@@ -246,17 +246,21 @@ class NotificationsBatchUpdateResponse(Model):
     updated_count: int
 
 
-class NotificationChannels(Model):
+class NotificationChannelSettings(Model):
     push: bool
     # email: bool # Not supported for now
     # matrix: bool # Possible future Matrix.org integration?
 
 
-class NotificationChannelSettings(Model):
+class NotificationCategorySettings(Model):
     category: PersonalNotificationCategory
     enabled: bool
-    channels: NotificationChannels
+    channels: NotificationChannelSettings
 
 
-class NotificationUserPreferences(Model):
-    __root__: List[NotificationChannelSettings]
+class UpdateUserNotificationPreferencesRequest(Model):
+    preferences: List[NotificationCategorySettings]
+
+
+class UserNotificationPreferencesResponse(Model):
+    __root__: List[NotificationCategorySettings]

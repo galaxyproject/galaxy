@@ -14,18 +14,19 @@ from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.notification import NotificationManager
 from galaxy.model import User
 from galaxy.schema.notifications import (
+    BroadcastNotificationCreateRequest,
     BroadcastNotificationListResponse,
     BroadcastNotificationResponse,
-    NotificationBroadcastCreateRequest,
     NotificationBroadcastUpdateRequest,
+    NotificationCreatedResponse,
     NotificationCreateRequest,
-    NotificationCreateResponse,
     NotificationResponse,
     NotificationsBatchUpdateResponse,
     NotificationStatusSummary,
     NotificationUpdateRequest,
-    NotificationUserPreferences,
+    UpdateUserNotificationPreferencesRequest,
     UserNotificationListResponse,
+    UserNotificationPreferencesResponse,
     UserNotificationResponse,
     UserNotificationUpdateRequest,
 )
@@ -38,24 +39,24 @@ class NotificationService(ServiceBase):
 
     def send_notification(
         self, sender_context: ProvidesUserContext, payload: NotificationCreateRequest
-    ) -> NotificationCreateResponse:
+    ) -> NotificationCreatedResponse:
         """Sends a notification to a list of recipients (users, groups or roles)."""
         self._ensure_user_can_send_notifications(sender_context)
         notification, recipient_user_count = self.notification_manager.create_notification_for_users(payload)
-        return NotificationCreateResponse(
+        return NotificationCreatedResponse(
             total_notifications_sent=recipient_user_count, notification=NotificationResponse.from_orm(notification)
         )
 
     def broadcast(
-        self, sender_context: ProvidesUserContext, payload: NotificationBroadcastCreateRequest
-    ) -> NotificationCreateResponse:
+        self, sender_context: ProvidesUserContext, payload: BroadcastNotificationCreateRequest
+    ) -> NotificationCreatedResponse:
         """Creates a notification broadcast.
 
         Broadcasted notifications are a special type of notification are accessible by every user.
         """
         self._ensure_user_can_broadcast_notifications(sender_context)
         notification = self.notification_manager.create_broadcast_notification(payload)
-        return NotificationCreateResponse(
+        return NotificationCreatedResponse(
             total_notifications_sent=1, notification=NotificationResponse.from_orm(notification)
         )
 
@@ -127,13 +128,13 @@ class NotificationService(ServiceBase):
         )
         return NotificationsBatchUpdateResponse(updated_count=updated_count)
 
-    def get_user_notification_preferences(self, user: User) -> NotificationUserPreferences:
+    def get_user_notification_preferences(self, user: User) -> UserNotificationPreferencesResponse:
         """TODO"""
         raise NotImplementedError
 
     def update_user_notification_preferences(
-        self, user: User, updated_preferences: NotificationUserPreferences
-    ) -> NotificationUserPreferences:
+        self, user: User, request: UpdateUserNotificationPreferencesRequest
+    ) -> UserNotificationPreferencesResponse:
         """TODO"""
         raise NotImplementedError
 

@@ -17,17 +17,16 @@ from fastapi import (
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.notifications import (
+    BroadcastNotificationCreateRequest,
     BroadcastNotificationListResponse,
-    NotificationBroadcastCreateRequest,
     NotificationBroadcastUpdateRequest,
+    NotificationCreatedResponse,
     NotificationCreateRequest,
-    NotificationCreateResponse,
     NotificationsBatchRequest,
     NotificationsBatchUpdateResponse,
     NotificationStatusSummary,
-    NotificationUpdateRequest,
-    NotificationUserPreferences,
     UserNotificationListResponse,
+    UserNotificationPreferencesResponse,
     UserNotificationResponse,
     UserNotificationsBatchUpdateRequest,
     UserNotificationUpdateRequest,
@@ -142,7 +141,7 @@ class FastAPINotifications:
         trans: ProvidesUserContext = DependsOnTrans,
         notification_id: DecodedDatabaseIdField = Path(),
     ):
-        delete_request = NotificationUpdateRequest(deleted=True)
+        delete_request = UserNotificationUpdateRequest(deleted=True)
         self.service.update_user_notification(trans, notification_id, delete_request)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -155,7 +154,7 @@ class FastAPINotifications:
         trans: ProvidesUserContext = DependsOnTrans,
         payload: NotificationsBatchRequest = Body(),
     ) -> NotificationsBatchUpdateResponse:
-        delete_request = NotificationUpdateRequest(deleted=True)
+        delete_request = UserNotificationUpdateRequest(deleted=True)
         return self.service.update_user_notifications(trans, set(payload.notification_ids), delete_request)
 
     @router.post(
@@ -167,7 +166,7 @@ class FastAPINotifications:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         payload: NotificationCreateRequest = Body(),
-    ) -> NotificationCreateResponse:
+    ) -> NotificationCreatedResponse:
         """Sends a notification to a list of recipients (users, groups or roles)."""
         return self.service.send_notification(sender_context=trans, payload=payload)
 
@@ -179,8 +178,8 @@ class FastAPINotifications:
     def broadcast_notification(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        payload: NotificationBroadcastCreateRequest = Body(),
-    ) -> NotificationCreateResponse:
+        payload: BroadcastNotificationCreateRequest = Body(),
+    ) -> NotificationCreatedResponse:
         """These special kind of notifications will be always accessible to the user."""
         return self.service.broadcast(sender_context=trans, payload=payload)
 
@@ -191,7 +190,7 @@ class FastAPINotifications:
     def get_notification_preferences(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> NotificationUserPreferences:
+    ) -> UserNotificationPreferencesResponse:
         user = self.service.get_authenticated_user(trans)
         return self.service.get_user_notification_preferences(user)
 
@@ -202,7 +201,7 @@ class FastAPINotifications:
     def update_notification_preferences(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        payload: NotificationUserPreferences = Body(),
-    ) -> NotificationUserPreferences:
+        payload: UserNotificationPreferencesResponse = Body(),
+    ) -> UserNotificationPreferencesResponse:
         user = self.service.get_authenticated_user(trans)
         return self.service.update_user_notification_preferences(user, updated_preferences=payload)
