@@ -1955,7 +1955,15 @@ class Tool(Dictifiable):
         log.info(validation_timer)
         return all_params, all_errors, rerun_remap_job_id, collection_info
 
-    def handle_input(self, trans, incoming, history=None, use_cached_job=False, input_format="legacy"):
+    def handle_input(
+        self,
+        trans,
+        incoming,
+        history=None,
+        use_cached_job=False,
+        preferred_object_store_id: Optional[str] = None,
+        input_format="legacy",
+    ):
         """
         Process incoming parameters for this tool from the dict `incoming`,
         update the tool state (or create if none existed), and either return
@@ -1989,6 +1997,7 @@ class Tool(Dictifiable):
             mapping_params,
             history=request_context.history,
             rerun_remap_job_id=rerun_remap_job_id,
+            preferred_object_store_id=preferred_object_store_id,
             collection_info=collection_info,
             completed_jobs=completed_jobs,
         )
@@ -2036,6 +2045,7 @@ class Tool(Dictifiable):
         completed_job=None,
         collection_info=None,
         job_callback=None,
+        preferred_object_store_id=None,
         flush_job=True,
         skip=False,
     ):
@@ -2054,6 +2064,7 @@ class Tool(Dictifiable):
                 completed_job=completed_job,
                 collection_info=collection_info,
                 job_callback=job_callback,
+                preferred_object_store_id=preferred_object_store_id,
                 flush_job=flush_job,
                 skip=skip,
             )

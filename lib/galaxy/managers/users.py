@@ -7,7 +7,12 @@ import random
 import re
 import time
 from datetime import datetime
-from typing import Optional
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+)
 
 from markupsafe import escape
 from sqlalchemy import (
@@ -33,6 +38,7 @@ from galaxy.security.validate_user_input import (
     VALID_EMAIL_RE,
     validate_email,
     validate_password,
+    validate_preferred_object_store_id,
     validate_publicname,
 )
 from galaxy.structured_app import (
@@ -381,13 +387,13 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
     def default_permissions(self, user):
         return self.app.security_agent.user_get_default_permissions(user)
 
-    def quota(self, user, total=False):
+    def quota(self, user, total=False, quota_source_label=None):
         if total:
-            return self.app.quota_agent.get_quota_nice_size(user)
-        return self.app.quota_agent.get_percent(user=user)
+            return self.app.quota_agent.get_quota_nice_size(user, quota_source_label=quota_source_label)
+        return self.app.quota_agent.get_percent(user=user, quota_source_label=quota_source_label)
 
-    def quota_bytes(self, user):
-        return self.app.quota_agent.get_quota(user=user)
+    def quota_bytes(self, user, quota_source_label: Optional[str] = None):
+        return self.app.quota_agent.get_quota(user=user, quota_source_label=quota_source_label)
 
     def tags_used(self, user, tag_models=None):
         """
@@ -620,6 +626,7 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
                 "tags_used",
                 # all annotations
                 # 'annotations'
+                "preferred_object_store_id",
             ],
             include_keys_from="summary",
         )
@@ -643,6 +650,23 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
             }
         )
 
+    def serialize_disk_usage(self, user: model.User) -> List[Dict[str, Any]]:
+        rval = user.dictify_usage(self.app.object_store)
+        for usage in rval:
+            quota_source_label = usage["quota_source_label"]
+            usage["quota_percent"] = self.user_manager.quota(user, quota_source_label=quota_source_label)
+            usage["quota"] = self.user_manager.quota(user, total=True, quota_source_label=quota_source_label)
+            usage["quota_bytes"] = self.user_manager.quota_bytes(user, quota_source_label=quota_source_label)
+        return rval
+
+    def serialize_disk_usage_for(self, user: model.User, label: Optional[str]) -> Dict[str, Any]:
+        usage = user.dictify_usage_for(label)
+        quota_source_label = usage["quota_source_label"]
+        usage["quota_percent"] = self.user_manager.quota(user, quota_source_label=quota_source_label)
+        usage["quota"] = self.user_manager.quota(user, total=True, quota_source_label=quota_source_label)
+        usage["quota_bytes"] = self.user_manager.quota_bytes(user, quota_source_label=quota_source_label)
+        return usage
+
 
 class UserDeserializer(base.ModelDeserializer):
     """
@@ -654,11 +678,18 @@ class UserDeserializer(base.ModelDeserializer):
 
     def add_deserializers(self):
         super().add_deserializers()
-        self.deserializers.update(
-            {
-                "username": self.deserialize_username,
-            }
-        )
+        history_deserializers: Dict[str, base.Deserializer] = {
+            "username": self.deserialize_username,
+            "preferred_object_store_id": self.deserialize_preferred_object_store_id,
+        }
+        self.deserializers.update(history_deserializers)
+
+    def deserialize_preferred_object_store_id(self, item: Any, key: Any, val: Any, **context):
+        preferred_object_store_id = val
+        validation_error = validate_preferred_object_store_id(self.app.object_store, preferred_object_store_id)
+        if validation_error:
+            raise base.ModelDeserializingError(validation_error)
+        return self.default_deserializer(item, key, preferred_object_store_id, **context)
 
     def deserialize_username(self, item, key, username, trans=None, **context):
         # TODO: validate_publicname requires trans and should(?) raise exceptions

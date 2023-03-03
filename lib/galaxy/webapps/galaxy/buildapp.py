@@ -583,6 +583,12 @@ def populate_api_routes(webapp, app):
         conditions=dict(method=["POST"]),
     )
 
+    webapp.mapper.connect(
+        "/api/users/{user_id}/usage", action="usage", controller="users", conditions=dict(method=["GET"])
+    )
+    webapp.mapper.connect(
+        "/api/users/{user_id}/usage/{label}", action="usage_for", controller="users", conditions=dict(method=["GET"])
+    )
     webapp.mapper.resource_with_deleted("user", "users", path_prefix="/api")
     webapp.mapper.resource("visualization", "visualizations", path_prefix="/api")
     webapp.mapper.resource("plugins", "plugins", path_prefix="/api")

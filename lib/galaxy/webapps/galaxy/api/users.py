@@ -5,6 +5,7 @@ import copy
 import json
 import logging
 import re
+from typing import Optional
 
 from fastapi import (
     Body,
@@ -316,6 +317,37 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             raise exceptions.RequestParameterInvalidException("Invalid user id specified", id=user_id)
 
     @expose_api
+    def usage(self, trans, user_id: str, **kwd):
+        """
+        GET /api/users/{user_id}/usage
+
+        Get user's disk usage broken down by quota source.
+        """
+        user = self._get_user_full(trans, user_id, **kwd)
+        if user:
+            rval = self.user_serializer.serialize_disk_usage(user)
+            return rval
+        else:
+            return []
+
+    @expose_api
+    def usage_for(self, trans, user_id: str, label: str, **kwd):
+        """
+        GET /api/users/{user_id}/usage/{label}
+
+        Get user's disk usage for supplied quota source label.
+        """
+        user = self._get_user_full(trans, user_id, **kwd)
+        effective_label: Optional[str] = label
+        if label == "__null__":
+            effective_label = None
+        if user:
+            rval = self.user_serializer.serialize_disk_usage_for(user, effective_label)
+            return rval
+        else:
+            return None
+
+    @expose_api
     def create(self, trans: GalaxyWebTransaction, payload: dict, **kwd):
         """
         POST /api/users
@@ -414,7 +446,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         if not trans.user and not trans.history:
             # Can't return info about this user, may not have a history yet.
             return {}
-        usage = trans.app.quota_agent.get_usage(trans)
+        usage = trans.app.quota_agent.get_usage(trans, history=trans.history)
         percent = trans.app.quota_agent.get_percent(trans=trans, usage=usage)
         return {
             "total_disk_usage": int(usage),

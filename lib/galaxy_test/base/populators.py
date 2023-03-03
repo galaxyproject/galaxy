@@ -409,7 +409,10 @@ class BaseDatasetPopulator(BasePopulator):
             run_response = self.tools_post(payload)
         else:
             payload = self.fetch_payload(history_id, content=content, **kwds)
-            run_response = self.fetch(payload, wait=wait)
+            fetch_kwds = dict(wait=wait)
+            if "assert_ok" in kwds:
+                fetch_kwds["assert_ok"] = kwds["assert_ok"]
+            run_response = self.fetch(payload, **fetch_kwds)
         if wait:
             self.wait_for_tool_run(history_id, run_response, assert_ok=kwds.get("assert_ok", True))
         return run_response
@@ -648,6 +651,10 @@ class BaseDatasetPopulator(BasePopulator):
         jobs_response = self._get("jobs", query_params)
         assert jobs_response.status_code == 200
         return jobs_response.json()
+
+    def history_jobs_for_tool(self, history_id: str, tool_id: str) -> List[Dict[str, Any]]:
+        jobs = self.history_jobs(history_id)
+        return [j for j in jobs if j["tool_id"] == tool_id]
 
     def invocation_jobs(self, invocation_id: str) -> List[Dict[str, Any]]:
         query_params = {"invocation_id": invocation_id, "order_by": "create_time"}
@@ -1074,6 +1081,26 @@ class BaseDatasetPopulator(BasePopulator):
         assert "id" in role, role
         return role["id"]
 
+    def get_usage(self) -> List[Dict[str, Any]]:
+        usage_response = self.galaxy_interactor.get("users/current/usage")
+        usage_response.raise_for_status()
+        return usage_response.json()
+
+    def get_usage_for(self, label: Optional[str]) -> Dict[str, Any]:
+        label_as_str = label if label is not None else "__null__"
+        usage_response = self.galaxy_interactor.get(f"users/current/usage/{label_as_str}")
+        usage_response.raise_for_status()
+        return usage_response.json()
+
+    def update_user(self, properties: Dict[str, Any]) -> Dict[str, Any]:
+        update_response = self.update_user_raw(properties)
+        update_response.raise_for_status()
+        return update_response.json()
+
+    def update_user_raw(self, properties: Dict[str, Any]) -> Response:
+        update_response = self.galaxy_interactor.put("users/current", properties, json=True)
+        return update_response
+
     def create_role(self, user_ids: list, description: Optional[str] = None) -> dict:
         using_requirement("admin")
         payload = {
@@ -1087,14 +1114,14 @@ class BaseDatasetPopulator(BasePopulator):
 
     def create_quota(self, quota_payload: dict) -> dict:
         using_requirement("admin")
-        quota_response = self._post("quotas", data=quota_payload, admin=True)
-        quota_response.raise_for_status()
+        quota_response = self._post("quotas", data=quota_payload, admin=True, json=True)
+        api_asserts.assert_status_code_is_ok(quota_response)
         return quota_response.json()
 
     def get_quotas(self) -> list:
         using_requirement("admin")
         quota_response = self._get("quotas", admin=True)
-        quota_response.raise_for_status()
+        api_asserts.assert_status_code_is_ok(quota_response)
         return quota_response.json()
 
     def make_private(self, history_id: str, dataset_id: str) -> dict:
@@ -1105,14 +1132,28 @@ class BaseDatasetPopulator(BasePopulator):
             "access": [role_id],
             "manage": [role_id],
         }
+        response = self.update_permissions_raw(history_id, dataset_id, payload)
+        api_asserts.assert_status_code_is_ok(response)
+        return response.json()
+
+    def make_dataset_public_raw(self, history_id: str, dataset_id: str) -> Response:
+        role_id = self.user_private_role_id()
+        payload = {
+            "access": [],
+            "manage": [role_id],
+        }
+        response = self.update_permissions_raw(history_id, dataset_id, payload)
+        return response
+
+    def update_permissions_raw(self, history_id: str, dataset_id: str, payload: dict) -> Response:
         url = f"histories/{history_id}/contents/{dataset_id}/permissions"
         update_response = self._put(url, payload, admin=True, json=True)
-        assert update_response.status_code == 200, update_response.content
-        return update_response.json()
+        return update_response
 
     def make_public(self, history_id: str) -> dict:
         using_requirement("new_published_objects")
         sharing_response = self._put(f"histories/{history_id}/publish")
+        api_asserts.assert_status_code_is_ok(sharing_response)
         assert sharing_response.status_code == 200
         return sharing_response.json()
 
@@ -1217,9 +1258,12 @@ class BaseDatasetPopulator(BasePopulator):
     def history_names(self) -> Dict[str, Dict]:
         return {h["name"]: h for h in self.get_histories()}
 
-    def rename_history(self, history_id, new_name):
+    def rename_history(self, history_id: str, new_name: str):
+        self.update_history(history_id, {"name": new_name})
+
+    def update_history(self, history_id: str, payload: Dict[str, Any]) -> Response:
         update_url = f"histories/{history_id}"
-        put_response = self._put(update_url, {"name": new_name}, json=True)
+        put_response = self._put(update_url, payload, json=True)
         return put_response
 
     def get_histories(self):
@@ -1765,6 +1809,7 @@ class BaseWorkflowPopulator(BasePopulator):
         expected_response: int = 200,
         assert_ok: bool = True,
         client_convert: Optional[bool] = None,
+        extra_invocation_kwds: Optional[Dict[str, Any]] = None,
         round_trip_format_conversion: bool = False,
         invocations: int = 1,
         raw_yaml: bool = False,
@@ -1815,6 +1860,8 @@ class BaseWorkflowPopulator(BasePopulator):
             workflow_request["parameters_normalized"] = True
         if replacement_parameters:
             workflow_request["replacement_params"] = json.dumps(replacement_parameters)
+        if extra_invocation_kwds is not None:
+            workflow_request.update(extra_invocation_kwds)
         if has_uploads:
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         assert invocations > 0
@@ -1983,6 +2030,9 @@ class RunJobsSummary(NamedTuple):
     jobs: list
     invocation: dict
     workflow_request: dict
+
+    def jobs_for_tool(self, tool_id):
+        return [j for j in self.jobs if j["tool_id"] == tool_id]
 
 
 class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, ImporterGalaxyInterface):
@@ -2697,8 +2747,8 @@ class BaseDatasetCollectionPopulator:
         payload = dict(history_id=history_id, collection_type=collection_type, **kwds)
         return payload
 
-    def pair_identifiers(self, history_id: str, contents=None):
-        hda1, hda2 = self.__datasets(history_id, count=2, contents=contents)
+    def pair_identifiers(self, history_id: str, contents=None, wait: bool = False):
+        hda1, hda2 = self.__datasets(history_id, count=2, contents=contents, wait=wait)
 
         element_identifiers = [
             dict(name="forward", src="hda", id=hda1["id"]),
@@ -2734,10 +2784,12 @@ class BaseDatasetCollectionPopulator:
         else:
             return self.dataset_populator.fetch(payload, wait=wait)
 
-    def __datasets(self, history_id: str, count: int, contents=None):
+    def __datasets(self, history_id: str, count: int, contents=None, wait: bool = False):
         datasets = []
         for i in range(count):
-            new_kwds = {}
+            new_kwds = {
+                "wait": wait,
+            }
             if contents:
                 new_kwds["content"] = contents[i]
             datasets.append(self.dataset_populator.new_dataset(history_id, **new_kwds))

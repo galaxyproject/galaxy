@@ -88,6 +88,15 @@
             </UserBeaconSettings>
         </ConfigProvider>
         <ConfigProvider v-slot="{ config }">
+            <CurrentUser v-slot="{ user }">
+                <UserPreferredObjectStore
+                    v-if="config && config.object_store_allows_id_selection"
+                    :preferred-object-store-id="user.preferred_object_store_id"
+                    :user-id="userId">
+                </UserPreferredObjectStore>
+            </CurrentUser>
+        </ConfigProvider>
+        <ConfigProvider v-slot="{ config }">
             <UserDeletion
                 v-if="config && !config.single_user && config.enable_account_interface"
                 :email="email"
@@ -115,9 +124,11 @@ import axios from "axios";
 import QueryStringParsing from "utils/query-string-parsing";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
 import ConfigProvider from "components/providers/ConfigProvider";
+import CurrentUser from "components/providers/CurrentUser";
 import { userLogoutAll } from "utils/logout";
 import UserDeletion from "./UserDeletion";
 import UserPreferencesElement from "./UserPreferencesElement";
+import UserPreferredObjectStore from "./UserPreferredObjectStore";
 
 import "@fortawesome/fontawesome-svg-core";
 import UserBeaconSettings from "./UserBeaconSettings";
@@ -131,6 +142,8 @@ export default {
         UserPreferencesElement,
         ThemeSelector,
         UserBeaconSettings,
+        CurrentUser,
+        UserPreferredObjectStore,
     },
     props: {
         userId: {
