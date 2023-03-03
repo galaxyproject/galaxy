@@ -10,7 +10,7 @@ function interpolate(template, properties) {
     return parsed;
 }
 
-class SelectorTemplate extends Function {
+export class SelectorTemplate extends Function {
     constructor(selector, selectorType, props = {}, children = {}) {
         super();
         if (selectorType == "data-description") {
@@ -95,7 +95,7 @@ function componentFromObject(name, object) {
     return new Component(name, subComponents, selectors);
 }
 
-class Component {
+export class Component {
     constructor(name, subComponents, selectors) {
         self._name = name;
         self._subComponents = subComponents;
