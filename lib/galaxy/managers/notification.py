@@ -18,8 +18,15 @@ from sqlalchemy import (
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import Select
 
-from galaxy import model
 from galaxy.exceptions import ObjectNotFound
+from galaxy.model import (
+    GroupRoleAssociation,
+    Notification,
+    User,
+    UserGroupAssociation,
+    UserNotificationAssociation,
+    UserRoleAssociation,
+)
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.notifications import (
@@ -38,25 +45,25 @@ NOTIFICATION_PREFERENCES_SECTION_NAME = "notifications"
 
 
 class NotificationManager:
-    """Interface/service object shared by controllers for interacting with notifications."""
+    """Manager class to interact with the database models related with Notifications."""
 
     def __init__(self, sa_session: galaxy_scoped_session):
         self.sa_session = sa_session
         self.notification_columns = [
-            model.Notification.id,
-            model.Notification.source,
-            model.Notification.category,
-            model.Notification.variant,
-            model.Notification.create_time,
-            model.Notification.update_time,
-            model.Notification.publication_time,
-            model.Notification.expiration_time,
-            model.Notification.content,
+            Notification.id,
+            Notification.source,
+            Notification.category,
+            Notification.variant,
+            Notification.create_time,
+            Notification.update_time,
+            Notification.publication_time,
+            Notification.expiration_time,
+            Notification.content,
         ]
         self.user_notification_columns = self.notification_columns + [
-            model.UserNotificationAssociation.seen_time,
-            model.UserNotificationAssociation.favorite,
-            model.UserNotificationAssociation.deleted,
+            UserNotificationAssociation.seen_time,
+            UserNotificationAssociation.favorite,
+            UserNotificationAssociation.deleted,
         ]
         self.broadcast_notification_columns = self.notification_columns
 
@@ -64,7 +71,7 @@ class NotificationManager:
     def now(self):
         return datetime.utcnow()
 
-    def create_notification_for_users(self, request: NotificationCreateRequest) -> Tuple[model.Notification, int]:
+    def create_notification_for_users(self, request: NotificationCreateRequest) -> Tuple[Notification, int]:
         """
         Creates a new notification and associates it with all the recipient users.
         """
@@ -74,7 +81,7 @@ class NotificationManager:
             self.sa_session.add(notification)
             for user in recipient_users:
                 # TODO: check user notification settings before?
-                user_notification_association = model.UserNotificationAssociation(user, notification)
+                user_notification_association = UserNotificationAssociation(user, notification)
                 self.sa_session.add(user_notification_association)
 
         return notification, len(recipient_users)
@@ -89,22 +96,22 @@ class NotificationManager:
             self.sa_session.add(notification)
         return notification
 
-    def get_user_notification(self, user: model.User, notification_id: int):
+    def get_user_notification(self, user: User, notification_id: int):
         """
         Displays a notification belonging to the user.
         """
         stmt = (
             select(self.user_notification_columns)
-            .select_from(model.Notification)
+            .select_from(Notification)
             .join(
-                model.UserNotificationAssociation,
-                model.UserNotificationAssociation.notification_id == notification_id,
+                UserNotificationAssociation,
+                UserNotificationAssociation.notification_id == notification_id,
             )
             .where(
                 and_(
-                    model.UserNotificationAssociation.user_id == user.id,
-                    model.Notification.publication_time < self.now,
-                    model.Notification.expiration_time > self.now,
+                    UserNotificationAssociation.user_id == user.id,
+                    Notification.publication_time < self.now,
+                    Notification.expiration_time > self.now,
                 )
             )
         )
@@ -115,7 +122,7 @@ class NotificationManager:
 
     def get_user_notifications(
         self,
-        user: model.User,
+        user: User,
         limit: Optional[int] = 50,
         offset: Optional[int] = None,
         since: Optional[datetime] = None,
@@ -132,24 +139,24 @@ class NotificationManager:
         result = self.sa_session.execute(stmt).fetchall()
         return result
 
-    def get_user_total_unread_notification_count(self, user: model.User) -> int:
+    def get_user_total_unread_notification_count(self, user: User) -> int:
         """
         Returns the total number of unread notifications of the user.
         Only published and not expired notifications are accounted.
         """
         stmt = (
-            select([func.count(model.UserNotificationAssociation.id)])
-            .select_from(model.UserNotificationAssociation)
+            select([func.count(UserNotificationAssociation.id)])
+            .select_from(UserNotificationAssociation)
             .join(
-                model.Notification,
-                model.Notification.id == model.UserNotificationAssociation.notification_id,
+                Notification,
+                Notification.id == UserNotificationAssociation.notification_id,
             )
             .where(
                 and_(
-                    model.UserNotificationAssociation.user_id == user.id,
-                    model.UserNotificationAssociation.seen_time.is_(None),
-                    model.Notification.publication_time < self.now,
-                    model.Notification.expiration_time > self.now,
+                    UserNotificationAssociation.user_id == user.id,
+                    UserNotificationAssociation.seen_time.is_(None),
+                    Notification.publication_time < self.now,
+                    Notification.expiration_time > self.now,
                 )
             )
         )
@@ -163,15 +170,15 @@ class NotificationManager:
         return result
 
     def update_user_notifications(
-        self, user: model.User, notification_ids: Set[int], request: UserNotificationUpdateRequest
+        self, user: User, notification_ids: Set[int], request: UserNotificationUpdateRequest
     ) -> int:
         """Updates a batch of notifications associated with the user using the requested values."""
         updated_row_count = 0
         with self.sa_session.begin():
-            stmt = update(model.UserNotificationAssociation).where(
+            stmt = update(UserNotificationAssociation).where(
                 and_(
-                    model.UserNotificationAssociation.user_id == user.id,
-                    model.UserNotificationAssociation.notification_id.in_(notification_ids),
+                    UserNotificationAssociation.user_id == user.id,
+                    UserNotificationAssociation.notification_id.in_(notification_ids),
                 )
             )
             if request.seen is not None:
@@ -189,10 +196,10 @@ class NotificationManager:
         """Updates a single broadcasted notification with the requested values."""
         updated_row_count = 0
         with self.sa_session.begin():
-            stmt = update(model.Notification).where(
+            stmt = update(Notification).where(
                 and_(
-                    model.Notification.id == notification_id,
-                    model.Notification.category == MandatoryNotificationCategory.broadcast,
+                    Notification.id == notification_id,
+                    Notification.category == MandatoryNotificationCategory.broadcast,
                 )
             )
             if request.source is not None:
@@ -207,7 +214,7 @@ class NotificationManager:
             updated_row_count = result.rowcount
         return updated_row_count
 
-    def get_user_notification_preferences(self, user: model.User) -> UserNotificationPreferences:
+    def get_user_notification_preferences(self, user: User) -> UserNotificationPreferences:
         """Gets the user's current notification preferences or the default ones if no preferences are set."""
         current_notification_preferences = (
             user.preferences[NOTIFICATION_PREFERENCES_SECTION_NAME]
@@ -219,7 +226,7 @@ class NotificationManager:
         return UserNotificationPreferences.parse_raw(current_notification_preferences)
 
     def update_user_notification_preferences(
-        self, user: model.User, request: UpdateUserNotificationPreferencesRequest
+        self, user: User, request: UpdateUserNotificationPreferencesRequest
     ) -> UserNotificationPreferences:
         """Updates the user's notification preferences with the requested changes."""
         notification_preferences = UserNotificationPreferences.default()
@@ -229,7 +236,7 @@ class NotificationManager:
         return notification_preferences
 
     def _create_notification_model(self, payload: NotificationCreateData):
-        notification = model.Notification(
+        notification = Notification(
             payload.source,
             payload.category,
             payload.variant,
@@ -239,44 +246,44 @@ class NotificationManager:
         notification.expiration_time = payload.expiration_time
         return notification
 
-    def _all_user_notifications_query(self, user: model.User, since: Optional[datetime] = None):
+    def _all_user_notifications_query(self, user: User, since: Optional[datetime] = None):
         stmt = (
             select(self.user_notification_columns)
-            .select_from(model.Notification)
+            .select_from(Notification)
             .join(
-                model.UserNotificationAssociation,
-                model.UserNotificationAssociation.notification_id == model.Notification.id,
+                UserNotificationAssociation,
+                UserNotificationAssociation.notification_id == Notification.id,
             )
             .where(
                 and_(
-                    model.UserNotificationAssociation.user_id == user.id,
-                    model.Notification.publication_time < self.now,
-                    model.Notification.expiration_time > self.now,
+                    UserNotificationAssociation.user_id == user.id,
+                    Notification.publication_time < self.now,
+                    Notification.expiration_time > self.now,
                 )
             )
         )
         if since is not None:
-            stmt = stmt.where(model.Notification.publication_time > since)
+            stmt = stmt.where(Notification.publication_time > since)
 
         return stmt
 
     def _all_broadcasted_notifications_query(self, since: Optional[datetime] = None):
         stmt = (
             select(self.broadcast_notification_columns)
-            .select_from(model.Notification)
+            .select_from(Notification)
             .where(
                 and_(
-                    model.Notification.category == MandatoryNotificationCategory.broadcast,
-                    model.Notification.publication_time < self.now,
-                    model.Notification.expiration_time > self.now,
+                    Notification.category == MandatoryNotificationCategory.broadcast,
+                    Notification.publication_time < self.now,
+                    Notification.expiration_time > self.now,
                 )
             )
         )
         if since is not None:
-            stmt = stmt.where(model.Notification.publication_time > since)
+            stmt = stmt.where(Notification.publication_time > since)
         return stmt
 
-    def _get_all_recipient_users(self, recipients: NotificationRecipients) -> List[model.User]:
+    def _get_all_recipient_users(self, recipients: NotificationRecipients) -> List[User]:
         """Gets all the users from all the individual user ids, group ids and roles ids
         provided as recipients.
         The resulting list will contain only unique users even if the same user id might have been provided more
@@ -295,23 +302,23 @@ class NotificationManager:
         user_ids_from_groups_and_roles = set([id for id, in self.sa_session.execute(union_stmt)])
         unique_user_ids.update(user_ids_from_groups_and_roles)
 
-        unique_recipient_users = self.sa_session.query(model.User).filter(model.User.id.in_(unique_user_ids)).all()
+        unique_recipient_users = self.sa_session.query(User).filter(User.id.in_(unique_user_ids)).all()
         return unique_recipient_users
 
     def _get_all_user_ids_from_roles_query(self, role_ids: Set[int]) -> Select:
         stmt = (
-            select(model.UserRoleAssociation.user_id)
-            .select_from(model.UserRoleAssociation)
-            .where(model.UserRoleAssociation.role_id.in_(role_ids))
+            select(UserRoleAssociation.user_id)
+            .select_from(UserRoleAssociation)
+            .where(UserRoleAssociation.role_id.in_(role_ids))
             .distinct()
         )
         return stmt
 
     def _get_all_user_ids_from_groups_query(self, group_ids: Set[int]) -> Select:
         stmt = (
-            select(model.UserGroupAssociation.user_id)
-            .select_from(model.UserGroupAssociation)
-            .where(model.UserGroupAssociation.group_id.in_(group_ids))
+            select(UserGroupAssociation.user_id)
+            .select_from(UserGroupAssociation)
+            .where(UserGroupAssociation.group_id.in_(group_ids))
             .distinct()
         )
         return stmt
@@ -326,9 +333,9 @@ class NotificationManager:
         while True:
             # Get group IDs associated with any of the given role IDs
             stmt = (
-                select(model.GroupRoleAssociation.group_id)
-                .select_from(model.GroupRoleAssociation)
-                .where(model.GroupRoleAssociation.role_id.in_(role_ids))
+                select(GroupRoleAssociation.group_id)
+                .select_from(GroupRoleAssociation)
+                .where(GroupRoleAssociation.role_id.in_(role_ids))
                 .distinct()
             )
             group_ids_from_roles = set([id for id, in self.sa_session.execute(stmt)])
@@ -336,9 +343,9 @@ class NotificationManager:
 
             # Get role IDs associated with any of the given group IDs
             stmt = (
-                select(model.GroupRoleAssociation.role_id)
-                .select_from(model.GroupRoleAssociation)
-                .where(model.GroupRoleAssociation.group_id.in_(group_ids))
+                select(GroupRoleAssociation.role_id)
+                .select_from(GroupRoleAssociation)
+                .where(GroupRoleAssociation.group_id.in_(group_ids))
                 .distinct()
             )
             role_ids_from_groups = set([id for id, in self.sa_session.execute(stmt)])
@@ -358,14 +365,14 @@ class NotificationManager:
 
         return group_ids, role_ids
 
-    def _get_all_recipient_users_using_recursive_CTE(self, recipients: NotificationRecipients) -> List[model.User]:
+    def _get_all_recipient_users_using_recursive_CTE(self, recipients: NotificationRecipients) -> List[User]:
         # Get all the user IDs from individual users
         user_ids = set(recipients.user_ids)
 
         # Get all the user IDs from groups and roles using recursive CTEs
         group_users = (
-            select(model.UserGroupAssociation.user_id)
-            .where(model.UserGroupAssociation.group_id.in_(bindparam("group_ids")))
+            select(UserGroupAssociation.user_id)
+            .where(UserGroupAssociation.group_id.in_(bindparam("group_ids")))
             .cte("group_users", recursive=True)
         )
 
@@ -373,14 +380,12 @@ class NotificationManager:
         group_users_query = select(group_users_alias.c.user_id).select_from(group_users_alias)
 
         group_users = group_users.union_all(
-            select(model.UserGroupAssociation.user_id).where(
-                model.UserGroupAssociation.group_id == group_users_alias.c.user_id
-            )
+            select(UserGroupAssociation.user_id).where(UserGroupAssociation.group_id == group_users_alias.c.user_id)
         )
 
         role_users = (
-            select(model.UserRoleAssociation.user_id)
-            .where(model.UserRoleAssociation.role_id.in_(bindparam("role_ids")))
+            select(UserRoleAssociation.user_id)
+            .where(UserRoleAssociation.role_id.in_(bindparam("role_ids")))
             .cte("role_users", recursive=True)
         )
 
@@ -388,9 +393,7 @@ class NotificationManager:
         role_users_query = select(role_users_alias.c.user_id).select_from(role_users_alias)
 
         role_users = role_users.union_all(
-            select(model.UserRoleAssociation.user_id).where(
-                model.UserRoleAssociation.role_id == role_users_alias.c.user_id
-            )
+            select(UserRoleAssociation.user_id).where(UserRoleAssociation.role_id == role_users_alias.c.user_id)
         )
 
         # Build the final query to get all unique user IDs
@@ -407,7 +410,7 @@ class NotificationManager:
 
         # Get all the unique recipient users by ID
         unique_user_ids = user_ids.union(group_and_role_user_ids)
-        unique_recipient_users = self.sa_session.query(model.User).filter(model.User.id.in_(unique_user_ids)).all()
+        unique_recipient_users = self.sa_session.query(User).filter(User.id.in_(unique_user_ids)).all()
         return unique_recipient_users
 
     def _raise_notification_not_found(self, notification_id: int):
