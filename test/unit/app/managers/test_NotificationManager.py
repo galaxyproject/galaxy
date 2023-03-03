@@ -2,9 +2,9 @@ import json
 
 from galaxy.managers.notification import NotificationManager
 from galaxy.schema.notifications import (
+    MessageNotificationContent,
     NotificationCreateData,
     NotificationCreateRequest,
-    NotificationMessageContent,
     NotificationRecipients,
 )
 from .base import BaseTestCase
@@ -30,7 +30,7 @@ class TestNotificationManager(BaseTestCase):
                 source="testing",
                 variant="info",
                 category="message",
-                content=NotificationMessageContent(subject="Testing Subject", message="Testing Message"),
+                content=MessageNotificationContent(subject="Testing Subject", message="Testing Message"),
                 publication_time=None,
                 expiration_time=None,
             ),

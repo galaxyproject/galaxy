@@ -23,8 +23,8 @@ from galaxy.exceptions import ObjectNotFound
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.notifications import (
+    BroadcastNotificationCreateRequest,
     MandatoryNotificationCategory,
-    NotificationBroadcastCreateRequest,
     NotificationBroadcastUpdateRequest,
     NotificationCreateData,
     NotificationCreateRequest,
@@ -75,7 +75,7 @@ class NotificationManager:
 
         return notification, len(recipient_users)
 
-    def create_broadcast_notification(self, request: NotificationBroadcastCreateRequest):
+    def create_broadcast_notification(self, request: BroadcastNotificationCreateRequest):
         """Creates a broadcasted notification.
 
         This kind of notification is not explicitly associated with any specific user but it is accessible by all users.
