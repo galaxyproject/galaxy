@@ -29,8 +29,12 @@ from galaxy.schema.notifications import (
     NotificationCreateData,
     NotificationCreateRequest,
     NotificationRecipients,
+    UpdateUserNotificationPreferencesRequest,
+    UserNotificationPreferences,
     UserNotificationUpdateRequest,
 )
+
+NOTIFICATION_PREFERENCES_SECTION_NAME = "notifications"
 
 
 class NotificationManager:
@@ -202,6 +206,27 @@ class NotificationManager:
             result = self.sa_session.execute(stmt)
             updated_row_count = result.rowcount
         return updated_row_count
+
+    def get_user_notification_preferences(self, user: model.User) -> UserNotificationPreferences:
+        """Gets the user's current notification preferences or the default ones if no preferences are set."""
+        current_notification_preferences = (
+            user.preferences[NOTIFICATION_PREFERENCES_SECTION_NAME]
+            if NOTIFICATION_PREFERENCES_SECTION_NAME in user.preferences
+            else None
+        )
+        if current_notification_preferences is None:
+            return UserNotificationPreferences.default()
+        return UserNotificationPreferences.parse_raw(current_notification_preferences)
+
+    def update_user_notification_preferences(
+        self, user: model.User, request: UpdateUserNotificationPreferencesRequest
+    ) -> UserNotificationPreferences:
+        """Updates the user's notification preferences with the requested changes."""
+        notification_preferences = UserNotificationPreferences.default()
+        notification_preferences.update(request.preferences)
+        with self.sa_session.begin():
+            user.preferences[NOTIFICATION_PREFERENCES_SECTION_NAME] = notification_preferences.json()
+        return notification_preferences
 
     def _create_notification_model(self, payload: NotificationCreateData):
         notification = model.Notification(

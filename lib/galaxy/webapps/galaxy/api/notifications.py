@@ -25,8 +25,9 @@ from galaxy.schema.notifications import (
     NotificationsBatchRequest,
     NotificationsBatchUpdateResponse,
     NotificationStatusSummary,
+    UpdateUserNotificationPreferencesRequest,
     UserNotificationListResponse,
-    UserNotificationPreferencesResponse,
+    UserNotificationPreferences,
     UserNotificationResponse,
     UserNotificationsBatchUpdateRequest,
     UserNotificationUpdateRequest,
@@ -190,9 +191,8 @@ class FastAPINotifications:
     def get_notification_preferences(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> UserNotificationPreferencesResponse:
-        user = self.service.get_authenticated_user(trans)
-        return self.service.get_user_notification_preferences(user)
+    ) -> UserNotificationPreferences:
+        return self.service.get_user_notification_preferences(trans)
 
     @router.put(
         "/api/notifications/preferences",
@@ -201,7 +201,6 @@ class FastAPINotifications:
     def update_notification_preferences(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        payload: UserNotificationPreferencesResponse = Body(),
-    ) -> UserNotificationPreferencesResponse:
-        user = self.service.get_authenticated_user(trans)
-        return self.service.update_user_notification_preferences(user, updated_preferences=payload)
+        payload: UpdateUserNotificationPreferencesRequest = Body(),
+    ) -> UserNotificationPreferences:
+        return self.service.update_user_notification_preferences(trans, payload)
