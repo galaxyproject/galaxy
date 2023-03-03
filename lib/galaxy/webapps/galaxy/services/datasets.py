@@ -573,7 +573,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         item_url = web.url_for(
             controller="dataset",
             action="display_by_username_and_slug",
-            username=hda.history.user.username,
+            username=hda.user and hda.user.username,
             slug=self.encode_id(hda.id),
             preview=False,
         )

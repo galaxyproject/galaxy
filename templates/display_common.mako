@@ -125,10 +125,7 @@
 <%def name="get_item_user( item )">
     <%
         # Exceptions first, default last.
-        if isinstance( item, model.HistoryDatasetAssociation ):
-            return item.history.user
-        else:
-            return item.user
+        return item.user
     %>
 </%def>
 

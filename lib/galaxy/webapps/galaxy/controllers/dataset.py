@@ -153,7 +153,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             return trans.show_error_message("You are not allowed to access this dataset")
         if data.purged or data.dataset.purged:
             return trans.show_error_message("The dataset you are attempting to view has been purged.")
-        elif data.deleted and not (trans.user_is_admin or (data.history and trans.get_user() == data.history.user)):
+        elif data.deleted and not (trans.user_is_admin or (data.history and trans.get_user() == data.user)):
             return trans.show_error_message("The dataset you are attempting to view has been deleted.")
         elif data.state == Dataset.states.UPLOAD:
             return trans.show_error_message(
@@ -488,7 +488,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         if data is None:
             trans.log_event(f"Problem retrieving dataset id ({dataset_id}).")
             return None, self.message_exception(trans, "The dataset id is invalid.")
-        if dataset_id is not None and data.history.user is not None and data.history.user != trans.user:
+        if dataset_id is not None and data.user and data.user != trans.user:
             trans.log_event(f"User attempted to edit a dataset they do not own (encoded: {dataset_id}, decoded: {id}).")
             return None, self.message_exception(trans, "The dataset id is invalid.")
         if data.history.user and not data.dataset.has_manage_permissions_roles(trans.app.security_agent):
@@ -498,9 +498,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             manage_permissions_action = trans.app.security_agent.get_action(
                 trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action
             )
-            permissions = {
-                manage_permissions_action: [trans.app.security_agent.get_private_user_role(data.history.user)]
-            }
+            permissions = {manage_permissions_action: [trans.app.security_agent.get_private_user_role(data.user)]}
             trans.app.security_agent.set_dataset_permission(data.dataset, permissions)
         return data, None
 
@@ -571,7 +569,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             return self.display(trans, dataset_id=slug, filename=filename)
 
         truncated, dataset_data = self.hda_manager.text_data(dataset, preview)
-        dataset.annotation = self.get_item_annotation_str(trans.sa_session, dataset.history.user, dataset)
+        dataset.annotation = self.get_item_annotation_str(trans.sa_session, dataset.user, dataset)
 
         # If dataset is chunkable, get first chunk.
         first_chunk = None

@@ -2152,8 +2152,8 @@ class Tool(Dictifiable):
         for p_name in rup_dict:
             redirect_url += f"&{p_name}={rup_dict[p_name]}"
         # Add the current user email to redirect_url
-        if data.history.user:
-            USERNAME = str(data.history.user.email)
+        if data.user:
+            USERNAME = str(data.user.email)
         else:
             USERNAME = "Anonymous"
         redirect_url += f"&USERNAME={USERNAME}"
