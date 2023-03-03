@@ -216,10 +216,20 @@ class NotificationCreateResponse(Model):
 
 
 class NotificationUpdateRequest(Model):
+    def has_changes(self) -> bool:
+        """Whether the notification update request contains at least one change."""
+        return any(getattr(self, field) is not None for field in self.__fields__.keys())
+
+
+class UserNotificationUpdateRequest(NotificationUpdateRequest):
     seen: Optional[bool]
     favorite: Optional[bool]
     deleted: Optional[bool]
-    # Admin only
+
+
+class NotificationBroadcastUpdateRequest(NotificationUpdateRequest):
+    source: Optional[str]
+    variant: Optional[NotificationVariant]
     publication_time: Optional[datetime]
     expiration_time: Optional[datetime]
 
@@ -228,8 +238,12 @@ class NotificationsBatchRequest(Model):
     notification_ids: List[DecodedDatabaseIdField]
 
 
-class NotificationsBatchUpdateRequest(NotificationsBatchRequest):
-    changes: NotificationUpdateRequest
+class UserNotificationsBatchUpdateRequest(NotificationsBatchRequest):
+    changes: UserNotificationUpdateRequest
+
+
+class NotificationsBatchUpdateResponse(Model):
+    updated_count: int
 
 
 class NotificationChannels(Model):
