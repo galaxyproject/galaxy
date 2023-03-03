@@ -2710,7 +2710,7 @@ class Notification(Base, Dictifiable, RepresentById):
 
     id = Column(Integer, primary_key=True)
     create_time = Column(DateTime, default=now)
-    update_time = Column(DateTime, default=now, onupdate=now)  # The last time the notification content was updated
+    update_time = Column(DateTime, default=now, onupdate=now)
     publication_time = Column(
         DateTime, default=now
     )  # The date of publication, can be a future date to allow scheduling

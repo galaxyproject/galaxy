@@ -5,7 +5,11 @@ from typing import (
     Set,
 )
 
-from galaxy.exceptions import AdminRequiredException
+from galaxy.exceptions import (
+    AdminRequiredException,
+    AuthenticationRequired,
+    RequestParameterInvalidException,
+)
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.notification import NotificationManager
 from galaxy.model import User
@@ -13,14 +17,17 @@ from galaxy.schema.notifications import (
     BroadcastNotificationListResponse,
     BroadcastNotificationResponse,
     NotificationBroadcastCreateRequest,
+    NotificationBroadcastUpdateRequest,
     NotificationCreateRequest,
     NotificationCreateResponse,
     NotificationResponse,
+    NotificationsBatchUpdateResponse,
     NotificationStatusSummary,
     NotificationUpdateRequest,
     NotificationUserPreferences,
     UserNotificationListResponse,
     UserNotificationResponse,
+    UserNotificationUpdateRequest,
 )
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
@@ -91,13 +98,34 @@ class NotificationService(ServiceBase):
         notification = self.notification_manager.get_user_notification(user, notification_id)
         return UserNotificationResponse.from_orm(notification)
 
-    def update_notification(self, user: User, notification_id: int, request: NotificationUpdateRequest):
-        """Updates a single notification with the requested values."""
-        return self.update_notifications(user, set([notification_id]), request)
+    def update_user_notification(
+        self, user_context: ProvidesUserContext, notification_id: int, request: UserNotificationUpdateRequest
+    ):
+        """Updates a single notification received by the user with the requested values."""
+        updated_response = self.update_user_notifications(user_context, set([notification_id]), request)
+        if not updated_response.updated_count:
+            self.notification_manager._raise_notification_not_found(notification_id)
 
-    def update_notifications(self, user: User, notification_ids: Set[int], request: NotificationUpdateRequest):
-        """TODO"""
-        raise NotImplementedError
+    def update_broadcasted_notification(
+        self, user_context: ProvidesUserContext, notification_id: int, request: NotificationBroadcastUpdateRequest
+    ):
+        """Updates a single notification received by the user with the requested values."""
+        self._ensure_user_can_update_broadcasted_notifications(user_context)
+        self._ensure_there_are_changes(request)
+        updated_count = self.notification_manager.update_broadcasted_notification(notification_id, request)
+        if not updated_count:
+            self.notification_manager._raise_notification_not_found(notification_id)
+
+    def update_user_notifications(
+        self, user_context: ProvidesUserContext, notification_ids: Set[int], request: UserNotificationUpdateRequest
+    ) -> NotificationsBatchUpdateResponse:
+        """Updates a batch of notifications received by the user with the requested values."""
+        self._ensure_user_can_update_notifications(user_context)
+        self._ensure_there_are_changes(request)
+        updated_count = self.notification_manager.update_user_notifications(
+            user_context.user, notification_ids, request
+        )
+        return NotificationsBatchUpdateResponse(updated_count=updated_count)
 
     def get_user_notification_preferences(self, user: User) -> NotificationUserPreferences:
         """TODO"""
@@ -120,6 +148,23 @@ class NotificationService(ServiceBase):
         # TODO implement and check permissions for non-admin users?
         if not sender_context.user_is_admin:
             raise AdminRequiredException("Only administrators can broadcast notifications.")
+
+    def _ensure_user_can_update_notifications(self, user_context: ProvidesUserContext):
+        """Raises an exception if the user cannot update notifications."""
+        if user_context.anonymous:
+            raise AuthenticationRequired("You must be logged in to update notifications.")
+
+    def _ensure_user_can_update_broadcasted_notifications(self, user_context: ProvidesUserContext):
+        """Raises an exception if the user tries to update broadcasted notifications without permission."""
+        if not user_context.user_is_admin:
+            raise AdminRequiredException(
+                "Only administrators can update publication and expiration times of notifications."
+            )
+
+    def _ensure_there_are_changes(self, request: NotificationUpdateRequest):
+        """Raises an exception if all values are None"""
+        if not request.has_changes():
+            raise RequestParameterInvalidException("Please specify at least one value to update for notifications.")
 
     def _get_all_broadcasted(self, since: Optional[datetime] = None) -> List[BroadcastNotificationResponse]:
         notifications = self.notification_manager.get_all_broadcasted_notifications(since)

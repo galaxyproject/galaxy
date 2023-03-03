@@ -13,6 +13,7 @@ from sqlalchemy import (
     select,
     union,
     union_all,
+    update,
 )
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import Select
@@ -24,9 +25,11 @@ from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.notifications import (
     MandatoryNotificationCategory,
     NotificationBroadcastCreateRequest,
+    NotificationBroadcastUpdateRequest,
     NotificationCreateData,
     NotificationCreateRequest,
     NotificationRecipients,
+    UserNotificationUpdateRequest,
 )
 
 
@@ -155,51 +158,50 @@ class NotificationManager:
         result = self.sa_session.execute(stmt).fetchall()
         return result
 
-    def show(self, notification_id):
-        """
-        Displays information about a notification.
-        """
-        notification = self.sa_session.query(model.Notification).get(notification_id)
-        if notification is None:
-            raise ObjectNotFound(f"Notification with id {notification_id} was not found.")
-        return notification
+    def update_user_notifications(
+        self, user: model.User, notification_ids: Set[int], request: UserNotificationUpdateRequest
+    ) -> int:
+        """Updates a batch of notifications associated with the user using the requested values."""
+        updated_row_count = 0
+        with self.sa_session.begin():
+            stmt = update(model.UserNotificationAssociation).where(
+                and_(
+                    model.UserNotificationAssociation.user_id == user.id,
+                    model.UserNotificationAssociation.notification_id.in_(notification_ids),
+                )
+            )
+            if request.seen is not None:
+                seen_time = self.now if request.seen else None
+                stmt = stmt.values(seen_time=seen_time)
+            if request.favorite is not None:
+                stmt = stmt.values(favorite=request.favorite)
+            if request.deleted is not None:
+                stmt = stmt.values(deleted=request.deleted)
+            result = self.sa_session.execute(stmt)
+            updated_row_count = result.rowcount
+        return updated_row_count
 
-    def update(self, notification_id, updated_content: str):
-        """
-        Modifies a notification.
-        """
-        notification = self.sa_session.query(model.Notification).get(notification_id)
-        if notification is None:
-            raise ObjectNotFound(f"Notification with id {notification_id} was not found.")
-        notification.content = updated_content
-        self.sa_session.add(notification)
-        self.sa_session.flush()
-        return notification
-
-    def update_status(self, user_id, notification_id, seen: bool):
-        """
-        Modifies a notification status.
-        """
-        # user = self.sa_session.query(model.User).get(user_id)
-        notification = self.sa_session.query(model.Notification).get(notification_id)
-        if notification is None:
-            raise ObjectNotFound(f"Notification with id {notification_id} was not found.")
-        notification.seen = seen
-        self.sa_session.add(notification)
-        self.sa_session.flush()
-        return notification
-
-    def associate_user_notification(self, user_ids: List[DecodedDatabaseIdField], notification: model.Notification):
-        assoc_ids = []
-        for user_id in user_ids:
-            user = self.sa_session.query(model.User).get(user_id)
-            assoc = model.UserNotificationAssociation(user, notification)
-            assoc.user_id = user.id
-            assoc.notification_id = notification.id
-            assoc_ids.append(assoc.id)
-            self.sa_session.add(assoc)
-        self.sa_session.flush()
-        return assoc_ids
+    def update_broadcasted_notification(self, notification_id: int, request: NotificationBroadcastUpdateRequest) -> int:
+        """Updates a single broadcasted notification with the requested values."""
+        updated_row_count = 0
+        with self.sa_session.begin():
+            stmt = update(model.Notification).where(
+                and_(
+                    model.Notification.id == notification_id,
+                    model.Notification.category == MandatoryNotificationCategory.broadcast,
+                )
+            )
+            if request.source is not None:
+                stmt = stmt.values(source=request.source)
+            if request.variant is not None:
+                stmt = stmt.values(variant=request.variant)
+            if request.publication_time is not None:
+                stmt = stmt.values(publication_time=request.publication_time)
+            if request.expiration_time is not None:
+                stmt = stmt.values(expiration_time=request.expiration_time)
+            result = self.sa_session.execute(stmt)
+            updated_row_count = result.rowcount
+        return updated_row_count
 
     def _create_notification_model(self, payload: NotificationCreateData):
         notification = model.Notification(

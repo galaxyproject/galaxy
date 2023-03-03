@@ -10,6 +10,8 @@ from fastapi import (
     Body,
     Path,
     Query,
+    Response,
+    status,
 )
 
 from galaxy.managers.context import ProvidesUserContext
@@ -17,15 +19,18 @@ from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.notifications import (
     BroadcastNotificationListResponse,
     NotificationBroadcastCreateRequest,
+    NotificationBroadcastUpdateRequest,
     NotificationCreateRequest,
     NotificationCreateResponse,
     NotificationsBatchRequest,
-    NotificationsBatchUpdateRequest,
+    NotificationsBatchUpdateResponse,
     NotificationStatusSummary,
     NotificationUpdateRequest,
     NotificationUserPreferences,
     UserNotificationListResponse,
     UserNotificationResponse,
+    UserNotificationsBatchUpdateRequest,
+    UserNotificationUpdateRequest,
 )
 from galaxy.webapps.galaxy.services.notifications import NotificationService
 from . import (
@@ -87,57 +92,71 @@ class FastAPINotifications:
         return self.service.get_user_notification(user, notification_id)
 
     @router.put(
-        "/api/notifications/{notification_id}",
-        summary="Updates the state of a notification.",
+        "/api/notifications/broadcast/{notification_id}",
+        summary="Updates the state of a broadcasted notification.",
+        require_admin=True,
+        status_code=status.HTTP_204_NO_CONTENT,
     )
-    def update_notification(
+    def update_broadcasted_notification(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         notification_id: DecodedDatabaseIdField = Path(),
-        payload: NotificationUpdateRequest = Body(),
-    ) -> UserNotificationResponse:
-        """Only Admins can update publication and expiration dates."""
-        user = self.service.get_authenticated_user(trans)
-        return self.service.update_notification(user, notification_id, payload)
+        payload: NotificationBroadcastUpdateRequest = Body(),
+    ):
+        """Only Admins can update broadcasted notifications."""
+        self.service.update_broadcasted_notification(trans, notification_id, payload)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @router.put(
+        "/api/notifications/{notification_id}",
+        summary="Updates the state of a notification.",
+        status_code=status.HTTP_204_NO_CONTENT,
+    )
+    def update_user_notification(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        notification_id: DecodedDatabaseIdField = Path(),
+        payload: UserNotificationUpdateRequest = Body(),
+    ):
+        self.service.update_user_notification(trans, notification_id, payload)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.put(
         "/api/notifications",
         summary="Updates a list of notifications with the requested values.",
     )
-    def update_notifications(
+    def update_user_notifications(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        payload: NotificationsBatchUpdateRequest = Body(),
-    ) -> UserNotificationResponse:
-        """Only Admins can update publication and expiration dates."""
-        user = self.service.get_authenticated_user(trans)
-        return self.service.update_notifications(user, set(payload.notification_ids), payload.changes)
+        payload: UserNotificationsBatchUpdateRequest = Body(),
+    ) -> NotificationsBatchUpdateResponse:
+        return self.service.update_user_notifications(trans, set(payload.notification_ids), payload.changes)
 
     @router.delete(
         "/api/notifications/{notification_id}",
         summary="Deletes a notification received by the user.",
+        status_code=status.HTTP_204_NO_CONTENT,
     )
-    def delete_notification(
+    def delete_user_notification(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         notification_id: DecodedDatabaseIdField = Path(),
-    ) -> UserNotificationResponse:
-        user = self.service.get_authenticated_user(trans)
+    ):
         delete_request = NotificationUpdateRequest(deleted=True)
-        return self.service.update_notification(user, notification_id, delete_request)
+        self.service.update_user_notification(trans, notification_id, delete_request)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.delete(
         "/api/notifications",
         summary="Deletes a list of notifications received by the user.",
     )
-    def delete_notifications(
+    def delete_user_notifications(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         payload: NotificationsBatchRequest = Body(),
-    ) -> UserNotificationResponse:
-        user = self.service.get_authenticated_user(trans)
+    ) -> NotificationsBatchUpdateResponse:
         delete_request = NotificationUpdateRequest(deleted=True)
-        return self.service.update_notifications(user, set(payload.notification_ids), delete_request)
+        return self.service.update_user_notifications(trans, set(payload.notification_ids), delete_request)
 
     @router.post(
         "/api/notifications",
