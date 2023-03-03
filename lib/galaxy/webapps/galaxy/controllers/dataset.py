@@ -210,6 +210,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         # Ensure ck_size is an integer before passing through to datatypes.
         if ck_size:
             ck_size = int(ck_size)
+        kwd.pop("dataset", None)
+        # `dataset` in kwd` would interfere with positional dataset argument of `display_data` method.
         display_data, headers = data.datatype.display_data(
             trans, data, preview, filename, to_ext, offset=offset, ck_size=ck_size, **kwd
         )
