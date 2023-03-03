@@ -9,7 +9,7 @@ Produce a mulled hash with:
 """
 
 from ._cli import arg_parser
-from .mulled_build import parse_targets
+from .mulled_build import target_str_to_targets
 from .util import (
     v1_image_name,
     v2_image_name,
@@ -24,7 +24,7 @@ def main(argv=None):
     )
     parser.add_argument("--hash", dest="hash", choices=["v1", "v2"], default="v2")
     args = parser.parse_args()
-    targets = parse_targets(args.targets)
+    targets = target_str_to_targets(args.targets)
     image_name = v2_image_name if args.hash == "v2" else v1_image_name
     print(image_name(targets))
 

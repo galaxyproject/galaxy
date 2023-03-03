@@ -10,7 +10,7 @@ from galaxy.tool_util.deps.mulled.mulled_build import (
     DEFAULT_EXTENDED_BASE_IMAGE,
     InvolucroContext,
     mull_targets,
-    parse_targets,
+    target_str_to_targets,
 )
 from ..util import external_dependency_management
 
@@ -49,6 +49,6 @@ def test_mulled_build_files_cli(use_mamba, tmpdir):
 
 def test_target_str_to_targets():
     target_str = "samtools=1.3.1--4,bedtools=2.22"
-    targets = parse_targets(target_str)
+    targets = target_str_to_targets(target_str)
     assert (targets[0].package, targets[0].version, targets[0].build) == ("samtools", "1.3.1", "4")
     assert (targets[1].package, targets[1].version, targets[1].build) == ("bedtools", "2.22", None)

@@ -3,7 +3,7 @@ import tempfile
 import pytest
 import yaml
 
-from galaxy.tool_util.deps.mulled.mulled_build import parse_targets
+from galaxy.tool_util.deps.mulled.mulled_build import target_str_to_targets
 from galaxy.tool_util.deps.mulled.mulled_build_files import (
     FALLBACK_LINE_TUPLE,
     generate_targets,
@@ -62,7 +62,7 @@ TEST_IDS = [next(iter(k.keys())) for k in TESTCASES]
     "content, equals", [(d[k]["content"], d[k]["equals"]) for k, d in zip(TEST_IDS, TESTCASES)], ids=TEST_IDS
 )
 def test_generate_targets(content, equals):
-    equals["targets"] = parse_targets(equals["targets"])
+    equals["targets"] = target_str_to_targets(equals["targets"])
     equals = FALLBACK_LINE_TUPLE(**equals)
     with tempfile.NamedTemporaryFile(mode="w") as tmpfile:
         tmpfile.write(content)
