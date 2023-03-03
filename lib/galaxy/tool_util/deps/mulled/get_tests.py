@@ -26,7 +26,7 @@ except ImportError:
 
 from galaxy.util import (
     check_github_api_response_rate_limit,
-    unicodify
+    unicodify,
 )
 from .util import (
     get_file_from_conda_package,
