@@ -60,8 +60,8 @@ class TestPurgeUsage(BaseModelTestCase):
 
         usages = self.u.dictify_usage()
         assert len(usages) == 2
-        assert usages[1]["quota_source_label"] == "myquotalabel"
-        assert usages[1]["total_disk_usage"] == 114
+        assert usages[1].quota_source_label == "myquotalabel"
+        assert usages[1].total_disk_usage == 114
 
 
 class TestCalculateUsage(BaseModelTestCase):
@@ -144,23 +144,23 @@ class TestCalculateUsage(BaseModelTestCase):
         model.context.refresh(u)
         usages = u.dictify_usage(object_store)
         assert len(usages) == 2
-        assert usages[0]["quota_source_label"] is None
-        assert usages[0]["total_disk_usage"] == 10
+        assert usages[0].quota_source_label is None
+        assert usages[0].total_disk_usage == 10
 
-        assert usages[1]["quota_source_label"] == "alt_source"
-        assert usages[1]["total_disk_usage"] == 15
+        assert usages[1].quota_source_label == "alt_source"
+        assert usages[1].total_disk_usage == 15
 
         usage = u.dictify_usage_for(None)
-        assert usage["quota_source_label"] is None
-        assert usage["total_disk_usage"] == 10
+        assert usage.quota_source_label is None
+        assert usage.total_disk_usage == 10
 
         usage = u.dictify_usage_for("alt_source")
-        assert usage["quota_source_label"] == "alt_source"
-        assert usage["total_disk_usage"] == 15
+        assert usage.quota_source_label == "alt_source"
+        assert usage.total_disk_usage == 15
 
         usage = u.dictify_usage_for("unused_source")
-        assert usage["quota_source_label"] == "unused_source"
-        assert usage["total_disk_usage"] == 0
+        assert usage.quota_source_label == "unused_source"
+        assert usage.total_disk_usage == 0
 
     def test_calculate_usage_removes_unused_quota_labels(self):
         model = self.model
@@ -180,22 +180,22 @@ class TestCalculateUsage(BaseModelTestCase):
         model.context.refresh(u)
         usages = u.dictify_usage()
         assert len(usages) == 2
-        assert usages[0]["quota_source_label"] is None
-        assert usages[0]["total_disk_usage"] == 10
+        assert usages[0].quota_source_label is None
+        assert usages[0].total_disk_usage == 10
 
-        assert usages[1]["quota_source_label"] == "alt_source"
-        assert usages[1]["total_disk_usage"] == 15
+        assert usages[1].quota_source_label == "alt_source"
+        assert usages[1].total_disk_usage == 15
 
         alt_source.default_quota_source = "new_alt_source"
         u.calculate_and_set_disk_usage(object_store)
         model.context.refresh(u)
         usages = u.dictify_usage()
         assert len(usages) == 2
-        assert usages[0]["quota_source_label"] is None
-        assert usages[0]["total_disk_usage"] == 10
+        assert usages[0].quota_source_label is None
+        assert usages[0].total_disk_usage == 10
 
-        assert usages[1]["quota_source_label"] == "new_alt_source"
-        assert usages[1]["total_disk_usage"] == 15
+        assert usages[1].quota_source_label == "new_alt_source"
+        assert usages[1].total_disk_usage == 15
 
     def test_dictify_usage_unused_quota_labels(self):
         model = self.model
@@ -236,11 +236,11 @@ class TestCalculateUsage(BaseModelTestCase):
         model.context.refresh(u)
         usages = u.dictify_usage(object_store)
         assert len(usages) == 2
-        assert usages[0]["quota_source_label"] is None
-        assert usages[0]["total_disk_usage"] == 0
+        assert usages[0].quota_source_label is None
+        assert usages[0].total_disk_usage == 0
 
-        assert usages[1]["quota_source_label"] == "alt_source"
-        assert usages[1]["total_disk_usage"] == 15
+        assert usages[1].quota_source_label == "alt_source"
+        assert usages[1].total_disk_usage == 15
 
 
 class TestQuota(BaseModelTestCase):
@@ -377,5 +377,5 @@ class TestUsage(BaseModelTestCase):
 
         usages = u.dictify_usage()
         assert len(usages) == 2
-        assert usages[1]["quota_source_label"] == "foobar"
-        assert usages[1]["total_disk_usage"] == 247
+        assert usages[1].quota_source_label == "foobar"
+        assert usages[1].total_disk_usage == 247

@@ -1,3 +1,89 @@
+<script lang="ts" setup>
+import { ref, watch, onMounted } from "vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import DescribeObjectStore from "@/components/ObjectStore/DescribeObjectStore.vue";
+import { errorMessageAsString } from "@/utils/simple-error";
+import ObjectStoreBadges from "@/components/ObjectStore/ObjectStoreBadges.vue";
+import ProvidedQuotaSourceUsageBar from "@/components/User/DiskUsage/Quota/ProvidedQuotaSourceUsageBar.vue";
+import { getSelectableObjectStores } from "./services";
+
+const props = defineProps({
+    selectedObjectStoreId: {
+        type: String,
+        default: null,
+    },
+    defaultOptionTitle: {
+        // "Use Your User Preference Defaults"
+        type: String,
+        required: true,
+    },
+    defaultOptionDescription: {
+        // "Selecting this will cause the history to not set a default and to fallback to your user preference defined default."
+        type: String,
+        required: true,
+    },
+    forWhat: {
+        type: String,
+        required: true,
+    },
+    parentError: {
+        type: String,
+        default: null,
+    },
+});
+
+const loading = ref(true);
+const error = ref(props.parentError);
+const popoverPlacement = "left";
+const objectStores = ref<Array<object>>([]);
+
+const loadingObjectStoreInfoMessage = ref("Loading object store information");
+const whyIsSelectionPreferredText = ref(`
+Selecting this will reset Galaxy to default behaviors configured by your Galaxy administrator.
+Select a preferred object store for new datasets. This is should be thought of as a preferred
+object store because depending the job and workflow configuration execution configuration of
+this Galaxy instance - a different object store may be selected. After a dataset is created,
+click on the info icon in the history panel to view information about where it is stored. If it
+is not stored in the correct place, contact your Galaxy administrator for more information.
+`);
+
+watch(
+    () => props.parentError,
+    () => {
+        error.value = props.parentError;
+    }
+);
+
+function handleError(e: unknown) {
+    const errorMessage = errorMessageAsString(e);
+    error.value = errorMessage;
+}
+
+onMounted(async () => {
+    try {
+        const data = await getSelectableObjectStores();
+        objectStores.value = data;
+        loading.value = false;
+    } catch (e) {
+        handleError(e);
+    }
+});
+
+function variant(objectStoreId: string) {
+    if (props.selectedObjectStoreId == objectStoreId) {
+        return "outline-primary";
+    } else {
+        return "outline-info";
+    }
+}
+
+const emit = defineEmits(["onSubmit"]);
+
+async function handleSubmit(preferredObjectStoreId: string) {
+    emit("onSubmit", preferredObjectStoreId);
+}
+</script>
+
 <template>
     <div>
         <loading-span v-if="loading" :message="loadingObjectStoreInfoMessage" />
@@ -55,97 +141,3 @@
         </div>
     </div>
 </template>
-
-<script>
-import axios from "axios";
-import { prependPath } from "utils/redirect";
-import LoadingSpan from "components/LoadingSpan";
-import DescribeObjectStore from "components/ObjectStore/DescribeObjectStore";
-import { errorMessageAsString } from "utils/simple-error";
-import ObjectStoreBadges from "components/ObjectStore/ObjectStoreBadges";
-import ProvidedQuotaSourceUsageBar from "components/User/DiskUsage/Quota/ProvidedQuotaSourceUsageBar";
-
-export default {
-    components: {
-        LoadingSpan,
-        DescribeObjectStore,
-        ObjectStoreBadges,
-        ProvidedQuotaSourceUsageBar,
-    },
-    props: {
-        selectedObjectStoreId: {
-            type: String,
-            default: null,
-        },
-        defaultOptionTitle: {
-            // "Use Your User Preference Defaults"
-            type: String,
-            required: true,
-        },
-        defaultOptionDescription: {
-            // "Selecting this will cause the history to not set a default and to fallback to your user preference defined default."
-            type: String,
-            required: true,
-        },
-        forWhat: {
-            type: String,
-            required: true,
-        },
-        parentError: {
-            type: String,
-            default: null,
-        },
-    },
-    data() {
-        return {
-            loading: true,
-            error: this.parentError,
-            popoverPlacement: "left",
-            objectStores: [],
-            loadingObjectStoreInfoMessage: "Loading object store information",
-            galaxySelectionDefalutTitle: "Use Galaxy Defaults",
-            galaxySelectionDefalutDescription:
-                "Selecting this will reset Galaxy to default behaviors configured by your Galaxy administrator.",
-            whyIsSelectionPreferredText: `
-Selecting this will reset Galaxy to default behaviors configured by your Galaxy administrator.
-Select a preferred object store for new datasets. This is should be thought of as a preferred
-object store because depending the job and workflow configuration execution configuration of
-this Galaxy instance - a different object store may be selected. After a dataset is created,
-click on the info icon in the history panel to view information about where it is stored. If it
-is not stored in the correct place, contact your Galaxy adminstrator for more information.
-`,
-        };
-    },
-    watch: {
-        parentError() {
-            this.error = this.parentError;
-        },
-    },
-    async mounted() {
-        const url = prependPath("api/object_store?selectable=true");
-        try {
-            const { data } = await axios.get(url);
-            this.objectStores = data;
-            this.loading = false;
-        } catch (e) {
-            this.handleError(e);
-        }
-    },
-    methods: {
-        handleError(e) {
-            const errorMessage = errorMessageAsString(e);
-            this.error = errorMessage;
-        },
-        variant(objectStoreId) {
-            if (this.selectedObjectStoreId == objectStoreId) {
-                return "outline-primary";
-            } else {
-                return "outline-info";
-            }
-        },
-        async handleSubmit(preferredObjectStoreId) {
-            this.$emit("onSubmit", preferredObjectStoreId);
-        },
-    },
-};
-</script>

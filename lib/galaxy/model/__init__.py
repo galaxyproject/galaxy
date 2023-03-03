@@ -40,6 +40,7 @@ from uuid import (
 
 import sqlalchemy
 from boltons.iterutils import remap
+from pydantic import BaseModel
 from social_core.storage import (
     AssociationMixin,
     CodeMixin,
@@ -634,6 +635,19 @@ WHERE user_id = :id AND quota_source_label IS NOT NULL
     return statements
 
 
+# move these to galaxy.schema.schema once galaxy-data depends on
+# galaxy-schema.
+class UserQuotaBasicUsage(BaseModel):
+    quota_source_label: Optional[str]
+    total_disk_usage: float
+
+
+class UserQuotaUsage(UserQuotaBasicUsage):
+    quota_percent: Optional[float]
+    quota_bytes: Optional[int]
+    quota: Optional[str]
+
+
 class User(Base, Dictifiable, RepresentById):
     """
     Data for a Galaxy user or admin and relations to their
@@ -1025,23 +1039,23 @@ ON CONFLICT
         session.add(assoc)
         session.flush()
 
-    def dictify_usage(self, object_store=None) -> List[Dict[str, Any]]:
+    def dictify_usage(self, object_store=None) -> List[UserQuotaBasicUsage]:
         """Include object_store to include empty/unused usage info."""
         used_labels: Set[Union[str, None]] = set()
-        rval: List[Dict[str, Any]] = [
-            {
-                "quota_source_label": None,
-                "total_disk_usage": float(self.disk_usage or 0),
-            }
+        rval: List[UserQuotaBasicUsage] = [
+            UserQuotaBasicUsage(
+                quota_source_label=None,
+                total_disk_usage=float(self.disk_usage or 0),
+            )
         ]
         used_labels.add(None)
         for quota_source_usage in self.quota_source_usages:
             label = quota_source_usage.quota_source_label
             rval.append(
-                {
-                    "quota_source_label": label,
-                    "total_disk_usage": float(quota_source_usage.disk_usage),
-                }
+                UserQuotaBasicUsage(
+                    quota_source_label=label,
+                    total_disk_usage=float(quota_source_usage.disk_usage),
+                )
             )
             used_labels.add(label)
 
@@ -1049,33 +1063,33 @@ ON CONFLICT
             for label in object_store.get_quota_source_map().ids_per_quota_source().keys():
                 if label not in used_labels:
                     rval.append(
-                        {
-                            "quota_source_label": label,
-                            "total_disk_usage": 0.0,
-                        }
+                        UserQuotaBasicUsage(
+                            quota_source_label=label,
+                            total_disk_usage=0.0,
+                        )
                     )
 
         return rval
 
-    def dictify_usage_for(self, quota_source_label: Optional[str]) -> Dict[str, Any]:
-        rval: Dict[str, Any]
+    def dictify_usage_for(self, quota_source_label: Optional[str]) -> UserQuotaBasicUsage:
+        rval: UserQuotaBasicUsage
         if quota_source_label is None:
-            rval = {
-                "quota_source_label": None,
-                "total_disk_usage": float(self.disk_usage or 0),
-            }
+            rval = UserQuotaBasicUsage(
+                quota_source_label=None,
+                total_disk_usage=float(self.disk_usage or 0),
+            )
         else:
             quota_source_usage = self.quota_source_usage_for(quota_source_label)
             if quota_source_usage is None:
-                rval = {
-                    "quota_source_label": quota_source_label,
-                    "total_disk_usage": 0.0,
-                }
+                rval = UserQuotaBasicUsage(
+                    quota_source_label=quota_source_label,
+                    total_disk_usage=0.0,
+                )
             else:
-                rval = {
-                    "quota_source_label": quota_source_label,
-                    "total_disk_usage": float(quota_source_usage.disk_usage),
-                }
+                rval = UserQuotaBasicUsage(
+                    quota_source_label=quota_source_label,
+                    total_disk_usage=float(quota_source_usage.disk_usage),
+                )
 
         return rval
 

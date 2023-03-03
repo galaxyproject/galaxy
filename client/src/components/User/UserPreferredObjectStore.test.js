@@ -1,9 +1,12 @@
+import { setupSelectableMock } from "../ObjectStore/mockServices";
+setupSelectableMock();
+
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
-import UserPreferredObjectStore from "./UserPreferredObjectStore";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
+import UserPreferredObjectStore from "./UserPreferredObjectStore.vue";
 
 const localVue = getLocalVue(true);
 
@@ -18,19 +21,13 @@ function mountComponent() {
     return wrapper;
 }
 
-import { ROOT_COMPONENT } from "utils/navigation";
-
-const OBJECT_STORES = [
-    { object_store_id: "object_store_1", badges: [], quota: { enabled: false } },
-    { object_store_id: "object_store_2", badges: [], quota: { enabled: false } },
-];
+import { ROOT_COMPONENT } from "@/utils/navigation";
 
 describe("UserPreferredObjectStore.vue", () => {
     let axiosMock;
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
-        axiosMock.onGet("/api/object_store?selectable=true").reply(200, OBJECT_STORES);
     });
 
     afterEach(async () => {
@@ -50,6 +47,7 @@ describe("UserPreferredObjectStore.vue", () => {
         const wrapper = mountComponent();
         const el = await wrapper.find(ROOT_COMPONENT.preferences.object_store.selector);
         await el.trigger("click");
+        await flushPromises();
         const els = wrapper.findAll(ROOT_COMPONENT.preferences.object_store_selection.option_buttons.selector);
         expect(els.length).toBe(3);
         const galaxyDefaultOption = wrapper.find(
@@ -63,7 +61,7 @@ describe("UserPreferredObjectStore.vue", () => {
         expect(errorEl.exists()).toBeFalsy();
     });
 
-    it("updates object store to default on selection null", async () => {
+    it("updates object store to default on actual selection", async () => {
         const wrapper = mountComponent();
         const el = await wrapper.find(ROOT_COMPONENT.preferences.object_store.selector);
         await el.trigger("click");

@@ -2,11 +2,7 @@
 API operations on Galaxy's object store.
 """
 import logging
-from typing import (
-    Any,
-    Dict,
-    List,
-)
+from typing import List
 
 from fastapi import (
     Path,
@@ -18,7 +14,10 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
 )
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.objectstore import BaseObjectStore
+from galaxy.objectstore import (
+    BaseObjectStore,
+    ConcreteObjectStoreModel,
+)
 from . import (
     depends,
     DependsOnTrans,
@@ -34,7 +33,9 @@ ConcreteObjectStoreIdPathParam: str = Path(
 )
 
 SelectableQueryParam: bool = Query(
-    default=False, title="Selectable", description="Restrict index query to user selectable object stores."
+    default=False,
+    title="Selectable",
+    description="Restrict index query to user selectable object stores, the current implementation requires this to be true.",
 )
 
 
@@ -44,37 +45,34 @@ class FastAPIObjectStore:
 
     @router.get(
         "/api/object_store",
-        summary="",
-        response_description="",
+        summary="Get a list of (currently only concrete) object stores configured with this Galaxy instance.",
+        response_description="A list of the configured object stores.",
     )
     def index(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         selectable: bool = SelectableQueryParam,
-    ) -> List[Dict[str, Any]]:
+    ) -> List[ConcreteObjectStoreModel]:
         if not selectable:
             raise RequestParameterInvalidException(
                 "The object store index query currently needs to be called with selectable=true"
             )
         selectable_ids = self.object_store.object_store_ids_allowing_selection()
-        return [self._dict_for(selectable_id) for selectable_id in selectable_ids]
+        return [self._model_for(selectable_id) for selectable_id in selectable_ids]
 
     @router.get(
         "/api/object_store/{object_store_id}",
-        summary="Return boolean to indicate if Galaxy's default object store allows selection.",
-        response_description="A list with details about the remote files available to the user.",
+        summary="Get information about a concrete object store configured with Galaxy.",
     )
     def show_info(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         object_store_id: str = ConcreteObjectStoreIdPathParam,
-    ) -> Dict[str, Any]:
-        return self._dict_for(object_store_id)
+    ) -> ConcreteObjectStoreModel:
+        return self._model_for(object_store_id)
 
-    def _dict_for(self, object_store_id: str) -> Dict[str, Any]:
+    def _model_for(self, object_store_id: str) -> ConcreteObjectStoreModel:
         concrete_object_store = self.object_store.get_concrete_store_by_object_store_id(object_store_id)
         if concrete_object_store is None:
             raise ObjectNotFound()
-        as_dict = concrete_object_store.to_dict()
-        as_dict["object_store_id"] = object_store_id
-        return as_dict
+        return concrete_object_store.to_model(object_store_id)

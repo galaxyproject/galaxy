@@ -1,5 +1,6 @@
 """Galaxy Quotas"""
 import logging
+from typing import Optional
 
 from sqlalchemy.sql import text
 
@@ -23,10 +24,10 @@ class QuotaAgent:  # metaclass=abc.ABCMeta
     """
 
     # TODO: make abstractmethod after they work better with mypy
-    def get_quota(self, user, quota_source_label=None):
+    def get_quota(self, user, quota_source_label=None) -> Optional[int]:
         """Return quota in bytes or None if no quota is set."""
 
-    def get_quota_nice_size(self, user, quota_source_label=None):
+    def get_quota_nice_size(self, user, quota_source_label=None) -> Optional[str]:
         """Return quota as a human-readable string or 'unlimited' if no quota is set."""
         quota_bytes = self.get_quota(user, quota_source_label=quota_source_label)
         if quota_bytes is not None:
@@ -36,10 +37,12 @@ class QuotaAgent:  # metaclass=abc.ABCMeta
         return quota_str
 
     # TODO: make abstractmethod after they work better with mypy
-    def get_percent(self, trans=None, user=False, history=False, usage=False, quota=False, quota_source_label=None):
+    def get_percent(
+        self, trans=None, user=False, history=False, usage=False, quota=False, quota_source_label=None
+    ) -> Optional[int]:
         """Return the percentage of any storage quota applicable to the user/transaction."""
 
-    def get_usage(self, trans=None, user=False, history=False, quota_source_label=None):
+    def get_usage(self, trans=None, user=False, history=False, quota_source_label=None) -> Optional[float]:
         if trans:
             user = trans.user
             history = trans.history
@@ -73,14 +76,16 @@ class NoQuotaAgent(QuotaAgent):
     def __init__(self):
         pass
 
-    def get_quota(self, user, quota_source_label=None):
+    def get_quota(self, user, quota_source_label=None) -> Optional[int]:
         return None
 
     @property
     def default_quota(self):
         return None
 
-    def get_percent(self, trans=None, user=False, history=False, usage=False, quota=False, quota_source_label=None):
+    def get_percent(
+        self, trans=None, user=False, history=False, usage=False, quota=False, quota_source_label=None
+    ) -> Optional[int]:
         return None
 
     def is_over_quota(self, app, job, job_destination):
@@ -94,7 +99,7 @@ class DatabaseQuotaAgent(QuotaAgent):
         self.model = model
         self.sa_session = model.context
 
-    def get_quota(self, user, quota_source_label=None):
+    def get_quota(self, user, quota_source_label=None) -> Optional[int]:
         """
         Calculated like so:
 
@@ -220,7 +225,9 @@ WHERE default_quota_association.type = :default_type
         self.sa_session.add(target_default)
         self.sa_session.flush()
 
-    def get_percent(self, trans=None, user=False, history=False, usage=False, quota=False, quota_source_label=None):
+    def get_percent(
+        self, trans=None, user=False, history=False, usage=False, quota=False, quota_source_label=None
+    ) -> Optional[int]:
         """
         Return the percentage of any storage quota applicable to the user/transaction.
         """
