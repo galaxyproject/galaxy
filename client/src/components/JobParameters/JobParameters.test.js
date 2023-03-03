@@ -8,6 +8,9 @@ import paramResponse from "./parameters-response.json";
 import raw from "components/providers/test/json/Dataset.json";
 import { userStore } from "store/userStore";
 import { configStore } from "store/configStore";
+import { createTestingPinia } from "@pinia/testing";
+import { setActivePinia } from "pinia";
+import { useDataset } from "@/composables/dataset";
 
 const JOB_ID = "foo";
 const DatasetProvider = {
@@ -22,10 +25,17 @@ const localVue = createLocalVue();
 
 localVue.use(Vuex);
 
+jest.mock("@/composables/dataset");
+useDataset.mockReturnValue({
+    isLoading: true,
+    dataset: null,
+});
+
 describe("JobParameters/JobParameters.vue", () => {
     let actions;
     let state;
     let store;
+    let testingPinia;
 
     const linkParam = paramResponse.parameters.find((element) => Array.isArray(element.value));
     let axiosMock;
@@ -33,6 +43,10 @@ describe("JobParameters/JobParameters.vue", () => {
     beforeEach(() => {
         axiosMock = new MockAdapter(axios);
         axiosMock.onGet(`/api/jobs/${JOB_ID}/parameters_display`).reply(200, paramResponse);
+
+        testingPinia = createTestingPinia();
+        setActivePinia(testingPinia);
+
         store = new Vuex.Store({
             modules: {
                 config: {
@@ -66,6 +80,7 @@ describe("JobParameters/JobParameters.vue", () => {
             stubs: {
                 DatasetProvider: DatasetProvider,
             },
+            pinia: testingPinia,
         });
         await flushPromises();
 
@@ -103,6 +118,7 @@ describe("JobParameters/JobParameters.vue", () => {
                 stubs: {
                     DatasetProvider: DatasetProvider,
                 },
+                pinia: testingPinia,
             });
             await flushPromises();
             return wrapper.find("#single-param");
