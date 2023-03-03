@@ -10,7 +10,6 @@ import threading
 from typing import (
     Iterable,
     List,
-    NamedTuple,
     Optional,
     Tuple,
     TYPE_CHECKING,
