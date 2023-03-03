@@ -1091,7 +1091,6 @@ class JobHandlerStopQueue(BaseJobHandlerQueue):
         """
         Called repeatedly by `monitor` to stop jobs.
         """
-        # TODO: remove handling of DELETED_NEW after 21.09
         # Pull all new jobs from the queue at once
         jobs_to_check = []
         with self.sa_session() as session, session.begin():
@@ -1129,7 +1128,7 @@ class JobHandlerStopQueue(BaseJobHandlerQueue):
                 jobs_to_check.append((job, job.stderr or None))
 
     def _get_new_jobs(self, session):
-        states = (model.Job.states.DELETED_NEW, model.Job.states.DELETING, model.Job.states.STOPPING)
+        states = (model.Job.states.DELETING, model.Job.states.STOPPING)
         stmt = select(model.Job).filter(
             model.Job.state.in_(states) & (model.Job.handler == self.app.config.server_name)
         )
@@ -1153,7 +1152,6 @@ class JobHandlerStopQueue(BaseJobHandlerQueue):
             if (
                 job.state
                 not in (
-                    job.states.DELETED_NEW,
                     job.states.DELETING,
                     job.states.DELETED,
                     job.states.STOPPING,
@@ -1164,7 +1162,7 @@ class JobHandlerStopQueue(BaseJobHandlerQueue):
                 # terminated before it got here
                 log.debug("Job %s already finished, not deleting or stopping", job.id)
                 continue
-            if job.state in (job.states.DELETED_NEW, job.states.DELETING):
+            if job.state == job.states.DELETING:
                 self.__delete(job, error_msg, session)
             elif job.state == job.states.STOPPING:
                 self.__stop(job, session)

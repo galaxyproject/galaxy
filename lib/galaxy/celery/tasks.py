@@ -213,9 +213,7 @@ def is_aborted(session: galaxy_scoped_session, job_id: int):
         select(
             exists(model.Job.state).where(
                 model.Job.id == job_id,
-                model.Job.state.in_(
-                    [model.Job.states.DELETED, model.Job.states.DELETED_NEW, model.Job.states.DELETING]
-                ),
+                model.Job.state.in_([model.Job.states.DELETED, model.Job.states.DELETING]),
             )
         )
     ).scalar()

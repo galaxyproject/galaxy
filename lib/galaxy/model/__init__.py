@@ -1071,7 +1071,6 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         PAUSED = "paused"
         DELETING = "deleting"
         DELETED = "deleted"
-        DELETED_NEW = "deleted_new"  # now DELETING, remove after 21.0
         STOPPING = "stop"
         STOPPED = "stopped"
         SKIPPED = "skipped"
@@ -1107,7 +1106,6 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             states.ERROR,
             states.DELETING,
             states.DELETED,
-            states.DELETED_NEW,
         ]
 
     def io_dicts(self, exclude_implicit_outputs=False) -> IoDicts:
