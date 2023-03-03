@@ -1,11 +1,22 @@
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { getLocalVue } from "@tests/jest/helpers";
 import GenericElement from "./GenericElement";
+import { useDataset } from "@/composables/dataset";
+import { createTestingPinia } from "@pinia/testing";
+import { setActivePinia } from "pinia";
 
 const localVue = getLocalVue();
 
+jest.mock("@/composables/dataset");
+useDataset.mockReturnValue({
+    isLoading: true,
+    dataset: null,
+});
+
 describe("GenericElement", () => {
     let wrapper;
+    const testPinia = createTestingPinia();
+    setActivePinia(testPinia);
 
     beforeEach(() => {
         wrapper = mount(GenericElement, {
@@ -53,6 +64,7 @@ describe("GenericElement", () => {
                 },
             },
             localVue,
+            pinia: testPinia,
         });
     });
 
