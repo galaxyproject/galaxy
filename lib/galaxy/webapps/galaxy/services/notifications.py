@@ -26,7 +26,7 @@ from galaxy.schema.notifications import (
     NotificationUpdateRequest,
     UpdateUserNotificationPreferencesRequest,
     UserNotificationListResponse,
-    UserNotificationPreferencesResponse,
+    UserNotificationPreferences,
     UserNotificationResponse,
     UserNotificationUpdateRequest,
 )
@@ -128,15 +128,17 @@ class NotificationService(ServiceBase):
         )
         return NotificationsBatchUpdateResponse(updated_count=updated_count)
 
-    def get_user_notification_preferences(self, user: User) -> UserNotificationPreferencesResponse:
-        """TODO"""
-        raise NotImplementedError
+    def get_user_notification_preferences(self, user_context: ProvidesUserContext) -> UserNotificationPreferences:
+        """Gets the user's current notification preferences."""
+        user = self.get_authenticated_user(user_context)
+        return self.notification_manager.get_user_notification_preferences(user)
 
     def update_user_notification_preferences(
-        self, user: User, request: UpdateUserNotificationPreferencesRequest
-    ) -> UserNotificationPreferencesResponse:
-        """TODO"""
-        raise NotImplementedError
+        self, user_context: ProvidesUserContext, request: UpdateUserNotificationPreferencesRequest
+    ) -> UserNotificationPreferences:
+        """Updates the user's notification preferences with the requested changes."""
+        user = self.get_authenticated_user(user_context)
+        return self.notification_manager.update_user_notification_preferences(user, request)
 
     def _ensure_user_can_send_notifications(self, sender_context: ProvidesUserContext) -> None:
         """Raises an exception if the user cannot send notifications."""

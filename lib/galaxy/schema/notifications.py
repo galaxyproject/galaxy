@@ -3,6 +3,7 @@ from datetime import datetime
 from enum import Enum
 from typing import (
     Any,
+    Dict,
     List,
     Optional,
     Union,
@@ -247,20 +248,31 @@ class NotificationsBatchUpdateResponse(Model):
 
 
 class NotificationChannelSettings(Model):
-    push: bool
+    push: bool = Field(default=True)
     # email: bool # Not supported for now
     # matrix: bool # Possible future Matrix.org integration?
 
 
 class NotificationCategorySettings(Model):
-    category: PersonalNotificationCategory
-    enabled: bool
-    channels: NotificationChannelSettings
+    enabled: bool = Field(default=True)
+    channels: NotificationChannelSettings = Field(default=NotificationChannelSettings())
+
+
+class UserNotificationPreferences(Model):
+    __root__: Dict[PersonalNotificationCategory, NotificationCategorySettings]
+
+    def update(self, other: "UserNotificationPreferences"):
+        self.__root__.update(other.__root__)
+
+    @classmethod
+    def default(cls):
+        return cls(
+            __root__={
+                category: NotificationCategorySettings()
+                for category in PersonalNotificationCategory.__members__.values()
+            }
+        )
 
 
 class UpdateUserNotificationPreferencesRequest(Model):
-    preferences: List[NotificationCategorySettings]
-
-
-class UserNotificationPreferencesResponse(Model):
-    __root__: List[NotificationCategorySettings]
+    preferences: UserNotificationPreferences
