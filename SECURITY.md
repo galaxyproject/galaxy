@@ -63,3 +63,10 @@ embargo, we will:
 If an issue is deemed to be time-sensitive – e.g. due to active and ongoing exploits in the wild – the embargo may be shortened considerably.
 
 If we believe that the reported issue affects other Galaxy Project components or projects outside of the Galaxy ecosystem, we may discuss the issue with those projects and coordinate disclosure and resolution with them.
+
+
+# Reporting a Vulnerability
+
+If you discover a security vulnerability in galaxy please disclose it via [our huntr page](https://huntr.dev/repos/galaxyproject/galaxy/). Information about bounties, CVEs, response times and past reports are all there..
+
+Thank you for improving the security of galaxy.
