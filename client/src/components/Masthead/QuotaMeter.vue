@@ -1,10 +1,12 @@
 <template>
     <current-user>
-        <div class="quota-meter d-flex align-items-center">
-            <b-link v-if="!hasQuota" v-b-tooltip.hover.left to="/storage" class="ml-auto quota-text" :title="title">
+        <div v-if="!hasQuota" class="quota-text d-flex align-items-center">
+            <b-link v-b-tooltip.hover.left to="/storage" class="ml-auto" :title="title">
                 {{ usingString + " " + totalUsageString }}
             </b-link>
-            <b-link v-else v-b-tooltip.hover.left class="quota-progress" to="/storage" :title="title">
+        </div>
+        <div v-else class="quota-meter d-flex align-items-center">
+            <b-link v-b-tooltip.hover.left class="quota-progress" to="/storage" :title="title">
                 <b-progress :max="100">
                     <b-progress-bar aria-label="Quota usage" :value="usage" :variant="variant" />
                 </b-progress>
@@ -77,13 +79,23 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.quota-meter {
-    background: var(--masthead-link-color);
+.quote-container {
     position: relative;
     height: 100%;
     margin-right: 0.5rem;
     padding-right: 0.5rem;
     padding-left: 0.5rem;
+}
+.quota-text {
+    @extend .quote-container;
+    background: var(--masthead-link-color);
+    a {
+        color: var(--masthead-text-color);
+        text-decoration: none;
+    }
+}
+.quota-meter {
+    @extend .quote-container;
     .quota-progress {
         width: 100px;
         height: 16px;
@@ -98,10 +110,6 @@ export default {
             line-height: 1em;
             pointer-events: none;
         }
-    }
-    .quota-text {
-        color: var(--masthead-text-color);
-        text-decoration: none;
     }
     :deep(a) {
         &:focus-visible {
