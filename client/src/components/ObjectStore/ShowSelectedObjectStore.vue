@@ -4,11 +4,13 @@ import { ObjectStoreDetailsProvider } from "@/components/providers/ObjectStorePr
 import DescribeObjectStore from "@/components/ObjectStore/DescribeObjectStore.vue";
 
 interface ShowSelectObjectStoreProps {
-    forWhat: string;
-    preferredObjectStoreId?: string | null;
+    forWhat: String;
+    preferredObjectStoreId?: String | null;
 }
 
-defineProps<ShowSelectObjectStoreProps>();
+withDefaults(defineProps<ShowSelectObjectStoreProps>(), {
+    preferredObjectStoreId: null,
+});
 
 const loadingMessage = "Loading object store details";
 </script>
