@@ -539,8 +539,6 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
             "contents_url": lambda item, key, **context: self.url_for(
                 "history_contents", history_id=self.app.security.encode_id(item.id), context=context
             ),
-            "empty": lambda item, key, **context: (len(item.datasets) + len(item.dataset_collections)) <= 0,
-            "count": lambda item, key, **context: len(item.datasets),
             "hdas": lambda item, key, **context: [self.app.security.encode_id(hda.id) for hda in item.datasets],
             "state_details": self.serialize_state_counts,
             "state_ids": self.serialize_state_ids,
