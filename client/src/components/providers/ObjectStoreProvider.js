@@ -4,7 +4,7 @@ import { SingleQueryProvider } from "components/providers/SingleQueryProvider";
 import { rethrowSimple } from "utils/simple-error";
 
 async function objectStoreDetails({ id }) {
-    const url = `${getAppRoot()}api/object_store/${id}`;
+    const url = `${getAppRoot()}api/object_stores/${id}`;
     try {
         const { data } = await axios.get(url);
         return data;

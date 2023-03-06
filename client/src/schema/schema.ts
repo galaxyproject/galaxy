@@ -889,13 +889,13 @@ export interface paths {
          */
         post: operations["create_api_metrics_post"];
     };
-    "/api/object_store": {
+    "/api/object_stores": {
         /** Get a list of (currently only concrete) object stores configured with this Galaxy instance. */
-        get: operations["index_api_object_store_get"];
+        get: operations["index_api_object_stores_get"];
     };
-    "/api/object_store/{object_store_id}": {
+    "/api/object_stores/{object_store_id}": {
         /** Get information about a concrete object store configured with Galaxy. */
-        get: operations["show_info_api_object_store__object_store_id__get"];
+        get: operations["show_info_api_object_stores__object_store_id__get"];
     };
     "/api/pages": {
         /**
@@ -12483,7 +12483,7 @@ export interface operations {
             };
         };
     };
-    index_api_object_store_get: {
+    index_api_object_stores_get: {
         /** Get a list of (currently only concrete) object stores configured with this Galaxy instance. */
         parameters?: {
             /** @description Restrict index query to user selectable object stores, the current implementation requires this to be true. */
@@ -12510,7 +12510,7 @@ export interface operations {
             };
         };
     };
-    show_info_api_object_store__object_store_id__get: {
+    show_info_api_object_stores__object_store_id__get: {
         /** Get information about a concrete object store configured with Galaxy. */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
