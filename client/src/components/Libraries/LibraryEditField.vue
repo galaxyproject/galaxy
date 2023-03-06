@@ -7,17 +7,20 @@
             </div>
             <!-- shrink long text -->
             <div v-else-if="text.length > maxDescriptionLength && !isExpanded">
+                <!-- eslint-disable vue/no-v-html -->
                 <span
                     class="shrinked-description"
                     :title="text"
-                    v-html="linkify(text.substring(0, maxDescriptionLength))">
+                    v-html="linkify(sanitize(text.substring(0, maxDescriptionLength)))">
                 </span>
+                <!-- eslint-enable vue/no-v-html -->
                 <span :title="text">...</span>
                 <a class="more-text-btn" href="javascript:void(0)" @click="toggleDescriptionExpand">(more) </a>
             </div>
             <!-- Regular -->
             <div v-else>
-                <div v-html="linkify(text)"></div>
+                <!-- eslint-disable-next-line vue/no-v-html -->
+                <div v-html="linkify(sanitize(text))"></div>
                 <!-- hide toggle expand if text is too short -->
                 <a
                     v-if="text.length > maxDescriptionLength"
@@ -37,6 +40,7 @@ import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
 import linkifyHtml from "linkify-html";
+import { sanitize } from "dompurify";
 Vue.use(BootstrapVue);
 
 export default {
@@ -60,6 +64,7 @@ export default {
         };
     },
     methods: {
+        sanitize,
         updateValue(value) {
             this.$emit("update:changedValue", value);
         },
