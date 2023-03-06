@@ -25,7 +25,7 @@ describe("ShowSelectedObjectStore", () => {
     });
 
     it("should show a loading message and then a DescribeObjectStore component", async () => {
-        axiosMock.onGet(`/api/object_store/${TEST_OBJECT_ID}`).reply(200, OBJECT_STORE_DATA);
+        axiosMock.onGet(`/api/object_stores/${TEST_OBJECT_ID}`).reply(200, OBJECT_STORE_DATA);
         wrapper = mount(ShowSelectedObjectStore, {
             propsData: { preferredObjectStoreId: TEST_OBJECT_ID, forWhat: "Data goes into..." },
             localVue,

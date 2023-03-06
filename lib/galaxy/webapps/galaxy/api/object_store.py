@@ -44,7 +44,7 @@ class FastAPIObjectStore:
     object_store: BaseObjectStore = depends(BaseObjectStore)
 
     @router.get(
-        "/api/object_store",
+        "/api/object_stores",
         summary="Get a list of (currently only concrete) object stores configured with this Galaxy instance.",
         response_description="A list of the configured object stores.",
     )
@@ -61,7 +61,7 @@ class FastAPIObjectStore:
         return [self._model_for(selectable_id) for selectable_id in selectable_ids]
 
     @router.get(
-        "/api/object_store/{object_store_id}",
+        "/api/object_stores/{object_store_id}",
         summary="Get information about a concrete object store configured with Galaxy.",
     )
     def show_info(

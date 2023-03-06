@@ -8,6 +8,7 @@ import re
 from typing import (
     List,
     Optional,
+    Union,
 )
 
 from fastapi import (
@@ -22,6 +23,7 @@ from sqlalchemy import (
     or_,
     true,
 )
+from typing_extensions import Literal
 
 from galaxy import (
     exceptions,
@@ -76,9 +78,12 @@ log = logging.getLogger(__name__)
 
 router = Router(tags=["users"])
 
+FlexibleUserIdType = Union[DecodedDatabaseIdField, Literal["current"]]
 UserIdPathParam: DecodedDatabaseIdField = Path(..., title="User ID", description="The ID of the user to get.")
 APIKeyPathParam: str = Path(..., title="API Key", description="The API key of the user.")
-FlexibleUserIdPathParam: str = Path(..., title="User ID", description="The ID of the user to get or __current__.")
+FlexibleUserIdPathParam: FlexibleUserIdType = Path(
+    ..., title="User ID", description="The ID of the user to get or 'current'."
+)
 QuotaSourceLabelPathParam: str = Path(
     ...,
     title="Quota Source Label",
@@ -160,7 +165,7 @@ class FastAPIUsers:
     def usage(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        user_id: str = FlexibleUserIdPathParam,
+        user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
     ) -> List[UserQuotaUsage]:
         user = get_user_full(trans, user_id, False)
         if user:
@@ -177,7 +182,7 @@ class FastAPIUsers:
     def usage_for(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        user_id: str = FlexibleUserIdPathParam,
+        user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
         label: str = QuotaSourceLabelPathParam,
     ) -> Optional[UserQuotaUsage]:
         user = get_user_full(trans, user_id, False)
@@ -1146,7 +1151,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         return user
 
 
-def get_user_full(trans: ProvidesUserContext, user_id: str, deleted: bool) -> Optional[User]:
+def get_user_full(trans: ProvidesUserContext, user_id: Union[FlexibleUserIdType, str], deleted: bool) -> Optional[User]:
     try:
         # user is requesting data about themselves
         if user_id == "current":

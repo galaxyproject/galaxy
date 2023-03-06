@@ -174,10 +174,7 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
         assert response.status_code == 400
 
     def test_index_query(self):
-        selectable_object_stores_response = self._get("object_store?selectable=true")
-        selectable_object_stores_response.raise_for_status()
-        selectable_object_stores = selectable_object_stores_response.json()
-        selectable_object_store_ids = [s["object_store_id"] for s in selectable_object_stores]
+        selectable_object_store_ids = self.dataset_populator.selectable_object_store_ids()
         assert "default" in selectable_object_store_ids
         assert "static" in selectable_object_store_ids
         assert "dynamic_s3" not in selectable_object_store_ids

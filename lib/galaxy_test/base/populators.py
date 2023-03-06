@@ -1375,6 +1375,17 @@ class BaseDatasetPopulator(BasePopulator):
             timeout=timeout,
         )
 
+    def selectable_object_stores(self) -> List[Dict[str, Any]]:
+        selectable_object_stores_response = self._get("object_stores?selectable=true")
+        selectable_object_stores_response.raise_for_status()
+        selectable_object_stores = selectable_object_stores_response.json()
+        return selectable_object_stores
+
+    def selectable_object_store_ids(self) -> List[str]:
+        selectable_object_stores = self.selectable_object_stores()
+        selectable_object_store_ids = [s["object_store_id"] for s in selectable_object_stores]
+        return selectable_object_store_ids
+
     def new_page(
         self, slug: str = "mypage", title: str = "MY PAGE", content_format: str = "html", content: Optional[str] = None
     ) -> Dict[str, Any]:
