@@ -85,7 +85,7 @@ export default {
     padding-right: 0.5rem;
     padding-left: 0.5rem;
     .quota-progress {
-        width: 100%;
+        width: 100px;
         height: 16px;
         position: relative;
         & > * {
