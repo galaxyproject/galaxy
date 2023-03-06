@@ -164,6 +164,29 @@ class NotificationManager:
         result = self.sa_session.execute(stmt).scalar()
         return result
 
+    def get_broadcasted_notification(self, notification_id: int, include_inactive: bool = False):
+        stmt = (
+            select(self.broadcast_notification_columns)
+            .select_from(Notification)
+            .where(
+                and_(
+                    Notification.id == notification_id,
+                    Notification.category == MandatoryNotificationCategory.broadcast,
+                )
+            )
+        )
+        if not include_inactive:
+            stmt = stmt.where(
+                and_(
+                    Notification.publication_time < self.now,
+                    Notification.expiration_time > self.now,
+                )
+            )
+        result = self.sa_session.execute(stmt).fetchone()
+        if result is None:
+            self._raise_notification_not_found(notification_id)
+        return result
+
     def get_all_broadcasted_notifications(self, since: Optional[datetime] = None):
         stmt = self._all_broadcasted_notifications_query(since)
         result = self.sa_session.execute(stmt).fetchall()
