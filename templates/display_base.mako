@@ -101,8 +101,7 @@
         modern_route = modern_route_for_controller(get_controller_name(item))
         item_plural = get_item_plural( item )
         href_to_all_items = h.url_for( controller='/' + modern_route, action='list_published')
-        href_to_user_items = h.url_for( controller='/' + modern_route, action='list_published', xxx=item.user.username)
-        href_to_user_items = href_to_user_items.replace( 'xxx', 'f-username')
+        href_to_user_items = h.url_for( controller='/' + modern_route, action='list_published', **{"f-username": item.user and item.user.username})
     %>
     <div class="page-body p-3">
         <div class="page-item-header">
@@ -118,8 +117,7 @@
         modern_route = modern_route_for_controller(get_controller_name(item))
         item_plural = get_item_plural( item )
         href_to_all_items = h.url_for( controller='/' + modern_route , action='list_published')
-        href_to_user_items = h.url_for( controller='/' + modern_route, action='list_published', xxx=item.user.username)
-        href_to_user_items = href_to_user_items.replace( 'xxx', 'f-username')
+        href_to_user_items = h.url_for( controller='/' + modern_route, action='list_published', **{"f-username": item.user and item.user.username})
     %>
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner">

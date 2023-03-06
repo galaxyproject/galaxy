@@ -182,7 +182,7 @@ class HDAManager(
         copy.set_size()
 
         original_annotation = self.annotation(hda)
-        self.annotate(copy, original_annotation, user=hda.history.user, flush=False)
+        self.annotate(copy, original_annotation, user=hda.user, flush=False)
         if flush:
             if history:
                 history.add_pending_items()
@@ -292,7 +292,7 @@ class HDAManager(
     # .... annotatable
     def annotation(self, hda):
         # override to scope to history owner
-        return self._user_annotation(hda, hda.history.user)
+        return self._user_annotation(hda, hda.user)
 
     def _set_permissions(self, trans, hda, role_ids_dict):
         # The user associated the DATASET_ACCESS permission on the dataset with 1 or more roles.  We
