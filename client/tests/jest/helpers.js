@@ -72,6 +72,20 @@ expect.extend({
             };
         }
     },
+    toContainLocalizationOf(received, str) {
+        const pass = received.indexOf(testLocalize(str)) >= 0;
+        if (pass) {
+            return {
+                message: () => `expected ${received} to contain localization of ${str}`,
+                pass: true,
+            };
+        } else {
+            return {
+                message: () => `expected ${received} to contain localization of ${str}`,
+                pass: false,
+            };
+        }
+    },
 });
 
 // Creates a watcher on the indicated vm/prop for use in testing
