@@ -14027,9 +14027,9 @@ export interface operations {
             header?: {
                 "run-as"?: string;
             };
-            /** @description The ID of the user to get or __current__. */
+            /** @description The ID of the user to get or 'current'. */
             path: {
-                user_id: string;
+                user_id: string | "current";
             };
         };
         responses: {
@@ -14054,10 +14054,10 @@ export interface operations {
             header?: {
                 "run-as"?: string;
             };
-            /** @description The ID of the user to get or __current__. */
+            /** @description The ID of the user to get or 'current'. */
             /** @description The label corresponding to the quota source to fetch usage information about. */
             path: {
-                user_id: string;
+                user_id: string | "current";
                 label: string;
             };
         };
