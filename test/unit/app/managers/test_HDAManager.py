@@ -480,7 +480,7 @@ class TestHDASerializer(HDATestCase):
 
     def test_file_name_serializers(self):
         hda = self._create_vanilla_hda()
-        owner = hda.history.user
+        owner = hda.user
         keys = ["file_name"]
 
         self.log("file_name should be included if app configured to do so")
