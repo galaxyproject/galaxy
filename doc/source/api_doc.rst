@@ -18,7 +18,7 @@ The Galaxy API addresses these and other situations by exposing Galaxy
 internals through an additional interface, known as an Application Programming
 Interface, or API.
 
-The up-to-date Galaxy API documentation can be accessed by appending ``/api/docs`` or ``/redoc``
+The up-to-date Galaxy API documentation can be accessed by appending ``/api/docs`` or ``/api/redoc``
 to the base URL of a Galaxy server, e.g. https://usegalaxy.org/api/docs
 
 Various language specific bindings for interfacing with the Galaxy API have been
