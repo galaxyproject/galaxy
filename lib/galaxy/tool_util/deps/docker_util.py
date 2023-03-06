@@ -54,7 +54,7 @@ def build_pull_command(tag: str, **kwds) -> List[str]:
 
 
 def build_docker_cache_command(image: str, **kwds) -> str:
-    assert not kwds.get("to_str", True)
+    assert kwds.get("to_str", True)
     inspect_image_command = command_shell("inspect", [image], **kwds)
     pull_image_command = command_shell("pull", [image], **kwds)
     cache_command = f"{inspect_image_command} > /dev/null 2>&1\n[ $? -ne 0 ] && {pull_image_command} > /dev/null 2>&1\n"
