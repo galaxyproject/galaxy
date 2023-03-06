@@ -7468,7 +7468,6 @@ export interface components {
             | "paused"
             | "deleting"
             | "deleted"
-            | "deleted_new"
             | "stop"
             | "stopped"
             | "skipped";
