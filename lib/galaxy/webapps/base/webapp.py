@@ -815,7 +815,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             prev_galaxy_session
             and prev_galaxy_session.current_history
             and not prev_galaxy_session.current_history.deleted
-            and prev_galaxy_session.current_history.datasets
+            and not prev_galaxy_session.current_history.empty
             and (prev_galaxy_session.current_history.user is None or prev_galaxy_session.current_history.user == user)
         ):
             # If the previous galaxy session had a history, associate it with the new session, but only if it didn't
@@ -959,7 +959,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         )
         default_history = None
         for history in unnamed_histories:
-            if len(history.datasets) == 0:
+            if history.empty:
                 # Found suitable default history.
                 default_history = history
                 break

@@ -4795,6 +4795,11 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         self.copied_from_history_dataset_association = copied_from_history_dataset_association
         self.copied_from_library_dataset_dataset_association = copied_from_library_dataset_dataset_association
 
+    @property
+    def user(self):
+        if self.history:
+            return self.history.user
+
     def __create_version__(self, session):
         state = inspect(self)
         changes = {}
@@ -4842,7 +4847,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         self.validated_state = other_hda.validated_state
         self.validated_state_message = other_hda.validated_state_message
         if include_tags and self.history:
-            self.copy_tags_from(self.history.user, other_hda)
+            self.copy_tags_from(self.user, other_hda)
         self.dataset = new_dataset or other_hda.dataset
         if old_dataset:
             old_dataset.full_delete()
@@ -4993,7 +4998,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             for hda in self.dataset.history_associations:
                 if hda.id == self.id:
                     continue
-                if not hda.purged and hda.history and hda.history.user and hda.history.user == user:
+                if not hda.purged and hda.history and hda.user and hda.user == user:
                     break
             else:
                 rval += self.get_total_size()

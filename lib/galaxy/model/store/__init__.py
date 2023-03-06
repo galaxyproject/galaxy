@@ -105,7 +105,7 @@ from galaxy.util.path import (
 )
 from ._bco_convert_utils import (
     bco_workflow_version,
-    SoftwarePrerequisteTracker,
+    SoftwarePrerequisiteTracker,
 )
 from .ro_crate_utils import WorkflowRunCrateProfileBuilder
 from ..custom_types import json_encoder
@@ -2547,7 +2547,7 @@ class BcoModelExportStore(WorkflowInvocationOnlyExportStore):
 
         # metrics = {}  ... TODO
         pipeline_steps: List[PipelineStep] = []
-        software_prerequisite_tracker = SoftwarePrerequisteTracker()
+        software_prerequisite_tracker = SoftwarePrerequisiteTracker()
         input_subdomain_items: List[InputSubdomainItem] = []
         output_subdomain_items: List[OutputSubdomainItem] = []
         for step in workflow_invocation.steps:

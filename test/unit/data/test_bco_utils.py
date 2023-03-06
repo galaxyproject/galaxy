@@ -2,7 +2,7 @@ import json
 
 from galaxy.model import WorkflowStep
 from galaxy.model.orm.now import now
-from galaxy.model.store._bco_convert_utils import SoftwarePrerequisteTracker
+from galaxy.model.store._bco_convert_utils import SoftwarePrerequisiteTracker
 from galaxy.schema.bco import (
     BioComputeObjectCore,
     ContributionEnum,
@@ -93,8 +93,8 @@ def test_bco_writing(tmp_path):
     assert final_bco_object["object_id"] == object_id
 
 
-def test_software_prerequiste_tracker():
-    tracker = SoftwarePrerequisteTracker()
+def test_software_prerequisite_tracker():
+    tracker = SoftwarePrerequisiteTracker()
     step_0 = WorkflowStep()
     step_0.tool_id = "toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.73+galaxy0"
     step_0.type = "tool"
@@ -107,22 +107,33 @@ def test_software_prerequiste_tracker():
     step_2.tool_id = "toolshed.g2.bx.psu.edu/repos/iuc/compose_text_param/compose_text_param/0.1.1"
     step_2.type = "tool"
     step_2.tool_version = "0.1.1"
+    step_3 = WorkflowStep()
+    step_3.tool_id = "toolshed.g2.bx.psu.edu/repos/iuc/extract_genomic_dna/Extract genomic DNA 1/3.0.3+galaxy2"
+    step_3.type = "tool"
+    step_3.tool_version = "3.0.3+galaxy2"
 
     # subworkflow step
-    step_3 = WorkflowStep()
-    step_3.type = "subworkflow"
+    step_4 = WorkflowStep()
+    step_4.type = "subworkflow"
 
     # stock tool
-    step_4 = WorkflowStep()
-    step_4.type = "tool"
-    step_4.tool_id = "cat1"
-    step_4.tool_version = "1.0.0"
+    step_5 = WorkflowStep()
+    step_5.type = "tool"
+    step_5.tool_id = "cat1"
+    step_5.tool_version = "1.0.0"
+
+    step_6 = WorkflowStep()
+    step_6.type = "tool"
+    step_6.tool_id = "Tool ID With Spaces"
+    step_6.tool_version = "1.0.0"
 
     tracker.register_step(step_0)
     tracker.register_step(step_1)
     tracker.register_step(step_2)
     tracker.register_step(step_3)
     tracker.register_step(step_4)
+    tracker.register_step(step_5)
+    tracker.register_step(step_6)
 
     sps = tracker.software_prerequisites
-    assert len(sps) == 3
+    assert len(sps) == 5

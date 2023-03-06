@@ -129,17 +129,20 @@
                                     getMessage(row.item).length > maxDescriptionLength &&
                                     !expandedMessage.includes(row.item.id)
                                 ">
+                                <!-- eslint-disable vue/no-v-html -->
                                 <span
                                     class="shrinked-description"
                                     :title="getMessage(row.item)"
-                                    v-html="linkify(getMessage(row.item).substring(0, maxDescriptionLength))">
+                                    v-html="linkify(sanitize(getMessage(row.item).substring(0, maxDescriptionLength)))">
                                 </span>
+                                <!-- eslint-enable vue/no-v-html -->
                                 <span :title="getMessage(row.item)"> ...</span>
                                 <a class="more-text-btn" href="javascript:void(0)" @click="expandMessage(row.item)"
                                     >(more)</a
                                 >
                             </div>
-                            <div v-else v-html="linkify(getMessage(row.item))"></div>
+                            <!-- eslint-disable-next-line vue/no-v-html -->
+                            <div v-else v-html="linkify(sanitize(getMessage(row.item)))"></div>
                         </div>
                     </div>
                 </template>
@@ -269,6 +272,7 @@
 
 <script>
 import Vue from "vue";
+import { sanitize } from "dompurify";
 import { getAppRoot } from "onload/loadConfig";
 import UtcDate from "components/UtcDate";
 import BootstrapVue from "bootstrap-vue";
@@ -359,6 +363,7 @@ export default {
         this.getFolder(this.folder_id, this.page);
     },
     methods: {
+        sanitize,
         getFolder(folder_id, page) {
             this.currentFolderId = folder_id;
             this.currentPage = page;

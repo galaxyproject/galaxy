@@ -381,16 +381,13 @@ def get_file_from_conda_package(
         checklist = set([checklist])
     else:
         checklist = set(checklist)
-    # print(checklist)
     try:
         stream = stream_conda_info(url)
     except FileNotFoundError:
         stream = stream_conda_info_from_url(url)
     for tar, member in stream:
-        # print(member.name)
         if member.name in checklist:
             return member.name, tar.extractfile(member).read()
-    # print("None")
     return None, None
 
 
