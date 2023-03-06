@@ -145,6 +145,7 @@ def get_fastapi_instance() -> FastAPI:
     return FastAPI(
         title="Galaxy API",
         docs_url="/api/docs",
+        redoc_url="/api/redoc",
         openapi_tags=api_tags_metadata,
         license_info={"name": "MIT", "url": "https://github.com/galaxyproject/galaxy/blob/dev/LICENSE.txt"},
     )
