@@ -19,6 +19,7 @@ from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.notifications import (
     BroadcastNotificationCreateRequest,
     BroadcastNotificationListResponse,
+    BroadcastNotificationResponse,
     NotificationBroadcastUpdateRequest,
     NotificationCreatedResponse,
     NotificationCreateRequest,
@@ -73,11 +74,23 @@ class FastAPINotifications:
         return self.service.get_user_notifications(trans, limit=limit, offset=offset)
 
     @router.get(
+        "/api/notifications/broadcast/{notification_id}",
+        summary="Returns the information of a specific broadcasted notification.",
+    )
+    def get_broadcasted(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        notification_id: DecodedDatabaseIdField = Path(),
+    ) -> BroadcastNotificationResponse:
+        """Only Admin users can access inactive notifications (scheduled or recently expired)."""
+        return self.service.get_broadcasted_notification(trans, notification_id)
+
+    @router.get(
         "/api/notifications/broadcast",
         summary="Returns all currently active broadcasted notifications.",
     )
-    def get_broadcasted(self) -> BroadcastNotificationListResponse:
-        return self.service.get_broadcasted_notifications()
+    def get_all_broadcasted(self) -> BroadcastNotificationListResponse:
+        return self.service.get_all_broadcasted_notifications()
 
     @router.get(
         "/api/notifications/{notification_id}",

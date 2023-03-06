@@ -89,7 +89,19 @@ class NotificationService(ServiceBase):
         user_notifications = self._get_user_notifications(user_context, limit, offset)
         return UserNotificationListResponse(__root__=user_notifications)
 
-    def get_broadcasted_notifications(self) -> BroadcastNotificationListResponse:
+    def get_broadcasted_notification(
+        self, user_context: ProvidesUserContext, notification_id: int
+    ) -> BroadcastNotificationResponse:
+        """Gets a single `broadcasted` notification by ID.
+        Admin users can access inactive notifications (scheduled or recently expired).
+        """
+        include_inactive = user_context.user_is_admin
+        broadcasted_notification = self.notification_manager.get_broadcasted_notification(
+            notification_id, include_inactive
+        )
+        return BroadcastNotificationResponse.from_orm(broadcasted_notification)
+
+    def get_all_broadcasted_notifications(self) -> BroadcastNotificationListResponse:
         """Gets all the `broadcasted` notifications currently published."""
         broadcasted_notifications = self._get_all_broadcasted()
         return BroadcastNotificationListResponse(__root__=broadcasted_notifications)
