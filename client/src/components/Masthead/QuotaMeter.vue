@@ -98,7 +98,7 @@ export default {
     @extend .quote-container;
     .quota-progress {
         width: 100px;
-        height: 16px;
+        height: 1.4em;
         position: relative;
         & > * {
             position: absolute;
@@ -107,7 +107,7 @@ export default {
             text-align: center;
         }
         & > span {
-            line-height: 1em;
+            line-height: 1.4em;
             pointer-events: none;
         }
     }
