@@ -30,9 +30,9 @@ describe("test utils", () => {
         expect(Utils.uid()).not.toBe(Utils.uid()); //, "UID is unique");
     });
 
-    it('test sanitize', async () => {
+    it("test sanitize", async () => {
         expect(Utils.sanitize("<script>alert('xss')</script>")).toBe("&lt;script&gt;alert('xss')&lt;/script&gt;");
         expect(Utils.sanitize("This is just plain text")).toBe("This is just plain text");
         expect(Utils.sanitize(`'"><img src=x onerror=alert(1);>`)).toBe("'\"&gt;&lt;img src=x onerror=alert(1);&gt;");
-    })
+    });
 });

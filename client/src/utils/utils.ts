@@ -4,7 +4,6 @@
  */
 
 import _ from "underscore";
-import $ from "jquery";
 import axios, { type AxiosError, type AxiosResponse } from "axios";
 
 import { getAppRoot } from "@/onload/loadConfig";
@@ -102,7 +101,7 @@ export function isEmpty(value: any | any[]) {
  * @param{String}   lst - List of strings to be converted in human readable list sentence
  */
 export function textify(lst: string[] | string): string {
-    if ($.isArray(lst)) {
+    if (Array.isArray(lst)) {
         lst = lst.toString().replace(/,/g, ", ");
         const pos = lst.lastIndexOf(", ");
         if (pos != -1) {
