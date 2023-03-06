@@ -29,6 +29,8 @@ const props = defineProps({
     },
 });
 
+const POLLING_DELAY = 10000;
+
 const exportParams = reactive(DEFAULT_EXPORT_PARAMS);
 const isLoadingRecords = ref(true);
 const exportRecords = ref(null);
@@ -66,7 +68,7 @@ async function updateExports() {
             !taskMonitorRequestFailed.value &&
             !taskHasFailed.value;
         if (shouldWaitForTask) {
-            waitForTask(latestExportRecord.value.taskUUID, 3000);
+            waitForTask(latestExportRecord.value.taskUUID, POLLING_DELAY);
         }
         if (taskMonitorRequestFailed.value) {
             errorMessage.value = "Something went wrong trying to get the export progress. Please check back later.";
@@ -92,7 +94,7 @@ async function prepareDownload() {
         downloadObjectByRequestId(upToDateDownloadRecord.stsDownloadId);
         return;
     }
-    await downloadHistory(props.historyId, { pollDelayInMs: 3000, exportParams: exportParams });
+    await downloadHistory(props.historyId, { pollDelayInMs: POLLING_DELAY, exportParams: exportParams });
     updateExports();
 }
 

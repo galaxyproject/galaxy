@@ -4,7 +4,7 @@ import axios from "axios";
 const SUCCESS_STATE = "SUCCESS";
 const FAILURE_STATE = "FAILURE";
 const TASK_READY_STATES = [SUCCESS_STATE, FAILURE_STATE];
-const DEFAULT_POLL_DELAY = 1000;
+const DEFAULT_POLL_DELAY = 10000;
 
 /**
  * Composable for waiting on Galaxy background tasks.
