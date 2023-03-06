@@ -12,7 +12,12 @@ import { useFileSources } from "composables/fileSources";
 import { useShortTermStorage, DEFAULT_EXPORT_PARAMS } from "composables/shortTermStorage";
 import { useConfirmDialog } from "composables/confirmDialog";
 
-const { isRunning: isExportTaskRunning, waitForTask } = useTaskMonitor();
+const {
+    isRunning: isExportTaskRunning,
+    waitForTask,
+    requestHasFailed: taskMonitorRequestFailed,
+    hasFailed: taskHasFailed,
+} = useTaskMonitor();
 const { hasWritable: hasWritableFileSources } = useFileSources();
 const { isPreparing: isPreparingDownload, downloadHistory, downloadObjectByRequestId } = useShortTermStorage();
 const { confirm } = useConfirmDialog();
@@ -55,14 +60,25 @@ async function updateExports() {
     try {
         errorMessage.value = null;
         exportRecords.value = await getExportRecords(props.historyId);
-        const shouldWaitForTask = latestExportRecord.value?.isPreparing && !isExportTaskRunning.value;
+        const shouldWaitForTask =
+            latestExportRecord.value?.isPreparing &&
+            !isExportTaskRunning.value &&
+            !taskMonitorRequestFailed.value &&
+            !taskHasFailed.value;
         if (shouldWaitForTask) {
             waitForTask(latestExportRecord.value.taskUUID, 3000);
         }
+        if (taskMonitorRequestFailed.value) {
+            errorMessage.value = "Something went wrong trying to get the export progress. Please check back later.";
+        }
+        if (taskHasFailed.value) {
+            errorMessage.value = "Something went wrong trying to export the history. Please try again later.";
+        }
     } catch (error) {
         errorMessage.value = error;
+    } finally {
+        isLoadingRecords.value = false;
     }
-    isLoadingRecords.value = false;
 }
 
 async function doExportToFileSource(exportDirectory, fileName) {
@@ -174,8 +190,11 @@ function updateExportParams(newParams) {
             </b-tabs>
         </b-card>
 
+        <b-alert v-if="errorMessage" id="last-export-record-error-alert" variant="danger" class="mt-3" show>
+            {{ errorMessage }}
+        </b-alert>
         <export-record-details
-            v-if="latestExportRecord"
+            v-else-if="latestExportRecord"
             :record="latestExportRecord"
             object-type="history"
             class="mt-3"
@@ -184,9 +203,6 @@ function updateExportParams(newParams) {
             @onDownload="downloadFromRecord"
             @onReimport="reimportFromRecord"
             @onActionMessageDismissed="onActionMessageDismissedFromRecord" />
-        <b-alert v-else-if="errorMessage" id="last-export-record-error-alert" variant="danger" class="mt-3" show>
-            {{ errorMessage }}
-        </b-alert>
         <b-alert v-else id="no-export-records-alert" variant="info" class="mt-3" show>
             {{ availableRecordsMessage }}
         </b-alert>

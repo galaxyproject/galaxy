@@ -55,6 +55,7 @@ export function useTaskMonitor() {
         status.value = err;
         requestHasFailed.value = true;
         isRunning.value = false;
+        resetTimeout();
     }
 
     function resetTimeout() {
