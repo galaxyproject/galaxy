@@ -83,12 +83,12 @@ export default {
     position: relative;
     height: 100%;
     margin-right: 0.5rem;
-    padding-right: 0.5rem;
-    padding-left: 0.5rem;
 }
 .quota-text {
     @extend .quote-container;
     background: var(--masthead-link-color);
+    padding-right: 0.5rem;
+    padding-left: 0.5rem;
     a {
         color: var(--masthead-text-color);
         text-decoration: none;
