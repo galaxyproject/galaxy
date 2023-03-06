@@ -49,9 +49,11 @@ export function linkify(inputText: string): string {
     return replacedText;
 }
 
-/** Clone */
+/**
+ * This is a deep copy of the object input
+ */
 export function clone<T>(obj: T): T {
-    return JSON.parse(JSON.stringify(obj) || null);
+    return JSON.parse(JSON.stringify(obj));
 }
 
 /**
@@ -170,7 +172,7 @@ export function cssLoadFile(url: string): void {
  * @param{Object}   options         - Target dictionary
  * @param{Object}   optionsDefault  - Source dictionary
  */
-export function merge(options, optionsDefault) {
+export function merge(options: any, optionsDefault: any) {
     if (options) {
         return _.defaults(options, optionsDefault);
     } else {
@@ -185,7 +187,7 @@ export function merge(options, optionsDefault) {
  */
 export function roundToDecimalPlaces(number: number, numPlaces: number) {
     let placesMultiplier = 1;
-    for (const i = 0; i < numPlaces; i++) {
+    for (let i = 0; i < numPlaces; i++) {
         placesMultiplier *= 10;
     }
     return Math.round(number * placesMultiplier) / placesMultiplier;
@@ -234,8 +236,7 @@ export function bytesToString(size: number, normal_font: boolean, numberPlaces: 
 
 /** Create a unique id */
 export function uid(): string {
-    top.__utils__uid__ = top.__utils__uid__ || 0;
-    return `uid-${top.__utils__uid__++}`;
+    return _.uniqueId("uid-");
 }
 
 /** Create a time stamp */
@@ -247,7 +248,7 @@ export function time(): string {
 }
 
 /** Append script and style tags to Galaxy main application */
-export function appendScriptStyle(data) {
+export function appendScriptStyle(data: { script?: string, styles?: string }) {
     // create a script tag inside head tag
     if (data.script && data.script !== "") {
         $("<script/>", { type: "text/javascript" }).text(data.script).appendTo("head");
@@ -288,7 +289,7 @@ export function setWindowTitle(title: string): void {
 export function hashFnv32a(str: string): number {
     let hval = 0x811c9dc5;
 
-    for (const i = 0, l = str.length; i < l; i++) {
+    for (let i = 0, l = str.length; i < l; i++) {
         hval ^= str.charCodeAt(i);
         hval += (hval << 1) + (hval << 4) + (hval << 7) + (hval << 8) + (hval << 24);
     }
@@ -300,7 +301,7 @@ export function hashFnv32a(str: string): number {
  * @param selector
  * @returns {Promise<*>}
  */
-export async function waitForElementToBePresent(selector) {
+export async function waitForElementToBePresent(selector: string) {
     while (document.querySelector(selector) === null) {
         await new Promise((resolve) => requestAnimationFrame(resolve));
     }
@@ -326,7 +327,6 @@ export default {
     bytesToString: bytesToString,
     uid: uid,
     time: time,
-    request: request,
     sanitize: sanitize,
     textify: textify,
     isEmpty: isEmpty,
