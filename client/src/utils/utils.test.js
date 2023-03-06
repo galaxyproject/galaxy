@@ -14,4 +14,25 @@ describe("test utils", () => {
         expect(Utils.isEmpty(1)).toBe(false); //, "Value is int");
         expect(Utils.isEmpty(0)).toBe(false); //, "Value is zero");
     });
+
+    it("test isJSON", async () => {
+        expect(Utils.isJSON("{}")).toBe(true); //, "JSON is {}");
+        expect(Utils.isJSON("[]")).toBe(true); //, "JSON is []");
+        expect(Utils.isJSON("null")).toBe(true); //, "JSON is null");
+        expect(Utils.isJSON("")).toBe(true); //, "JSON is empty");
+        expect(Utils.isJSON("data")).toBe(false); //, "JSON is data");
+    });
+
+    it("test uid", async () => {
+        const uid = Utils.uid();
+        expect(uid).not.toBe(""); //, "UID is not empty");
+        expect(uid).toMatch(/^uid-/); //, "UID starts with uid-");
+        expect(Utils.uid()).not.toBe(Utils.uid()); //, "UID is unique");
+    });
+
+    it('test sanitize', async () => {
+        expect(Utils.sanitize("<script>alert('xss')</script>")).toBe("&lt;script&gt;alert('xss')&lt;/script&gt;");
+        expect(Utils.sanitize("This is just plain text")).toBe("This is just plain text");
+        expect(Utils.sanitize(`'"><img src=x onerror=alert(1);>`)).toBe("'\"&gt;&lt;img src=x onerror=alert(1);&gt;");
+    })
 });

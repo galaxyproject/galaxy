@@ -248,7 +248,7 @@ export function time(): string {
 }
 
 /** Append script and style tags to Galaxy main application */
-export function appendScriptStyle(data: { script?: string, styles?: string }) {
+export function appendScriptStyle(data: { script?: string; styles?: string }) {
     // create a script tag inside head tag
     if (data.script && data.script !== "") {
         $("<script/>", { type: "text/javascript" }).text(data.script).appendTo("head");
