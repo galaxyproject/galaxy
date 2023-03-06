@@ -1,6 +1,7 @@
-import { mount } from "@vue/test-utils";
+import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 import ObjectStoreBadges from "./ObjectStoreBadges";
+import ObjectStoreBadge from "./ObjectStoreBadge";
 
 const localVue = getLocalVue(true);
 
@@ -13,19 +14,27 @@ const BADGES = [
 describe("ObjectStoreBadges", () => {
     let wrapper;
 
-    function mountBadges() {
-        wrapper = mount(ObjectStoreBadges, {
+    it("should render all badges in array", async () => {
+        wrapper = shallowMount(ObjectStoreBadges, {
             propsData: { badges: BADGES },
             localVue,
-            stubs: { ObjectStoreBadge: true },
         });
-    }
-
-    it("should render all badges in array", async () => {
-        mountBadges();
         const badgeListEl = wrapper.find(".object-store-badges");
         expect(badgeListEl.exists()).toBeTruthy();
-        console.log(badgeListEl.html());
-        expect(badgeListEl.findAll("objectstorebadge-stub").length).toBe(2);
+        const badges = wrapper.findAllComponents(ObjectStoreBadge);
+        expect(badges.length).toBe(2);
+        expect(badges.at(0).attributes("size")).toBe("3x");
+    });
+
+    it("should pass along size attributes", async () => {
+        wrapper = shallowMount(ObjectStoreBadges, {
+            propsData: { badges: BADGES, size: "2x" },
+            localVue,
+        });
+        const badgeListEl = wrapper.find(".object-store-badges");
+        expect(badgeListEl.exists()).toBeTruthy();
+        const badges = wrapper.findAllComponents(ObjectStoreBadge);
+        expect(badges.length).toBe(2);
+        expect(badges.at(0).attributes("size")).toBe("2x");
     });
 });
