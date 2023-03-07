@@ -1,4 +1,5 @@
 import time
+from pathlib import Path
 
 import pytest
 
@@ -126,6 +127,28 @@ def test_cleanup_no_op_if_duration_not_reached(tmpdir):
     time.sleep(TEST_SLEEP_DURATION)
     manager.cleanup()
     assert short_term_storage_target.path.exists()
+
+
+def test_cleanup_if_metadata_not_found(tmpdir):
+    config = ShortTermStorageConfiguration(
+        short_term_storage_directory=tmpdir,
+        maximum_storage_duration=100,
+    )
+    manager = ShortTermStorageManager(config=config)
+    short_term_storage_target = manager.new_target(
+        TEST_FILENAME,
+        TEST_MIME_TYPE,
+    )
+    short_term_storage_target.path.touch()
+    # Force metadata file deletion only
+    parent_directory_path = Path(short_term_storage_target.path.parent)
+    for metadata_file_path in parent_directory_path.glob("*.json"):
+        metadata_file_path.unlink()
+    assert short_term_storage_target.path.exists()
+
+    manager.cleanup()
+    # If the metadata is lost, the target will be deleted
+    assert not short_term_storage_target.path.exists()
 
 
 def test_serve_non_existent_raises_object_not_found(tmpdir):
