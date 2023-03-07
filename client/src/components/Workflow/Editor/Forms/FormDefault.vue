@@ -27,7 +27,6 @@
         <template v-slot:body>
             <FormElement
                 id="__label"
-                :key="stepId"
                 :value="label"
                 title="Label"
                 help="Add a step label."
@@ -35,7 +34,6 @@
                 @input="onLabel" />
             <FormElement
                 id="__annotation"
-                :key="stepId"
                 :value="annotation"
                 title="Step Annotation"
                 :area="true"
@@ -80,9 +78,9 @@ const emit = defineEmits(["onAnnotation", "onLabel", "onAttemptRefactor", "onEdi
 const stepRef = toRef(props, "step");
 const { stepId, contentId, annotation, label, name, type, configForm } = useStepProps(stepRef);
 const stepStore = useWorkflowStepStore();
-const uniqueErrorLabel = useUniqueLabelError(stepStore, label?.value);
+const uniqueErrorLabel = useUniqueLabelError(stepStore, label.value);
 const stepTitle = computed(() => {
-    if (label?.value) {
+    if (label.value) {
         return label.value;
     }
     if (isSubworkflow.value) {
