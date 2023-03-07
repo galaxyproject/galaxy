@@ -5,9 +5,6 @@ Revises: c39f1de47a04
 Create Date: 2023-03-07 15:06:55.682273
 
 """
-import sqlalchemy as sa
-from alembic import op
-
 from galaxy.model.migrations.util import (
     create_index,
     drop_index,
