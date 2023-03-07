@@ -252,6 +252,12 @@ class ShortTermStorageManager(ShortTermStorageAllocator, ShortTermStorageMonitor
         with open(meta_path) as f:
             return json.load(f)
 
+    def _load_metadata_safe(self, target_directory: Path, meta_name: str):
+        try:
+            return self._load_metadata(target_directory, meta_name)
+        except ObjectNotFound:
+            return None
+
     def _directory(self, target: Union[UUID, ShortTermStorageTarget]) -> Path:
         if isinstance(target, ShortTermStorageTarget):
             request_id = target.request_id
@@ -261,7 +267,14 @@ class ShortTermStorageManager(ShortTermStorageAllocator, ShortTermStorageMonitor
         return self._root.joinpath(*relative_directory)
 
     def _cleanup_if_needed(self, request_id: UUID):
-        request_metadata = self._load_metadata(self._directory(request_id), "request")
+        target_directory = self._directory(request_id)
+        if not target_directory.exists():
+            return  # Nothing to clean
+        request_metadata = self._load_metadata_safe(target_directory, "request")
+        if request_metadata is None:
+            # Delete if metadata is lost
+            self._delete(request_id)
+            return
         duration = request_metadata["duration"]
         creation_datetime_str = request_metadata["created"]
         unprintStrptimeFmt = "%Y-%m-%d %H:%M:%S.%f"
