@@ -11,6 +11,7 @@ import FormText from "./Elements/FormText.vue";
 import FormOptionalText from "./Elements/FormOptionalText.vue";
 import FormRulesEdit from "./Elements/FormRulesEdit.vue";
 import FormUpload from "./Elements/FormUpload.vue";
+import FormDrilldown from "./Elements/FormDrilldown.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref, computed, useAttrs } from "vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -263,6 +264,11 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 :options="attrs.options"
                 :optional="attrs.optional"
                 :multiple="attrs.multiple" />
+            <FormDrilldown
+                v-else-if="props.type === 'drill_down'"
+                :id="id"
+                v-model="currentValue"
+                :options="attrs.options" />
             <FormColor v-else-if="props.type === 'color'" :id="props.id" v-model="currentValue" />
             <FormDirectory v-else-if="props.type === 'directory_uri'" v-model="currentValue" />
             <FormUpload v-else-if="props.type === 'upload'" v-model="currentValue" />
