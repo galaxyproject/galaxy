@@ -29,7 +29,7 @@ const props = defineProps({
     },
 });
 
-const POLLING_DELAY = 10000;
+const POLLING_DELAY = 3000;
 
 const exportParams = reactive(DEFAULT_EXPORT_PARAMS);
 const isLoadingRecords = ref(true);
