@@ -82,5 +82,10 @@ Outputs
 
 If you create gene sets or differential experession sets, this will be available as a collection of files under
 "Cellxgene user annotations and gene sets" at the end of the execution (when you stop the interactive environment).
+
+Tutorials
+---------
+
+You can find cellxgene tuorials `here <https://cellxgene.cziscience.com/docs/04__Analyze%20Public%20Data/4_1__Hosted%20Tutorials>`_ .
 ]]></help>
 </tool>
