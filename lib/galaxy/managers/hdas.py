@@ -416,7 +416,7 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
                     hda: model.HistoryDatasetAssociation = self.hda_manager.get_owned(hda_id, user)
                     hda.deleted = True
                     quota_amount = int(hda.quota_amount(user))
-                    hda.purge_usage_from_quota(user)
+                    hda.purge_usage_from_quota(user, hda.dataset.quota_source_info)
                     hda.purged = True
                     dataset_ids_to_remove.add(hda.dataset.id)
                     success_item_count += 1
