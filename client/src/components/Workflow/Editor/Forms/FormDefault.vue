@@ -78,9 +78,9 @@ const emit = defineEmits(["onAnnotation", "onLabel", "onAttemptRefactor", "onEdi
 const stepRef = toRef(props, "step");
 const { stepId, contentId, annotation, label, name, type, configForm } = useStepProps(stepRef);
 const stepStore = useWorkflowStepStore();
-const uniqueErrorLabel = useUniqueLabelError(stepStore, label?.value);
+const uniqueErrorLabel = useUniqueLabelError(stepStore, label.value);
 const stepTitle = computed(() => {
-    if (label?.value) {
+    if (label.value) {
         return label.value;
     }
     if (isSubworkflow.value) {
