@@ -13,6 +13,7 @@
 
 <script>
 import Draggable from "./Draggable.vue";
+import { useAnimationFrameThrottle } from "@/composables/throttle";
 
 export default {
     components: {
@@ -42,6 +43,10 @@ export default {
             default: null,
         },
     },
+    setup() {
+        const { throttle } = useAnimationFrameThrottle();
+        return { throttle };
+    },
     data() {
         return {
             isPanning: false,
@@ -66,7 +71,10 @@ export default {
                 this.$emit("move", position);
             }
             this.timeout = setTimeout(() => {
-                this.emitPan(position);
+                // ensure the recursive call also runs in the animation frame
+                this.throttle(() => {
+                    this.emitPan(position);
+                });
             }, this.refreshRate);
         },
         onMove(position, event) {
