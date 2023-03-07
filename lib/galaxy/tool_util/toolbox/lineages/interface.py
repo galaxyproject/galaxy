@@ -14,7 +14,8 @@ from galaxy.util.tool_version import remove_version_from_guid
 class ToolLineageVersion:
     """Represents a single tool in a lineage. If lineage is based
     around GUIDs that somehow encode the version (either using GUID
-    or a simple tool id and a version)."""
+    or a simple tool id and a version).
+    """
 
     def __init__(self, id, version):
         self.id = id

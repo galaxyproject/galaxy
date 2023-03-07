@@ -28,7 +28,6 @@ def remove(engine):
 
 def _postgres_remove():
     """postgres trigger removal sql"""
-
     sql = []
     sql.append(f"DROP FUNCTION IF EXISTS {fn_prefix}_history_id() CASCADE;")
     sql.append(f"DROP FUNCTION IF EXISTS {fn_prefix}_id() CASCADE;")
@@ -38,7 +37,6 @@ def _postgres_remove():
 
 def _postgres_install(engine):
     """postgres trigger installation sql"""
-
     sql = []
 
     # postgres trigger function template

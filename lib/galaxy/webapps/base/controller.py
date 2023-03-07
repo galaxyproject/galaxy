@@ -114,7 +114,6 @@ class BaseController:
 
     # TODO this will be replaced by lib.galaxy.managers.base.ModelFilterParser.build_filter_params
     def parse_filter_params(self, qdict, filter_attr_key="q", filter_value_key="qv", attr_op_split_char="-"):
-        """ """
         # TODO: import DEFAULT_OP from FilterParser
         DEFAULT_OP = "eq"
         if filter_attr_key not in qdict:
@@ -144,8 +143,6 @@ class BaseController:
         return list(zip(attrs, ops, values))
 
     def parse_limit_offset(self, qdict):
-        """ """
-
         def _parse_pos_int(i):
             try:
                 new_val = int(i)
@@ -905,7 +902,6 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
 
     def get_tool_def(self, trans, hda):
         """Returns definition of an interactive tool for an HDA."""
-
         # Get dataset's job.
         job = None
         for job_output_assoc in hda.creating_job_associations:
@@ -1353,7 +1349,8 @@ class SharableMixin:
     def _make_item_accessible(self, sa_session, item):
         """Makes item accessible--viewable and importable--and sets item's slug.
         Does not flush/commit changes, however. Item must have name, user,
-        importable, and slug attributes."""
+        importable, and slug attributes.
+        """
         item.importable = True
         self.slug_builder.create_item_slug(sa_session, item)
 

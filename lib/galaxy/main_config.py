@@ -51,7 +51,8 @@ def find_config(supplied_config: Optional[str], galaxy_root: Optional[str], app_
 
 class WebappSetupProps(NamedTuple):
     """Basic properties to provide information about the App and the environment variables
-    used to resolve the App configuration."""
+    used to resolve the App configuration.
+    """
 
     app_name: str
     default_section_name: str

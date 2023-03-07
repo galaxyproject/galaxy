@@ -571,7 +571,8 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         jeha_id: Union[DecodedDatabaseIdField, LatestLiteral],
     ) -> model.JobExportHistoryArchive:
         """Returns the exported history archive information if it's ready
-        or raises an exception if not."""
+        or raises an exception if not.
+        """
         return self.history_export_manager.get_ready_jeha(trans, history_id, jeha_id)
 
     def get_archive_download_path(

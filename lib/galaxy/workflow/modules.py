@@ -490,7 +490,6 @@ class WorkflowModule:
 
     def get_replacement_parameters(self, step):
         """Return a list of replacement parameters."""
-
         return []
 
     def compute_collection_info(self, progress, step, all_inputs):
@@ -2013,7 +2012,6 @@ class ToolModule(WorkflowModule):
         See the test case test_inputs_to_steps for an example of a workflow test
         case that exercises this code.
         """
-
         # Ensure any repeats defined only by input_connections are populated.
         input_connections = kwds.get("input_connections", {})
         expected_replacement_keys = input_connections.keys()
@@ -2436,7 +2434,8 @@ class SkipWorkflowStepEvaluation(Exception):
 
 class WorkflowModuleInjector:
     """Injects workflow step objects from the ORM with appropriate module and
-    module generated/influenced state."""
+    module generated/influenced state.
+    """
 
     def __init__(self, trans, allow_tool_state_corrections=False):
         self.trans = trans

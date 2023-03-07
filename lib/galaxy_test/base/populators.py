@@ -1616,7 +1616,8 @@ class BaseWorkflowPopulator(BasePopulator):
         timeout: timeout_type = DEFAULT_TIMEOUT,
     ) -> None:
         """Wait for a workflow invocation to completely schedule and then history
-        to be complete."""
+        to be complete.
+        """
         self.wait_for_invocation(workflow_id, invocation_id, timeout=timeout, assert_ok=assert_ok)
         self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=assert_ok, timeout=timeout)
 
@@ -3066,7 +3067,6 @@ class GiHttpMixin:
 
 
 class GiDatasetPopulator(GiHttpMixin, BaseDatasetPopulator):
-
     """Implementation of BaseDatasetPopulator backed by bioblend."""
 
     def __init__(self, gi):
@@ -3078,7 +3078,6 @@ class GiDatasetPopulator(GiHttpMixin, BaseDatasetPopulator):
 
 
 class GiDatasetCollectionPopulator(GiHttpMixin, BaseDatasetCollectionPopulator):
-
     """Implementation of BaseDatasetCollectionPopulator backed by bioblend."""
 
     def __init__(self, gi):
@@ -3093,7 +3092,6 @@ class GiDatasetCollectionPopulator(GiHttpMixin, BaseDatasetCollectionPopulator):
 
 
 class GiWorkflowPopulator(GiHttpMixin, BaseWorkflowPopulator):
-
     """Implementation of BaseWorkflowPopulator backed by bioblend."""
 
     def __init__(self, gi):

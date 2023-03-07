@@ -61,7 +61,7 @@ OPTIONAL_TEMPLATE_PARAMS: Dict[str, Any] = {
 
 
 def job_script(template=DEFAULT_JOB_FILE_TEMPLATE, **kwds):
-    """
+    r"""
 
     >>> has_exception = False
     >>> try: job_script()
@@ -69,20 +69,20 @@ def job_script(template=DEFAULT_JOB_FILE_TEMPLATE, **kwds):
     >>> has_exception
     True
     >>> script = job_script(working_directory='wd', command='uptime', exit_code_path='ec')
-    >>> '\\nuptime\\n' in script
+    >>> '\nuptime\n' in script
     True
     >>> 'GALAXY_LIB="None"' in script
     True
-    >>> script.startswith('#!/bin/sh\\n#PBS -test\\n')
+    >>> script.startswith('#!/bin/sh\n#PBS -test\n')
     False
     >>> script = job_script(working_directory='wd', command='uptime', exit_code_path='ec', headers='#PBS -test')
-    >>> script.startswith('#!/bin/bash\\n\\n#PBS -test\\n')
+    >>> script.startswith('#!/bin/bash\n\n#PBS -test\n')
     True
     >>> script = job_script(working_directory='wd', command='uptime', exit_code_path='ec', slots_statement='GALAXY_SLOTS="$SLURM_JOB_NUM_NODES"')
-    >>> script.find('GALAXY_SLOTS="$SLURM_JOB_NUM_NODES"\\n') > 0
+    >>> script.find('GALAXY_SLOTS="$SLURM_JOB_NUM_NODES"\n') > 0
     True
     >>> script = job_script(working_directory='wd', command='uptime', exit_code_path='ec', memory_statement='GALAXY_MEMORY_MB="32768"')
-    >>> script.find('GALAXY_MEMORY_MB="32768"\\n') > 0
+    >>> script.find('GALAXY_MEMORY_MB="32768"\n') > 0
     True
     """
     if any(param not in kwds for param in REQUIRED_TEMPLATE_PARAMS):

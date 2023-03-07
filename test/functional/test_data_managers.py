@@ -21,7 +21,6 @@ def build_tests(
     classes for all of its tests and put them into this modules globals() so
     they can be discovered by nose.
     """
-
     if data_managers is None:
         log.warning("data_managers was not set for Data Manager functional testing. Will not test.")
         return

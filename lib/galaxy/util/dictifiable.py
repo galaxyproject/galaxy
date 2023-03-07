@@ -16,13 +16,13 @@ def dict_for(obj, **kwds):
 class Dictifiable:
     """Mixin that enables objects to be converted to dictionaries. This is useful
     when for sharing objects across boundaries, such as the API, tool scripts,
-    and JavaScript code."""
+    and JavaScript code.
+    """
 
     def to_dict(self, view: str = "collection", value_mapper: Optional[Dict[str, Callable]] = None) -> Dict[str, Any]:
         """
         Return item dictionary.
         """
-
         if not value_mapper:
             value_mapper = {}
 

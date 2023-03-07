@@ -1207,7 +1207,7 @@ def get_test_fname(fname):
 
 
 def get_file_peek(file_name, width=256, line_count=5, skipchars=None, line_wrap=True):
-    """
+    r"""
     Returns the first line_count lines wrapped to width.
 
     >>> def assert_peek_is(file_name, expected, *args, **kwd):
@@ -1215,9 +1215,9 @@ def get_file_peek(file_name, width=256, line_count=5, skipchars=None, line_wrap=
     ...     peek = get_file_peek(path, *args, **kwd)
     ...     assert peek == expected, "%s != %s" % (peek, expected)
     >>> assert_peek_is('0_nonewline', u'0')
-    >>> assert_peek_is('0.txt', u'0\\n')
-    >>> assert_peek_is('4.bed', u'chr22\\t30128507\\t31828507\\tuc003bnx.1_cds_2_0_chr22_29227_f\\t0\\t+\\n', line_count=1)
-    >>> assert_peek_is('1.bed', u'chr1\\t147962192\\t147962580\\tCCDS989.1_cds_0_0_chr1_147962193_r\\t0\\t-\\nchr1\\t147984545\\t147984630\\tCCDS990.1_cds_0_0_chr1_147984546_f\\t0\\t+\\n', line_count=2)
+    >>> assert_peek_is('0.txt', u'0\n')
+    >>> assert_peek_is('4.bed', u'chr22\t30128507\t31828507\tuc003bnx.1_cds_2_0_chr22_29227_f\t0\t+\n', line_count=1)
+    >>> assert_peek_is('1.bed', u'chr1\t147962192\t147962580\tCCDS989.1_cds_0_0_chr1_147962193_r\t0\t-\nchr1\t147984545\t147984630\tCCDS990.1_cds_0_0_chr1_147984546_f\t0\t+\n', line_count=2)
     """
     # Set size for file.readline() to a negative number to force it to
     # read until either a newline or EOF.  Needed for datasets with very

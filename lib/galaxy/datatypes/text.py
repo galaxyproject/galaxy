@@ -1,4 +1,4 @@
-""" Clearing house for generic text datatypes that are not XML or tabular.
+"""Clearing house for generic text datatypes that are not XML or tabular.
 """
 
 import gzip
@@ -142,7 +142,6 @@ class ExpressionJson(Json):
     )
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
-        """ """
         if dataset.has_data():
             json_type = "null"
             file_path = dataset.file_name

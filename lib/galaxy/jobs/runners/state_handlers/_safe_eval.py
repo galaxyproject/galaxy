@@ -88,7 +88,7 @@ def _check_call(ast_node):
 
 
 def _check_expression(text, allowed_variables=None):
-    """
+    r"""
 
     >>> allowed_variables = ["c1", "c2", "c3", "c4", "c5"]
     >>> _check_expression("c1", allowed_variables)
@@ -117,7 +117,7 @@ def _check_expression(text, allowed_variables=None):
     True
     >>> _check_expression("exec 1", allowed_variables)
     False
-    >>> _check_expression("str(c2) in [\\\"a\\\",\\\"b\\\"]", allowed_variables)
+    >>> _check_expression("str(c2) in [\"a\",\"b\"]", allowed_variables)
     True
     """
     if allowed_variables is None:

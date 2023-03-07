@@ -1000,7 +1000,6 @@ class RepositoriesController(BaseAPIController):
         The following parameters may be included in the payload.
         :param commit_message: hg commit message for update.
         """
-
         # Example URL: http://localhost:9009/api/repositories/f9cad7b01a472135
         rdah = attribute_handlers.RepositoryDependencyAttributeHandler(self.app, unpopulate=False)
         tdah = attribute_handlers.ToolDependencyAttributeHandler(self.app, unpopulate=False)

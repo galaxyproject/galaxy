@@ -43,7 +43,8 @@ class Node:
 
     def addChildrenToJson(self, jsonDict):
         """Needs a special method to addChildren, such that the key does not appear in the Jsondict when the children is empty
-        this requirement is due to the layout algorithm used by d3 layout for hiding subtree"""
+        this requirement is due to the layout algorithm used by d3 layout for hiding subtree
+        """
         if len(self.children) > 0:
             children = [node.toJson() for node in self.children]
             jsonDict["children"] = children
@@ -60,7 +61,8 @@ class Node:
 
 class PhyloTree:
     """Standardized python based class to represent the phylogenetic tree parsed from different
-    phylogenetic file formats."""
+    phylogenetic file formats.
+    """
 
     def __init__(self):
         self.root, self.rootAttr = None, {}
@@ -75,7 +77,8 @@ class PhyloTree:
 
     def makeNode(self, nodeName, **kwargs):
         """Called to make a node within PhyloTree, arbitrary kwargs can be passed to annotate nodes
-        Tracks the number of nodes via internally incremented id"""
+        Tracks the number of nodes via internally incremented id
+        """
         kwargs["id"] = self.id
         self.id += 1
         return Node(nodeName, **kwargs)
@@ -88,7 +91,8 @@ class PhyloTree:
 
     def generateJsonableDict(self):
         """Changes itself into a dictonary by recurssively calling the tojson on all its nodes. Think of it
-        as a dict in an array of dict in an array of dict and so on..."""
+        as a dict in an array of dict in an array of dict and so on...
+        """
         jsonTree: Dict[str, Any]
         if self.root:
             assert isinstance(self.root, Node)
@@ -103,7 +107,8 @@ class PhyloTree:
 
 class Base_Parser:
     """Base parsers contain all the methods to handle phylogeny tree creation and
-    converting the data to json that all parsers should have"""
+    converting the data to json that all parsers should have
+    """
 
     def __init__(self):
         self.phyloTrees = []

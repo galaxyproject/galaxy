@@ -174,8 +174,10 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
     @web.expose
     @web.json
     def transfer_status(self, trans, dataset_id, filename=None):
-        """Primarily used for the S3ObjectStore - get the status of data transfer
-        if the file is not in cache"""
+        """Get the status of data transfer if the file is not in cache
+
+        Primarily used for the S3ObjectStore
+        """
         data = self._check_dataset(trans, dataset_id)
         if isinstance(data, str):
             return data

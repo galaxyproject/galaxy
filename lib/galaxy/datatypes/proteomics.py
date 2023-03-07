@@ -700,7 +700,8 @@ class Edta(TabularData):
 
 class ProteomicsXml(GenericXml):
     """An enhanced XML datatype used to reuse code across several
-    proteomic/mass-spec datatypes."""
+    proteomic/mass-spec datatypes.
+    """
 
     edam_data = "data_2536"
     edam_format = "format_2032"

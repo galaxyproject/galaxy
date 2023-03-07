@@ -15,8 +15,6 @@ from galaxy.schema import PdfDocumentType
 
 
 class WorkflowReportGeneratorPlugin(metaclass=ABCMeta):
-    """ """
-
     @property
     @abstractmethod
     def plugin_type(self):
@@ -24,18 +22,17 @@ class WorkflowReportGeneratorPlugin(metaclass=ABCMeta):
 
     @abstractmethod
     def generate_report_json(self, trans, invocation, runtime_report_config_json=None):
-        """ """
+        pass
 
     @abstractmethod
     def generate_report_pdf(self, trans, invocation, runtime_report_config_json=None):
-        """ """
+        pass
 
 
 class WorkflowMarkdownGeneratorPlugin(WorkflowReportGeneratorPlugin, metaclass=ABCMeta):
     """WorkflowReportGeneratorPlugin that generates markdown as base report."""
 
     def generate_report_json(self, trans, invocation, runtime_report_config_json=None):
-        """ """
         workflow_manager = workflows.WorkflowsManager(trans.app)
         workflow_encoded_id = trans.app.security.encode_id(invocation.workflow_id)
         workflow = workflow_manager.get_stored_accessible_workflow(trans, workflow_encoded_id, by_stored_id=False)
@@ -63,7 +60,7 @@ class WorkflowMarkdownGeneratorPlugin(WorkflowReportGeneratorPlugin, metaclass=A
 
     @abstractmethod
     def _generate_report_markdown(self, trans, invocation, runtime_report_config_json=None):
-        """ """
+        pass
 
     def _generate_internal_markdown(self, trans, invocation, runtime_report_config_json=None):
         workflow_markdown = self._generate_report_markdown(

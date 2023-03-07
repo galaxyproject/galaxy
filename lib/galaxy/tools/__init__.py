@@ -1396,7 +1396,6 @@ class Tool(Dictifiable):
         )
 
     def parse_command(self, tool_source):
-        """ """
         # Command line (template). Optional for tools that do not invoke a local program
         command = tool_source.parse_command()
         if command is not None:
@@ -2492,7 +2491,6 @@ class Tool(Dictifiable):
 
     def to_dict(self, trans, link_details=False, io_details=False, tool_help=False):
         """Returns dict of tool."""
-
         # Basic information
         tool_dict = super().to_dict()
 

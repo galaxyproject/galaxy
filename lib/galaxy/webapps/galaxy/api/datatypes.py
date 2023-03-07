@@ -92,7 +92,8 @@ class FastAPIDatatypes:
     ) -> DatatypesCombinedMap:
         """Combines the datatype information from (/api/datatypes) and the
         mapping information from (/api/datatypes/mapping) into a single
-        response."""
+        response.
+        """
         return DatatypesCombinedMap(
             datatypes=view_index(self.datatypes_registry, extension_only, upload_only),
             datatypes_mapping=view_mapping(self.datatypes_registry),
@@ -133,7 +134,8 @@ class FastAPIDatatypes:
     )
     async def edam_formats_detailed(self):
         """Gets a map of datatypes and their corresponding EDAM formats.
-        EDAM formats contain the EDAM iri, label, and definition."""
+        EDAM formats contain the EDAM iri, label, and definition.
+        """
         return view_edam_formats(self.datatypes_registry, True)
 
     @router.get(
@@ -153,5 +155,6 @@ class FastAPIDatatypes:
     )
     async def edam_data_detailed(self):
         """Gets a map of datatypes and their corresponding EDAM data.
-        EDAM data contains the EDAM iri, label, and definition."""
+        EDAM data contains the EDAM iri, label, and definition.
+        """
         return view_edam_data(self.datatypes_registry, True)

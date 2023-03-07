@@ -4,7 +4,8 @@ file, like the ones used by the 454 sequencer.
 
 Optionally, it can also split paired-end reads if given the linker sequence.
 The splitting is done with maximum match, i.e., every occurence of the linker
-sequence will be removed, even if occuring multiple times."""
+sequence will be removed, even if occuring multiple times.
+"""
 
 # copyright Jose Blanca and Bastien Chevreux
 # COMAV institute, Universidad Politecnica de Valencia (UPV)
@@ -100,7 +101,8 @@ def check_version(version):
 
 def read_header(fileh):
     """It reads the header from the sff file and returns a dict with the
-    information"""
+    information
+    """
     # first we read the first part of the header
     head_struct = [
         ("magic_number", "I"),
@@ -129,7 +131,8 @@ def read_header(fileh):
 
 def read_sequence(header, fileh, fposition):
     """It reads one read from the sff file located at the fposition and
-    returns a dict with the information."""
+    returns a dict with the information.
+    """
     # the sequence struct
     read_header_1 = [
         ("read_header_length", "H"),
@@ -249,7 +252,6 @@ def remove_last_xmltag_in_file(fname, tag=None):
     The resulting xml file will be not xml valid. This function is a hack
     that allows to append records to xml files in a quick and dirty way.
     """
-
     fh = open(fname, "r+")
     # we have to read from the end to the start of the file and keep the
     # string enclosed by </ >
@@ -327,7 +329,6 @@ def create_clip_xml_info(readlen, adapl, adapr, quall, qualr):
     simplified calculations earlier in the process of conversion
     (especially during splitting of paired-end reads)
     """
-
     to_print = [""]
 
     # if right borders are >= to read length, they don't need
@@ -373,8 +374,7 @@ def create_clip_xml_info(readlen, adapl, adapr, quall, qualr):
 
 
 def create_xml_for_unpaired_read(data, fname):
-    """Given the data for one read it returns an str with the xml ancillary
-    data."""
+    """Given the data for one read it returns an str with the xml ancillary data."""
     to_print = [create_basic_xml_info(data["name"], fname)]
     # clippings in the XML only if we do not hard clip
     if not config["clip"]:
@@ -407,7 +407,8 @@ def format_as_fastq(name, seq, qual):
 
 def get_read_data(data):
     """Given the data for one read it returns 2 strs with the fasta seq
-    and fasta qual."""
+    and fasta qual.
+    """
     # seq and qual
     if config["mix_case"]:
         seq = sequence_case(data)
@@ -421,7 +422,8 @@ def get_read_data(data):
 
 def extract_read_info(data, fname):
     """Given the data for one read it returns 3 strs with the fasta seq, fasta
-    qual and xml ancillary data."""
+    qual and xml ancillary data.
+    """
     seq, qual = get_read_data(data)
     seqstring, qualstring = format_as_fasta(data["name"], seq, qual)
     xmlstring = create_xml_for_unpaired_read(data, fname)
@@ -431,7 +433,8 @@ def extract_read_info(data, fname):
 def write_sequence(name, seq, qual, seq_fh, qual_fh):
     """Write sequence and quality FASTA and FASTA qual filehandles
     (or into FASTQ and XML)
-    if sequence length is 0, don't write"""
+    if sequence length is 0, don't write
+    """
     if len(seq) == 0:
         return
 
@@ -447,7 +450,8 @@ def write_sequence(name, seq, qual, seq_fh, qual_fh):
 def write_unpaired_read(data, sff_fh, seq_fh, qual_fh, xml_fh):
     """Writes an unpaired read into FASTA, FASTA qual and XML filehandles
     (or into FASTQ and XML)
-    if sequence length is 0, don't write"""
+    if sequence length is 0, don't write
+    """
     seq, qual = get_read_data(data)
     if len(seq) == 0:
         return
@@ -526,7 +530,8 @@ def fragment_sequences(sequence, qualities, splitchar):
     """Works like split() on strings, except it does this on a sequence
     and the corresponding list with quality values.
     Returns a tuple for each fragment, each sublist has the fragment
-    sequence as first and the fragment qualities as second elemnt"""
+    sequence as first and the fragment qualities as second elemnt
+    """
     # this is slow (due to zip and list appends... use an iterator over
     #  the sequence find find variations and splices on seq and qual
 
@@ -1128,7 +1133,8 @@ def tests_for_ssaha():
 
 def load_linker_sequences(linker_fname):
     """Loads all linker sequences into memory, storing only the length
-    of each linker."""
+    of each linker.
+    """
     global linkerlengths
 
     if not os.path.getsize(linker_fname):
@@ -1146,7 +1152,8 @@ def load_linker_sequences(linker_fname):
 
 def launch_ssaha(linker_fname, query_fname, output_fh):
     """Launches SSAHA2 on the linker and query file, string SSAHA2 output
-    into the output filehandle"""
+    into the output filehandle
+    """
     tests_for_ssaha()
 
     try:
@@ -1168,7 +1175,8 @@ def launch_ssaha(linker_fname, query_fname, output_fh):
 def read_ssaha_data(ssahadata_fh):
     """Given file handle, reads file generated with SSAHA2 (with default
     output format) and stores all matches as list ssahapematches
-    (ssaha paired-end matches) dictionary"""
+    (ssaha paired-end matches) dictionary
+    """
     global ssahapematches
 
     print("Parsing SSAHA2 result file ... ", end=" ")
@@ -1249,7 +1257,8 @@ def version_string():
 
 def read_config():
     """It reads the configuration options from the command line arguments and
-    it returns a dict with them."""
+    it returns a dict with them.
+    """
     from optparse import (
         OptionGroup,
         OptionParser,

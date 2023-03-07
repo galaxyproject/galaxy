@@ -167,14 +167,14 @@ def remove_protocol_from_url(url):
 
 
 def is_binary(value):
-    """
+    r"""
     File is binary if it contains a null-byte by default (e.g. behavior of grep, etc.).
     This may fail for utf-16 files, but so would ASCII encoding.
     >>> is_binary( string.printable )
     False
-    >>> is_binary( b'\\xce\\x94' )
+    >>> is_binary( b'\xce\x94' )
     False
-    >>> is_binary( b'\\x00' )
+    >>> is_binary( b'\x00' )
     True
     """
     value = smart_str(value)
@@ -653,7 +653,6 @@ def sanitize_text(text, valid_characters=valid_chars, character_map=mapped_chars
 
 def _sanitize_text_helper(text, valid_characters=valid_chars, character_map=mapped_chars, invalid_character="X"):
     """Restricts the characters that are allowed in a string"""
-
     out = []
     for c in text:
         if c in valid_characters:
@@ -733,7 +732,6 @@ def find_instance_nested(item, instances):
     Returns a dictionary, where keys are the deepest key at which an instance has been found,
     and the value is the matched instance.
     """
-
     matches = {}
 
     def visit(path, key, value):
@@ -789,7 +787,6 @@ def ready_name_for_url(raw_name):
     >>> ready_name_for_url( "Hello₩◎ґʟⅾ" )
     'Hello'
     """
-
     # Replace whitespace with '-'
     slug_base = re.sub(r"\s+", "-", raw_name)
     # Remove all non-alphanumeric characters.
@@ -1217,7 +1214,7 @@ def filesystem_safe_string(
 
 
 def smart_str(s, encoding=DEFAULT_ENCODING, strings_only=False, errors="strict"):
-    """
+    r"""
     Returns a bytestring version of 's', encoded as specified in 'encoding'.
 
     If strings_only is True, don't convert (some) non-string-like objects.
@@ -1231,9 +1228,9 @@ def smart_str(s, encoding=DEFAULT_ENCODING, strings_only=False, errors="strict")
     >>> s = b'a bytes string'; assert smart_str(s) == s
     >>> s = bytearray(b'a bytes string'); assert smart_str(s) == s
     >>> assert smart_str('a simple unicode string') == b'a simple unicode string'
-    >>> assert smart_str('à strange ünicode ڃtring') == b'\\xc3\\xa0 strange \\xc3\\xbcnicode \\xda\\x83tring'
-    >>> assert smart_str(b'\\xc3\\xa0n \\xc3\\xabncoded utf-8 string', encoding='latin-1') == b'\\xe0n \\xebncoded utf-8 string'
-    >>> assert smart_str(bytearray(b'\\xc3\\xa0n \\xc3\\xabncoded utf-8 string'), encoding='latin-1') == b'\\xe0n \\xebncoded utf-8 string'
+    >>> assert smart_str('à strange ünicode ڃtring') == b'\xc3\xa0 strange \xc3\xbcnicode \xda\x83tring'
+    >>> assert smart_str(b'\xc3\xa0n \xc3\xabncoded utf-8 string', encoding='latin-1') == b'\xe0n \xebncoded utf-8 string'
+    >>> assert smart_str(bytearray(b'\xc3\xa0n \xc3\xabncoded utf-8 string'), encoding='latin-1') == b'\xe0n \xebncoded utf-8 string'
     """
     if strings_only and isinstance(s, (type(None), int)):
         return s
@@ -1275,8 +1272,6 @@ def clean_multiline_string(multiline_string, sep="\n"):
 
 
 class ParamsWithSpecs(collections.defaultdict):
-    """ """
-
     def __init__(self, specs=None, params=None):
         self.specs = specs or dict()
         self.params = params or dict()
@@ -1560,7 +1555,6 @@ def send_mail(frm, to, subject, body, config, html=None):
     :param html: Alternative HTML representation of the body content. If
                  provided will convert the message to a MIMEMultipart. (Default 'None')
     """
-
     to = listify(to)
     if html:
         msg = MIMEMultipart("alternative")

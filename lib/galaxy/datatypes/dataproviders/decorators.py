@@ -93,13 +93,14 @@ def dataprovider_factory(name, settings=None):
     :param settings: dictionary containing key/type pairs for parsing query strings
         to __init__ arguments
     :type settings: dictionary
+
+    TODO:?? use *args for settings allowing mulitple dictionaries
+    make a function available through the name->provider dispatch to parse query strings
+      callable like:
+    settings_dict = dataproviders[ provider_name ].parse_query_string_settings( query_kwargs )
+    TODO: ugh - overly complicated but the best I could think of
     """
 
-    # TODO:?? use *args for settings allowing mulitple dictionaries
-    # make a function available through the name->provider dispatch to parse query strings
-    #   callable like:
-    # settings_dict = dataproviders[ provider_name ].parse_query_string_settings( query_kwargs )
-    # TODO: ugh - overly complicated but the best I could think of
     def parse_query_string_settings(query_kwargs):
         return _parse_query_string_settings(query_kwargs, settings)
 
@@ -123,20 +124,15 @@ def _parse_query_string_settings(query_kwargs, settings=None):
     """
     Parse the values in `query_kwargs` from strings to the proper types
     listed in the same key in `settings`.
+    TODO: this was a relatively late addition: review and re-think
     """
-
-    # TODO: this was a relatively late addition: review and re-think
-    def list_from_query_string(s):
-        # assume csv
-        return s.split(",")
-
     parsers = {
         "int": int,
         "float": float,
         "bool": bool,
-        "list:str": lambda s: list_from_query_string(s),
-        "list:escaped": lambda s: [unquote(e) for e in list_from_query_string(s)],
-        "list:int": lambda s: [int(i) for i in list_from_query_string(s)],
+        "list:str": lambda s: s.split(","),
+        "list:escaped": lambda s: [unquote(e) for e in s.split(",")],
+        "list:int": lambda s: [int(i) for i in s.split(",")],
     }
     settings = settings or {}
     # yay! yet another set of query string parsers! <-- sarcasm

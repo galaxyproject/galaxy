@@ -190,7 +190,8 @@ class GalaxyASGIRequest(GalaxyAbstractRequest):
     """Wrapper around Starlette/FastAPI Request object.
 
     Implements the GalaxyAbstractRequest interface to provide access to some properties
-    of the request commonly used."""
+    of the request commonly used.
+    """
 
     def __init__(self, request: Request):
         self.__request = request
@@ -210,7 +211,8 @@ class GalaxyASGIResponse(GalaxyAbstractResponse):
     """Wrapper around Starlette/FastAPI Response object.
 
     Implements the GalaxyAbstractResponse interface to provide access to some properties
-    of the response object commonly used."""
+    of the response object commonly used.
+    """
 
     def __init__(self, response: Response):
         self.__response = response

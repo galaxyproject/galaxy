@@ -18,7 +18,8 @@ def assert_has_text(
 ):
     """Asserts specified output contains the substring specified by
     the argument text. The exact number of occurrences can be
-    optionally specified by the argument n"""
+    optionally specified by the argument n
+    """
     assert output is not None, "Checking has_text assertion on empty output (None)"
     _assert_presence_number(
         output,
@@ -37,8 +38,10 @@ def assert_has_text(
 
 
 def assert_not_has_text(output, text):
-    """Asserts specified output does not contain the substring
-    specified by the argument text"""
+    """
+    Asserts specified output does not contain the substring
+    specified by the argument text
+    """
     assert output is not None, "Checking not_has_text assertion on empty output (None)"
     assert output.find(text) < 0, f"Output file contains unexpected text '{text}'"
 
@@ -54,7 +57,8 @@ def assert_has_line(
 ):
     """Asserts the specified output contains the line specified by the
     argument line. The exact number of occurrences can be optionally
-    specified by the argument n"""
+    specified by the argument n
+    """
     assert output is not None, "Checking has_line assertion on empty output (None)"
     _assert_presence_number(
         output,
@@ -82,7 +86,8 @@ def assert_has_n_lines(
 ):
     """Asserts the specified output contains ``n`` lines allowing
     for a difference in the number of lines (delta)
-    or relative differebce in the number of lines"""
+    or relative differebce in the number of lines
+    """
     assert output is not None, "Checking has_n_lines assertion on empty output (None)"
     count = len(output.splitlines())
     _assert_number(
@@ -138,7 +143,8 @@ def assert_has_line_matching(
 ):
     """Asserts the specified output contains a line matching the
     regular expression specified by the argument expression. If n is given
-    the assertion checks for exactly n occurences."""
+    the assertion checks for exactly n occurences.
+    """
     _assert_presence_number(
         output,
         expression,

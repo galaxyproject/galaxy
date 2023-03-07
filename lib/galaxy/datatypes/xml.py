@@ -207,7 +207,7 @@ class Phyloxml(GenericXml):
             dataset.blurb = "file purged from disk"
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
-        """ "Checking for keyword - 'phyloxml' always in lowercase in the first few lines.
+        """Checking for keyword - 'phyloxml' always in lowercase in the first few lines.
 
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( '1.phyloxml' )

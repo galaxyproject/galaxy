@@ -1,7 +1,8 @@
 """Client-centric CWL-related utilities.
 
 Used to share code between the Galaxy test framework
-and other Galaxy CWL clients (e.g. Planemo)."""
+and other Galaxy CWL clients (e.g. Planemo).
+"""
 import abc
 import hashlib
 import io
@@ -144,7 +145,6 @@ def galactic_job_json(
     stage files and modify the job description to adapt to these changes
     for Galaxy.
     """
-
     datasets = []
     dataset_collections = []
 

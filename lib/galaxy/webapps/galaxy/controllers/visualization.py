@@ -484,7 +484,6 @@ class VisualizationController(
     @web.expose
     def display_by_username_and_slug(self, trans, username, slug):
         """Display visualization based on a username and slug."""
-
         # Get visualization.
         session = trans.sa_session
         user = session.query(model.User).filter_by(username=username).first()
@@ -720,7 +719,6 @@ class VisualizationController(
         """
         Display browser for the visualization denoted by id and add the datasets listed in `dataset_ids`.
         """
-
         # define app configuration
         app = {"jscript": "trackster"}
 
@@ -769,7 +767,6 @@ class VisualizationController(
         """
         Display a circster visualization.
         """
-
         # Get dataset to add.
         dataset = None
         if dataset_id:

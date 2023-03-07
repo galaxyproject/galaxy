@@ -106,7 +106,8 @@ class DirectoryModuleChecker:
     """Finds module by path.
 
     Searches the paths listed in modulepath to for a file or directory matching the module name.
-    If the version=True, searches for files named module/version."""
+    If the version=True, searches for files named module/version.
+    """
 
     def __init__(self, module_dependency_resolver, modulepath, prefetch):
         self.module_dependency_resolver = module_dependency_resolver
@@ -138,7 +139,8 @@ class AvailModuleChecker:
     Parses the Environment Modules 'module avail' output, splitting
     module names into module and version on '/' and discarding a postfix matching default_indicator
     (by default '(default)'. Matching is done using the module and
-    (if version=True) the module version."""
+    (if version=True) the module version.
+    """
 
     def __init__(self, module_dependency_resolver, modulepath, prefetch, default_indicator=DEFAULT_INDICATOR):
         self.module_dependency_resolver = module_dependency_resolver
@@ -192,7 +194,8 @@ class ModuleDependency(Dependency):
 
     Using Environment Modules' 'modulecmd' (specifically 'modulecmd sh load') to
     convert module specifications into shell expressions for inclusion in
-    the script used to run a tool in Galaxy."""
+    the script used to run a tool in Galaxy.
+    """
 
     dict_collection_visible_keys = Dependency.dict_collection_visible_keys + [
         "module_name",

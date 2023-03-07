@@ -50,7 +50,8 @@ class TokenEvaluator:
 class BoolOperand:
     """Represents a boolean operand that has a label and a value.
 
-    The value is determined by a custom TokenEvaluator."""
+    The value is determined by a custom TokenEvaluator.
+    """
 
     evaluator: TokenEvaluator
 
@@ -122,7 +123,8 @@ class BooleanExpressionEvaluator:
     Supports AND, OR and NOT operator including parentheses to override operator precedences.
 
     You can pass in different TokenEvaluator implementations to customize how the tokens (or variables) are
-    converted to a boolean value when evaluating the expression."""
+    converted to a boolean value when evaluating the expression.
+    """
 
     def __init__(self, evaluator: TokenEvaluator, token_format: Optional[str] = None) -> None:
         """Initializes the expression evaluator.
@@ -159,7 +161,8 @@ class BooleanExpressionEvaluator:
     @classmethod
     def is_valid_expression(cls, expr: str) -> bool:
         """Tries to evaluate the given boolean expression and returns True if it is valid or
-        False if it has syntax or gramatical errors."""
+        False if it has syntax or gramatical errors.
+        """
         try:
             evaluator = BooleanExpressionEvaluator(ValidationOnlyTokenEvaluator())
             evaluator.evaluate_expression(expr)
@@ -170,7 +173,8 @@ class BooleanExpressionEvaluator:
 
 class TokenContainedEvaluator(TokenEvaluator):
     """Implements the TokenEvaluator interface to determine if a token is contained
-    in a particular list of tokens."""
+    in a particular list of tokens.
+    """
 
     def __init__(self, tokens: Set[str]) -> None:
         """Initializes the token evaluator with the set of tokens that will evaluate to `True`.
@@ -187,7 +191,8 @@ class TokenContainedEvaluator(TokenEvaluator):
 class ValidationOnlyTokenEvaluator(TokenEvaluator):
     """Simple TokenEvaluator that always evaluates to True for valid tokens.
 
-    This is only useful for validation purposes, do NOT use it for real expression evaluations."""
+    This is only useful for validation purposes, do NOT use it for real expression evaluations.
+    """
 
     def evaluate(self, token: str) -> bool:
         return True

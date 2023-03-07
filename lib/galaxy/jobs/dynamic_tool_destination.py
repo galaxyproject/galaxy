@@ -134,7 +134,6 @@ class RuleValidator:
         @return: validated rule or result of validation (depending on
                  return_bool)
         """
-
         rule = copy.deepcopy(original_rule)
         valid_rule = True
 
@@ -183,7 +182,6 @@ class RuleValidator:
         @return: validated rule or result of validation (depending on
                  return_bool)
         """
-
         rule = copy.deepcopy(original_rule)
         valid_rule = True
 
@@ -232,7 +230,6 @@ class RuleValidator:
         @return: validated rule or result of validation (depending on
                  return_bool)
         """
-
         rule = copy.deepcopy(original_rule)
         valid_rule = True
 
@@ -281,7 +278,6 @@ class RuleValidator:
         @return: validated rule or result of validation (depending on
                 return_bool)
         """
-
         rule = copy.deepcopy(original_rule)
         valid_rule = True
 
@@ -334,7 +330,6 @@ class RuleValidator:
         @rtype: bool, dict (tuple)
         @return: validated rule and result of validation
         """
-
         if "nice_value" in rule:
             if rule["nice_value"] < -20 or rule["nice_value"] > 20:
                 error = f"nice_value goes from -20 to 20; rule {str(counter)}"
@@ -376,7 +371,6 @@ class RuleValidator:
         :rtype: bool, dict (tuple)
         :returns: validated rule and result of validation
         """
-
         if "fail_message" in rule:
             if "destination" not in rule or rule["destination"] != "fail":
                 error = f"Found a fail_message for rule {str(counter)}"
@@ -503,7 +497,6 @@ class RuleValidator:
         @rtype: bool/None, dict (tuple)
         @return: validated rule (or None if invalid) and result of validation
         """
-
         if "upper_bound" in rule and "lower_bound" in rule:
             if rule["rule_type"] in ("file_size", "records"):
                 upper_bound = str_to_bytes(rule["upper_bound"])
@@ -579,7 +572,6 @@ class RuleValidator:
         @rtype: bool/None, dict (tuple)
         @return: validated rule (or None if invalid) and result of validation
         """
-
         if "arguments" not in rule or not isinstance(rule["arguments"], dict):
             error = f"No arguments found for rule {str(counter)} in '"
             error += f"{str(tool)}' despite being of type arguments."
@@ -618,7 +610,6 @@ class RuleValidator:
         @rtype: bool, dict (tuple)
         @return: validated rule and result of validation
         """
-
         emailregex = r"^[A-Za-z0-9\.\+_-]+@[A-Za-z0-9\._-]+\.[a-zA-Z]*$"
 
         if "users" in rule:
@@ -691,7 +682,6 @@ def parse_yaml(
     :returns: validated rule or result of validation (depending on return_bool)
 
     """
-
     if app is None:
         global destination_list
         destination_list = get_destination_list_from_job_config(job_conf_path)
@@ -758,7 +748,6 @@ def validate_destination(app, destination: str, err_message: str, err_message_co
     :rtype: bool
     :returns: True if the destination is valid and False otherwise.
     """
-
     valid_destination = False
     suggestion = None
 
@@ -796,7 +785,6 @@ def validate_config(obj: dict, app=None, return_bool: bool = False):
     :rtype: bool, dict (depending on return_bool)
     :returns: validated rule or result of validation (depending on return_bool)
     """
-
     global priority_list
     priority_list = set()
 
@@ -1674,7 +1662,6 @@ def get_edit_distance(source, target):
     @rtype: int
     @return: The edit distance between str1 and str2
     """
-
     if len(source) < len(target):
         return get_edit_distance(target, source)
 
@@ -1729,7 +1716,6 @@ def get_typo_correction(typo_str, word_set, max_dist):
     :returns: The closest matching string, or None, if no strings
               being compared to are within max_dist edit distance.
     """
-
     # Start curr_best out as the largest
     # edit distance we will tolerate plus one
     curr_best = max_dist + 1

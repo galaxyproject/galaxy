@@ -31,7 +31,8 @@ def assert_has_n_columns(
     """Asserts the tabular output contains n columns. The optional
     sep argument specifies the column seperator used to determine the
     number of columns. The optional comment argument specifies
-    comment characters"""
+    comment characters
+    """
     first_line = get_first_line(output, comment)
     n_columns = len(first_line.split(sep))
     _assert_number(

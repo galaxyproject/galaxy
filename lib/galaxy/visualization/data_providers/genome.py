@@ -656,7 +656,6 @@ class VcfDataProvider(GenomeDataProvider):
             alt to ref. Cigar format is an array of [ op_index, length ] pairs
             where op_index is the 0-based index into the string "MIDNSHP=X"
             """
-
             cig_ops = "MIDNSHP=X"
 
             ref_len = len(ref)
@@ -837,7 +836,6 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
         """
         Write reads in regions to file.
         """
-
         # Open current BAM file using index.
         bamfile = pysam.AlignmentFile(
             self.original_dataset.file_name, mode="rb", index_filename=self.converted_dataset.file_name
@@ -882,7 +880,6 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
         """
         Returns an iterator that provides data in the region chrom:start-end
         """
-
         # Fetch and return data.
         chrom = str(chrom)
         start = int(start)
@@ -943,7 +940,6 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
 
         def decode_strand(read_flag, mask):
             """Decode strand from read flag."""
-
             strand_flag = read_flag & mask == 0
             if strand_flag:
                 return "+"
@@ -965,7 +961,6 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
             """
             An iterator that returns every nth read.
             """
-
             # Convert threshold to N for stepping through iterator.
             n = int(1 / threshold)
             return itertools.islice(read_iterator, None, None, n)
@@ -1516,7 +1511,6 @@ class ENCODEPeakDataProvider(GenomeDataProvider):
         """
         Provides
         """
-
         # FIXMEs:
         # (1) should be able to unify some of this code with BedDataProvider.process_data
         # (2) are optional number of parameters supported?
@@ -1616,7 +1610,6 @@ class ChromatinInteractionsDataProvider(GenomeDataProvider):
         """
         Provides
         """
-
         rval = []
         message = None
         for count, line in enumerate(iterator):
@@ -1660,7 +1653,6 @@ class ChromatinInteractionsTabixDataProvider(TabixDataProvider, ChromatinInterac
     def get_iterator(
         self, data_file, chrom, start=0, end=sys.maxsize, interchromosomal=False, **kwargs
     ) -> Iterator[str]:
-        """ """
         # Modify start as needed to get earlier interactions with start region.
         span = int(end) - int(start)
         filter_start = max(0, int(start) - span - span / 2)

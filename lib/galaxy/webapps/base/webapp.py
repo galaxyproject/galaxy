@@ -1,5 +1,3 @@
-"""
-"""
 import datetime
 import inspect
 import logging
@@ -414,7 +412,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         NOTE: raising some errors (such as httpexceptions), will remove the
         header (e.g. client will get both CORS error and 404 inside that)
         """
-
         # do not set any access control headers if not configured for it (common case)
         if not self.app.config.get("allowed_origin_hostnames", None):
             return
@@ -946,7 +943,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         Gets or creates a default history and associates it with the current
         session.
         """
-
         # There must be a user to fetch a default history.
         if not self.galaxy_session.user:
             return self.new_history()

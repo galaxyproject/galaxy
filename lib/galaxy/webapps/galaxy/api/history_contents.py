@@ -132,7 +132,8 @@ def get_index_query_params(
     ),
 ) -> HistoryContentsIndexParams:
     """This function is meant to be used as a dependency to render the OpenAPI documentation
-    correctly"""
+    correctly
+    """
     return parse_index_query_params(
         v=v,
         dataset_details=dataset_details,
@@ -145,7 +146,8 @@ def parse_index_query_params(
     **_,  # Additional params are ignored
 ) -> HistoryContentsIndexParams:
     """Parses query parameters for the history contents `index` operation
-    and returns a model containing the values in the correct type."""
+    and returns a model containing the values in the correct type.
+    """
     try:
         return HistoryContentsIndexParams(
             v=v,
@@ -205,7 +207,8 @@ def get_legacy_index_query_params(
     ),
 ) -> LegacyHistoryContentsIndexParams:
     """This function is meant to be used as a dependency to render the OpenAPI documentation
-    correctly"""
+    correctly
+    """
     return parse_legacy_index_query_params(
         ids=ids,
         types=types or type,
@@ -226,7 +229,8 @@ def parse_legacy_index_query_params(
     **_,  # Additional params are ignored
 ) -> LegacyHistoryContentsIndexParams:
     """Parses (legacy) query parameters for the history contents `index` operation
-    and returns a model containing the values in the correct type."""
+    and returns a model containing the values in the correct type.
+    """
     if types:
         if isinstance(types, list) and len(types) == 1:  # Support ?types=dataset,dataset_collection
             content_types = util.listify(types[0])
@@ -258,7 +262,8 @@ def parse_legacy_index_query_params(
 
 def parse_dataset_details(details: Optional[str]):
     """Parses the different values that the `dataset_details` parameter
-    can have from a string."""
+    can have from a string.
+    """
     dataset_details = None
     if details is not None and details != "all":
         dataset_details = set(util.listify(details))
@@ -286,7 +291,8 @@ def get_index_jobs_summary_params(
     ),
 ) -> HistoryContentsIndexJobsSummaryParams:
     """This function is meant to be used as a dependency to render the OpenAPI documentation
-    correctly"""
+    correctly
+    """
     return parse_index_jobs_summary_params(
         ids=ids,
         types=types,
@@ -299,7 +305,8 @@ def parse_index_jobs_summary_params(
     **_,  # Additional params are ignored
 ) -> HistoryContentsIndexJobsSummaryParams:
     """Parses query parameters for the history contents `index_jobs_summary` operation
-    and returns a model containing the values in the correct type."""
+    and returns a model containing the values in the correct type.
+    """
     return HistoryContentsIndexJobsSummaryParams(ids=util.listify(ids), types=util.listify(types))
 
 
@@ -748,7 +755,8 @@ class FastAPIHistoryContents:
     ):
         """Build and return a compressed archive of the selected history contents.
 
-        **Note**: this is a volatile endpoint and settings and behavior may change."""
+        **Note**: this is a volatile endpoint and settings and behavior may change.
+        """
         archive = self.service.archive(trans, history_id, filter_query_params, filename, dry_run)
         if isinstance(archive, HistoryContentsArchiveDryRunResult):
             return archive

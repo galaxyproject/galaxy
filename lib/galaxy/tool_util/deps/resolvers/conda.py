@@ -351,7 +351,7 @@ class CondaDependencyResolver(
             yield self._to_requirement(name, version)
 
     def _install_dependency(self, name, version, type, **kwds):
-        "Returns True on (seemingly) successfull installation"
+        """Returns True on (seemingly) successfull installation"""
         # should be checked before called
         assert not self.read_only
 

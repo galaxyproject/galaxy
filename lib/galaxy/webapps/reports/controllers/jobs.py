@@ -265,7 +265,6 @@ class SpecifiedDateListGrid(grids.Grid):
 
 
 class Jobs(BaseUIController, ReportQueryBuilder):
-
     """
     Class contains functions for querying data requested by user via the webapp. It exposes the functions and
     responds to requests with the filled .mako templates.
@@ -696,7 +695,6 @@ class Jobs(BaseUIController, ReportQueryBuilder):
         """
         Queries the DB for user jobs in error. Filters out monitor jobs.
         """
-
         message = ""
         PageSpec = namedtuple("PageSpec", ["entries", "offset", "page", "pages_found"])
 
@@ -1130,7 +1128,6 @@ class Jobs(BaseUIController, ReportQueryBuilder):
         """
         Queries the DB for user jobs in error. Filters out monitor jobs.
         """
-
         message = ""
         PageSpec = namedtuple("PageSpec", ["entries", "offset", "page", "pages_found"])
 

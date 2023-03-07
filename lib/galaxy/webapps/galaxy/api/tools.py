@@ -130,7 +130,6 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         :param tool_id: if present the given tool_id will be searched for
                         all installed versions
         """
-
         # Read params.
         in_panel = util.string_as_bool(kwds.get("in_panel", "True"))
         trackster = util.string_as_bool(kwds.get("trackster", "False"))
@@ -332,7 +331,6 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         GET /api/tools/all_requirements
         Return list of unique requirements for all tools.
         """
-
         return trans.app.toolbox.all_requirements
 
     @web.require_admin
@@ -419,11 +417,6 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         Return diagnostic information to help debug panel
         and dependency related problems.
         """
-
-        # TODO: Move this into tool.
-        def to_dict(x):
-            return x.to_dict()
-
         tool = self.service._get_tool(trans, id, user=trans.user)
         if hasattr(tool, "lineage"):
             lineage_dict = tool.lineage.to_dict()
@@ -432,13 +425,13 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         tool_shed_dependencies = tool.installed_tool_dependencies
         tool_shed_dependencies_dict: Optional[list] = None
         if tool_shed_dependencies:
-            tool_shed_dependencies_dict = list(map(to_dict, tool_shed_dependencies))
+            tool_shed_dependencies_dict = [_.to_dict() for _ in tool_shed_dependencies]
         return {
             "tool_id": tool.id,
             "tool_version": tool.version,
             "dependency_shell_commands": tool.build_dependency_shell_commands(),
             "lineage": lineage_dict,
-            "requirements": list(map(to_dict, tool.requirements)),
+            "requirements": [_.to_dict() for _ in tool.requirements],
             "installed_tool_shed_dependencies": tool_shed_dependencies_dict,
             "tool_dir": tool.tool_dir,
             "tool_shed": tool.tool_shed,

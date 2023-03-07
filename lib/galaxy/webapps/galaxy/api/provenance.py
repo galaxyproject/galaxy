@@ -20,8 +20,6 @@ log = logging.getLogger(__name__)
 
 
 class BaseProvenanceController(BaseGalaxyAPIController):
-    """ """
-
     @web.legacy_expose_api
     def index(self, trans, **kwd):
         follow = string_as_bool(kwd.get("follow", False))

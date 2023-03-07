@@ -68,7 +68,6 @@ class TestVisualizationsRegistry(VisualizationsBase_TestCase):
         assert not trackster.serves_templates
 
     def test_plugin_load(self):
-        """"""
         mock_app_dir = galaxy_mock.MockDir(
             {
                 "plugins": {
@@ -134,7 +133,6 @@ class TestVisualizationsRegistry(VisualizationsBase_TestCase):
         template_cache_dir
 
     def test_script_entry(self):
-        """"""
         script_entry_config = clean_multiline_string(
             """\
         <?xml version="1.0" encoding="UTF-8"?>

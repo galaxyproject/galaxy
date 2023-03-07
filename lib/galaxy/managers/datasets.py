@@ -265,7 +265,6 @@ class DatasetSerializer(base.ModelSerializer[DatasetManager], deletable.Purgable
         self.skip()
 
     def serialize_permissions(self, item, key, user=None, **context):
-        """ """
         dataset = item
         trans = context.get("trans")
         if not self.dataset_manager.permissions.manage.is_permitted(dataset, user, trans=trans):
@@ -362,7 +361,6 @@ class DatasetAssociationManager(
         """
         Stops an dataset_assoc's creating job if all the job's other outputs are deleted.
         """
-
         # Optimize this to skip other checks if this dataset is terminal - we can infer the
         # job is already complete.
         if dataset_assoc.state in model.Dataset.terminal_states:
@@ -760,7 +758,6 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
 
     # TODO: untested
     def deserialize_metadata(self, dataset_assoc, metadata_key, metadata_dict, **context):
-        """ """
         self.validate.matches_type(metadata_key, metadata_dict, dict)
         returned = {}
         for key, val in metadata_dict.items():
@@ -768,7 +765,6 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
         return returned
 
     def deserialize_metadatum(self, dataset_assoc, key, val, **context):
-        """ """
         if key not in dataset_assoc.datatype.metadata_spec:
             return
         metadata_specification = dataset_assoc.datatype.metadata_spec[key]

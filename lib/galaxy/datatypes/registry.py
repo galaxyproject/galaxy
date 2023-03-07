@@ -889,14 +889,12 @@ class Registry:
 
     @property
     def edam_formats(self):
-        """ """
         if not self._edam_formats_mapping:
             self._edam_formats_mapping = {k: v.edam_format for k, v in self.datatypes_by_extension.items()}
         return self._edam_formats_mapping
 
     @property
     def edam_data(self):
-        """ """
         if not self._edam_data_mapping:
             self._edam_data_mapping = {k: v.edam_data for k, v in self.datatypes_by_extension.items()}
         return self._edam_data_mapping

@@ -64,7 +64,6 @@ GROUP BY jobstates.hdca_id
 class SqlitePGView(PGView):
     def to_sql_statement_create_or_replace(self) -> Generator[TextClause, None, None]:
         """Generates a SQL "create or replace view" statement"""
-
         yield sql_text(f"""DROP VIEW IF EXISTS {self.literal_schema}."{self.signature}";""")
         yield sql_text(f"""CREATE VIEW {self.literal_schema}."{self.signature}" AS {self.definition};""")
 

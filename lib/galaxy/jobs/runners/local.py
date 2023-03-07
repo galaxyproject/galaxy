@@ -48,7 +48,6 @@ class LocalJobRunner(BaseJobRunner):
 
     def __init__(self, app, nworkers):
         """Start the job runner"""
-
         self._proc_lock = threading.Lock()
         self._procs = []
 
@@ -57,7 +56,6 @@ class LocalJobRunner(BaseJobRunner):
         super().__init__(app, nworkers)
 
     def __command_line(self, job_wrapper: "MinimalJobWrapper") -> Tuple[str, str]:
-        """ """
         command_line = job_wrapper.runner_command_line
 
         # slots would be cleaner name, but don't want deployers to see examples and think it

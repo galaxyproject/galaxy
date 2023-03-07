@@ -61,7 +61,6 @@ def getMissval(inped=""):
 
 
 def rgConv(inpedfilepath, outhtmlname, outfilepath, plink):
-    """ """
     pedf = f"{inpedfilepath}.ped"
     basename = os.path.split(inpedfilepath)[-1]  # get basename
     outroot = os.path.join(outfilepath, basename)

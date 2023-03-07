@@ -56,7 +56,6 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         If m_c and m_a are present, the center panel will be loaded using the
         controller and action as a url: (e.g. 'user/dbkeys').
         """
-
         self._check_require_login(trans)
 
         # if a history_id was sent, attempt to switch to that history

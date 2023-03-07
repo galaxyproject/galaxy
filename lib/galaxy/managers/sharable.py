@@ -254,7 +254,8 @@ class SharableModelManager(
         """Returns optional extra information about the shareability of the given item.
 
         This function should be overridden in the particular manager class that wants
-        to provide the extra information, otherwise, it will be None by default."""
+        to provide the extra information, otherwise, it will be None by default.
+        """
         return None
 
     def make_members_public(self, trans, item):
@@ -266,7 +267,8 @@ class SharableModelManager(
 
     def update_current_sharing_with_users(self, item, new_users_shared_with: Set[User], flush=True):
         """Updates the currently list of users this item is shared with by adding new
-        users and removing missing ones."""
+        users and removing missing ones.
+        """
         current_shares = self.get_share_assocs(item)
         currently_shared_with = {share.user for share in current_shares}
 
@@ -478,7 +480,6 @@ class SharableModelDeserializer(
         )
 
     def deserialize_published(self, item, key, val, **context):
-        """ """
         val = self.validate.bool(key, val)
         if item.published == val:
             return val
@@ -490,7 +491,6 @@ class SharableModelDeserializer(
         return item.published
 
     def deserialize_importable(self, item, key, val, **context):
-        """ """
         val = self.validate.bool(key, val)
         if item.importable == val:
             return val

@@ -93,7 +93,6 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
     rating_assoc = model.PageRatingAssociation
 
     def __init__(self, app: MinimalManagerApp):
-        """ """
         super().__init__(app)
         self.workflow_manager = app.workflow_manager
 
@@ -356,7 +355,6 @@ class PageContentProcessor(HTMLParser):
         attrs is a list of (attr, value) tuples, e.g. for <pre class='screen'>,
         tag='pre', attrs=[('class', 'screen')]
         """
-
         # If ignoring content, just increment tag count and ignore.
         if self.ignore_content:
             self.num_open_tags_for_ignore += 1

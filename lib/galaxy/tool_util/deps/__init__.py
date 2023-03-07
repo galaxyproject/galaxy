@@ -55,7 +55,6 @@ def build_dependency_manager(
     resolution_config_dict if specified is assumed to be the to_dict() version of a
     DependencyManager and should only contain dependency configuration options.
     """
-
     if app_config_dict is None:
         app_config_dict = {}
     else:
@@ -356,7 +355,6 @@ class DependencyManager:
         )
 
     def __parse_resolver_conf_plugins(self, plugin_source):
-        """ """
         extra_kwds = dict(dependency_manager=self)
         # Use either 'type' from YAML definition or 'resolver_type' from to_dict definition.
         return plugin_config.load_plugins(

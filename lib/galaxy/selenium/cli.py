@@ -17,7 +17,6 @@ from .navigates_galaxy import NavigatesGalaxy
 
 def add_selenium_arguments(parser):
     """Add common selenium arguments for argparse driver utility."""
-
     parser.add_argument(
         "--selenium-browser",
         default="auto",
@@ -55,7 +54,6 @@ def add_selenium_arguments(parser):
 
 
 class DriverWrapper(NavigatesGalaxy):
-
     """Adapt argparse command-line options to a concrete Selenium driver."""
 
     def __init__(self, args):

@@ -42,7 +42,6 @@ class JobImportHistoryArchiveWrapper:
         """Set history, datasets, collections and jobs' attributes
         and clean up archive directory.
         """
-
         #
         # Import history.
         #

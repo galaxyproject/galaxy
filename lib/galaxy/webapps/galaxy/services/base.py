@@ -84,7 +84,8 @@ class ServiceBase:
     def build_order_by(self, manager: SortableManager, order_by_query: Optional[str] = None):
         """Returns an ORM compatible order_by clause using the order attribute and the given manager.
 
-        The manager has to implement the `parse_order_by` function to support all the sortable model attributes."""
+        The manager has to implement the `parse_order_by` function to support all the sortable model attributes.
+        """
         ORDER_BY_SEP_CHAR = ","
         if order_by_query and ORDER_BY_SEP_CHAR in order_by_query:
             return [manager.parse_order_by(o) for o in order_by_query.split(ORDER_BY_SEP_CHAR)]

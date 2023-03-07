@@ -125,7 +125,8 @@ def get_filter_query_params(
 
 def get_update_permission_payload(payload: Dict[str, Any]) -> UpdateDatasetPermissionsPayload:
     """Converts the generic payload dictionary into a UpdateDatasetPermissionsPayload model with custom parsing.
-    This is an attempt on supporting multiple aliases for the permissions params."""
+    This is an attempt on supporting multiple aliases for the permissions params.
+    """
     # There are several allowed names for the same role list parameter, i.e.: `access`, `access_ids`, `access_ids[]`
     # The `access_ids[]` name is not pydantic friendly, so this will be modelled as an alias but we can only set one alias
     # TODO: Maybe we should choose only one way/naming and deprecate the others?

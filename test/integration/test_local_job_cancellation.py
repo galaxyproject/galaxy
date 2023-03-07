@@ -58,7 +58,6 @@ class TestLocalJobCancellation(CancelsJob, integration_util.IntegrationTestCase)
             )
 
     def test_kill_process(self):
-        """ """
         with self.dataset_populator.test_history() as history_id:
             job_id = self._setup_cat_data_and_sleep(history_id)
 

@@ -39,5 +39,6 @@ class FastAPILicenses:
     )
     async def get(self, id=LicenseIdPath) -> LicenseMetadataModel:
         """Returns the license metadata associated with the given
-        [SPDX license short ID](https://spdx.github.io/spdx-spec/appendix-I-SPDX-license-list/)."""
+        [SPDX license short ID](https://spdx.github.io/spdx-spec/appendix-I-SPDX-license-list/).
+        """
         return self.licenses_manager.get_license_by_id(id)

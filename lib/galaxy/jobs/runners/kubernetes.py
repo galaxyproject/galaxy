@@ -340,9 +340,11 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         return label_val
 
     def __get_k8s_job_spec_template(self, ajs):
-        """The k8s spec template is nothing but a Pod spec, except that it is nested and does not have an apiversion
-        nor kind. In addition to required fields for a Pod, a pod template in a job must specify appropriate labels
-        (see pod selector) and an appropriate restart policy."""
+        """The k8s spec template is nothing but a Pod spec, except that it is
+        nested and does not have an apiversion nor kind. In addition to required
+        fields for a Pod, a pod template in a job must specify appropriate
+        labels (see pod selector) and an appropriate restart policy.
+        """
         k8s_spec_template = {
             "metadata": {
                 "labels": {
@@ -383,8 +385,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         return k8s_spec_template
 
     def __get_k8s_service_spec(self, ajs):
-        """The k8s spec template is nothing but a Service spec, except that it is nested and does not have an apiversion
-        nor kind."""
+        """The k8s spec template is nothing but a Service spec, except that it
+        is nested and does not have an apiversion nor kind.
+        """
         guest_ports = ajs.job_wrapper.guest_ports
         k8s_spec_template = {
             "metadata": {
@@ -417,8 +420,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         return k8s_spec_template
 
     def __get_k8s_ingress_spec(self, ajs):
-        """The k8s spec template is nothing but a Ingress spec, except that it is nested and does not have an apiversion
-        nor kind."""
+        """The k8s spec template is nothing but a Ingress spec, except that it
+        is nested and does not have an apiversion nor kind.
+        """
         guest_ports = ajs.job_wrapper.guest_ports
         if len(guest_ports) > 0:
             entry_points = []

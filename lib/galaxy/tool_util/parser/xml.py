@@ -490,9 +490,7 @@ class XmlToolSource(ToolSource):
           and exit codes derived from the properties of the command tag.
           thus more specific regexes of the same or more severe error level
           are triggered first.
-
         """
-
         command_el = self._command_el
         detect_errors = None
         if command_el is not None:

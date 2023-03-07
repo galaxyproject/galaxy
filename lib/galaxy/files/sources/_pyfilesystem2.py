@@ -42,7 +42,6 @@ class PyFilesystem2FilesSource(BaseFilesSource):
 
     def _list(self, path="/", recursive=False, user_context=None, opts: Optional[FilesSourceOptions] = None):
         """Return dictionary of 'Directory's and 'File's."""
-
         with self._open_fs(user_context=user_context, opts=opts) as h:
             if recursive:
                 res: List[Dict[str, Any]] = []

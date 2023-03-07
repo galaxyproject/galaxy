@@ -23,7 +23,7 @@ DEFAULT_TIMEOUT_CHECK_INTERVAL = 3
 
 
 class LocalShell(BaseShellExec):
-    """
+    r"""
 
     >>> shell = LocalShell()
     >>> def exec_python(script, **kwds): return shell.execute(['python', '-c', script], **kwds)
@@ -41,7 +41,7 @@ class LocalShell(BaseShellExec):
     True
     >>> exec_result.returncode == TIMEOUT_RETURN_CODE
     True
-    >>> shell.execute('echo hi').stdout == "hi\\n"
+    >>> shell.execute('echo hi').stdout == "hi\n"
     True
     """
 

@@ -10,7 +10,6 @@ GNUPLOT = {"version": "4.6", "type": "package", "name": "gnuplot"}
 
 
 class TestCondaResolutionIntegration(integration_util.IntegrationTestCase):
-
     """Test conda dependency resolution through API."""
 
     framework_tool_and_types = True
@@ -67,7 +66,6 @@ class TestCondaResolutionIntegration(integration_util.IntegrationTestCase):
         self._assert_dependency_type(response, exact=False)
 
     def test_legacy_r_mapping(self):
-        """ """
         tool_id = "legacy_R"
         dataset_populator = DatasetPopulator(self.galaxy_interactor)
         history_id = dataset_populator.new_history()

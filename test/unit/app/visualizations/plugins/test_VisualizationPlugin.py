@@ -81,7 +81,6 @@ class TestVisualizationsPlugin(VisualizationsBase_TestCase):
         assert render_vars["config"].__dict__ == {}
 
     def test_build_config(self):
-        """ """
         plugin_config: dict = dict()
         plugin = self.plugin_class(galaxy_mock.MockApp(), "", "myvis", plugin_config)
         config = plugin._build_config({})
@@ -115,7 +114,6 @@ class TestVisualizationsPlugin(VisualizationsBase_TestCase):
         assert config.wat == 2
 
     def test_render(self):
-        """ """
         # use the python in a template to test for variables that should be there
         # TODO: gotta be a better way
         testing_template = clean_multiline_string(

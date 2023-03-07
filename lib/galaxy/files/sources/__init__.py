@@ -353,7 +353,8 @@ class BaseFilesSource(FilesSource):
 
     def _validate_security_rules(self) -> None:
         """Checks if the security rules defined in the plugin configuration are valid boolean expressions or raises
-        a ConfigurationError exception otherwise."""
+        a ConfigurationError exception otherwise.
+        """
 
         def _get_error_msg_for(rule_name: str) -> str:
             return f"Invalid boolean expression for '{rule_name}' in {self.label} file source plugin configuration."

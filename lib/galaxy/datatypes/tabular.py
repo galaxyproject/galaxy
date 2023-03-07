@@ -1574,7 +1574,6 @@ class ConnectivityTable(Tabular):
             9 C       8   10    1    9
             10 a       9    0    0   10
         """
-
         i = 0
         j = 1
 

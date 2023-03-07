@@ -14,7 +14,6 @@ def flatten(d, path):
     >>> flatten({'a': {'b': 2}, 'q': 3}, [])
     [('a.b', 2), ('q', 3)]
     """
-
     if isinstance(d, dict):
         for k, v in d.items():
             yield from flatten(v, path + [k])

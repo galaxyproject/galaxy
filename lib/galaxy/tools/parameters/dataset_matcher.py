@@ -19,8 +19,6 @@ def get_dataset_matcher_factory(trans):
 
 
 class DatasetMatcherFactory:
-    """"""
-
     def __init__(self, trans, tool=None):
         self._trans = trans
         self._tool = tool

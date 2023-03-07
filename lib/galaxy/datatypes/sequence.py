@@ -573,7 +573,8 @@ class csFasta(Sequence):
 @build_sniff_from_prefix
 class Fastg(Sequence):
     """Class representing a FASTG sequence
-    http://fastg.sourceforge.net/FASTG_Spec_v1.00.pdf"""
+    http://fastg.sourceforge.net/FASTG_Spec_v1.00.pdf
+    """
 
     edam_format = "format_3823"
     file_ext = "fastg"
@@ -1364,7 +1365,6 @@ class DotBracket(Sequence):
 
         * Empty lines are allowed.
         """
-
         state = 0
 
         for line in file_prefix.line_iterator():

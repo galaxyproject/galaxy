@@ -15,7 +15,8 @@ def _assert_h5py():
 
 def assert_has_h5_attribute(output_bytes, key, value):
     """Asserts the specified HDF5 output has a given key-value pair as HDF5
-    attribute"""
+    attribute
+    """
     _assert_h5py()
     output_temp = io.BytesIO(output_bytes)
     local_attrs = h5py.File(output_temp, "r").attrs
