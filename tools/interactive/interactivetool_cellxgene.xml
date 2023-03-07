@@ -61,7 +61,26 @@ adata.write_h5ad(output, compression="gzip")
     </outputs>
     <tests>
     </tests>
-    <help>
-    Interactive tool for visualising AnnData.
-    </help>
+<help><![CDATA[
+cellxgene - "Cell by gene" interactive viewer for single cell data in AnnData
+=============================================================================
+Purpose
+-------
+Enables interactive visualisation of Single Cell RNA-Seq datasets stored as 
+AnnData files (the format used by Scanpy).
+
+Selecting the Var name
+----------------------
+It can happen that the main index for the var element of AnnData is not the 
+gene symbol field, in which case search by genes will probably be by identifier.
+You can choose a different field (which contains the gene symbols) so that
+the AnnData is modified (in a new copy) so that that field is made unique and
+it is indexed by it. Then cellxgene will allow searches by genes in that field.
+
+Outputs
+-------
+
+If you create gene sets or differential experession sets, this will be available as a collection of files under
+"Cellxgene user annotations and gene sets" at the end of the execution (when you stop the interactive environment).
+]]></help>
 </tool>
