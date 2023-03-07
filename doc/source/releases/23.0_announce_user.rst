@@ -91,6 +91,9 @@ New Datatypes
 ===========================================================
 
 .. datatypes
+* Do not pass dataset keyword parameter into datatype.display_data
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15695`_
 * Add "Datatypes" Page
   (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
   `Pull Request 14464`_

@@ -1208,6 +1208,9 @@ Fixes
   `Pull Request 15332`_
 .. bug_tag_datatypes
 
+* Do not pass dataset keyword parameter into datatype.display_data
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15695`_
 * Format Python code with black 23.1.0
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 15488`_
@@ -1245,6 +1248,12 @@ Fixes
   `Pull Request 15304`_
 .. bug_tag_workflows
 
+* Fix saving workflow with conditional subworkflow step
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15649`_
+* Fix anonymous workflow preview
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15679`_
 * Adding more directive to the Invalid Input tooltip
   (thanks to `@assuntad23 <https://github.com/assuntad23>`__).
   `Pull Request 15406`_
@@ -1304,6 +1313,9 @@ Fixes
   `Pull Request 15343`_
 .. bug_tag_ui
 
+* Data Libraries Sanitization
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 15706`_
 * Provide d3@3 for older visualization compatibility
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 15462`_
@@ -1356,6 +1368,9 @@ Fixes
   `Pull Request 14968`_
 .. bug_tag_admin
 
+* Disable table sort reset by clicking on unsortable headers
+  (thanks to `@itisAliRH <https://github.com/itisAliRH>`__).
+  `Pull Request 15610`_
 * Change Field Method for Tool Table Columns to a Map
   (thanks to `@assuntad23 <https://github.com/assuntad23>`__).
   `Pull Request 15529`_
@@ -1373,6 +1388,51 @@ Fixes
   `Pull Request 15322`_
 .. bug
 
+* Sync ToolForm and WorkflowRun with history changes
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 15565`_
+* Fix Filter history inputs and outputs server error
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 15572`_
+* Fix escaped html in alert regarding login activation
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 15632`_
+* Fix bioblend ``GalaxyClient`` import for mypy
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 15637`_
+* check for sessionless and userless API access
+  (thanks to `@martenson <https://github.com/martenson>`__).
+  `Pull Request 15659`_
+* Rework collapsible FormCard handling;
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 15661`_
+* convert activate method substitutions to f-strings
+  (thanks to `@martenson <https://github.com/martenson>`__).
+  `Pull Request 15666`_
+* Ignore spurious mypy error
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 15667`_
+* Temporarily restore old BCO export mechanism (without Celery)
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 15674`_
+* Fix sentry in WSGI/ASGI context
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15675`_
+* Fix stock tool URL generation in BCOs
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 15685`_
+* Fix run_form=true if trs_url is used
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15687`_
+* Use more efficient model properties when serializing histories
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15705`_
+* Fix task-based export error handling
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 15719`_
+* Fix library bulk selection
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 15721`_
 * Ensure that tool form is initialized before attempting updates
   (thanks to `@guerler <https://github.com/guerler>`__).
   `Pull Request 15325`_
