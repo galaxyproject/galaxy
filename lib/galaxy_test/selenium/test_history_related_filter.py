@@ -36,5 +36,4 @@ class TestHistoryRelatedFilter(SeleniumTestCase):
         assert initial_value == f"related:{CURRENT_HID}", initial_value
         self.history_element("clear filters").wait_for_and_click()
         filter_element.send_keys(f"related:{UNRELATED_HID}")
-        self.sleep_for(self.wait_types.UX_TRANSITION)
-        current_hda.assert_absent_or_hidden()
+        current_hda.wait_for_absent()
