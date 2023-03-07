@@ -285,7 +285,7 @@ class ShortTermStorageManager(ShortTermStorageAllocator, ShortTermStorageMonitor
             self._delete(request_id)
 
     def _delete(self, request_id: UUID):
-        shutil.rmtree(self._directory(request_id))
+        shutil.rmtree(self._directory(request_id), ignore_errors=True)
 
     def cleanup(self):
         for directory in self._root.glob("*/*/*/*"):
