@@ -13,9 +13,11 @@ export interface FormDrilldownProps {
 const props = defineProps<FormDrilldownProps>();
 </script>
 <template>
-    <li class="form-drilldown-option">
-        {{ props.option.name }}
-        <form-drilldown-option v-for="option in props.option.options" :key="option.name" :option="option">
-        </form-drilldown-option>
-    </li>
+    <div class="form-drilldown-option">
+        <b-form-checkbox v-model="props.option.selected">
+            {{ props.option.name }}
+            <form-drilldown-option v-for="option in props.option.options" :key="option.name" :option="option">
+            </form-drilldown-option>
+        </b-form-checkbox>
+    </div>
 </template>
