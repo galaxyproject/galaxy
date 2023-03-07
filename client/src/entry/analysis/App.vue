@@ -54,6 +54,7 @@ import Toast from "components/Toast";
 import ConfirmDialog from "components/ConfirmDialog";
 import UploadModal from "components/Upload/UploadModal.vue";
 import { ref } from "vue";
+import { useUserStore } from "@/stores/userStore";
 import { setToastComponentRef } from "composables/toast";
 import { setConfirmDialogComponentRef } from "composables/confirmDialog";
 import { setGlobalUploadModal } from "composables/globalUploadModal";
@@ -69,6 +70,9 @@ export default {
         UploadModal,
     },
     setup() {
+        const userStore = useUserStore();
+        userStore.loadUser();
+
         const toastRef = ref(null);
         setToastComponentRef(toastRef);
 
