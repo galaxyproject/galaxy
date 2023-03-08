@@ -8206,7 +8206,7 @@ class WorkflowRequestInputParameter(Base, Dictifiable, Serializable):
 
     id = Column(Integer, primary_key=True)
     workflow_invocation_id = Column(
-        Integer, ForeignKey("workflow_invocation.id", onupdate="CASCADE", ondelete="CASCADE")
+        Integer, ForeignKey("workflow_invocation.id", onupdate="CASCADE", ondelete="CASCADE"), index=True
     )
     name = Column(Unicode(255))
     value = Column(TEXT)
@@ -8236,7 +8236,7 @@ class WorkflowRequestStepState(Base, Dictifiable, Serializable):
 
     id = Column(Integer, primary_key=True)
     workflow_invocation_id = Column(
-        Integer, ForeignKey("workflow_invocation.id", onupdate="CASCADE", ondelete="CASCADE")
+        Integer, ForeignKey("workflow_invocation.id", onupdate="CASCADE", ondelete="CASCADE"), index=True
     )
     workflow_step_id = Column(Integer, ForeignKey("workflow_step.id"))
     value = Column(MutableJSONType)
