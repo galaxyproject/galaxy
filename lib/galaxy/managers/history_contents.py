@@ -538,7 +538,11 @@ class HistoryContentsFilters(
             # Type check whether hid is int
             if not qv_hid.isdigit():
                 raise glx_exceptions.RequestParameterInvalidException(
-                    "unparsable value for filter", column="related", operation="eq", value=qv_hid, ValueError="invalid type in filter"
+                    "unparsable value for filter",
+                    column="related",
+                    operation="eq",
+                    value=qv_hid,
+                    ValueError="invalid type in filter",
                 )
 
             # Make new q and qv excluding related filter
