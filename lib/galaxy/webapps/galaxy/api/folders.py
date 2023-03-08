@@ -148,7 +148,7 @@ class FastAPILibraryFolders:
             title="Action",
             description=(
                 "Indicates what action should be performed on the Library. "
-                f"Currently only `{LibraryFolderPermissionAction.set_permissions}` is supported."
+                f"Currently only `{LibraryFolderPermissionAction.set_permissions.value}` is supported."
             ),
         ),
         payload: LibraryFolderPermissionsPayload = Body(...),
