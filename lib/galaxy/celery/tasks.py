@@ -34,6 +34,7 @@ from galaxy.managers.model_stores import ModelStoreManager
 from galaxy.managers.tool_data import ToolDataImportManager
 from galaxy.metadata.set_metadata import set_metadata_portable
 from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.objectstore import BaseObjectStore
 from galaxy.schema.tasks import (
     ComputeDatasetHashTaskRequest,
     GenerateHistoryContentDownload,
@@ -66,11 +67,13 @@ def cached_create_tool_from_representation(app, raw_tool_source):
 
 
 @galaxy_task(ignore_result=True, action="recalculate a user's disk usage")
-def recalculate_user_disk_usage(session: galaxy_scoped_session, user_id: Optional[int] = None):
+def recalculate_user_disk_usage(
+    session: galaxy_scoped_session, object_store: BaseObjectStore, user_id: Optional[int] = None
+):
     if user_id:
         user = session.query(model.User).get(user_id)
         if user:
-            user.calculate_and_set_disk_usage()
+            user.calculate_and_set_disk_usage(object_store)
             log.info(f"New user disk usage is {user.disk_usage}")
         else:
             log.error(f"Recalculate user disk usage task failed, user {user_id} not found")

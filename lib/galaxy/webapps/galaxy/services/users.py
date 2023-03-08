@@ -36,7 +36,10 @@ class UsersService(ServiceBase):
             send_local_control_task(
                 trans.app,
                 "recalculate_user_disk_usage",
-                kwargs={"user_id": trans.user.id},
+                kwargs={
+                    "object_store": trans.app.object_store,
+                    "user_id": trans.user.id,
+                },
             )
 
     def get_api_key(self, trans: ProvidesUserContext, user_id: int) -> Optional[APIKeyModel]:
