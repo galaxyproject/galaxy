@@ -60,8 +60,8 @@ gravity = ">=1.0"
 gunicorn = "*"
 gxformat2 = "*"
 h5py = "*"
-importlib_metadata = "<5"  # Work around kombu bug
-importlib_resources = "*"
+importlib-metadata = "<5"  # Work around https://github.com/celery/kombu/issues/1600
+importlib-resources = "*"
 isa-rwval = "*"
 kombu = "*"
 lagom = "*"
