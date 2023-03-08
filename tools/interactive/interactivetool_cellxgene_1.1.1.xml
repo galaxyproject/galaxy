@@ -7,6 +7,13 @@
             <port>80</port>
         </entry_point>
     </entry_points>
+    <stdio>
+		<regex match="WARNING"
+			   source="both"
+			   level="warning"
+			   description="cellxgene warnings"
+			   />
+    </stdio>
     <command><![CDATA[
         #import re
         #set $fancy_name = '/tmp/galaxy_cellxgene_' + re.sub('[^\w\-_]', '_', $infile.element_identifier) + '.h5ad'
