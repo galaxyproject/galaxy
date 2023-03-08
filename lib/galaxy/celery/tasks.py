@@ -66,7 +66,7 @@ def cached_create_tool_from_representation(app, raw_tool_source):
     )
 
 
-@galaxy_task(ignore_result=True, action="recalculate a user's disk usage")
+@galaxy_task(action="recalculate a user's disk usage")
 def recalculate_user_disk_usage(
     session: galaxy_scoped_session, object_store: BaseObjectStore, user_id: Optional[int] = None
 ):
