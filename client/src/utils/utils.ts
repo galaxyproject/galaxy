@@ -4,6 +4,7 @@
  */
 
 import _ from "underscore";
+import $ from "jquery";
 import axios, { type AxiosError, type AxiosResponse } from "axios";
 
 import { getAppRoot } from "@/onload/loadConfig";
@@ -203,8 +204,7 @@ const tb = gb * kb;
  * @param{Integer}   size           - Size in bytes
  * @param{Boolean}   normal_font    - Switches font between normal and bold
  */
-export function bytesToString(size: number, normal_font: boolean, numberPlaces: number) {
-    numberPlaces = numberPlaces !== undefined ? numberPlaces : 1;
+export function bytesToString(size: number, normal_font: boolean, numPlaces = 1) {
     // identify unit
     let unit = "";
     if (size >= tb) {
@@ -225,7 +225,7 @@ export function bytesToString(size: number, normal_font: boolean, numberPlaces: 
         return normal_font ? "0 b" : "<strong>-</strong>";
     }
     // return formatted string
-    const rounded = unit == "b" ? size : roundToDecimalPlaces(size, numberPlaces);
+    const rounded = unit == "b" ? size : roundToDecimalPlaces(size, numPlaces);
     if (normal_font) {
         return `${rounded} ${unit}`;
     } else {
