@@ -6,11 +6,10 @@ Create Date: 2022-10-24 16:43:39.565871
 
 """
 import sqlalchemy as sa
-from alembic import op
 
 from galaxy.model.custom_types import JSONType
 from galaxy.model.migrations.util import (
-    column_exists,
+    add_column,
     drop_column,
 )
 
@@ -22,13 +21,14 @@ depends_on = None
 
 # database object names used in this revision
 table_name = "workflow_step"
-column_name = "when_expression"
+column = sa.Column("when_expression", JSONType)
 
 
 def upgrade():
-    if not column_exists(table_name, column_name):
-        op.add_column(table_name, sa.Column(column_name, JSONType))
+    return
+    add_column(table_name, column)
 
 
 def downgrade():
-    drop_column(table_name, column_name)
+    return
+    drop_column(table_name, column.name)

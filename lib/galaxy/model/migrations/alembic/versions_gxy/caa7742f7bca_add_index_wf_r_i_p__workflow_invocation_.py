@@ -16,7 +16,6 @@ down_revision = "3a2914d703ca"
 branch_labels = None
 depends_on = None
 
-
 table_name = "workflow_request_input_parameters"
 columns = ["workflow_invocation_id"]
 index_name = "ix_workflow_request_input_parameters_workflow_invocation_id"
@@ -27,4 +26,4 @@ def upgrade():
 
 
 def downgrade():
-    drop_index(index_name, table_name, columns)
+    drop_index(index_name, table_name)

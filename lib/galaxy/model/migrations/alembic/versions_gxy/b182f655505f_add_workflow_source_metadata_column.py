@@ -5,12 +5,11 @@ Revises: e7b6dcb09efd
 Create Date: 2022-03-14 12:56:57.067748
 
 """
-from alembic import op
 from sqlalchemy import Column
 
 from galaxy.model.custom_types import JSONType
 from galaxy.model.migrations.util import (
-    column_exists,
+    add_column,
     drop_column,
 )
 
@@ -20,15 +19,15 @@ down_revision = "e7b6dcb09efd"
 branch_labels = None
 depends_on = None
 
-# database object names used in this revision
 table_name = "workflow"
-column_name = "source_metadata"
+column = Column("source_metadata", JSONType)
 
 
 def upgrade():
-    if not column_exists(table_name, column_name):
-        op.add_column(table_name, Column(column_name, JSONType))
+    return
+    add_column(table_name, column)
 
 
 def downgrade():
-    drop_column(table_name, column_name)
+    return
+    drop_column(table_name, column.name)

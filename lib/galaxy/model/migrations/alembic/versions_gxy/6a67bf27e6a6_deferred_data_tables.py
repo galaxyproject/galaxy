@@ -5,13 +5,15 @@ Revises: b182f655505f
 Create Date: 2022-03-14 12:17:55.313830
 
 """
-from alembic import op
 from sqlalchemy import (
     Boolean,
     Column,
 )
 
-from galaxy.model.migrations.util import drop_column
+from galaxy.model.migrations.util import (
+    add_column,
+    drop_column,
+)
 
 # revision identifiers, used by Alembic.
 revision = "6a67bf27e6a6"
@@ -19,12 +21,18 @@ down_revision = "b182f655505f"
 branch_labels = None
 depends_on = None
 
+table1_name = "history_dataset_association"
+table2_name = "library_dataset_dataset_association"
+column = Column("metadata_deferred", Boolean(), default=False)
+
 
 def upgrade():
-    op.add_column("history_dataset_association", Column("metadata_deferred", Boolean(), default=False))
-    op.add_column("library_dataset_dataset_association", Column("metadata_deferred", Boolean(), default=False))
+    return
+    add_column(table1_name, column)
+    add_column(table2_name, column)
 
 
 def downgrade():
-    drop_column("history_dataset_association", "metadata_deferred")
-    drop_column("library_dataset_dataset_association", "metadata_deferred")
+    return
+    drop_column(table1_name, column.name)
+    drop_column(table2_name, column.name)
