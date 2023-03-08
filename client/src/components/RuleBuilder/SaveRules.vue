@@ -37,13 +37,13 @@ export default {
         }
     },
     methods: {
-        saveSession(jsonRulesString) {
-            var dateTimeString = new Date().toISOString();
-            var key = this.prefix + dateTimeString;
-            localStorage.setItem(key, jsonRulesString);
+        saveSession(rule) {
+            const dateTime = new Date().toISOString();
+            const key = this.prefix + dateTime;
+            localStorage.setItem(key, rule);
             this.savedRules.push({
-                dateTime: dateTimeString,
-                rule: jsonRulesString,
+                dateTime,
+                rule,
             });
         },
     },
