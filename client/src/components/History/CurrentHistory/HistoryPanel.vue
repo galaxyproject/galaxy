@@ -93,6 +93,9 @@
                         </b-alert>
                         <div v-else-if="itemsLoaded.length === 0">
                             <HistoryEmpty v-if="queryDefault" class="m-2" />
+                            <b-alert v-else-if="historySearchError" class="m-2" variant="danger" show>
+                                {{ historySearchError }}
+                            </b-alert>
                             <b-alert v-else class="m-2" variant="info" show>
                                 No data found for selected filter.
                             </b-alert>
@@ -247,6 +250,10 @@ export default {
         isWatching() {
             const { getWatchingVisibility } = storeToRefs(useHistoryItemsStore());
             return getWatchingVisibility.value;
+        },
+        /** @returns {String} */
+        historySearchError() {
+            return useHistoryItemsStore().error[`${this.historyId}-${this.filterText}`];
         },
         /** @returns {String} */
         storeFilterText() {

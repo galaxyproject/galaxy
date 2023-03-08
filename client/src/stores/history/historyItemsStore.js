@@ -16,6 +16,7 @@ const queue = new LastQueue();
 
 export const useHistoryItemsStore = defineStore("historyItemsStore", {
     state: () => ({
+        error: {},
         items: {},
         itemKey: "hid",
         totalMatchesCount: undefined,
@@ -73,6 +74,10 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
                 const payload = data.contents;
                 const relatedHid = HistoryFilters.getFilterValue(filterText, "related");
                 this.saveHistoryItems(historyId, payload, relatedHid);
+            })
+            .catch((error) => {
+                console.error(error);
+                Vue.set(this.error, `${historyId}-${filterText}`, error);
             });
         },
         // Setters
