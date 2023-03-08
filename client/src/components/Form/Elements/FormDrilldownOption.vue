@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed, ref } from "vue";
+
 export interface Option {
     name: string;
     value: string;
@@ -8,16 +10,35 @@ export interface Option {
 
 export interface FormDrilldownProps {
     option: Option;
+    depth: number;
+}
+function toggleChildren() {
+    showChildren.value = !showChildren.value;
 }
 
+const showChildren = ref(false);
+
 const props = defineProps<FormDrilldownProps>();
+
+const hasOptions = computed(() => {
+    return props.option.options.length > 0;
+});
 </script>
 <template>
     <div class="form-drilldown-option">
-        <b-form-checkbox v-model="props.option.selected">
-            {{ props.option.name }}
-            <form-drilldown-option v-for="option in props.option.options" :key="option.name" :option="option">
-            </form-drilldown-option>
-        </b-form-checkbox>
+        <span
+            v-if="hasOptions"
+            @click="toggleChildren"
+            class="ui-drilldown-button"
+            v-bind:class="{ 'fa fa-plus-square': !showChildren, 'fa fa-minus-square': showChildren }" />
+        <b-form-checkbox v-model="props.option.selected" style="display: inline-block"/>
+        {{ props.option.name }}
+        <form-drilldown-option
+            v-show="showChildren"
+            v-for="option in props.option.options"
+            :key="option.name"
+            :option="option"
+            :depth="depth + 1">
+        </form-drilldown-option>
     </div>
 </template>
