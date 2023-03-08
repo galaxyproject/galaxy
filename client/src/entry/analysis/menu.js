@@ -158,6 +158,32 @@ export function fetchMenu(options = {}) {
     };
     menu.push(helpTab);
 
+    // Subdomain tab
+
+    // Hard-coded for now. These should be sourced from Galaxy.config, probably
+    // through a subdomain_conf.xml file.
+
+    const subdomainsTab = {
+        id: "subdomain",
+        title: _l("Domain"),
+        cls: "",
+        url: "javascript:void(0)",
+        tooltip: _l("Switch between community domain sites"),
+        menu: [
+            {
+                title: "Base",
+                url: "127.0.0.1:8081",
+                order: 1,
+            },
+            {
+                title: "Genome",
+                url: "genome.127.0.0.1:8081",
+                order: 2,
+            },
+        ]
+    }
+    menu.push(subdomainsTab);
+
     //
     // User tab.
     //
@@ -248,5 +274,6 @@ export function fetchMenu(options = {}) {
         }
     }
     menu.push(userTab);
+
     return menu;
 }
