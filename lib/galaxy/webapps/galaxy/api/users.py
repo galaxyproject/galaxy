@@ -111,14 +111,24 @@ class FastAPIUsers:
     user_serializer: users.UserSerializer = depends(users.UserSerializer)
 
     @router.put(
+        "/api/users/current/recalculate_disk_usage",
+        summary=RecalculateDiskUsageSummary,
+        responses=RecalculateDiskUsageResponseDescriptions,
+    )
+    @router.put(
         "/api/users/recalculate_disk_usage",
         summary=RecalculateDiskUsageSummary,
         responses=RecalculateDiskUsageResponseDescriptions,
+        deprecated=True,
     )
     def recalculate_disk_usage(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
     ):
+        """This route will be removed in a future version.
+
+        Please use `/api/users/current/recalculate_disk_usage` instead.
+        """
         result = self.service.recalculate_disk_usage(trans)
         return Response(status_code=status.HTTP_204_NO_CONTENT) if result is None else result
 
