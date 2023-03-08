@@ -74,11 +74,16 @@ It's easier than ever to change the datatype of every dataset in a collection us
    <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/SNvne6GdKzs" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen alt="Video of a user using the new search interface to find collection operations tools, and then a Filter tool."></iframe>
 
 
-RO-Crate / Biocompute Export
+RO-Crate / Biocompute Workflow Invocation Export
 ----------------------------
 
-Are you interested in publishing workflow artefacts? You can do that in one of two formats now, RO-Crate and BioCompute Object. These are both standards based efforts to package research data and metadata. Read more about `RO-Crate <https://www.researchobject.org/ro-crate/>`__ and `BioCompute Objects <https://biocomputeobject.org/>`__. You'll need to have a remote file source configured (e.g. FTP or Dropbox) to use it.
+Galaxy now offers two options for packaging and publishing workflow artifacts: RO-Crate and BioCompute Object. These standard-based formats provide a way to bundle research data and metadata in a structured way. To learn more about these formats, check out RO-Crate <https://www.researchobject.org/ro-crate/>__ and BioCompute Objects <https://biocomputeobject.org/>__. Please note that you'll need to enable the Celery task system in order to export to both formats. Additionally, you can directly export these files to any writeable remote file source that has been configured (e.g., FTP or Dropbox).
 
+
+History Export Tracking
+----------------------------
+
+Good news for users with Celery enabled on their Galaxy instances: a new History export user interface is now available with additional options for generating temporal History downloads. This feature also allows you to package your history as an RO-Crate and export it to remote file sources for more permanent storage. Plus, every time you export your history to one of these remote sources, a new tracking record is created with a button that lets you re-import that history snapshot with ease.
 
 
 Workflow Report - Collapsible Boxes
