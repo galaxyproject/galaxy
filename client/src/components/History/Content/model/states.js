@@ -85,3 +85,6 @@ export const STATES = {
  * This list is ordered from highest to lowest priority. If any element is in error state the whole collection should be in error.
  */
 export const HIERARCHICAL_COLLECTION_JOB_STATES = ["error", "failed", "upload", "paused", "running", "queued", "new"];
+
+/** Datalist recommended states for the advanced history panel search */
+export const COMMON_HISTORY_PANEL_STATES = ["ok", "error", "failed", "upload", "paused", "running", "queued", "new"];

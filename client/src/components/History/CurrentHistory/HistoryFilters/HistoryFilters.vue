@@ -88,7 +88,7 @@
 <script>
 import DebouncedInput from "components/DebouncedInput";
 import HistoryFiltersDefault from "./HistoryFiltersDefault";
-import { STATES } from "components/History/Content/model/states";
+import { COMMON_HISTORY_PANEL_STATES } from "components/History/Content/model/states";
 import { HistoryFilters } from "components/History/HistoryFilters";
 
 export default {
@@ -104,6 +104,7 @@ export default {
         return {
             create_time_gt: "",
             create_time_lt: "",
+            states: COMMON_HISTORY_PANEL_STATES,
         };
     },
     computed: {
@@ -119,9 +120,6 @@ export default {
                     this.updateFilter(newVal);
                 }
             },
-        },
-        states() {
-            return Object.keys(STATES);
         },
     },
     watch: {
