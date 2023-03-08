@@ -1212,6 +1212,13 @@ export default {
                 });
         }
     },
+    mounted() {
+        // something bizarre is up with the rendering of hands-on-table, needs a click to render.
+        // Vue.nextTick() didn't work here.
+        setTimeout(() => {
+            this.$refs.hotTable.$el.click();
+        }, 200);
+    },
     methods: {
         restoreRules(event) {
             const json = JSON.parse(event);
