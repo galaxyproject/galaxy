@@ -2,6 +2,7 @@ import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { terminalFactory } from "@/components/Workflow/Editor/modules/terminals";
 import type { Step, TerminalSource } from "@/stores/workflowStepStore";
 import { ref, watch, type Ref, computed } from "vue";
+import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 export function useTerminal(
     stepId: Ref<Step["id"]>,
@@ -9,7 +10,8 @@ export function useTerminal(
     datatypesMapper: Ref<DatatypesMapperModel>
 ) {
     const terminal: Ref<ReturnType<typeof terminalFactory> | null> = ref(null);
-    const isMappedOver = computed(() => terminal.value?.isMappedOver() ?? false);
+    const stepStore = useWorkflowStepStore();
+    const isMappedOver = computed(() => stepStore.stepMapOver[stepId.value]?.isCollection ?? false);
 
     watch(
         [stepId, terminalSource, datatypesMapper],
