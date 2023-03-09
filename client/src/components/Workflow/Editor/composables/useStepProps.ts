@@ -1,14 +1,12 @@
 import type { Step } from "@/stores/workflowStepStore";
 import { toRefs } from "@vueuse/core";
 
-import type { Ref } from "vue";
+import { computed, type Ref } from "vue";
 
 export function useStepProps(step: Ref<Step>) {
     const {
         id: stepId,
         content_id: contentId,
-        annotation,
-        label,
         name,
         type,
         inputs: stepInputs,
@@ -16,6 +14,10 @@ export function useStepProps(step: Ref<Step>) {
         config_form: configForm,
         post_job_actions: postJobActions,
     } = toRefs(step);
+
+    const label = computed(() => step.value.label ?? undefined);
+    const annotation = computed(() => step.value.annotation ?? null);
+
     return {
         stepId,
         contentId,

@@ -1,7 +1,8 @@
 <script lang="ts" setup>
 import { ref, inject, reactive } from "vue";
 import type { Ref } from "vue";
-import { useElementSize } from "@vueuse/core";
+import { useAnimationFrameSize } from "@/composables/sensors/animationFrameSize";
+import { useAnimationFrameThrottle } from "@/composables/throttle";
 import { useDraggable } from "./composables/useDraggable.js";
 import type { ZoomTransform } from "d3-zoom";
 
@@ -28,10 +29,14 @@ const props = defineProps({
 const emit = defineEmits(["mousedown", "mouseup", "move", "dragstart", "start", "stop"]);
 
 const draggable = ref();
-const size = reactive(useElementSize(draggable));
+const size = reactive(useAnimationFrameSize(draggable));
 const transform: Ref<ZoomTransform> | undefined = inject("transform");
 
-const onStart = (position: any, event: DragEvent) => {
+type Position = { x: number; y: number };
+
+const { throttle } = useAnimationFrameThrottle();
+
+const onStart = (position: Position, event: DragEvent) => {
     emit("start");
     emit("mousedown", event);
     if (event.type == "dragstart") {
@@ -44,20 +49,23 @@ const onStart = (position: any, event: DragEvent) => {
     }
 };
 
-const onMove = (position: any, event: DragEvent) => {
+const onMove = (position: Position, event: DragEvent) => {
     if (event.type == "drag" && event.x == 0 && event.y == 0) {
         // the last drag event has no coordinate ... this is obviously a hack!
         return;
     }
-    const newPosition = {
-        unscaled: { ...position, ...size },
-        x: (position.x - props.rootOffset.x - transform!.value.x) / transform!.value.k,
-        y: (position.y - props.rootOffset.y - transform!.value.y) / transform!.value.k,
-    };
-    emit("move", newPosition, event);
+
+    throttle(() => {
+        const newPosition = {
+            unscaled: { ...position, ...size },
+            x: (position.x - props.rootOffset.x - transform!.value.x) / transform!.value.k,
+            y: (position.y - props.rootOffset.y - transform!.value.y) / transform!.value.k,
+        };
+        emit("move", newPosition, event);
+    });
 };
 
-const onEnd = (position: any, event: DragEvent) => {
+const onEnd = (position: Position, event: DragEvent) => {
     emit("stop");
     emit("mouseup");
 };
