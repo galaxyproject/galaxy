@@ -27,8 +27,11 @@ class TestRecalculateUserDiskUsageIntegration(IntegrationTestCase):
         current_usage = self.dataset_populator.get_usage_for(None)
         assert current_usage["total_disk_usage"] == expected_usage
         self.dataset_populator.delete_dataset(history_id, hda_id, purge=True, wait_for_purge=True)
-        # After purging the disk usage might not be automatically recalculated yet
+
+        # Purging that dataset should result in usage dropping back
+        # down to zero.
         current_usage = self.dataset_populator.get_usage_for(None)
+        assert current_usage["total_disk_usage"] == 0
 
         recalculate_response = self._put("users/current/recalculate_disk_usage")
         task_ok = self.dataset_populator.wait_on_task(recalculate_response)
