@@ -6491,8 +6491,10 @@ export interface components {
              *  - make_public: The contents of the resource will be made publicly accessible.
              *  - make_accessible_to_shared: This will automatically create a new `sharing role` allowing protected contents to be accessed only by the desired users.
              *  - no_changes: This won't change the current permissions for the contents. The user which this resource will be shared may not be able to access all its contents.
+             *
+             * @enum {string}
              */
-            share_option?: components["schemas"]["SharingOptions"];
+            share_option?: "make_public" | "make_accessible_to_shared" | "no_changes";
             /**
              * User Identifiers
              * @description A collection of encoded IDs (or email addresses) of users that this resource will be shared with.
@@ -6558,12 +6560,6 @@ export interface components {
              */
             users_shared_with?: components["schemas"]["UserEmail"][];
         };
-        /**
-         * SharingOptions
-         * @description Options for sharing resources that may have restricted access to all or part of their contents.
-         * @enum {string}
-         */
-        SharingOptions: "make_public" | "make_accessible_to_shared" | "no_changes";
         /**
          * SharingStatus
          * @description Base model definition with common configuration used by all derived models.

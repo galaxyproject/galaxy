@@ -591,7 +591,5 @@ __all__ = (
     "SharableModelFilters",
     "SharableModelManager",
     "SharableModelSerializer",
-    "SharingOptions",
-    "ShareWithExtra",
     "SlugBuilder",
 )

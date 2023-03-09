@@ -2974,12 +2974,8 @@ class HistoryContentsWithStatsResult(Model):
 
 
 # Sharing -----------------------------------------------------------------
-class SharingOptions(str, Enum):
-    """Options for sharing resources that may have restricted access to all or part of their contents."""
-
-    make_public = "make_public"
-    make_accessible_to_shared = "make_accessible_to_shared"
-    no_changes = "no_changes"
+# Options for sharing resources that may have restricted access to all or part of their contents.
+SharingOptions = Literal["make_public", "make_accessible_to_shared", "no_changes"]
 
 
 class ShareWithExtra(Model):
@@ -3010,9 +3006,9 @@ class ShareWithPayload(Model):
         description=(
             "User choice for sharing resources which its contents may be restricted:\n"
             " - None: The user did not choose anything yet or no option is needed.\n"
-            f" - {SharingOptions.make_public.value}: The contents of the resource will be made publicly accessible.\n"
-            f" - {SharingOptions.make_accessible_to_shared.value}: This will automatically create a new `sharing role` allowing protected contents to be accessed only by the desired users.\n"
-            f" - {SharingOptions.no_changes.value}: This won't change the current permissions for the contents. The user which this resource will be shared may not be able to access all its contents.\n"
+            " - make_public: The contents of the resource will be made publicly accessible.\n"
+            " - make_accessible_to_shared: This will automatically create a new `sharing role` allowing protected contents to be accessed only by the desired users.\n"
+            " - no_changes: This won't change the current permissions for the contents. The user which this resource will be shared may not be able to access all its contents.\n"
         ),
     )
 

@@ -44,6 +44,8 @@ from galaxy.schema.schema import (
     ExportObjectType,
     HDABasicInfo,
     ShareHistoryExtra,
+    ShareWithExtra,
+    SharingOptions,
 )
 from galaxy.security.validate_user_input import validate_preferred_object_store_id
 from galaxy.structured_app import MinimalManagerApp
@@ -271,8 +273,8 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         return job
 
     def get_sharing_extra_information(
-        self, trans, item, users: Set[model.User], errors: Set[str], option: Optional[sharable.SharingOptions] = None
-    ) -> Optional[sharable.ShareWithExtra]:
+        self, trans, item, users: Set[model.User], errors: Set[str], option: Optional[SharingOptions] = None
+    ) -> Optional[ShareWithExtra]:
         """Returns optional extra information about the datasets of the history that can be accessed by the users."""
         extra = ShareHistoryExtra()
         history = cast(model.History, item)
@@ -284,7 +286,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         owner_roles = owner.all_roles()
         can_change_dict = {}
         cannot_change_dict = {}
-        share_anyway = option is not None and option == sharable.SharingOptions.no_changes
+        share_anyway = option is not None and option == "no_changes"
         datasets = history.activatable_datasets
         total_dataset_count = len(datasets)
         for user in users:
@@ -303,9 +305,9 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
                     and not hda.dataset.library_associations
                 )
                 if option and owner_can_manage_dataset:
-                    if option == sharable.SharingOptions.make_accessible_to_shared:
+                    if option == "make_accessible_to_shared":
                         trans.app.security_agent.privately_share_dataset(hda.dataset, users=[owner, user])
-                    elif option == sharable.SharingOptions.make_public:
+                    elif option == "make_public":
                         trans.app.security_agent.make_dataset_public(hda.dataset)
                 else:
                     hda_id = trans.security.encode_id(hda.id)
