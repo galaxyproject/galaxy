@@ -74,7 +74,6 @@ def recalculate_user_disk_usage(
         user = session.query(model.User).get(user_id)
         if user:
             user.calculate_and_set_disk_usage(object_store)
-            log.info(f"New user disk usage is {user.disk_usage}")
         else:
             log.error(f"Recalculate user disk usage task failed, user {user_id} not found")
     else:

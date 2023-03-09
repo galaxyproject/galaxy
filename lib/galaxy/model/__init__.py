@@ -977,7 +977,11 @@ ON CONFLICT
                 binds.append(bindparam(key, expanding=expand_binding))
             statement = statement.bindparams(*binds)
             sa_session.execute(statement, args)
-            sa_session.flush()
+            # expire user.disk_usage so sqlalchemy knows to ignore
+            # the existing value - we're setting it in raw SQL for
+            # performance reasons and bypassing object properties.
+            sa_session.expire(self, ["disk_usage"])
+        sa_session.flush()
 
     @staticmethod
     def user_template_environment(user):
