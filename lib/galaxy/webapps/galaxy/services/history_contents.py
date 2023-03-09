@@ -159,7 +159,7 @@ class HistoryContentsIndexJobsSummaryParams(Model):
 
 class CreateHistoryContentPayloadBase(Model):
     type: Optional[HistoryContentType] = Field(
-        HistoryContentType.dataset,
+        "dataset",
         title="Type",
         description="The type of content to be created in the history.",
     )
@@ -347,9 +347,9 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
 
         :returns:   dictionary containing detailed HDA or HDCA information
         """
-        if contents_type == HistoryContentType.dataset:
+        if contents_type == "dataset":
             return self.__show_dataset(trans, id, serialization_params)
-        elif contents_type == HistoryContentType.dataset_collection:
+        elif contents_type == "dataset_collection":
             return self.__show_dataset_collection(trans, id, serialization_params, fuzzy_count)
         raise exceptions.UnknownContentsType(f"Unknown contents type: {contents_type}")
 
@@ -358,14 +358,14 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         trans: ProvidesHistoryContext,
         id: DecodedDatabaseIdField,
         payload: StoreExportPayload,
-        contents_type: HistoryContentType = HistoryContentType.dataset,
+        contents_type: HistoryContentType = "dataset",
     ) -> AsyncFile:
         model_store_format = payload.model_store_format
-        if contents_type == HistoryContentType.dataset:
+        if contents_type == "dataset":
             hda = self.hda_manager.get_accessible(id, trans.user)
             content_id = hda.id
             content_name = hda.name
-        elif contents_type == HistoryContentType.dataset_collection:
+        elif contents_type == "dataset_collection":
             dataset_collection_instance = self.__get_accessible_collection(trans, id)
             content_id = dataset_collection_instance.id
             content_name = dataset_collection_instance.name
@@ -391,13 +391,13 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         trans: ProvidesHistoryContext,
         id: DecodedDatabaseIdField,
         payload: WriteStoreToPayload,
-        contents_type: HistoryContentType = HistoryContentType.dataset,
+        contents_type: HistoryContentType = "dataset",
     ):
         ensure_celery_tasks_enabled(trans.app.config)
-        if contents_type == HistoryContentType.dataset:
+        if contents_type == "dataset":
             hda = self.hda_manager.get_accessible(id, trans.user)
             content_id = hda.id
-        elif contents_type == HistoryContentType.dataset_collection:
+        elif contents_type == "dataset_collection":
             dataset_collection_instance = self.__get_accessible_collection(trans, id)
             content_id = dataset_collection_instance.id
         else:
@@ -451,10 +451,10 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         # At most one of job or implicit_collection_jobs should be found.
         job = None
         implicit_collection_jobs = None
-        if contents_type == HistoryContentType.dataset:
+        if contents_type == "dataset":
             hda = self.hda_manager.get_accessible(id, trans.user)
             job = hda.creating_job
-        elif contents_type == HistoryContentType.dataset_collection:
+        elif contents_type == "dataset_collection":
             dataset_collection_instance = self.__get_accessible_collection(trans, id)
             job_source_type = dataset_collection_instance.job_source_type
             if job_source_type == "Job":
@@ -512,13 +512,13 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
 
         serialization_params.default_view = "detailed"
         history_content_type = payload.type
-        if history_content_type == HistoryContentType.dataset:
+        if history_content_type == "dataset":
             source = payload.source
             if source == HistoryContentSource.library_folder:
                 return self.__create_datasets_from_library_folder(trans, history, payload, serialization_params)
             else:
                 return self.__create_dataset(trans, history, payload, serialization_params)
-        elif history_content_type == HistoryContentType.dataset_collection:
+        elif history_content_type == "dataset_collection":
             return self.__create_dataset_collection(trans, history, payload, serialization_params)
         raise exceptions.UnknownContentsType(f"Unknown contents type: {payload.type}")
 
@@ -615,9 +615,9 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         :returns:   an error object if an error occurred or a dictionary containing
                     any values that were different from the original and, therefore, updated
         """
-        if contents_type == HistoryContentType.dataset:
+        if contents_type == "dataset":
             return self.__update_dataset(trans, history_id, id, payload, serialization_params)
-        elif contents_type == HistoryContentType.dataset_collection:
+        elif contents_type == "dataset_collection":
             return self.__update_dataset_collection(trans, id, payload)
         else:
             raise exceptions.UnknownContentsType(f"Unknown contents type: {contents_type}")
@@ -649,7 +649,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         hdca_ids: List[DecodedDatabaseIdField] = []
         for item in items:
             contents_type = item.history_content_type
-            if contents_type == HistoryContentType.dataset:
+            if contents_type == "dataset":
                 hda_ids.append(item.id)
             else:
                 hdca_ids.append(item.id)
@@ -725,9 +725,9 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         """
         Delete the history content with the given ``id`` and specified type (defaults to dataset)
         """
-        if contents_type == HistoryContentType.dataset:
+        if contents_type == "dataset":
             return self.__delete_dataset(trans, id, payload.purge, payload.stop_job, serialization_params)
-        elif contents_type == HistoryContentType.dataset_collection:
+        elif contents_type == "dataset_collection":
             async_result = self.dataset_collection_manager.delete(
                 trans, "history", id, recursive=payload.recursive, purge=payload.purge
             )
@@ -1338,13 +1338,11 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
     ) -> List[HistoryItemModel]:
         contents: List[HistoryItemModel] = []
 
-        dataset_items = filter(lambda item: item.history_content_type == HistoryContentType.dataset, items)
+        dataset_items = filter(lambda item: item.history_content_type == "dataset", items)
         datasets_ids = map(lambda dataset: dataset.id, dataset_items)
         contents.extend(self.hda_manager.get_owned_ids(datasets_ids, history))
 
-        collection_items = filter(
-            lambda item: item.history_content_type == HistoryContentType.dataset_collection, items
-        )
+        collection_items = filter(lambda item: item.history_content_type == "dataset_collection", items)
         collections = [
             self.dataset_collection_manager.get_dataset_collection_instance(
                 trans, instance_type="history", id=collection_item.id, check_ownership=True

@@ -1883,8 +1883,9 @@ export interface components {
              * Type
              * @description The type of content to be created in the history.
              * @default dataset
+             * @enum {string}
              */
-            type?: components["schemas"]["HistoryContentType"];
+            type?: "dataset" | "dataset_collection";
         };
         /**
          * CreateHistoryFromStore
@@ -3489,8 +3490,9 @@ export interface components {
             /**
              * Content Type
              * @description The type of this item.
+             * @enum {string}
              */
-            history_content_type: components["schemas"]["HistoryContentType"];
+            history_content_type: "dataset" | "dataset_collection";
             /**
              * History ID
              * @description The encoded ID of the history associated with this item.
@@ -3701,8 +3703,9 @@ export interface components {
             /**
              * Content Type
              * @description The type of this item.
+             * @enum {string}
              */
-            history_content_type: components["schemas"]["HistoryContentType"];
+            history_content_type: "dataset" | "dataset_collection";
             /**
              * History ID
              * @description The encoded ID of the history associated with this item.
@@ -3816,8 +3819,9 @@ export interface components {
             /**
              * Content Type
              * @description The type of this item.
+             * @enum {string}
              */
-            history_content_type: components["schemas"]["HistoryContentType"];
+            history_content_type: "dataset" | "dataset_collection";
             /**
              * History ID
              * @description The encoded ID of the history associated with this item.
@@ -3951,8 +3955,9 @@ export interface components {
             /**
              * Content Type
              * @description The type of this item.
+             * @enum {string}
              */
-            history_content_type: components["schemas"]["HistoryContentType"];
+            history_content_type: "dataset" | "dataset_collection";
             /**
              * History ID
              * @description The encoded ID of the history associated with this item.
@@ -4252,8 +4257,9 @@ export interface components {
             /**
              * Content Type
              * @description The type of this item.
+             * @enum {string}
              */
-            history_content_type: components["schemas"]["HistoryContentType"];
+            history_content_type: "dataset" | "dataset_collection";
             /**
              * ID
              * @description The encoded ID of this entity.
@@ -4293,12 +4299,6 @@ export interface components {
              */
             total_matches: number;
         };
-        /**
-         * HistoryContentType
-         * @description Available types of History contents.
-         * @enum {string}
-         */
-        HistoryContentType: "dataset" | "dataset_collection";
         /**
          * HistoryContentsResult
          * @description List of history content items.
@@ -6962,8 +6962,9 @@ export interface components {
             /**
              * Content Type
              * @description The type of this item.
+             * @enum {string}
              */
-            history_content_type: components["schemas"]["HistoryContentType"];
+            history_content_type: "dataset" | "dataset_collection";
             /**
              * ID
              * @description The encoded ID of this entity.
@@ -10101,7 +10102,7 @@ export interface operations {
             /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
-                type?: components["schemas"]["HistoryContentType"];
+                type?: "dataset" | "dataset_collection";
                 view?: string;
                 keys?: string;
             };
@@ -10568,7 +10569,7 @@ export interface operations {
             /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
-                type?: components["schemas"]["HistoryContentType"];
+                type?: "dataset" | "dataset_collection";
                 fuzzy_count?: number;
                 view?: string;
                 keys?: string;
@@ -10618,7 +10619,7 @@ export interface operations {
             /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
-                type?: components["schemas"]["HistoryContentType"];
+                type?: "dataset" | "dataset_collection";
                 view?: string;
                 keys?: string;
             };
@@ -10685,7 +10686,7 @@ export interface operations {
             /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
-                type?: components["schemas"]["HistoryContentType"];
+                type?: "dataset" | "dataset_collection";
                 purge?: boolean;
                 recursive?: boolean;
                 stop_job?: boolean;
@@ -10875,7 +10876,7 @@ export interface operations {
             /** @description The ID of the History. */
             path: {
                 history_id: string;
-                type: components["schemas"]["HistoryContentType"];
+                type: "dataset" | "dataset_collection";
             };
         };
         requestBody: {
@@ -10935,7 +10936,7 @@ export interface operations {
             path: {
                 history_id: string;
                 id: string;
-                type: components["schemas"]["HistoryContentType"];
+                type: "dataset" | "dataset_collection";
             };
         };
         responses: {
@@ -10979,7 +10980,7 @@ export interface operations {
             path: {
                 history_id: string;
                 id: string;
-                type: components["schemas"]["HistoryContentType"];
+                type: "dataset" | "dataset_collection";
             };
         };
         requestBody: {
@@ -11045,7 +11046,7 @@ export interface operations {
             path: {
                 history_id: string;
                 id: string;
-                type: components["schemas"]["HistoryContentType"];
+                type: "dataset" | "dataset_collection";
             };
         };
         requestBody?: {
@@ -11094,7 +11095,7 @@ export interface operations {
             path: {
                 history_id: string;
                 id: string;
-                type: components["schemas"]["HistoryContentType"];
+                type: "dataset" | "dataset_collection";
             };
         };
         responses: {
@@ -11127,7 +11128,7 @@ export interface operations {
             path: {
                 history_id: string;
                 id: string;
-                type: components["schemas"]["HistoryContentType"];
+                type: "dataset" | "dataset_collection";
             };
         };
         requestBody: {
@@ -11162,7 +11163,7 @@ export interface operations {
             path: {
                 history_id: string;
                 id: string;
-                type: components["schemas"]["HistoryContentType"];
+                type: "dataset" | "dataset_collection";
             };
         };
         requestBody: {

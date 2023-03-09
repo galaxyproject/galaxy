@@ -23,7 +23,6 @@ from galaxy.schema.schema import (
     ExportObjectRequestMetadata,
     ExportObjectResultMetadata,
     ExportObjectType,
-    HistoryContentType,
     ShortTermStoreExportPayload,
     WriteStoreToPayload,
 )
@@ -134,7 +133,7 @@ class ModelStoreManager:
             with model.store.get_export_store_factory(self._app, model_store_format, export_files=export_files)(
                 short_term_storage_target.path
             ) as export_store:
-                if request.content_type == HistoryContentType.dataset:
+                if request.content_type == "dataset":
                     hda = self._sa_session.query(model.HistoryDatasetAssociation).get(request.content_id)
                     export_store.add_dataset(hda)
                 else:
@@ -196,7 +195,7 @@ class ModelStoreManager:
         with model.store.get_export_store_factory(
             self._app, model_store_format, export_files=export_files, user_context=user_context
         )(target_uri) as export_store:
-            if request.content_type == HistoryContentType.dataset:
+            if request.content_type == "dataset":
                 hda = self._sa_session.query(model.HistoryDatasetAssociation).get(request.content_id)
                 export_store.add_dataset(hda)
             else:

@@ -252,12 +252,8 @@ class GroupModel(Model):
 # Available types of job sources (model classes) that produce dataset collections.
 JobSourceType = Literal["Job", "ImplicitCollectionJobs", "WorkflowInvocation"]
 
-
-class HistoryContentType(str, Enum):
-    """Available types of History contents."""
-
-    dataset = "dataset"
-    dataset_collection = "dataset_collection"
+# Available types of History contents.
+HistoryContentType = Literal["dataset", "dataset_collection"]
 
 
 class HistoryImportArchiveSourceType(str, Enum):

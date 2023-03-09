@@ -23,6 +23,7 @@ from starlette.responses import (
     Response,
     StreamingResponse,
 )
+from typing_extensions import get_args
 
 from galaxy import util
 from galaxy.managers.context import ProvidesHistoryContext
@@ -92,10 +93,10 @@ HistoryHDCAIDPathParam: DecodedDatabaseIdField = Path(
 )
 
 ContentTypeQueryParam = Query(
-    default=HistoryContentType.dataset,
+    default="dataset",
     title="Content Type",
     description="The type of the history element to show.",
-    example=HistoryContentType.dataset,
+    example="dataset",
 )
 
 CONTENT_DELETE_RESPONSES = {
@@ -233,7 +234,7 @@ def parse_legacy_index_query_params(
         else:  # Support ?types=dataset&types=dataset_collection
             content_types = util.listify(types)
     else:
-        content_types = [e.value for e in HistoryContentType]
+        content_types = list(get_args(HistoryContentType))
 
     id_list = None
     if ids:
@@ -560,7 +561,7 @@ class FastAPIHistoryContents:
             default=None,
             title="Content Type",
             description="The type of the history element to create.",
-            example=HistoryContentType.dataset,
+            example="dataset",
         ),
         serialization_params: SerializationParams = Depends(query_serialization_params),
         payload: CreateHistoryContentPayload = Body(...),
