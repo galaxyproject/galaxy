@@ -29,8 +29,8 @@ const hasOptions = computed(() => {
 
 <template>
     <div v-if="hasOptions">
-        <div v-for="option in options" :key="option.name" class="options">
+        <ul v-for="option in options" :key="option.name" class="options" >
             <form-drilldown-option :option="option" :depth="0"></form-drilldown-option>
-        </div>
+        </ul>
     </div>
 </template>
