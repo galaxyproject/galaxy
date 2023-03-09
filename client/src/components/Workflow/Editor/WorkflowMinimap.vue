@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, onMounted, ref, unref, watch } from "vue";
 import { useAnimationFrame } from "@/composables/sensors/animationFrame";
+import { useAnimationFrameThrottle } from "@/composables/throttle";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { AxisAlignedBoundingBox, Transform } from "./modules/geometry";
 import { useDraggable, type UseElementBoundingReturn } from "@vueuse/core";
@@ -22,20 +23,36 @@ const emit = defineEmits<{
 
 const stateStore = useWorkflowStateStore();
 
-/** bounding box following the viewport */
-const viewportBounds = computed(() => {
-    const bounds = new AxisAlignedBoundingBox();
-    bounds.x = -props.viewportPan.x / props.viewportScale;
-    bounds.y = -props.viewportPan.y / props.viewportScale;
-    bounds.width = unref(props.viewportBounds.width) / props.viewportScale;
-    bounds.height = unref(props.viewportBounds.height) / props.viewportScale;
-
-    return bounds;
-});
-
 /** reference to the main canvas element */
 const canvas: Ref<HTMLCanvasElement | null> = ref(null);
 let redraw = false;
+
+/** bounding box following the viewport */
+const viewportBounds = ref(new AxisAlignedBoundingBox());
+const { throttle } = useAnimationFrameThrottle();
+watch(
+    () => ({
+        x: props.viewportPan.x,
+        y: props.viewportPan.y,
+        scale: props.viewportScale,
+        width: unref(props.viewportBounds.width),
+        height: unref(props.viewportBounds.height),
+    }),
+    ({ x, y, scale, width, height }) => {
+        redraw = true;
+
+        throttle(() => {
+            const bounds = viewportBounds.value;
+
+            bounds.x = -x / scale;
+            bounds.y = -y / scale;
+            bounds.width = width / scale;
+            bounds.height = height / scale;
+
+            viewportBounds.value = bounds;
+        });
+    }
+);
 
 /** bounding box encompassing all nodes in the workflow */
 const aabb = new AxisAlignedBoundingBox();
@@ -67,8 +84,7 @@ function recalculateAABB() {
     }
 }
 
-// redraw if any of these props change
-watch(viewportBounds, () => (redraw = true));
+// redraw if any steps change
 watch(
     props.steps,
     () => {
