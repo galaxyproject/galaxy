@@ -1,18 +1,10 @@
-import { mockModule, getLocalVue } from "tests/jest/helpers";
-import { userStore } from "store/userStore";
-import Vuex from "vuex";
-import HistoryNavigation from "./HistoryNavigation";
+import { createPinia } from "pinia";
 import { shallowMount } from "@vue/test-utils";
+import { useUserStore } from "stores/userStore";
+import { getLocalVue } from "tests/jest/helpers";
+import HistoryNavigation from "./HistoryNavigation";
 
 const localVue = getLocalVue();
-
-const createStore = (currentUser) => {
-    return new Vuex.Store({
-        modules: {
-            user: mockModule(userStore, { currentUser }),
-        },
-    });
-};
 
 // all options
 const expectedOptions = [
@@ -39,22 +31,32 @@ const anonymousOptions = [
 // options disabled for logged-out users
 const anonymousDisabledOptions = expectedOptions.filter((option) => !anonymousOptions.includes(option));
 
-describe("History Navigation", () => {
-    it("presents all options to logged-in users", () => {
-        const store = createStore({
-            id: "user.id",
-            email: "user.email",
-        });
+async function createWrapper(component, propsData, localVue, userData) {
+    const pinia = createPinia();
+    const wrapper = shallowMount(component, {
+        propsData,
+        localVue,
+        pinia,
+    });
+    const userStore = useUserStore();
+    userStore.currentUser = { ...userStore.currentUser, ...userData };
+    return wrapper;
+}
 
-        const wrapper = shallowMount(HistoryNavigation, {
-            propsData: {
+describe("History Navigation", () => {
+    it("presents all options to logged-in users", async () => {
+        const wrapper = await createWrapper(
+            HistoryNavigation,
+            {
                 history: { id: "current_history_id" },
                 histories: [],
             },
             localVue,
-            store,
-            provide: { store },
-        });
+            {
+                id: "user.id",
+                email: "user.email",
+            }
+        );
 
         const createButton = wrapper.find("*[data-description='create new history']");
         expect(createButton.attributes().disabled).toBeFalsy();
@@ -68,18 +70,16 @@ describe("History Navigation", () => {
         expect(optionTexts).toStrictEqual(expectedOptions);
     });
 
-    it("disables options for anonymous users", () => {
-        const store = createStore({});
-
-        const wrapper = shallowMount(HistoryNavigation, {
-            propsData: {
+    it("disables options for anonymous users", async () => {
+        const wrapper = await createWrapper(
+            HistoryNavigation,
+            {
                 history: { id: "current_history_id" },
                 histories: [],
             },
             localVue,
-            store,
-            provide: { store },
-        });
+            {}
+        );
 
         const createButton = wrapper.find("*[data-description='create new history']");
         expect(createButton.attributes().disabled).toBeTruthy();
@@ -96,18 +96,16 @@ describe("History Navigation", () => {
         expect(disabledOptionTexts).toStrictEqual(anonymousDisabledOptions);
     });
 
-    it("prompts anonymous users to log in", () => {
-        const store = createStore({});
-
-        const wrapper = shallowMount(HistoryNavigation, {
-            propsData: {
+    it("prompts anonymous users to log in", async () => {
+        const wrapper = await createWrapper(
+            HistoryNavigation,
+            {
                 history: { id: "current_history_id" },
                 histories: [],
             },
             localVue,
-            store,
-            provide: { store },
-        });
+            {}
+        );
 
         const dropDown = wrapper.find("*[data-description='history options']");
         const disabledOptionElements = dropDown.findAll("b-dropdown-item-stub[disabled]");
