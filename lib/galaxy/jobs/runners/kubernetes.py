@@ -1051,7 +1051,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         
         # TODO: These might not exist for running jobs at the upgrade to 19.XX, remove that
         # assumption in 20.XX.
-        tool_stderr = None
+        tool_stderr = "Galaxy issue: Stderr failed to be retrieved from the job working directory."
+        tool_stdout = "Galaxy issue: Stdout failed to be retrieved from the job working directory."
         if os.path.exists(tool_stdout_path):
             with open(tool_stdout_path, "rb") as stdout_file:
                 tool_stdout = self._job_io_for_db(stdout_file)
@@ -1060,7 +1061,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             tool_stdout = job_stdout
             job_stdout = None
 
-        tool_stdout = None
         if os.path.exists(tool_stderr_path):
             with open(tool_stderr_path, "rb") as stdout_file:
                 tool_stderr = self._job_io_for_db(stdout_file)
