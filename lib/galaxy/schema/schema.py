@@ -1106,9 +1106,7 @@ class WorkflowIndexQueryPayload(Model):
     skip_step_counts: bool = False
 
 
-class JobIndexSortByEnum(str, Enum):
-    create_time = "create_time"
-    update_time = "update_time"
+JobIndexSortByEnum = Literal["create_time", "update_time"]
 
 
 class JobIndexQueryPayload(Model):
@@ -1122,7 +1120,7 @@ class JobIndexQueryPayload(Model):
     history_id: Optional[DecodedDatabaseIdField] = None
     workflow_id: Optional[DecodedDatabaseIdField] = None
     invocation_id: Optional[DecodedDatabaseIdField] = None
-    order_by: JobIndexSortByEnum = JobIndexSortByEnum.update_time
+    order_by: JobIndexSortByEnum = "update_time"
     search: Optional[str] = None
     limit: int = 500
     offset: int = 0

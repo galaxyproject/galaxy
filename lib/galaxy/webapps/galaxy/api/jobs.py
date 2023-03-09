@@ -141,7 +141,7 @@ InvocationIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
 )
 
 SortByQueryParam: JobIndexSortByEnum = Query(
-    default=JobIndexSortByEnum.update_time,
+    default="update_time",
     title="Sort By",
     description="Sort results by specified field.",
 )

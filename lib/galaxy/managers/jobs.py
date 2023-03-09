@@ -40,10 +40,7 @@ from galaxy.model.index_filter_util import (
     text_column_filter,
 )
 from galaxy.model.scoped_session import galaxy_scoped_session
-from galaxy.schema.schema import (
-    JobIndexQueryPayload,
-    JobIndexSortByEnum,
-)
+from galaxy.schema.schema import JobIndexQueryPayload
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import StructuredApp
 from galaxy.util import (
@@ -200,7 +197,7 @@ class JobManager:
                         columns.append(model.Job.job_runner_name)
                     query = query.filter(raw_text_column_filter(columns, term))
 
-        if payload.order_by == JobIndexSortByEnum.create_time:
+        if payload.order_by == "create_time":
             order_by = model.Job.create_time.desc()
         else:
             order_by = model.Job.update_time.desc()

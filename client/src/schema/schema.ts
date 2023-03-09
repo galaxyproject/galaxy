@@ -4853,12 +4853,6 @@ export interface components {
             update_time: string;
         };
         /**
-         * JobIndexSortByEnum
-         * @description An enumeration.
-         * @enum {string}
-         */
-        JobIndexSortByEnum: "create_time" | "update_time";
-        /**
          * JobIndexViewEnum
          * @description An enumeration.
          * @enum {string}
@@ -12024,7 +12018,7 @@ export interface operations {
                 history_id?: string;
                 workflow_id?: string;
                 invocation_id?: string;
-                order_by?: components["schemas"]["JobIndexSortByEnum"];
+                order_by?: "create_time" | "update_time";
                 search?: string;
                 limit?: number;
                 offset?: number;
