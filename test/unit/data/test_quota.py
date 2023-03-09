@@ -166,7 +166,7 @@ class TestCalculateUsage(BaseModelTestCase):
         model = self.model
         u = self.u
 
-        self._add_dataset(10)
+        d = self._add_dataset(10)
         self._add_dataset(15, "alt_source_store")
 
         quota_source_map = QuotaSourceMap()
@@ -196,6 +196,17 @@ class TestCalculateUsage(BaseModelTestCase):
 
         assert usages[1].quota_source_label == "new_alt_source"
         assert usages[1].total_disk_usage == 15
+
+        d.dataset.deleted = True
+        d.purge_usage_from_quota(u, quota_source_map.info)
+        self.model.session.add(d)
+        self.model.session.flush()
+        model.context.refresh(u)
+
+        usages = u.dictify_usage()
+        assert len(usages) == 2
+        assert usages[0].quota_source_label is None
+        assert usages[0].total_disk_usage == 0
 
     def test_dictify_usage_unused_quota_labels(self):
         model = self.model
