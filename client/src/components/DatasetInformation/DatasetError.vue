@@ -63,7 +63,7 @@
                     >
                     <div v-if="showForm" id="fieldsAndButton">
                         <span class="mr-2 font-weight-bold">{{ emailTitle }}</span>
-                        <span v-if="!!currentUser.email">{{ user.email }}</span>
+                        <span v-if="!!currentUser?.email">{{ currentUser?.email }}</span>
                         <span v-else>{{ "You must be logged in to receive emails" | l }}</span>
                         <FormElement
                             id="dataset-error-message"
