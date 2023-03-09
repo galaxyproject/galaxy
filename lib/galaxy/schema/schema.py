@@ -3011,9 +3011,9 @@ class ShareWithPayload(Model):
         description=(
             "User choice for sharing resources which its contents may be restricted:\n"
             " - None: The user did not choose anything yet or no option is needed.\n"
-            f" - {SharingOptions.make_public}: The contents of the resource will be made publicly accessible.\n"
-            f" - {SharingOptions.make_accessible_to_shared}: This will automatically create a new `sharing role` allowing protected contents to be accessed only by the desired users.\n"
-            f" - {SharingOptions.no_changes}: This won't change the current permissions for the contents. The user which this resource will be shared may not be able to access all its contents.\n"
+            f" - {SharingOptions.make_public.value}: The contents of the resource will be made publicly accessible.\n"
+            f" - {SharingOptions.make_accessible_to_shared.value}: This will automatically create a new `sharing role` allowing protected contents to be accessed only by the desired users.\n"
+            f" - {SharingOptions.no_changes.value}: This won't change the current permissions for the contents. The user which this resource will be shared may not be able to access all its contents.\n"
         ),
     )
 
