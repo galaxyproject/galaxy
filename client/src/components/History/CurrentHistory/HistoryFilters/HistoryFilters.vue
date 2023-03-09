@@ -44,8 +44,18 @@
             <small class="mt-1">Filter by tag:</small>
             <b-form-input v-model="filterSettings['tag:']" size="sm" placeholder="any tag" />
             <small class="mt-1">Filter by state:</small>
-            <b-form-input v-model="filterSettings['state:']" size="sm" placeholder="any state" list="stateSelect" />
-            <b-form-datalist id="stateSelect" :options="states"></b-form-datalist>
+            <b-input-group>
+                <b-form-input v-model="filterSettings['state:']" size="sm" placeholder="any state" list="stateSelect" />
+                <b-form-datalist id="stateSelect" :options="commonStates"></b-form-datalist>
+                <b-input-group-append>
+                    <b-button
+                        title="States Help"
+                        size="sm"
+                        @click="showHelp = true">
+                        <icon icon="question" />
+                    </b-button>
+                </b-input-group-append>
+            </b-input-group>
             <small>Filter by database:</small>
             <b-form-input v-model="filterSettings['genome_build:']" size="sm" placeholder="any database" />
             <small class="mt-1">Filter by related to item index:</small>
@@ -81,6 +91,14 @@
                     <span>{{ "Cancel" | localize }}</span>
                 </b-button>
             </div>
+            <b-modal v-model="showHelp" title="History Item States Help" ok-only>
+                <p>This input can be used to filter history items by different states.</p>
+                <p>The available item states in Galaxy are:</p>
+                <dl v-for="state in Object.keys(allStates)" :key="state">
+                    <dt><code>{{ state }}</code></dt>
+                    <dd>{{ allStates[state].text }}</dd>
+                </dl>
+            </b-modal>
         </div>
     </div>
 </template>
@@ -88,8 +106,9 @@
 <script>
 import DebouncedInput from "components/DebouncedInput";
 import HistoryFiltersDefault from "./HistoryFiltersDefault";
-import { COMMON_HISTORY_PANEL_STATES } from "components/History/Content/model/states";
+import { STATES, COMMON_HISTORY_PANEL_STATES } from "components/History/Content/model/states";
 import { HistoryFilters } from "components/History/HistoryFilters";
+import filtersMixin from "components/Indices/filtersMixin";
 
 export default {
     components: {
@@ -100,11 +119,14 @@ export default {
         filterText: { type: String, default: null },
         showAdvanced: { type: Boolean, default: false },
     },
+    mixins: [filtersMixin],
     data() {
         return {
             create_time_gt: "",
             create_time_lt: "",
-            states: COMMON_HISTORY_PANEL_STATES,
+            commonStates: COMMON_HISTORY_PANEL_STATES,
+            allStates: STATES,
+            showHelp: false,
         };
     },
     computed: {
