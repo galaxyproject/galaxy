@@ -2593,8 +2593,7 @@ class LibraryPermissionsPayload(LibraryPermissionsPayloadBase):
 # Library Folders -----------------------------------------------------------------
 
 
-class LibraryFolderPermissionAction(str, Enum):
-    set_permissions = "set_permissions"
+LibraryFolderPermissionAction = Literal["set_permissions"]
 
 
 FolderNameField: str = Field(

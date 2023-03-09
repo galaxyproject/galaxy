@@ -5175,12 +5175,6 @@ export interface components {
             total_rows: number;
         };
         /**
-         * LibraryFolderPermissionAction
-         * @description An enumeration.
-         * @enum {string}
-         */
-        LibraryFolderPermissionAction: "set_permissions";
-        /**
          * LibraryFolderPermissionsPayload
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -5188,8 +5182,9 @@ export interface components {
             /**
              * Action
              * @description Indicates what action should be performed on the library folder.
+             * @enum {string}
              */
-            action?: components["schemas"]["LibraryFolderPermissionAction"];
+            action?: "set_permissions";
             /**
              * Add IDs
              * @description A list of role encoded IDs defining roles that should be able to add items to the library.
@@ -8881,7 +8876,7 @@ export interface operations {
         parameters: {
             /** @description Indicates what action should be performed on the Library. Currently only `set_permissions` is supported. */
             query?: {
-                action?: components["schemas"]["LibraryFolderPermissionAction"];
+                action?: "set_permissions";
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
