@@ -27,9 +27,13 @@ const stateStore = useWorkflowStateStore();
 const canvas: Ref<HTMLCanvasElement | null> = ref(null);
 let redraw = false;
 
+// it is important these throttles are defined before useAnimationFrame,
+// so that they are executed first in the frame loop
+const { throttle: viewportThrottle } = useAnimationFrameThrottle();
+const { throttle: dragThrottle } = useAnimationFrameThrottle();
+
 /** bounding box following the viewport */
 const viewportBounds = ref(new AxisAlignedBoundingBox());
-const { throttle } = useAnimationFrameThrottle();
 watch(
     () => ({
         x: props.viewportPan.x,
@@ -41,7 +45,7 @@ watch(
     ({ x, y, scale, width, height }) => {
         redraw = true;
 
-        throttle(() => {
+        viewportThrottle(() => {
             const bounds = viewportBounds.value;
 
             bounds.x = -x / scale;
@@ -260,18 +264,20 @@ useDraggable(canvas, {
         }
     },
     onMove: (position, event) => {
-        if (!dragViewport || Object.values(props.steps).length === 0) {
-            return;
-        }
+        dragThrottle(() => {
+            if (!dragViewport || Object.values(props.steps).length === 0) {
+                return;
+            }
 
-        // minimap coordinates to global coordinates, without translation
-        const [x, y] = canvasTransform
-            .resetTranslation()
-            .inverse()
-            .scale([scaleFactor.value, scaleFactor.value])
-            .apply([-event.movementX, -event.movementY]);
+            // minimap coordinates to global coordinates, without translation
+            const [x, y] = canvasTransform
+                .resetTranslation()
+                .inverse()
+                .scale([scaleFactor.value, scaleFactor.value])
+                .apply([-event.movementX, -event.movementY]);
 
-        emit("panBy", { x, y });
+            emit("panBy", { x, y });
+        });
     },
     onEnd(position, event) {
         // minimap coordinates to global coordinates
