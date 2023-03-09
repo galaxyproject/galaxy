@@ -457,9 +457,9 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         elif contents_type == HistoryContentType.dataset_collection:
             dataset_collection_instance = self.__get_accessible_collection(trans, id)
             job_source_type = dataset_collection_instance.job_source_type
-            if job_source_type == JobSourceType.Job:
+            if job_source_type == "Job":
                 job = dataset_collection_instance.job
-            elif job_source_type == JobSourceType.ImplicitCollectionJobs:
+            elif job_source_type == "ImplicitCollectionJobs":
                 implicit_collection_jobs = dataset_collection_instance.implicit_collection_jobs
 
         assert job is None or implicit_collection_jobs is None

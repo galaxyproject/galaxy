@@ -3839,8 +3839,9 @@ export interface components {
             /**
              * Job Source Type
              * @description The type of job (model class) that produced this dataset collection. Used to track the state of the job.
+             * @enum {string}
              */
-            job_source_type?: components["schemas"]["JobSourceType"];
+            job_source_type?: "Job" | "ImplicitCollectionJobs" | "WorkflowInvocation";
             /**
              * Job State Summary
              * @description Overview of the job states working inside the dataset collection.
@@ -3973,8 +3974,9 @@ export interface components {
             /**
              * Job Source Type
              * @description The type of job (model class) that produced this dataset collection. Used to track the state of the job.
+             * @enum {string}
              */
-            job_source_type?: components["schemas"]["JobSourceType"];
+            job_source_type?: "Job" | "ImplicitCollectionJobs" | "WorkflowInvocation";
             /**
              * Job State Summary
              * @description Overview of the job states working inside the dataset collection.
@@ -4870,12 +4872,6 @@ export interface components {
              */
             active: boolean;
         };
-        /**
-         * JobSourceType
-         * @description Available types of job sources (model classes) that produce dataset collections.
-         * @enum {string}
-         */
-        JobSourceType: "Job" | "ImplicitCollectionJobs" | "WorkflowInvocation";
         /**
          * JobStateSummary
          * @description Base model definition with common configuration used by all derived models.
