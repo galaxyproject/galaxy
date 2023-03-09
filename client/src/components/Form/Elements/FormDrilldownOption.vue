@@ -26,6 +26,19 @@ const hasOptions = computed(() => {
 const indent = computed(() => {
     return {transform: `translate(${props.depth * 25}px)`, "list-style-type": "none"}
 });
+
+const selected = computed({
+    get: () => {
+        return props.option.selected;
+    },
+    set: (newVal) => {
+        props.option.selected = newVal;
+        if (hasOptions){
+            props.option.options.forEach(element => element.selected = newVal);
+        }
+    }
+});
+
 </script>
 <template>
     <div class="form-drilldown-option">
@@ -35,7 +48,7 @@ const indent = computed(() => {
                 @click="toggleChildren"
                 class="ui-drilldown-button"
                 :class="{ 'fa fa-plus-square': !showChildren, 'fa fa-minus-square': showChildren }" />
-            <b-form-checkbox v-model="props.option.selected" style="display: inline-block" />
+            <b-form-checkbox v-model="selected" style="display: inline-block" />
             {{ props.option.name }}
             </li>
             <form-drilldown-option
