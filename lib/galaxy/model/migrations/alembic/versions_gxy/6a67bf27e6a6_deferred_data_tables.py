@@ -27,12 +27,10 @@ column = Column("metadata_deferred", Boolean(), default=False)
 
 
 def upgrade():
-    return
     add_column(table1_name, column)
     add_column(table2_name, column)
 
 
 def downgrade():
-    return
     drop_column(table1_name, column.name)
     drop_column(table2_name, column.name)

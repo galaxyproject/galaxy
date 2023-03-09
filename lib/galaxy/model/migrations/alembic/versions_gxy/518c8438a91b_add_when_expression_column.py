@@ -25,10 +25,8 @@ column = sa.Column("when_expression", JSONType)
 
 
 def upgrade():
-    return
     add_column(table_name, column)
 
 
 def downgrade():
-    return
     drop_column(table_name, column.name)
