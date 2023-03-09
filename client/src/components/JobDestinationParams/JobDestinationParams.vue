@@ -1,5 +1,5 @@
 <template>
-    <div v-if="currentUser.is_admin">
+    <div v-if="currentUser?.is_admin">
         <h2 class="h-md">Destination Parameters</h2>
         <table id="destination_parameters" class="tabletip info_data_table">
             <tbody>

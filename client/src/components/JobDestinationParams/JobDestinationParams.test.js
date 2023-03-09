@@ -1,13 +1,15 @@
 import Vuex from "vuex";
-import { shallowMount, createLocalVue } from "@vue/test-utils";
 import createCache from "vuex-cache";
+import { useUserStore } from "stores/userStore";
+import { PiniaVuePlugin, createPinia } from "pinia";
 import JobDestinationParams from "./JobDestinationParams";
+import { shallowMount, createLocalVue } from "@vue/test-utils";
 import jobDestinationResponse from "./testData/jobDestinationResponse";
-import MockCurrentUser from "../providers/MockCurrentUser";
 
 const JOB_ID = "foo_job_id";
 
 const localVue = createLocalVue();
+localVue.use(PiniaVuePlugin);
 localVue.use(Vuex);
 
 const testStore = new Vuex.Store({
@@ -30,23 +32,22 @@ describe("JobDestinationParams/JobDestinationParams.vue", () => {
     const responseKeys = Object.keys(jobDestinationResponse);
 
     let wrapper;
+    let userStore;
 
     beforeEach(async () => {
         const propsData = {
             jobId: JOB_ID,
         };
+        const pinia = createPinia();
         wrapper = await shallowMount(JobDestinationParams, {
             store: testStore,
             propsData,
             localVue,
             attachTo: document.body,
-            stubs: {
-                // Need to stub all this horrible-ness because of the last 2 tests
-                // which need to dig into the first layer of the mount tree, will remove
-                // all of this shortly with a PR that completely replaces Upload
-                CurrentUser: MockCurrentUser({ is_admin: true }),
-            },
+            pinia,
         });
+        userStore = useUserStore();
+        userStore.currentUser = { is_admin: true };
         expect(responseKeys.length > 0).toBeTruthy();
     });
 
