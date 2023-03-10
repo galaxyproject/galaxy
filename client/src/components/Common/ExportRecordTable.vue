@@ -9,9 +9,10 @@ import {
     faDownload,
     faFileImport,
     faSpinner,
+    faLink,
 } from "@fortawesome/free-solid-svg-icons";
 
-library.add(faExclamationCircle, faCheckCircle, faDownload, faFileImport, faSpinner);
+library.add(faExclamationCircle, faCheckCircle, faDownload, faFileImport, faSpinner, faLink);
 
 const props = defineProps({
     records: {
@@ -40,6 +41,10 @@ async function reimportObject(record) {
 
 function downloadObject(record) {
     emit("onDownload", record);
+}
+
+function copyDownloadLink(record) {
+    emit("onCopyDownloadLink", record);
 }
 </script>
 
@@ -112,6 +117,12 @@ function downloadObject(record) {
                                     title="Download"
                                     @click="downloadObject(row.item)">
                                     <font-awesome-icon icon="download" />
+                                </b-button>
+                                <b-button
+                                    v-if="row.item.canDownload"
+                                    title="Copy Download Link"
+                                    @click.stop="copyDownloadLink(row.item)">
+                                    <font-awesome-icon icon="link" />
                                 </b-button>
                                 <b-button
                                     v-b-tooltip.hover.bottom

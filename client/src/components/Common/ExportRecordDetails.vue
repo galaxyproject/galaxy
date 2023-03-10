@@ -4,10 +4,16 @@ import { BAlert, BCard, BCardTitle } from "bootstrap-vue";
 import LoadingSpan from "components/LoadingSpan";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faExclamationCircle, faExclamationTriangle, faCheckCircle, faClock } from "@fortawesome/free-solid-svg-icons";
+import {
+    faExclamationCircle,
+    faExclamationTriangle,
+    faCheckCircle,
+    faClock,
+    faLink,
+} from "@fortawesome/free-solid-svg-icons";
 import { ExportRecordModel } from "./models/exportRecordModel";
 
-library.add(faExclamationCircle, faExclamationTriangle, faCheckCircle, faClock);
+library.add(faExclamationCircle, faExclamationTriangle, faCheckCircle, faClock, faLink);
 
 const props = defineProps({
     record: {
@@ -28,7 +34,7 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits(["onReimport", "onDownload", "onActionMessageDismissed"]);
+const emit = defineEmits(["onReimport", "onDownload", "onCopyDownloadLink", "onActionMessageDismissed"]);
 
 const title = computed(() => (props.record.isReady ? `Exported` : `Export started`));
 const preparingMessage = computed(
@@ -41,6 +47,10 @@ async function reimportObject() {
 
 function downloadObject() {
     emit("onDownload", props.record);
+}
+
+function copyDownloadLink() {
+    emit("onCopyDownloadLink", props.record);
 }
 
 function onMessageDismissed() {
@@ -112,6 +122,14 @@ function onMessageDismissed() {
                         variant="primary"
                         @click="downloadObject">
                         Download
+                    </b-button>
+                    <b-button
+                        v-if="props.record.canDownload"
+                        title="Copy Download Link"
+                        size="sm"
+                        variant="link"
+                        @click.stop="copyDownloadLink">
+                        <font-awesome-icon icon="link" />
                     </b-button>
                     <b-button
                         v-if="props.record.canReimport"
