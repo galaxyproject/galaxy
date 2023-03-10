@@ -95,7 +95,7 @@ class NotificationManager:
             self.sa_session.add(notification)
         return notification
 
-    def get_user_notification(self, user: User, notification_id: int):
+    def get_user_notification(self, user: User, notification_id: int, exclude_expired: Optional[bool] = True):
         """
         Displays a notification belonging to the user.
         """
@@ -110,10 +110,12 @@ class NotificationManager:
                 and_(
                     UserNotificationAssociation.user_id == user.id,
                     Notification.publication_time < self.now,
-                    Notification.expiration_time > self.now,
                 )
             )
         )
+        if exclude_expired:
+            stmt = stmt.where(Notification.expiration_time > self.now)
+
         result = self.sa_session.execute(stmt).fetchone()
         if result is None:
             raise ObjectNotFound
@@ -268,7 +270,9 @@ class NotificationManager:
         notification.expiration_time = payload.expiration_time
         return notification
 
-    def _all_user_notifications_query(self, user: User, since: Optional[datetime] = None):
+    def _all_user_notifications_query(
+        self, user: User, since: Optional[datetime] = None, exclude_expired: Optional[bool] = True
+    ):
         stmt = (
             select(self.user_notification_columns)
             .select_from(Notification)
@@ -280,16 +284,19 @@ class NotificationManager:
                 and_(
                     UserNotificationAssociation.user_id == user.id,
                     Notification.publication_time < self.now,
-                    Notification.expiration_time > self.now,
                 )
             )
         )
         if since is not None:
             stmt = stmt.where(Notification.publication_time > since)
+        if exclude_expired:
+            stmt = stmt.where(Notification.expiration_time > self.now)
 
         return stmt
 
-    def _all_broadcasted_notifications_query(self, since: Optional[datetime] = None):
+    def _all_broadcasted_notifications_query(
+        self, since: Optional[datetime] = None, exclude_expired: Optional[bool] = True
+    ):
         stmt = (
             select(self.broadcast_notification_columns)
             .select_from(Notification)
@@ -297,12 +304,13 @@ class NotificationManager:
                 and_(
                     Notification.category == MandatoryNotificationCategory.broadcast,
                     Notification.publication_time < self.now,
-                    Notification.expiration_time > self.now,
                 )
             )
         )
         if since is not None:
             stmt = stmt.where(Notification.publication_time > since)
+        if exclude_expired:
+            stmt = stmt.where(Notification.expiration_time > self.now)
         return stmt
 
     def _get_all_recipient_users(self, recipients: NotificationRecipients) -> List[User]:
