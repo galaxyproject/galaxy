@@ -33,7 +33,7 @@ const fields = [
 ];
 
 const isExpanded = ref(false);
-const title = computed(() => (isExpanded.value ? `Hide export records` : `Show export records`));
+const title = computed(() => (isExpanded.value ? `Hide old export records` : `Show old export records`));
 
 async function reimportObject(record) {
     emit("onReimport", record);
