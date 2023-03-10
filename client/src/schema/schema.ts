@@ -899,6 +899,61 @@ export interface paths {
          */
         post: operations["create_api_metrics_post"];
     };
+    "/api/notifications": {
+        /**
+         * Returns the list of notifications associated with the user.
+         * @description Anonymous users cannot receive personal notifications, only broadcasted notifications.
+         */
+        get: operations["get_user_notifications_api_notifications_get"];
+        /** Updates a list of notifications with the requested values. */
+        put: operations["update_user_notifications_api_notifications_put"];
+        /**
+         * Sends a notification to a list of recipients (users, groups or roles).
+         * @description Sends a notification to a list of recipients (users, groups or roles).
+         */
+        post: operations["send_notification_api_notifications_post"];
+        /** Deletes a list of notifications received by the user. */
+        delete: operations["delete_user_notifications_api_notifications_delete"];
+    };
+    "/api/notifications/broadcast": {
+        /** Returns all currently active broadcasted notifications. */
+        get: operations["get_all_broadcasted_api_notifications_broadcast_get"];
+        /**
+         * Broadcasts a notification to every user.
+         * @description These special kind of notifications will be always accessible to the user.
+         */
+        post: operations["broadcast_notification_api_notifications_broadcast_post"];
+    };
+    "/api/notifications/broadcast/{notification_id}": {
+        /**
+         * Returns the information of a specific broadcasted notification.
+         * @description Only Admin users can access inactive notifications (scheduled or recently expired).
+         */
+        get: operations["get_broadcasted_api_notifications_broadcast__notification_id__get"];
+        /**
+         * Updates the state of a broadcasted notification.
+         * @description Only Admins can update broadcasted notifications.
+         */
+        put: operations["update_broadcasted_notification_api_notifications_broadcast__notification_id__put"];
+    };
+    "/api/notifications/preferences": {
+        /** Returns the current user's preferences for notifications. */
+        get: operations["get_notification_preferences_api_notifications_preferences_get"];
+        /** Updates the user's preferences for notifications. */
+        put: operations["update_notification_preferences_api_notifications_preferences_put"];
+    };
+    "/api/notifications/status": {
+        /** Returns the current status summary of the user's notifications since a particular date. */
+        get: operations["get_notifications_status_api_notifications_status_get"];
+    };
+    "/api/notifications/{notification_id}": {
+        /** Displays information about a notification received by the user. */
+        get: operations["show_notification_api_notifications__notification_id__get"];
+        /** Updates the state of a notification. */
+        put: operations["update_user_notification_api_notifications__notification_id__put"];
+        /** Deletes a notification received by the user. */
+        delete: operations["delete_user_notification_api_notifications__notification_id__delete"];
+    };
     "/api/object_stores": {
         /** Get a list of (currently only concrete) object stores configured with this Galaxy instance. */
         get: operations["index_api_object_stores_get"];
@@ -1464,6 +1519,19 @@ export interface components {
             url: string;
         };
         /**
+         * ActionLink
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        ActionLink: {
+            /** Action Name */
+            action_name: string;
+            /**
+             * Link
+             * Format: uri
+             */
+            link: string;
+        };
+        /**
          * AsyncFile
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -1570,6 +1638,105 @@ export interface components {
             history_id: Record<string, never>;
             /** Targets */
             targets: Record<string, never>;
+        };
+        /**
+         * BroadcastNotificationContent
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        BroadcastNotificationContent: {
+            /** Action Links */
+            action_links?: components["schemas"]["ActionLink"][];
+            /**
+             * Category
+             * @default broadcast
+             * @enum {string}
+             */
+            category?: "broadcast";
+            /** Message */
+            message: string;
+            /** Subject */
+            subject: string;
+        };
+        /**
+         * BroadcastNotificationCreateRequest
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        BroadcastNotificationCreateRequest: {
+            /**
+             * Category
+             * @default broadcast
+             * @enum {string}
+             */
+            category?: "broadcast";
+            content: components["schemas"]["BroadcastNotificationContent"];
+            /**
+             * Expiration Time
+             * Format: date-time
+             */
+            expiration_time?: string;
+            /**
+             * Publication Time
+             * Format: date-time
+             */
+            publication_time?: string;
+            /** Source */
+            source: string;
+            variant: components["schemas"]["NotificationVariant"];
+        };
+        /**
+         * BroadcastNotificationListResponse
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        BroadcastNotificationListResponse: components["schemas"]["BroadcastNotificationResponse"][];
+        /**
+         * BroadcastNotificationResponse
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        BroadcastNotificationResponse: {
+            /**
+             * Category
+             * @default broadcast
+             * @enum {string}
+             */
+            category?: "broadcast";
+            /** Content */
+            content:
+                | components["schemas"]["BroadcastNotificationContent"]
+                | components["schemas"]["MessageNotificationContent"]
+                | components["schemas"]["NewHistorySharedNotificationContent"]
+                | components["schemas"]["NewWorkflowSharedNotificationContent"]
+                | components["schemas"]["NewPageSharedNotificationContent"]
+                | components["schemas"]["NewVisualizationSharedNotificationContent"];
+            /**
+             * Create Time
+             * Format: date-time
+             * @description The time and date this item was created.
+             */
+            create_time: string;
+            /**
+             * Expiration Time
+             * Format: date-time
+             */
+            expiration_time?: string;
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Publication Time
+             * Format: date-time
+             */
+            publication_time: string;
+            /** Source */
+            source: string;
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time and date this item was updated.
+             */
+            update_time: string;
+            variant: components["schemas"]["NotificationVariant"];
         };
         /**
          * BulkOperationItemError
@@ -5645,6 +5812,14 @@ export interface components {
             url: string;
         };
         /**
+         * MandatoryNotificationCategory
+         * @description These notification categories cannot be opt-out by the user.
+         *
+         * The user will always receive notifications from these categories.
+         * @enum {string}
+         */
+        MandatoryNotificationCategory: "broadcast";
+        /**
          * MaterializeDatasetInstanceAPIRequest
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -5663,6 +5838,22 @@ export interface components {
              * @description The source of the content. Can be other history element to be copied or library elements.
              */
             source: components["schemas"]["DatasetSourceType"];
+        };
+        /**
+         * MessageNotificationContent
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        MessageNotificationContent: {
+            /**
+             * Category
+             * @default message
+             * @enum {string}
+             */
+            category?: "message";
+            /** Message */
+            message: string;
+            /** Subject */
+            subject: string;
         };
         /**
          * MetadataFile
@@ -5863,6 +6054,293 @@ export interface components {
              * @default false
              */
             to_posix_lines?: boolean;
+        };
+        /**
+         * NewHistorySharedNotificationContent
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        NewHistorySharedNotificationContent: {
+            /**
+             * Category
+             * @default new_history_shared
+             * @enum {string}
+             */
+            category?: "new_history_shared";
+            /**
+             * Item Id
+             * @example 0123456789ABCDEF
+             */
+            item_id: string;
+            /**
+             * Owner Id
+             * @example 0123456789ABCDEF
+             */
+            owner_id: string;
+        };
+        /**
+         * NewPageSharedNotificationContent
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        NewPageSharedNotificationContent: {
+            /**
+             * Category
+             * @default new_page_shared
+             * @enum {string}
+             */
+            category?: "new_page_shared";
+            /**
+             * Item Id
+             * @example 0123456789ABCDEF
+             */
+            item_id: string;
+            /**
+             * Owner Id
+             * @example 0123456789ABCDEF
+             */
+            owner_id: string;
+        };
+        /**
+         * NewVisualizationSharedNotificationContent
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        NewVisualizationSharedNotificationContent: {
+            /**
+             * Category
+             * @default new_visualization_shared
+             * @enum {string}
+             */
+            category?: "new_visualization_shared";
+            /**
+             * Item Id
+             * @example 0123456789ABCDEF
+             */
+            item_id: string;
+            /**
+             * Owner Id
+             * @example 0123456789ABCDEF
+             */
+            owner_id: string;
+        };
+        /**
+         * NewWorkflowSharedNotificationContent
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        NewWorkflowSharedNotificationContent: {
+            /**
+             * Category
+             * @default new_workflow_shared
+             * @enum {string}
+             */
+            category?: "new_workflow_shared";
+            /**
+             * Item Id
+             * @example 0123456789ABCDEF
+             */
+            item_id: string;
+            /**
+             * Owner Id
+             * @example 0123456789ABCDEF
+             */
+            owner_id: string;
+        };
+        /**
+         * NotificationBroadcastUpdateRequest
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        NotificationBroadcastUpdateRequest: {
+            /**
+             * Expiration Time
+             * Format: date-time
+             */
+            expiration_time?: string;
+            /**
+             * Publication Time
+             * Format: date-time
+             */
+            publication_time?: string;
+            /** Source */
+            source?: string;
+            variant?: components["schemas"]["NotificationVariant"];
+        };
+        /**
+         * NotificationCategorySettings
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        NotificationCategorySettings: {
+            /**
+             * Channels
+             * @default {
+             *   "push": true
+             * }
+             */
+            channels?: components["schemas"]["NotificationChannelSettings"];
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled?: boolean;
+        };
+        /**
+         * NotificationChannelSettings
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        NotificationChannelSettings: {
+            /**
+             * Push
+             * @default true
+             */
+            push?: boolean;
+        };
+        /**
+         * NotificationCreateData
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        NotificationCreateData: {
+            /** Category */
+            category:
+                | components["schemas"]["MandatoryNotificationCategory"]
+                | components["schemas"]["PersonalNotificationCategory"];
+            /** Content */
+            content:
+                | components["schemas"]["BroadcastNotificationContent"]
+                | components["schemas"]["MessageNotificationContent"]
+                | components["schemas"]["NewHistorySharedNotificationContent"]
+                | components["schemas"]["NewWorkflowSharedNotificationContent"]
+                | components["schemas"]["NewPageSharedNotificationContent"]
+                | components["schemas"]["NewVisualizationSharedNotificationContent"];
+            /**
+             * Expiration Time
+             * Format: date-time
+             */
+            expiration_time?: string;
+            /**
+             * Publication Time
+             * Format: date-time
+             */
+            publication_time?: string;
+            /** Source */
+            source: string;
+            variant: components["schemas"]["NotificationVariant"];
+        };
+        /**
+         * NotificationCreateRequest
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        NotificationCreateRequest: {
+            notification: components["schemas"]["NotificationCreateData"];
+            recipients: components["schemas"]["NotificationRecipients"];
+        };
+        /**
+         * NotificationCreatedResponse
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        NotificationCreatedResponse: {
+            notification: components["schemas"]["NotificationResponse"];
+            /** Total Notifications Sent */
+            total_notifications_sent: number;
+        };
+        /**
+         * NotificationRecipients
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        NotificationRecipients: {
+            /**
+             * Group Ids
+             * @default []
+             */
+            group_ids?: string[];
+            /**
+             * Role Ids
+             * @default []
+             */
+            role_ids?: string[];
+            /**
+             * User Ids
+             * @default []
+             */
+            user_ids?: string[];
+        };
+        /**
+         * NotificationResponse
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        NotificationResponse: {
+            /** Category */
+            category:
+                | components["schemas"]["MandatoryNotificationCategory"]
+                | components["schemas"]["PersonalNotificationCategory"];
+            /** Content */
+            content:
+                | components["schemas"]["BroadcastNotificationContent"]
+                | components["schemas"]["MessageNotificationContent"]
+                | components["schemas"]["NewHistorySharedNotificationContent"]
+                | components["schemas"]["NewWorkflowSharedNotificationContent"]
+                | components["schemas"]["NewPageSharedNotificationContent"]
+                | components["schemas"]["NewVisualizationSharedNotificationContent"];
+            /**
+             * Create Time
+             * Format: date-time
+             * @description The time and date this item was created.
+             */
+            create_time: string;
+            /**
+             * Expiration Time
+             * Format: date-time
+             */
+            expiration_time?: string;
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Publication Time
+             * Format: date-time
+             */
+            publication_time: string;
+            /** Source */
+            source: string;
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time and date this item was updated.
+             */
+            update_time: string;
+            variant: components["schemas"]["NotificationVariant"];
+        };
+        /**
+         * NotificationStatusSummary
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        NotificationStatusSummary: {
+            /** Broadcasts */
+            broadcasts: components["schemas"]["BroadcastNotificationResponse"][];
+            /** Notifications */
+            notifications: components["schemas"]["UserNotificationResponse"][];
+            /** Total Unread Count */
+            total_unread_count: number;
+        };
+        /**
+         * NotificationVariant
+         * @description The notification variant communicates the intent or relevance of the notification.
+         * @enum {string}
+         */
+        NotificationVariant: "info" | "warning" | "urgent";
+        /**
+         * NotificationsBatchRequest
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        NotificationsBatchRequest: {
+            /** Notification Ids */
+            notification_ids: string[];
+        };
+        /**
+         * NotificationsBatchUpdateResponse
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        NotificationsBatchUpdateResponse: {
+            /** Updated Count */
+            updated_count: number;
         };
         /**
          * ObjectExportTaskResponse
@@ -6211,6 +6689,18 @@ export interface components {
              */
             to_posix_lines?: boolean;
         };
+        /**
+         * PersonalNotificationCategory
+         * @description These notification categories can be opt-out by the user and will be
+         * displayed in the notification preferences.
+         * @enum {string}
+         */
+        PersonalNotificationCategory:
+            | "message"
+            | "new_history_shared"
+            | "new_workflow_shared"
+            | "new_page_shared"
+            | "new_visualization_shared";
         /**
          * PrepareStoreDownloadPayload
          * @description Base model definition with common configuration used by all derived models.
@@ -7359,6 +7849,13 @@ export interface components {
             operation?: components["schemas"]["QuotaOperation"];
         };
         /**
+         * UpdateUserNotificationPreferencesRequest
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        UpdateUserNotificationPreferencesRequest: {
+            preferences: components["schemas"]["UserNotificationPreferences"];
+        };
+        /**
          * UrlDataElement
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -7490,6 +7987,93 @@ export interface components {
              * @description User username
              */
             username: string;
+        };
+        /**
+         * UserNotificationListResponse
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        UserNotificationListResponse: components["schemas"]["UserNotificationResponse"][];
+        /**
+         * UserNotificationPreferences
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        UserNotificationPreferences: {
+            [key: string]: components["schemas"]["NotificationCategorySettings"] | undefined;
+        };
+        /**
+         * UserNotificationResponse
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        UserNotificationResponse: {
+            category: components["schemas"]["PersonalNotificationCategory"];
+            /** Content */
+            content:
+                | components["schemas"]["BroadcastNotificationContent"]
+                | components["schemas"]["MessageNotificationContent"]
+                | components["schemas"]["NewHistorySharedNotificationContent"]
+                | components["schemas"]["NewWorkflowSharedNotificationContent"]
+                | components["schemas"]["NewPageSharedNotificationContent"]
+                | components["schemas"]["NewVisualizationSharedNotificationContent"];
+            /**
+             * Create Time
+             * Format: date-time
+             * @description The time and date this item was created.
+             */
+            create_time: string;
+            /** Deleted */
+            deleted: boolean;
+            /**
+             * Expiration Time
+             * Format: date-time
+             */
+            expiration_time?: string;
+            /** Favorite */
+            favorite: boolean;
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Publication Time
+             * Format: date-time
+             */
+            publication_time: string;
+            /**
+             * Seen Time
+             * Format: date-time
+             */
+            seen_time?: string;
+            /** Source */
+            source: string;
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time and date this item was updated.
+             */
+            update_time: string;
+            variant: components["schemas"]["NotificationVariant"];
+        };
+        /**
+         * UserNotificationUpdateRequest
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        UserNotificationUpdateRequest: {
+            /** Deleted */
+            deleted?: boolean;
+            /** Favorite */
+            favorite?: boolean;
+            /** Seen */
+            seen?: boolean;
+        };
+        /**
+         * UserNotificationsBatchUpdateRequest
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        UserNotificationsBatchUpdateRequest: {
+            changes: components["schemas"]["UserNotificationUpdateRequest"];
+            /** Notification Ids */
+            notification_ids: string[];
         };
         /**
          * UserQuota
@@ -12818,6 +13402,376 @@ export interface operations {
                     "application/json": Record<string, never>;
                 };
             };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_user_notifications_api_notifications_get: {
+        /**
+         * Returns the list of notifications associated with the user.
+         * @description Anonymous users cannot receive personal notifications, only broadcasted notifications.
+         */
+        parameters?: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["UserNotificationListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_user_notifications_api_notifications_put: {
+        /** Updates a list of notifications with the requested values. */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserNotificationsBatchUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["NotificationsBatchUpdateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_notification_api_notifications_post: {
+        /**
+         * Sends a notification to a list of recipients (users, groups or roles).
+         * @description Sends a notification to a list of recipients (users, groups or roles).
+         */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["NotificationCreatedResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_user_notifications_api_notifications_delete: {
+        /** Deletes a list of notifications received by the user. */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationsBatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["NotificationsBatchUpdateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_all_broadcasted_api_notifications_broadcast_get: {
+        /** Returns all currently active broadcasted notifications. */
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["BroadcastNotificationListResponse"];
+                };
+            };
+        };
+    };
+    broadcast_notification_api_notifications_broadcast_post: {
+        /**
+         * Broadcasts a notification to every user.
+         * @description These special kind of notifications will be always accessible to the user.
+         */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BroadcastNotificationCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["NotificationCreatedResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_broadcasted_api_notifications_broadcast__notification_id__get: {
+        /**
+         * Returns the information of a specific broadcasted notification.
+         * @description Only Admin users can access inactive notifications (scheduled or recently expired).
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                notification_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["BroadcastNotificationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_broadcasted_notification_api_notifications_broadcast__notification_id__put: {
+        /**
+         * Updates the state of a broadcasted notification.
+         * @description Only Admins can update broadcasted notifications.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                notification_id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationBroadcastUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: never;
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_notification_preferences_api_notifications_preferences_get: {
+        /** Returns the current user's preferences for notifications. */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["UserNotificationPreferences"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_notification_preferences_api_notifications_preferences_put: {
+        /** Updates the user's preferences for notifications. */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateUserNotificationPreferencesRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["UserNotificationPreferences"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_notifications_status_api_notifications_status_get: {
+        /** Returns the current status summary of the user's notifications since a particular date. */
+        parameters: {
+            query: {
+                since: string;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["NotificationStatusSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    show_notification_api_notifications__notification_id__get: {
+        /** Displays information about a notification received by the user. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                notification_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["UserNotificationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_user_notification_api_notifications__notification_id__put: {
+        /** Updates the state of a notification. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                notification_id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserNotificationUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: never;
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_user_notification_api_notifications__notification_id__delete: {
+        /** Deletes a notification received by the user. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                notification_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: never;
             /** @description Validation Error */
             422: {
                 content: {
