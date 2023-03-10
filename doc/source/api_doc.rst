@@ -18,7 +18,15 @@ The Galaxy API addresses these and other situations by exposing Galaxy
 internals through an additional interface, known as an Application Programming
 Interface, or API.
 
-Various language specific bindings for interfacing with the Galaxy API have been developed by the Galaxy community including `Python <https://bioblend.readthedocs.io/>`__, `PHP <https://github.com/galaxyproject/blend4php>`__, `Java <https://github.com/jmchilton/blend4j>`__, and `JavaScript <https://github.com/galaxyproject/galaxy/tree/dev/client/src/mvc>`__.
+The up-to-date Galaxy API documentation can be accessed by appending ``/api/docs`` or ``/api/redoc``
+to the base URL of a Galaxy server, e.g. https://usegalaxy.org/api/docs
+
+Various language specific bindings for interfacing with the Galaxy API have been
+developed by the Galaxy community including
+`Python <https://bioblend.readthedocs.io/>`__,
+`PHP <https://github.com/galaxyproject/blend4php>`__,
+`Java <https://github.com/galaxyproject/blend4j>`__, and
+`TypeScript <https://github.com/galaxyproject/galaxy/tree/dev/client/src/schema>`__.
 
 Overview of available API resources is available at https://galaxyproject.org/develop/api/ .
 
