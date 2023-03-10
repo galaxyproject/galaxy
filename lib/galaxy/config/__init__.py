@@ -135,6 +135,7 @@ LOGGING_CONFIG_DEFAULT: Dict[str, Any] = {
 """Default value for logging configuration, passed to :func:`logging.config.dictConfig`"""
 
 VERSION_JSON_FILE = "version.json"
+DISABLED_FLAG = "disabled"  # Used to mark a config option as disabled
 
 
 def configure_logging(config, facts=None):
@@ -1275,6 +1276,15 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                 log.warning(
                     f"Config option '{key}' is deprecated and will be removed in a future release.  Please consult the latest version of the sample configuration file."
                 )
+
+    def is_fetch_with_celery_enabled(self):
+        celery_enabled = self.enable_celery_tasks
+        fetch_disabled = (
+            self.celery_conf
+            and self.celery_conf["task_routes"]
+            and self.celery_conf["task_routes"]["galaxy.fetch_data"] == DISABLED_FLAG
+        )
+        return celery_enabled and not fetch_disabled
 
     @staticmethod
     def _parse_allowed_origin_hostnames(allowed_origin_hostnames):
