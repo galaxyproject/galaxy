@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import (
     List,
+    NoReturn,
     Optional,
     Set,
 )
@@ -8,11 +9,13 @@ from typing import (
 from galaxy.exceptions import (
     AdminRequiredException,
     AuthenticationRequired,
+    ObjectNotFound,
     RequestParameterInvalidException,
 )
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.notification import NotificationManager
 from galaxy.model import User
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.notifications import (
     BroadcastNotificationCreateRequest,
     BroadcastNotificationListResponse,
@@ -96,10 +99,13 @@ class NotificationService(ServiceBase):
         Admin users can access inactive notifications (scheduled or recently expired).
         """
         include_inactive = user_context.user_is_admin
-        broadcasted_notification = self.notification_manager.get_broadcasted_notification(
-            notification_id, include_inactive
-        )
-        return BroadcastNotificationResponse.from_orm(broadcasted_notification)
+        try:
+            broadcasted_notification = self.notification_manager.get_broadcasted_notification(
+                notification_id, include_inactive
+            )
+            return BroadcastNotificationResponse.from_orm(broadcasted_notification)
+        except ObjectNotFound:
+            self._raise_notification_not_found(notification_id)
 
     def get_all_broadcasted_notifications(self) -> BroadcastNotificationListResponse:
         """Gets all the `broadcasted` notifications currently published."""
@@ -108,8 +114,11 @@ class NotificationService(ServiceBase):
 
     def get_user_notification(self, user: User, notification_id: int) -> UserNotificationResponse:
         """Gets the information of the notification received by the user with the given ID."""
-        notification = self.notification_manager.get_user_notification(user, notification_id)
-        return UserNotificationResponse.from_orm(notification)
+        try:
+            notification = self.notification_manager.get_user_notification(user, notification_id)
+            return UserNotificationResponse.from_orm(notification)
+        except ObjectNotFound:
+            self._raise_notification_not_found(notification_id)
 
     def update_user_notification(
         self, user_context: ProvidesUserContext, notification_id: int, request: UserNotificationUpdateRequest
@@ -117,7 +126,7 @@ class NotificationService(ServiceBase):
         """Updates a single notification received by the user with the requested values."""
         updated_response = self.update_user_notifications(user_context, set([notification_id]), request)
         if not updated_response.updated_count:
-            self.notification_manager._raise_notification_not_found(notification_id)
+            self._raise_notification_not_found(notification_id)
 
     def update_broadcasted_notification(
         self, user_context: ProvidesUserContext, notification_id: int, request: NotificationBroadcastUpdateRequest
@@ -127,7 +136,7 @@ class NotificationService(ServiceBase):
         self._ensure_there_are_changes(request)
         updated_count = self.notification_manager.update_broadcasted_notification(notification_id, request)
         if not updated_count:
-            self.notification_manager._raise_notification_not_found(notification_id)
+            self._raise_notification_not_found(notification_id)
 
     def update_user_notifications(
         self, user_context: ProvidesUserContext, notification_ids: Set[int], request: UserNotificationUpdateRequest
@@ -198,3 +207,8 @@ class NotificationService(ServiceBase):
         notifications = self.notification_manager.get_user_notifications(user_context.user, limit, offset, since)
         user_notifications = [UserNotificationResponse.from_orm(notification) for notification in notifications]
         return user_notifications
+
+    def _raise_notification_not_found(self, notification_id: int) -> NoReturn:
+        raise ObjectNotFound(
+            f"The requested notification with id '{DecodedDatabaseIdField.encode(notification_id)}' was not found."
+        )
