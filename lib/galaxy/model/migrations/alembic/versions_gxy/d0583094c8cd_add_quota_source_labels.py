@@ -21,7 +21,7 @@ from galaxy.model.migrations.util import (
 
 # revision identifiers, used by Alembic.
 revision = "d0583094c8cd"
-down_revision = "c39f1de47a04"
+down_revision = "caa7742f7bca"
 branch_labels = None
 depends_on = None
 
