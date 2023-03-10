@@ -1,6 +1,15 @@
 import json
-from typing import List
+from datetime import datetime
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+)
 
+import pytest
+
+from galaxy.exceptions import ObjectNotFound
 from galaxy.managers.notification import NotificationManager
 from galaxy.model import User
 from galaxy.schema.notifications import (
@@ -150,19 +159,39 @@ class TestNotificationManager(BaseTestCase):
         assert message_preferences.enabled is False
         assert message_preferences.channels.push is False
 
-    def _send_notification_to_users(self, users: List[User]):
+    def test_cleanup_expired_notifications(self):
+        user = self.user_manager.create(**user2_data)
+        now = datetime.utcnow()
+        notification, _ = self._send_notification_to_users([user], notification={"expiration_time": now})
+        user_notification = self.notification_manager.get_user_notification(
+            user, notification.id, exclude_expired=False
+        )
+        assert user_notification
+        assert self._has_expired(user_notification.expiration_time) is True
+
+        self.notification_manager.cleanup_expired_notifications()
+
+        with pytest.raises(ObjectNotFound):
+            self.notification_manager.get_user_notification(user, notification.id, exclude_expired=False)
+
+    def _send_notification_to_users(self, users: List[User], notification: Optional[Dict[str, Any]] = None):
+        notification_data = NotificationCreateData(
+            source="testing",
+            variant="info",
+            category="message",
+            content=MessageNotificationContent(subject="Testing Subject", message="Testing Message"),
+            publication_time=None,
+            expiration_time=None,
+        )
+        notification_data = notification_data.copy(update=notification)
         request = NotificationCreateRequest(
             recipients=NotificationRecipients.construct(
                 user_ids=[user.id for user in users],
             ),
-            notification=NotificationCreateData(
-                source="testing",
-                variant="info",
-                category="message",
-                content=MessageNotificationContent(subject="Testing Subject", message="Testing Message"),
-                publication_time=None,
-                expiration_time=None,
-            ),
+            notification=notification_data,
         )
         notification, notifications_sent = self.notification_manager.create_notification_for_users(request)
         return notification, notifications_sent
+
+    def _has_expired(self, expiration_time: Optional[datetime]) -> bool:
+        return expiration_time < datetime.utcnow() if expiration_time else False
