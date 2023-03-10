@@ -28,7 +28,6 @@ from galaxy.model import (
     UserRoleAssociation,
 )
 from galaxy.model.scoped_session import galaxy_scoped_session
-from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.notifications import (
     BroadcastNotificationCreateRequest,
     MandatoryNotificationCategory,
@@ -117,7 +116,7 @@ class NotificationManager:
         )
         result = self.sa_session.execute(stmt).fetchone()
         if result is None:
-            self._raise_notification_not_found(notification_id)
+            raise ObjectNotFound
         return result
 
     def get_user_notifications(
@@ -184,7 +183,7 @@ class NotificationManager:
             )
         result = self.sa_session.execute(stmt).fetchone()
         if result is None:
-            self._raise_notification_not_found(notification_id)
+            raise ObjectNotFound
         return result
 
     def get_all_broadcasted_notifications(self, since: Optional[datetime] = None):
@@ -435,8 +434,3 @@ class NotificationManager:
         unique_user_ids = user_ids.union(group_and_role_user_ids)
         unique_recipient_users = self.sa_session.query(User).filter(User.id.in_(unique_user_ids)).all()
         return unique_recipient_users
-
-    def _raise_notification_not_found(self, notification_id: int):
-        raise ObjectNotFound(
-            f"The requested notification with id '{DecodedDatabaseIdField.encode(notification_id)}' was not found."
-        )
