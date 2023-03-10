@@ -191,7 +191,7 @@ class ContainerDescription:
         # Force to lowercase because container image names must be lowercase.
         # Cached singularity images include the path on disk, so only lowercase
         # the image identifier portion.
-        self.identifier: str = ""
+        self.identifier: str = identifier
         if identifier:
             parts = identifier.rsplit(os.sep, 1)
             parts[-1] = parts[-1].lower()
