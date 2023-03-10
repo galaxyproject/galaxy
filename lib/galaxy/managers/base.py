@@ -305,7 +305,7 @@ class ModelManager(Generic[U]):
         """
         Returns a tuple of columns for the default order when getting multiple models.
         """
-        return (self.model_class.table.c.create_time,)
+        return (self.model_class.__table__.c.create_time,)
 
     def _apply_orm_limit_offset(self, query: Query, limit: Optional[int], offset: Optional[int]) -> Query:
         """
@@ -356,7 +356,7 @@ class ModelManager(Generic[U]):
         """
         Gets a model by primary id.
         """
-        id_filter = self.model_class.table.c.id == id
+        id_filter = self.model_class.__table__.c.id == id
         return self.one(filters=id_filter)
 
     # .... multirow queries
@@ -449,7 +449,7 @@ class ModelManager(Generic[U]):
         """
         if not ids:
             return []
-        ids_filter = parsed_filter("orm", self.model_class.table.c.id.in_(ids))
+        ids_filter = parsed_filter("orm", self.model_class.__table__.c.id.in_(ids))
         found = self.list(filters=self._munge_filters(ids_filter, filters), **kwargs)
         # TODO: this does not order by the original 'ids' array
 
@@ -1159,7 +1159,7 @@ class ModelFilterParser(HasAModelManager):
         # note: column_map[ 'column' ] takes precedence
         if "column" in column_map:
             attr = column_map["column"]
-        column = self.model_class.table.columns.get(attr)
+        column = self.model_class.__table__.columns.get(attr)
         if column is None:
             # could be a property (hybrid_property, etc.) - assume we can make a filter from it
             column = getattr(self.model_class, attr)

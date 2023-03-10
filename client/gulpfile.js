@@ -149,14 +149,16 @@ function buildPlugins(callback, forceRebuild) {
                         }
                     );
                     console.log(`Building ${pluginName}`);
-                    if (
-                        child_process.spawnSync("yarn", ["build"], {
-                            cwd: pluginDir,
-                            stdio: "inherit",
-                            shell: true,
-                            env: { ...process.env, NODE_OPTIONS: "--openssl-legacy-provider" },
-                        }).status === 0
-                    ) {
+                    const opts = {
+                        cwd: pluginDir,
+                        stdio: "inherit",
+                        shell: true,
+                    };
+                    // if node version is >16, set NODE_OPTIONS to use legacy openssl provider
+                    if (process.versions.node.split(".")[0] > "16") {
+                        opts.env = { ...process.env, NODE_OPTIONS: "--openssl-legacy-provider" };
+                    }
+                    if (child_process.spawnSync("yarn", ["build"], opts).status === 0) {
                         console.log(`Successfully built, saving build state to ${hashFilePath}`);
                         child_process.exec(`(git rev-parse HEAD 2>/dev/null || echo \`\`) > ${hashFilePath}`);
                     } else {

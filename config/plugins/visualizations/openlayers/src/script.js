@@ -215,7 +215,8 @@ var MapViewer = (function(mv) {
             const sourceVec = new Vector({ format: formatType, url: filePath, wrapX: false });
             mv.createMap(filePath, sourceVec, options, chart, styleFunction, target);
         } else if (fileType === "shp") {
-            axios.get(filePath, { responseType: "arraybuffer" }).then(shpfile => {
+            const fileUrl = prefixedDownloadUrl(options.root, filePath);
+            axios.get(fileUrl, { responseType: "arraybuffer" }).then(shpfile => {
                 console.debug(shpfile);
                 shp(shpfile.data).then(
                     geojson => {
