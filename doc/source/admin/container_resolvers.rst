@@ -4,8 +4,8 @@ Containers in Galaxy
 ====================
 
 Galaxy can run tools using containers using ``docker`` or ``singularity``.
-The containers can be either explicit or (so called) mulled. The former
-are given by ``<container>`` requirements pointing to a specific container.
+The containers can be either explicit or mulled (also called multi package containers).
+The former are given by ``<container>`` requirements pointing to a specific container.
 The later are containers built for a set of requirements of type package.
 Mulled containers are described by a hash that is unique for a set of
 packages and versions (for mulled v2), e.g. 
@@ -14,8 +14,9 @@ packages and versions (for mulled v2), e.g.
 for single packages simply the package name and version are used instead of the hashes,
 e.g. ``ucsc-liftover:357--h446ed27_4``.
 
-The bioconda and the Galaxy project provide infrastructure to make mulled
-containers globally available on the ``quay.io/biocontainers`` container registry.
+The bioconda and the Galaxy project provide infrastructure to create mulled
+containers and to make them globally available on the ``quay.io/biocontainers``
+container registry.
 
 1. For each bioconda package a container is deployed
 2. Mulled containers are created and deployed by the infrastructure provided by the
@@ -30,8 +31,9 @@ Container Resolvers in Galaxy
 
 A container resolver tries to get a container description, i.e. the information
 (URI/path to the container image, ...) that is needed to execute a tool in a
-container, given the requirements specified in this tool. Galaxy implements
-various container resolvers that are suitable for different needs. 
+container (in the execution environment), given the requirements specified in
+this tool. Galaxy implements various container resolvers that are suitable for
+different needs. 
 
 Galaxy tries to execute jobs using containers if they are send
 to execution environments (previously called destinations) with either 
