@@ -115,6 +115,24 @@ class TestRemoteFilesIntegration(ConfiguresRemoteFilesIntegrationTestCase):
 
         assert os.path.exists(os.path.join(self.library_dir, "a"))
 
+    def test_fetch_from_drs(self):
+        with self.dataset_populator.test_history() as history_id:
+            element = dict(src="url", url="drs://bpa-drs.beta.biocommons.org.au/e949351fd8a07b50e4ed0784a4736823")
+            target = {
+                "destination": {"type": "hdas"},
+                "elements": [element],
+            }
+            targets = [target]
+            payload = {
+                "history_id": history_id,
+                "targets": targets,
+            }
+            new_dataset = self.dataset_populator.fetch(payload, assert_ok=True).json()["outputs"][0]
+            content = self.dataset_populator.get_history_dataset_content(history_id, dataset=new_dataset)
+            assert content == "a\n", content
+
+        assert not os.path.exists(os.path.join(ftp_dir, "a"))
+
     def test_fetch_from_ftp(self):
         ftp_dir = self.user_ftp_dir
         _write_file_fixtures(self.root, ftp_dir)
