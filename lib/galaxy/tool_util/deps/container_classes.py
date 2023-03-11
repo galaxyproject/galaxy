@@ -273,21 +273,21 @@ class HasDockerLikeVolumes:
                 defaults += ",$tool_directory:default_ro"
             defaults += ",$job_directory/outputs:rw,$working_directory:rw"
         else:
-            defaults = "$galaxy_root:default_ro"
+            if self.job_info.tmp_directory is not None:
+                defaults = "$tmp_directory:rw"
+                # If a tool definitely has a temp directory available set it to /tmp in container for compat.
+                # with CWL. This is part of that spec and should make it easier to share containers between CWL
+                # and Galaxy.
+                defaults += ",$tmp_directory:/tmp:rw"
+            else:
+                defaults = "$_GALAXY_JOB_TMP_DIR:rw,$_GALAXY_JOB_TMP_DIR/:/tmp:rw"
+            defaults += ",$galaxy_root:default_ro"
             if self.job_info.tool_directory:
                 defaults += ",$tool_directory:default_ro"
             if self.job_info.job_directory:
                 defaults += ",$job_directory:default_ro,$job_directory/outputs:rw"
                 if self.tool_info.profile <= 19.09:
                     defaults += ",$job_directory/configs:rw"
-            if self.job_info.tmp_directory is not None:
-                defaults += ",$tmp_directory:rw"
-                # If a tool definitely has a temp directory available set it to /tmp in container for compat.
-                # with CWL. This is part of that spec and should make it easier to share containers between CWL
-                # and Galaxy.
-                defaults += ",$tmp_directory:/tmp:rw"
-            else:
-                defaults += ",$_GALAXY_JOB_TMP_DIR:rw,$TMPDIR:rw,$TMP:rw,$TEMP:rw"
             if self.job_info.home_directory is not None:
                 defaults += ",$home_directory:rw"
             if self.app_info.outputs_to_working_directory:
@@ -487,6 +487,7 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
 
         volumes_raw = self._expand_volume_str(self.destination_info.get("singularity_volumes", "$defaults"))
         preprocessed_volumes_list = preprocess_volumes(volumes_raw, self.container_type)
+        log.error(preprocess_volumes)
         volumes = [DockerVolume.from_str(v) for v in preprocessed_volumes_list]
 
         run_command = singularity_util.build_singularity_run_command(
