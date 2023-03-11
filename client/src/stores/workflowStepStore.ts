@@ -129,7 +129,7 @@ export interface ConnectionOutputLink {
     input_subworkflow_step_id?: number;
 }
 
-interface WorkflowOutputs {
+export interface WorkflowOutputs {
     [index: string]: {
         stepId: number;
         outputName: string;
