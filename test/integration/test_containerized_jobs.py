@@ -69,6 +69,7 @@ class ContainerizedIntegrationTestCase(integration_util.IntegrationTestCase):
     """
     TODO seems unused
     """
+
     @classmethod
     def setUpClass(cls) -> None:
         skip_if_container_type_unavailable(cls)
