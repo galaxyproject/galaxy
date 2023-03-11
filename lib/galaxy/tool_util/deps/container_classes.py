@@ -265,6 +265,10 @@ def preprocess_volumes(volumes_raw_str: str, container_type: str) -> List[str]:
     ro for Singularity iff no subdirectories are rw (Singularity does not allow ro
     parent directories with rw subdirectories).
 
+    Removes volumes that have the same target directory which is not allowed
+    (for docker and singularity). Volumes that are specified later in the volumes_raw_str
+    are favoured which allows admins to averwrite defaults.
+
     >>> preprocess_volumes("", DOCKER_CONTAINER_TYPE)
     []
     >>> preprocess_volumes("/a/b", DOCKER_CONTAINER_TYPE)
@@ -299,6 +303,17 @@ def preprocess_volumes(volumes_raw_str: str, container_type: str) -> List[str]:
                     if in_directory(rw_path, volume.target):
                         mode = "rw"
         volume.mode = mode
+
+    # remove duplicate directories
+    targets: Dict[str, Volume] = dict()
+    i = len(volumes) - 1
+    while i > -1:
+        if volumes[i].target in targets:
+            log.debug(f"{volumes[i]} removed in favour of {targets[volumes[i].target]}")
+            del volumes[i]
+        else:
+            targets[volumes[i].target] = volumes[i]
+        i -= 1
     return [str(v) for v in volumes]
 
 
