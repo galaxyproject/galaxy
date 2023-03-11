@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 DEFAULT_WORKING_DIRECTORY = None
 DEFAULT_SINGULARITY_COMMAND = "singularity"
 DEFAULT_CLEANENV = True
+DEFAULT_NO_MOUNT = ["tmp"]
 DEFAULT_SUDO = False
 DEFAULT_SUDO_COMMAND = "sudo"
 DEFAULT_RUN_EXTRA_ARGUMENTS = None
@@ -70,6 +71,7 @@ def build_singularity_run_command(
     guest_ports: Union[bool, List[str]] = False,
     container_name: Optional[str] = None,
     cleanenv: bool = DEFAULT_CLEANENV,
+    no_mount: Optional[List[str]] = DEFAULT_NO_MOUNT,
 ) -> str:
     volumes = volumes or []
     env = env or []
@@ -89,6 +91,8 @@ def build_singularity_run_command(
     command_parts.append("exec")
     if cleanenv:
         command_parts.append("--cleanenv")
+    if no_mount:
+        command_parts.extend(["--no-mount", ",".join(no_mount)])
     for volume in volumes:
         command_parts.extend(["-B", str(volume)])
     if home is not None:

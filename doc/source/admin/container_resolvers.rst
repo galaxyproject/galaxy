@@ -332,3 +332,20 @@ It may be cleaned regularly using ``singularity cache`` or be disabled by using 
 
 Setting up Galaxy using docker / singularity on distributed compute resources
 (in particular in real user setups) requires careful planning.
+
+Other considerations
+====================
+
+Frequently tools use ``$TMP``, ``$TEMP``, or ``$TMPDIR`` (or simply use hardcoded
+``/tmp``) for storing temporary data. In containerized environments ``/tmp``
+is by default bound to a directory in the job working dir (``$_GALAXY_JOB_TMP_DIR``),
+i.e. ``$_GALAXY_JOB_TMP_DIR:/tmp:rw`` is in the bind strings (in addition to
+``$_GALAXY_JOB_TMP_DIR:$_GALAXY_JOB_TMP_DIR:rw``).
+Galaxy automatically passes the environment variables ``$TMP``, ``$TEMP``, and
+``$TMPDIR`` to the container, but the admin is responsible to 
+bind the corresponding directories as writable volumes to the container.
+This can be done by setting the 
+`docker_volumes <https://github.com/galaxyproject/galaxy/blob/85f16381694224598dff139bcfe307d9fd4f22bc/lib/galaxy/config/sample/job_conf.sample.yml#L455>`_ and
+`singularity_volumes <https://github.com/galaxyproject/galaxy/blob/85f16381694224598dff139bcfe307d9fd4f22bc/lib/galaxy/config/sample/job_conf.sample.yml#L567>`_, resp., 
+configuration in the :doc:`job configuration <jobs>`.
+Note that also the default bind for `/tmp` can be overwritten this way.
