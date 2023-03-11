@@ -11,6 +11,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Tuple,
     Type,
     TYPE_CHECKING,
 )
@@ -163,6 +164,97 @@ class Container(metaclass=ABCMeta):
         """
 
 
+class Volume:
+    """
+    helper class to manage a container volume string
+    """
+
+    def __init__(self, rawstr: str, container_type: str):
+        self.source, self.target, self.mode = Volume.parse_volume_str(rawstr)
+        self.container_type = container_type
+
+    @classmethod
+    def parse_volume_str(cls, rawstr: str) -> Tuple[str, str, str]:
+        """
+        >>> Volume.parse_volume_str('A:B:rw')
+        ('A', 'B', 'rw')
+        >>> Volume.parse_volume_str('A : B: ro')
+        ('A', 'B', 'ro')
+        >>> Volume.parse_volume_str('A:B')
+        ('A', 'B', 'rw')
+        >>> Volume.parse_volume_str('A:ro')
+        ('A', 'A', 'ro')
+        >>> Volume.parse_volume_str('A')
+        ('A', 'A', 'rw')
+        >>> Volume.parse_volume_str(' ')
+        Traceback (most recent call last):
+        ...
+        Exception: Unparsable volumes string in configuration [ ]
+        >>> Volume.parse_volume_str('A:B:C:D')
+        Traceback (most recent call last):
+        ...
+        Exception: Unparsable volumes string in configuration [A:B:C:D]
+        """
+        if rawstr.strip() == "":
+            raise Exception(f"Unparsable volumes string in configuration [{rawstr}]")
+
+        volume_parts = rawstr.split(":")
+        if len(volume_parts) > 3:
+            raise Exception(f"Unparsable volumes string in configuration [{rawstr}]")
+        if len(volume_parts) == 3:
+            source = volume_parts[0]
+            target = volume_parts[1]
+            mode = volume_parts[2]
+        elif len(volume_parts) == 2:
+            if volume_parts[1] not in ("rw", "ro", "default_ro"):
+                source = volume_parts[0]
+                target = volume_parts[1]
+                mode = "rw"
+            else:
+                source = volume_parts[0]
+                target = volume_parts[0]
+                mode = volume_parts[1]
+        elif len(volume_parts) == 1:
+            source = volume_parts[0]
+            target = volume_parts[0]
+            mode = "rw"
+
+        source = source.strip()
+        target = target.strip()
+        mode = mode.strip()
+
+        return source, target, mode
+
+    def __str__(self):
+        """
+        >>> str(Volume('A:A:rw', 'docker'))
+        'A:rw'
+        >>> str(Volume('A:B:rw', 'docker'))
+        'A:B:rw'
+        >>> str(Volume('A:A:ro', 'singularity'))
+        'A:ro'
+        >>> str(Volume('A:B:ro', 'singularity'))
+        'A:B:ro'
+        >>> str(Volume('A:A:rw', 'singularity'))
+        'A'
+        >>> str(Volume('A:B:rw', 'singularity'))
+        'A:B'
+        """
+        if self.source == self.target:
+            path = self.source
+        else:
+            path = f"{self.source}:{self.target}"
+
+        # TODO remove this, we require quite recent singularity anyway
+        # for a while singularity did not allow to specify the bind type rw
+        # (which is the default). so we omit this default
+        # see https://github.com/hpcng/singularity/pull/5487
+        if self.container_type == SINGULARITY_CONTAINER_TYPE and self.mode == "rw":
+            return path
+        else:
+            return f"{path}:{self.mode}"
+
+
 def preprocess_volumes(volumes_raw_str: Optional[str], container_type: str) -> List[str]:
     """Process Galaxy volume specification string to either Docker or Singularity specification.
 
@@ -186,49 +278,27 @@ def preprocess_volumes(volumes_raw_str: Optional[str], container_type: str) -> L
     ['/a/b:ro', '/a/b/c:ro']
     >>> preprocess_volumes("/a/b:default_ro,/a/b/c:rw", SINGULARITY_CONTAINER_TYPE)
     ['/a/b', '/a/b/c']
+    >>> preprocess_volumes("/x:/a/b:default_ro,/y:/a/b/c:ro", SINGULARITY_CONTAINER_TYPE)
+    ['/x:/a/b:ro', '/y:/a/b/c:ro']
+    >>> preprocess_volumes("/x:/a/b:default_ro,/y:/a/b/c:rw", SINGULARITY_CONTAINER_TYPE)
+    ['/x:/a/b', '/y:/a/b/c']
     """
 
     if not volumes_raw_str:
         return []
 
-    volumes_raw_strs = [v.strip() for v in volumes_raw_str.split(",")]
-    volumes = []
-    rw_paths = []
-
-    for volume_raw_str in volumes_raw_strs:
-        volume_parts = volume_raw_str.split(":")
-        if len(volume_parts) > 3:
-            raise Exception(f"Unparsable volumes string in configuration [{volumes_raw_str}]")
-        if len(volume_parts) == 3:
-            volume_parts = [f"{volume_parts[0]}:{volume_parts[1]}", volume_parts[2]]
-        if len(volume_parts) == 2 and volume_parts[1] not in ("rw", "ro", "default_ro"):
-            volume_parts = [f"{volume_parts[0]}:{volume_parts[1]}", "rw"]
-        if len(volume_parts) == 1:
-            volume_parts.append("rw")
-        volumes.append(volume_parts)
-        if volume_parts[1] == "rw":
-            rw_paths.append(volume_parts[0])
-
+    volumes = [Volume(v, container_type) for v in volumes_raw_str.split(",")]
+    rw_paths = [v.target for v in volumes if v.mode == "rw"]
     for volume in volumes:
-        path = volume[0]
-        how = volume[1]
-
-        if how == "default_ro":
-            how = "ro"
+        mode = volume.mode
+        if volume.mode == "default_ro":
+            mode = "ro"
             if container_type == SINGULARITY_CONTAINER_TYPE:
                 for rw_path in rw_paths:
-                    if in_directory(rw_path, path):
-                        how = "rw"
-
-        volume[1] = how
-
-        # for a while singularity did not allow to specify the bind type rw
-        # (which is the default). so we omit this default
-        # see https://github.com/hpcng/singularity/pull/5487
-        if container_type == SINGULARITY_CONTAINER_TYPE and volume[1] == "rw":
-            del volume[1]
-
-    return [":".join(v) for v in volumes]
+                    if in_directory(rw_path, volume.target):
+                        mode = "rw"
+        volume.mode = mode
+    return [str(v) for v in volumes]
 
 
 class HasDockerLikeVolumes:
