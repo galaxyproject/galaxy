@@ -700,7 +700,7 @@ class TestMulledSingularityContainerResolver(TestMulledContainerResolver):
     mulled_hash = "mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0"
     assumptions = {
         "run": {
-            "expect_failure": True,
+            "expect_failure": False,
             "output": [
                 "bedtools v2.26.0",
                 "samtools: error while loading shared libraries: libcrypto.so.1.0.0",
