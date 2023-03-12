@@ -168,11 +168,7 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
                                 label: inputName,
                                 extensions: [],
                             };
-                            if (extraInputs[step.id]) {
-                                extraInputs[step.id].push(terminalSource);
-                            } else {
-                                extraInputs[step.id] = [terminalSource];
-                            }
+                            pushOrSet(extraInputs, step.id, terminalSource);
                         }
                     });
                 }
@@ -210,6 +206,7 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
             Vue.set(this.steps, stepId.toString(), step);
             const connectionStore = useConnectionStore();
             stepToConnections(step).map((connection) => connectionStore.addConnection(connection));
+            this.stepExtraInputs[step.id] = getStepExtraInputs(step);
             return step;
         },
         updateStep(this: State, step: Step) {
@@ -217,6 +214,7 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
                 step.outputs.find((output) => workflowOutput.output_name == output.name)
             );
             this.steps[step.id.toString()] = step;
+            this.stepExtraInputs[step.id] = getStepExtraInputs(step);
         },
         changeStepMapOver(stepId: number, mapOver: CollectionTypeDescriptor) {
             Vue.set(this.stepMapOver, stepId, mapOver);
@@ -288,6 +286,7 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
                 .getConnectionsForStep(stepId)
                 .forEach((connection) => connectionStore.removeConnection(connection.id));
             Vue.delete(this.steps, stepId.toString());
+            Vue.delete(this.stepExtraInputs, stepId);
         },
     },
 });
@@ -324,4 +323,25 @@ export function stepToConnections(step: Step): Connection[] {
         });
     }
     return connections;
+}
+
+function getStepExtraInputs(step: Step) {
+    const extraInputs: InputTerminalSource[] = [];
+    if (step.when !== undefined) {
+        Object.keys(step.input_connections).forEach((inputName) => {
+            if (!step.inputs.find((input) => input.name === inputName) && step.when?.includes(inputName)) {
+                const terminalSource = {
+                    name: inputName,
+                    optional: false,
+                    input_type: "parameter" as const,
+                    type: "boolean" as const,
+                    multiple: false,
+                    label: inputName,
+                    extensions: [],
+                };
+                extraInputs.push(terminalSource);
+            }
+        });
+    }
+    return extraInputs;
 }
