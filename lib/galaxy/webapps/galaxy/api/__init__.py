@@ -173,7 +173,7 @@ class UrlBuilder:
         query_params = path_params.pop("query_params", None)
         try:
             if qualified:
-                url = self.request.url_for(name, **path_params)
+                url = str(self.request.url_for(name, **path_params))
             else:
                 url = self.request.app.url_path_for(name, **path_params)
             if query_params:
