@@ -1,0 +1,5 @@
+- type: drs
+  id: drshttp
+  url_regex: "^drs://(localhost|127\\.0\\.0\\.1)"
+  force_http: true
+  doc: Test DRS with forced http for local urls
