@@ -51,12 +51,22 @@ class TestIsFetchWithCeleryEnabled:
 
     def test_enabled_if_no_celeryconf(self, appconfig):
         appconfig.enable_celery_tasks = True
-        appconfig.enable_celery_conf = None
+        appconfig.celery_conf = None
         assert appconfig.is_fetch_with_celery_enabled()
 
-    def test_enabled_if_no_task_routes(self, appconfig):
+    def test_enabled_if_no_task_routes_key(self, appconfig):
+        appconfig.enable_celery_tasks = True
+        appconfig.celery_conf = {"some-other-key": 1}
+        assert appconfig.is_fetch_with_celery_enabled()
+
+    def test_enabled_if_task_routes_empty(self, appconfig):
         appconfig.enable_celery_tasks = True
         appconfig.celery_conf["task_routes"] = None
+        assert appconfig.is_fetch_with_celery_enabled()
+
+    def test_enabled_if_no_route_key(self, appconfig):
+        appconfig.enable_celery_tasks = True
+        appconfig.celery_conf["task_routes"] = {"some-other-route": 1}
         assert appconfig.is_fetch_with_celery_enabled()
 
     def test_enabled_if_no_route(self, appconfig):
