@@ -68,8 +68,16 @@ class NotificationManager:
         self.broadcast_notification_columns = self.notification_columns
 
     @property
-    def now(self):
+    def _now(self):
         return datetime.utcnow()
+
+    @property
+    def _notification_is_active(self):
+        """Condition to filter active (published and not expired) notifications only."""
+        return and_(
+            Notification.publication_time <= self._now,
+            Notification.expiration_time > self._now,
+        )
 
     def create_notification_for_users(self, request: NotificationCreateRequest) -> Tuple[Notification, int]:
         """
@@ -96,7 +104,7 @@ class NotificationManager:
             self.sa_session.add(notification)
         return notification
 
-    def get_user_notification(self, user: User, notification_id: int, exclude_expired: Optional[bool] = True):
+    def get_user_notification(self, user: User, notification_id: int, active_only: Optional[bool] = True):
         """
         Displays a notification belonging to the user.
         """
@@ -107,15 +115,10 @@ class NotificationManager:
                 UserNotificationAssociation,
                 UserNotificationAssociation.notification_id == notification_id,
             )
-            .where(
-                and_(
-                    UserNotificationAssociation.user_id == user.id,
-                    Notification.publication_time < self.now,
-                )
-            )
+            .where(UserNotificationAssociation.user_id == user.id)
         )
-        if exclude_expired:
-            stmt = stmt.where(Notification.expiration_time > self.now)
+        if active_only:
+            stmt = stmt.where(self._notification_is_active)
 
         result = self.sa_session.execute(stmt).fetchone()
         if result is None:
@@ -153,20 +156,18 @@ class NotificationManager:
                 Notification,
                 Notification.id == UserNotificationAssociation.notification_id,
             )
+            .where(self._notification_is_active)
             .where(
                 and_(
                     UserNotificationAssociation.user_id == user.id,
                     UserNotificationAssociation.seen_time.is_(None),
-                    Notification.publication_time < self.now,
-                    Notification.expiration_time > self.now,
                 )
             )
         )
-
         result = self.sa_session.execute(stmt).scalar()
         return result
 
-    def get_broadcasted_notification(self, notification_id: int, include_inactive: bool = False):
+    def get_broadcasted_notification(self, notification_id: int, active_only: Optional[bool] = True):
         stmt = (
             select(self.broadcast_notification_columns)
             .select_from(Notification)
@@ -177,13 +178,8 @@ class NotificationManager:
                 )
             )
         )
-        if not include_inactive:
-            stmt = stmt.where(
-                and_(
-                    Notification.publication_time < self.now,
-                    Notification.expiration_time > self.now,
-                )
-            )
+        if active_only:
+            stmt = stmt.where(self._notification_is_active)
         result = self.sa_session.execute(stmt).fetchone()
         if result is None:
             raise ObjectNotFound
@@ -207,7 +203,7 @@ class NotificationManager:
                 )
             )
             if request.seen is not None:
-                seen_time = self.now if request.seen else None
+                seen_time = self._now if request.seen else None
                 stmt = stmt.values(seen_time=seen_time)
             if request.favorite is not None:
                 stmt = stmt.values(favorite=request.favorite)
@@ -271,7 +267,7 @@ class NotificationManager:
                 UserNotificationAssociation.favorite.is_(True),
                 UserNotificationAssociation.deleted.is_(False),
             )
-            has_expired = Notification.expiration_time <= self.now
+            has_expired = Notification.expiration_time <= self._now
 
             # Find those notification ids that have expired excluding those that somebody has marked as favorite
             non_favorite_expired_notifications_query = (
@@ -337,7 +333,7 @@ class NotificationManager:
         return notification
 
     def _all_user_notifications_query(
-        self, user: User, since: Optional[datetime] = None, exclude_expired: Optional[bool] = True
+        self, user: User, since: Optional[datetime] = None, active_only: Optional[bool] = True
     ):
         stmt = (
             select(self.user_notification_columns)
@@ -346,37 +342,27 @@ class NotificationManager:
                 UserNotificationAssociation,
                 UserNotificationAssociation.notification_id == Notification.id,
             )
-            .where(
-                and_(
-                    UserNotificationAssociation.user_id == user.id,
-                    Notification.publication_time < self.now,
-                )
-            )
+            .where(UserNotificationAssociation.user_id == user.id)
         )
         if since is not None:
             stmt = stmt.where(Notification.publication_time > since)
-        if exclude_expired:
-            stmt = stmt.where(Notification.expiration_time > self.now)
+        if active_only:
+            stmt = stmt.where(self._notification_is_active)
 
         return stmt
 
     def _all_broadcasted_notifications_query(
-        self, since: Optional[datetime] = None, exclude_expired: Optional[bool] = True
+        self, since: Optional[datetime] = None, active_only: Optional[bool] = True
     ):
         stmt = (
             select(self.broadcast_notification_columns)
             .select_from(Notification)
-            .where(
-                and_(
-                    Notification.category == MandatoryNotificationCategory.broadcast,
-                    Notification.publication_time < self.now,
-                )
-            )
+            .where(Notification.category == MandatoryNotificationCategory.broadcast)
         )
         if since is not None:
             stmt = stmt.where(Notification.publication_time > since)
-        if exclude_expired:
-            stmt = stmt.where(Notification.expiration_time > self.now)
+        if active_only:
+            stmt = stmt.where(self._notification_is_active)
         return stmt
 
     def _get_all_recipient_users(self, recipients: NotificationRecipients) -> List[User]:
