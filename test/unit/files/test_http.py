@@ -4,10 +4,9 @@ import urllib
 from typing import Any
 from unittest import mock
 
-from galaxy import exceptions
-
 import pytest
 
+from galaxy import exceptions
 from ._util import (
     assert_realizes_as,
     assert_realizes_contains,
