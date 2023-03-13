@@ -1,9 +1,9 @@
 <template>
-    <div :class="rowClass">
+    <div :class="rowClass" :data-output-name="output.name">
         <div
             v-if="showCalloutActiveOutput"
             v-b-tooltip
-            :class="['callout-terminal', output.name]"
+            class="callout-terminal"
             title="Checked outputs will become primary workflow outputs and are available as subworkflow outputs."
             @keyup="onToggleActive"
             @click="onToggleActive">
@@ -12,7 +12,7 @@
         <div
             v-if="showCalloutVisible"
             v-b-tooltip
-            :class="['callout-terminal', output.name]"
+            class="callout-terminal"
             :title="visibleHint"
             @keyup="onToggleVisible"
             @click="onToggleVisible">
