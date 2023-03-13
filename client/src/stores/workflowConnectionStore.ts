@@ -72,13 +72,14 @@ export const useConnectionStore = defineStore("workflowConnectionStore", {
         },
     },
     actions: {
-        addConnection(this, connection: Connection) {
+        addConnection(this, _connection: Connection) {
+            const connection = Object.freeze(_connection);
             this.connections.push(connection);
             const stepStore = useWorkflowStepStore();
             stepStore.addConnection(connection);
             this.terminalToConnection = updateTerminalToConnection(this.connections);
             this.inputTerminalToOutputTerminals = updateTerminalToTerminal(this.connections);
-            this.stepToConnections = updateStepToConnections(this.connections)
+            this.stepToConnections = updateStepToConnections(this.connections);
         },
         markInvalidConnection(this: State, connectionId: string, reason: string) {
             Vue.set(this.invalidConnections, connectionId, reason);
@@ -114,26 +115,23 @@ export const useConnectionStore = defineStore("workflowConnectionStore", {
                         return true;
                     }
                 }
-
             });
             this.terminalToConnection = updateTerminalToConnection(this.connections);
             this.inputTerminalToOutputTerminals = updateTerminalToTerminal(this.connections);
-            this.stepToConnections = updateStepToConnections(this.connections)
+            this.stepToConnections = updateStepToConnections(this.connections);
         },
     },
 });
-
 
 function updateTerminalToTerminal(connections: Connection[]) {
     const inputTerminalToOutputTerminals: TerminalToOutputTerminals = {};
     connections.map((connection) => {
         const terminals = getTerminals(connection);
         const inputTerminalId = getTerminalId(terminals.input);
-        pushOrSet(inputTerminalToOutputTerminals, inputTerminalId, terminals.output)
+        pushOrSet(inputTerminalToOutputTerminals, inputTerminalId, terminals.output);
     });
     return inputTerminalToOutputTerminals;
 }
-
 
 function updateTerminalToConnection(connections: Connection[]) {
     const terminalToConnection: { [index: string]: Connection[] } = {};
@@ -147,16 +145,14 @@ function updateTerminalToConnection(connections: Connection[]) {
     return terminalToConnection;
 }
 
-
 function updateStepToConnections(connections: Connection[]) {
     const stepToConnections: { [index: number]: Connection[] } = {};
     connections.map((connection) => {
         pushOrSet(stepToConnections, connection.input.stepId, connection);
         pushOrSet(stepToConnections, connection.output.stepId, connection);
     });
-    return stepToConnections
+    return stepToConnections;
 }
-
 
 export function getTerminalId(item: BaseTerminal): string {
     return `node-${item.stepId}-${item.connectorType}-${item.name}`;

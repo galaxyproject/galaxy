@@ -107,17 +107,15 @@ async function toggleChildComponent() {
 
 function onToggleActive() {
     const step = stepStore.getStep(stepId.value);
+    let stepWorkflowOutputs = [...(step.workflow_outputs || [])];
     if (workflowOutput.value) {
-        step.workflow_outputs = (step.workflow_outputs || []).filter(
+        stepWorkflowOutputs = stepWorkflowOutputs.filter(
             (workflowOutput) => workflowOutput.output_name !== output.value.name
         );
     } else {
-        if (!step.workflow_outputs) {
-            step.workflow_outputs = [];
-        }
-        step.workflow_outputs.push({ output_name: output.value.name });
+        stepWorkflowOutputs.push({ output_name: output.value.name });
     }
-    stepStore.updateStep(step);
+    stepStore.updateStep({ ...step, workflow_outputs: stepWorkflowOutputs });
 }
 
 function onToggleVisible() {
