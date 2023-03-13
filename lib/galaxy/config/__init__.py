@@ -1278,12 +1278,14 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                 )
 
     def is_fetch_with_celery_enabled(self):
+        """
+        True iff celery is enabled and celery_conf["task_routes"]["galaxy.fetch_data"] == DISABLED_FLAG.
+        """
         celery_enabled = self.enable_celery_tasks
-        fetch_disabled = (
-            self.celery_conf
-            and self.celery_conf["task_routes"]
-            and self.celery_conf["task_routes"]["galaxy.fetch_data"] == DISABLED_FLAG
-        )
+        try:
+            fetch_disabled = self.celery_conf["task_routes"]["galaxy.fetch_data"] == DISABLED_FLAG
+        except (TypeError, KeyError):  # celery_conf is None or sub-dictionary is none or either key is not present
+            fetch_disabled = False
         return celery_enabled and not fetch_disabled
 
     @staticmethod
