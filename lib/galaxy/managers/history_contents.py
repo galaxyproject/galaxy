@@ -531,9 +531,11 @@ class HistoryContentsFilters(
 
     def parse_query_filters_with_relations(self, query_filters: ValueFilterQueryParams, history_id):
         """Parse query filters but consider case where related filter is included."""
-        has_related_q = [q for q in ('related-eq', 'related') if query_filters.q and q in query_filters.q]
+        has_related_q = [q for q in ("related-eq", "related") if query_filters.q and q in query_filters.q]
         if has_related_q:
-            query_filters_with_relations = self.get_query_filters_with_relations(query_filters=query_filters, related_q=has_related_q[0], history_id=history_id)
+            query_filters_with_relations = self.get_query_filters_with_relations(
+                query_filters=query_filters, related_q=has_related_q[0], history_id=history_id
+            )
             return super().parse_query_filters(query_filters_with_relations)
         return super().parse_query_filters(query_filters)
 
