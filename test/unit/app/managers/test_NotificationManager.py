@@ -163,16 +163,14 @@ class TestNotificationManager(BaseTestCase):
         user = self.user_manager.create(**user2_data)
         now = datetime.utcnow()
         notification, _ = self._send_notification_to_users([user], notification={"expiration_time": now})
-        user_notification = self.notification_manager.get_user_notification(
-            user, notification.id, exclude_expired=False
-        )
+        user_notification = self.notification_manager.get_user_notification(user, notification.id, active_only=False)
         assert user_notification
         assert self._has_expired(user_notification.expiration_time) is True
 
         self.notification_manager.cleanup_expired_notifications()
 
         with pytest.raises(ObjectNotFound):
-            self.notification_manager.get_user_notification(user, notification.id, exclude_expired=False)
+            self.notification_manager.get_user_notification(user, notification.id, active_only=False)
 
     def _send_notification_to_users(self, users: List[User], notification: Optional[Dict[str, Any]] = None):
         notification_data = NotificationCreateData(

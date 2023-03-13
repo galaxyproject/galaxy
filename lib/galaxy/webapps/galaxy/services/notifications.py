@@ -98,10 +98,10 @@ class NotificationService(ServiceBase):
         """Gets a single `broadcasted` notification by ID.
         Admin users can access inactive notifications (scheduled or recently expired).
         """
-        include_inactive = user_context.user_is_admin
+        active_only = not user_context.user_is_admin
         try:
             broadcasted_notification = self.notification_manager.get_broadcasted_notification(
-                notification_id, include_inactive
+                notification_id, active_only
             )
             return BroadcastNotificationResponse.from_orm(broadcasted_notification)
         except ObjectNotFound:
