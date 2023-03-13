@@ -566,7 +566,6 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
 
         volumes_raw = self._expand_volume_str(self.destination_info.get("singularity_volumes", "$defaults"))
         preprocessed_volumes_list = preprocess_volumes(volumes_raw, self.container_type)
-        log.error(preprocess_volumes)
         volumes = [DockerVolume.from_str(v) for v in preprocessed_volumes_list]
 
         run_command = singularity_util.build_singularity_run_command(
