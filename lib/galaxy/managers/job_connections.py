@@ -10,7 +10,6 @@ from sqlalchemy.sql import (
 from galaxy import model
 from galaxy.managers.base import get_class
 from galaxy.model.scoped_session import galaxy_scoped_session
-from galaxy.schema.fields import DecodedDatabaseIdField
 
 
 class JobConnectionsManager:
@@ -19,7 +18,7 @@ class JobConnectionsManager:
     def __init__(self, sa_session: galaxy_scoped_session):
         self.sa_session = sa_session
 
-    def get_connections_graph(self, id: DecodedDatabaseIdField, src: str):
+    def get_connections_graph(self, id: int, src: str):
         """Get connections graph of inputs and outputs for given item id"""
         if src == "HistoryDatasetAssociation":
             output_selects = self.outputs_derived_from_input_hda(id)
@@ -35,7 +34,7 @@ class JobConnectionsManager:
         result["inputs"] = self._get_union_results(*input_selects)
         return result
 
-    def get_related_hids(self, history_id: DecodedDatabaseIdField, hid: int):
+    def get_related_hids(self, history_id, hid: int):
         """Get connections graph of inputs and outputs for given item hid from the given history_id"""
         # Get id(s) and src(s) for the given hid
         items_by_hid = self.sa_session.execute(
@@ -64,7 +63,7 @@ class JobConnectionsManager:
             result.append({"src": row.src, "id": row.id})
         return result
 
-    def outputs_derived_from_input_hda(self, input_hda_id: DecodedDatabaseIdField):
+    def outputs_derived_from_input_hda(self, input_hda_id: int):
         hda_select = (
             select(
                 [
@@ -95,7 +94,7 @@ class JobConnectionsManager:
         )
         return hda_select, hdca_select
 
-    def outputs_derived_from_input_hdca(self, input_hdca_id: DecodedDatabaseIdField):
+    def outputs_derived_from_input_hdca(self, input_hdca_id: int):
         hda_select = (
             select(
                 [
@@ -127,7 +126,7 @@ class JobConnectionsManager:
         )
         return hda_select, hdca_select
 
-    def inputs_for_hda(self, input_hda_id: DecodedDatabaseIdField):
+    def inputs_for_hda(self, input_hda_id: int):
         input_hdas = (
             select(
                 [
@@ -158,7 +157,7 @@ class JobConnectionsManager:
         )
         return input_hdas, input_hdcas
 
-    def inputs_for_hdca(self, input_hdca_id: DecodedDatabaseIdField):
+    def inputs_for_hdca(self, input_hdca_id: int):
         input_hdas = (
             select(
                 [
