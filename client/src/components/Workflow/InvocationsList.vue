@@ -10,6 +10,7 @@
         <b-table
             v-bind="indexTableAttrs"
             v-model="invocationItemsModel"
+            no-sort-reset
             :fields="invocationFields"
             :items="provider"
             class="invocations-table">
@@ -197,18 +198,23 @@ export default {
 .invocations-table {
     min-width: 40rem;
 }
+
 .table:deep(.col-name) {
     width: 40%;
 }
+
 .table:deep(.col-history) {
     width: 20%;
 }
+
 .table:deep(.col-small) {
     width: 100px;
 }
+
 .table:deep(.col-button) {
     width: 50px;
 }
+
 .table:deep(.truncate) {
     overflow: hidden;
     white-space: nowrap;

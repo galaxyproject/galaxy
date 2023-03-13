@@ -815,7 +815,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             prev_galaxy_session
             and prev_galaxy_session.current_history
             and not prev_galaxy_session.current_history.deleted
-            and prev_galaxy_session.current_history.datasets
+            and not prev_galaxy_session.current_history.empty
             and (prev_galaxy_session.current_history.user is None or prev_galaxy_session.current_history.user == user)
         ):
             # If the previous galaxy session had a history, associate it with the new session, but only if it didn't
@@ -825,7 +825,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                 # Increase the user's disk usage by the amount of the previous history's datasets if they didn't already
                 # own it.
                 for hda in history.datasets:
-                    user.adjust_total_disk_usage(hda.quota_amount(user))
+                    user.adjust_total_disk_usage(hda.quota_amount(user), hda.dataset.quota_source_info.label)
                 # Only set default history permissions if the history is from the previous session and anonymous
                 set_permissions = True
         elif self.galaxy_session.current_history:
@@ -959,7 +959,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         )
         default_history = None
         for history in unnamed_histories:
-            if len(history.datasets) == 0:
+            if history.empty:
                 # Found suitable default history.
                 default_history = history
                 break
@@ -979,12 +979,13 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         """
         # There must be a user to fetch histories, and without a user we have
         # no recent history.
-        if not self.galaxy_session.user:
+        user = self.get_user()
+        if not user:
             return None
         try:
             recent_history = (
                 self.sa_session.query(self.app.model.History)
-                .filter_by(user=self.galaxy_session.user, deleted=False)
+                .filter_by(user=user, deleted=False)
                 .order_by(self.app.model.History.update_time.desc())
                 .first()
             )

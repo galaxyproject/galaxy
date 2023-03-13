@@ -172,7 +172,7 @@ var HistoryContents = Backbone.Collection.extend({
         this.id = options.id;
     },
     url: function () {
-        return `${this.urlRoot + this.id}/contents`;
+        return `${this.urlRoot + this.id}/contents?shareable=true`;
     },
     model: HistoryItem,
 });

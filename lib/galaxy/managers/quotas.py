@@ -59,7 +59,11 @@ class QuotaManager:
             raise ActionInputError("Operation for an unlimited quota must be '='.")
         # Create the quota
         quota = model.Quota(
-            name=params.name, description=params.description, amount=create_amount, operation=params.operation
+            name=params.name,
+            description=params.description,
+            amount=create_amount,
+            operation=params.operation,
+            quota_source_label=params.quota_source_label,
         )
         self.sa_session.add(quota)
         # If this is a default quota, create the DefaultQuotaAssociation

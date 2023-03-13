@@ -15,6 +15,10 @@ import { PiniaVuePlugin } from "pinia";
 
 const defaultComparator = (a, b) => a == b;
 
+export function findViaNavigation(wrapper, component) {
+    return wrapper.find(component.selector);
+}
+
 function testLocalize(text) {
     if (text) {
         return `test_localized<${text}>`;

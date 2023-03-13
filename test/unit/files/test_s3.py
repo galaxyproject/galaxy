@@ -2,7 +2,12 @@ import os
 
 import pytest
 
-from ._util import assert_simple_file_realize
+from ._util import (
+    assert_realizes_contains,
+    assert_simple_file_realize,
+    configured_file_sources,
+    user_context_fixture,
+)
 
 pytest.importorskip("s3fs")
 
@@ -18,3 +23,29 @@ def test_file_source():
         contents="DATA USE POLICIES",
         contains=True,
     )
+
+
+def test_file_source_generic():
+    file_url = "s3://ga4gh-demo-data/phenopackets/Cao-2018-TGFBR2-Patient_4.json"
+    user_context = user_context_fixture()
+    file_sources = configured_file_sources(FILE_SOURCES_CONF)
+    file_source_pair = file_sources.get_file_source_path(file_url)
+
+    assert file_source_pair.path == file_url
+    assert file_source_pair.file_source.id == "test2"
+
+    assert_realizes_contains(
+        file_sources, file_url, "PMID:30101859-Cao-2018-TGFBR2-Patient_4", user_context=user_context
+    )
+
+
+def test_file_source_specific():
+    file_url = "s3://genomeark/data_use_policies.txt"
+    user_context = user_context_fixture()
+    file_sources = configured_file_sources(FILE_SOURCES_CONF)
+    file_source_pair = file_sources.get_file_source_path(file_url)
+
+    assert file_source_pair.path == file_url
+    assert file_source_pair.file_source.id == "test1"
+
+    assert_realizes_contains(file_sources, file_url, "DATA USE POLICIES", user_context=user_context)

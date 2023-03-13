@@ -78,6 +78,7 @@ from galaxy.tool_util.toolbox import (
     ToolSection,
 )
 from galaxy.tool_util.toolbox.views.sources import StaticToolBoxViewSources
+from galaxy.tool_util.verify.test_data import TestDataNotFoundError
 from galaxy.tools import expressions
 from galaxy.tools.actions import (
     DefaultToolAction,
@@ -1347,12 +1348,30 @@ class Tool(Dictifiable):
         if not test_data:
             # Fallback to Galaxy test data directory for builtin tools, tools
             # under development, and some older ToolShed published tools that
-            # used stock test data.
+            # used stock test data. Also possible remote test data using `location`.
             try:
-                test_data = self.app.test_data_resolver.get_filename(filename)
-            except ValueError:
+                test_data_context = self._find_test_data_context(filename)
+                test_data = self.app.test_data_resolver.get_filename(filename, test_data_context)
+            except TestDataNotFoundError:
                 test_data = None
         return test_data
+
+    def _find_test_data_context(self, filename: str):
+        """Returns the attributes (context) associated with a required file for test inputs or outputs."""
+        # We are returning the attributes of the first test input or output that matches the filename
+        # Could there be multiple different test data files with the same filename and different attributes?
+        # I hope not... otherwise we need a way to match a test file with its test definition.
+        for test in self.tests:
+            # Check for input context attributes
+            for required_file in test.required_files:
+                if len(required_file) > 1 and required_file[0] == filename:
+                    return required_file[1]
+            # Check for outputs context attributes too
+            for output in test.outputs:
+                value = output.get("value", None)
+                if value and value == filename:
+                    return output.get("attributes")
+        return None
 
     def __walk_test_data(self, dir, filename):
         for root, dirs, _ in os.walk(dir):
@@ -1936,7 +1955,15 @@ class Tool(Dictifiable):
         log.info(validation_timer)
         return all_params, all_errors, rerun_remap_job_id, collection_info
 
-    def handle_input(self, trans, incoming, history=None, use_cached_job=False, input_format="legacy"):
+    def handle_input(
+        self,
+        trans,
+        incoming,
+        history=None,
+        use_cached_job=False,
+        preferred_object_store_id: Optional[str] = None,
+        input_format="legacy",
+    ):
         """
         Process incoming parameters for this tool from the dict `incoming`,
         update the tool state (or create if none existed), and either return
@@ -1970,6 +1997,7 @@ class Tool(Dictifiable):
             mapping_params,
             history=request_context.history,
             rerun_remap_job_id=rerun_remap_job_id,
+            preferred_object_store_id=preferred_object_store_id,
             collection_info=collection_info,
             completed_jobs=completed_jobs,
         )
@@ -2017,6 +2045,7 @@ class Tool(Dictifiable):
         completed_job=None,
         collection_info=None,
         job_callback=None,
+        preferred_object_store_id=None,
         flush_job=True,
         skip=False,
     ):
@@ -2035,6 +2064,7 @@ class Tool(Dictifiable):
                 completed_job=completed_job,
                 collection_info=collection_info,
                 job_callback=job_callback,
+                preferred_object_store_id=preferred_object_store_id,
                 flush_job=flush_job,
                 skip=skip,
             )
@@ -2271,8 +2301,8 @@ class Tool(Dictifiable):
         for p_name in rup_dict:
             redirect_url += f"&{p_name}={rup_dict[p_name]}"
         # Add the current user email to redirect_url
-        if data.history.user:
-            USERNAME = str(data.history.user.email)
+        if data.user:
+            USERNAME = str(data.user.email)
         else:
             USERNAME = "Anonymous"
         redirect_url += f"&USERNAME={USERNAME}"

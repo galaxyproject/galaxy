@@ -404,7 +404,7 @@ class FolderManager:
             sub_folders_query = sub_folders_query.order_by(sort_column.desc() if payload.sort_desc else sort_column)
         else:  # Sort by name alphabetically by default
             sub_folders_query = sub_folders_query.order_by(model.LibraryFolder.name)
-        if limit is not None:
+        if limit is not None and limit > 0:
             sub_folders_query = sub_folders_query.limit(limit)
         if offset is not None:
             sub_folders_query = sub_folders_query.offset(offset)
@@ -414,7 +414,7 @@ class FolderManager:
         # Update pagination
         num_folders_returned = len(folders)
         num_folders_skipped = total_sub_folders - num_folders_returned
-        if limit:
+        if limit is not None and limit > 0:
             limit -= num_folders_returned
         if offset:
             offset -= num_folders_skipped
@@ -422,7 +422,7 @@ class FolderManager:
 
         datasets_query = self._get_contained_datasets_query(sa_session, folder, security_params, payload)
         total_datasets = datasets_query.count()
-        if limit is not None:
+        if limit is not None and limit > 0:
             datasets_query = datasets_query.limit(limit)
         if offset is not None:
             datasets_query = datasets_query.offset(offset)

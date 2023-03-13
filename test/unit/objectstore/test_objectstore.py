@@ -307,8 +307,26 @@ def test_concrete_name_without_objectstore_id():
             assert files1_name is None
 
 
+MIXED_STORE_BY_DISTRIBUTED_TEST_CONFIG = """<?xml version="1.0"?>
+<object_store type="distributed">
+    <backends>
+        <backend id="files1" type="disk" weight="1" order="0" store_by="id">
+            <files_dir path="${temp_directory}/files1"/>
+            <extra_dir type="temp" path="${temp_directory}/tmp1"/>
+            <extra_dir type="job_work" path="${temp_directory}/job_working_directory1"/>
+        </backend>
+        <backend id="files2" type="disk" weight="1" order="1" store_by="uuid" private="true">
+            <files_dir path="${temp_directory}/files2"/>
+            <extra_dir type="temp" path="${temp_directory}/tmp2"/>
+            <extra_dir type="job_work" path="${temp_directory}/job_working_directory2"/>
+        </backend>
+    </backends>
+</object_store>
+"""
+
+
 MIXED_STORE_BY_HIERARCHICAL_TEST_CONFIG = """<?xml version="1.0"?>
-<object_store type="hierarchical">
+<object_store type="hierarchical" private="true">
     <backends>
         <backend id="files1" type="disk" weight="1" order="0" store_by="id">
             <files_dir path="${temp_directory}/files1"/>
@@ -326,21 +344,156 @@ MIXED_STORE_BY_HIERARCHICAL_TEST_CONFIG = """<?xml version="1.0"?>
 
 
 def test_mixed_store_by():
+    with TestConfig(MIXED_STORE_BY_DISTRIBUTED_TEST_CONFIG) as (directory, object_store):
+        as_dict = object_store.to_dict()
+        assert as_dict["backends"][0]["store_by"] == "id"
+        assert as_dict["backends"][1]["store_by"] == "uuid"
+
     with TestConfig(MIXED_STORE_BY_HIERARCHICAL_TEST_CONFIG) as (directory, object_store):
         as_dict = object_store.to_dict()
         assert as_dict["backends"][0]["store_by"] == "id"
         assert as_dict["backends"][1]["store_by"] == "uuid"
 
 
+def test_mixed_private():
+    # Distributed object store can combine private and non-private concrete objectstores
+    with TestConfig(MIXED_STORE_BY_DISTRIBUTED_TEST_CONFIG) as (directory, object_store):
+        ids = object_store.object_store_ids()
+        print(ids)
+        assert len(ids) == 2
+
+        ids = object_store.object_store_ids(private=True)
+        assert len(ids) == 1
+        assert ids[0] == "files2"
+
+        ids = object_store.object_store_ids(private=False)
+        assert len(ids) == 1
+        assert ids[0] == "files1"
+
+        as_dict = object_store.to_dict()
+        assert not as_dict["backends"][0]["private"]
+        assert as_dict["backends"][1]["private"]
+
+    with TestConfig(MIXED_STORE_BY_HIERARCHICAL_TEST_CONFIG) as (directory, object_store):
+        as_dict = object_store.to_dict()
+        assert as_dict["backends"][0]["private"]
+        assert as_dict["backends"][1]["private"]
+
+        assert object_store.private
+        assert as_dict["private"] is True
+
+
+BADGES_TEST_1_CONFIG_XML = """<?xml version="1.0"?>
+<object_store type="disk">
+    <files_dir path="${temp_directory}/files1"/>
+    <extra_dir type="temp" path="${temp_directory}/tmp1"/>
+    <extra_dir type="job_work" path="${temp_directory}/job_working_directory1"/>
+    <badges>
+        <short_term />
+        <faster>Fast interconnects.</faster>
+        <less_stable />
+        <more_secure />
+        <backed_up>Storage is backed up to tape nightly.</backed_up>
+    </badges>
+</object_store>
+"""
+
+
+BADGES_TEST_1_CONFIG_YAML = """
+type: disk
+files_dir: "${temp_directory}/files1"
+store_by: uuid
+extra_dirs:
+  - type: temp
+    path: "${temp_directory}/tmp1"
+  - type: job_work
+    path: "${temp_directory}/job_working_directory1"
+badges:
+  - type: short_term
+  - type: faster
+    message: Fast interconnects.
+  - type: less_stable
+  - type: more_secure
+  - type: backed_up
+    message: Storage is backed up to tape nightly.
+"""
+
+
+def test_badges_parsing():
+    for config_str in [BADGES_TEST_1_CONFIG_XML, BADGES_TEST_1_CONFIG_YAML]:
+        with TestConfig(config_str) as (directory, object_store):
+            badges = object_store.to_dict()["badges"]
+            assert len(badges) == 6
+            badge_1 = badges[0]
+            assert badge_1["type"] == "short_term"
+            assert badge_1["message"] is None
+
+            badge_2 = badges[1]
+            assert badge_2["type"] == "faster"
+            assert badge_2["message"] == "Fast interconnects."
+
+            badge_3 = badges[2]
+            assert badge_3["type"] == "less_stable"
+            assert badge_3["message"] is None
+
+            badge_4 = badges[3]
+            assert badge_4["type"] == "more_secure"
+            assert badge_4["message"] is None
+
+
+BADGES_TEST_CONFLICTS_1_CONFIG_YAML = """
+type: disk
+files_dir: "${temp_directory}/files1"
+badges:
+  - type: slower
+  - type: faster
+"""
+
+
+BADGES_TEST_CONFLICTS_2_CONFIG_YAML = """
+type: disk
+files_dir: "${temp_directory}/files1"
+badges:
+  - type: more_secure
+  - type: less_secure
+"""
+
+
+def test_badges_parsing_conflicts():
+    for config_str in [BADGES_TEST_CONFLICTS_1_CONFIG_YAML]:
+        exception_raised = False
+        try:
+            with TestConfig(config_str) as (directory, object_store):
+                pass
+        except Exception as e:
+            assert "faster" in str(e)
+            assert "slower" in str(e)
+            exception_raised = True
+        assert exception_raised
+
+    for config_str in [BADGES_TEST_CONFLICTS_2_CONFIG_YAML]:
+        exception_raised = False
+        try:
+            with TestConfig(config_str) as (directory, object_store):
+                pass
+        except Exception as e:
+            assert "more_secure" in str(e)
+            assert "less_secure" in str(e)
+            exception_raised = True
+        assert exception_raised
+
+
 DISTRIBUTED_TEST_CONFIG = """<?xml version="1.0"?>
 <object_store type="distributed">
     <backends>
         <backend id="files1" type="disk" weight="2">
+            <quota source="1files" />
             <files_dir path="${temp_directory}/files1"/>
             <extra_dir type="temp" path="${temp_directory}/tmp1"/>
             <extra_dir type="job_work" path="${temp_directory}/job_working_directory1"/>
         </backend>
         <backend id="files2" type="disk" weight="1">
+            <quota source="2files" />
             <files_dir path="${temp_directory}/files2"/>
             <extra_dir type="temp" path="${temp_directory}/tmp2"/>
             <extra_dir type="job_work" path="${temp_directory}/job_working_directory2"/>
@@ -354,6 +507,8 @@ DISTRIBUTED_TEST_CONFIG_YAML = """
 type: distributed
 backends:
    - id: files1
+     quota:
+       source: 1files
      type: disk
      weight: 2
      files_dir: "${temp_directory}/files1"
@@ -363,6 +518,8 @@ backends:
      - type: job_work
        path: "${temp_directory}/job_working_directory1"
    - id: files2
+     quota:
+       source: 2files
      type: disk
      weight: 1
      files_dir: "${temp_directory}/files2"
@@ -395,8 +552,43 @@ def test_distributed_store():
             _assert_has_keys(as_dict, ["backends", "extra_dirs", "type"])
             _assert_key_has_value(as_dict, "type", "distributed")
 
+            backends = as_dict["backends"]
+            assert len(backends)
+            assert backends[0]["quota"]["source"] == "1files"
+            assert backends[1]["quota"]["source"] == "2files"
+
             extra_dirs = as_dict["extra_dirs"]
             assert len(extra_dirs) == 2
+
+
+HIERARCHICAL_MUST_HAVE_UNIFIED_QUOTA_SOURCE = """<?xml version="1.0"?>
+<object_store type="hierarchical" private="true">
+    <backends>
+        <backend type="disk" weight="1" order="0" store_by="id">
+            <quota source="1files" /> <!-- Cannot do this here, only in distributedobjectstore -->
+            <files_dir path="${temp_directory}/files1"/>
+            <extra_dir type="temp" path="${temp_directory}/tmp1"/>
+            <extra_dir type="job_work" path="${temp_directory}/job_working_directory1"/>
+        </backend>
+        <backend type="disk" weight="1" order="1" store_by="uuid">
+            <files_dir path="${temp_directory}/files2"/>
+            <extra_dir type="temp" path="${temp_directory}/tmp2"/>
+            <extra_dir type="job_work" path="${temp_directory}/job_working_directory2"/>
+        </backend>
+    </backends>
+</object_store>
+"""
+
+
+def test_hiercachical_backend_must_share_quota_source():
+    the_exception = None
+    for config_str in [HIERARCHICAL_MUST_HAVE_UNIFIED_QUOTA_SOURCE]:
+        try:
+            with TestConfig(config_str) as (directory, object_store):
+                pass
+        except Exception as e:
+            the_exception = e
+    assert the_exception is not None
 
 
 # Unit testing the cloud and advanced infrastructure object stores is difficult, but
@@ -486,7 +678,7 @@ def test_config_parse_pithos():
             assert len(extra_dirs) == 2
 
 
-S3_TEST_CONFIG = """<object_store type="s3">
+S3_TEST_CONFIG = """<object_store type="s3" private="true">
      <auth access_key="access_moo" secret_key="secret_cow" />
      <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
      <cache path="database/object_store_cache" size="1000" />
@@ -498,6 +690,7 @@ S3_TEST_CONFIG = """<object_store type="s3">
 
 S3_TEST_CONFIG_YAML = """
 type: s3
+private: true
 auth:
   access_key: access_moo
   secret_key: secret_cow
@@ -521,6 +714,7 @@ extra_dirs:
 def test_config_parse_s3():
     for config_str in [S3_TEST_CONFIG, S3_TEST_CONFIG_YAML]:
         with TestConfig(config_str, clazz=UnitializeS3ObjectStore) as (directory, object_store):
+            assert object_store.private
             assert object_store.access_key == "access_moo"
             assert object_store.secret_key == "secret_cow"
 

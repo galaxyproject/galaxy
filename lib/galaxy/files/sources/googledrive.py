@@ -4,6 +4,9 @@ try:
 except ImportError:
     GoogleDriveFS = None
 
+from typing import Optional
+
+from . import FilesSourceOptions
 from ._pyfilesystem2 import PyFilesystem2FilesSource
 
 
@@ -12,7 +15,7 @@ class GoogleDriveFilesSource(PyFilesystem2FilesSource):
     required_module = GoogleDriveFS
     required_package = "fs.googledrivefs"
 
-    def _open_fs(self, user_context):
+    def _open_fs(self, user_context=None, opts: Optional[FilesSourceOptions] = None):
         props = self._serialization_props(user_context)
         credentials = Credentials(**props)
         handle = GoogleDriveFS(credentials)

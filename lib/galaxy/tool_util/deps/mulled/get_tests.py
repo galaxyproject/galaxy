@@ -7,8 +7,12 @@ A shallow search (default for singularity and conda generation scripts) just che
 """
 import json
 import logging
-import tarfile
 from glob import glob
+from typing import (
+    Any,
+    Dict,
+    Optional,
+)
 
 import requests
 import yaml
@@ -20,9 +24,12 @@ except ImportError:
     Template = None  # type: ignore[assignment,misc]
     UndefinedError = Exception  # type: ignore[assignment,misc]
 
-from galaxy.util import check_github_api_response_rate_limit
+from galaxy.util import (
+    check_github_api_response_rate_limit,
+    unicodify,
+)
 from .util import (
-    get_file_from_recipe_url,
+    get_file_from_conda_package,
     MULLED_SOCKET_TIMEOUT,
     split_container_name,
 )
@@ -32,7 +39,7 @@ INSTALL_JINJA_EXCEPTION = (
 )
 
 
-def get_commands_from_yaml(yaml_content):
+def get_commands_from_yaml(yaml_content: bytes) -> Optional[Dict[str, Any]]:
     """
     Parse tests from Conda's meta.yaml file contents
     """
@@ -77,7 +84,7 @@ def get_commands_from_yaml(yaml_content):
     return package_tests
 
 
-def get_run_test(file):
+def get_run_test(file: str) -> Dict[str, Any]:
     r"""
     Get tests from a run_test.sh file
     """
@@ -101,41 +108,20 @@ def prepend_anaconda_url(url):
     return f"https://anaconda.org{url}"
 
 
-def get_test_from_anaconda(url):
+def get_test_from_anaconda(url: str) -> Optional[Dict[str, Any]]:
     """
     Given the URL of an anaconda tarball, return tests
     """
-    try:
-        tarball = get_file_from_recipe_url(url)
-    except tarfile.ReadError:
-        return None
-
-    try:
-        metafile = tarball.extractfile("info/recipe/meta.yaml")
-    except (tarfile.ReadError, KeyError, TypeError):
-        pass
-    else:
-        package_tests = get_commands_from_yaml(metafile.read())
+    name, content = get_file_from_conda_package(
+        url, ["info/recipe/meta.yaml", "info/recipe/meta.yaml.template", "info/recipe/run_test.sh"]
+    )
+    if name and content and name.startswith("info/recipe/meta.yaml"):
+        package_tests = get_commands_from_yaml(content)
         if package_tests:
             return package_tests
-
-    # this part is perhaps unnecessary, but some of the older tarballs have a testfile with .yaml.template ext
-    try:
-        metafile = tarball.extractfile("info/recipe/meta.yaml.template")
-    except (tarfile.ReadError, KeyError, TypeError):
-        pass
-    else:
-        package_tests = get_commands_from_yaml(metafile)
-        if package_tests:
-            return package_tests
-
-    # if meta.yaml was not present or there were no tests in it, try and get run_test.sh instead
-    try:
-        run_test = tarball.extractfile("info/recipe/run_test.sh")
-        return get_run_test(run_test)
-    except KeyError:
-        logging.info("run_test.sh file not present.")
-        return None
+    if name and content and name == "info/recipe/run_test.sh":
+        return get_run_test(unicodify(content))
+    return None
 
 
 def find_anaconda_versions(name, anaconda_channel="bioconda"):

@@ -12,7 +12,12 @@ import { useFileSources } from "composables/fileSources";
 import { useShortTermStorage, DEFAULT_EXPORT_PARAMS } from "composables/shortTermStorage";
 import { useConfirmDialog } from "composables/confirmDialog";
 
-const { isRunning: isExportTaskRunning, waitForTask } = useTaskMonitor();
+const {
+    isRunning: isExportTaskRunning,
+    waitForTask,
+    requestHasFailed: taskMonitorRequestFailed,
+    hasFailed: taskHasFailed,
+} = useTaskMonitor();
 const { hasWritable: hasWritableFileSources } = useFileSources();
 const { isPreparing: isPreparingDownload, downloadHistory, downloadObjectByRequestId } = useShortTermStorage();
 const { confirm } = useConfirmDialog();
@@ -23,6 +28,8 @@ const props = defineProps({
         required: true,
     },
 });
+
+const POLLING_DELAY = 3000;
 
 const exportParams = reactive(DEFAULT_EXPORT_PARAMS);
 const isLoadingRecords = ref(true);
@@ -55,14 +62,25 @@ async function updateExports() {
     try {
         errorMessage.value = null;
         exportRecords.value = await getExportRecords(props.historyId);
-        const shouldWaitForTask = latestExportRecord.value?.isPreparing && !isExportTaskRunning.value;
+        const shouldWaitForTask =
+            latestExportRecord.value?.isPreparing &&
+            !isExportTaskRunning.value &&
+            !taskMonitorRequestFailed.value &&
+            !taskHasFailed.value;
         if (shouldWaitForTask) {
-            waitForTask(latestExportRecord.value.taskUUID, 3000);
+            waitForTask(latestExportRecord.value.taskUUID, POLLING_DELAY);
+        }
+        if (taskMonitorRequestFailed.value) {
+            errorMessage.value = "Something went wrong trying to get the export progress. Please check back later.";
+        }
+        if (taskHasFailed.value) {
+            errorMessage.value = "Something went wrong trying to export the history. Please try again later.";
         }
     } catch (error) {
         errorMessage.value = error;
+    } finally {
+        isLoadingRecords.value = false;
     }
-    isLoadingRecords.value = false;
 }
 
 async function doExportToFileSource(exportDirectory, fileName) {
@@ -76,7 +94,7 @@ async function prepareDownload() {
         downloadObjectByRequestId(upToDateDownloadRecord.stsDownloadId);
         return;
     }
-    await downloadHistory(props.historyId, { pollDelayInMs: 3000, exportParams: exportParams });
+    await downloadHistory(props.historyId, { pollDelayInMs: POLLING_DELAY, exportParams: exportParams });
     updateExports();
 }
 
@@ -174,8 +192,11 @@ function updateExportParams(newParams) {
             </b-tabs>
         </b-card>
 
+        <b-alert v-if="errorMessage" id="last-export-record-error-alert" variant="danger" class="mt-3" show>
+            {{ errorMessage }}
+        </b-alert>
         <export-record-details
-            v-if="latestExportRecord"
+            v-else-if="latestExportRecord"
             :record="latestExportRecord"
             object-type="history"
             class="mt-3"
@@ -184,9 +205,6 @@ function updateExportParams(newParams) {
             @onDownload="downloadFromRecord"
             @onReimport="reimportFromRecord"
             @onActionMessageDismissed="onActionMessageDismissedFromRecord" />
-        <b-alert v-else-if="errorMessage" id="last-export-record-error-alert" variant="danger" class="mt-3" show>
-            {{ errorMessage }}
-        </b-alert>
         <b-alert v-else id="no-export-records-alert" variant="info" class="mt-3" show>
             {{ availableRecordsMessage }}
         </b-alert>

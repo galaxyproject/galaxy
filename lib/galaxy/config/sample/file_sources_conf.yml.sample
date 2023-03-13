@@ -161,4 +161,3 @@
   doc: The Copernicus DEM is a Digital Surface Model (DSM) which represents the surface of the Earth including buildings, infrastructure and vegetation.
   bucket: copernicus-dem-30m
   anon: true
-

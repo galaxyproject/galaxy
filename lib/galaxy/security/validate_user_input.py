@@ -6,11 +6,14 @@ user inputs - so these methods do not need to be escaped.
 """
 import logging
 import re
+from typing import Optional
 
 import dns.resolver
 from dns.exception import DNSException
 from sqlalchemy import func
 from typing_extensions import LiteralString
+
+from galaxy.objectstore import ObjectStore
 
 log = logging.getLogger(__name__)
 
@@ -155,3 +158,12 @@ def validate_password(trans, password, confirm):
     if password != confirm:
         return "Passwords do not match."
     return validate_password_str(password)
+
+
+def validate_preferred_object_store_id(object_store: ObjectStore, preferred_object_store_id: Optional[str]) -> str:
+    if not object_store.object_store_allows_id_selection() and preferred_object_store_id is not None:
+        return "The current configuration doesn't allow selecting preferred object stores."
+    if object_store.object_store_allows_id_selection() and preferred_object_store_id:
+        if preferred_object_store_id not in object_store.object_store_ids_allowing_selection():
+            return "Supplied object store id is not an allowed object store selection"
+    return ""

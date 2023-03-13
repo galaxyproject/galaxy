@@ -13,6 +13,7 @@ def initialize_fast_app(gx_webapp, tool_shed_app):
         title="Galaxy Tool Shed API",
         description=("This API allows you to manage the Tool Shed repositories."),
         docs_url="/api/docs",
+        redoc_url="/api/redoc",
     )
     add_exception_handler(app)
     add_request_id_middleware(app)

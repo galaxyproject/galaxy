@@ -980,9 +980,6 @@ class WorkflowContentsManager(UsesAnnotations):
         if has_cycles(workflow):
             raise exceptions.MessageException("Workflow cannot be run because it contains cycles.")
 
-        # Ensure that the user has a history
-        trans.get_history(most_recent=True, create=True)
-
         def row_for_param(input_dict, param, raw_value, other_values, prefix, step):
             input_dict["label"] = param.get_label()
             value = None

@@ -48,7 +48,7 @@ class TestLocalJobCancellation(CancelsJob, integration_util.IntegrationTestCase)
             job = sa_session.query(Job).filter_by(tool_id="cat_data_and_sleep").order_by(Job.create_time.desc()).first()
             # This is how the admin controller code cancels a job
             job.job_stderr = "admin cancelled job"
-            job.set_state(app.model.Job.states.DELETED_NEW)
+            job.set_state(app.model.Job.states.DELETING)
             sa_session.add(job)
             sa_session.flush()
             self.galaxy_interactor.wait_for(

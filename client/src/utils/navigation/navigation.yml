@@ -80,11 +80,17 @@ preferences:
     current_email: "#user-preferences-current-email"
     get_new_key: '.create-button'
     api_key_input: '[data-test-id="api-key-input"]'
+    object_store: '#select-preferred-object-store'
     delete_account: '#delete-account'
     delete_account_input: '#name-input'
     delete_account_ok_btn: '.modal-footer .btn-primary'
     email_input: "input[id='email']"
     username_input: "input[id='username']"
+
+  object_store_selection:
+    selectors:
+      option_buttons: '.preferred-object-store-select-button'
+      option_button: '.preferred-object-store-select-button[data-object-store-id="${object_store_id}"]'
 
 toolbox_filters:
   selectors:
@@ -118,6 +124,10 @@ dataset_details:
     tool_parameters: 'table#tool-parameters'
     transform_action: '[data-transform-action="${action}"]'
     deferred_source_uri: '.deferred-dataset-source-uri'
+
+object_store_details:
+  selectors:
+    badge_of_type: '.object-store-badge-wrapper [data-badge-type="${type}"]'
 
 history_panel:
   menu:
@@ -581,6 +591,8 @@ workflow_run:
     input_select_field:
       type: xpath
       selector: '//div[@data-label="${label}"]//span[@class="select2-chosen"]'
+    primary_storage_indciator: '.workflow-storage-indicator-primary'
+    intermediate_storage_indciator: '.workflow-storage-indicator-intermediate'
 
 workflow_editor:
   node:

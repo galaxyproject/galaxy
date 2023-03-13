@@ -22,7 +22,7 @@ ARG STAGE1_BASE=python:3.10-slim
 ARG FINAL_STAGE_BASE=$STAGE1_BASE
 ARG GALAXY_USER=galaxy
 ARG GALAXY_PLAYBOOK_REPO=https://github.com/galaxyproject/galaxy-docker-k8s
-ARG GALAXY_PLAYBOOK_BRANCH=v3.0.0
+ARG GALAXY_PLAYBOOK_BRANCH=v4.0.0
 
 ARG GIT_COMMIT=unspecified
 ARG BUILD_DATE=unspecified
@@ -73,8 +73,6 @@ FROM stage1 AS server_build
 ARG SERVER_DIR
 
 RUN ansible-playbook -i localhost, playbook.yml -v -e "{galaxy_build_client: false}" -e galaxy_virtualenv_command=virtualenv
-
-RUN cat /galaxy/server/lib/galaxy/dependencies/conditional-requirements.txt | grep psycopg2-binary | xargs /galaxy/server/.venv/bin/pip install
 
 # Remove build artifacts + files not needed in container
 WORKDIR $SERVER_DIR

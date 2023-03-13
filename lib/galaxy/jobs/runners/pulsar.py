@@ -271,7 +271,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             guest_ports = job_wrapper.guest_ports
             if len(guest_ports) > 0:
                 persisted_state = job_wrapper.get_state()
-                if persisted_state in model.Job.terminal_states + [model.Job.states.DELETED_NEW]:
+                if persisted_state in model.Job.terminal_states + [model.Job.states.DELETING]:
                     log.debug(
                         "(%s) Watched job in terminal state, will stop monitoring: %s",
                         job_state.job_id,

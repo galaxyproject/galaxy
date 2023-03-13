@@ -535,6 +535,16 @@ class HistoryContentsFilters(
             qv_index = query_filters.q.index("related-eq")
             qv_hid = query_filters.qv[qv_index]
 
+            # Type check whether hid is int
+            if not qv_hid.isdigit():
+                raise glx_exceptions.RequestParameterInvalidException(
+                    "unparsable value for filter",
+                    column="related",
+                    operation="eq",
+                    value=qv_hid,
+                    ValueError="invalid type in filter",
+                )
+
             # Make new q and qv excluding related filter
             new_q = [x for i, x in enumerate(query_filters.q) if i != qv_index]
             new_qv = [x for i, x in enumerate(query_filters.qv) if i != qv_index]

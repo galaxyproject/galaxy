@@ -34,9 +34,9 @@ test:
 
 def test_get_commands_from_yaml():
     commands = get_commands_from_yaml(smart_str(TEST_RECIPE))
-    assert commands["imports"] == ["eagle"]
-    assert commands["commands"] == ["eagle --help"]
-    assert commands["import_lang"] == "python -c"
+    assert commands and commands["imports"] == ["eagle"]
+    assert commands and commands["commands"] == ["eagle --help"]
+    assert commands and commands["import_lang"] == "python -c"
 
 
 def test_get_run_test():
@@ -57,11 +57,26 @@ def test_prepend_anaconda_url():
 
 @external_dependency_management
 def test_get_test_from_anaconda():
+    # test old fashion tar.bz2 package
     tests = get_test_from_anaconda(
         "https://anaconda.org/bioconda/samtools/1.3.1/download/linux-64/samtools-1.3.1-5.tar.bz2"
     )
-    assert tests["commands"] == ["samtools --help"]
-    assert tests["import_lang"] == "python -c"
+    assert tests and tests["commands"] == ["samtools --help"]
+    assert tests and tests["import_lang"] == "python -c"
+
+    # test new conda package
+    tests = get_test_from_anaconda(
+        "https://anaconda.org/conda-forge/chopin2/1.0.7/download/noarch/chopin2-1.0.7-pyhd8ed1ab_1.conda"
+    )
+    assert tests and tests["commands"] == ["pip check", "chopin2 --version"]
+    assert tests and tests["imports"] == ["chopin2"]
+    assert tests and tests["import_lang"] == "python -c"
+
+    # test for package defining tests in info/recipe/run_test.sh
+    tests = get_test_from_anaconda(
+        "https://anaconda.org/bioconda/ucsc-pslmap/366/download/linux-64/ucsc-pslmap-366-hdd26221_0.tar.bz2"
+    )
+    assert tests and tests["commands"] == ['#!/bin/bash && pslMap 2> /dev/null || [[ "$?" == 255 ]] && ']
 
 
 @external_dependency_management

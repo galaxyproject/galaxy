@@ -1,4 +1,4 @@
-"""Integration tests for object stores."""
+"""Test selecting an object store with resource parameters configured in job configuration."""
 
 import os
 import string
@@ -33,11 +33,13 @@ DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template(
             <extra_dir type="job_work" path="${temp_directory}/job_working_directory_static"/>
         </backend>
         <backend id="dynamic_ebs" type="disk" weight="0">
+            <quota source="ebs" />
             <files_dir path="${temp_directory}/files_dynamic_ebs"/>
             <extra_dir type="temp" path="${temp_directory}/tmp_dynamic_ebs"/>
             <extra_dir type="job_work" path="${temp_directory}/job_working_directory_dynamic_ebs"/>
         </backend>
         <backend id="dynamic_s3" type="disk" weight="0">
+            <quota source="s3" />
             <files_dir path="${temp_directory}/files_dynamic_s3"/>
             <extra_dir type="temp" path="${temp_directory}/tmp_dynamic_s3"/>
             <extra_dir type="job_work" path="${temp_directory}/job_working_directory_dynamic_s3"/>
@@ -48,7 +50,7 @@ DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template(
 )
 
 
-class TestObjectStoreSelectionIntegration(BaseObjectStoreIntegrationTestCase):
+class TestObjectStoreSelectionWithResourceParameterIntegration(BaseObjectStoreIntegrationTestCase):
     # populated by config_object_store
     files_default_path: str
     files_static_path: str
@@ -63,7 +65,8 @@ class TestObjectStoreSelectionIntegration(BaseObjectStoreIntegrationTestCase):
         config["job_config_file"] = JOB_CONFIG_FILE
         config["job_resource_params_file"] = JOB_RESOURCE_PARAMETERS_CONFIG_FILE
         config["object_store_store_by"] = "uuid"
-        config["metadata_strategy"] = "celery_extended"
+        # Broken in dev https://github.com/galaxyproject/galaxy/pull/14055
+        # config["metadata_strategy"] = "celery_extended"
         config["outputs_to_working_directory"] = True
 
     def _object_store_counts(self):
@@ -87,7 +90,7 @@ class TestObjectStoreSelectionIntegration(BaseObjectStoreIntegrationTestCase):
         for external_filename_tuple in self._app.model.session.query(Dataset.external_filename).all():
             assert external_filename_tuple[0] is None
 
-    def test_tool_simple_constructs(self):
+    def test_objectstore_selection(self):
         with self.dataset_populator.test_history() as history_id:
 
             def _run_tool(tool_id, inputs):
@@ -109,10 +112,22 @@ class TestObjectStoreSelectionIntegration(BaseObjectStoreIntegrationTestCase):
 
             # One file uploaded, added to default object store ID.
             self._assert_file_counts(1, 0, 0, 0)
+            usage_list = self.dataset_populator.get_usage()
+            # assert len(usage_list) == 1
+            assert usage_list[0]["quota_source_label"] is None
+            assert usage_list[0]["total_disk_usage"] == 6
+
+            usage = self.dataset_populator.get_usage_for(None)
+            assert usage["quota_source_label"] is None
+            assert usage["total_disk_usage"] == 6
 
             # should create two files in static object store.
             _run_tool("multi_data_param", {"f1": hda1_input, "f2": hda1_input})
             self._assert_file_counts(1, 2, 0, 0)
+
+            usage = self.dataset_populator.get_usage_for(None)
+            assert usage["quota_source_label"] is None
+            assert usage["total_disk_usage"] == 18
 
             # should create two files in ebs object store.
             create_10_inputs_1 = {
@@ -121,6 +136,18 @@ class TestObjectStoreSelectionIntegration(BaseObjectStoreIntegrationTestCase):
             }
             _run_tool("create_10", create_10_inputs_1)
             self._assert_file_counts(1, 2, 10, 0)
+
+            usage = self.dataset_populator.get_usage_for("ebs")
+            assert usage["quota_source_label"] == "ebs"
+            assert usage["total_disk_usage"] == 21
+
+            usage_list = self.dataset_populator.get_usage()
+            # assert len(usage_list) == 2
+            assert usage_list[0]["quota_source_label"] is None
+            assert usage_list[0]["total_disk_usage"] == 18
+            ebs_usage = [u for u in usage_list if u["quota_source_label"] == "ebs"][0]
+            assert ebs_usage["quota_source_label"] == "ebs"
+            assert ebs_usage["total_disk_usage"] == 21, str(usage_list)
 
             # should create 10 files in S3 object store.
             create_10_inputs_2 = {

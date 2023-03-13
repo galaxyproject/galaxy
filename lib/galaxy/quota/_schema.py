@@ -107,6 +107,11 @@ class QuotaBase(Model):
         description="The `encoded identifier` of the quota.",
     )
     name: str = QuotaNameField
+    quota_source_label: Optional[str] = Field(
+        None,
+        title="Quota Source Label",
+        description="Quota source label",
+    )
 
 
 class QuotaSummary(QuotaBase):
@@ -182,6 +187,11 @@ class CreateQuotaParams(Model):
             " are ``no``, ``unregistered``, ``registered``. None is"
             " equivalent to ``no``."
         ),
+    )
+    quota_source_label: Optional[str] = Field(
+        default=None,
+        title="Quota Source Label",
+        description="If set, quota source label to apply this quota operation to. Otherwise, the default quota is used.",
     )
     in_users: Optional[List[str]] = Field(
         default=[],

@@ -16,6 +16,7 @@ def initialize_fast_app(gx_webapp):
             "It aims to provide data about users, jobs, workflows, disk space, and much more."
         ),
         docs_url="/api/docs",
+        redoc_url="/api/redoc",
     )
     add_exception_handler(app)
     add_request_id_middleware(app)

@@ -194,30 +194,39 @@ class ItemGrabber:
                     trans.rollback()
 
 
-class JobHandlerQueue(Monitors):
+class StopSignalException(Exception):
+    """Exception raised when queue returns a stop signal."""
+
+
+class BaseJobHandlerQueue(Monitors):
+    STOP_SIGNAL = object()
+
+    def __init__(self, app: MinimalManagerApp, dispatcher):
+        """
+        Initializes the Queue, creates (unstarted) monitoring thread.
+        """
+        self.app = app
+        self.dispatcher = dispatcher
+        self.sa_session = app.model.context  # scoped session registry
+        self.track_jobs_in_database = self.app.config.track_jobs_in_database
+        # Keep track of the pid that started the job manager, only it has valid threads
+        self.parent_pid = os.getpid()
+        # This queue is not used if track_jobs_in_database is True.
+        self.queue: Queue[Tuple[int, str]] = Queue()
+
+
+class JobHandlerQueue(BaseJobHandlerQueue):
     """
     Job Handler's Internal Queue, this is what actually implements waiting for
     jobs to be runnable and dispatching to a JobRunner.
     """
 
-    STOP_SIGNAL = object()
-
     def __init__(self, app: MinimalManagerApp, dispatcher):
-        """Initializes the Job Handler Queue, creates (unstarted) monitoring thread"""
-        self.app = app
-        self.dispatcher = dispatcher
-
-        self.sa_session = app.model.context
-        self.track_jobs_in_database = self.app.config.track_jobs_in_database
+        super().__init__(app, dispatcher)
+        # self.queue contains tuples: (job_id, tool_id)
 
         # Initialize structures for handling job limits
         self.__clear_job_count()
-
-        # Keep track of the pid that started the job manager, only it
-        # has valid threads
-        self.parent_pid = os.getpid()
-        # Contains a tuple of new new job and tool id. Note this is not used if track_jobs_in_database is True
-        self.queue: Queue[Tuple[int, str]] = Queue()
         # Contains job ids for jobs that are waiting (only use from monitor thread)
         self.waiting_jobs: List[int] = []
         # Contains wrappers of jobs that are limited or ready (so they aren't created unnecessarily/multiple times)
@@ -263,75 +272,67 @@ class JobHandlerQueue(Monitors):
         job handler starts.
         In case the activation is enforced it will filter out the jobs of inactive users.
         """
-        jobs_at_startup = []
+        stmt = self._build_check_jobs_at_startup_statement()
+        with self.sa_session() as session, session.begin():
+            jobs_at_startup = session.scalars(stmt)
+            for job in jobs_at_startup:
+                if not self.app.toolbox.has_tool(job.tool_id, job.tool_version, exact=True):
+                    log.warning(f"({job.id}) Tool '{job.tool_id}' removed from tool config, unable to recover job")
+                    self.job_wrapper(job).fail(
+                        "This tool was disabled before the job completed.  Please contact your Galaxy administrator."
+                    )
+                elif job.job_runner_name is not None and job.job_runner_external_id is None:
+                    # This could happen during certain revisions of Galaxy where a runner URL was persisted before the job was dispatched to a runner.
+                    log.debug(
+                        f"({job.id}) Job runner assigned but no external ID recorded, adding to the job handler queue"
+                    )
+                    job.job_runner_name = None
+                    if self.track_jobs_in_database:
+                        job.set_state(model.Job.states.NEW)
+                    else:
+                        self.queue.put((job.id, job.tool_id))
+                elif (
+                    job.job_runner_name is not None
+                    and job.job_runner_external_id is not None
+                    and job.destination_id is None
+                ):
+                    # This is the first start after upgrading from URLs to destinations, convert the URL to a destination and persist
+                    job_wrapper = self.job_wrapper(job)
+                    job_destination = self.dispatcher.url_to_destination(job.job_runner_name)
+                    if job_destination.id is None:
+                        job_destination.id = "legacy_url"
+                    job_wrapper.set_job_destination(job_destination, job.job_runner_external_id)
+                    self.dispatcher.recover(job, job_wrapper)
+                    log.info(f"({job.id}) Converted job from a URL to a destination and recovered")
+                elif job.job_runner_name is None:
+                    # Never (fully) dispatched
+                    log.debug(
+                        f"({job.id}) No job runner assigned and job still in '{job.state}' state, adding to the job handler queue"
+                    )
+                    if self.track_jobs_in_database:
+                        job.set_state(model.Job.states.NEW)
+                    else:
+                        self.queue.put((job.id, job.tool_id))
+                else:
+                    # Already dispatched and running
+                    job_wrapper = self.__recover_job_wrapper(job)
+                    self.dispatcher.recover(job, job_wrapper)
+
+    def _build_check_jobs_at_startup_statement(self):
         if self.track_jobs_in_database:
             in_list = (model.Job.states.QUEUED, model.Job.states.RUNNING, model.Job.states.STOPPED)
         else:
             in_list = (model.Job.states.NEW, model.Job.states.QUEUED, model.Job.states.RUNNING)
-        if self.app.config.user_activation_on:
-            jobs_at_startup = (
-                self.sa_session.query(model.Job)
-                .enable_eagerloads(False)
-                .outerjoin(model.User)
-                .filter(
-                    model.Job.state.in_(in_list)
-                    & (model.Job.handler == self.app.config.server_name)
-                    & or_((model.Job.user_id == null()), (model.User.active == true()))
-                )
-                .yield_per(model.YIELD_PER_ROWS)
-            )
-        else:
-            jobs_at_startup = (
-                self.sa_session.query(model.Job)
-                .enable_eagerloads(False)
-                .filter(model.Job.state.in_(in_list) & (model.Job.handler == self.app.config.server_name))
-                .yield_per(model.YIELD_PER_ROWS)
-            )
 
-        for job in jobs_at_startup:
-            if not self.app.toolbox.has_tool(job.tool_id, job.tool_version, exact=True):
-                log.warning(f"({job.id}) Tool '{job.tool_id}' removed from tool config, unable to recover job")
-                self.job_wrapper(job).fail(
-                    "This tool was disabled before the job completed.  Please contact your Galaxy administrator."
-                )
-            elif job.job_runner_name is not None and job.job_runner_external_id is None:
-                # This could happen during certain revisions of Galaxy where a runner URL was persisted before the job was dispatched to a runner.
-                log.debug(
-                    f"({job.id}) Job runner assigned but no external ID recorded, adding to the job handler queue"
-                )
-                job.job_runner_name = None
-                if self.track_jobs_in_database:
-                    job.set_state(model.Job.states.NEW)
-                else:
-                    self.queue.put((job.id, job.tool_id))
-            elif (
-                job.job_runner_name is not None
-                and job.job_runner_external_id is not None
-                and job.destination_id is None
-            ):
-                # This is the first start after upgrading from URLs to destinations, convert the URL to a destination and persist
-                job_wrapper = self.job_wrapper(job)
-                job_destination = self.dispatcher.url_to_destination(job.job_runner_name)
-                if job_destination.id is None:
-                    job_destination.id = "legacy_url"
-                job_wrapper.set_job_destination(job_destination, job.job_runner_external_id)
-                self.dispatcher.recover(job, job_wrapper)
-                log.info(f"({job.id}) Converted job from a URL to a destination and recovered")
-            elif job.job_runner_name is None:
-                # Never (fully) dispatched
-                log.debug(
-                    f"({job.id}) No job runner assigned and job still in '{job.state}' state, adding to the job handler queue"
-                )
-                if self.track_jobs_in_database:
-                    job.set_state(model.Job.states.NEW)
-                else:
-                    self.queue.put((job.id, job.tool_id))
-            else:
-                # Already dispatched and running
-                job_wrapper = self.__recover_job_wrapper(job)
-                self.dispatcher.recover(job, job_wrapper)
-        if self.sa_session.dirty:
-            self.sa_session.flush()
+        stmt = (
+            select(model.Job)
+            .execution_options(yield_per=model.YIELD_PER_ROWS)
+            .filter(model.Job.state.in_(in_list) & (model.Job.handler == self.app.config.server_name))
+        )
+        if self.app.config.user_activation_on:
+            # Filter out the jobs of inactive users.
+            stmt = stmt.outerjoin(model.User).filter(or_((model.Job.user_id == null()), (model.User.active == true())))
+        return stmt
 
     def __recover_job_wrapper(self, job):
         # Already dispatched and running
@@ -382,7 +383,10 @@ class JobHandlerQueue(Monitors):
         )
         if self.job_grabber is not None:
             self.job_grabber.grab_unhandled_items()
-        self.__handle_waiting_jobs()
+        try:
+            self.__handle_waiting_jobs()
+        except StopSignalException:
+            pass
         log.trace(monitor_step_timer.to_str())
 
     def __handle_waiting_jobs(self):
@@ -481,7 +485,7 @@ class JobHandlerQueue(Monitors):
                 while 1:
                     message = self.queue.get_nowait()
                     if message is self.STOP_SIGNAL:
-                        return
+                        raise StopSignalException()
                     # Unpack the message
                     job_id, tool_id = message
                     # Get the job object and append to watch queue
@@ -1015,22 +1019,6 @@ class JobHandlerQueue(Monitors):
                             return JOB_WAIT
         return JOB_READY
 
-    def _handle_setup_msg(self, job_id=None):
-        job = self.sa_session.query(model.Job).get(job_id)
-        if job.handler is None:
-            job.handler = self.app.config.server_name
-            self.sa_session.add(job)
-            self.sa_session.flush()
-            # If not tracking jobs in the database
-            self.put(job.id, job.tool_id)
-        else:
-            log.warning(
-                "(%s) Handler '%s' received setup message but handler '%s' is already assigned, ignoring",
-                job.id,
-                self.app.config.server_name,
-                job.handler,
-            )
-
     def put(self, job_id, tool_id):
         """Add a job to the queue (by job identifier)"""
         if not self.track_jobs_in_database:
@@ -1045,7 +1033,7 @@ class JobHandlerQueue(Monitors):
         else:
             log.info("sending stop signal to worker thread")
             self.stop_monitoring()
-            if not self.app.config.track_jobs_in_database:
+            if not self.track_jobs_in_database:
                 self.queue.put(self.STOP_SIGNAL)
             # A message could still be received while shutting down, should be ok since they will be picked up on next startup.
             self.sleeper.wake()
@@ -1054,132 +1042,67 @@ class JobHandlerQueue(Monitors):
             self.dispatcher.shutdown()
 
 
-class JobHandlerStopQueue(Monitors):
+class JobHandlerStopQueue(BaseJobHandlerQueue):
     """
     A queue for jobs which need to be terminated prematurely.
     """
 
-    STOP_SIGNAL = object()
-
     def __init__(self, app: MinimalManagerApp, dispatcher):
-        self.app = app
-        self.dispatcher = dispatcher
-
-        self.sa_session = app.model.context
-
-        # Keep track of the pid that started the job manager, only it
-        # has valid threads
-        self.parent_pid = os.getpid()
-        # Contains a tuple of job_id and error message. Note this is not used if track_jobs_in_database is True
-        self.queue: Queue[Tuple[int, str]] = Queue()
-
-        # Contains job ids that are waiting (only use from monitor thread)
-        self.waiting: List[int] = []
+        super().__init__(app, dispatcher)
+        # self.queue contains tuples: (job_id, error message)
 
         name = "JobHandlerStopQueue.monitor_thread"
-        self._init_monitor_thread(name, config=app.config)
-        log.info("job handler stop queue started")
+        self._init_monitor_thread(name, target=self.__monitor, config=app.config)
 
     def start(self):
         # Start the queue
         self.monitor_thread.start()
         log.info("job handler stop queue started")
 
-    def monitor(self):
+    def __monitor(self):
         """
-        Continually iterate the waiting jobs, stop any that are found.
+        Continually iterate and stop appropriate jobs.
         """
         # HACK: Delay until after forking, we need a way to do post fork notification!!!
         time.sleep(10)
         while self.monitor_running:
             try:
-                self.monitor_step()
+                self.__monitor_step()
             except Exception:
                 log.exception("Exception in monitor_step")
             # Sleep
             self._monitor_sleep(1)
 
-    def __delete(self, job, error_msg):
+    def __delete(self, job, error_msg, session):
         final_state = job.states.DELETED
         if error_msg is not None:
             final_state = job.states.ERROR
             job.info = error_msg
         job.set_final_state(final_state, supports_skip_locked=self.app.application_stack.supports_skip_locked())
-        self.sa_session.add(job)
-        self.sa_session.flush()
+        session.add(job)
+        session.flush()
 
-    def __stop(self, job):
+    def __stop(self, job, session):
         job.set_state(job.states.STOPPED)
-        self.sa_session.add(job)
-        self.sa_session.flush()
+        session.add(job)
+        session.flush()
 
-    def monitor_step(self):
+    def __monitor_step(self):
         """
         Called repeatedly by `monitor` to stop jobs.
         """
-        # TODO: remove handling of DELETED_NEW after 21.09
         # Pull all new jobs from the queue at once
         jobs_to_check = []
-        if self.app.config.track_jobs_in_database:
-            # Clear the session so we get fresh states for job and all datasets
-            self.sa_session.expunge_all()
-            # Fetch all new jobs
-            newly_deleted_jobs = (
-                self.sa_session.query(model.Job)
-                .enable_eagerloads(False)
-                .filter(
-                    (
-                        model.Job.state.in_(
-                            (model.Job.states.DELETED_NEW, model.Job.states.DELETING, model.Job.states.STOPPING)
-                        )
-                    )
-                    & (model.Job.handler == self.app.config.server_name)
-                )
-                .all()
-            )
-            for job in newly_deleted_jobs:
-                # job.stderr is always a string (job.job_stderr + job.tool_stderr, possibly `''`),
-                # while any `not None` message returned in self.queue.get_nowait() is interpreted
-                # as an error, so here we use None if job.stderr is false-y
-                jobs_to_check.append((job, job.stderr or None))
-        # Also pull from the queue (in the case of Administrative stopped jobs)
-        try:
-            while 1:
-                message = self.queue.get_nowait()
-                if message is self.STOP_SIGNAL:
-                    return
-                # Unpack the message
-                job_id, error_msg = message
-                # Get the job object and append to watch queue
-                jobs_to_check.append((self.sa_session.query(model.Job).get(job_id), error_msg))
-        except Empty:
-            pass
-        for job, error_msg in jobs_to_check:
-            if (
-                job.state
-                not in (
-                    job.states.DELETED_NEW,
-                    job.states.DELETING,
-                    job.states.DELETED,
-                    job.states.STOPPING,
-                    job.states.STOPPED,
-                )
-                and job.finished
-            ):
-                # terminated before it got here
-                log.debug("Job %s already finished, not deleting or stopping", job.id)
-                continue
-            if job.state in (job.states.DELETED_NEW, job.states.DELETING):
-                self.__delete(job, error_msg)
-            elif job.state == job.states.STOPPING:
-                self.__stop(job)
-            if job.job_runner_name is not None:
-                # tell the dispatcher to stop the job
-                job_wrapper = JobWrapper(job, self, use_persisted_destination=True)
-                self.dispatcher.stop(job, job_wrapper)
+        with self.sa_session() as session, session.begin():
+            self._add_newly_deleted_jobs(session, jobs_to_check)
+            try:
+                self._pull_from_queue(session, jobs_to_check)
+            except StopSignalException:
+                return
+            self._check_jobs(session, jobs_to_check)
 
     def put(self, job_id, error_msg=None):
-        if not self.app.config.track_jobs_in_database:
+        if not self.track_jobs_in_database:
             self.queue.put((job_id, error_msg))
 
     def shutdown(self):
@@ -1190,10 +1113,63 @@ class JobHandlerStopQueue(Monitors):
         else:
             log.info("sending stop signal to worker thread")
             self.stop_monitoring()
-            if not self.app.config.track_jobs_in_database:
+            if not self.track_jobs_in_database:
                 self.queue.put(self.STOP_SIGNAL)
             self.shutdown_monitor()
             log.info("job handler stop queue stopped")
+
+    def _add_newly_deleted_jobs(self, session, jobs_to_check):
+        if self.track_jobs_in_database:
+            newly_deleted_jobs = self._get_new_jobs(session)
+            for job in newly_deleted_jobs:
+                # job.stderr is always a string (job.job_stderr + job.tool_stderr, possibly `''`),
+                # while any `not None` message returned in self.queue.get_nowait() is interpreted
+                # as an error, so here we use None if job.stderr is false-y
+                jobs_to_check.append((job, job.stderr or None))
+
+    def _get_new_jobs(self, session):
+        states = (model.Job.states.DELETING, model.Job.states.STOPPING)
+        stmt = select(model.Job).filter(
+            model.Job.state.in_(states) & (model.Job.handler == self.app.config.server_name)
+        )
+        return session.scalars(stmt).all()
+
+    def _pull_from_queue(self, session, jobs_to_check):
+        # Pull jobs from the queue (in the case of Administrative stopped jobs)
+        try:
+            while 1:
+                message = self.queue.get_nowait()
+                if message is self.STOP_SIGNAL:
+                    raise StopSignalException()
+                job_id, error_msg = message
+                job = session.get(model.Job, job_id)
+                jobs_to_check.append((job, error_msg))
+        except Empty:
+            pass
+
+    def _check_jobs(self, session, jobs_to_check):
+        for job, error_msg in jobs_to_check:
+            if (
+                job.state
+                not in (
+                    job.states.DELETING,
+                    job.states.DELETED,
+                    job.states.STOPPING,
+                    job.states.STOPPED,
+                )
+                and job.finished
+            ):
+                # terminated before it got here
+                log.debug("Job %s already finished, not deleting or stopping", job.id)
+                continue
+            if job.state == job.states.DELETING:
+                self.__delete(job, error_msg, session)
+            elif job.state == job.states.STOPPING:
+                self.__stop(job, session)
+            if job.job_runner_name is not None:
+                # tell the dispatcher to stop the job
+                job_wrapper = JobWrapper(job, self, use_persisted_destination=True)
+                self.dispatcher.stop(job, job_wrapper)
 
 
 class DefaultJobDispatcher:

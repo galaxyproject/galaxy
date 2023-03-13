@@ -117,6 +117,10 @@ Using a cluster will also net you a fringe benefit: When running tools locally, 
 
 Configuration is not difficult once your cluster is set up.  Details can be found on the [cluster](cluster.md) page.
 
+### Distributing Data
+
+Information on distributing Galaxy datasets across multiple disk and leveraging services such as S3 can be found in the [Galaxy Training Materials](https://training.galaxyproject.org/training-material/topics/admin/tutorials/object-store/tutorial.html) and in the [sample object_store_conf.xml file](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/object_store_conf.xml.sample).
+
 ### Cleaning up datasets
 
 When datasets are deleted from a history or library, it is simply marked as deleted and not actually removed, since it can later be undeleted.  To free disk space, a set of scripts can be run (e.g. from `cron`) to remove the data files as specified by local policy.  See the [Purge histories and datasets](https://galaxyproject.org/admin/config/performance/purge-histories-and-datasets/) page for instructions.
