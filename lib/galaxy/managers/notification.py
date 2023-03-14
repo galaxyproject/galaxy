@@ -83,20 +83,24 @@ class NotificationManager:
             Notification.expiration_time > self._now,
         )
 
-    def create_notification_for_users(self, request: NotificationCreateRequest) -> Tuple[Notification, int]:
+    def send_notification_to_recipients(self, request: NotificationCreateRequest) -> Tuple[Notification, int]:
         """
         Creates a new notification and associates it with all the recipient users.
         """
         recipient_users = self._get_all_recipient_users(request.recipients)
+        notifications_sent = len(recipient_users)
         with self.sa_session.begin():
             notification = self._create_notification_model(request.notification)
             self.sa_session.add(notification)
-            for user in recipient_users:
-                # TODO: check user notification settings before?
-                user_notification_association = UserNotificationAssociation(user, notification)
-                self.sa_session.add(user_notification_association)
+            self._send_to_users(notification, recipient_users)
 
-        return notification, len(recipient_users)
+        return notification, notifications_sent
+
+    def _send_to_users(self, notification: Notification, users: List[User]):
+        for user in users:
+            # TODO: check user notification settings before?
+            user_notification_association = UserNotificationAssociation(user, notification)
+            self.sa_session.add(user_notification_association)
 
     def create_broadcast_notification(self, request: BroadcastNotificationCreateRequest):
         """Creates a broadcasted notification.

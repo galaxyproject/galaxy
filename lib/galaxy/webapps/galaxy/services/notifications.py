@@ -45,7 +45,7 @@ class NotificationService(ServiceBase):
     ) -> NotificationCreatedResponse:
         """Sends a notification to a list of recipients (users, groups or roles)."""
         self._ensure_user_can_send_notifications(sender_context)
-        notification, recipient_user_count = self.notification_manager.create_notification_for_users(payload)
+        notification, recipient_user_count = self.notification_manager.send_notification_to_recipients(payload)
         return NotificationCreatedResponse(
             total_notifications_sent=recipient_user_count, notification=NotificationResponse.from_orm(notification)
         )
