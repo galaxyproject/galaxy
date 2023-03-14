@@ -1,20 +1,36 @@
 import logging
 from typing import (
+    Dict,
     List,
     Optional,
     Set,
     Tuple,
+    Union,
 )
 
 from sqlalchemy import false
 
 from galaxy.managers import base
+from galaxy.managers.notification import NotificationManager
 from galaxy.managers.sharable import (
     SharableModelManager,
     SharableModelSerializer,
 )
-from galaxy.model import User
+from galaxy.model import (
+    History,
+    Page,
+    User,
+    Visualization,
+    Workflow,
+)
 from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.notifications import (
+    NewHistorySharedNotificationContent,
+    NotificationCreateData,
+    NotificationCreateRequest,
+    NotificationRecipients,
+    PersonalNotificationCategory,
+)
 from galaxy.schema.schema import (
     SetSlugPayload,
     ShareWithPayload,
@@ -26,6 +42,13 @@ from galaxy.schema.schema import (
 
 log = logging.getLogger(__name__)
 
+SharableItem = Union[
+    History,
+    Workflow,
+    Visualization,
+    Page,
+]
+
 
 class ShareableService:
     """
@@ -36,9 +59,14 @@ class ShareableService:
     and have a compatible SharableModelSerializer implementation.
     """
 
-    def __init__(self, manager: SharableModelManager, serializer: SharableModelSerializer) -> None:
+    def __init__(
+        self,
+        manager: SharableModelManager,
+        serializer: SharableModelSerializer,
+    ) -> None:
         self.manager = manager
         self.serializer = serializer
+        self.notification_manager = NotificationManager(self.manager.session())  # TODO inject
 
     def set_slug(self, trans, id: DecodedDatabaseIdField, payload: SetSlugPayload):
         item = self._get_item_by_id(trans, id)
@@ -85,6 +113,7 @@ class ShareableService:
         status = ShareWithStatus.construct(**base_status.dict())
         status.extra = extra
         status.errors.extend(errors)
+        self._send_notification_to_users(users, status, item)
         return status
 
     def _share_with_options(
@@ -139,3 +168,38 @@ class ShareableService:
                 send_to_users.add(send_to_user)
 
         return send_to_users, send_to_err
+
+    def _send_notification_to_users(self, users: Set[User], status: ShareWithStatus, item: SharableItem):
+        if self.notification_manager.notifications_enabled and users:
+            request = SharedItemNotificationRequestFactory.build_notification_request(users, item, status)
+            self.notification_manager.create_notification_for_users(request)
+
+
+class SharedItemNotificationRequestFactory:
+
+    category_map: Dict[SharableItem, PersonalNotificationCategory] = {
+        History: PersonalNotificationCategory.new_history_shared,
+        Workflow: PersonalNotificationCategory.new_workflow_shared,
+        Visualization: PersonalNotificationCategory.new_visualization_shared,
+        Page: PersonalNotificationCategory.new_page_shared,
+    }
+
+    @staticmethod
+    def build_notification_request(
+        users: Set[User], item: SharableItem, status: ShareWithStatus
+    ) -> NotificationCreateRequest:
+        # TODO: Skip if already shared?
+        user_ids = [user.id for user in users]
+        return NotificationCreateRequest(
+            recipients=NotificationRecipients.construct(user_ids=user_ids),
+            notification=NotificationCreateData(
+                source="sharing_system",
+                variant="info",
+                category=SharedItemNotificationRequestFactory.category_map[type(item)],
+                content=NewHistorySharedNotificationContent(
+                    item_name=status.title,
+                    owner_name=status.username,
+                    slug=status.username_and_slug,
+                ),
+            ),
+        )

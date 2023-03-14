@@ -94,8 +94,9 @@ class MessageNotificationContent(MessageNotificationContentBase):
 
 
 class NewSharedItemNotificationContent(Model):
-    item_id: EncodedDatabaseIdField
-    owner_id: EncodedDatabaseIdField
+    item_name: str
+    owner_name: str
+    slug: str
 
 
 class NewHistorySharedNotificationContent(NewSharedItemNotificationContent):
