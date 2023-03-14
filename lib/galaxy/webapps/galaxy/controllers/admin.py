@@ -699,7 +699,7 @@ class AdminGalaxy(controller.JSAppLauncher):
             all_users = []
             all_groups = []
             labels = trans.app.object_store.get_quota_source_map().get_quota_source_labels()
-            label_options = [("Default Quota", None)]
+            label_options = [("Default Quota", "__default__")]
             label_options.extend([(label, label) for label in labels])
             for user in (
                 trans.sa_session.query(trans.app.model.User)
@@ -752,6 +752,9 @@ class AdminGalaxy(controller.JSAppLauncher):
             return rval
         else:
             try:
+                quota_source_label = payload.get("quota_source_label")
+                if quota_source_label == "__default__":
+                    payload["quota_source_label"] = None
                 quota, message = self.quota_manager.create_quota(payload, decode_id=trans.security.decode_id)
                 return {"message": message}
             except ActionInputError as e:
