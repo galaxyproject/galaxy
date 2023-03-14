@@ -408,6 +408,15 @@ class QuotaListGrid(grids.Grid):
                 return len(quota.groups)
             return 0
 
+    class QuotaSourceLabelColumn(grids.TextColumn):
+        def get_value(self, trans, grid, quota):
+            raw_label = quota.quota_source_label
+            if raw_label is None:
+                rval = "<i>unlabelled object stores</i>"
+            else:
+                rval = raw_label
+            return rval
+
     # Grid definition
     title = "Quotas"
     model_class = model.Quota
@@ -427,6 +436,7 @@ class QuotaListGrid(grids.Grid):
         AmountColumn("Amount", key="amount", model_class=model.Quota, attach_popup=False),
         UsersColumn("Users", attach_popup=False),
         GroupsColumn("Groups", attach_popup=False),
+        QuotaSourceLabelColumn("Source Label", key="quota_source_label", visible=False, filterable="advanced"),
         StatusColumn("Status", attach_popup=False),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced"),
@@ -690,6 +700,9 @@ class AdminGalaxy(controller.JSAppLauncher):
         if message:
             kwargs["message"] = util.sanitize_text(message)
             kwargs["status"] = status or "done"
+        labels = trans.app.object_store.get_quota_source_map().get_quota_source_labels()
+        if labels:
+            self.quota_list_grid.columns[5].visible = True
         return self.quota_list_grid(trans, **kwargs)
 
     @web.legacy_expose_api
