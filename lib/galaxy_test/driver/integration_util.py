@@ -5,6 +5,7 @@ order to test something that cannot be tested with the default functional/api
 testing configuration.
 """
 import os
+import re
 from typing import (
     ClassVar,
     Iterator,
@@ -22,6 +23,7 @@ import pytest
 
 from galaxy.app import UniverseApplication
 from galaxy.tool_util.verify.test_data import TestDataResolver
+from galaxy.util import safe_makedirs
 from galaxy.util.commands import which
 from galaxy.util.unittest import TestCase
 from galaxy_test.base.api import (
@@ -220,3 +222,24 @@ def integration_tool_runner(tool_ids):
         instance._run_tool_test(tool_id)
 
     return pytest.mark.parametrize("tool_id", tool_ids)(test_tools)
+
+
+class ConfiguresObjectStores:
+    object_stores_parent: ClassVar[str]
+    _test_driver: GalaxyTestDriver
+
+    @classmethod
+    def _configure_object_store(cls, template, config):
+        temp_directory = cls._test_driver.mkdtemp()
+        cls.object_stores_parent = temp_directory
+        config_path = os.path.join(temp_directory, "object_store_conf.xml")
+        xml = template.safe_substitute({"temp_directory": temp_directory})
+        with open(config_path, "w") as f:
+            f.write(xml)
+        config["object_store_config_file"] = config_path
+        for path in re.findall(r'files_dir path="([^"]*)"', xml):
+            assert path.startswith(temp_directory)
+            dir_name = os.path.basename(path)
+            os.path.join(temp_directory, dir_name)
+            safe_makedirs(path)
+            setattr(cls, f"{dir_name}_path", path)

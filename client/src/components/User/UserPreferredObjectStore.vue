@@ -5,6 +5,7 @@
             <a
                 id="select-preferred-object-store"
                 v-b-modal.modal-select-preferred-object-store
+                class="preferred-storage"
                 href="javascript:void(0)"
                 ><b v-localize>Preferred Object Store</b></a
             >

@@ -347,7 +347,7 @@ There is default access to this storage by any MSI group with an active account.
 
 More information about MSI Storage can be found [here](https://www.msi.umn.edu/content/data-storage).
 </description>
-            <files_dir path="/Users/jxc755/workspace/galaxy/database/objects/deafult"/>
+            <files_dir path="/Users/jxc755/workspace/galaxy/database/objects/default"/>
             <badges>
                 <faster />
                 <more_stable />

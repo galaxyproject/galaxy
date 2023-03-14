@@ -86,6 +86,7 @@ preferences:
     delete_account_ok_btn: '.modal-footer .btn-primary'
     email_input: "input[id='email']"
     username_input: "input[id='username']"
+    preferred_storage: '.preferred-storage'
 
   object_store_selection:
     selectors:
@@ -127,7 +128,9 @@ dataset_details:
 
 object_store_details:
   selectors:
+    stored_by_name: '.display-os-by-name'
     badge_of_type: '.object-store-badge-wrapper [data-badge-type="${type}"]'
+
 
 history_panel:
   menu:
@@ -510,6 +513,7 @@ tool_form:
     repeat_insert: '[data-description="repeat insert"]'
     reference: '.formatted-reference'
     about: '.tool-footer'
+    storage_options: '.tool-storage'
 
   labels:
     generate_tour: 'Generate Tour'
