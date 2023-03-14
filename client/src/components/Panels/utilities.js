@@ -92,6 +92,8 @@ export function searchToolsByKeys(tools, keys, query) {
             let actualValue = "";
             if (key === "combined") {
                 actualValue = tool.name.toLowerCase() + " " + tool.description.toLowerCase();
+            } else if (key === "hyphenated") {
+                actualValue = tool.name.toLowerCase().replaceAll("-", " ");
             } else {
                 actualValue = tool[key] ? tool[key].toLowerCase() : "";
             }
