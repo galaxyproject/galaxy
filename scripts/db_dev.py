@@ -23,8 +23,8 @@ def main() -> None:
 
     parser_builder = ParserBuilder(parser)
 
-    parser_builder.add_upgrade_command()
-    parser_builder.add_downgrade_command()
+    parser_builder.add_upgrade_command(dev_options=True)
+    parser_builder.add_downgrade_command(dev_options=True)
     parser_builder.add_version_command()
     parser_builder.add_dbversion_command()
     parser_builder.add_init_command()
