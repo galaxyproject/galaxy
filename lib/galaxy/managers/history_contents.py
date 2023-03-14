@@ -532,7 +532,20 @@ class HistoryContentsFilters(
     def parse_query_filters_with_relations(self, query_filters: ValueFilterQueryParams, history_id):
         """Parse query filters but consider case where related filter is included."""
         has_related_q = [q for q in ("related-eq", "related") if query_filters.q and q in query_filters.q]
-        if has_related_q:
+        if query_filters.q and query_filters.qv and has_related_q:
+            qv_index = query_filters.q.index(has_related_q[0])
+            qv_hid = query_filters.qv[qv_index]
+
+            # Type check whether hid is int
+            if not qv_hid.isdigit():
+                raise glx_exceptions.RequestParameterInvalidException(
+                    "unparsable value for related filter",
+                    column="related",
+                    operation="eq",
+                    value=qv_hid,
+                    ValueError="invalid type in filter",
+                )
+
             query_filters_with_relations = self.get_query_filters_with_relations(
                 query_filters=query_filters, related_q=has_related_q[0], history_id=history_id
             )
@@ -598,16 +611,6 @@ class HistoryContentsFilters(
         if query_filters.q and query_filters.qv:
             qv_index = query_filters.q.index(related_q)
             qv_hid = query_filters.qv[qv_index]
-
-            # Type check whether hid is int
-            if not qv_hid.isdigit():
-                raise glx_exceptions.RequestParameterInvalidException(
-                    "unparsable value for related filter",
-                    column="related",
-                    operation="eq",
-                    value=qv_hid,
-                    ValueError="invalid type in filter",
-                )
 
             # Make new q and qv excluding related filter
             new_q = [x for i, x in enumerate(query_filters.q) if i != qv_index]

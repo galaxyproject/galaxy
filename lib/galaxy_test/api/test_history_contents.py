@@ -746,7 +746,7 @@ class TestHistoryContentsApi(ApiTestCase):
         # Run tool on first dataset to get 3rd, related dataset
         inputs = {
             "input1": {"src": "hda", "id": input_hda_id},
-            "sleep_time": 10,
+            "sleep_time": 0,
         }
         run_response = self.dataset_populator.run_tool_raw(
             "cat_data_and_sleep",
