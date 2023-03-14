@@ -68,6 +68,10 @@ class NotificationManager:
         self.broadcast_notification_columns = self.notification_columns
 
     @property
+    def notifications_enabled(self):
+        return True  # TODO get from config
+
+    @property
     def _now(self):
         return datetime.utcnow()
 
