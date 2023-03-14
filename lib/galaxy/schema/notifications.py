@@ -59,10 +59,7 @@ class PersonalNotificationCategory(str, Enum):
     """
 
     message = "message"
-    new_history_shared = "new_history_shared"
-    new_workflow_shared = "new_workflow_shared"
-    new_page_shared = "new_page_shared"
-    new_visualization_shared = "new_visualization_shared"
+    new_shared_item = "new_shared_item"
     # TODO: enable this and create content model when we have a hook for completed workflows
     # workflow_execution_completed = "workflow_execution_completed"
 
@@ -93,40 +90,27 @@ class MessageNotificationContent(MessageNotificationContentBase):
     category: Literal[PersonalNotificationCategory.message] = PersonalNotificationCategory.message
 
 
+SharableItemType = Literal[
+    "history",
+    "workflow",
+    "visualization",
+    "page",
+]
+
+
 class NewSharedItemNotificationContent(Model):
+    category: Literal[PersonalNotificationCategory.new_shared_item] = PersonalNotificationCategory.new_shared_item
+    item_type: SharableItemType
     item_name: str
     owner_name: str
     slug: str
-
-
-class NewHistorySharedNotificationContent(NewSharedItemNotificationContent):
-    category: Literal[PersonalNotificationCategory.new_history_shared] = PersonalNotificationCategory.new_history_shared
-
-
-class NewWorkflowSharedNotificationContent(NewSharedItemNotificationContent):
-    category: Literal[
-        PersonalNotificationCategory.new_workflow_shared
-    ] = PersonalNotificationCategory.new_workflow_shared
-
-
-class NewPageSharedNotificationContent(NewSharedItemNotificationContent):
-    category: Literal[PersonalNotificationCategory.new_page_shared] = PersonalNotificationCategory.new_page_shared
-
-
-class NewVisualizationSharedNotificationContent(NewSharedItemNotificationContent):
-    category: Literal[
-        PersonalNotificationCategory.new_visualization_shared
-    ] = PersonalNotificationCategory.new_visualization_shared
 
 
 AnyNotificationContent = Annotated[
     Union[
         BroadcastNotificationContent,
         MessageNotificationContent,
-        NewHistorySharedNotificationContent,
-        NewWorkflowSharedNotificationContent,
-        NewPageSharedNotificationContent,
-        NewVisualizationSharedNotificationContent,
+        NewSharedItemNotificationContent,
     ],
     Field(discriminator="category"),
 ]

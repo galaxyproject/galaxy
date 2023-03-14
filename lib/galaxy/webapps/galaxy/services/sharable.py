@@ -19,17 +19,18 @@ from galaxy.managers.sharable import (
 from galaxy.model import (
     History,
     Page,
+    StoredWorkflow,
     User,
     Visualization,
-    Workflow,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.notifications import (
-    NewHistorySharedNotificationContent,
+    NewSharedItemNotificationContent,
     NotificationCreateData,
     NotificationCreateRequest,
     NotificationRecipients,
     PersonalNotificationCategory,
+    SharableItemType,
 )
 from galaxy.schema.schema import (
     SetSlugPayload,
@@ -44,7 +45,7 @@ log = logging.getLogger(__name__)
 
 SharableItem = Union[
     History,
-    Workflow,
+    StoredWorkflow,
     Visualization,
     Page,
 ]
@@ -63,10 +64,11 @@ class ShareableService:
         self,
         manager: SharableModelManager,
         serializer: SharableModelSerializer,
+        notification_manager: NotificationManager,
     ) -> None:
         self.manager = manager
         self.serializer = serializer
-        self.notification_manager = NotificationManager(self.manager.session())  # TODO inject
+        self.notification_manager = notification_manager
 
     def set_slug(self, trans, id: DecodedDatabaseIdField, payload: SetSlugPayload):
         item = self._get_item_by_id(trans, id)
@@ -113,7 +115,7 @@ class ShareableService:
         status = ShareWithStatus.construct(**base_status.dict())
         status.extra = extra
         status.errors.extend(errors)
-        self._send_notification_to_users(users, status, item)
+        self._send_notification_to_users(item, users, status)
         return status
 
     def _share_with_options(
@@ -169,34 +171,36 @@ class ShareableService:
 
         return send_to_users, send_to_err
 
-    def _send_notification_to_users(self, users: Set[User], status: ShareWithStatus, item: SharableItem):
+    def _send_notification_to_users(self, item: SharableItem, users: Set[User], status: ShareWithStatus):
         if self.notification_manager.notifications_enabled and users:
-            request = SharedItemNotificationRequestFactory.build_notification_request(users, item, status)
-            self.notification_manager.create_notification_for_users(request)
+            request = SharedItemNotificationFactory.build_notification_request(item, users, status)
+            self.notification_manager.send_notification_to_recipients(request)
 
 
-class SharedItemNotificationRequestFactory:
+class SharedItemNotificationFactory:
+    source = "galaxy_sharing_system"
 
-    category_map: Dict[SharableItem, PersonalNotificationCategory] = {
-        History: PersonalNotificationCategory.new_history_shared,
-        Workflow: PersonalNotificationCategory.new_workflow_shared,
-        Visualization: PersonalNotificationCategory.new_visualization_shared,
-        Page: PersonalNotificationCategory.new_page_shared,
+    type_map: Dict[SharableItem, SharableItemType] = {
+        History: "history",
+        StoredWorkflow: "workflow",
+        Visualization: "visualization",
+        Page: "page",
     }
 
     @staticmethod
     def build_notification_request(
-        users: Set[User], item: SharableItem, status: ShareWithStatus
+        item: SharableItem, users: Set[User], status: ShareWithStatus
     ) -> NotificationCreateRequest:
         # TODO: Skip if already shared?
         user_ids = [user.id for user in users]
         return NotificationCreateRequest(
             recipients=NotificationRecipients.construct(user_ids=user_ids),
             notification=NotificationCreateData(
-                source="sharing_system",
+                source=SharedItemNotificationFactory.source,
                 variant="info",
-                category=SharedItemNotificationRequestFactory.category_map[type(item)],
-                content=NewHistorySharedNotificationContent(
+                category=PersonalNotificationCategory.new_shared_item,
+                content=NewSharedItemNotificationContent(
+                    item_type=SharedItemNotificationFactory.type_map[type(item)],
                     item_name=status.title,
                     owner_name=status.username,
                     slug=status.username_and_slug,

@@ -188,7 +188,7 @@ class TestNotificationManager(BaseTestCase):
             ),
             notification=notification_data,
         )
-        notification, notifications_sent = self.notification_manager.create_notification_for_users(request)
+        notification, notifications_sent = self.notification_manager.send_notification_to_recipients(request)
         return notification, notifications_sent
 
     def _has_expired(self, expiration_time: Optional[datetime]) -> bool:
