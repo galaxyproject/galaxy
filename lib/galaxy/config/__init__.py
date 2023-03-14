@@ -1279,7 +1279,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
     def is_fetch_with_celery_enabled(self):
         """
-        True iff celery is enabled and celery_conf["task_routes"]["galaxy.fetch_data"] == DISABLED_FLAG.
+        True iff celery is enabled and celery_conf["task_routes"]["galaxy.fetch_data"] != DISABLED_FLAG.
         """
         celery_enabled = self.enable_celery_tasks
         try:
