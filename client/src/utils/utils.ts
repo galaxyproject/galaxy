@@ -258,16 +258,6 @@ export function appendScriptStyle(data: { script?: string; styles?: string }) {
     }
 }
 
-/** Get querystrings from url */
-export function getQueryString(key: string): string {
-    return decodeURIComponent(
-        window.location.search.replace(
-            new RegExp(`^(?:.*[&\\?]${encodeURIComponent(key).replace(/[.+*]/g, "\\$&")}(?:\\=([^&]*))?)?.*$`, "i"),
-            "$1"
-        )
-    );
-}
-
 export function setWindowTitle(title: string): void {
     const Galaxy = getGalaxyInstance();
     if (title) {
@@ -334,7 +324,6 @@ export default {
     clone: clone,
     linkify: linkify,
     appendScriptStyle: appendScriptStyle,
-    getQueryString: getQueryString,
     setWindowTitle: setWindowTitle,
     waitForElementToBePresent: waitForElementToBePresent,
     delay: delay,
