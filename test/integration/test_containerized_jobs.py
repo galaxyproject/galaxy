@@ -14,7 +14,10 @@ from typing import (
 from typing_extensions import Literal
 
 from galaxy.tool_util.deps.container_resolvers.mulled import list_docker_cached_mulled_images
-from galaxy.util.commands import which, shell
+from galaxy.util.commands import (
+    shell,
+    which,
+)
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
@@ -203,8 +206,6 @@ class TestDockerizedJobsIntegration(BaseJobEnvironmentIntegrationTestCase, Mulle
         response = create_response.json()
         assert len(response) == 1
         status = response[0]["status"]
-        for s in status:
-            print(f"STATUS {s}")
         assert status[0]["model_class"] == "ContainerDependency"
         assert status[0]["dependency_type"] == self.container_type
         self._assert_container_description_identifier(
@@ -212,11 +213,15 @@ class TestDockerizedJobsIntegration(BaseJobEnvironmentIntegrationTestCase, Mulle
             "mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0",
         )
 
-    def _assert_container_description_identifier(self, identifier, expected_hash):
+    def _assert_container_description_identifier(self, identifier: str, expected_hash: str):
         """
-        Helper function to assert a correct container identifier.
+        function to check the identifier of container against a mulled hash
+        here we assert that locally built containers are cached in the "local"
+        namespace as if they were from quay.io
+
+        may need to be overwritten in derived classes.
         """
-        assert identifier.startswith(f"quay.io/local/{expected_hash}")
+        assert identifier == f"quay.io/local/{expected_hash}"
 
 
 class TestMappingContainerResolver(integration_util.IntegrationTestCase):
@@ -416,7 +421,7 @@ class TestSingularityJobsIntegration(TestDockerizedJobsIntegration):
 
 class TestMulledContainerResolver(integration_util.IntegrationTestCase):
     """
-    Test the 3 possibilities where Galaxy calls the (container) resolve functiion
+    Test the 3 possibilities where Galaxy calls the (container) resolve function
 
     1. when preparing a job (test_tool_run)
        - check tool output
@@ -424,11 +429,11 @@ class TestMulledContainerResolver(integration_util.IntegrationTestCase):
     2. when listing container dependencies in the admin UI (test_api_container_resolvers_toolbox)
        - test consist of 2 calls to the route in order to check if a 2nd round picks
          up a potentially cached container
-       - after each call check container_type, used resolver and if container has been chached
+       - after each call check container_type, used resolver and if container has been cached
     3. when "building" a container in the admin UI (test_api_container_resolvers_toolbox_install)
        - test consist of 2 calls to the route in order to check if a 2nd round picks
          up a potentially cached container
-       - after each call check container_type, used resolver and if container has been chached
+       - after each call check container_type, used resolver and if container has been cached
     """
 
     dataset_populator: DatasetPopulator
@@ -518,7 +523,7 @@ class TestMulledContainerResolver(integration_util.IntegrationTestCase):
         - determines list of cached images using `docker images`
         - and checks the given name is in the image identifiers of the cached images
 
-        The boolen `cached` sets the assumption in the caching state.
+        The boolean `cached` sets the assumption in the caching state.
         `namespace` and `hash_func` are used to filter cached images.
         """
         cache_list = list_docker_cached_mulled_images(namespace, hash_func)
@@ -570,7 +575,7 @@ class TestMulledContainerResolver(integration_util.IntegrationTestCase):
 
         test checks assumptions on
         - resolver type
-        - identifier (a regexp). note for docker the same when chached/uncached
+        - identifier (a regexp). note for docker the same when cached/uncached
         - caching (cached, cache_name, cache_namespace)
         """
         create_response = self._get(
@@ -621,7 +626,7 @@ class TestMulledContainerResolver(integration_util.IntegrationTestCase):
 
         1st call resolves with mulled and container is cached (but the cached
             URI is returned .. but for docker this makes no difference)
-        2nd call should resilve with cached_mulled (container is still cached)
+        2nd call should resolve with cached_mulled (container is still cached)
         """
         create_response = self._post(
             "container_resolvers/toolbox/install",
