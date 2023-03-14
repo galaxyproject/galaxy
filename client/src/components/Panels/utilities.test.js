@@ -49,7 +49,7 @@ describe("test helpers in tool searching utilities", () => {
             {
                 elems: [
                     {
-                        panel_section_name: "Collection Operations",
+                        panel_section_name: "FASTA/FASTQ",
                         description: "Extract UMI from fastq files",
                         id: "toolshed.g2.bx.psu.edu/repos/iuc/umi_tools_extract/umi_tools_extract/1.1.2+galaxy2",
                         name: "UMI-tools extract",
