@@ -1,4 +1,5 @@
 import os
+import tempfile
 
 import pytest
 
@@ -333,6 +334,84 @@ def test_posix_user_access_using_boolean_rules():
     _assert_user_access_granted(file_sources, user_context)
 
 
+def test_posix_file_url_mode_non_admin_cannot_retrieve():
+    with tempfile.NamedTemporaryFile(mode="w") as tf:
+        tf.write("File content returned from a file:// location")
+        tf.flush()
+        test_url = f"file://{tf.name}"
+        user_context = user_context_fixture()
+        file_sources = _configured_file_sources(empty_root=True)
+        file_source_pair = file_sources.get_file_source_path(test_url)
+
+        assert file_source_pair.path == test_url.replace("file://", "")
+        assert file_source_pair.file_source.id == "test1"
+
+        with pytest.raises(ItemAccessibilityException):
+            assert_realizes_as(
+                file_sources,
+                test_url,
+                "File content returned from a file:// location",
+                user_context=user_context,
+            )
+
+
+def test_posix_file_url_only_mode_non_admin_cannot_retrieve():
+    with tempfile.NamedTemporaryFile(mode="w") as tf:
+        tf.write("File content returned from a file:// location")
+        tf.flush()
+        test_url = f"file://{tf.name}"
+        user_context = user_context_fixture()
+        file_sources = _configured_file_sources(empty_root=True)
+        file_source_pair = file_sources.get_file_source_path(test_url)
+
+        assert file_source_pair.path == test_url.replace("file://", "")
+        assert file_source_pair.file_source.id == "test1"
+
+        with pytest.raises(ItemAccessibilityException):
+            assert_realizes_as(
+                file_sources,
+                test_url,
+                "File content returned from a file:// location",
+                user_context=user_context,
+            )
+
+
+def test_posix_file_url_only_mode_admin_can_retrieve():
+    with tempfile.NamedTemporaryFile(mode="w") as tf:
+        tf.write("File content returned from a file:// location")
+        tf.flush()
+        test_url = f"file://{tf.name}"
+        user_context = user_context_fixture(is_admin=True)
+        file_sources = _configured_file_sources(empty_root=True)
+        file_source_pair = file_sources.get_file_source_path(test_url)
+
+        assert file_source_pair.path == test_url.replace("file://", "")
+        assert file_source_pair.file_source.id == "test1"
+
+        assert_realizes_as(
+            file_sources,
+            test_url,
+            "File content returned from a file:// location",
+            user_context=user_context,
+        )
+
+
+def test_posix_file_url_only_mode_even_admin_cannot_write():
+    with tempfile.NamedTemporaryFile(mode="w") as tf:
+        tf.write("File content returned from a file:// location")
+        tf.flush()
+        test_url = f"file://{tf.name}"
+        user_context = user_context_fixture(is_admin=True)
+        file_sources = _configured_file_sources(empty_root=True)
+        file_source_pair = file_sources.get_file_source_path(test_url)
+
+        assert file_source_pair.path == test_url.replace("file://", "")
+        assert file_source_pair.file_source.id == "test1"
+
+        with pytest.raises(Exception, match="Cannot write to a non-writable file source"):
+            write_from(file_sources, test_url, "my test content", user_context=user_context)
+
+
 def _assert_user_access_prohibited(file_sources, user_context):
     with pytest.raises(ItemAccessibilityException):
         list_root(file_sources, "gxfiles://test1", recursive=False, user_context=user_context)
@@ -358,9 +437,12 @@ def _assert_user_access_granted(file_sources, user_context):
 
 
 def _configured_file_sources(
-    include_allowlist=False, plugin_extra_config=None, per_user=False, writable=None, allow_subdir_creation=True
+    include_allowlist=False, plugin_extra_config=None, per_user=False, writable=None, allow_subdir_creation=True, empty_root=False
 ) -> TestConfiguredFileSources:
-    tmp, root = setup_root()
+    if empty_root:
+        tmp, root = "/", None
+    else:
+        tmp, root = setup_root()
     config_kwd = {}
     if include_allowlist:
         config_kwd["symlink_allowlist"] = [tmp]
@@ -378,7 +460,8 @@ def _configured_file_sources(
     else:
         plugin["root"] = root
     plugin.update(plugin_extra_config or {})
-    write_file_fixtures(tmp, root)
+    if not empty_root:
+        write_file_fixtures(tmp, root)
     file_sources = TestConfiguredFileSources(file_sources_config, conf_dict={"test1": plugin}, test_root=root)
     return file_sources
 
