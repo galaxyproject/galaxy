@@ -56,6 +56,7 @@ Members
 - Aysam Guerler (@guerler)
 - Jennifer Hillman Jackson (@jennaj)
 - David López (@davelopez)
+- Laila Los (@ElectronicBlueberry)
 - Anton Nekrutenko (@nekrut)
 - Helena Rasche (@hexylena)
 - Nicola Soranzo (@nsoranzo)
