@@ -1,6 +1,7 @@
 import io
 import os
 import urllib
+import tempfile
 from typing import Any
 from unittest import mock
 
@@ -92,5 +93,24 @@ def test_file_source_ftp_url():
             file_sources,
             test_url,
             "This is ftp.gnu.org, the FTP server of the the GNU project.",
+            user_context=user_context,
+        )
+
+def test_file_source_file_url():
+    with tempfile.NamedTemporaryFile(mode="w") as tf:
+        tf.write("File content returned from a file:// location")
+        tf.flush()
+        test_url = f"file://{tf.name}"
+        user_context = user_context_fixture()
+        file_sources = configured_file_sources(FILE_SOURCES_CONF)
+        file_source_pair = file_sources.get_file_source_path(test_url)
+
+        assert file_source_pair.path == test_url
+        assert file_source_pair.file_source.id == "test3"
+
+        assert_realizes_contains(
+            file_sources,
+            test_url,
+            "File content returned from a file:// location",
             user_context=user_context,
         )
