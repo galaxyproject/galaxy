@@ -35,4 +35,17 @@ describe("test utils", () => {
         expect(Utils.sanitize("This is just plain text")).toBe("This is just plain text");
         expect(Utils.sanitize(`'"><img src=x onerror=alert(1);>`)).toBe("'\"&gt;&lt;img src=x onerror=alert(1);&gt;");
     });
+
+    it("test linkify", async () => {
+        expect(Utils.linkify("https://galaxyproject.org")).toBe(
+            '<a href="https://galaxyproject.org" target="_blank">https://galaxyproject.org</a>'
+        );
+        expect(Utils.linkify("Welcome to https://galaxyproject.org today")).toBe(
+            'Welcome to <a href="https://galaxyproject.org" target="_blank">https://galaxyproject.org</a> today'
+        );
+        expect(Utils.linkify("Check out galaxyproject.org")).toBe("Check out galaxyproject.org");
+        expect(Utils.linkify("Email info@galaxyproject.org")).toBe(
+            'Email <a href="mailto:info@galaxyproject.org">info@galaxyproject.org</a>'
+        );
+    });
 });
