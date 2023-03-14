@@ -737,6 +737,38 @@ class TestHistoryContentsApi(ApiTestCase):
         ).json()
         assert len(contents_response) == 0
 
+    @skip_without_tool("cat_data_and_sleep")
+    def test_index_filter_by_related_items(self, history_id):
+        # initialise history with 2 datasets
+        input_hda_id = self.dataset_populator.new_dataset(history_id)["id"]
+        unrelated_hid = self.dataset_populator.new_dataset(history_id)["hid"]
+
+        # Run tool on first dataset to get 3rd, related dataset
+        inputs = {
+            "input1": {"src": "hda", "id": input_hda_id},
+            "sleep_time": 0,
+        }
+        run_response = self.dataset_populator.run_tool_raw(
+            "cat_data_and_sleep",
+            inputs,
+            history_id,
+        )
+        related_hid = run_response.json()["outputs"][0]["hid"]
+
+        # Test q = related-eq, for related items
+        contents_response = self._get(f"histories/{history_id}/contents?v=dev&q=related-eq&qv={related_hid}").json()
+        assert len(contents_response) == 2
+
+        # Test q = related, for unrelated item
+        contents_response = self._get(f"histories/{history_id}/contents?v=dev&q=related&qv={unrelated_hid}").json()
+        assert len(contents_response) == 1
+
+        # Test error case: qv is string
+        related_qv = "one"
+        contents_response = self._get(f"histories/{history_id}/contents?v=dev&q=related-eq&qv={related_qv}")
+        assert contents_response.status_code == 400
+        assert contents_response.json()["err_msg"] == "unparsable value for related filter"
+
     def test_elements_datatypes_field(self, history_id):
         collection_name = "homogeneous"
         expected_datatypes = ["txt"]
