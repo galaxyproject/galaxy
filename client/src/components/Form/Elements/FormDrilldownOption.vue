@@ -24,8 +24,12 @@ const hasOptions = computed(() => {
     return props.option.options.length > 0;
 });
 const indent = computed(() => {
-    return {transform: `translate(${props.depth * 25}px)`, "list-style-type": "none"}
+    return { transform: `translate(${props.depth * 25}px)`, "list-style-type": "none" };
 });
+
+const emit = defineEmits<{
+    (e: "selected", name: string, selected: boolean): void;
+}>();
 
 const selected = computed({
     get: () => {
@@ -33,12 +37,16 @@ const selected = computed({
     },
     set: (newVal) => {
         props.option.selected = newVal;
-        if (hasOptions){
-            props.option.options.forEach(element => element.selected = newVal);
+        emit("selected", props.option.name, props.option.selected);
+        if (hasOptions) {
+            props.option.options.forEach((element) => {
+                element.selected = newVal;
+                console.log("name: ", element.name, ", value: ", element.selected);
+                // emit("selected", element.name, element.selected);
+            });
         }
-    }
+    },
 });
-
 </script>
 <template>
     <div class="form-drilldown-option">
@@ -50,13 +58,13 @@ const selected = computed({
                 :class="{ 'fa fa-plus-square': !showChildren, 'fa fa-minus-square': showChildren }" />
             <b-form-checkbox v-model="selected" style="display: inline-block" />
             {{ props.option.name }}
-            </li>
-            <form-drilldown-option
-                v-show="showChildren"
-                v-for="option in props.option.options"
-                :key="option.name"
-                :option="option"
-                :depth="depth + 1">
-            </form-drilldown-option>
+        </li>
+        <form-drilldown-option
+            v-show="showChildren"
+            v-for="option in props.option.options"
+            :key="option.name"
+            :option="option"
+            :depth="depth + 1">
+        </form-drilldown-option>
     </div>
 </template>
