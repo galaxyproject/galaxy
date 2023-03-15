@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { STATES } from "./states";
-import type { ComputedRef } from "vue";
 import { computed } from "vue";
 
 type State = {
@@ -33,11 +32,11 @@ const propShowHelp = computed({
         emit("update:show-help", val);
     },
 });
-const states: ComputedRef<States> = computed(() => STATES);
 
+const states = STATES as States;
 const helpText: HelpText = {
-    failed: "The dataset failed to run.",
-    ok: "The dataset has no errors and is useable and readable in the history.",
+    failed: "The job failed to run.",
+    ok: "The dataset has no errors.",
 };
 
 function onFilter(value: string) {
