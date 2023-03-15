@@ -27,6 +27,7 @@ from typing import (
     List,
     NamedTuple,
     Optional,
+    overload,
     Set,
     Tuple,
     Type,
@@ -102,6 +103,7 @@ from sqlalchemy.orm import (
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.sql import exists
 from typing_extensions import (
+    Literal,
     Protocol,
     TypedDict,
 )
@@ -3915,16 +3917,24 @@ class Dataset(Base, StorableObject, Serializable):
     def _extra_files_rel_path(self):
         return self._extra_files_path or self.extra_files_path_name
 
-    def _calculate_size(self):
+    def _calculate_size(self) -> int:
         if self.external_filename:
             try:
                 return os.path.getsize(self.external_filename)
             except OSError:
                 return 0
-        else:
-            return self.object_store.size(self)
+        assert self.object_store
+        return self.object_store.size(self)
 
-    def get_size(self, nice_size=False, calculate_size=True):
+    @overload
+    def get_size(self, nice_size: Literal[False], calculate_size: bool = True) -> int:
+        ...
+
+    @overload
+    def get_size(self, nice_size: Literal[True], calculate_size: bool = True) -> str:
+        ...
+
+    def get_size(self, nice_size: bool = False, calculate_size: bool = True) -> Union[int, str]:
         """Returns the size of the data on disk"""
         if self.file_size:
             if nice_size:
