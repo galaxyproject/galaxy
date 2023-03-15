@@ -46,7 +46,7 @@
             <small class="mt-1">Filter by state:</small>
             <b-input-group>
                 <b-form-input v-model="filterSettings['state:']" size="sm" placeholder="any state" list="stateSelect" />
-                <b-form-datalist id="stateSelect" :options="commonStates"></b-form-datalist>
+                <b-form-datalist id="stateSelect" :options="states"></b-form-datalist>
                 <b-input-group-append>
                     <b-button title="States Help" size="sm" @click="showHelp = true">
                         <icon icon="question" />
@@ -96,7 +96,7 @@
 <script>
 import DebouncedInput from "components/DebouncedInput";
 import HistoryFiltersDefault from "./HistoryFiltersDefault";
-import { COMMON_HISTORY_PANEL_STATES } from "components/History/Content/model/states";
+import { STATES } from "components/History/Content/model/states";
 import StatesInfo from "components/History/Content/model/StatesInfo";
 import { HistoryFilters } from "components/History/HistoryFilters";
 
@@ -114,7 +114,7 @@ export default {
         return {
             create_time_gt: "",
             create_time_lt: "",
-            commonStates: COMMON_HISTORY_PANEL_STATES,
+            states: Object.keys(STATES),
             showHelp: false,
         };
     },
