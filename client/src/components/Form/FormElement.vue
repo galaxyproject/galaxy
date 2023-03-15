@@ -272,7 +272,7 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 :id="props.id"
                 v-model="currentValue"
                 :data-label="props.title"
-                :type="props.type ?? 'text'"
+                :type="props.type ?? (attrs.options ? 'select' : 'text')"
                 :attributes="attrs" />
             <FormInput v-else :id="props.id" v-model="currentValue" :area="attrs['area']" />
         </div>
