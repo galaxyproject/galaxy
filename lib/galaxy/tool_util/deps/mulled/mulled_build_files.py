@@ -108,6 +108,15 @@ def line_to_targets(line_str, line_tuple):
     return line_tuple(*line_parts)
 
 
+def str_from_target(target):
+    target_str = target.package
+    if target.version:
+        target_str += "=" + target.version
+    if target.build:
+        target_str += "--" + target.build
+    return target_str
+
+
 __all__ = ("main",)
 
 

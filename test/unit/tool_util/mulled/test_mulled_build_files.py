@@ -8,7 +8,9 @@ from galaxy.tool_util.deps.mulled.mulled_build_files import (
     FALLBACK_LINE_TUPLE,
     generate_targets,
     generate_targets_from_file,
+    str_from_target,
 )
+from galaxy.tool_util.deps.mulled.util import build_target
 
 TESTCASES = yaml.safe_load(
     r"""
@@ -93,3 +95,16 @@ def test_generate_targets_from_file(content, equals):
     assert generated_target.image_build == equals.image_build
     assert generated_target.name_override == equals.name_override
     assert generated_target.base_image == equals.base_image
+
+
+def test_str_from_target():
+    target_str = "atarget"
+    assert target_str == str_from_target(build_target(target_str))
+
+    version = "0.1"
+    target_str_versioned = f"{target_str}={version}"
+    assert target_str_versioned == str_from_target(build_target(target_str, version))
+
+    build = "2"
+    target_str_version_build = f"{target_str}={version}--{build}"
+    assert target_str_version_build == str_from_target(build_target(target_str, version, build))
