@@ -3,7 +3,7 @@ Offload jobs to a Kubernetes cluster.
 """
 
 import logging
-import json # for debugging of API objects
+import json  # for debugging of API objects
 import math
 import os
 import re
@@ -100,8 +100,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 map=str, valid=lambda s: s == "$gid" or isinstance(s, int) or not s or s.isdigit(), default=None
             ),
             k8s_cleanup_job=dict(map=str, valid=lambda s: s in {"onsuccess", "always", "never"}, default="always"),
-            k8s_pod_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=1), # note that if the backOffLimit is lower, this paramer will have no effect.
-            k8s_job_spec_back_off_limit=dict(map=int, valid=lambda x: int(x) >= 0, default=0), # this means that it will stop retrying after 1 failure.
+            k8s_pod_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=1),  # note that if the backOffLimit is lower, this paramer will have no effect.
+            k8s_job_spec_back_off_limit=dict(map=int, valid=lambda x: int(x) >= 0, default=0),  # this means that it will stop retrying after 1 failure.
             k8s_walltime_limit=dict(map=int, valid=lambda x: int(x) >= 0, default=172800),
             k8s_unschedulable_walltime_limit=dict(map=int, valid=lambda x: not x or int(x) >= 0, default=None),
             k8s_interactivetools_use_ssl=dict(map=bool, default=False),
@@ -468,26 +468,26 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             },
             "spec": {
                 "ingressClassName": "nginx",
-                "rules":[ {
-                                "host": ep["domain"],
-                                "http": {
-                                    "paths": [ {
-                                                    "backend": {
-                                                            "service":  {
-                                                                "name": self.__get_k8s_job_name(
-                                                                    self.__produce_k8s_job_prefix(), ajs.job_wrapper
-                                                                ),
-                                                                "port": { "number": int(ep["tool_port"])}
-                                                            }
-                                                    },
-                                                    "path": ep.get("entry_path", "/"),
-                                                    "pathType": "Prefix"
-                                                }
-                                            ]
-                                        },
+                "rules": [ {
+                            "host": ep["domain"],
+                            "http": {
+                                "paths": [ {
+                                                "backend": {
+                                                        "service": {
+                                                            "name": self.__get_k8s_job_name(
+                                                                self.__produce_k8s_job_prefix(), ajs.job_wrapper
+                                                            ),
+                                                            "port": { "number": int(ep["tool_port"])}
+                                                        }
+                                                },
+                                                "path": ep.get("entry_path", "/"),
+                                                "pathType": "Prefix"
+                                            }
+                                        ]
+                                    },
                             }
                             for ep in entry_points
-                        ]
+                         ]
             },
         }
         if self.runner_params.get("k8s_interactivetools_use_ssl"):
@@ -1007,11 +1007,11 @@ class KubernetesJobRunner(AsynchronousJobRunner):
     def fail_job(self, job_state: "JobState", exception=False, message="Job failed", full_status=None):
         log.debug("PP Getting into fail_job in k8s runner")
         job = job_state.job_wrapper.get_job()
-        
-        #### Get STDOUT and STDERR from the job and tool to be stored in the database ####
-        #### This is needed because when calling finish_job on a failed job, the check_output method
-        #### overrides the job error state and tries to figure it out from the job output files
-        #### breaking OOM resubmissions.
+
+        # Get STDOUT and STDERR from the job and tool to be stored in the database #
+        # This is needed because when calling finish_job on a failed job, the check_output method
+        # overrides the job error state and tries to figure it out from the job output files
+        # breaking OOM resubmissions.
         # To ensure that files below are readable, ownership must be reclaimed first
         job_state.job_wrapper.reclaim_ownership()
 
@@ -1039,7 +1039,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
         tool_stdout_path = os.path.join(outputs_directory, "tool_stdout")
         tool_stderr_path = os.path.join(outputs_directory, "tool_stderr")
-        
+
         # TODO: These might not exist for running jobs at the upgrade to 19.XX, remove that
         # assumption in 20.XX.
         tool_stderr = "Galaxy issue: stderr could not be retrieved from the job working directory."
@@ -1060,10 +1060,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             tool_stderr = job_stderr
             job_stderr = None
 
-        #### END Get STDOUT and STDERR from the job and tool to be stored in the database ####
+        # END Get STDOUT and STDERR from the job and tool to be stored in the database #
 
         # full status empty leaves the UI without stderr/stdout
-        full_status = { "stderr" : tool_stderr, "stdout" : tool_stdout}
+        full_status = {"stderr" : tool_stderr, "stdout" : tool_stdout}
         log.debug(f"({job.id}/{job.job_runner_external_id}) tool_stdout: {tool_stdout}")
         log.debug(f"({job.id}/{job.job_runner_external_id}) tool_stderr: {tool_stderr}")
         log.debug(f"({job.id}/{job.job_runner_external_id}) job_stdout: {job_stdout}")
@@ -1071,7 +1071,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
         # run super method
         super().fail_job(job_state, exception, message, full_status)
-        
 
     def finish_job(self, job_state):
         self._handle_metadata_externally(job_state.job_wrapper, resolve_requirements=True)
