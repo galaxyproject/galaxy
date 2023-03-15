@@ -23,7 +23,7 @@ const hasOptions = computed(() => {
     return props.options.length > 0;
 });
 
-let currentValue: string[] = [];
+let currentValue: string[] = []; //was called selected, when attempting to use computed currentValue
 
 function addToSelected(n: string, v: boolean) {
     if (v == true) {
@@ -32,16 +32,20 @@ function addToSelected(n: string, v: boolean) {
         const index = currentValue.indexOf(n);
         currentValue.splice(index, 1);
     }
-    emit("input", currentValue);
+    emit("input", currentValue); //HELP problem with this is that once a checkbox is checked, if you uncheck it no longer requires something is checked, and you're able to send an empty array
     console.log(":CV:", currentValue);
 }
 
-//currentValue will be computed array of selected values
-//need to implement selectAll
+//TODO implement selectAll
 
 const emit = defineEmits<{
     (e: "input", value: string[]): void;
 }>();
+
+// HELP:
+// can't use this computed as is, because, I can't push to computed (like I can with an array)
+// and when I simply set the currentValue to what's in the array I curated above
+// it dowesn't update and emit the changing values, and just remains an empty array
 
 // const currentValue =  computed({
 //     get: () => {
