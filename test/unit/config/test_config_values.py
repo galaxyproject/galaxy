@@ -7,7 +7,7 @@ from galaxy.config import DEFAULT_EMAIL_FROM_LOCAL_PART
 from galaxy.util.properties import running_from_source
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def appconfig():
     return config.GalaxyAppConfiguration(override_tempdir=False)
 
@@ -50,3 +50,44 @@ def test_assign_email_from(monkeypatch):
         override_tempdir=False, galaxy_infrastructure_url="http://myhost:8080/galaxy/"
     )
     assert appconfig.email_from == f"{DEFAULT_EMAIL_FROM_LOCAL_PART}@myhost"
+
+
+class TestIsFetchWithCeleryEnabled:
+    def test_disabled_if_celery_disabled(self, appconfig):
+        appconfig.enable_celery_tasks = False
+        assert not appconfig.is_fetch_with_celery_enabled()
+
+    def test_enabled_if_no_celeryconf(self, appconfig):
+        appconfig.enable_celery_tasks = True
+        appconfig.celery_conf = None
+        assert appconfig.is_fetch_with_celery_enabled()
+
+    def test_enabled_if_no_task_routes_key(self, appconfig):
+        appconfig.enable_celery_tasks = True
+        appconfig.celery_conf = {"some-other-key": 1}
+        assert appconfig.is_fetch_with_celery_enabled()
+
+    def test_enabled_if_task_routes_empty(self, appconfig):
+        appconfig.enable_celery_tasks = True
+        appconfig.celery_conf["task_routes"] = None
+        assert appconfig.is_fetch_with_celery_enabled()
+
+    def test_enabled_if_no_route_key(self, appconfig):
+        appconfig.enable_celery_tasks = True
+        appconfig.celery_conf["task_routes"] = {"some-other-route": 1}
+        assert appconfig.is_fetch_with_celery_enabled()
+
+    def test_enabled_if_no_route(self, appconfig):
+        appconfig.enable_celery_tasks = True
+        appconfig.celery_conf["task_routes"]["galaxy.fetch_data"] = None
+        assert appconfig.is_fetch_with_celery_enabled()
+
+    def test_enabled_if_has_route(self, appconfig):
+        appconfig.enable_celery_tasks = True
+        appconfig.celery_conf["task_routes"]["galaxy.fetch_data"] = "my_route"
+        assert appconfig.is_fetch_with_celery_enabled()
+
+    def test_disabled_if_disabled_flag(self, appconfig):
+        appconfig.enable_celery_tasks = True
+        appconfig.celery_conf["task_routes"]["galaxy.fetch_data"] = config.DISABLED_FLAG
+        assert not appconfig.is_fetch_with_celery_enabled()

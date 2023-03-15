@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+import { pushOrSet } from "@/utils/pushOrSet";
 import Vue from "vue";
 
 interface InvalidConnections {
@@ -9,6 +10,9 @@ interface InvalidConnections {
 export interface State {
     connections: Connection[];
     invalidConnections: InvalidConnections;
+    inputTerminalToOutputTerminals: TerminalToOutputTerminals;
+    terminalToConnection: { [index: string]: Connection[] };
+    stepToConnections: { [index: number]: Connection[] };
 }
 
 export class Connection {
@@ -44,80 +48,38 @@ interface TerminalToOutputTerminals {
     [index: string]: OutputTerminal[];
 }
 
-interface TerminalToInputTerminals {
-    [index: string]: InputTerminal[];
-}
-
-/**
- * Pushes a value to an array in an object, if the array exists. Else creates a new array containing value.
- * @param object Object which contains array
- * @param key Key which array is in
- * @param value Value to push
- */
-function pushOrSet<T>(object: { [key: string | number]: Array<T> }, key: string | number, value: T) {
-    if (key in object) {
-        object[key]!.push(value);
-    } else {
-        object[key] = [value];
-    }
-}
-
 export const useConnectionStore = defineStore("workflowConnectionStore", {
     state: (): State => ({
         connections: [] as Connection[],
         invalidConnections: {} as InvalidConnections,
+        inputTerminalToOutputTerminals: {} as TerminalToOutputTerminals,
+        terminalToConnection: {} as { [index: string]: Connection[] },
+        stepToConnections: {} as { [index: number]: Connection[] },
     }),
     getters: {
         getOutputTerminalsForInputTerminal(state: State) {
-            const inputTerminalToOutputTerminals: TerminalToOutputTerminals = {};
-            state.connections.map((connection) => {
-                const terminals = getTerminals(connection);
-                const inputTerminalId = getTerminalId(terminals.input);
-                pushOrSet(inputTerminalToOutputTerminals, inputTerminalId, terminals.output);
-            });
             return (terminalId: string): OutputTerminal[] => {
-                return inputTerminalToOutputTerminals[terminalId] || [];
-            };
-        },
-        getInputTerminalsForOutputTerminal(state: State) {
-            const outputTerminalToInputTerminals: TerminalToInputTerminals = {};
-            state.connections.map((connection) => {
-                const terminals = getTerminals(connection);
-                const outputTerminalId = getTerminalId(terminals.output);
-                pushOrSet(outputTerminalToInputTerminals, outputTerminalId, terminals.input);
-            });
-            return (terminalId: string): BaseTerminal[] => {
-                return outputTerminalToInputTerminals[terminalId] || [];
+                return state.inputTerminalToOutputTerminals[terminalId] || [];
             };
         },
         getConnectionsForTerminal(state: State) {
-            const terminalToConnection: { [index: string]: Connection[] } = {};
-            state.connections.map((connection) => {
-                const terminals = getTerminals(connection);
-                const outputTerminalId = getTerminalId(terminals.output);
-                pushOrSet(terminalToConnection, outputTerminalId, connection);
-
-                const inputTerminalId = getTerminalId(terminals.input);
-                pushOrSet(terminalToConnection, inputTerminalId, connection);
-            });
             return (terminalId: string): Connection[] => {
-                return terminalToConnection[terminalId] || [];
+                return state.terminalToConnection[terminalId] || [];
             };
         },
         getConnectionsForStep(state: State) {
-            const stepToConnections: { [index: number]: Connection[] } = {};
-            state.connections.map((connection) => {
-                pushOrSet(stepToConnections, connection.input.stepId, connection);
-                pushOrSet(stepToConnections, connection.output.stepId, connection);
-            });
-            return (stepId: number): Connection[] => stepToConnections[stepId] || [];
+            return (stepId: number): Connection[] => state.stepToConnections[stepId] || [];
         },
     },
     actions: {
-        addConnection(this: State, connection: Connection) {
+        addConnection(this, _connection: Connection) {
+            const connection = Object.freeze(_connection);
             this.connections.push(connection);
             const stepStore = useWorkflowStepStore();
             stepStore.addConnection(connection);
+            this.terminalToConnection = updateTerminalToConnection(this.connections);
+            this.inputTerminalToOutputTerminals = updateTerminalToTerminal(this.connections);
+            this.stepToConnections = updateStepToConnections(this.connections);
         },
         markInvalidConnection(this: State, connectionId: string, reason: string) {
             Vue.set(this.invalidConnections, connectionId, reason);
@@ -125,7 +87,7 @@ export const useConnectionStore = defineStore("workflowConnectionStore", {
         dropFromInvalidConnections(this: State, connectionId: string) {
             Vue.delete(this.invalidConnections, connectionId);
         },
-        removeConnection(this: State, terminal: InputTerminal | OutputTerminal | Connection["id"]) {
+        removeConnection(this, terminal: InputTerminal | OutputTerminal | Connection["id"]) {
             const stepStore = useWorkflowStepStore();
             this.connections = this.connections.filter((connection) => {
                 if (typeof terminal === "string") {
@@ -154,9 +116,43 @@ export const useConnectionStore = defineStore("workflowConnectionStore", {
                     }
                 }
             });
+            this.terminalToConnection = updateTerminalToConnection(this.connections);
+            this.inputTerminalToOutputTerminals = updateTerminalToTerminal(this.connections);
+            this.stepToConnections = updateStepToConnections(this.connections);
         },
     },
 });
+
+function updateTerminalToTerminal(connections: Connection[]) {
+    const inputTerminalToOutputTerminals: TerminalToOutputTerminals = {};
+    connections.map((connection) => {
+        const terminals = getTerminals(connection);
+        const inputTerminalId = getTerminalId(terminals.input);
+        pushOrSet(inputTerminalToOutputTerminals, inputTerminalId, terminals.output);
+    });
+    return inputTerminalToOutputTerminals;
+}
+
+function updateTerminalToConnection(connections: Connection[]) {
+    const terminalToConnection: { [index: string]: Connection[] } = {};
+    connections.map((connection) => {
+        const terminals = getTerminals(connection);
+        const outputTerminalId = getTerminalId(terminals.output);
+        pushOrSet(terminalToConnection, outputTerminalId, connection);
+        const inputTerminalId = getTerminalId(terminals.input);
+        pushOrSet(terminalToConnection, inputTerminalId, connection);
+    });
+    return terminalToConnection;
+}
+
+function updateStepToConnections(connections: Connection[]) {
+    const stepToConnections: { [index: number]: Connection[] } = {};
+    connections.map((connection) => {
+        pushOrSet(stepToConnections, connection.input.stepId, connection);
+        pushOrSet(stepToConnections, connection.output.stepId, connection);
+    });
+    return stepToConnections;
+}
 
 export function getTerminalId(item: BaseTerminal): string {
     return `node-${item.stepId}-${item.connectorType}-${item.name}`;

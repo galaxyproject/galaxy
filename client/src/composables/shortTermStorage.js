@@ -30,8 +30,13 @@ export function useShortTermStorage() {
         return prepareObjectDownload(invocationId, "invocations", options);
     }
 
-    function downloadObjectByRequestId(storageRequestId) {
+    function getDownloadObjectUrl(storageRequestId) {
         const url = withPrefix(`/api/short_term_storage/${storageRequestId}`);
+        return url;
+    }
+
+    function downloadObjectByRequestId(storageRequestId) {
+        const url = getDownloadObjectUrl(storageRequestId);
         window.location.assign(url);
     }
 
@@ -119,5 +124,10 @@ export function useShortTermStorage() {
          * Whether the download is still being prepared.
          */
         isPreparing: readonly(isPreparing),
+        /**
+         * Given a storageRequestId it returns the download URL for that object.
+         * @param {String} storageRequestId The storage request ID associated to the object to be downloaded
+         */
+        getDownloadObjectUrl,
     };
 }

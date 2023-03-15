@@ -611,8 +611,8 @@ workflow_editor:
       output_terminal: "${_} [output-name='${name}']"
       input_terminal: "${_} [input-name='${name}']"
       input_mapping_icon: "${_} [input-name='${name}'].multiple"
-      workflow_output_toggle: "${_} .callout-terminal.${name}"
-      workflow_output_toggle_active: "${_} .callout-terminal.${name} .mark-terminal-active"
+      workflow_output_toggle: "${_} [data-output-name='${name}'] .callout-terminal "
+      workflow_output_toggle_active: "${_} [data-output-name='${name}'] .mark-terminal-active"
   selectors:
     canvas_body: '#workflow-canvas'
     edit_annotation: '#workflow-annotation'

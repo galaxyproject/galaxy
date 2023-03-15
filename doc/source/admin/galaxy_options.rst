@@ -4881,6 +4881,9 @@
     The `broker_url` option, if unset, defaults to the value of
     `amqp_internal_connection`. The `result_backend` option must be
     set if the `enable_celery_tasks` option is set.
+    The galaxy.fetch_data task can be disabled by setting its route to
+    "disabled": `galaxy.fetch_data: disabled`. (Other tasks cannot be
+    disabled on a per-task basis at this time.)
     For details, see Celery documentation at
     https://docs.celeryq.dev/en/stable/userguide/configuration.html.
 :Default: ``{'task_routes': {'galaxy.fetch_data': 'galaxy.external', 'galaxy.set_job_metadata': 'galaxy.external'}}``

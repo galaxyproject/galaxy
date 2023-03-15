@@ -11,6 +11,8 @@ import { useTaskMonitor } from "composables/taskMonitor";
 import { useFileSources } from "composables/fileSources";
 import { useShortTermStorage, DEFAULT_EXPORT_PARAMS } from "composables/shortTermStorage";
 import { useConfirmDialog } from "composables/confirmDialog";
+import { copy as sendToClipboard } from "utils/clipboard";
+import { absPath } from "@/utils/redirect";
 
 const {
     isRunning: isExportTaskRunning,
@@ -18,8 +20,16 @@ const {
     requestHasFailed: taskMonitorRequestFailed,
     hasFailed: taskHasFailed,
 } = useTaskMonitor();
+
 const { hasWritable: hasWritableFileSources } = useFileSources();
-const { isPreparing: isPreparingDownload, downloadHistory, downloadObjectByRequestId } = useShortTermStorage();
+
+const {
+    isPreparing: isPreparingDownload,
+    downloadHistory,
+    downloadObjectByRequestId,
+    getDownloadObjectUrl,
+} = useShortTermStorage();
+
 const { confirm } = useConfirmDialog();
 
 const props = defineProps({
@@ -101,6 +111,13 @@ async function prepareDownload() {
 function downloadFromRecord(record) {
     if (record.canDownload) {
         downloadObjectByRequestId(record.stsDownloadId);
+    }
+}
+
+function copyDownloadLinkFromRecord(record) {
+    if (record.canDownload) {
+        const relativeLink = getDownloadObjectUrl(record.stsDownloadId);
+        sendToClipboard(absPath(relativeLink), "Download link copied to your clipboard");
     }
 }
 
@@ -203,6 +220,7 @@ function updateExportParams(newParams) {
             :action-message="actionMessage"
             :action-message-variant="actionMessageVariant"
             @onDownload="downloadFromRecord"
+            @onCopyDownloadLink="copyDownloadLinkFromRecord"
             @onReimport="reimportFromRecord"
             @onActionMessageDismissed="onActionMessageDismissedFromRecord" />
         <b-alert v-else id="no-export-records-alert" variant="info" class="mt-3" show>
