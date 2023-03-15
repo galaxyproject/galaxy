@@ -59,8 +59,8 @@ TESTCASES = yaml.safe_load(
 """
 )
 TESTCASES = {k: v for t in TESTCASES for k, v in t.items()}
-for test_id, test_case in TESTCASES.items():
-    TESTCASES[test_id]["equals"]["targets"] = target_str_to_targets(TESTCASES[test_id]["equals"]["targets"])
+for key in TESTCASES:
+    TESTCASES[key]["equals"]["targets"] = target_str_to_targets(TESTCASES[key]["equals"]["targets"])
 
 
 @pytest.mark.parametrize(
