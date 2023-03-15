@@ -782,8 +782,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                     job_state.job_wrapper.cleanup()
                 return None
             else:
-                log.debug(f"Job is failed and not deleted, looking at failure")
-                log.debug(f"Job id: {job_state.job_id} failed but has not been deleted yet. Current state: {job_state.job_wrapper.get_state()}")
+                log.debug(f"Job id: {job_state.job_id} failed and it is not a deletion case. Current state: {job_state.job_wrapper.get_state()}")
                 self._handle_job_failure(job, job_state)
                 # changes for resubmission (removed self.mark_as_failed from handle_job_failure)
                 self.work_queue.put((self.mark_as_failed, job_state))
