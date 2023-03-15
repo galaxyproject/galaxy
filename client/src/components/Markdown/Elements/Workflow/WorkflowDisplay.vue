@@ -34,13 +34,14 @@
         <b-card-body>
             <LoadingSpan v-if="loading" message="Loading Workflow" />
             <div v-else :class="!expanded && 'content-height'">
-                <b-alert v-if="errorDict" variant="danger" show>
+                <b-alert v-if="errorContent" variant="danger" show>
                     <b>Please fix the following error(s):</b>
-                    <ul class="my-2">
-                        <li v-for="(errorValue, errorKey) in errorDict" :key="errorKey">
+                    <ul v-if="typeof errorContent === 'object'" class="my-2">
+                        <li v-for="(errorValue, errorKey) in errorContent" :key="errorKey">
                             {{ errorKey }}: {{ errorValue }}
                         </li>
                     </ul>
+                    <div v-else>{{ errorContent }}</div>
                 </b-alert>
                 <div v-else>
                     <div v-for="step in itemContent.steps" :key="step.order_index" class="mb-2">
@@ -79,7 +80,7 @@ export default {
     },
     data() {
         return {
-            errorDict: null,
+            errorContent: null,
             itemContent: null,
             loading: true,
         };
@@ -105,8 +106,8 @@ export default {
                 this.itemContent = data;
                 this.loading = false;
             })
-            .catch((errorDict) => {
-                this.errorDict = errorDict;
+            .catch((errorContent) => {
+                this.errorContent = errorContent;
                 this.loading = false;
             });
     },

@@ -27,13 +27,10 @@ function mountDefault() {
     });
 }
 
-function mountError() {
+function mountError(errContent) {
     axiosMock = new MockAdapter(axios);
     const data = {
-        err_msg: {
-            firstError: "firstValue",
-            secondError: "secondValue",
-        },
+        err_msg: errContent,
     };
     axiosMock.onGet(`/api/workflows/workflow_id/download?style=preview`).reply(400, data);
     return mount(MountTarget, {
@@ -62,13 +59,23 @@ describe("WorkflowDisplay", () => {
         expect(dataRequest).toBe("/api/workflows/workflow_id/download?style=preview");
     });
 
-    it("error messages", async () => {
-        const wrapper = mountError();
+    it("error message as object", async () => {
+        const wrapper = mountError({
+            firstError: "firstValue",
+            secondError: "secondValue",
+        });
         await flushPromises();
         const cardHeader = wrapper.find(".card-header");
         expect(cardHeader.text()).toBe("Workflow: ...");
-        const errorMessages = wrapper.findAll("li");
-        expect(errorMessages.at(0).text()).toBe("firstError: firstValue");
-        expect(errorMessages.at(1).text()).toBe("secondError: secondValue");
+        const errorContent = wrapper.findAll("li");
+        expect(errorContent.at(0).text()).toBe("firstError: firstValue");
+        expect(errorContent.at(1).text()).toBe("secondError: secondValue");
+    });
+
+    it("error message as text", async () => {
+        const wrapper = mountError("Something went wrong.");
+        await flushPromises();
+        const errorContent = wrapper.find(".alert > div");
+        expect(errorContent.text()).toBe("Something went wrong.");
     });
 });
