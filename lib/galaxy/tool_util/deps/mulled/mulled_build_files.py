@@ -70,7 +70,7 @@ def generate_targets_from_file(target_source_file):
                 else:
                     yield line_to_targets(line, line_tuple)
 
- 
+
 def generate_targets(target_source):
     """Generate all targets from TSV files in specified file or directory."""
     target_source = os.path.abspath(target_source)
@@ -83,6 +83,7 @@ def generate_targets(target_source):
         # If no headers are defined we use the 4 default fields in the order
         # that has been used in galaxy-tool-util / galaxy-lib < 20.01
         yield from generate_targets_from_file(target_source_file)
+
 
 def tuple_from_header(header):
     fields = header[1:].split("\t")
