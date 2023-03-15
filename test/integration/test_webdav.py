@@ -12,7 +12,7 @@ from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
-FILE_SOURCES_JOB_CONF = os.path.join(SCRIPT_DIRECTORY, "file_sources_conf_webdav.yml")
+FILE_SOURCES_JOB_CONF = os.path.join(SCRIPT_DIRECTORY, "file_sources_conf.yml")
 
 skip_if_no_webdav = pytest.mark.skipif(not os.environ.get("GALAXY_TEST_WEBDAV"), reason="GALAXY_TEST_WEBDAV not set")
 
