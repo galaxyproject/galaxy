@@ -5,13 +5,15 @@ Revises: 6a67bf27e6a6
 Create Date: 2022-06-01 17:50:22.629894
 
 """
-from alembic import op
 from sqlalchemy import (
     Column,
     DateTime,
 )
 
-from galaxy.model.migrations.util import drop_column
+from galaxy.model.migrations.util import (
+    add_column,
+    drop_column,
+)
 from galaxy.model.orm.now import now
 
 # revision identifiers, used by Alembic.
@@ -29,4 +31,4 @@ def upgrade():
 
 
 def downgrade():
-    op.add_column(table_name, Column("update_time", DateTime, default=now, onupdate=now))
+    add_column(table_name, Column(column_name, DateTime, default=now, onupdate=now))
