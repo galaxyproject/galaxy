@@ -34,9 +34,19 @@
         <b-card-body>
             <LoadingSpan v-if="loading" message="Loading Workflow" />
             <div v-else :class="!expanded && 'content-height'">
-                <div v-for="step in itemContent.steps" :key="step.order_index" class="mb-2">
-                    <div>Step {{ step.order_index + 1 }}: {{ step.label }}</div>
-                    <WorkflowTree :input="step" :skip-head="true" />
+                <b-alert v-if="errorDict" variant="danger" show>
+                    <b>Please fix the following error(s):</b>
+                    <ul class="my-2">
+                        <li v-for="(errorValue, errorKey) in errorDict" :key="errorKey">
+                            {{ errorKey }}: {{ errorValue }}
+                        </li>
+                    </ul>
+                </b-alert>
+                <div v-else>
+                    <div v-for="step in itemContent.steps" :key="step.order_index" class="mb-2">
+                        <div>Step {{ step.order_index + 1 }}: {{ step.label }}</div>
+                        <WorkflowTree :input="step" :skip-head="true" />
+                    </div>
                 </div>
             </div>
         </b-card-body>
@@ -69,6 +79,7 @@ export default {
     },
     data() {
         return {
+            errorDict: null,
             itemContent: null,
             loading: true,
         };
@@ -89,10 +100,15 @@ export default {
     },
     created() {
         const url = this.itemUrl;
-        urlData({ url }).then((data) => {
-            this.itemContent = data;
-            this.loading = false;
-        });
+        urlData({ url })
+            .then((data) => {
+                this.itemContent = data;
+                this.loading = false;
+            })
+            .catch((errorDict) => {
+                this.errorDict = errorDict;
+                this.loading = false;
+            });
     },
 };
 </script>
