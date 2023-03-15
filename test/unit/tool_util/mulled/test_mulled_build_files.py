@@ -7,6 +7,7 @@ from galaxy.tool_util.deps.mulled.mulled_build import target_str_to_targets
 from galaxy.tool_util.deps.mulled.mulled_build_files import (
     FALLBACK_LINE_TUPLE,
     generate_targets,
+    generate_targets_from_file,
 )
 
 TESTCASES = yaml.safe_load(
@@ -71,6 +72,23 @@ def test_generate_targets(content, equals):
         tmpfile.write(content)
         tmpfile.flush()
         generated_target = next(generate_targets(tmpfile.name))
+    assert generated_target.targets == equals.targets
+    assert generated_target.image_build == equals.image_build
+    assert generated_target.name_override == equals.name_override
+    assert generated_target.base_image == equals.base_image
+
+
+@pytest.mark.parametrize(
+    "content, equals",
+    [(test_case["content"], test_case["equals"]) for _, test_case in TESTCASES.items()], 
+    ids=TESTCASES.keys()
+)
+def test_generate_targets_from_file(content, equals):
+    equals = FALLBACK_LINE_TUPLE(**equals)
+    with tempfile.NamedTemporaryFile(mode="w") as tmpfile:
+        tmpfile.write(content)
+        tmpfile.flush()
+        generated_target = next(generate_targets_from_file(tmpfile.name))
     assert generated_target.targets == equals.targets
     assert generated_target.image_build == equals.image_build
     assert generated_target.name_override == equals.name_override

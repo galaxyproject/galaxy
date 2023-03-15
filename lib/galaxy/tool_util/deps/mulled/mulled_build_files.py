@@ -58,6 +58,19 @@ def main(argv=None):
             sys.exit(ret)
 
 
+def generate_targets_from_file(target_source_file):
+    line_tuple = FALLBACK_LINE_TUPLE
+    with open(target_source_file) as f:
+        for line in f.readlines():
+            if line:
+                line = line.strip()
+                if line.startswith("#"):
+                    # headers can define a different column order
+                    line_tuple = tuple_from_header(line)
+                else:
+                    yield line_to_targets(line, line_tuple)
+
+ 
 def generate_targets(target_source):
     """Generate all targets from TSV files in specified file or directory."""
     target_source = os.path.abspath(target_source)
@@ -69,17 +82,7 @@ def generate_targets(target_source):
     for target_source_file in target_source_files:
         # If no headers are defined we use the 4 default fields in the order
         # that has been used in galaxy-tool-util / galaxy-lib < 20.01
-        line_tuple = FALLBACK_LINE_TUPLE
-        with open(target_source_file) as f:
-            for line in f.readlines():
-                if line:
-                    line = line.strip()
-                    if line.startswith("#"):
-                        # headers can define a different column order
-                        line_tuple = tuple_from_header(line)
-                    else:
-                        yield line_to_targets(line, line_tuple)
-
+        yield from generate_targets_from_file(target_source_file)
 
 def tuple_from_header(header):
     fields = header[1:].split("\t")
