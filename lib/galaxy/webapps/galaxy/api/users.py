@@ -1163,7 +1163,7 @@ def get_user_full(trans: ProvidesUserContext, user_id: Union[FlexibleUserIdType,
             else:
                 user = trans.user
         else:
-            return managers_base.get_object(
+            user = managers_base.get_object(
                 trans,
                 user_id,
                 "User",
@@ -1172,9 +1172,7 @@ def get_user_full(trans: ProvidesUserContext, user_id: Union[FlexibleUserIdType,
         # check that the user is requesting themselves (and they aren't del'd) unless admin
         if not trans.user_is_admin:
             if trans.user != user or user.deleted:
-                raise exceptions.InsufficientPermissionsException(
-                    "You are not allowed to perform action on that user", id=user_id
-                )
+                raise exceptions.RequestParameterInvalidException("Invalid user id specified", id=user_id)
         return user
     except exceptions.MessageException:
         raise

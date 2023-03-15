@@ -128,7 +128,7 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
                             role="button"
                             variant="link"
                             size="sm"
-                            class="float-right"
+                            class="float-right tool-storage"
                             @click="onShowObjectStoreSelect">
                             <span class="fa fa-hdd" />
                         </b-button>
