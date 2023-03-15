@@ -14,9 +14,7 @@ export interface FormDrilldownProps {
     id: string;
     options: Array<Option>;
 }
-export interface SelectedArray {
-    selected: string[];
-}
+
 const props = withDefaults(defineProps<FormDrilldownProps>(), {
     value: "",
 });
@@ -25,18 +23,17 @@ const hasOptions = computed(() => {
     return props.options.length > 0;
 });
 
-let selected: SelectedArray = {
-    selected: [],
-};
+let currentValue: string[] = [];
 
 function addToSelected(n: string, v: boolean) {
     if (v == true) {
-        selected.selected.push(n);
+        currentValue.push(n);
     } else if (v == false) {
-        const index = selected.selected.indexOf(n);
-
-        const x = selected.selected.splice(index, 1);
+        const index = currentValue.indexOf(n);
+        currentValue.splice(index, 1);
     }
+    emit("input", currentValue);
+    console.log(":CV:", currentValue);
 }
 
 //currentValue will be computed array of selected values
@@ -46,33 +43,20 @@ const emit = defineEmits<{
     (e: "input", value: string[]): void;
 }>();
 
-const currentValue = computed({
-    get: () => {
-        
-    },
-    set: (newValue) => {
-        
-
-        // if (newValue.length === 0) {
-        //     selectAll.value = false;
-        //     indeterminate.value = false;
-        // } else if (newValue.length === props.options.length) {
-        //     selectAll.value = true;
-        //     indeterminate.value = false;
-        // } else {
-        //     indeterminate.value = true;
-        // }
-    },
-});
+// const currentValue =  computed({
+//     get: () => {
+//         return selected;
+//     },
+//     set: (selected) => {
+//         emit("input", selected);
+//     },
+// });
 </script>
 
 <template>
     <div v-if="hasOptions">
         <ul v-for="option in options" :key="option.name" class="options">
-            <form-drilldown-option
-                :option="option"
-                :depth="0"
-                :handle-click="addToSelected"></form-drilldown-option>
+            <form-drilldown-option :option="option" :depth="0" :handle-click="addToSelected"></form-drilldown-option>
         </ul>
     </div>
 </template>
