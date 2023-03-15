@@ -203,6 +203,7 @@ history_panel:
       # Action buttons...
       download_button: '${_} .download-btn'
       info_button: '${_} .params-btn'
+      highlight_button: '${_} .highlight-btn'
       alltags: '${_} .stateless-tags .tag'
       metadata_file_download: '${_} [data-description="download ${metadata_name}"]'
 
