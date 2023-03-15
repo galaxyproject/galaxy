@@ -11,6 +11,8 @@ export interface Option {
 export interface FormDrilldownProps {
     option: Option;
     depth: number;
+    handleClick: Function;
+
 }
 function toggleChildren() {
     showChildren.value = !showChildren.value;
@@ -37,14 +39,7 @@ const selected = computed({
     },
     set: (newVal) => {
         props.option.selected = newVal;
-        emit("selected", props.option.name, props.option.selected);
-        if (hasOptions) {
-            props.option.options.forEach((element) => {
-                element.selected = newVal;
-                console.log("name: ", element.name, ", value: ", element.selected);
-                // emit("selected", element.name, element.selected);
-            });
-        }
+        props.handleClick(props.option.name, props.option.selected);
     },
 });
 </script>
@@ -64,7 +59,8 @@ const selected = computed({
             v-for="option in props.option.options"
             :key="option.name"
             :option="option"
-            :depth="depth + 1">
+            :depth="depth + 1"
+            :handle-click="handleClick">
         </form-drilldown-option>
     </div>
 </template>

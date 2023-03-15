@@ -37,34 +37,33 @@ function addToSelected(n: string, v: boolean) {
 
         const x = selected.selected.splice(index, 1);
     }
-    console.log(":selectedArray:", selected.selected)
 }
 
 //currentValue will be computed array of selected values
 //need to implement selectAll
 
-// const emit = defineEmits<{
-//     (e: "input", value: string[]): void;
-// }>();
+const emit = defineEmits<{
+    (e: "input", value: string[]): void;
+}>();
 
-// const currentValue = computed({
-//     get: () => {
+const currentValue = computed({
+    get: () => {
         
-//     },
-//     set: (newValue) => {
+    },
+    set: (newValue) => {
         
 
-//         // if (newValue.length === 0) {
-//         //     selectAll.value = false;
-//         //     indeterminate.value = false;
-//         // } else if (newValue.length === props.options.length) {
-//         //     selectAll.value = true;
-//         //     indeterminate.value = false;
-//         // } else {
-//         //     indeterminate.value = true;
-//         // }
-//     },
-// });
+        // if (newValue.length === 0) {
+        //     selectAll.value = false;
+        //     indeterminate.value = false;
+        // } else if (newValue.length === props.options.length) {
+        //     selectAll.value = true;
+        //     indeterminate.value = false;
+        // } else {
+        //     indeterminate.value = true;
+        // }
+    },
+});
 </script>
 
 <template>
@@ -73,7 +72,7 @@ function addToSelected(n: string, v: boolean) {
             <form-drilldown-option
                 :option="option"
                 :depth="0"
-                @selected="addToSelected"></form-drilldown-option>
+                :handle-click="addToSelected"></form-drilldown-option>
         </ul>
     </div>
 </template>
