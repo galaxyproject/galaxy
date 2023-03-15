@@ -55,13 +55,15 @@ TESTCASES = yaml.safe_load(
       targets: samtools
 """
 )
-TEST_IDS = [next(iter(k.keys())) for k in TESTCASES]
-for idx, (test_id, test_case) in enumerate(zip(TEST_IDS, TESTCASES)):
-    TESTCASES[idx][test_id]["equals"]["targets"] = target_str_to_targets(test_case[test_id]["equals"]["targets"])
+TESTCASES = {k: v for t in TESTCASES for k, v in t.items()}
+for test_id, test_case in TESTCASES.items():
+    TESTCASES[test_id]["equals"]["targets"] = target_str_to_targets(TESTCASES[test_id]["equals"]["targets"])
 
 
 @pytest.mark.parametrize(
-    "content, equals", [(d[k]["content"], d[k]["equals"]) for k, d in zip(TEST_IDS, TESTCASES)], ids=TEST_IDS
+    "content, equals", 
+    [(test_case["content"], test_case["equals"]) for _, test_case in TESTCASES.items()], 
+    ids=TESTCASES.keys()
 )
 def test_generate_targets(content, equals):
     equals = FALLBACK_LINE_TUPLE(**equals)
