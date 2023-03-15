@@ -239,7 +239,7 @@ def _simple_image_name(targets, image_build=None):
     return f"{target.package_name}{suffix}"
 
 
-def sort_build_targets(build_targets):
+def sort_build_targets(build_targets: List[Target]) -> List[Target]:
     """Sort build targets by package name.
     
     >>> ordered_targets = [Target(package_name='bioblend=1.0.0', version=None, build=None, package='bioblend=1.0.0'), Target(package_name='galaxyxml=0.4.14', version=None, build=None, package='galaxyxml=0.4.14')]
