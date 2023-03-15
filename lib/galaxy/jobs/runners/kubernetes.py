@@ -100,7 +100,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 map=str, valid=lambda s: s == "$gid" or isinstance(s, int) or not s or s.isdigit(), default=None
             ),
             k8s_cleanup_job=dict(map=str, valid=lambda s: s in {"onsuccess", "always", "never"}, default="always"),
-            k8s_pod_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=1), # note that if the backOffLimit is lower, this paramer will have not effect.
+            k8s_pod_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=1), # note that if the backOffLimit is lower, this paramer will have no effect.
             k8s_job_spec_back_off_limit=dict(map=int, valid=lambda x: int(x) >= 0, default=0), # this means that it will stop retrying after 1 failure.
             k8s_walltime_limit=dict(map=int, valid=lambda x: int(x) >= 0, default=172800),
             k8s_unschedulable_walltime_limit=dict(map=int, valid=lambda x: not x or int(x) >= 0, default=None),
@@ -220,9 +220,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
     def __has_guest_ports(self, job_wrapper):
         # Check if job has guest ports or interactive tool entry points that would signal that
-        # this is an interactive tool.
-        log.debug(f"Checking if job {job_wrapper.get_id_tag()} has guest ports: {job_wrapper.guest_ports}")
-        log.debug(f"Checking if job {job_wrapper.get_id_tag()} has interactive entry points: {job_wrapper.guest_ports}")
+        log.debug(f"Checking if job {job_wrapper.get_id_tag()} is an interactive tool. guest ports: {job_wrapper.guest_ports}. interactive entry points: {job_wrapper.interactivetool_entry_points}")
         return bool(job_wrapper.guest_ports) or bool(job_wrapper.get_job().interactivetool_entry_points)
 
     def __configure_port_routing(self, ajs):
@@ -245,14 +243,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         log.debug(f"Kubernetes ingress object: {json.dumps(k8s_ingress_obj, indent=4)}")
         # We avoid creating service and ingress if they already exist (e.g. when Galaxy is restarted or resubmitting a job)
         service = Service(self._pykube_api, k8s_service_obj)
-        # if service.exists():
-        #     log.debug(f"Service {k8s_job_name} already exists, skipping creation")
-        # else:
         service.create()
         ingress = Ingress(self._pykube_api, k8s_ingress_obj)
-        # if ingress.exists():
-        #     log.debug(f"Ingress {k8s_job_name} already exists, skipping creation")
-        # else:
         ingress.create()
 
     def __get_overridable_params(self, job_wrapper, param_key):
@@ -766,7 +758,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             elif active > 0 and failed < max_pod_retries + 1:
                 if not job_state.running:
                     if self.__job_pending_due_to_unschedulable_pod(job_state):
-                        log.debug("PP Job pending..")
+                        log.debug(f"Job id: {job_state.job_id} with k8s id: {job.name}  pending...")
                         if self.runner_params.get("k8s_unschedulable_walltime_limit"):
                             creation_time_str = job.obj["metadata"].get("creationTimestamp")
                             creation_time = datetime.strptime(creation_time_str, "%Y-%m-%dT%H:%M:%SZ")
@@ -778,20 +770,20 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                         else:
                             pass
                     else:
-                        log.debug("Job set to running..")
+                        log.debug("Job set to running...")
                         job_state.running = True
                         job_state.job_wrapper.change_state(model.Job.states.RUNNING)
                 return job_state
             elif job_persisted_state == model.Job.states.DELETED:
                 # Job has been deleted via stop_job and job has not been deleted,
                 # remove from watched_jobs by returning `None`
-                log.debug("Job is DELETED..")
+                log.debug(f"Job id: {job_state.job_id} has been already deleted...")
                 if job_state.job_wrapper.cleanup_job in ("always", "onsuccess"):
                     job_state.job_wrapper.cleanup()
                 return None
             else:
                 log.debug(f"Job is failed and not deleted, looking at failure")
-                log.debug(f"Job state before handle job failure: {job_state.job_wrapper.get_state()}")
+                log.debug(f"Job id: {job_state.job_id} failed but has not been deleted yet. Current state: {job_state.job_wrapper.get_state()}")
                 self._handle_job_failure(job, job_state)
                 # changes for resubmission (removed self.mark_as_failed from handle_job_failure)
                 self.work_queue.put((self.mark_as_failed, job_state))
@@ -838,19 +830,19 @@ class KubernetesJobRunner(AsynchronousJobRunner):
     def _handle_job_failure(self, job, job_state):
         # Figure out why job has failed
         with open(job_state.error_file, "a") as error_file:
-            log.debug("PP Trying with error file in _handle_job_failure")
+            log.debug("Trying with error file in _handle_job_failure")
             if self.__job_failed_due_to_low_memory(job_state):
-                log.debug("PP OOM reached!")
+                log.debug(f"OOM detected for job: {job_state.job_id}")
                 error_file.write("Job killed after running out of memory. Try with more memory.\n")
                 job_state.fail_message = "Tool failed due to insufficient memory. Try with more memory."
                 job_state.runner_state = JobState.runner_states.MEMORY_LIMIT_REACHED
             elif self.__job_failed_due_to_walltime_limit(job):
-                log.debug("PP checking for walltime")
+                log.debug(f"Walltime limit reached for job: {job_state.job_id}")
                 error_file.write("DeadlineExceeded")
                 job_state.fail_message = "Job was active longer than specified deadline"
                 job_state.runner_state = JobState.runner_states.WALLTIME_REACHED
             else:
-                log.debug("PP no idea!")
+                log.debug(f"Unknown error detected in job: {job_state.job_id}")
                 error_file.write("Exceeded max number of job retries allowed for job\n")
                 job_state.fail_message = "More job retries failed than allowed. See standard output within the info section for details."
         # changes for resubmission
@@ -1051,8 +1043,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         
         # TODO: These might not exist for running jobs at the upgrade to 19.XX, remove that
         # assumption in 20.XX.
-        tool_stderr = "Galaxy issue: Stderr failed to be retrieved from the job working directory."
-        tool_stdout = "Galaxy issue: Stdout failed to be retrieved from the job working directory."
+        tool_stderr = "Galaxy issue: stderr could not be retrieved from the job working directory."
+        tool_stdout = "Galaxy issue: stdout could not be retrieved from the job working directory."
         if os.path.exists(tool_stdout_path):
             with open(tool_stdout_path, "rb") as stdout_file:
                 tool_stdout = self._job_io_for_db(stdout_file)
