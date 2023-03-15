@@ -170,7 +170,7 @@ class ObjectStore(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def size(self, obj, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False):
+    def size(self, obj, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False) -> int:
         """
         Return size of the object identified by `obj`.
 
@@ -850,7 +850,7 @@ class DiskObjectStore(ConcreteObjectStore):
         """Override `ObjectStore`'s stub by checking file size on disk."""
         return self.size(obj, **kwargs) == 0
 
-    def _size(self, obj, **kwargs):
+    def _size(self, obj, **kwargs) -> int:
         """Override `ObjectStore`'s stub by return file size on disk.
 
         Returns 0 if the object doesn't exist yet or other error.

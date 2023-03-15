@@ -400,8 +400,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
     def _get_size_in_cloud(self, rel_path):
         try:
             obj = self.bucket.objects.get(rel_path)
-            if obj:
-                return obj.size
+            return obj.size
         except Exception:
             log.exception("Could not get size of key '%s' from S3", rel_path)
             return -1

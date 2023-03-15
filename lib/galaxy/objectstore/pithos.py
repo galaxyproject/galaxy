@@ -309,7 +309,7 @@ class PithosObjectStore(ConcreteObjectStore):
             raise ObjectNotFound(f"objectstore.empty, object does not exist: {obj}, kwargs: {kwargs}")
         return bool(self._size(obj, **kwargs))
 
-    def _size(self, obj, **kwargs):
+    def _size(self, obj, **kwargs) -> int:
         """
         :returns: The size of the object, or 0 if it doesn't exist (sorry for
             that, not our fault, the ObjectStore interface is like that some
