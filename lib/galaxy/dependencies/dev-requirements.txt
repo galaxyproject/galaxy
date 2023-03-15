@@ -227,7 +227,7 @@ tqdm==4.64.0; python_version >= "2.7" and python_full_version < "3.0.0" or pytho
 trio-websocket==0.9.2; python_version >= "3.7" and python_version < "4.0"
 trio==0.21.0; python_version >= "3.7" and python_version < "4.0"
 tuspy==0.2.5
-tuswsgi==0.5.4
+tuswsgi==0.5.5
 twill==3.0.2
 typed-ast==1.5.4; python_version < "3.8" and implementation_name == "cpython" and python_full_version >= "3.6.2" and python_version >= "3.7"
 typing-extensions==4.2.0; python_version >= "3.7"
