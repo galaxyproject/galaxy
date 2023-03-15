@@ -2,8 +2,8 @@
 Offload jobs to a Kubernetes cluster.
 """
 
-import logging
 import json  # for debugging of API objects
+import logging
 import math
 import os
 import re
@@ -13,9 +13,6 @@ from datetime import datetime
 import yaml
 
 from galaxy import model
-from galaxy.util import (
-    unicodify,
-)
 from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState,
@@ -48,6 +45,7 @@ from galaxy.jobs.runners.util.pykube_util import (
     Service,
     service_object_dict,
 )
+from galaxy.util import unicodify
 from galaxy.util.bytesize import ByteSize
 
 log = logging.getLogger(__name__)
@@ -100,8 +98,12 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 map=str, valid=lambda s: s == "$gid" or isinstance(s, int) or not s or s.isdigit(), default=None
             ),
             k8s_cleanup_job=dict(map=str, valid=lambda s: s in {"onsuccess", "always", "never"}, default="always"),
-            k8s_pod_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=1),  # note that if the backOffLimit is lower, this paramer will have no effect.
-            k8s_job_spec_back_off_limit=dict(map=int, valid=lambda x: int(x) >= 0, default=0),  # this means that it will stop retrying after 1 failure.
+            k8s_pod_retries=dict(
+                map=int, valid=lambda x: int(x) >= 0, default=1
+            ),  # note that if the backOffLimit is lower, this paramer will have no effect.
+            k8s_job_spec_back_off_limit=dict(
+                map=int, valid=lambda x: int(x) >= 0, default=0
+            ),  # this means that it will stop retrying after 1 failure.
             k8s_walltime_limit=dict(map=int, valid=lambda x: int(x) >= 0, default=172800),
             k8s_unschedulable_walltime_limit=dict(map=int, valid=lambda x: not x or int(x) >= 0, default=None),
             k8s_interactivetools_use_ssl=dict(map=bool, default=False),
@@ -220,7 +222,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
     def __has_guest_ports(self, job_wrapper):
         # Check if job has guest ports or interactive tool entry points that would signal that
-        log.debug(f"Checking if job {job_wrapper.get_id_tag()} is an interactive tool. guest ports: {job_wrapper.guest_ports}. interactive entry points: {job_wrapper.interactivetool_entry_points}")
+        log.debug(
+            f"Checking if job {job_wrapper.get_id_tag()} is an interactive tool. guest ports: {job_wrapper.guest_ports}. interactive entry points: {job_wrapper.interactivetool_entry_points}"
+        )
         return bool(job_wrapper.guest_ports) or bool(job_wrapper.get_job().interactivetool_entry_points)
 
     def __configure_port_routing(self, ajs):
@@ -468,26 +472,28 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             },
             "spec": {
                 "ingressClassName": "nginx",
-                "rules": [ {
-                            "host": ep["domain"],
-                            "http": {
-                                "paths": [ {
-                                                "backend": {
-                                                        "service": {
-                                                            "name": self.__get_k8s_job_name(
-                                                                self.__produce_k8s_job_prefix(), ajs.job_wrapper
-                                                            ),
-                                                            "port": { "number": int(ep["tool_port"])}
-                                                        }
-                                                },
-                                                "path": ep.get("entry_path", "/"),
-                                                "pathType": "Prefix"
-                                            }
-                                        ]
+                "rules": [
+                    {
+                        "host": ep["domain"],
+                        "http": {
+                            "paths": [
+                                {
+                                    "backend": {
+                                        "service": {
+                                            "name": self.__get_k8s_job_name(
+                                                self.__produce_k8s_job_prefix(), ajs.job_wrapper
+                                            ),
+                                            "port": {"number": int(ep["tool_port"])},
+                                        }
                                     },
-                            }
-                            for ep in entry_points
-                         ]
+                                    "path": ep.get("entry_path", "/"),
+                                    "pathType": "Prefix",
+                                }
+                            ]
+                        },
+                    }
+                    for ep in entry_points
+                ],
             },
         }
         if self.runner_params.get("k8s_interactivetools_use_ssl"):
@@ -782,7 +788,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                     job_state.job_wrapper.cleanup()
                 return None
             else:
-                log.debug(f"Job id: {job_state.job_id} failed and it is not a deletion case. Current state: {job_state.job_wrapper.get_state()}")
+                log.debug(
+                    f"Job id: {job_state.job_id} failed and it is not a deletion case. Current state: {job_state.job_wrapper.get_state()}"
+                )
                 self._handle_job_failure(job, job_state)
                 # changes for resubmission (removed self.mark_as_failed from handle_job_failure)
                 self.work_queue.put((self.mark_as_failed, job_state))
@@ -794,14 +802,18 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 if job_state.job_wrapper.cleanup_job in ("always", "onsuccess"):
                     job_state.job_wrapper.cleanup()
                 return None
-            if job_state.job_wrapper.get_job().state == model.Job.states.STOPPED and self.__has_guest_ports(job_state.job_wrapper):
+            if job_state.job_wrapper.get_job().state == model.Job.states.STOPPED and self.__has_guest_ports(
+                job_state.job_wrapper
+            ):
                 # Interactive job has been stopped via stop_job (most likely by the user),
                 # cleanup and remove from watched_jobs by returning `None`. STOPPED jobs are cleaned up elsewhere.
                 # Marking as finished makes sure that the interactive job output is available in the UI.
                 self.mark_as_finished(job_state)
                 return None
             # there is no job responding to this job_id, it is either lost or something happened.
-            log.error(f"No Jobs are available under expected selector app={job_state.job_id} and they are not deleted or stopped either.")
+            log.error(
+                f"No Jobs are available under expected selector app={job_state.job_id} and they are not deleted or stopped either."
+            )
             self.mark_as_failed(job_state)
             # job is no longer viable - remove from watched jobs
             return None
@@ -843,7 +855,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             else:
                 log.debug(f"Unknown error detected in job: {job_state.job_id}")
                 error_file.write("Exceeded max number of job retries allowed for job\n")
-                job_state.fail_message = "More job retries failed than allowed. See standard output within the info section for details."
+                job_state.fail_message = (
+                    "More job retries failed than allowed. See standard output within the info section for details."
+                )
         # changes for resubmission
         # job_state.running = False
         # self.mark_as_failed(job_state)
@@ -1063,7 +1077,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # END Get STDOUT and STDERR from the job and tool to be stored in the database #
 
         # full status empty leaves the UI without stderr/stdout
-        full_status = {"stderr" : tool_stderr, "stdout" : tool_stdout}
+        full_status = {"stderr": tool_stderr, "stdout": tool_stdout}
         log.debug(f"({job.id}/{job.job_runner_external_id}) tool_stdout: {tool_stdout}")
         log.debug(f"({job.id}/{job.job_runner_external_id}) tool_stderr: {tool_stderr}")
         log.debug(f"({job.id}/{job.job_runner_external_id}) job_stdout: {job_stdout}")
