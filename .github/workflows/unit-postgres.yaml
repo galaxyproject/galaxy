@@ -56,3 +56,6 @@ jobs:
       - name: Run migration tests
         run: ./run_tests.sh -unit test/unit/data/model/migrations/test_migrations.py
         working-directory: 'galaxy root'
+      - name: Run test migrate database
+        run: ./run_tests.sh -unit test/unit/app/test_migrate_database.py
+        working-directory: 'galaxy root'
