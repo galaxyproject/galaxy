@@ -5,62 +5,30 @@ export interface Option {
     name: string;
     value: string;
     options: Array<Option>;
-    selected: boolean;
 }
 
 export interface FormDrilldownProps {
-    option: Option;
-    depth: number;
+    options: Array<Option>;
     handleClick: Function;
-
 }
-function toggleChildren() {
-    showChildren.value = !showChildren.value;
-}
-
-const showChildren = ref(false);
 
 const props = defineProps<FormDrilldownProps>();
 
+const showChildren = ref(false);
+
 const hasOptions = computed(() => {
-    return props.option.options.length > 0;
-});
-const indent = computed(() => {
-    return { transform: `translate(${props.depth * 25}px)`, "list-style-type": "none" };
+    return props.options.length > 0;
 });
 
-const emit = defineEmits<{
-    (e: "selected", name: string, selected: boolean): void;
-}>();
-
-const selected = computed({
-    get: () => {
-        return props.option.selected;
-    },
-    set: (newVal) => {
-        props.option.selected = newVal;
-        props.handleClick(props.option.name, props.option.selected);
-    },
-});
+function toggleChildren() {
+    showChildren.value = !showChildren.value;
+}
 </script>
+
 <template>
     <div class="form-drilldown-option">
-        <li :class="{ 'ui-drilldown-subgroup': depth > 0 }" :style="indent">
-            <span
-                v-if="hasOptions"
-                @click="toggleChildren"
-                class="ui-drilldown-button"
-                :class="{ 'fa fa-plus-square': !showChildren, 'fa fa-minus-square': showChildren }" />
-            <b-form-checkbox v-model="selected" style="display: inline-block" />
-            {{ props.option.name }}
-        </li>
-        <form-drilldown-option
-            v-show="showChildren"
-            v-for="option in props.option.options"
-            :key="option.name"
-            :option="option"
-            :depth="depth + 1"
-            :handle-click="handleClick">
-        </form-drilldown-option>
+        <ul v-for="option in options" :key="option.name" class="options">
+            {{ option.name }}
+        </ul>
     </div>
 </template>

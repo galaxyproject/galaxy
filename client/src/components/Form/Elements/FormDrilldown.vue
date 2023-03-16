@@ -55,8 +55,6 @@ function addToSelected(n: string, v: boolean) {
 
 <template>
     <div v-if="hasOptions">
-        <ul v-for="option in options" :key="option.name" class="options">
-            <form-drilldown-option :option="option" :depth="0" :handle-click="addToSelected"/>
-        </ul>
+        <form-drilldown-option :options="options" :handle-click="addToSelected"/>
     </div>
 </template>
