@@ -196,9 +196,6 @@ export default {
         dragLeave(event) {
             this.$root.$emit("bv::hide::tooltip", this.iconId);
         },
-        onChange() {
-            this.$emit("onChange");
-        },
         onRemove() {
             const connections = this.connectionStore.getConnectionsForTerminal(this.id);
             connections.forEach((connection) => this.terminal.disconnect(connection));

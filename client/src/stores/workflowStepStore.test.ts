@@ -12,6 +12,7 @@ const stepInputConnection: StepInputConnection = {
 };
 
 const workflowStepZero: NewStep = {
+    id: 0,
     input_connections: {},
     inputs: [],
     name: "a step",
@@ -33,7 +34,7 @@ describe("Connection Store", () => {
         const stepStore = useWorkflowStepStore();
         expect(stepStore.steps).toStrictEqual({});
         stepStore.addStep(workflowStepZero);
-        expect(stepStore.getStep(0)).toBe(workflowStepZero);
+        expect(stepStore.getStep(0)).toStrictEqual(workflowStepZero);
         expect(workflowStepZero.id).toBe(0);
     });
     it("removes step", () => {
