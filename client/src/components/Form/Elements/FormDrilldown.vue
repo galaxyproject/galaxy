@@ -6,18 +6,21 @@ export interface Option {
     name: string;
     value: string;
     options: Array<Option>;
-    selected: boolean;
 }
 
 export interface FormDrilldownProps {
-    value?: string | string[];
     id: string;
+    value?: string | string[];
     options: Array<Option>;
 }
 
 const props = withDefaults(defineProps<FormDrilldownProps>(), {
-    value: "",
+    value: null,
 });
+
+const emit = defineEmits<{
+    (e: "input", value: string[]): void;
+}>();
 
 const hasOptions = computed(() => {
     return props.options.length > 0;
@@ -37,27 +40,23 @@ const currentValue = computed({
 });
 
 function addToSelected(n: string, v: boolean) {
-    if (v == true) {
+    /*if (v == true) {
         currentValue.push(n);
     } else if (v == false) {
         const index = currentValue.indexOf(n);
         currentValue.splice(index, 1);
     }
     emit("input", currentValue); //HELP problem with this is that once a checkbox is checked, if you uncheck it no longer requires something is checked, and you're able to send an empty array
-    console.log(":CV:", currentValue);
+    console.log(":CV:", currentValue);*/
 }
 
 //TODO implement selectAll
-
-const emit = defineEmits<{
-    (e: "input", value: string[]): void;
-}>();
 </script>
 
 <template>
     <div v-if="hasOptions">
         <ul v-for="option in options" :key="option.name" class="options">
-            <form-drilldown-option :option="option" :depth="0" :handle-click="addToSelected"></form-drilldown-option>
+            <form-drilldown-option :option="option" :depth="0" :handle-click="addToSelected"/>
         </ul>
     </div>
 </template>
