@@ -7,29 +7,17 @@ import ObjectStoreBadges from "@/components/ObjectStore/ObjectStoreBadges.vue";
 import ProvidedQuotaSourceUsageBar from "@/components/User/DiskUsage/Quota/ProvidedQuotaSourceUsageBar.vue";
 import { getSelectableObjectStores } from "./services";
 
-const props = defineProps({
-    selectedObjectStoreId: {
-        type: String,
-        default: null,
-    },
-    defaultOptionTitle: {
-        // "Use Your User Preference Defaults"
-        type: String,
-        required: true,
-    },
-    defaultOptionDescription: {
-        // "Selecting this will cause the history to not set a default and to fallback to your user preference defined default."
-        type: String,
-        required: true,
-    },
-    forWhat: {
-        type: String,
-        required: true,
-    },
-    parentError: {
-        type: String,
-        default: null,
-    },
+interface SelectObjectStoreProps {
+    selectedObjectStoreId?: String | null;
+    defaultOptionTitle: String;
+    defaultOptionDescription: String;
+    forWhat: String;
+    parentError?: String | null;
+}
+
+const props = withDefaults(defineProps<SelectObjectStoreProps>(), {
+    selectedObjectStoreId: null,
+    parentError: null,
 });
 
 const loading = ref(true);
@@ -77,7 +65,9 @@ function variant(objectStoreId: string) {
     }
 }
 
-const emit = defineEmits(["onSubmit"]);
+const emit = defineEmits<{
+    (e: "onSubmit", id: string | null): void;
+}>();
 
 async function handleSubmit(preferredObjectStoreId: string) {
     emit("onSubmit", preferredObjectStoreId);

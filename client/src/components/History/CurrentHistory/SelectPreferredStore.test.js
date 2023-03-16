@@ -60,4 +60,27 @@ describe("SelectPreferredStore.vue", () => {
         const emitted = wrapper.emitted();
         expect(emitted["updated"][0][0]).toEqual(null);
     });
+
+    it("updates object store to on non-null selection", async () => {
+        const wrapper = mountComponent();
+        await flushPromises();
+        const els = wrapper.findAll(PREFERENCES.object_store_selection.option_buttons.selector);
+        expect(els.length).toBe(3);
+        const galaxyDefaultOption = wrapper.find(
+            PREFERENCES.object_store_selection.option_button({ object_store_id: "object_store_2" }).selector
+        );
+        expect(galaxyDefaultOption.exists()).toBeTruthy();
+        axiosMock
+            .onPut(
+                `/api/histories/${TEST_HISTORY_ID}`,
+                expect.objectContaining({ preferred_object_store_id: "object_store_2" })
+            )
+            .reply(202);
+        await galaxyDefaultOption.trigger("click");
+        await flushPromises();
+        const errorEl = wrapper.find(".object-store-selection-error");
+        expect(errorEl.exists()).toBeFalsy();
+        const emitted = wrapper.emitted();
+        expect(emitted["updated"][0][0]).toEqual("object_store_2");
+    });
 });

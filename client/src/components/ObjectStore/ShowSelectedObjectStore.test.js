@@ -1,6 +1,8 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 import ShowSelectedObjectStore from "./ShowSelectedObjectStore";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import DescribeObjectStore from "@/components/ObjectStore/DescribeObjectStore.vue";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
@@ -34,12 +36,12 @@ describe("ShowSelectedObjectStore", () => {
                 DescribeObjectStore: true,
             },
         });
-        let loadingEl = wrapper.find("loadingspan-stub");
+        let loadingEl = wrapper.findComponent(LoadingSpan);
         expect(loadingEl.exists()).toBeTruthy();
-        expect(loadingEl.attributes("message")).toBeLocalizationOf("Loading object store details");
+        expect(loadingEl.find(".loading-message").text()).toContainLocalizationOf("Loading object store details");
         await flushPromises();
-        loadingEl = wrapper.find("loadingspan-stub");
+        loadingEl = wrapper.findComponent(LoadingSpan);
         expect(loadingEl.exists()).toBeFalsy();
-        expect(wrapper.find("describeobjectstore-stub").exists()).toBeTruthy();
+        expect(wrapper.findComponent(DescribeObjectStore).exists()).toBeTruthy();
     });
 });
