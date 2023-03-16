@@ -1,10 +1,10 @@
-import json
-from concurrent.futures import TimeoutError
 import datetime
-from functools import lru_cache
+import json
 import os
-from pathlib import Path
 import shutil
+from concurrent.futures import TimeoutError
+from functools import lru_cache
+from pathlib import Path
 from typing import (
     Any,
     Callable,
@@ -514,10 +514,13 @@ def dispatch_pending_notifications(notification_manager: NotificationManager):
 @galaxy_task(action="clean up job working directories")
 def cleanup_jwds(sa_session: galaxy_scoped_session, object_store: BaseObjectStore):
     """Cleanup job working directories for failed jobs that are older than X days"""
+
     def get_failed_jobs():
         failed_jobs = {}
         jobs = sa_session.query(model.Job).filter(
-            model.Job.state == "error", model.Job.update_time > datetime.datetime.now() - datetime.timedelta(days=days), model.Job.object_store_id is not None
+            model.Job.state == "error",
+            model.Job.update_time > datetime.datetime.now() - datetime.timedelta(days=days),
+            model.Job.object_store_id is not None,
         )
 
         for job in jobs:
