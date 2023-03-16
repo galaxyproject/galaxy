@@ -64,9 +64,9 @@ for key in TESTCASES:
 
 
 @pytest.mark.parametrize(
-    "content, equals", 
-    [(test_case["content"], test_case["equals"]) for _, test_case in TESTCASES.items()], 
-    ids=TESTCASES.keys()
+    "content, equals",
+    [(test_case["content"], test_case["equals"]) for _, test_case in TESTCASES.items()],
+    ids=TESTCASES.keys(),
 )
 def test_generate_targets(content, equals):
     equals = FALLBACK_LINE_TUPLE(**equals)
@@ -82,8 +82,8 @@ def test_generate_targets(content, equals):
 
 @pytest.mark.parametrize(
     "content, equals",
-    [(test_case["content"], test_case["equals"]) for _, test_case in TESTCASES.items()], 
-    ids=TESTCASES.keys()
+    [(test_case["content"], test_case["equals"]) for _, test_case in TESTCASES.items()],
+    ids=TESTCASES.keys(),
 )
 def test_generate_targets_from_file(content, equals):
     equals = FALLBACK_LINE_TUPLE(**equals)
