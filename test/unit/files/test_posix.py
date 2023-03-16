@@ -391,6 +391,27 @@ def test_posix_file_url_only_mode_even_admin_cannot_write():
             write_from(file_sources, test_url, "my test content", user_context=user_context)
 
 
+def test_posix_file_url_only_mode_malformed():
+    with tempfile.NamedTemporaryFile(mode="w") as tf:
+        tf.write("File content returned from a file://file:// location")
+        tf.flush()
+        test_url = f"file://file://{tf.name}"
+        user_context = user_context_fixture(is_admin=True)
+        file_sources = _configured_file_sources(empty_root=True)
+        file_source_pair = file_sources.get_file_source_path(test_url)
+
+        assert file_source_pair.path == test_url[7:]
+        assert file_source_pair.file_source.id == "test1"
+
+        with pytest.raises(FileNotFoundError, match="\[Errno 2\] No such file or directory: '/file:/"):
+            assert_realizes_as(
+                file_sources,
+                test_url,
+                "File content returned from a file://file:// location",
+                user_context=user_context,
+            )
+
+
 def _assert_user_access_prohibited(file_sources, user_context):
     with pytest.raises(ItemAccessibilityException):
         list_root(file_sources, "gxfiles://test1", recursive=False, user_context=user_context)
