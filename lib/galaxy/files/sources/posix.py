@@ -55,7 +55,7 @@ class PosixFilesSource(BaseFilesSource):
 
     def _list(self, path="/", recursive=True, user_context=None, opts: Optional[FilesSourceOptions] = None):
         if not self.root:
-            raise exceptions.ItemAccessibilityException(f"Cannot list files when configured to handle only file:// protocol")
+            raise exceptions.ItemAccessibilityException("Listing files at file:// URLs has been disabled.")
         dir_path = self._to_native_path(path, user_context=user_context)
         if not self._safe_directory(dir_path):
             raise exceptions.ObjectNotFound(f"The specified directory does not exist [{dir_path}].")
@@ -77,7 +77,7 @@ class PosixFilesSource(BaseFilesSource):
         self, source_path: str, native_path: str, user_context=None, opts: Optional[FilesSourceOptions] = None
     ):
         if not self.root and (not user_context or not user_context.is_admin):
-            raise exceptions.ItemAccessibilityException(f"Non admins cannot realize files when configured to handle only file:// protocol")
+            raise exceptions.ItemAccessibilityException("Writing to file:// URLs has been disabled.")
 
         effective_root = self._effective_root(user_context)
         source_native_path = self._to_native_path(source_path, user_context=user_context)
@@ -167,7 +167,9 @@ class PosixFilesSource(BaseFilesSource):
 
     def score_url_match(self, url: str):
         # For security, we need to ensure that a partial match doesn't work. e.g. file://{root}something/myfiles
-        if self.root and (url.startswith(f"{self.get_uri_root()}://{self.root}/") or url == f"self.get_uri_root()://{self.root}"):
+        if self.root and (
+            url.startswith(f"{self.get_uri_root()}://{self.root}/") or url == f"self.get_uri_root()://{self.root}"
+        ):
             return len(f"self.get_uri_root()://{self.root}")
         elif self.root and (url.startswith(f"file://{self.root}/") or url == f"file://{self.root}"):
             return len(f"file://{self.root}")
@@ -178,7 +180,7 @@ class PosixFilesSource(BaseFilesSource):
 
     def to_relative_path(self, url: str) -> str:
         if url.startswith("file://"):
-            return url.replace("file://", "")
+            return url[7:]
         else:
             return super().to_relative_path(url)
 

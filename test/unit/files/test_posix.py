@@ -334,27 +334,6 @@ def test_posix_user_access_using_boolean_rules():
     _assert_user_access_granted(file_sources, user_context)
 
 
-def test_posix_file_url_mode_non_admin_cannot_retrieve():
-    with tempfile.NamedTemporaryFile(mode="w") as tf:
-        tf.write("File content returned from a file:// location")
-        tf.flush()
-        test_url = f"file://{tf.name}"
-        user_context = user_context_fixture()
-        file_sources = _configured_file_sources(empty_root=True)
-        file_source_pair = file_sources.get_file_source_path(test_url)
-
-        assert file_source_pair.path == test_url.replace("file://", "")
-        assert file_source_pair.file_source.id == "test1"
-
-        with pytest.raises(ItemAccessibilityException):
-            assert_realizes_as(
-                file_sources,
-                test_url,
-                "File content returned from a file:// location",
-                user_context=user_context,
-            )
-
-
 def test_posix_file_url_only_mode_non_admin_cannot_retrieve():
     with tempfile.NamedTemporaryFile(mode="w") as tf:
         tf.write("File content returned from a file:// location")
@@ -364,7 +343,7 @@ def test_posix_file_url_only_mode_non_admin_cannot_retrieve():
         file_sources = _configured_file_sources(empty_root=True)
         file_source_pair = file_sources.get_file_source_path(test_url)
 
-        assert file_source_pair.path == test_url.replace("file://", "")
+        assert file_source_pair.path == tf.name
         assert file_source_pair.file_source.id == "test1"
 
         with pytest.raises(ItemAccessibilityException):
@@ -385,7 +364,7 @@ def test_posix_file_url_only_mode_admin_can_retrieve():
         file_sources = _configured_file_sources(empty_root=True)
         file_source_pair = file_sources.get_file_source_path(test_url)
 
-        assert file_source_pair.path == test_url.replace("file://", "")
+        assert file_source_pair.path == tf.name
         assert file_source_pair.file_source.id == "test1"
 
         assert_realizes_as(
@@ -405,7 +384,7 @@ def test_posix_file_url_only_mode_even_admin_cannot_write():
         file_sources = _configured_file_sources(empty_root=True)
         file_source_pair = file_sources.get_file_source_path(test_url)
 
-        assert file_source_pair.path == test_url.replace("file://", "")
+        assert file_source_pair.path == tf.name
         assert file_source_pair.file_source.id == "test1"
 
         with pytest.raises(Exception, match="Cannot write to a non-writable file source"):
@@ -437,7 +416,12 @@ def _assert_user_access_granted(file_sources, user_context):
 
 
 def _configured_file_sources(
-    include_allowlist=False, plugin_extra_config=None, per_user=False, writable=None, allow_subdir_creation=True, empty_root=False
+    include_allowlist=False,
+    plugin_extra_config=None,
+    per_user=False,
+    writable=None,
+    allow_subdir_creation=True,
+    empty_root=False,
 ) -> TestConfiguredFileSources:
     if empty_root:
         tmp, root = "/", None
