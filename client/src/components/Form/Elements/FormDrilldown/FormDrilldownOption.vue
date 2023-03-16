@@ -4,6 +4,7 @@ import FormDrilldownList from "./FormDrilldownList.vue";
 import type { Option } from "./types.js";
 
 export interface Props {
+    currentValue: string[];
     option: Option;
     handleClick: Function;
 }
@@ -14,6 +15,11 @@ const showChildren = ref(false);
 
 const hasOptions = computed(() => {
     return props.option.options.length > 0;
+});
+
+const isChecked = computed(() => {
+    const optionValue = props.option.value;
+    return props.currentValue.indexOf(optionValue) !== -1;
 });
 
 function toggleChildren() {
@@ -27,8 +33,12 @@ function toggleChildren() {
             <span v-if="showChildren" class="fa fa-plus-square" />
             <span v-else class="fa fa-minus-square" />
         </span>
-        <b-form-checkbox class="d-inline" />
+        <b-form-checkbox class="d-inline" :checked="isChecked"/>
         {{ option.name }}
-        <form-drilldown-list v-show="showChildren" :options="option.options" :handle-click="handleClick" />
+        <form-drilldown-list
+            v-show="showChildren"
+            :current-value="currentValue"
+            :options="option.options"
+            :handle-click="handleClick" />
     </li>
 </template>

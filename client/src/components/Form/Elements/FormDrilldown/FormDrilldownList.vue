@@ -4,6 +4,7 @@ import FormDrilldownOption from "./FormDrilldownOption.vue";
 import type { Option } from "./types.js";
 
 export interface Props {
+    currentValue: string[];
     options: Array<Option>;
     handleClick: Function;
 }
@@ -14,7 +15,7 @@ const props = defineProps<Props>();
 <template>
     <div>
         <ul v-for="option in options" :key="option.name" class="ui-drilldown">
-            <form-drilldown-option :option="option" :handle-click="handleClick" />
+            <form-drilldown-option :current-value="currentValue" :option="option" :handle-click="handleClick" />
         </ul>
     </div>
 </template>

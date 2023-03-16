@@ -50,6 +50,6 @@ function addToSelected(n: string, v: boolean) {
 
 <template>
     <div v-if="hasOptions">
-        <form-drilldown-list :options="options" :handle-click="addToSelected" />
+        <form-drilldown-list :current-value="currentValue" :options="options" :handle-click="addToSelected" />
     </div>
 </template>
