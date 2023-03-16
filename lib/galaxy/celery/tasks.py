@@ -543,19 +543,11 @@ def cleanup_jwds(sa_session: galaxy_scoped_session, object_store: BaseObjectStor
 
     # days should be converted to a config option
     days = 5
-    galaxy_log_dir = "/var/log/galaxy"
-    log_file_name = f"jwds_cleanup_{datetime.datetime.now().strftime('%d_%m_%Y-%I_%M_%S')}.log"
-
     failed_jobs = get_failed_jobs()
 
     if not failed_jobs:
         log.info("No failed jobs found within the last %s days", days)
 
-    with open(f"{galaxy_log_dir}/{log_file_name}", "w") as jwd_log:
-        jwd_log.write(
-            "The following job working directories (JWDs) belonging "
-            "to the failed jobs are deleted\nJob id: JWD path\n"
-                )
         for job_id, job_working_directory in failed_jobs.items():
             delete_jwd(job_working_directory)
-            jwd_log.write(f"{job_id}: {job_working_directory}")
+            log.info("Deleted job working directory for job %s", job_id)
