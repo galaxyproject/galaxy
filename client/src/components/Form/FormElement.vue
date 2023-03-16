@@ -11,7 +11,7 @@ import FormText from "./Elements/FormText.vue";
 import FormOptionalText from "./Elements/FormOptionalText.vue";
 import FormRulesEdit from "./Elements/FormRulesEdit.vue";
 import FormUpload from "./Elements/FormUpload.vue";
-import FormDrilldown from "./Elements/FormDrilldown.vue";
+import FormDrilldown from "./Elements/FormDrilldown/FormDrilldown.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref, computed, useAttrs } from "vue";
 import { library } from "@fortawesome/fontawesome-svg-core";

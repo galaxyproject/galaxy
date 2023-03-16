@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import FormDrilldownOption from "./FormDrilldownOption.vue";
+import FormDrilldownList from "./FormDrilldownList.vue";
 
 export interface Option {
     name: string;
@@ -55,6 +55,6 @@ function addToSelected(n: string, v: boolean) {
 
 <template>
     <div v-if="hasOptions">
-        <form-drilldown-option :options="options" :handle-click="addToSelected" />
+        <form-drilldown-list :options="options" :handle-click="addToSelected" />
     </div>
 </template>
