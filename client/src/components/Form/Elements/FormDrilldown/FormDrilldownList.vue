@@ -1,12 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import FormDrilldownOption from "./FormDrilldownOption.vue";
-
-export interface Option {
-    name: string;
-    value: string;
-    options: Array<Option>;
-}
+import type { Option } from "./types.js";
 
 export interface Props {
     options: Array<Option>;
