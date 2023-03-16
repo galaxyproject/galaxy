@@ -179,7 +179,9 @@ class PosixFilesSource(BaseFilesSource):
             return super().score_url_match(url)
 
     def to_relative_path(self, url: str) -> str:
-        if url.startswith("file://"):
+        if url.startswith(f"file://{self.root}"):
+            return url[len(f"file://{self.root}") :]
+        elif url.startswith("file://"):
             return url[7:]
         else:
             return super().to_relative_path(url)

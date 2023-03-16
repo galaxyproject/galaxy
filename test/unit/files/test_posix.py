@@ -3,7 +3,10 @@ import tempfile
 
 import pytest
 
-from galaxy.exceptions import ItemAccessibilityException
+from galaxy.exceptions import (
+    ItemAccessibilityException,
+    RequestParameterInvalidException,
+)
 from galaxy.files import (
     ConfiguredFileSources,
     ConfiguredFileSourcesConfig,
@@ -412,6 +415,22 @@ def test_posix_file_url_only_mode_malformed():
             )
 
 
+def test_posix_file_url_allowed_root():
+    file_sources, root = _configured_file_sources_with_root(plugin_extra_config={"enforce_symlink_security": False})
+    test_url = f"file://{root}/a"
+    assert_realizes_as(file_sources, test_url, "a\n")
+
+
+def test_posix_file_url_disallowed_root():
+    file_sources, root = _configured_file_sources_with_root(plugin_extra_config={"enforce_symlink_security": False})
+    with tempfile.NamedTemporaryFile(mode="w") as tf:
+        tf.write("some content")
+        tf.flush()
+        test_url = f"file://{tf.name}"
+        with pytest.raises(RequestParameterInvalidException, match="Could not find handler for URI"):
+            assert_realizes_as(file_sources, test_url, "some content\n")
+
+
 def _assert_user_access_prohibited(file_sources, user_context):
     with pytest.raises(ItemAccessibilityException):
         list_root(file_sources, "gxfiles://test1", recursive=False, user_context=user_context)
@@ -436,7 +455,7 @@ def _assert_user_access_granted(file_sources, user_context):
     assert_realizes_as(file_sources, "gxfiles://test1/a", "a\n", user_context=user_context)
 
 
-def _configured_file_sources(
+def _configured_file_sources_with_root(
     include_allowlist=False,
     plugin_extra_config=None,
     per_user=False,
@@ -468,6 +487,25 @@ def _configured_file_sources(
     if not empty_root:
         write_file_fixtures(tmp, root)
     file_sources = TestConfiguredFileSources(file_sources_config, conf_dict={"test1": plugin}, test_root=root)
+    return file_sources, root
+
+
+def _configured_file_sources(
+    include_allowlist=False,
+    plugin_extra_config=None,
+    per_user=False,
+    writable=None,
+    allow_subdir_creation=True,
+    empty_root=False,
+) -> TestConfiguredFileSources:
+    file_sources, _ = _configured_file_sources_with_root(
+        include_allowlist=include_allowlist,
+        plugin_extra_config=plugin_extra_config,
+        per_user=per_user,
+        writable=writable,
+        allow_subdir_creation=allow_subdir_creation,
+        empty_root=empty_root,
+    )
     return file_sources
 
 
