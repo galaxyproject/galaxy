@@ -34,15 +34,16 @@ const currentValue = computed({
     },
 });
 
-function addToSelected(n: string, v: boolean) {
-    /*if (v == true) {
-        currentValue.push(n);
-    } else if (v == false) {
-        const index = currentValue.indexOf(n);
-        currentValue.splice(index, 1);
+function handleClick(value: string) {
+    console.log(value);
+    const newValue = currentValue.value.slice();
+    const index = newValue.indexOf(value);
+    if (index !== -1) {
+        newValue.splice(index, 1);
+    } else {
+        newValue.push(value);
     }
-    emit("input", currentValue); //HELP problem with this is that once a checkbox is checked, if you uncheck it no longer requires something is checked, and you're able to send an empty array
-    console.log(":CV:", currentValue);*/
+    emit("input", newValue);
 }
 
 //TODO implement selectAll
@@ -50,6 +51,6 @@ function addToSelected(n: string, v: boolean) {
 
 <template>
     <div v-if="hasOptions">
-        <form-drilldown-list :current-value="currentValue" :options="options" :handle-click="addToSelected" />
+        <form-drilldown-list :current-value="currentValue" :options="options" :handle-click="handleClick" />
     </div>
 </template>
