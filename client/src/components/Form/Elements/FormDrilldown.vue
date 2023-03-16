@@ -27,14 +27,14 @@ const hasOptions = computed(() => {
 });
 
 const currentValue = computed({
-    get: () : string[] => {
+    get: (): string[] => {
         if (Array.isArray(props.value)) {
             return props.value;
         } else {
             return [props.value];
         }
     },
-    set: (newValue: string[]) : void => {
+    set: (newValue: string[]): void => {
         emit("input", newValue);
     },
 });
@@ -55,6 +55,6 @@ function addToSelected(n: string, v: boolean) {
 
 <template>
     <div v-if="hasOptions">
-        <form-drilldown-option :options="options" :handle-click="addToSelected"/>
+        <form-drilldown-option :options="options" :handle-click="addToSelected" />
     </div>
 </template>

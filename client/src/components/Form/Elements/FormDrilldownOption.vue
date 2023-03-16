@@ -26,9 +26,23 @@ function toggleChildren() {
 </script>
 
 <template>
-    <div class="form-drilldown-option">
-        <ul v-for="option in options" :key="option.name" class="options">
-            {{ option.name }}
+    <div>
+        <ul v-for="option in options" :key="option.name" class="ui-drilldown">
+            <li>
+                <span
+                    v-if="hasOptions"
+                    @click="toggleChildren"
+                    :class="{ 'fa fa-plus-square': !showChildren, 'fa fa-minus-square': showChildren }" />
+                <b-form-checkbox class="d-inline" />
+                {{ option.name }}
+                <form-drilldown-option v-show="showChildren" :options="option.options" :handle-click="handleClick" />
+            </li>
         </ul>
     </div>
 </template>
+
+<style>
+    .ui-drilldown {
+        list-style-type: none;
+    }
+</style>
