@@ -23,7 +23,18 @@ const hasOptions = computed(() => {
     return props.options.length > 0;
 });
 
-let currentValue: string[] = []; //was called selected, when attempting to use computed currentValue
+const currentValue = computed({
+    get: () : string[] => {
+        if (Array.isArray(props.value)) {
+            return props.value;
+        } else {
+            return [props.value];
+        }
+    },
+    set: (newValue: string[]) : void => {
+        emit("input", newValue);
+    },
+});
 
 function addToSelected(n: string, v: boolean) {
     if (v == true) {
@@ -41,20 +52,6 @@ function addToSelected(n: string, v: boolean) {
 const emit = defineEmits<{
     (e: "input", value: string[]): void;
 }>();
-
-// HELP:
-// can't use this computed as is, because, I can't push to computed (like I can with an array)
-// and when I simply set the currentValue to what's in the array I curated above
-// it dowesn't update and emit the changing values, and just remains an empty array
-
-// const currentValue =  computed({
-//     get: () => {
-//         return selected;
-//     },
-//     set: (selected) => {
-//         emit("input", selected);
-//     },
-// });
 </script>
 
 <template>
