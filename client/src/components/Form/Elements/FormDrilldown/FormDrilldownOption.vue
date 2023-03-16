@@ -36,6 +36,7 @@ function toggleChildren() {
         <b-form-checkbox class="d-inline" :checked="isChecked" @change="handleClick(option.value)" />
         {{ option.name }}
         <form-drilldown-list
+            v-if="hasOptions"
             v-show="showChildren"
             :current-value="currentValue"
             :options="option.options"
