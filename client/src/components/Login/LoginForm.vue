@@ -6,33 +6,28 @@
                     <b-alert :show="!!messageText" :variant="messageVariant">
                         <span v-html="messageText" />
                     </b-alert>
-                    <b-alert :show="!!connectExternalURL" variant="info">
-                        Reminder: Registration and usage of multiple accounts is tracked and such accounts are subject
-                        to termination and data deletion. Connect existing account now to avoid possible loss of data.
+                    <b-alert :show="!!connectExternalProvider" variant="info">
+                        There already exists a user with the email <i>{{ connectExternalEmail }}</i>. In order to associate this
+                        account with <i>{{ connectExternalLabel }}</i>, you must first login to your existing account.
                     </b-alert>
                     <b-form id="login" @submit.prevent="submitLogin()">
                         <b-card no-body>
-                            <b-card-header>
-                                <span v-if="!connectExternalURL">{{ headerWelcome }}</span>
-                                <span v-else>
-                                    There already exists a user with the email <i>{{ connectExternalURL }}</i
-                                    >. To associate this external login, you must first be logged in as that existing
-                                    account.
-                                </span>
+                            <b-card-header v-if="!connectExternalProvider">
+                                <span>{{ headerWelcome }}</span>
                             </b-card-header>
                             <b-card-body>
                                 <div>
                                     <!-- standard internal galaxy login -->
                                     <b-form-group :label="labelNameAddress">
                                         <b-form-input
-                                            v-if="!connectExternalURL"
+                                            v-if="!connectExternalProvider"
                                             v-model="login"
                                             name="login"
                                             type="text" />
                                         <b-form-input
                                             v-else
                                             disabled
-                                            :value="connectExternalURL"
+                                            :value="connectExternalEmail"
                                             name="login"
                                             type="text" />
                                     </b-form-group>
@@ -53,11 +48,11 @@
                                 </div>
                                 <div v-if="enableOidc">
                                     <!-- OIDC login-->
-                                    <external-login :login_page="true" />
+                                    <external-login :login_page="true" :exclude_idps="[connectExternalProvider]"/>
                                 </div>
                             </b-card-body>
                             <b-card-footer>
-                                <span v-if="!connectExternalURL">
+                                <span v-if="!connectExternalProvider">
                                     Don't have an account?
                                     <span v-if="allowUserCreation">
                                         <a
@@ -165,9 +160,17 @@ export default {
             var urlParams = new URLSearchParams(window.location.search);
             return urlParams.has("confirm") && urlParams.get("confirm") == "true";
         },
-        connectExternalURL() {
+        connectExternalEmail() {
             var urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get("connect_external");
+            return urlParams.get("connect_external_email");
+        },
+        connectExternalProvider() {
+            var urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get("connect_external_provider");
+        },
+        connectExternalLabel() {
+            var urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get("connect_external_label");
         },
         welcomeUrlWithRoot() {
             return withPrefix(this.welcomeUrl);

@@ -44,6 +44,7 @@ class CustosAuthnz(IdentityProvider):
         self.config = {"provider": provider}
         self.config["verify_ssl"] = oidc_config["VERIFY_SSL"]
         self.config["url"] = oidc_backend_config["url"]
+        self.config['label'] = oidc_backend_config.get('label', provider.capitalize())
         self.config["client_id"] = oidc_backend_config["client_id"]
         self.config["client_secret"] = oidc_backend_config["client_secret"]
         self.config["redirect_uri"] = oidc_backend_config["redirect_uri"]
@@ -144,7 +145,11 @@ class CustosAuthnz(IdentityProvider):
                     else:
                         message = f"There already exists a user with email {email}.  To associate this external login, you must first be logged in as that existing account."
                         log.info(message)
-                        login_redirect_url = f"{login_redirect_url}login/start?connect_external={email}"
+                        login_redirect_url = (
+                            f"{login_redirect_url}login/start"
+                            f"?connect_external_email={email}"
+                            f"&connect_external_provider={self.config['provider']}"
+                            f"&connect_external_label={self.config['label']}")
                         return login_redirect_url, None
                 elif self.config["provider"] == "custos":
                     login_redirect_url = f"{login_redirect_url}login/start?confirm=true&custos_token={json.dumps(token)}"

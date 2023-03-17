@@ -109,6 +109,10 @@ export default {
             type: Boolean,
             required: false,
         },
+        exclude_idps: {
+            type: Array,
+            required: false,
+        }
     },
     data() {
         const galaxy = getGalaxyInstance();
@@ -126,9 +130,11 @@ export default {
     },
     computed: {
         filtered_oidc_idps() {
+            const exclude = ["cilogon", "custos"].concat(this.exclude_idps);
             const filtered = Object.assign({}, this.oidc_idps);
-            delete filtered.custos;
-            delete filtered.cilogon;
+            exclude.forEach( (idp) => {
+                delete filtered[idp];
+            });
             return filtered;
         },
         cilogonListShow() {
