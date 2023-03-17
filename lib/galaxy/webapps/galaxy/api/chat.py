@@ -3,13 +3,14 @@ API Controller providing Chat functionality
 """
 import logging
 
-from . import (
-    Router,
-)
-
 import openai
 
+from galaxy.config import GalaxyAppConfiguration
 from galaxy.schema.schema import ChatPayload
+from . import (
+    depends,
+    Router,
+)
 
 log = logging.getLogger(__name__)
 
@@ -30,12 +31,17 @@ Q: ${query}
 
 
 @router.cbv
-class FastAPIChat:
+class ChatAPI:
+    config: GalaxyAppConfiguration = depends(GalaxyAppConfiguration)
+
     @router.post("/api/chat")
     def query(self, query: ChatPayload) -> str:
         """We're off to ask the wizard"""
 
-        openai.api_key = "NOPE"
+        if self.config.openai_api_key is None:
+            return "OpenAI is not configured for this instance."
+        else:
+            openai.api_key = self.config.openai_api_key
 
         response = openai.Completion.create(
             model="text-davinci-003",

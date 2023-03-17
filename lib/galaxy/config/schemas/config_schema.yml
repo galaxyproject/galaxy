@@ -3923,6 +3923,12 @@ mapping:
           use -1 (default) in order to always use the regular select fields,
           use any other positive number as threshold (above threshold: regular select fields will be used)
 
+      openai_api_key:
+        type: str
+        required: false
+        desc: |
+          API key for OpenAI (https://openai.com/) to enable the wizard (or more?)
+
       enable_tool_recommendations:
         type: bool
         default: false
