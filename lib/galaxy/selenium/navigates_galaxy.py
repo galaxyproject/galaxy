@@ -1651,7 +1651,7 @@ class NavigatesGalaxy(HasDriver):
 
     def history_panel_item_view_dataset_details(self, hid):
         item = self.history_panel_item_component(hid=hid)
-        item.dataset_operations_dropdown.wait_for_and_click()
+        item.dataset_operations.wait_for_visible()
         item.info_button.wait_for_and_click()
         self.components.dataset_details._.wait_for_visible()
 

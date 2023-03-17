@@ -210,7 +210,7 @@ history_panel:
       alltags: '${_} .stateless-tags .tag'
       metadata_file_download: '${_} [data-description="download ${metadata_name}"]'
 
-      dataset_operations_dropdown: '${_}  .dataset-actions'
+      dataset_operations: '${_} .dataset-actions'
 
   # re-usable history editor, scoped for use in different layout scenarios (multi, etc.)
   editor:
