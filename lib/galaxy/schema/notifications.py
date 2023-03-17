@@ -108,9 +108,9 @@ class NewSharedItemNotificationContent(Model):
 
 AnyNotificationContent = Annotated[
     Union[
-        BroadcastNotificationContent,
         MessageNotificationContent,
         NewSharedItemNotificationContent,
+        BroadcastNotificationContent,
     ],
     Field(discriminator="category"),
 ]
