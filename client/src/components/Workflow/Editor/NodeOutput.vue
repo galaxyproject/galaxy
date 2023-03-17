@@ -14,6 +14,7 @@ import {
     type PostJobAction,
 } from "@/stores/workflowStepStore";
 import type { UseScrollReturn } from "@vueuse/core";
+import { NULL_COLLECTION_TYPE_DESCRIPTION } from "./modules/collectionTypeDescription";
 
 const props = defineProps<{
     output: OutputTerminalSource;
@@ -201,6 +202,21 @@ const terminalClass = computed(() => {
     }
     return cls;
 });
+const outputDetails = computed(() => {
+    let collectionType = "collectionType" in terminal.value && terminal.value.collectionType;
+    const outputType =
+        collectionType && collectionType.isCollection
+            ? `output is ${collectionType.collectionType} dataset collection`
+            : `output is dataset`;
+    if (isMultiple.value) {
+        if (!collectionType) {
+            collectionType = NULL_COLLECTION_TYPE_DESCRIPTION;
+        }
+        const effectiveOutputType = terminal.value.mapOver.append(collectionType);
+        return `${outputType} and mapped-over to produce a ${effectiveOutputType.collectionType} dataset collection`;
+    }
+    return outputType;
+});
 
 onBeforeUnmount(() => {
     stateStore.deleteOutputTerminalPosition(props.stepId, props.output.name);
@@ -243,6 +259,7 @@ onBeforeUnmount(() => {
             @move="onMove">
             <div
                 ref="icon"
+                v-b-tooltip.hover="outputDetails"
                 class="icon prevent-zoom"
                 tabindex="0"
                 :aria-label="`Connect output ${output.name} to input. Press space to see a list of available inputs`"
