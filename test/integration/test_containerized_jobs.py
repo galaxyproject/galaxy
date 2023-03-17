@@ -1,6 +1,7 @@
 """Integration tests for running tools in Docker containers."""
 
 import json
+import logging
 import os
 import re
 import unittest
@@ -9,9 +10,13 @@ from typing import (
     Dict,
     List,
     Optional,
+    TYPE_CHECKING,
 )
 
-from typing_extensions import Literal
+from typing_extensions import (
+    Literal,
+    Protocol,
+)
 
 from galaxy.tool_util.deps.container_resolvers.mulled import list_docker_cached_mulled_images
 from galaxy.util.commands import (
@@ -19,8 +24,11 @@ from galaxy.util.commands import (
     which,
 )
 from galaxy_test.base.populators import DatasetPopulator
-from galaxy_test.driver import integration_util
+from galaxy_test.driver.integration_util import IntegrationTestCase
 from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
+
+if TYPE_CHECKING:
+    from requests import Response
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 
@@ -30,6 +38,12 @@ DOCKERIZED_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "dockerized_job_conf
 
 # define an environment (local_singularity) for local execution with singularity enabled
 SINGULARITY_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "singularity_job_conf.yml")
+
+JOB_CONFIG_FOR_CONTAINER_TYPE = {
+    "docker": DOCKERIZED_JOB_CONFIG_FILE,
+    "singularity": SINGULARITY_JOB_CONFIG_FILE,
+}
+
 EXTENDED_TIMEOUT = 120
 
 
@@ -68,21 +82,91 @@ class MulledJobTestCases:
         assert "0.7.15-r1140" in output
 
 
-class ContainerizedIntegrationTestCase(integration_util.IntegrationTestCase):
+class ContainerizedIntegrationTestCase(IntegrationTestCase):
     """
-    TODO seems unused
+    class for containerized (docker) tests
+    provides methods for clearing and checking the container cache
+    cache is cleared before each test
     """
+
+    container_type: str = "docker"
+    dataset_populator: DatasetPopulator
+    framework_tool_and_types = True
+    jobs_directory: str
 
     @classmethod
     def setUpClass(cls) -> None:
         skip_if_container_type_unavailable(cls)
         super().setUpClass()
 
+    def setUp(self) -> None:
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self._clear_container_cache()
+
     @classmethod
     def handle_galaxy_config_kwds(cls, config) -> None:
         super().handle_galaxy_config_kwds(config)
-        config["job_config_file"] = DOCKERIZED_JOB_CONFIG_FILE
+        cls.jobs_directory = cls._test_driver.mkdtemp()
+        config["jobs_directory"] = cls.jobs_directory
+        config["job_config_file"] = JOB_CONFIG_FOR_CONTAINER_TYPE[cls.container_type]
         disable_dependency_resolution(config)
+
+    def _clear_container_cache(self):
+        """
+        clear the cached images
+
+        should be overwritten in test classes for singularity
+        """
+        logging.debug("TestMulledContainerResolver.clear_cache")
+        cmd = ["docker", "system", "prune", "--all", "--force", "--volumes"]
+        shell(cmd)
+
+    def _assert_container_in_cache(
+        self, cached: bool, container_name: str, namespace: Optional[str] = None, hash_func: Literal["v1", "v2"] = "v2"
+    ) -> None:
+        """
+        function to check if the container is cached
+
+        should be overwritten in test classes for singularity
+
+        - determines list of cached images using `docker images`
+        - and checks the given name is in the image identifiers of the cached images
+
+        The boolean `cached` sets the assumption in the caching state.
+        `namespace` and `hash_func` are used to filter cached images.
+        """
+        cache_list = list_docker_cached_mulled_images(namespace, hash_func)
+        imageid_list = [_.image_identifier for _ in cache_list]
+        assert cached == (container_name in imageid_list)
+
+
+class SingularityIntegrationTestCase(ContainerizedIntegrationTestCase):
+    """
+    analogous to ContainerizedIntegrationTestCase, just for singularity
+    provides adapted methods for clearing and checking the container cache
+    """
+    container_type: str = "singularity"
+
+    def _clear_container_cache(self):
+        """
+        see TestMulledContainerResolver
+        """
+        cache_directory = os.path.join(self._app.config.container_image_cache_path, "singularity", "mulled")
+        logging.debug(f"TestMulledSingularityContainerResolver.clear_cache {cache_directory}")
+        for filename in os.listdir(cache_directory):
+            file_path = os.path.join(cache_directory, filename)
+            os.unlink(file_path)
+
+    def _assert_container_in_cache(
+        self, cached: bool, container_name: str, namespace: Optional[str] = None, hash_func: Literal["v1", "v2"] = "v2"
+    ) -> None:
+        """
+        see TestMulledContainerResolver
+        """
+        cache_directory = os.path.join(self._app.config.container_image_cache_path, "singularity", "mulled")
+        imageid_list = os.listdir(path=cache_directory)
+        assert cached == (container_name in imageid_list)
 
 
 def disable_dependency_resolution(config: Dict[str, Any]) -> None:
@@ -224,7 +308,7 @@ class TestDockerizedJobsIntegration(BaseJobEnvironmentIntegrationTestCase, Mulle
         assert identifier == f"quay.io/local/{expected_hash}"
 
 
-class TestMappingContainerResolver(integration_util.IntegrationTestCase):
+class TestMappingContainerResolver(IntegrationTestCase):
     """
     - test mapping resolver
     - test global container resolvers given in extra yaml file referenced via
@@ -371,7 +455,7 @@ class TestPerDestinationContainerConfiguration(TestMappingContainerResolver):
         config["container_resolvers"] = container_resolvers_config
 
 
-class TestInlineJobEnvironmentContainerResolver(integration_util.IntegrationTestCase):
+class TestInlineJobEnvironmentContainerResolver(IntegrationTestCase):
     """
     Test
     - container resolvers config given inline in job configuration (DOCKERIZED_JOB_CONFIG_FILE)
@@ -419,9 +503,46 @@ class TestSingularityJobsIntegration(TestDockerizedJobsIntegration):
         assert identifier.endswith(f"singularity/mulled/{expected_hash}")
 
 
-class TestMulledContainerResolver(integration_util.IntegrationTestCase):
+class ResolverTestProtocol(Protocol):
     """
-    Test the 3 possibilities where Galaxy calls the (container) resolve function
+    Helper class defining methods and properties needed to
+    use ContainerResolverTestCases
+    """
+
+    @property
+    def dataset_populator(self) -> DatasetPopulator:
+        ...
+
+    @property
+    def tool_id(self) -> str:
+        ...
+
+    @property
+    def assumptions(self) -> Dict[str, Any]:
+        ...
+
+    @property
+    def container_type(self) -> Literal["docker", "singularity"]:
+        ...
+
+    def _assert_container_in_cache(
+        self, cached: bool, container_name: str, namespace: Optional[str] = None, hash_func: Literal["v1", "v2"] = "v2"
+    ) -> None:
+        ...
+
+    def _assert_status_code_is(self, response: "Response", expected_status_code: int) -> None:
+        ...
+
+    def _get(self, route, data=None, headers=None, admin=False) -> "Response":
+        ...
+
+    def _post(self, route, data=None, files=None, headers=None, admin=False, json: bool = False) -> "Response":
+        ...
+
+
+class ContainerResolverTestCases:
+    """
+    Test cases for (the?) 3 possibilities where Galaxy calls the (container) resolve function
 
     1. when preparing a job (test_tool_run)
        - check tool output
@@ -436,110 +557,7 @@ class TestMulledContainerResolver(integration_util.IntegrationTestCase):
        - after each call check container_type, used resolver and if container has been cached
     """
 
-    dataset_populator: DatasetPopulator
-    jobs_directory: str
-    framework_tool_and_types = True
-    tool_id = "mulled_example_multi_1"
-    container_type = "docker"
-    job_config_file = DOCKERIZED_JOB_CONFIG_FILE
-    container_resolvers_config: List[Dict[str, Any]] = [
-        {
-            "type": "cached_mulled",
-        },
-        {"type": "mulled"},
-    ]
-    mulled_hash = "mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0"
-    assumptions: Dict[str, Any] = {
-        "run": {
-            "output": [
-                "bedtools v2.26.0",
-                "samtools: error while loading shared libraries: libcrypto.so.1.0.0",
-            ],
-            "cached": True,
-            "cache_name": f"quay.io/biocontainers/{mulled_hash}",
-            "cache_namespace": "biocontainers",
-        },
-        "list": [
-            {
-                "resolver_type": "mulled",
-                "identifier": "quay.io/biocontainers/mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0",
-                "cached": False,
-                "cache_name": f"quay.io/biocontainers/{mulled_hash}",
-                "cache_namespace": "biocontainers",
-            },
-            {
-                "resolver_type": "mulled",
-                "identifier": "quay.io/biocontainers/mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0",
-                "cached": False,
-                "cache_name": f"quay.io/biocontainers/{mulled_hash}",
-                "cache_namespace": "biocontainers",
-            },
-        ],
-        "build": [
-            {
-                "resolver_type": "mulled",
-                "identifier": "quay.io/biocontainers/mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0",
-                "cached": True,
-                "cache_name": f"quay.io/biocontainers/{mulled_hash}",
-                "cache_namespace": "biocontainers",
-            },
-            {
-                "resolver_type": "cached_mulled",
-                "identifier": "quay.io/biocontainers/mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0",
-                "cached": True,
-                "cache_name": f"quay.io/biocontainers/{mulled_hash}",
-                "cache_namespace": "biocontainers",
-            },
-        ],
-    }
-
-    @classmethod
-    def handle_galaxy_config_kwds(cls, config) -> None:
-        super().handle_galaxy_config_kwds(config)
-        cls.jobs_directory = cls._test_driver.mkdtemp()
-        config["jobs_directory"] = cls.jobs_directory
-        config["job_config_file"] = cls.job_config_file
-        disable_dependency_resolution(config)
-        config["container_resolvers"] = cls.container_resolvers_config
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        skip_if_container_type_unavailable(cls)
-        super().setUpClass()
-
-    def setUp(self) -> None:
-        super().setUp()
-        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
-        self._clear_cache()
-
-    def _assert_container_in_cache(
-        self, cached: bool, container_name: str, namespace: Optional[str] = None, hash_func: Literal["v1", "v2"] = "v2"
-    ):
-        """
-        function to check if the container is cached
-
-        should be overwritten in test classes for singularity
-
-        - determines list of cached images using `docker images`
-        - and checks the given name is in the image identifiers of the cached images
-
-        The boolean `cached` sets the assumption in the caching state.
-        `namespace` and `hash_func` are used to filter cached images.
-        """
-        cache_list = list_docker_cached_mulled_images(namespace, hash_func)
-        imageid_list = [_.image_identifier for _ in cache_list]
-        assert cached == (container_name in imageid_list)
-
-    def _clear_cache(self):
-        """
-        clear the cached images
-
-        should be overwritten in test classes for singularity
-        """
-        cmd = ["docker", "system", "prune", "--all", "--force", "--volumes"]
-        shell(cmd)
-
-    def test_tool_run(self, history_id: str) -> None:
+    def test_tool_run(self: ResolverTestProtocol, history_id: str) -> None:
         """
         test running a tool
 
@@ -566,7 +584,7 @@ class TestMulledContainerResolver(integration_util.IntegrationTestCase):
             namespace=self.assumptions["run"]["cache_namespace"],
         )
 
-    def test_api_container_resolvers_toolbox(self):
+    def test_api_container_resolvers_toolbox(self: ResolverTestProtocol):
         """
         test container resolvers via GET container_resolvers/toolbox
 
@@ -618,7 +636,7 @@ class TestMulledContainerResolver(integration_util.IntegrationTestCase):
             namespace=self.assumptions["list"][1]["cache_namespace"],
         )
 
-    def test_api_container_resolvers_toolbox_install(self):
+    def test_api_container_resolvers_toolbox_install(self: ResolverTestProtocol):
         """
         test container resolvers via POST container_resolvers/toolbox/install
 
@@ -676,23 +694,97 @@ class TestMulledContainerResolver(integration_util.IntegrationTestCase):
         )
 
 
-class TestMulledSingularityContainerResolver(TestMulledContainerResolver):
+class TestMulledContainerResolver(ContainerizedIntegrationTestCase, ContainerResolverTestCases):
     """
+    test cached_mulled + mulled container resolvers in default config
+
+    besides the properties of the returned container description the main points are
+    - running a tool creates an entry in the container cache (the test **can't** show if this is due to
+      1. the `docker inspect .. && docker pull ..` statement in the job script or
+      2. the resolve function
+      it should be both .. see also the corresponding test in TestMulledSingularityContainerResolver where
+      it is definitely the resolve function -- since for singularity there is no additional commands in the
+      job script)
+    - listing containers does not create a cache entry (cached=False and in both calls to resolve mulled is successful)
+    - building the container creates a cache entry (cached=True, 1st call resolves with mulled and 2nd with cached_mulled)
+    """
+
+    tool_id = "mulled_example_multi_1"
+    mulled_hash = "mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0"
+    container_resolvers_config: List[Dict[str, Any]] = [
+        {
+            "type": "cached_mulled",
+        },
+        {"type": "mulled"},
+    ]
+    assumptions: Dict[str, Any] = {
+        "run": {
+            "output": [
+                "bedtools v2.26.0",
+                "samtools: error while loading shared libraries: libcrypto.so.1.0.0",
+            ],
+            "cached": True,
+            "cache_name": f"quay.io/biocontainers/{mulled_hash}",
+            "cache_namespace": "biocontainers",
+        },
+        "list": [
+            {
+                "resolver_type": "mulled",
+                "identifier": "quay.io/biocontainers/mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0",
+                "cached": False,
+                "cache_name": f"quay.io/biocontainers/{mulled_hash}",
+                "cache_namespace": "biocontainers",
+            },
+            {
+                "resolver_type": "mulled",
+                "identifier": "quay.io/biocontainers/mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0",
+                "cached": False,
+                "cache_name": f"quay.io/biocontainers/{mulled_hash}",
+                "cache_namespace": "biocontainers",
+            },
+        ],
+        "build": [
+            {
+                "resolver_type": "mulled",
+                "identifier": "quay.io/biocontainers/mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0",
+                "cached": True,
+                "cache_name": f"quay.io/biocontainers/{mulled_hash}",
+                "cache_namespace": "biocontainers",
+            },
+            {
+                "resolver_type": "cached_mulled",
+                "identifier": "quay.io/biocontainers/mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0",
+                "cached": True,
+                "cache_name": f"quay.io/biocontainers/{mulled_hash}",
+                "cache_namespace": "biocontainers",
+            },
+        ],
+    }
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config) -> None:
+        super().handle_galaxy_config_kwds(config)
+        config["container_resolvers"] = cls.container_resolvers_config
+
+
+class TestMulledSingularityContainerResolver(SingularityIntegrationTestCase, ContainerResolverTestCases):
+    """
+    test cached_mulled_singularity + mulled_singularity container resolvers in default config
+
     assumptions:
     1. tool run
-       - is currently expected to fail due to https://github.com/galaxyproject/galaxy/issues/15673
        - container should still be cached during job preparation (even if the cached image
          won't be used for the 1st run .. see assumption for building .. would change with auto_install=False)
     2. listing container
        - container is not cached
-       - URI is resolved via mulled_singularity
+       - URI is resolved via mulled_singularity (note the `docker://` prefix)
     3. building container
-       - container is cached in 1st round (via mulled_singularity), but despite caching the URI is returned
+       - container is cached in 1st round (via mulled_singularity), but **despite caching the URI is returned**
        - 2nd round resolves cached image, uses the cached container
     """
 
-    container_type = "singularity"
-    job_config_file = SINGULARITY_JOB_CONFIG_FILE
+    tool_id = "mulled_example_multi_1"
+    mulled_hash = "mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0"
     container_resolvers_config: List[Dict[str, Any]] = [
         {
             "type": "cached_mulled_singularity",
@@ -702,7 +794,6 @@ class TestMulledSingularityContainerResolver(TestMulledContainerResolver):
         },
     ]
 
-    mulled_hash = "mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0"
     assumptions = {
         "run": {
             "expect_failure": False,
@@ -748,21 +839,7 @@ class TestMulledSingularityContainerResolver(TestMulledContainerResolver):
         ],
     }
 
-    def _assert_container_in_cache(
-        self, cached: bool, container_name: str, namespace: Optional[str] = None, hash_func: Literal["v1", "v2"] = "v2"
-    ):
-        """
-        see TestMulledContainerResolver
-        """
-        cache_directory = os.path.join(self._app.config.container_image_cache_path, "singularity", "mulled")
-        imageid_list = os.listdir(path=cache_directory)
-        assert cached == (container_name in imageid_list)
-
-    def _clear_cache(self):
-        """
-        see TestMulledContainerResolver
-        """
-        cache_directory = os.path.join(self._app.config.container_image_cache_path, "singularity", "mulled")
-        for filename in os.listdir(cache_directory):
-            file_path = os.path.join(cache_directory, filename)
-            os.unlink(file_path)
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config) -> None:
+        super().handle_galaxy_config_kwds(config)
+        config["container_resolvers"] = cls.container_resolvers_config
