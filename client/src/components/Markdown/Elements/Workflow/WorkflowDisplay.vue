@@ -34,9 +34,20 @@
         <b-card-body>
             <LoadingSpan v-if="loading" message="Loading Workflow" />
             <div v-else :class="!expanded && 'content-height'">
-                <div v-for="step in itemContent.steps" :key="step.order_index" class="mb-2">
-                    <div>Step {{ step.order_index + 1 }}: {{ step.label }}</div>
-                    <WorkflowTree :input="step" :skip-head="true" />
+                <b-alert v-if="errorContent" variant="danger" show>
+                    <b>Please fix the following error(s):</b>
+                    <ul v-if="typeof errorContent === 'object'" class="my-2">
+                        <li v-for="(errorValue, errorKey) in errorContent" :key="errorKey">
+                            {{ errorKey }}: {{ errorValue }}
+                        </li>
+                    </ul>
+                    <div v-else>{{ errorContent }}</div>
+                </b-alert>
+                <div v-else>
+                    <div v-for="step in itemContent.steps" :key="step.order_index" class="mb-2">
+                        <div>Step {{ step.order_index + 1 }}: {{ step.label }}</div>
+                        <WorkflowTree :input="step" :skip-head="true" />
+                    </div>
                 </div>
             </div>
         </b-card-body>
@@ -69,6 +80,7 @@ export default {
     },
     data() {
         return {
+            errorContent: null,
             itemContent: null,
             loading: true,
         };
@@ -89,10 +101,15 @@ export default {
     },
     created() {
         const url = this.itemUrl;
-        urlData({ url }).then((data) => {
-            this.itemContent = data;
-            this.loading = false;
-        });
+        urlData({ url })
+            .then((data) => {
+                this.itemContent = data;
+                this.loading = false;
+            })
+            .catch((errorContent) => {
+                this.errorContent = errorContent;
+                this.loading = false;
+            });
     },
 };
 </script>
