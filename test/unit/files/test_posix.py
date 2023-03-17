@@ -406,7 +406,7 @@ def test_posix_file_url_only_mode_malformed():
         assert file_source_pair.path == test_url[7:]
         assert file_source_pair.file_source.id == "test1"
 
-        with pytest.raises(FileNotFoundError, match="\[Errno 2\] No such file or directory: '/file:/"):
+        with pytest.raises(FileNotFoundError, match=r"\[Errno 2\] No such file or directory: '/file:/"):
             assert_realizes_as(
                 file_sources,
                 test_url,
