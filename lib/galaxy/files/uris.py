@@ -16,7 +16,6 @@ from galaxy.exceptions import (
 )
 from galaxy.files import (
     ConfiguredFileSources,
-    DictFileSourcesUserContext,
     NoMatchingFileSource,
 )
 from galaxy.files.sources import FilesSourceOptions
@@ -50,8 +49,6 @@ def stream_url_to_file(
 ) -> str:
     if file_sources is None:
         file_sources = ConfiguredFileSources.from_dict(None, load_stock_plugins=True)
-    if user_context is None:
-        user_context = DictFileSourcesUserContext(file_sources=file_sources)
     file_source, rel_path = file_sources.get_file_source_path(url)
     if file_source:
         if not target_path:
