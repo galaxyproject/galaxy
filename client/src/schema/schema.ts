@@ -1715,12 +1715,9 @@ export interface components {
             category?: "broadcast";
             /** Content */
             content:
-                | components["schemas"]["BroadcastNotificationContent"]
                 | components["schemas"]["MessageNotificationContent"]
-                | components["schemas"]["NewHistorySharedNotificationContent"]
-                | components["schemas"]["NewWorkflowSharedNotificationContent"]
-                | components["schemas"]["NewPageSharedNotificationContent"]
-                | components["schemas"]["NewVisualizationSharedNotificationContent"];
+                | components["schemas"]["NewSharedItemNotificationContent"]
+                | components["schemas"]["BroadcastNotificationContent"];
             /**
              * Create Time
              * Format: date-time
@@ -6088,92 +6085,27 @@ export interface components {
             to_posix_lines?: boolean;
         };
         /**
-         * NewHistorySharedNotificationContent
+         * NewSharedItemNotificationContent
          * @description Base model definition with common configuration used by all derived models.
          */
-        NewHistorySharedNotificationContent: {
+        NewSharedItemNotificationContent: {
             /**
              * Category
-             * @default new_history_shared
+             * @default new_shared_item
              * @enum {string}
              */
-            category?: "new_history_shared";
+            category?: "new_shared_item";
+            /** Item Name */
+            item_name: string;
             /**
-             * Item Id
-             * @example 0123456789ABCDEF
-             */
-            item_id: string;
-            /**
-             * Owner Id
-             * @example 0123456789ABCDEF
-             */
-            owner_id: string;
-        };
-        /**
-         * NewPageSharedNotificationContent
-         * @description Base model definition with common configuration used by all derived models.
-         */
-        NewPageSharedNotificationContent: {
-            /**
-             * Category
-             * @default new_page_shared
+             * Item Type
              * @enum {string}
              */
-            category?: "new_page_shared";
-            /**
-             * Item Id
-             * @example 0123456789ABCDEF
-             */
-            item_id: string;
-            /**
-             * Owner Id
-             * @example 0123456789ABCDEF
-             */
-            owner_id: string;
-        };
-        /**
-         * NewVisualizationSharedNotificationContent
-         * @description Base model definition with common configuration used by all derived models.
-         */
-        NewVisualizationSharedNotificationContent: {
-            /**
-             * Category
-             * @default new_visualization_shared
-             * @enum {string}
-             */
-            category?: "new_visualization_shared";
-            /**
-             * Item Id
-             * @example 0123456789ABCDEF
-             */
-            item_id: string;
-            /**
-             * Owner Id
-             * @example 0123456789ABCDEF
-             */
-            owner_id: string;
-        };
-        /**
-         * NewWorkflowSharedNotificationContent
-         * @description Base model definition with common configuration used by all derived models.
-         */
-        NewWorkflowSharedNotificationContent: {
-            /**
-             * Category
-             * @default new_workflow_shared
-             * @enum {string}
-             */
-            category?: "new_workflow_shared";
-            /**
-             * Item Id
-             * @example 0123456789ABCDEF
-             */
-            item_id: string;
-            /**
-             * Owner Id
-             * @example 0123456789ABCDEF
-             */
-            owner_id: string;
+            item_type: "history" | "workflow" | "visualization" | "page";
+            /** Owner Name */
+            owner_name: string;
+            /** Slug */
+            slug: string;
         };
         /**
          * NotificationBroadcastUpdateRequest
@@ -6234,12 +6166,9 @@ export interface components {
                 | components["schemas"]["PersonalNotificationCategory"];
             /** Content */
             content:
-                | components["schemas"]["BroadcastNotificationContent"]
                 | components["schemas"]["MessageNotificationContent"]
-                | components["schemas"]["NewHistorySharedNotificationContent"]
-                | components["schemas"]["NewWorkflowSharedNotificationContent"]
-                | components["schemas"]["NewPageSharedNotificationContent"]
-                | components["schemas"]["NewVisualizationSharedNotificationContent"];
+                | components["schemas"]["NewSharedItemNotificationContent"]
+                | components["schemas"]["BroadcastNotificationContent"];
             /**
              * Expiration Time
              * Format: date-time
@@ -6303,12 +6232,9 @@ export interface components {
                 | components["schemas"]["PersonalNotificationCategory"];
             /** Content */
             content:
-                | components["schemas"]["BroadcastNotificationContent"]
                 | components["schemas"]["MessageNotificationContent"]
-                | components["schemas"]["NewHistorySharedNotificationContent"]
-                | components["schemas"]["NewWorkflowSharedNotificationContent"]
-                | components["schemas"]["NewPageSharedNotificationContent"]
-                | components["schemas"]["NewVisualizationSharedNotificationContent"];
+                | components["schemas"]["NewSharedItemNotificationContent"]
+                | components["schemas"]["BroadcastNotificationContent"];
             /**
              * Create Time
              * Format: date-time
@@ -6727,12 +6653,7 @@ export interface components {
          * displayed in the notification preferences.
          * @enum {string}
          */
-        PersonalNotificationCategory:
-            | "message"
-            | "new_history_shared"
-            | "new_workflow_shared"
-            | "new_page_shared"
-            | "new_visualization_shared";
+        PersonalNotificationCategory: "message" | "new_shared_item";
         /**
          * PrepareStoreDownloadPayload
          * @description Base model definition with common configuration used by all derived models.
@@ -8049,12 +7970,9 @@ export interface components {
             category: components["schemas"]["PersonalNotificationCategory"];
             /** Content */
             content:
-                | components["schemas"]["BroadcastNotificationContent"]
                 | components["schemas"]["MessageNotificationContent"]
-                | components["schemas"]["NewHistorySharedNotificationContent"]
-                | components["schemas"]["NewWorkflowSharedNotificationContent"]
-                | components["schemas"]["NewPageSharedNotificationContent"]
-                | components["schemas"]["NewVisualizationSharedNotificationContent"];
+                | components["schemas"]["NewSharedItemNotificationContent"]
+                | components["schemas"]["BroadcastNotificationContent"];
             /**
              * Create Time
              * Format: date-time
