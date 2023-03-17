@@ -2,6 +2,7 @@ import os
 import tempfile
 from typing import (
     Any,
+    Dict,
     Tuple,
 )
 
@@ -475,7 +476,7 @@ def _configured_file_sources_with_root(
     if include_allowlist:
         config_kwd["symlink_allowlist"] = [tmp]
     file_sources_config = ConfiguredFileSourcesConfig(**config_kwd)
-    plugin: Any = {
+    plugin: Dict[str, Any] = {
         "type": "posix",
     }
     if writable is not None:
