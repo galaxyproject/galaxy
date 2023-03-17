@@ -719,7 +719,15 @@ export class OutputCollectionTerminal extends BaseOutputTerminal {
                                 otherCollectionType.canMapOver(collectionType)
                         );
                         if (connectedCollectionType) {
-                            return connectedCollectionType;
+                            if (connectedCollectionType.collectionType === "any") {
+                                // if the input collection type is "any" this output's collection type
+                                // is exactly the same as the connected output
+                                return otherCollectionType;
+                            } else {
+                                // else we pick the matching input collection type
+                                // so that the map over logic applies correctly
+                                return connectedCollectionType;
+                            }
                         }
                     }
                 }
