@@ -1,19 +1,7 @@
 <script setup lang="ts">
 import { STATES } from "./states";
 import { computed } from "vue";
-
-type State = {
-    status: string;
-    text?: string;
-    icon?: string;
-    spin?: boolean;
-};
-interface States {
-    [key: string]: State;
-}
-interface HelpText {
-    [key: string]: string;
-}
+import type { States, HelpText } from "./stateTypes";
 
 const props = defineProps({
     showHelp: { type: Boolean, default: false },
@@ -52,7 +40,7 @@ function onFilter(value: string) {
         <dl v-for="(state, key, index) in states" :key="index">
             <b-alert :variant="state.status || 'success'" show>
                 <dt>
-                    <a href="javascript:void(0)" @click="onFilter(key)"
+                    <a class="text-decoration-none" href="javascript:void(0)" @click="onFilter(key)"
                         ><code>{{ key }}</code></a
                     >
                     <icon v-if="state.icon" :icon="state.icon" />
