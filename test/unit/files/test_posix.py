@@ -1,5 +1,9 @@
 import os
 import tempfile
+from typing import (
+    Any,
+    Tuple,
+)
 
 import pytest
 
@@ -462,7 +466,7 @@ def _configured_file_sources_with_root(
     writable=None,
     allow_subdir_creation=True,
     empty_root=False,
-) -> TestConfiguredFileSources:
+) -> Tuple[TestConfiguredFileSources, str]:
     if empty_root:
         tmp, root = "/", None
     else:
@@ -471,12 +475,12 @@ def _configured_file_sources_with_root(
     if include_allowlist:
         config_kwd["symlink_allowlist"] = [tmp]
     file_sources_config = ConfiguredFileSourcesConfig(**config_kwd)
-    plugin = {
+    plugin: Any = {
         "type": "posix",
     }
     if writable is not None:
         plugin["writable"] = writable
-    if per_user:
+    if per_user and root:
         plugin["root"] = "%s/${user.username}" % root
         # setup files just for alice
         root = os.path.join(root, "alice")
@@ -484,7 +488,7 @@ def _configured_file_sources_with_root(
     else:
         plugin["root"] = root
     plugin.update(plugin_extra_config or {})
-    if not empty_root:
+    if root:
         write_file_fixtures(tmp, root)
     file_sources = TestConfiguredFileSources(file_sources_config, conf_dict={"test1": plugin}, test_root=root)
     return file_sources, root
