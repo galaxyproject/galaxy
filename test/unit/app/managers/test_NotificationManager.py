@@ -1,5 +1,8 @@
 import json
-from datetime import datetime
+from datetime import (
+    datetime,
+    timedelta,
+)
 from typing import (
     Any,
     Dict,
@@ -25,7 +28,6 @@ from galaxy.schema.notifications import (
     ActionLink,
     BroadcastNotificationContent,
     BroadcastNotificationCreateRequest,
-    MessageNotificationContent,
     NotificationCategorySettings,
     NotificationChannelSettings,
     NotificationCreateData,
@@ -42,29 +44,36 @@ default_password = "123456"
 
 
 class NotificationsBaseTestCase(BaseTestCase):
-    def _create_test_user(self, username="user1"):
+    def _create_test_user(self, username="user1") -> User:
         user_data = dict(email=f"{username}@user.email", username=username, password=default_password)
         user = self.user_manager.create(**user_data)
         return user
 
+    def _create_test_users(self, num_users: int = 1) -> List[User]:
+        users = [self._create_test_user(f"username{num:02}") for num in range(num_users)]
+        return users
 
-class TestNotificationManager(NotificationsBaseTestCase):
+    def _default_test_notification_data(self):
+        """Dictionary with default values for a simple Message notification."""
+        return {
+            "source": "testing",
+            "variant": "info",
+            "category": "message",
+            "content": {
+                "category": "message",
+                "subject": "Testing Subject",
+                "message": "Testing Message",
+            },
+        }
+
+
+class NotificationManagerBaseTestCase(NotificationsBaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()
         self.notification_manager = NotificationManager(self.trans.sa_session)
 
-    def test_create_notification_for_users(self):
-        user = self._create_test_user()
-        notification, notifications_sent = self._send_notification_to_users([user])
 
-        assert notifications_sent == 1
-        assert notification.id
-        assert notification.category == "message"
-        notification_content = json.loads(notification.content)
-        assert notification_content["category"] == "message"
-        assert notification_content["subject"] == "Testing Subject"
-        assert notification_content["message"] == "Testing Message"
-
+class TestBroadcastNotifications(NotificationManagerBaseTestCase):
     def test_create_notification_broadcast(self):
         request = BroadcastNotificationCreateRequest(
             variant="warning",
@@ -93,41 +102,50 @@ class TestNotificationManager(NotificationsBaseTestCase):
         assert action_links[0]["action_name"] == "Go to Poll"
         assert action_links[0]["link"] == "https://link_to_anonymous.test/poll"
 
+
+class TestUserNotifications(NotificationManagerBaseTestCase):
+    def test_create_notification_for_users(self):
+        num_target_users = 2
+        users = self._create_test_users(num_users=num_target_users)
+        expected_notification = self._default_test_notification_data()
+        expected_notification.update(
+            {
+                "source": "test_create_notification_for_users",
+                "publication_time": datetime.utcnow() + timedelta(hours=24),
+            }
+        )
+        actual_notification, actual_notifications_sent = self._send_message_notification_to_users(
+            users, notification=expected_notification
+        )
+
+        assert actual_notifications_sent == num_target_users
+        self._assert_notification_is_as_expected(actual_notification, expected_notification)
+
     def test_get_user_notifications(self):
         user = self._create_test_user()
         user_notifications = self.notification_manager.get_user_notifications(user)
         assert len(user_notifications) == 0
 
-        self._send_notification_to_users([user])
+        self._send_message_notification_to_users([user])
 
         user_notifications = self.notification_manager.get_user_notifications(user)
         assert len(user_notifications) == 1
 
     def test_get_user_notification(self):
         user = self._create_test_user()
-        notification, _ = self._send_notification_to_users([user])
+        expected_user_notification = self._default_test_notification_data()
+        notification, _ = self._send_message_notification_to_users([user], notification=expected_user_notification)
 
-        user_notification = self.notification_manager.get_user_notification(user, notification.id)
+        actual_user_notification = self.notification_manager.get_user_notification(user, notification.id)
 
-        assert user_notification
-        assert user_notification.id
-        assert user_notification.source == "testing"
-        assert user_notification.variant == "info"
-        assert user_notification.category == "message"
-        assert user_notification.publication_time is not None
-        assert user_notification.expiration_time is not None
-        assert user_notification.content
-        user_notification_content = json.loads(user_notification.content)
-        assert user_notification_content["category"] == "message"
-        assert user_notification_content["subject"] == "Testing Subject"
-        assert user_notification_content["message"] == "Testing Message"
-        assert user_notification.seen_time is None
-        assert user_notification.favorite is False
-        assert user_notification.deleted is False
+        self._assert_notification_is_as_expected(actual_user_notification, expected_user_notification)
+        assert actual_user_notification["seen_time"] is None
+        assert actual_user_notification["favorite"] is False
+        assert actual_user_notification["deleted"] is False
 
     def test_update_user_notifications(self):
         user = self._create_test_user()
-        notification, _ = self._send_notification_to_users([user])
+        notification, _ = self._send_message_notification_to_users([user])
         user_notification = self.notification_manager.get_user_notification(user, notification.id)
         assert user_notification.seen_time is None
         assert user_notification.favorite is False
@@ -175,7 +193,7 @@ class TestNotificationManager(NotificationsBaseTestCase):
     def test_cleanup_expired_notifications(self):
         user = self._create_test_user()
         now = datetime.utcnow()
-        notification, _ = self._send_notification_to_users([user], notification={"expiration_time": now})
+        notification, _ = self._send_message_notification_to_users([user], notification={"expiration_time": now})
         user_notification = self.notification_manager.get_user_notification(user, notification.id, active_only=False)
         assert user_notification
         assert self._has_expired(user_notification.expiration_time) is True
@@ -185,16 +203,12 @@ class TestNotificationManager(NotificationsBaseTestCase):
         with pytest.raises(ObjectNotFound):
             self.notification_manager.get_user_notification(user, notification.id, active_only=False)
 
-    def _send_notification_to_users(self, users: List[User], notification: Optional[Dict[str, Any]] = None):
-        notification_data = NotificationCreateData(
-            source="testing",
-            variant="info",
-            category="message",
-            content=MessageNotificationContent(subject="Testing Subject", message="Testing Message"),
-            publication_time=None,
-            expiration_time=None,
-        )
-        notification_data = notification_data.copy(update=notification)
+    def _send_message_notification_to_users(self, users: List[User], notification: Optional[Dict[str, Any]] = None):
+        data = self._default_test_notification_data()
+        if notification:
+            data.update(notification)
+        notification_data = NotificationCreateData(**data)
+
         request = NotificationCreateRequest(
             recipients=NotificationRecipients.construct(
                 user_ids=[user.id for user in users],
@@ -207,6 +221,31 @@ class TestNotificationManager(NotificationsBaseTestCase):
     def _has_expired(self, expiration_time: Optional[datetime]) -> bool:
         return expiration_time < datetime.utcnow() if expiration_time else False
 
+    def _assert_notification_is_as_expected(self, actual_notification: Any, expected_notification: Dict[str, Any]):
+        assert actual_notification
+        assert actual_notification.id
+        assert actual_notification.source == expected_notification["source"]
+        assert actual_notification.variant == expected_notification["variant"]
+        assert actual_notification.category == expected_notification["category"]
+
+        expected_publication_time = expected_notification.get("publication_time")
+        if expected_publication_time:
+            assert actual_notification.publication_time == expected_publication_time
+        else:
+            assert actual_notification.publication_time is not None
+
+        expected_expiration_time = expected_notification.get("expiration_time")
+        if expected_expiration_time:
+            assert actual_notification.expiration_time == expected_expiration_time
+        else:
+            assert actual_notification.expiration_time is not None
+
+        assert actual_notification.content
+        user_notification_content = json.loads(actual_notification.content)
+        assert user_notification_content["category"] == expected_notification["content"]["category"]
+        assert user_notification_content["subject"] == expected_notification["content"]["subject"]
+        assert user_notification_content["message"] == expected_notification["content"]["message"]
+
 
 class TestNotificationRecipientResolver(NotificationsBaseTestCase):
     def test_default_resolution_strategy(self):
@@ -218,19 +257,38 @@ class TestNotificationRecipientResolver(NotificationsBaseTestCase):
     def _create_test_recipients_scenario(self):
         """Creates a slightly 'complex' hierarchy combination of groups and roles
         for testing recipient users resolution."""
-        # TODO get rid of the encoding/decoding mess at manager layer
-        users = []
-        num_users = 10
-        for num in range(num_users):
-            user = self._create_test_user(f"username{num:02}")
-            users.append(user)
+        users = self._create_test_users(num_users=10)
 
-        group1 = self._create_test_group("Group1", users=[users[0], users[1]], roles=[])
-        role1 = self._create_test_role("Role1", users=[users[3], users[5]], groups=[])
-        group2 = self._create_test_group("Group2", users=[users[1], users[2]], roles=[role1])
-        role2 = self._create_test_role("Role2", users=[users[4]], groups=[group2])
-        group3 = self._create_test_group("Group3", users=[users[5]], roles=[role2])
-        role3 = self._create_test_role("Role3", users=[users[7]], groups=[group1])
+        group1 = self._create_test_group(
+            "Group1",
+            users=[users[0], users[1]],
+            roles=[],
+        )
+        role1 = self._create_test_role(
+            "Role1",
+            users=[users[3], users[5]],
+            groups=[],
+        )
+        group2 = self._create_test_group(
+            "Group2",
+            users=[users[1], users[2]],
+            roles=[role1],
+        )
+        role2 = self._create_test_role(
+            "Role2",
+            users=[users[4]],
+            groups=[group2],
+        )
+        group3 = self._create_test_group(
+            "Group3",
+            users=[users[5]],
+            roles=[role2],
+        )
+        role3 = self._create_test_role(
+            "Role3",
+            users=[users[7]],
+            groups=[group1],
+        )
 
         recipients = NotificationRecipients.construct(
             user_ids=[users[9].id],
