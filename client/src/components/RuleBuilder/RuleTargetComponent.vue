@@ -3,7 +3,7 @@
         class="rule-link dropdown-item"
         href="javascript:void(0)"
         :class="linkClassName"
-        @click="$emit('add-new-rule', ruleType)"
+        @click="$emit('addNewRule', ruleType)"
         >{{ title }}</a
     >
 </template>

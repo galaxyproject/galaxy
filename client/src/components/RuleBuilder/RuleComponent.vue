@@ -37,7 +37,7 @@ export default {
             this.$emit("update:displayRuleType", null);
         },
         okay() {
-            this.$emit("save-rule", this.ruleType);
+            this.$emit("saveRule", this.ruleType);
             this.cancel();
         },
     },
