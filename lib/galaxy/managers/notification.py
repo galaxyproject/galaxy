@@ -8,16 +8,14 @@ from typing import (
 
 from sqlalchemy import (
     and_,
-    bindparam,
     delete,
     func,
     select,
     union,
-    union_all,
     update,
 )
-from sqlalchemy.orm import aliased
 from sqlalchemy.sql import Select
+from typing_extensions import Protocol
 
 from galaxy.exceptions import ObjectNotFound
 from galaxy.model import (
@@ -49,6 +47,7 @@ class NotificationManager:
 
     def __init__(self, sa_session: galaxy_scoped_session):
         self.sa_session = sa_session
+        self.recipient_resolver = NotificationRecipientResolver(strategy=DefaultStrategy(sa_session))
         self.notification_columns = [
             Notification.id,
             Notification.source,
@@ -87,7 +86,7 @@ class NotificationManager:
         """
         Creates a new notification and associates it with all the recipient users.
         """
-        recipient_users = self._get_all_recipient_users(request.recipients)
+        recipient_users = self.recipient_resolver.resolve(request.recipients)
         notifications_sent = len(recipient_users)
         with self.sa_session.begin():
             notification = self._create_notification_model(request.notification)
@@ -373,12 +372,19 @@ class NotificationManager:
             stmt = stmt.where(self._notification_is_active)
         return stmt
 
-    def _get_all_recipient_users(self, recipients: NotificationRecipients) -> List[User]:
-        """Gets all the users from all the individual user ids, group ids and roles ids
-        provided as recipients.
-        The resulting list will contain only unique users even if the same user id might have been provided more
-        than once as `user_ids` input or implicitly in groups or roles.
-        """
+
+class NotificationRecipientResolverStrategy(Protocol):
+    def resolve_users(self, recipients: NotificationRecipients) -> List[User]:
+        pass
+
+
+class DefaultStrategy(NotificationRecipientResolverStrategy):
+    """Resolves the recipient users using an iterative approach."""
+
+    def __init__(self, sa_session: galaxy_scoped_session):
+        self.sa_session = sa_session
+
+    def resolve_users(self, recipients: NotificationRecipients) -> List[User]:
         unique_user_ids: Set[int] = set(recipients.user_ids)
 
         all_group_ids, all_role_ids = self._expand_group_and_roles_ids(
@@ -428,7 +434,7 @@ class NotificationManager:
                 .where(GroupRoleAssociation.role_id.in_(role_ids))
                 .distinct()
             )
-            group_ids_from_roles = set([id for id, in self.sa_session.execute(stmt)])
+            group_ids_from_roles = set([id for id, in self.sa_session.execute(stmt) if id is not None])
             new_group_ids = group_ids_from_roles - processed_group_ids
 
             # Get role IDs associated with any of the given group IDs
@@ -438,7 +444,7 @@ class NotificationManager:
                 .where(GroupRoleAssociation.group_id.in_(group_ids))
                 .distinct()
             )
-            role_ids_from_groups = set([id for id, in self.sa_session.execute(stmt)])
+            role_ids_from_groups = set([id for id, in self.sa_session.execute(stmt) if id is not None])
             new_role_ids = role_ids_from_groups - processed_role_ids
 
             # Stop if there are no new group or role IDs to process
@@ -455,50 +461,23 @@ class NotificationManager:
 
         return group_ids, role_ids
 
-    def _get_all_recipient_users_using_recursive_CTE(self, recipients: NotificationRecipients) -> List[User]:
-        # Get all the user IDs from individual users
-        user_ids = set(recipients.user_ids)
 
-        # Get all the user IDs from groups and roles using recursive CTEs
-        group_users = (
-            select(UserGroupAssociation.user_id)
-            .where(UserGroupAssociation.group_id.in_(bindparam("group_ids")))
-            .cte("group_users", recursive=True)
-        )
+class RecursiveCTEStrategy(NotificationRecipientResolverStrategy):
+    def resolve_users(self, recipients: NotificationRecipients) -> List[User]:
+        # TODO Implement resolver using recursive CTEs?
+        return []
 
-        group_users_alias = aliased(group_users, name="g")
-        group_users_query = select(group_users_alias.c.user_id).select_from(group_users_alias)
 
-        group_users = group_users.union_all(
-            select(UserGroupAssociation.user_id).where(UserGroupAssociation.group_id == group_users_alias.c.user_id)
-        )
+class NotificationRecipientResolver:
+    """Resolves a set of NotificationRecipients to a list of unique users using a specific strategy."""
 
-        role_users = (
-            select(UserRoleAssociation.user_id)
-            .where(UserRoleAssociation.role_id.in_(bindparam("role_ids")))
-            .cte("role_users", recursive=True)
-        )
+    def __init__(self, strategy: NotificationRecipientResolverStrategy):
+        self.strategy = strategy
 
-        role_users_alias = aliased(role_users, name="r")
-        role_users_query = select(role_users_alias.c.user_id).select_from(role_users_alias)
+    def resolve(self, recipients: NotificationRecipients) -> List[User]:
+        """Given individual user, group and roles ids as recipients, obtains the unique list of users.
 
-        role_users = role_users.union_all(
-            select(UserRoleAssociation.user_id).where(UserRoleAssociation.role_id == role_users_alias.c.user_id)
-        )
-
-        # Build the final query to get all unique user IDs
-        query = (
-            select(union_all(group_users_query, role_users_query).alias("all_users"))
-            .select_from(union_all(group_users, role_users))
-            .distinct("all_users.user_id")
-        )
-
-        # Execute the query and retrieve user IDs
-        params = {"group_ids": list(recipients.group_ids), "role_ids": list(recipients.role_ids)}
-        result = self.sa_session.execute(query, params).fetchall()
-        group_and_role_user_ids = set([id for id, in result])
-
-        # Get all the unique recipient users by ID
-        unique_user_ids = user_ids.union(group_and_role_user_ids)
-        unique_recipient_users = self.sa_session.query(User).filter(User.id.in_(unique_user_ids)).all()
-        return unique_recipient_users
+        The resulting list will contain only unique users even if the same user id might have been provided more
+        than once as `user_ids` input or implicitly in groups or roles.
+        """
+        return self.strategy.resolve_users(recipients)
