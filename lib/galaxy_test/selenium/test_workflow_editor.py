@@ -557,17 +557,17 @@ steps:
         editor.select_datatype(datatype="bam").wait_for_and_click()
         editor.node.output_data_row(output_name="out_file1", extension="bam").wait_for_visible()
         self.assert_connection_invalid("create_2#out_file1", "checksum#input")
+        # Assert save button
         save_button = self.components.workflow_editor.save_button
-        # Assert save button is disabled
-        assert save_button.has_class("disabled")
+        save_button.wait_for_and_click()
+        # Will trigger confirmation modal
+        self.components.workflow_editor.save_workflow_confirmation_button.wait_for_and_click()
         # Make connection valid again
         editor.change_datatype.wait_for_and_click()
         editor.select_datatype_text_search.wait_for_and_send_keys("tabular")
         editor.select_datatype(datatype="tabular").wait_for_and_click()
         # Assert connection is valid
         self.assert_connected("create_2#out_file1", "checksum#input")
-        # Assert save button is enabled
-        assert not save_button.has_class("disabled")
 
     @selenium_test
     def test_change_datatype_post_job_action_lost_regression(self):
