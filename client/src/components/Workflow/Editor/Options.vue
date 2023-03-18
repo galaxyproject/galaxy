@@ -9,6 +9,7 @@ const emit = defineEmits<{
     (e: "onReport"): void;
     (e: "onSaveAs"): void;
     (e: "onLayout"): void;
+    (e: "onLint"): void;
     (e: "onUpgrade"): void;
     (e: "onDownload"): void;
     (e: "onRun"): void;
