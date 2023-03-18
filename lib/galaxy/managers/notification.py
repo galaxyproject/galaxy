@@ -17,6 +17,7 @@ from sqlalchemy import (
 from sqlalchemy.sql import Select
 from typing_extensions import Protocol
 
+from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import ObjectNotFound
 from galaxy.model import (
     GroupRoleAssociation,
@@ -45,8 +46,9 @@ NOTIFICATION_PREFERENCES_SECTION_NAME = "notifications"
 class NotificationManager:
     """Manager class to interact with the database models related with Notifications."""
 
-    def __init__(self, sa_session: galaxy_scoped_session):
+    def __init__(self, sa_session: galaxy_scoped_session, config: GalaxyAppConfiguration):
         self.sa_session = sa_session
+        self.config = config
         self.recipient_resolver = NotificationRecipientResolver(strategy=DefaultStrategy(sa_session))
         self.notification_columns = [
             Notification.id,
@@ -68,7 +70,7 @@ class NotificationManager:
 
     @property
     def notifications_enabled(self):
-        return True  # TODO get from config
+        return self.config.enable_notification_system
 
     @property
     def _now(self):
@@ -82,10 +84,12 @@ class NotificationManager:
             Notification.expiration_time > self._now,
         )
 
-    def send_notification_to_recipients(self, request: NotificationCreateRequest) -> Tuple[Notification, int]:
+    def send_notification_to_recipients(self, request: NotificationCreateRequest) -> Tuple[Optional[Notification], int]:
         """
         Creates a new notification and associates it with all the recipient users.
         """
+        if not self.notifications_enabled:
+            return None, 0
         recipient_users = self.recipient_resolver.resolve(request.recipients)
         notifications_sent = len(recipient_users)
         with self.sa_session.begin():
@@ -106,6 +110,8 @@ class NotificationManager:
 
         This kind of notification is not explicitly associated with any specific user but it is accessible by all users.
         """
+        if not self.notifications_enabled:
+            return None
         with self.sa_session.begin():
             notification = self._create_notification_model(request)
             self.sa_session.add(notification)
@@ -269,6 +275,9 @@ class NotificationManager:
         User notifications that have been marked as `favorite` will not be removed on expiration unless the user
         un-favorite them or they are marked as deleted too.
         """
+        if not self.notifications_enabled:
+            return
+
         with self.sa_session.begin():
             is_favorite_and_not_deleted = and_(
                 UserNotificationAssociation.favorite.is_(True),
