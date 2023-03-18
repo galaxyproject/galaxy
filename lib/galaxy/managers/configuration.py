@@ -207,6 +207,7 @@ class ConfigSerializer(base.ModelSerializer):
             "tool_training_recommendations": _use_config,
             "tool_training_recommendations_link": _use_config,
             "tool_training_recommendations_api_url": _use_config,
+            "enable_notification_system": _use_config,
         }
 
 

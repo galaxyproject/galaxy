@@ -70,7 +70,7 @@ class NotificationsBaseTestCase(BaseTestCase):
 class NotificationManagerBaseTestCase(NotificationsBaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()
-        self.notification_manager = NotificationManager(self.trans.sa_session)
+        self.notification_manager = NotificationManager(self.trans.sa_session, self.app.config)
 
 
 class TestBroadcastNotifications(NotificationManagerBaseTestCase):

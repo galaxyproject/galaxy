@@ -2733,3 +2733,17 @@ galaxy:
   # Message to display on the export citations tool page
   #citations_export_message_html: When writing up your analysis, remember to include all references that should be cited in order to completely describe your work. Also, please remember to <a href="https://galaxyproject.org/citing-galaxy">cite Galaxy</a>.
 
+  # Enables the Notification System integrated in Galaxy.
+  # Users can receive automatic notifications when a certain resource is
+  # shared with them or when some long running operations have finished,
+  # etc.
+  # The system allows notification scheduling and expiration, and users
+  # can opt-out of specific notification categories or channels. They
+  # can also mark certain notifications as favorites to prevent
+  # expiration and manually delete notifications.
+  # Admins can schedule and broadcast notifications that will be visible
+  # to all users, including special server-wide announcements such as
+  # scheduled maintenance, high load warnings, and event announcements,
+  # to name a few examples.
+  #enable_notification_system: false
+
