@@ -30,8 +30,8 @@ function toggleChildren() {
 <template>
     <li>
         <span v-if="hasOptions" @click="toggleChildren">
-            <span v-if="showChildren" class="fa fa-minus-square" />
-            <span v-else class="fa fa-plus-square" />
+            <icon v-if="showChildren" fixed-width icon="minus-square" />
+            <icon v-else fixed-width icon="plus-square" />
         </span>
         <b-form-checkbox class="d-inline" :checked="isChecked" @change="handleClick(option.value)" />
         {{ option.name }}
