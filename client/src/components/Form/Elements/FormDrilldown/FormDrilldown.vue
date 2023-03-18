@@ -14,7 +14,7 @@ const props = withDefaults(defineProps<FormDrilldownProps>(), {
 });
 
 const emit = defineEmits<{
-    (e: "input", value: string[]): void;
+    (e: "input", value: string[] | null): void;
 }>();
 
 const hasOptions = computed(() => {
@@ -37,7 +37,6 @@ const currentValue = computed({
 });
 
 function handleClick(value: string) {
-    console.log(value);
     const newValue = currentValue.value.slice();
     const index = newValue.indexOf(value);
     if (index !== -1) {
@@ -45,7 +44,11 @@ function handleClick(value: string) {
     } else {
         newValue.push(value);
     }
-    emit("input", newValue);
+    if (newValue.length === 0) {
+        emit("input", null);
+    } else {
+        emit("input", newValue);
+    }
 }
 
 //TODO implement selectAll
