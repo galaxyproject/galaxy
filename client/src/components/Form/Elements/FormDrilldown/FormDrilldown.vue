@@ -23,7 +23,9 @@ const hasOptions = computed(() => {
 
 const currentValue = computed({
     get: (): string[] => {
-        if (Array.isArray(props.value)) {
+        if (props.value === null || props.value === "") {
+            return [];
+        } else if (Array.isArray(props.value)) {
             return props.value;
         } else {
             return [props.value];
