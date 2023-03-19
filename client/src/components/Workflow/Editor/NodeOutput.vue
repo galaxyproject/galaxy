@@ -14,7 +14,7 @@ import {
     type PostJobAction,
 } from "@/stores/workflowStepStore";
 import type { UseScrollReturn } from "@vueuse/core";
-import { NULL_COLLECTION_TYPE_DESCRIPTION } from "./modules/collectionTypeDescription";
+import { NULL_COLLECTION_TYPE_DESCRIPTION, type CollectionTypeDescriptor } from "./modules/collectionTypeDescription";
 
 const props = defineProps<{
     output: OutputTerminalSource;
@@ -202,18 +202,47 @@ const terminalClass = computed(() => {
     }
     return cls;
 });
+
+function collectionTypeToDescription(collectionTypeDescription: CollectionTypeDescriptor) {
+    let collectionDescription = collectionTypeDescription.collectionType;
+    if (
+        collectionTypeDescription &&
+        collectionTypeDescription.isCollection &&
+        collectionTypeDescription.collectionType
+    ) {
+        // we'll give a prettier label to the must common nested lists
+        switch (collectionTypeDescription.collectionType) {
+            case "list:paired": {
+                collectionDescription = "list of pairs dataset collection";
+                break;
+            }
+            case "list:list": {
+                collectionDescription = "list of lists dataset collection";
+                break;
+            }
+            default: {
+                if (collectionTypeDescription.rank > 1) {
+                    collectionDescription = `dataset collection with ${collectionTypeDescription.rank} levels of nesting`;
+                }
+                break;
+            }
+        }
+    }
+    return collectionDescription;
+}
+
 const outputDetails = computed(() => {
     let collectionType = "collectionType" in terminal.value && terminal.value.collectionType;
     const outputType =
-        collectionType && collectionType.isCollection
-            ? `output is ${collectionType.collectionType} dataset collection`
+        collectionType && collectionType.isCollection && collectionType.collectionType
+            ? `output is ${collectionTypeToDescription(collectionType)}`
             : `output is dataset`;
     if (isMultiple.value) {
         if (!collectionType) {
             collectionType = NULL_COLLECTION_TYPE_DESCRIPTION;
         }
         const effectiveOutputType = terminal.value.mapOver.append(collectionType);
-        return `${outputType} and mapped-over to produce a ${effectiveOutputType.collectionType} dataset collection`;
+        return `${outputType} and mapped-over to produce a ${collectionTypeToDescription(effectiveOutputType)} `;
     }
     return outputType;
 });
