@@ -56,6 +56,9 @@ Alternatively, if the execution environment specifies
 `require_container <https://github.com/galaxyproject/galaxy/blob/0742d6e27702c60d1b8fe358ae03a267e3f252c3/lib/galaxy/config/sample/job_conf.yml.sample#L528>`_
 the job fails in this case (TODO to be tested? or is it already).
 
+Besides determining a container description some container resolvers
+also cache/build containers.
+
 Configuration:
 --------------
 
@@ -100,14 +103,13 @@ The corresponding container resolvers yield container descriptions suitable
 for the corresponding "executor", i.e., docker (singularity, resp.)
 container resolvers will resolve a container only in compute environments
 with enabled docker (singularity, resp.). Thus, if only compute environments
-with docker (resp. singularity) are present then only docker (resp. singularity)
-container resolvers need to be listed. If compute environments for both
-container types are in use both types of container resolvers are needed.
+with docker (resp. singularity) are present then singularity (resp. docker)
+container resolvers are ignored (and may be omitted).
 
-Note that for the execution with ``singularity`` Galaxy relies mostly on
+Note that, for the execution with ``singularity`` Galaxy relies mostly on
 docker containers that are either executed directly or are converted
-to singularity images (except for explicit container requirements of
-``type="singularity"``).
+to singularity images. The only exception are explicit container requirements of
+``type="singularity"``.
 
 There are important differences between Galaxy's cached docker and singularity
 container resolvers. The caching mechanism essentially executes a
@@ -116,16 +118,18 @@ an entry in the docker image cache (on the local node) whereas for
 singularity an image file is created in the specified ``cache_directory``.
 On distributed systems ``cache_directory`` needs to be accessible on all
 compute nodes.
+For singularity admins should also take care of the ``APPTAINER_CACHEDIR``
+directory.
 
 .. note::
 
    Using a cached docker resolver has no additional value on distributed compute
    systems since the cache is only available locally. 
    Therefore an additional ``docker inspect ... ; [ $? -ne 0 ] && docker pull ...``
-   command is used in each job script.
+   command is used in each job script. Clearly admins need to take care of
+   docker caches of the main and compute nodes.
    For distributed compute systems built in techniques of docker may be useful:
    https://docs.docker.com/registry/recipes/mirror/.
-
 
 2. mulled vs explicit
 
@@ -139,14 +143,16 @@ a set of packages:
       <requirement type="package" version="1.0">bar</requirement>
   </requirements>
 
-Explicit containers apply for requirements defined by tools in the form of a
-container requirement:
+Explicit container resolvers apply for requirements defined by tools in the form
+of a container requirement:
 
 .. code-block:: xml
 
   <requirements>
       <container type="docker">quay.io/qiime2/core:2022.8</container>
   </requirements>
+
+See also TODO link to `Additional resolver types`
 
 3. cached vs non-cached
 
@@ -156,8 +162,7 @@ use those.
 
 This distinction is the weakest: some (by name) non-cached container resolvers
 can also resolve cached containers and are even responsible for the caching itself,
-i.e. they execute the ``pull``.
-
+i.e. they execute a ``pull``.
 
 There are the following mulled container resolvers:
 
@@ -179,9 +184,9 @@ Function of the ``resolve`` function of the main resolver types:
 
 The resolve function is called when 
 
-- opening the container tab in the dependency admin UI (with ``install=False``)
-- triggering a build from the admin UI (with ``install=True``)
-- when a job is prepared (with ``install=True``)
+- opening the container tab in the dependency admin UI
+- triggering a build from the admin UI
+- when a job is prepared
 
 If the ``resolve`` function implements the caching of images then this only
 happens if ``install=True``.
