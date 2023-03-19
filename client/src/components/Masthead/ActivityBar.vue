@@ -29,23 +29,21 @@ function onToggleSidebar(toggle) {
 </script>
 <template>
     <div class="d-flex">
-        <b-nav vertical class="side-bar pt-1">
+        <b-nav vertical class="side-bar p-1">
             <b-nav-item
                 id="tool-search"
                 v-b-tooltip.hover.right
-                class="my-1"
-                :class="{ 'active-sidebar': sidebarIsActive('search') }"
+                :class="{ 'nav-item-active': sidebarIsActive('search') }"
                 :title="'Search Tools and Workflows' | l"
                 @click="onToggleSidebar('search')">
                 <template>
-                    <span class="fa fa-wrench nav-icon" />
-                    <span v-if="sidebarIsActive('search')" class="fa fa-caret-right nav-icon-active" />
+                    <span class="nav-icon fa fa-wrench" />
                 </template>
             </b-nav-item>
             <upload-button />
         </b-nav>
-        <div v-show="!sidebarIsActive('search')" key="search">
-            <ToolBox v-bind="toolBoxProperties" />
+        <div v-show="sidebarIsActive('search')" key="search">
+            <ToolBox class="left-column" v-bind="toolBoxProperties" />
         </div>
     </div>
 </template>
@@ -53,39 +51,19 @@ function onToggleSidebar(toggle) {
 <style scoped>
 @import "theme/blue.scss";
 
-.nav-item {
-    cursor: pointer;
-    text-decoration: none;
-    list-style-type: none;
-}
-
-.left-column-disable {
-    min-width: 15.2rem;
-    max-width: 15.2rem;
-    width: 15.2rem;
-}
-
-.right-column {
-    min-width: 18rem;
-    max-width: 18rem;
-    width: 18rem;
+.left-column {
+    min-width: 15rem;
+    max-width: 15rem;
+    width: 15rem;
 }
 
 .side-bar {
-    z-index: 100;
-    //width: 2.8rem;
-    //min-width: 2.8rem;
-    //max-width: 2.8rem;
     background: $panel-bg-color;
 }
 
-.active-sidebar {
-    border-radius: 10px;
+.nav-item-active {
+    border-radius: 0.5rem;
     background: $gray-300;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
 }
 
 .nav-icon {
@@ -93,12 +71,6 @@ function onToggleSidebar(toggle) {
     display: flex;
     align-items: center;
     align-content: center;
-}
-
-.nav-icon-active {
-    top: 40%;
-    left: 100%;
-    position: absolute;
 }
 
 .panels-enter-active,
