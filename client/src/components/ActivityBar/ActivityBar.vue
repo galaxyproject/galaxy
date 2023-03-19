@@ -2,9 +2,9 @@
 import { getGalaxyInstance } from "app";
 import { useUserStore } from "@/stores/userStore";
 import { WindowManager } from "@/layout/window-manager";
-import { UploadButton } from "@/components/Upload";
 import { useRoute, useRouter } from "vue-router/composables";
 import { computed, ref } from "vue";
+import UploadButton from "./Items/UploadButton.vue";
 import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
 
 const route = useRoute();
