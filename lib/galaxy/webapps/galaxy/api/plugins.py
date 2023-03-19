@@ -90,7 +90,7 @@ class FastAPIPlugins:
             return plugins
 
     @router.get(
-        "/api/plugins/{id}",
+        "/api/plugins/{plugin_id}",
         summary="Get a plugin by id",
         response_description="Plugin",
     )
@@ -111,7 +111,7 @@ class FastAPIPlugins:
                 if registry.get_visualization(trans, plugin_id, hda):
                     result["hdas"].append({"id": trans.security.encode_id(hda.id), "name": hda.name})
         else:
-            result = registry.get_plugin(plugin_id).to_dict()
+            result = registry.get_plugin(plugin_id).to_dict(url_builder=trans.url_builder)
         return result
 
     def _get_registry(self):
