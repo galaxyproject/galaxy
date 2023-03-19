@@ -390,7 +390,7 @@ INPUTS_VALIDATOR_INCOMPATIBILITIES = """
             <validator type="value_in_data_table"/>
         </param>
         <param name="another_param_name" type="data" format="bed">
-            <validator type="metadata"/>
+            <validator type="metadata" value="value"/>
         </param>
     </inputs>
 </tool>
@@ -401,8 +401,10 @@ INPUTS_VALIDATOR_CORRECT = """
     <inputs>
         <param name="data_param" type="data" format="data">
             <validator type="metadata" check="md1,md2" skip="md3,md4" message="custom validation message" negate="true"/>
+            <validator type="dataset_metadata_equal" metadata_name="columns" value="xyz" message="custom validation message %s" negate="true"/>
             <validator type="unspecified_build" message="custom validation message" negate="true"/>
             <validator type="dataset_ok_validator" message="custom validation message" negate="true"/>
+            <validator type="dataset_metadata_equal" metadata_name="columns" value="8"/>
             <validator type="dataset_metadata_in_range" metadata_name="sequences" min="0" max="100" exclude_min="true" exclude_max="true" message="custom validation message" negate="true"/>
             <validator type="dataset_metadata_in_file" filename="file.tsv" metadata_column="3" split="," metadata_name="dbkey" message="custom validation message" negate="true"/>
             <validator type="dataset_metadata_in_data_table" table_name="datatable_name" metadata_column="3" metadata_name="dbkey" message="custom validation message" negate="true"/>
@@ -1334,10 +1336,14 @@ def test_inputs_validator_incompatibilities(lint_ctx):
         "Parameter [param_name]: 'value_in_data_table' validators need to define the 'table_name' attribute"
         in lint_ctx.error_messages
     )
+    assert (
+        "Parameter [another_param_name]: attribute 'value' is incompatible with validator of type 'metadata'"
+        in lint_ctx.error_messages
+    )
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
     assert len(lint_ctx.warn_messages) == 1
-    assert len(lint_ctx.error_messages) == 7
+    assert len(lint_ctx.error_messages) == 8
 
 
 def test_inputs_validator_correct(lint_ctx):

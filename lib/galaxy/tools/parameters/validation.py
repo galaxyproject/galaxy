@@ -31,7 +31,7 @@ class Validator(abc.ABC):
     @classmethod
     def from_element(cls, param, elem):
         """
-        Initialize the appropiate Validator class
+        Initialize the appropriate Validator class
 
         example call `validation.Validator.from_element(ToolParameter_object, Validator_object)`
 
@@ -561,30 +561,42 @@ class MetadataValidator(Validator):
 
 class MetadataEqualsValidator(Validator):
     """
+    Validator that checks for a metadata value for equality
+
+    metadata values that are lists are converted as comma separated string
+    everything else is converted to the string representation
     """
+
     requires_dataset_metadata = True
 
-    def __init__(self, metadata_name=None, value=None, message=None):
+    def __init__(self, metadata_name=None, value=None, message=None, negate="false"):
+        if not message:
+            if not util.asbool(negate):
+                message = f"Metadata value for '{metadata_name}' must be '{value}', but it is '%s'."
+            else:
+                message = f"Metadata value for '{metadata_name}' must not be '{value}' but it is."
+        super().__init__(message, negate)
         self.metadata_name = metadata_name
         self.value = value
-        self.message = message or 'Metadata value for (%s) must be (%s) and is not.' % (metadata_name, value)
 
     @classmethod
     def from_element(cls, param, elem):
         return cls(
-            metadata_name=elem.get('metadata_name', None),
-            value=elem.get('value', None),
-            message=elem.get('message', None),
+            metadata_name=elem.get("metadata_name", None),
+            value=elem.get("value", None),
+            message=elem.get("message", None),
+            negate=elem.get("negate", "false"),
         )
 
-    def validate( self, value, trans=None ):
+    def validate(self, value, trans=None):
         if value:
-            metdata_value = getattr(value.metadata, self.metadata_name)
-            if metdata_value != self.value:
-                raise ValueError( self.message )
+            metadata_value = getattr(value.metadata, self.metadata_name)
+            if isinstance(metadata_value, list):
+                metadata_value = ",".join(metadata_value)
+            super().validate(str(metadata_value) == self.value, value_to_show=metadata_value)
 
 
-class UnspecifiedBuildValidator( Validator ):
+class UnspecifiedBuildValidator(Validator):
     """
     Validator that checks for dbkey not equal to '?'
 
@@ -974,7 +986,7 @@ validator_types = dict(
     in_range=InRangeValidator,
     length=LengthValidator,
     metadata=MetadataValidator,
-    metadata_eq=MetadataEqualsValidator,
+    dataset_metadata_equal=MetadataEqualsValidator,
     unspecified_build=UnspecifiedBuildValidator,
     no_options=NoOptionsValidator,
     empty_field=EmptyTextfieldValidator,
