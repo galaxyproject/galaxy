@@ -232,7 +232,12 @@ class BaseInputTerminal extends Terminal {
             const terminalSource = step.outputs[0];
             if (terminalSource) {
                 const terminal = terminalFactory(step.id, terminalSource, this.datatypesMapper);
+                // drop mapping restrictions
                 terminal.resetMappingIfNeeded();
+                // re-establish map over through inputs
+                step.inputs.forEach((input) => {
+                    terminalFactory(step.id, input, this.datatypesMapper).getStepMapOver();
+                });
             }
         });
     }
