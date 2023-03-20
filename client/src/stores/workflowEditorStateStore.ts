@@ -1,4 +1,4 @@
-import Vue from "vue";
+import Vue, { shallowRef, type ShallowRef } from "vue";
 import type { UnwrapRef } from "vue";
 import { defineStore } from "pinia";
 import type { OutputTerminals } from "@/components/Workflow/Editor/modules/terminals";
@@ -14,12 +14,7 @@ export interface OutputTerminalPosition {
     startY: number;
 }
 
-export interface TerminalPosition {
-    startX: number;
-    endX: number;
-    startY: number;
-    endY: number;
-}
+export type TerminalPosition = InputTerminalPosition & OutputTerminalPosition;
 
 export interface XYPosition {
     x: number;
@@ -27,8 +22,8 @@ export interface XYPosition {
 }
 
 interface State {
-    inputTerminals: { [index: number]: { [index: string]: InputTerminalPosition } };
-    outputTerminals: { [index: number]: { [index: string]: OutputTerminalPosition } };
+    inputTerminals: { [index: number]: { [index: string]: ShallowRef<InputTerminalPosition> } };
+    outputTerminals: { [index: number]: { [index: string]: ShallowRef<OutputTerminalPosition> } };
     draggingPosition: TerminalPosition | null;
     draggingTerminal: OutputTerminals | null;
     activeNodeId: number | null;
@@ -50,10 +45,14 @@ export const useWorkflowStateStore = defineStore("workflowStateStore", {
     }),
     getters: {
         getInputTerminalPosition(state: State) {
-            return (stepId: number, inputName: string) => state.inputTerminals[stepId]?.[inputName];
+            return (stepId: number, inputName: string) => {
+                return state.inputTerminals[stepId]?.[inputName] as ShallowRef<InputTerminalPosition> | undefined;
+            };
         },
         getOutputTerminalPosition(state: State) {
-            return (stepId: number, outputName: string) => state.outputTerminals[stepId]?.[outputName];
+            return (stepId: number, outputName: string) => {
+                return state.outputTerminals[stepId]?.[outputName] as ShallowRef<OutputTerminalPosition> | undefined;
+            };
         },
         getStepLoadingState(state: State) {
             return (stepId: number) => state.stepLoadingState[stepId];
@@ -62,16 +61,24 @@ export const useWorkflowStateStore = defineStore("workflowStateStore", {
     actions: {
         setInputTerminalPosition(stepId: number, inputName: string, position: InputTerminalPosition) {
             if (!this.inputTerminals[stepId]) {
-                Vue.set(this.inputTerminals, stepId, { [inputName]: position });
+                this.inputTerminals[stepId] = {};
+            }
+
+            if (!this.inputTerminals[stepId][inputName]) {
+                this.inputTerminals[stepId][inputName] = shallowRef(position);
             } else {
-                Vue.set(this.inputTerminals[stepId], inputName, position);
+                this.inputTerminals[stepId][inputName].value = position;
             }
         },
         setOutputTerminalPosition(stepId: number, outputName: string, position: OutputTerminalPosition) {
             if (!this.outputTerminals[stepId]) {
-                Vue.set(this.outputTerminals, stepId, { [outputName]: position });
+                this.outputTerminals[stepId] = {};
+            }
+
+            if (!this.outputTerminals[stepId][outputName]) {
+                this.outputTerminals[stepId][outputName] = shallowRef(position);
             } else {
-                Vue.set(this.outputTerminals[stepId], outputName, position);
+                this.outputTerminals[stepId][outputName].value = position;
             }
         },
         deleteInputTerminalPosition(stepId: number, inputName: string) {
