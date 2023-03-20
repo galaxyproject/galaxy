@@ -1,4 +1,4 @@
-import type { Connection } from "@/stores/workflowConnectionStore";
+import { getConnectionId, type Connection } from "@/stores/workflowConnectionStore";
 import { computed, type Ref } from "vue";
 import { useWorkflowStateStore, type TerminalPosition } from "@/stores/workflowEditorStateStore";
 import { line, curveBasis } from "d3";
@@ -89,7 +89,7 @@ export function useDrawableConnection(connection: Connection, terminalPosition?:
     });
 
     const connectionIsValid = computed(() => {
-        return !connectionStore.invalidConnections[connection.id];
+        return !connectionStore.invalidConnections[getConnectionId(connection)];
     });
 
     const offsets = computed(() => getLineOffsets(inputIsMappedOver.value, outputIsMappedOver.value));
