@@ -77,7 +77,6 @@ HistoryIDPathParam: DecodedDatabaseIdField = Path(
 )
 
 JehaIDPathParam: Union[DecodedDatabaseIdField, LatestLiteral] = Path(
-    default="latest",
     title="Job Export History ID",
     description=(
         "The ID of the specific Job Export History Association or "
