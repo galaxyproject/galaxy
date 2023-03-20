@@ -326,9 +326,11 @@ export default {
                 jobDef.preferred_object_store_id = this.preferredObjectStoreId;
             }
             console.debug("toolForm::onExecute()", jobDef);
+            const prevRoute = this.$route.fullPath;
             submitJob(jobDef).then(
                 (jobResponse) => {
                     this.showExecuting = false;
+                    let changeRoute = false;
                     refreshContentsWrapper();
                     if (jobResponse.produces_entry_points) {
                         this.showEntryPoints = true;
@@ -345,17 +347,21 @@ export default {
                             toolName: this.toolName,
                         };
                         this.saveLatestResponse(response);
-                        this.$router.push(`/jobs/submission/success`);
+                        changeRoute = prevRoute === this.$route.fullPath;
                     } else {
                         this.showError = true;
                         this.showForm = true;
                         this.errorTitle = "Job submission rejected.";
                         this.errorContent = jobResponse;
                     }
-                    if ([true, "true"].includes(config.enable_tool_recommendations)) {
-                        this.showRecommendation = true;
+                    if (changeRoute) {
+                        this.$router.push(`/jobs/submission/success`);
+                    } else {
+                        if ([true, "true"].includes(config.enable_tool_recommendations)) {
+                            this.showRecommendation = true;
+                        }
+                        document.querySelector(".center-panel").scrollTop = 0;
                     }
-                    document.querySelector(".center-panel").scrollTop = 0;
                 },
                 (e) => {
                     this.errorMessage = e?.response?.data?.err_msg;

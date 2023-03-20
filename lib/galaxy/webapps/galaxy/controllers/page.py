@@ -375,8 +375,9 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
             operation = kwargs["operation"].lower()
             ids = util.listify(kwargs["id"])
             for id in ids:
-                item = session.query(model.Page).get(self.decode_id(id))
                 if operation == "delete":
+                    item = session.query(model.Page).get(self.decode_id(id))
+                    self.security_check(trans, item, check_ownership=True)
                     item.deleted = True
             session.flush()
 
@@ -478,6 +479,7 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
         decoded_id = self.decode_id(id)
         user = trans.get_user()
         p = trans.sa_session.query(model.Page).get(decoded_id)
+        p = self.security_check(trans, p, check_ownership=True)
         if trans.request.method == "GET":
             if p.slug is None:
                 self.slug_builder.create_item_slug(trans.sa_session, p)

@@ -560,7 +560,7 @@ export class InputCollectionTerminal extends BaseInputTerminal {
         return NULL_COLLECTION_TYPE_DESCRIPTION;
     }
     _effectiveCollectionTypes() {
-        return this.collectionTypes.map((t) => this.mapOver.append(t));
+        return this.collectionTypes.map((t) => this.localMapOver.append(t));
     }
     attachable(other: BaseOutputTerminal) {
         const otherCollectionType = this._otherCollectionType(other);

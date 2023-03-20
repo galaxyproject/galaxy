@@ -688,6 +688,7 @@ workflow_editor:
     connector_invalid_for: "#connection-${sink_id}-${source_id} .ribbon-inner-invalid"
     connector_destroy_callout: '.delete-terminal'
     save_button: '.editor-button-save'
+    save_workflow_confirmation_button: '#save-workflow-confirmation .btn-primary'
     state_modal_body: '.state-upgrade-modal'
     modal_button_continue: '.modal-footer .btn'
 
