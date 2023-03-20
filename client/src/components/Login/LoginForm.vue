@@ -182,8 +182,8 @@ export default {
         },
         submitLogin() {
             let redirect = this.redirect;
-            if (this.connectExternalURL) {
-                this.login = this.connectExternalURL;
+            if (this.connectExternalEmail) {
+                this.login = this.connectExternalEmail;
             }
             if (localStorage.getItem("redirect_url")) {
                 redirect = localStorage.getItem("redirect_url");
@@ -203,8 +203,8 @@ export default {
                         window.location = withPrefix(`/root/login?expired_user=${data.expired_user}`);
                     } else if (data.redirect) {
                         window.location = encodeURI(data.redirect);
-                    } else if (this.connectExternalURL) {
-                        window.location = safePath("/user/external_ids?connect_external=true");
+                    } else if (this.connectExternalProvider) {
+                        window.location = withPrefix("/user/external_ids?connect_external=true");
                     } else {
                         window.location = withPrefix("/");
                     }
@@ -212,7 +212,7 @@ export default {
                 .catch((error) => {
                     this.messageVariant = "danger";
                     const message = error.response.data && error.response.data.err_msg;
-                    if (this.connectExternalURL && message && message.toLowerCase().includes("invalid")) {
+                    if (this.connectExternalProvider && message && message.toLowerCase().includes("invalid")) {
                         this.messageText =
                             message + " Try logging in to the existing account through an external provider below.";
                     } else {
@@ -237,7 +237,7 @@ export default {
                 });
         },
         returnToLogin() {
-            window.location = safePath("/login/start");
+            window.location = withPrefix("/login/start");
         },
     },
 };
