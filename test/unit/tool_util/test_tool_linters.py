@@ -391,6 +391,7 @@ INPUTS_VALIDATOR_INCOMPATIBILITIES = """
         </param>
         <param name="another_param_name" type="data" format="bed">
             <validator type="metadata" value="value"/>
+            <validator type="dataset_metadata_equal" value="value" value_json="['1', '2']" metadata_name="columns"/>
         </param>
     </inputs>
 </tool>
@@ -1340,10 +1341,14 @@ def test_inputs_validator_incompatibilities(lint_ctx):
         "Parameter [another_param_name]: attribute 'value' is incompatible with validator of type 'metadata'"
         in lint_ctx.error_messages
     )
+    assert (
+        "Parameter [another_param_name]: 'dataset_metadata_equal' validators must not define the 'value' and the 'value_json' attributes"
+        in lint_ctx.error_messages
+    )
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
     assert len(lint_ctx.warn_messages) == 1
-    assert len(lint_ctx.error_messages) == 8
+    assert len(lint_ctx.error_messages) == 9
 
 
 def test_inputs_validator_correct(lint_ctx):

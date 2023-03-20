@@ -53,6 +53,7 @@ ATTRIB_VALIDATOR_COMPATIBILITY = {
     "split": ["dataset_metadata_in_file"],
     "skip": ["metadata"],
     "value": ["dataset_metadata_equal"],
+    "value_json": ["dataset_metadata_equal"],
 }
 
 PARAMETER_VALIDATOR_TYPE_COMPATIBILITY = {
@@ -396,13 +397,18 @@ def lint_inputs(tool_xml, lint_ctx):
                     f"Parameter [{param_name}]: '{vtype}' validators need to define the 'min' or 'max' attribute(s)",
                     node=validator,
                 )
-            if vtype in ["dataset_metadata_equal"] and (
-                "value" not in validator.attrib or "metadata_name" not in validator.attrib
-            ):
-                lint_ctx.error(
-                    f"Parameter [{param_name}]: '{vtype}' validators need to define the 'value' or 'metadata_name' attributes",
-                    node=validator,
-                )
+            if vtype in ["dataset_metadata_equal"]:
+                if not ("value" in validator.attrib or "value_json" in validator.attrib) or "metadata_name" not in validator.attrib:
+                    lint_ctx.error(
+                        f"Parameter [{param_name}]: '{vtype}' validators need to define the 'value'/'value_json' and 'metadata_name' attributes",
+                        node=validator,
+                    )
+                if "value" in validator.attrib and "value_json" in validator.attrib:
+                    lint_ctx.error(
+                        f"Parameter [{param_name}]: '{vtype}' validators must not define the 'value' and the 'value_json' attributes",
+                        node=validator,
+                    )
+
             if vtype in ["metadata"] and ("check" not in validator.attrib and "skip" not in validator.attrib):
                 lint_ctx.error(
                     f"Parameter [{param_name}]: '{vtype}' validators need to define the 'check' or 'skip' attribute(s)",

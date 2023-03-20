@@ -4408,7 +4408,7 @@ Note that each data parameter has automatically a metadata validator that checks
 if all non-optional metadata are set, i.e. ``<validator type="metadata/>``.
 - ``unspecified_build``: Check of a build is defined.
 - ``dataset_ok_validator``: Check if the data set is in state OK.
-- ``dataset_metadata_equal``: Check if metadata is equal to a given value. Works for metadata that is string, numbers and lists (where lists are represented as comma separated strings)
+- ``dataset_metadata_equal``: Check if metadata (given by ``metadata_name``) is equal to a given string value (given by ``value``) or JSON encoded value (given by ``value_json``). ``value_json`` needs to be used for all non string types (e.g. int, float, list, dict).
 - ``dataset_metadata_in_range``: Check if a numeric metadata value is within
 a given range.
 - ``dataset_metadata_in_data_table``: Check if a metadata value is contained in a column of a data table.
@@ -4598,8 +4598,14 @@ metadata fields will be checked unless ``check`` attribute is specified.</xs:doc
         </xs:attribute>
         <xs:attribute name="value" type="xs:string">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Value of the metadata to check. Only
-applicable to ``dataset_metadata_equal``.</xs:documentation>
+            <xs:documentation xml:lang="en">Value to check the metadata against. Only
+applicable to ``dataset_metadata_equal``. Mutually exclusive with ``value_json``.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="value_json" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">JSON encoded value to check the metadata against. Only
+applicable to ``dataset_metadata_equal``. Mutually exclusive with ``value``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="line_startswith" type="xs:string">

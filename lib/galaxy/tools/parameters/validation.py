@@ -2,6 +2,7 @@
 Classes related to parameter validation.
 """
 import abc
+import json
 import logging
 import os.path
 import re
@@ -581,9 +582,10 @@ class MetadataEqualsValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
+        value = elem.get("value", None) or json.loads(elem.get("value_json", "null"))
         return cls(
             metadata_name=elem.get("metadata_name", None),
-            value=elem.get("value", None),
+            value=value,
             message=elem.get("message", None),
             negate=elem.get("negate", "false"),
         )
@@ -591,9 +593,7 @@ class MetadataEqualsValidator(Validator):
     def validate(self, value, trans=None):
         if value:
             metadata_value = getattr(value.metadata, self.metadata_name)
-            if isinstance(metadata_value, list):
-                metadata_value = ",".join(metadata_value)
-            super().validate(str(metadata_value) == self.value, value_to_show=metadata_value)
+            super().validate(metadata_value == self.value, value_to_show=metadata_value)
 
 
 class UnspecifiedBuildValidator(Validator):

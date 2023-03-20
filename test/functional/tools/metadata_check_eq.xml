@@ -15,12 +15,12 @@
     ]]></command>
     <inputs>
         <param name="input" type="data" optional="true" multiple="false" format="tabular,csv">
-            <validator type="dataset_metadata_equal" metadata_name="columns" value="12" />
-            <validator type="dataset_metadata_equal" metadata_name="column_names" value="Transaction_date,Product,Price,Payment_Type,Name,City,State,Country,Account_Created,Last_Login,Latitude,Longitude" />
+            <validator type="dataset_metadata_equal" metadata_name="columns" value_json="12" />
+            <validator type="dataset_metadata_equal" metadata_name="column_names" value_json="[&quot;Transaction_date&quot; ,&quot;Product&quot;, &quot;Price&quot;, &quot;Payment_Type&quot;, &quot;Name&quot;, &quot;City&quot;, &quot;State&quot;, &quot;Country&quot;, &quot;Account_Created&quot;, &quot;Last_Login&quot;, &quot;Latitude&quot;, &quot;Longitude&quot;]" />
         </param>
         <param name="input_negate" type="data" optional="true" multiple="false" format="tabular,csv">
-            <validator type="dataset_metadata_equal" metadata_name="columns" negate="true"  value="12"/>
-            <validator type="dataset_metadata_equal" metadata_name="column_names" negate="true"  value="Transaction_date,Product,Price,Payment_Type,Name,City,State,Country,Account_Created,Last_Login,Latitude,Longitude" />
+            <validator type="dataset_metadata_equal" metadata_name="columns" negate="true"  value_json="12"/>
+            <validator type="dataset_metadata_equal" metadata_name="column_names" negate="true" value_json="[&quot;Transaction_date&quot; ,&quot;Product&quot;, &quot;Price&quot;, &quot;Payment_Type&quot;, &quot;Name&quot;, &quot;City&quot;, &quot;State&quot;, &quot;Country&quot;, &quot;Account_Created&quot;, &quot;Last_Login&quot;, &quot;Latitude&quot;, &quot;Longitude&quot;]" />
         </param>
     </inputs>
     <outputs>
@@ -36,8 +36,7 @@
                 <assert_contents>
                     <has_text text="sucess"/>
                     <has_text text="columns 12"/>
-                    <!-- unfortunately it seems impossible to access metadata and ,-join in cheetah -->
-                    <has_text text="column_names __ob____sq__Transaction_date__sq__, __sq__Product__sq__, __sq__Price__sq__, __sq__Payment_Type__sq__, __sq__Name__sq__, __sq__City__sq__, __sq__State__sq__, __sq__Country__sq__, __sq__Account_Created__sq__, __sq__Last_Login__sq__, __sq__Latitude__sq__, __sq__Longitude__sq____cb__"/>
+                    <has_text text="Transaction_date"/>
                 </assert_contents>
             </output>
         </test>
@@ -48,7 +47,7 @@
                     <has_text text="sucess"/>
                     <has_text text="columns 3"/>
                     <!-- tabular has no column names -->
-                    <has_text text="column_names __ob____cb__"/>
+                    <has_text text="Transaction_date" negate="true"/>
                 </assert_contents>
             </output>
         </test>
