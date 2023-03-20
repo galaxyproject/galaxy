@@ -203,6 +203,35 @@ class TestUserNotifications(NotificationManagerBaseTestCase):
         with pytest.raises(ObjectNotFound):
             self.notification_manager.get_user_notification(user, notification.id, active_only=False)
 
+    def test_cleanup_keeps_expired_favorite_notifications_until_deleted(self):
+        user = self._create_test_user()
+        now = datetime.utcnow()
+        notification, _ = self._send_message_notification_to_users([user], notification={"expiration_time": now})
+        request = UserNotificationUpdateRequest(favorite=True)
+        self.notification_manager.update_user_notifications(user, set([notification.id]), request)
+        user_notification = self.notification_manager.get_user_notification(user, notification.id, active_only=False)
+        assert self._has_expired(user_notification.expiration_time) is True
+        assert user_notification.favorite is True
+
+        self.notification_manager.cleanup_expired_notifications()
+
+        # The notification should remain
+        user_notification = self.notification_manager.get_user_notification(user, notification.id, active_only=False)
+        assert user_notification
+
+        # Mark it as deleted
+        request = UserNotificationUpdateRequest(deleted=True)
+        self.notification_manager.update_user_notifications(user, set([notification.id]), request)
+        user_notification = self.notification_manager.get_user_notification(user, notification.id, active_only=False)
+        assert user_notification.favorite is True
+        assert user_notification.deleted is True
+
+        self.notification_manager.cleanup_expired_notifications()
+
+        # If marked as deleted it will be removed (even if marked as favorite)
+        with pytest.raises(ObjectNotFound):
+            self.notification_manager.get_user_notification(user, notification.id, active_only=False)
+
     def _send_message_notification_to_users(self, users: List[User], notification: Optional[Dict[str, Any]] = None):
         data = self._default_test_notification_data()
         if notification:
