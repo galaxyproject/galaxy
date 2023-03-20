@@ -62,10 +62,10 @@ export function useDrawableConnection(connection: Connection, terminalPosition?:
 
         if (inputPos && outputPos) {
             return {
-                startX: outputPos.startX,
-                startY: outputPos.startY,
-                endX: inputPos.endX,
-                endY: inputPos.endY,
+                startX: outputPos.value.startX,
+                startY: outputPos.value.startY,
+                endX: inputPos.value.endX,
+                endY: inputPos.value.endY,
             };
         }
 
