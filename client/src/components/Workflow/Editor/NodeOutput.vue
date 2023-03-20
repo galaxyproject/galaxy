@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import DraggableWrapper from "./DraggablePan.vue";
-import { useCoordinatePosition, type ElementBounding } from "./composables/useCoordinatePosition";
 import { useTerminal } from "./composables/useTerminal";
-import { ref, computed, watch, nextTick, toRefs, onBeforeUnmount, type Ref } from "vue";
+import { ref, computed, watch, nextTick, toRefs, onBeforeUnmount, type Ref, type UnwrapRef } from "vue";
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useWorkflowStateStore, type XYPosition } from "@/stores/workflowEditorStateStore";
 import ConnectionMenu from "@/components/Workflow/Editor/ConnectionMenu.vue";
@@ -13,8 +12,12 @@ import {
     type PostJobActions,
     type PostJobAction,
 } from "@/stores/workflowStepStore";
-import type { UseScrollReturn } from "@vueuse/core";
+
+import type { UseElementBoundingReturn, UseScrollReturn } from "@vueuse/core";
+import { useRelativePosition } from "./composables/relativePosition";
 import { NULL_COLLECTION_TYPE_DESCRIPTION, type CollectionTypeDescriptor } from "./modules/collectionTypeDescription";
+
+type ElementBounding = UnwrapRef<UseElementBoundingReturn>;
 
 const props = defineProps<{
     output: OutputTerminalSource;
@@ -22,19 +25,25 @@ const props = defineProps<{
     stepType: Step["type"];
     stepId: number;
     postJobActions: PostJobActions;
-    stepPosition: NonNullable<Step["position"]>;
-    rootOffset: Ref<ElementBounding>;
+    stepPosition: Step["position"];
+    rootOffset: ElementBounding;
     scroll: UseScrollReturn;
     scale: number;
     datatypesMapper: DatatypesMapperModel;
+    parentNode: HTMLElement | null;
 }>();
 
 const emit = defineEmits(["pan-by", "stopDragging", "onDragConnector"]);
 const stateStore = useWorkflowStateStore();
 const stepStore = useWorkflowStepStore();
-const el = ref(null);
-const { rootOffset, stepPosition, output, stepId, datatypesMapper } = toRefs(props);
-const position = useCoordinatePosition(el, rootOffset, stepPosition);
+const icon: Ref<HTMLElement | null> = ref(null);
+const { rootOffset, output, stepId, datatypesMapper } = toRefs(props);
+
+const position = useRelativePosition(
+    icon,
+    computed(() => props.parentNode)
+);
+
 const extensions = computed(() => {
     let changeDatatype: PostJobAction | undefined;
     if ("label" in props.output && props.postJobActions[`ChangeDatatypeAction${props.output.label}`]) {
@@ -87,7 +96,6 @@ const rowClass = computed(() => {
 });
 
 const menu: Ref<InstanceType<typeof ConnectionMenu> | undefined> = ref();
-const icon: Ref<HTMLElement | undefined> = ref();
 const showChildComponent = ref(false);
 
 function closeMenu() {
@@ -157,8 +165,12 @@ const dragX = ref(0);
 const dragY = ref(0);
 const isDragging = ref(false);
 
-const startX = computed(() => position.left + props.scroll.x.value / props.scale + position.width / 2);
-const startY = computed(() => position.top + props.scroll.y.value / props.scale + position.height / 2);
+const startX = computed(
+    () => position.value.offsetLeft + (props.stepPosition?.left ?? 0) + (icon.value?.offsetWidth ?? 2) / 2
+);
+const startY = computed(
+    () => position.value.offsetTop + (props.stepPosition?.top ?? 0) + (icon.value?.offsetHeight ?? 2) / 2
+);
 const endX = computed(() => {
     return (dragX.value || startX.value) + props.scroll.x.value / props.scale;
 });
@@ -173,9 +185,6 @@ const dragPosition = computed(() => {
         endY: endY.value,
     };
 });
-const terminalPosition = computed(() => {
-    return Object.freeze({ startX: startX.value, startY: startY.value });
-});
 
 watch([dragPosition, isDragging], () => {
     if (isDragging.value) {
@@ -183,13 +192,19 @@ watch([dragPosition, isDragging], () => {
     }
 });
 
-watch(terminalPosition, () =>
-    stateStore.setOutputTerminalPosition(props.stepId, props.output.name, terminalPosition.value)
+watch(
+    [startX, startY],
+    ([x, y]) => {
+        stateStore.setOutputTerminalPosition(props.stepId, props.output.name, { startX: x, startY: y });
+    },
+    {
+        immediate: true,
+    }
 );
 
 function onMove(dragPosition: XYPosition) {
-    dragX.value = dragPosition.x + position.width / 2;
-    dragY.value = dragPosition.y + position.height / 2;
+    dragX.value = dragPosition.x + icon.value!.clientWidth / 2;
+    dragY.value = dragPosition.y + icon.value!.clientHeight / 2;
 }
 
 const id = computed(() => `node-${props.stepId}-output-${props.output.name}`);
