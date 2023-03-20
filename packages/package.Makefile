@@ -93,4 +93,4 @@ push-release:
 release: release-local push-release
 
 mypy:
-	mypy . --enable-incomplete-feature=Unpack
+	mypy .
