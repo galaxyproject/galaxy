@@ -39,7 +39,7 @@ async function onConfirmCleanupSelected(selectedItems: CleanableItem[]) {
     await delay(1000);
     if (currentOperation.value) {
         cleanupResult.value = await currentOperation.value.cleanupItems(selectedItems);
-        if (cleanupResult.value.success) {
+        if (cleanupResult.value.hasUpdatedResults) {
             refreshOperationId.value = currentOperation.value.id.toString();
         }
     }

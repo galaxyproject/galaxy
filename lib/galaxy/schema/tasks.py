@@ -1,4 +1,7 @@
-from typing import Optional
+from typing import (
+    List,
+    Optional,
+)
 from uuid import UUID
 
 from pydantic import (
@@ -116,3 +119,7 @@ class ComputeDatasetHashTaskRequest(BaseModel):
     extra_files_path: Optional[str]
     hash_function: HashFunctionNameEnum
     user: Optional[RequestUser]  # access checks should be done pre-celery so this is optional
+
+
+class PurgeDatasetsTaskRequest(BaseModel):
+    dataset_ids: List[int]
