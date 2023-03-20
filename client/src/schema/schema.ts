@@ -2321,7 +2321,7 @@ export interface components {
              * Collection Type
              * @description The type of the collection, can be `list`, `paired`, or define subcollections using `:` as separator like `list:paired` or `list:list`.
              */
-            collection_type?: string;
+            collection_type: string;
             /**
              * Contents URL
              * @description The relative URL to access the contents of this History.
@@ -3844,7 +3844,7 @@ export interface components {
              * Collection Type
              * @description The type of the collection, can be `list`, `paired`, or define subcollections using `:` as separator like `list:paired` or `list:list`.
              */
-            collection_type?: string;
+            collection_type: string;
             /**
              * Contents URL
              * @description The relative URL to access the contents of this History.
@@ -3989,7 +3989,7 @@ export interface components {
              * Collection Type
              * @description The type of the collection, can be `list`, `paired`, or define subcollections using `:` as separator like `list:paired` or `list:list`.
              */
-            collection_type?: string;
+            collection_type: string;
             /**
              * Contents URL
              * @description The relative URL to access the contents of this History.
@@ -5030,7 +5030,7 @@ export interface components {
         LibraryAvailablePermissions: {
             /**
              * Page
-             * @description Current page .
+             * @description Current page.
              */
             page: number;
             /**
@@ -5542,12 +5542,12 @@ export interface components {
              *
              * @example 0123456789ABCDEF
              */
-            content?: string;
+            content: string;
             /**
              * Source
              * @description The source of the content. Can be other history element to be copied or library elements.
              */
-            source?: components["schemas"]["DatasetSourceType"];
+            source: components["schemas"]["DatasetSourceType"];
         };
         /**
          * MetadataFile

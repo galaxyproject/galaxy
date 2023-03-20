@@ -20,9 +20,6 @@ from galaxy.util import (
     Element,
 )
 
-ALLOW_EXTRA = Extra.forbid
-
-
 DEFAULT_VALUE_TRANSLATION_TYPE = "template"
 VALUE_TRANSLATION_FUNCTIONS: Dict[str, Callable] = dict(abspath=os.path.abspath)
 DEFAULT_VALUE_TRANSLATION_TYPE = "template"
@@ -33,7 +30,7 @@ class DataTableBundleProcessorDataTableOutputColumnTranslation(BaseModel):
     value: str
 
     class Config:
-        extra = ALLOW_EXTRA
+        extra = Extra.forbid
 
 
 class DataTableBundleProcessorDataTableOutputColumnMove(BaseModel):
@@ -45,7 +42,7 @@ class DataTableBundleProcessorDataTableOutputColumnMove(BaseModel):
     relativize_symlinks: bool
 
     class Config:
-        extra = ALLOW_EXTRA
+        extra = Extra.forbid
 
 
 class DataTableBundleProcessorDataTableOutputColumn(BaseModel):
@@ -56,7 +53,7 @@ class DataTableBundleProcessorDataTableOutputColumn(BaseModel):
     moves: List[DataTableBundleProcessorDataTableOutputColumnMove] = []
 
     class Config:
-        extra = ALLOW_EXTRA
+        extra = Extra.forbid
 
     @root_validator(pre=True)
     def fill_in_default_data_table_name(cls, values):
@@ -70,7 +67,7 @@ class DataTableBundleProcessorDataTableOutput(BaseModel):
     columns: List[DataTableBundleProcessorDataTableOutputColumn]
 
     class Config:
-        extra = ALLOW_EXTRA
+        extra = Extra.forbid
 
 
 class DataTableBundleProcessorDataTable(BaseModel):
@@ -78,7 +75,7 @@ class DataTableBundleProcessorDataTable(BaseModel):
     output: Optional[DataTableBundleProcessorDataTableOutput]
 
     class Config:
-        extra = ALLOW_EXTRA
+        extra = Extra.forbid
 
 
 class DataTableBundleProcessorDescription(BaseModel):
@@ -86,7 +83,7 @@ class DataTableBundleProcessorDescription(BaseModel):
     data_tables: List[DataTableBundleProcessorDataTable]
 
     class Config:
-        extra = ALLOW_EXTRA
+        extra = Extra.forbid
 
     @property
     def data_table_names(self) -> List[str]:

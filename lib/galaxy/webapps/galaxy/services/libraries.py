@@ -130,8 +130,8 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
         id: DecodedDatabaseIdField,
         scope: Optional[LibraryPermissionScope] = LibraryPermissionScope.current,
         is_library_access: Optional[bool] = False,
-        page: Optional[int] = 1,
-        page_limit: Optional[int] = 10,
+        page: int = 1,
+        page_limit: int = 10,
         query: Optional[str] = None,
     ) -> Union[LibraryCurrentPermissions, LibraryAvailablePermissions]:
         """Load all permissions for the given library id and return it.

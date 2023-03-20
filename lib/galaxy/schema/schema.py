@@ -114,7 +114,6 @@ UpdateTimeField = Field(
 CollectionType = str  # str alias for now
 
 CollectionTypeField = Field(
-    default=None,
     title="Collection Type",
     description=(
         "The type of the collection, can be `list`, `paired`, or define subcollections using `:` "
@@ -1101,9 +1100,9 @@ class WorkflowIndexQueryPayload(Model):
     show_hidden: bool = False
     show_published: Optional[bool] = None
     show_shared: Optional[bool] = None
-    sort_by: Optional[WorkflowSortByEnum] = Field(title="Sort By", description="Sort workflows by this attribute")
+    sort_by: Optional[WorkflowSortByEnum] = Field(None, title="Sort By", description="Sort workflows by this attribute")
     sort_desc: Optional[bool] = Field(
-        title="Sort descending", description="Explicitly sort by descending if sort_by is specified."
+        None, title="Sort descending", description="Explicitly sort by descending if sort_by is specified."
     )
     limit: Optional[int] = Field(
         default=None,
@@ -2682,7 +2681,7 @@ class LibraryAvailablePermissions(Model):
     page: int = Field(
         ...,
         title="Page",
-        description="Current page .",
+        description="Current page.",
     )
     page_limit: int = Field(
         ...,
@@ -3172,12 +3171,10 @@ class PageSummaryBase(Model):
 
 class MaterializeDatasetInstanceAPIRequest(Model):
     source: DatasetSourceType = Field(
-        None,
         title="Source",
         description="The source of the content. Can be other history element to be copied or library elements.",
     )
     content: DecodedDatabaseIdField = Field(
-        None,
         title="Content",
         description=(
             "Depending on the `source` it can be:\n"

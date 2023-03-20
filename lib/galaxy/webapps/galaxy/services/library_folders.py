@@ -84,8 +84,8 @@ class LibraryFoldersService(ServiceBase):
         trans,
         folder_id: LibraryFolderDatabaseIdField,
         scope: Optional[LibraryPermissionScope] = LibraryPermissionScope.current,
-        page: Optional[int] = 1,
-        page_limit: Optional[int] = 10,
+        page: int = 1,
+        page_limit: int = 10,
         query: Optional[str] = None,
     ) -> Union[LibraryFolderCurrentPermissions, LibraryAvailablePermissions]:
         """
