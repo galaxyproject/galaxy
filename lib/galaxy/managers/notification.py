@@ -9,6 +9,7 @@ from typing import (
 from sqlalchemy import (
     and_,
     delete,
+    false,
     func,
     select,
     union,
@@ -121,17 +122,8 @@ class NotificationManager:
         """
         Displays a notification belonging to the user.
         """
-        stmt = (
-            select(self.user_notification_columns)
-            .select_from(Notification)
-            .join(
-                UserNotificationAssociation,
-                UserNotificationAssociation.notification_id == notification_id,
-            )
-            .where(UserNotificationAssociation.user_id == user.id)
-        )
-        if active_only:
-            stmt = stmt.where(self._notification_is_active)
+        stmt = self._user_notifications_query(user, active_only=active_only)
+        stmt = stmt.where(Notification.id == notification_id)
 
         result = self.sa_session.execute(stmt).fetchone()
         if result is None:
@@ -148,7 +140,7 @@ class NotificationManager:
         """
         Displays the list of notifications belonging to the user.
         """
-        stmt = self._all_user_notifications_query(user, since)
+        stmt = self._user_notifications_query(user, since)
         if offset:
             stmt = stmt.offset(offset)
         if limit:
@@ -173,6 +165,7 @@ class NotificationManager:
             .where(
                 and_(
                     UserNotificationAssociation.user_id == user.id,
+                    UserNotificationAssociation.deleted == false(),
                     UserNotificationAssociation.seen_time.is_(None),
                 )
             )
@@ -199,7 +192,7 @@ class NotificationManager:
         return result
 
     def get_all_broadcasted_notifications(self, since: Optional[datetime] = None):
-        stmt = self._all_broadcasted_notifications_query(since)
+        stmt = self._broadcasted_notifications_query(since)
         result = self.sa_session.execute(stmt).fetchall()
         return result
 
@@ -348,7 +341,7 @@ class NotificationManager:
         notification.expiration_time = payload.expiration_time
         return notification
 
-    def _all_user_notifications_query(
+    def _user_notifications_query(
         self, user: User, since: Optional[datetime] = None, active_only: Optional[bool] = True
     ):
         stmt = (
@@ -364,12 +357,11 @@ class NotificationManager:
             stmt = stmt.where(Notification.publication_time > since)
         if active_only:
             stmt = stmt.where(self._notification_is_active)
+            stmt = stmt.where(UserNotificationAssociation.deleted == false())
 
         return stmt
 
-    def _all_broadcasted_notifications_query(
-        self, since: Optional[datetime] = None, active_only: Optional[bool] = True
-    ):
+    def _broadcasted_notifications_query(self, since: Optional[datetime] = None, active_only: Optional[bool] = True):
         stmt = (
             select(self.broadcast_notification_columns)
             .select_from(Notification)
@@ -385,6 +377,21 @@ class NotificationManager:
 class NotificationRecipientResolverStrategy(Protocol):
     def resolve_users(self, recipients: NotificationRecipients) -> List[User]:
         pass
+
+
+class NotificationRecipientResolver:
+    """Resolves a set of NotificationRecipients to a list of unique users using a specific strategy."""
+
+    def __init__(self, strategy: NotificationRecipientResolverStrategy):
+        self.strategy = strategy
+
+    def resolve(self, recipients: NotificationRecipients) -> List[User]:
+        """Given individual user, group and roles ids as recipients, obtains the unique list of users.
+
+        The resulting list will contain only unique users even if the same user id might have been provided more
+        than once as `user_ids` input or implicitly in groups or roles.
+        """
+        return self.strategy.resolve_users(recipients)
 
 
 class DefaultStrategy(NotificationRecipientResolverStrategy):
@@ -475,18 +482,3 @@ class RecursiveCTEStrategy(NotificationRecipientResolverStrategy):
     def resolve_users(self, recipients: NotificationRecipients) -> List[User]:
         # TODO Implement resolver using recursive CTEs?
         return []
-
-
-class NotificationRecipientResolver:
-    """Resolves a set of NotificationRecipients to a list of unique users using a specific strategy."""
-
-    def __init__(self, strategy: NotificationRecipientResolverStrategy):
-        self.strategy = strategy
-
-    def resolve(self, recipients: NotificationRecipients) -> List[User]:
-        """Given individual user, group and roles ids as recipients, obtains the unique list of users.
-
-        The resulting list will contain only unique users even if the same user id might have been provided more
-        than once as `user_ids` input or implicitly in groups or roles.
-        """
-        return self.strategy.resolve_users(recipients)
