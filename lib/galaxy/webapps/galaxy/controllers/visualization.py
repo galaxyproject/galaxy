@@ -287,8 +287,8 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
             operation = kwargs['operation'].lower()
             ids = util.listify(kwargs['id'])
             for id in ids:
-                item = session.query(model.Visualization).get(self.decode_id(id))
                 if operation == "delete":
+                    item = self.get_visualization(trans, id)
                     item.deleted = True
                 if operation == "copy":
                     self.copy(trans, **kwargs)
@@ -327,7 +327,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
     @web.expose
     @web.require_login()
     def copy(self, trans, id, **kwargs):
-        visualization = self.get_visualization(trans, id, check_ownership=False)
+        visualization = self.get_visualization(trans, id, check_ownership=False, check_accessible=True)
         user = trans.get_user()
         owner = (visualization.user == user)
         new_title = f"Copy of '{visualization.title}'"
@@ -390,7 +390,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
 
         # Do import.
         session = trans.sa_session
-        visualization = self.get_visualization(trans, id, check_ownership=False)
+        visualization = self.get_visualization(trans, id, check_ownership=False, check_accessible=True)
         if visualization.importable is False:
             return trans.show_error_message(f"The owner of this visualization has disabled imports via this link.<br>You can {referer_message}", use_panels=True)
         elif visualization.deleted:
