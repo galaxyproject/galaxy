@@ -29,10 +29,9 @@ function onToggleSidebar(toggle) {
 </script>
 <template>
     <div class="d-flex">
-        <b-nav vertical class="side-bar p-1">
+        <b-nav vertical class="side-bar flex-nowrap p-1">
             <b-nav-item
                 id="tool-search"
-                v-b-tooltip.hover.right
                 :class="{ 'nav-item-active': sidebarIsActive('search') }"
                 :title="'Search Tools and Workflows' | l"
                 @click="onToggleSidebar('search')">
@@ -59,6 +58,11 @@ function onToggleSidebar(toggle) {
 
 .side-bar {
     background: $panel-bg-color;
+    overflow-y: auto;
+}
+
+.side-bar::-webkit-scrollbar {
+    display: none;
 }
 
 .nav-item-active {
