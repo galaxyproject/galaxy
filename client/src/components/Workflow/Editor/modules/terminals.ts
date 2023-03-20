@@ -1,5 +1,9 @@
-import { useConnectionStore } from "@/stores/workflowConnectionStore";
-import { Connection } from "@/stores/workflowConnectionStore";
+import {
+    getConnectionId,
+    useConnectionStore,
+    type Connection,
+    type ConnectionId,
+} from "@/stores/workflowConnectionStore";
 import EventEmitter from "events";
 import {
     NULL_COLLECTION_TYPE_DESCRIPTION,
@@ -76,23 +80,23 @@ class Terminal extends EventEmitter {
         return this.stepStore.stepMapOver[this.stepId] || NULL_COLLECTION_TYPE_DESCRIPTION;
     }
     connect(other: Terminal) {
-        const connection = new Connection(
-            { stepId: this.stepId, name: this.name, connectorType: "input" },
-            { stepId: other.stepId, name: other.name, connectorType: "output" }
-        );
+        const connection: Connection = {
+            input: { stepId: this.stepId, name: this.name, connectorType: "input" },
+            output: { stepId: other.stepId, name: other.name, connectorType: "output" },
+        };
         this.connectionStore.addConnection(connection);
     }
     disconnect(other: BaseOutputTerminal | Connection) {
         let connection: Connection;
         if (other instanceof Terminal) {
-            connection = new Connection(
-                { stepId: this.stepId, name: this.name, connectorType: "input" },
-                { stepId: other.stepId, name: other.name, connectorType: "output" }
-            );
+            connection = {
+                input: { stepId: this.stepId, name: this.name, connectorType: "input" },
+                output: { stepId: other.stepId, name: other.name, connectorType: "output" },
+            };
         } else {
             connection = other;
         }
-        this.connectionStore.removeConnection(connection.id);
+        this.connectionStore.removeConnection(getConnectionId(connection));
         this.resetMappingIfNeeded(connection);
     }
     setMapOver(val: CollectionTypeDescriptor) {
@@ -366,7 +370,7 @@ class BaseInputTerminal extends Terminal {
     getInvalidConnectedTerminals() {
         return this.getConnectedTerminals().filter((terminal) => {
             const canAccept = this.attachable(terminal);
-            const connectionId = `${this.stepId}-${this.name}-${terminal.stepId}-${terminal.name}`;
+            const connectionId: ConnectionId = `${this.stepId}-${this.name}-${terminal.stepId}-${terminal.name}`;
             if (!canAccept.canAccept) {
                 this.connectionStore.markInvalidConnection(connectionId, canAccept.reason ?? "Unknown");
                 return true;
@@ -639,7 +643,7 @@ class BaseOutputTerminal extends Terminal {
     getInvalidConnectedTerminals() {
         return this.getConnectedTerminals().filter((terminal: any) => {
             const canAccept = terminal.attachable(this);
-            const connectionId = `${terminal.stepId}-${terminal.name}-${this.stepId}-${this.name}`;
+            const connectionId: ConnectionId = `${terminal.stepId}-${terminal.name}-${this.stepId}-${this.name}`;
             if (!canAccept.canAccept) {
                 this.connectionStore.markInvalidConnection(connectionId, canAccept.reason ?? "Unknown");
                 return true;

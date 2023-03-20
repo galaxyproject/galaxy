@@ -31,7 +31,6 @@ const outputTerminal: OutputTerminal = {
 };
 
 const connection: Connection = {
-    id: "connection-id",
     input: inputTerminal,
     output: outputTerminal,
 };

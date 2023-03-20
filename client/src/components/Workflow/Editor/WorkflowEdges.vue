@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, toRef, onMounted, type Ref } from "vue";
-import { Connection, useConnectionStore, type OutputTerminal } from "@/stores/workflowConnectionStore";
+import { type Connection, useConnectionStore, type OutputTerminal } from "@/stores/workflowConnectionStore";
 import { storeToRefs } from "pinia";
 import type { TerminalPosition } from "@/stores/workflowEditorStateStore";
 import type { OutputTerminals } from "./modules/terminals";
@@ -35,14 +35,14 @@ onMounted(() => {
 
 const drawableDraggingConnection = computed(() => {
     if (props.draggingConnection && props.draggingTerminal) {
-        const connection = new Connection(
-            {
+        const connection: Connection = {
+            input: {
                 connectorType: "input",
                 name: "draggingInput",
                 stepId: -1,
             },
-            props.draggingTerminal as unknown as OutputTerminal
-        );
+            output: props.draggingTerminal as unknown as OutputTerminal,
+        };
 
         return useDrawableConnection(connection, toRef(props, "draggingConnection"));
     } else {

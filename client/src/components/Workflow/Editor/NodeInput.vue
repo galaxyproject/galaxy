@@ -29,7 +29,7 @@
 
 <script>
 import { useCoordinatePosition } from "./composables/useCoordinatePosition";
-import { useConnectionStore } from "@/stores/workflowConnectionStore";
+import { useConnectionStore, getConnectionId } from "@/stores/workflowConnectionStore";
 import { computed } from "vue";
 import { inject, ref, toRefs, watchEffect } from "vue";
 import { storeToRefs } from "pinia";
@@ -101,7 +101,7 @@ export default {
         });
         const invalidConnectionReasons = computed(() =>
             connections.value
-                .map((connection) => connectionStore.invalidConnections[connection.id])
+                .map((connection) => connectionStore.invalidConnections[getConnectionId(connection)])
                 .filter((reason) => reason)
         );
 
