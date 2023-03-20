@@ -3,32 +3,24 @@ from typing import (
     Any,
     Dict,
     List,
+    Optional,
 )
 from uuid import uuid4
 
 from galaxy_test.driver.integration_util import IntegrationTestCase
 
-NOTIFICATION_TEST_DATA = {
-    "source": "integration_tests",
-    "variant": "info",
-    "category": "message",
-    "content": {
-        "category": "message",
-        "subject": "Testing Subject",
-        "message": "Testing Message",
-    },
-}
 
-BROADCAST_NOTIFICATION_TEST_DATA = {
-    "source": "integration_tests",
-    "variant": "urgent",
-    "category": "broadcast",
-    "content": {
-        "category": "broadcast",
-        "subject": "Testing Broadcast",
-        "message": "Testing Broadcast Message",
-    },
-}
+def notification_test_data(subject: Optional[str] = None, message: Optional[str] = None):
+    return {
+        "source": "integration_tests",
+        "variant": "info",
+        "category": "message",
+        "content": {
+            "category": "message",
+            "subject": subject or "Testing Subject",
+            "message": message or "Testing Message",
+        },
+    }
 
 
 class TestNotificationsIntegration(IntegrationTestCase):
@@ -47,16 +39,16 @@ class TestNotificationsIntegration(IntegrationTestCase):
         before_creating_notifications = datetime.utcnow()
 
         # Only user1 will receive this notification
-        created_response = self._send_test_notification_to([user1["id"]])
+        created_response = self._send_test_notification_to([user1["id"]], message="test_notification_status 1")
         assert created_response["total_notifications_sent"] == 1
 
         # Both user1 and user2 will receive this notification
-        created_response = self._send_test_notification_to([user1["id"], user2["id"]])
+        created_response = self._send_test_notification_to([user1["id"], user2["id"]], "test_notification_status 2")
         assert created_response["total_notifications_sent"] == 2
 
         # All users will receive this broadcasted notification
-        notifications_status = self._send_broadcast_notification()
-        assert notifications_status["total_notifications_sent"] == 1
+        created_response = self._send_broadcast_notification("test_notification_status 3")
+        assert created_response["total_notifications_sent"] == 1
 
         after_creating_notifications = datetime.utcnow()
 
@@ -93,11 +85,20 @@ class TestNotificationsIntegration(IntegrationTestCase):
             assert len(status["notifications"]) == 0
             assert len(status["broadcasts"]) == 0
 
+        with self._different_user(anon=True):
+            # Anonymous users can access broadcasted notifications
+            status = self._get_notifications_status_since(before_creating_notifications)
+            assert status["total_unread_count"] == 0
+            assert len(status["notifications"]) == 0
+            assert len(status["broadcasts"]) == 1
+
     def test_user_cannot_access_other_users_notifications(self):
         user1 = self._create_test_user()
         user2 = self._create_test_user()
 
-        created_response = self._send_test_notification_to([user1["id"]])
+        created_response = self._send_test_notification_to(
+            [user1["id"]], message="test_user_cannot_access_other_users_notifications"
+        )
         notification_id = created_response["notification"]["id"]
 
         with self._different_user(user1["email"]):
@@ -114,7 +115,9 @@ class TestNotificationsIntegration(IntegrationTestCase):
 
         before_creating_notifications = datetime.utcnow()
 
-        created_response = self._send_test_notification_to([user1["id"], user2["id"]])
+        created_response = self._send_test_notification_to(
+            [user1["id"], user2["id"]], message="test_delete_notification_by_user"
+        )
         assert created_response["total_notifications_sent"] == 2
         notification_id = created_response["notification"]["id"]
 
@@ -134,6 +137,19 @@ class TestNotificationsIntegration(IntegrationTestCase):
             response = self._get(f"notifications/{notification_id}")
             self._assert_status_code_is_ok(response)
 
+    def test_non_admin_users_cannot_create_notifications(self):
+        user = self._create_test_user()
+        request = {
+            "recipients": {"user_ids": [user["id"]]},
+            "notification": notification_test_data(),
+        }
+        response = self._post("notifications", data=request, json=True)
+        self._assert_status_code_is(response, 403)
+
+        with self._different_user(anon=True):
+            response = self._post("notifications", data=request, json=True)
+            self._assert_status_code_is(response, 403)
+
     def _create_test_user(self):
         user = self._setup_user(f"{uuid4()}@galaxy.test")
         return user
@@ -144,18 +160,30 @@ class TestNotificationsIntegration(IntegrationTestCase):
         status = status_response.json()
         return status
 
-    def _send_test_notification_to(self, user_ids: List[str]):
+    def _send_test_notification_to(
+        self, user_ids: List[str], subject: Optional[str] = None, message: Optional[str] = None
+    ):
         request = {
             "recipients": {"user_ids": user_ids},
-            "notification": NOTIFICATION_TEST_DATA,
+            "notification": notification_test_data(subject, message),
         }
         response = self._post("notifications", data=request, admin=True, json=True)
         self._assert_status_code_is_ok(response)
         created_response = response.json()
         return created_response
 
-    def _send_broadcast_notification(self):
-        response = self._post("notifications/broadcast", data=BROADCAST_NOTIFICATION_TEST_DATA, admin=True, json=True)
+    def _send_broadcast_notification(self, subject: Optional[str] = None, message: Optional[str] = None):
+        payload = {
+            "source": "integration_tests",
+            "variant": "urgent",
+            "category": "broadcast",
+            "content": {
+                "category": "broadcast",
+                "subject": subject or "Testing Broadcast",
+                "message": message or "Testing Broadcast Message",
+            },
+        }
+        response = self._post("notifications/broadcast", data=payload, admin=True, json=True)
         self._assert_status_code_is_ok(response)
         notifications_status = response.json()
         return notifications_status
