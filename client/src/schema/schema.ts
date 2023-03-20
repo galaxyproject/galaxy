@@ -1191,8 +1191,23 @@ export interface paths {
          */
         post: operations["update_tour_api_tours__tour_id__post"];
     };
+    "/api/users/current/recalculate_disk_usage": {
+        /**
+         * Triggers a recalculation of the current user disk usage.
+         * @description This route will be removed in a future version.
+         *
+         * Please use `/api/users/current/recalculate_disk_usage` instead.
+         */
+        put: operations["recalculate_disk_usage_api_users_current_recalculate_disk_usage_put"];
+    };
     "/api/users/recalculate_disk_usage": {
-        /** Triggers a recalculation of the current user disk usage. */
+        /**
+         * Triggers a recalculation of the current user disk usage.
+         * @deprecated
+         * @description This route will be removed in a future version.
+         *
+         * Please use `/api/users/current/recalculate_disk_usage` instead.
+         */
         put: operations["recalculate_disk_usage_api_users_recalculate_disk_usage_put"];
     };
     "/api/users/{user_id}/api_key": {
@@ -14110,8 +14125,13 @@ export interface operations {
             };
         };
     };
-    recalculate_disk_usage_api_users_recalculate_disk_usage_put: {
-        /** Triggers a recalculation of the current user disk usage. */
+    recalculate_disk_usage_api_users_current_recalculate_disk_usage_put: {
+        /**
+         * Triggers a recalculation of the current user disk usage.
+         * @description This route will be removed in a future version.
+         *
+         * Please use `/api/users/current/recalculate_disk_usage` instead.
+         */
         parameters?: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -14119,7 +14139,44 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Successful Response */
+            /** @description The asynchronous task summary to track the task state. */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["AsyncTaskResultSummary"];
+                };
+            };
+            /** @description The background task was submitted but there is no status tracking ID available. */
+            204: never;
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    recalculate_disk_usage_api_users_recalculate_disk_usage_put: {
+        /**
+         * Triggers a recalculation of the current user disk usage.
+         * @deprecated
+         * @description This route will be removed in a future version.
+         *
+         * Please use `/api/users/current/recalculate_disk_usage` instead.
+         */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description The asynchronous task summary to track the task state. */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["AsyncTaskResultSummary"];
+                };
+            };
+            /** @description The background task was submitted but there is no status tracking ID available. */
             204: never;
             /** @description Validation Error */
             422: {
