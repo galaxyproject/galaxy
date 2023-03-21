@@ -249,6 +249,9 @@ class UserNotificationPreferences(Model):
     def update(self, other: "UserNotificationPreferences"):
         self.__root__.update(other.__root__)
 
+    def get(self, category: PersonalNotificationCategory) -> NotificationCategorySettings:
+        return self.__root__[category]
+
     @classmethod
     def default(cls):
         return cls(
