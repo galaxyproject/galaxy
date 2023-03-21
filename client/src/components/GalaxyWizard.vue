@@ -28,12 +28,19 @@ function submitQuery() {
         <!-- input text, full width top of page -->
         <Heading inline h2>Ask the wizard</Heading>
         <div class="mt-2">
-            <textarea v-model="query" style="width: 100%" />
+            <b-input
+                id="wizardinput"
+                v-model="query"
+                style="width: 100%"
+                placeholder="What's the difference in fasta and fastq?"
+                @keyup.enter="submitQuery" />
         </div>
         <!-- input button  -->
+        <!--
         <div class="mt-2">
             <button :disabled="queryDisabled" @click.prevent="submitQuery">Query</button>
         </div>
+        -->
         <div class="mt-4">
             {{ queryResponse }}
         </div>
