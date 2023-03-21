@@ -843,3 +843,78 @@ class TestMulledSingularityContainerResolver(SingularityIntegrationTestCase, Con
     def handle_galaxy_config_kwds(cls, config) -> None:
         super().handle_galaxy_config_kwds(config)
         config["container_resolvers"] = cls.container_resolvers_config
+
+
+class TestMulledContainerResolverNoAutoInstall(TestMulledContainerResolver):
+    """
+    Use the mulled (docker) container resolver with auto_install: False
+
+    No difference (since the cached name is identical to the URI)
+    """
+    pass
+
+
+class TestMulledSingularityContainerResolverNoAutoInstall(TestMulledSingularityContainerResolver):
+    """
+    Use the mulled singularity container resolver with auto_install: False
+    
+    The only difference is that the first call to resolve also returns the path
+    to the cached image (see assumptions["build"]["identifier"]). This is also used
+    in the run, but I have no idea how to test this (in the generated job script
+    the path is used instead of the URI)
+    """
+    container_resolvers_config: List[Dict[str, Any]] = [
+        {
+            "type": "cached_mulled_singularity",
+        },
+        {
+            "type": "mulled_singularity",
+            "auto_install": False,
+        },
+    ]
+
+    mulled_hash = "mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0"
+    assumptions = {
+        "run": {
+            "expect_failure": False,
+            "output": [
+                "bedtools v2.26.0",
+                "samtools: error while loading shared libraries: libcrypto.so.1.0.0",
+            ],
+            "cached": True,
+            "cache_name": mulled_hash,
+            "cache_namespace": "biocontainers",
+        },
+        "list": [
+            {
+                "resolver_type": "mulled_singularity",
+                "identifier": "docker://quay.io/biocontainers/mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0",
+                "cached": False,
+                "cache_name": mulled_hash,
+                "cache_namespace": "biocontainers",
+            },
+            {
+                "resolver_type": "mulled_singularity",
+                "identifier": "docker://quay.io/biocontainers/mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0",
+                "cached": False,
+                "cache_name": mulled_hash,
+                "cache_namespace": "biocontainers",
+            },
+        ],
+        "build": [
+            {
+                "resolver_type": "mulled_singularity",
+                "identifier": "/tmp/.*/mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0",
+                "cached": True,
+                "cache_name": mulled_hash,
+                "cache_namespace": "biocontainers",
+            },
+            {
+                "resolver_type": "cached_mulled_singularity",
+                "identifier": "/tmp/.*/mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0",
+                "cached": True,
+                "cache_name": mulled_hash,
+                "cache_namespace": "biocontainers",
+            },
+        ],
+    }
