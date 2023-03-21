@@ -47,10 +47,10 @@ class ChatAPI:
             model="text-davinci-003",
             prompt=prompt.format(query=query.query),
             temperature=0,
-            max_tokens=400,
+            max_tokens=800,
             frequency_penalty=0.0,
             presence_penalty=0.0,
-            stop=["\n"],
+            # stop=["\n"],
         )
         answer = response.choices[0].text.strip()
         return answer
