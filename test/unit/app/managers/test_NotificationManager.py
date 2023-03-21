@@ -232,6 +232,25 @@ class TestUserNotifications(NotificationManagerBaseTestCase):
         with pytest.raises(ObjectNotFound):
             self.notification_manager.get_user_notification(user, notification.id, active_only=False)
 
+    def test_users_do_not_receive_opt_out_notifications(self):
+        users = self._create_test_users(num_users=2)
+        user_a = users[0]
+        user_b = users[1]
+        update_request = UpdateUserNotificationPreferencesRequest(
+            preferences=UserNotificationPreferences(
+                __root__={
+                    PersonalNotificationCategory.message: NotificationCategorySettings(enabled=False),
+                }
+            )
+        )
+        self.notification_manager.update_user_notification_preferences(user_a, update_request)
+        self._send_message_notification_to_users(users)
+
+        user_notifications = self.notification_manager.get_user_notifications(user_a)
+        assert len(user_notifications) == 0
+        user_notifications = self.notification_manager.get_user_notifications(user_b)
+        assert len(user_notifications) == 1
+
     def _send_message_notification_to_users(self, users: List[User], notification: Optional[Dict[str, Any]] = None):
         data = self._default_test_notification_data()
         if notification:

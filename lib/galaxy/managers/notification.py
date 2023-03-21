@@ -36,6 +36,7 @@ from galaxy.schema.notifications import (
     NotificationCreateData,
     NotificationCreateRequest,
     NotificationRecipients,
+    PersonalNotificationCategory,
     UpdateUserNotificationPreferencesRequest,
     UserNotificationPreferences,
     UserNotificationUpdateRequest,
@@ -101,10 +102,16 @@ class NotificationManager:
         return notification, notifications_sent
 
     def _send_to_users(self, notification: Notification, users: List[User]):
+        # TODO: Move this potentially expensive operation to a task?
         for user in users:
-            # TODO: check user notification settings before?
-            user_notification_association = UserNotificationAssociation(user, notification)
-            self.sa_session.add(user_notification_association)
+            if self._user_is_subscribed_to_notification(user, notification.category):
+                user_notification_association = UserNotificationAssociation(user, notification)
+                self.sa_session.add(user_notification_association)
+
+    def _user_is_subscribed_to_notification(self, user: User, category: PersonalNotificationCategory) -> bool:
+        notification_preferences = self.get_user_notification_preferences(user)
+        category_settings = notification_preferences.get(category)
+        return category_settings.enabled
 
     def create_broadcast_notification(self, request: BroadcastNotificationCreateRequest):
         """Creates a broadcasted notification.
