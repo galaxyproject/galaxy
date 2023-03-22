@@ -2254,7 +2254,8 @@ class RoleListResponse(Model):
 
 # The tuple should probably be another proper model instead?
 # Keeping it as a Tuple for now for backward compatibility
-RoleNameIdTuple = Tuple[str, DecodedDatabaseIdField]
+# TODO: Use Tuple again when `make update-client-api-schema` supports them
+RoleNameIdTuple = List[str]  # Tuple[str, DecodedDatabaseIdField]
 
 # Group_Roles -----------------------------------------------------------------
 
@@ -2781,7 +2782,7 @@ class LibraryFolderMetadata(Model):
     total_rows: int
     can_modify_folder: bool
     can_add_library_item: bool
-    full_path: List[Tuple[str, str]]
+    full_path: List[List[str]]
 
 
 class LibraryFolderContentsIndexResult(Model):
