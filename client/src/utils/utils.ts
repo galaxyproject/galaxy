@@ -115,10 +115,11 @@ export function textify(lst: string[] | string): string {
 
 /**
  * Request handler for GET
+ * legacy layer from old $.ajax interface
  * @param{String}   url     - Url request is made to
  * @param{Function} success - Callback on success
  * @param{Function} error   - Callback on error
- * @param{Boolean}  cache   - Use cached data if available
+ * @param{Object}   data    - parameters to be sent with the request
  */
 interface getOptions {
     url: string;
