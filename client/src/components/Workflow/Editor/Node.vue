@@ -50,7 +50,6 @@
                     placement="bottom"
                     :show.sync="popoverShow">
                     <Recommendations
-                        v-if="popoverShow"
                         :step-id="id"
                         :datatypes-mapper="datatypesMapper"
                         @onCreate="onCreate" />
