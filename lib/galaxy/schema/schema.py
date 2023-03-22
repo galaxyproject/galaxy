@@ -12,6 +12,7 @@ from typing import (
     List,
     Optional,
     Set,
+    Tuple,
     Union,
 )
 from uuid import UUID
@@ -2933,8 +2934,7 @@ class HistoryContentsArchiveDryRunResult(Model):
     This is used for debugging purposes.
     """
 
-    # TODO: Use Tuple again when https://github.com/tiangolo/fastapi/issues/3665 is fixed upstream
-    __root__: List[List[str]]  # List[Tuple[str, str]]
+    __root__: List[Tuple[str, str]]
 
 
 class HistoryContentStats(Model):

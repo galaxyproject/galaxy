@@ -687,10 +687,8 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                 success_count += 1
             except galaxy_exceptions.MessageException as e:
                 errors.append(
-                    DatasetErrorMessage.construct(
-                        dataset=DatasetSourceId.construct(
-                            id=DecodedDatabaseIdField.encode(dataset.id), src=dataset.src
-                        ),
+                    DatasetErrorMessage(
+                        dataset=DatasetSourceId(id=dataset.id, src=dataset.src),
                         error_message=str(e),
                     )
                 )

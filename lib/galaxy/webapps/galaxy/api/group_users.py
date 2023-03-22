@@ -31,7 +31,7 @@ def group_user_to_model(trans, group_id, user) -> GroupUserModel:
     encoded_group_id = DecodedDatabaseIdField.encode(group_id)
     encoded_user_id = DecodedDatabaseIdField.encode(user.id)
     url = trans.url_builder("group_user", group_id=encoded_group_id, user_id=encoded_user_id)
-    return GroupUserModel.construct(id=encoded_user_id, email=user.email, url=url)
+    return GroupUserModel(id=user.id, email=user.email, url=url)
 
 
 @router.cbv

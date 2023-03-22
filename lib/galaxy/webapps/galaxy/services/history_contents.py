@@ -1327,9 +1327,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             return None
         except BaseException as exc:
             return BulkOperationItemError.construct(
-                item=HistoryContentItem.construct(
-                    id=self.encode_id(item.id), history_content_type=item.history_content_type
-                ),
+                item=HistoryContentItem.construct(id=item.id, history_content_type=item.history_content_type),
                 error=str(exc),
             )
 

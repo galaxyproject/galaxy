@@ -17,6 +17,7 @@ from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.roles import RoleManager
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
+    BasicRoleModel,
     CreateLibrariesFromStore,
     CreateLibraryPayload,
     LibraryAvailablePermissions,
@@ -71,7 +72,8 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
         query, prefetched_ids = self.library_manager.list(trans, deleted)
         libraries = []
         for library in query:
-            libraries.append(self.library_manager.get_library_dict(trans, library, prefetched_ids))
+            library_dict = self.library_manager.get_library_dict(trans, library, prefetched_ids)
+            libraries.append(LibrarySummary(**library_dict))
         return LibrarySummaryList.construct(__root__=libraries)
 
     def show(self, trans, id: DecodedDatabaseIdField) -> LibrarySummary:
@@ -171,7 +173,7 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
             return_roles = []
             for role in roles:
                 role_id = DecodedDatabaseIdField.encode(role.id)
-                return_roles.append(dict(id=role_id, name=role.name, type=role.type))
+                return_roles.append(BasicRoleModel(id=role_id, name=role.name, type=role.type))
             return LibraryAvailablePermissions.construct(
                 roles=return_roles, page=page, page_limit=page_limit, total=total_roles
             )

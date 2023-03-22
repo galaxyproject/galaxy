@@ -32,7 +32,7 @@ def group_role_to_model(trans, group_id: int, role) -> GroupRoleModel:
     encoded_group_id = DecodedDatabaseIdField.encode(group_id)
     encoded_role_id = DecodedDatabaseIdField.encode(role.id)
     url = trans.url_builder("group_role", group_id=encoded_group_id, role_id=encoded_role_id)
-    return GroupRoleModel.construct(id=encoded_role_id, name=role.name, url=url)
+    return GroupRoleModel(id=role.id, name=role.name, url=url)
 
 
 @router.cbv
@@ -44,9 +44,7 @@ class FastAPIGroupRoles:
         self, trans: ProvidesAppContext = DependsOnTrans, group_id: DecodedDatabaseIdField = GroupIDParam
     ) -> GroupRoleListModel:
         group_roles = self.manager.index(trans, group_id)
-        return GroupRoleListModel.construct(
-            __root__=[group_role_to_model(trans, group_id, gr.role) for gr in group_roles]
-        )
+        return GroupRoleListModel.parse_obj([group_role_to_model(trans, group_id, gr.role) for gr in group_roles])
 
     @router.get(
         "/api/groups/{group_id}/roles/{role_id}",

@@ -19,9 +19,13 @@ from galaxy.model import tags
 from galaxy.model.security import GalaxyRBACAgent
 from galaxy.schema.fields import LibraryFolderDatabaseIdField
 from galaxy.schema.schema import (
+    AnyLibraryFolderItem,
     CreateLibraryFilePayload,
+    FileLibraryFolderItem,
+    FolderLibraryFolderItem,
     LibraryFolderContentsIndexQueryPayload,
     LibraryFolderContentsIndexResult,
+    LibraryFolderMetadata,
 )
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.webapps.base.controller import UsesLibraryMixinItems
@@ -75,16 +79,23 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         user_permissions = self._retrieve_user_permissions_on_folder(trans, current_user_roles, folder)
         tag_manager = tags.GalaxyTagHandler(trans.sa_session)
 
-        folder_contents = []
+        folder_contents: List[AnyLibraryFolderItem] = []
         contents, total_rows = self.folder_manager.get_contents(trans, folder, payload)
         for content_item in contents:
             if isinstance(content_item, model.LibraryFolder):
-                serialized_item = self._serialize_library_folder(user_permissions, content_item)
-            elif isinstance(content_item, model.LibraryDataset):
-                serialized_item = self._serialize_library_dataset(trans, current_user_roles, tag_manager, content_item)
-            folder_contents.append(serialized_item)
+                folder_contents.append(
+                    FileLibraryFolderItem(**self._serialize_library_folder(user_permissions, content_item))
+                )
 
-        metadata = self._serialize_library_folder_metadata(trans, folder, user_permissions, total_rows)
+            elif isinstance(content_item, model.LibraryDataset):
+                folder_contents.append(
+                    FolderLibraryFolderItem(
+                        **self._serialize_library_dataset(trans, current_user_roles, tag_manager, content_item)
+                    )
+                )
+
+        metadata_dict = self._serialize_library_folder_metadata(trans, folder, user_permissions, total_rows)
+        metadata = LibraryFolderMetadata(**metadata_dict)
         return LibraryFolderContentsIndexResult.construct(metadata=metadata, folder_contents=folder_contents)
 
     def create(
