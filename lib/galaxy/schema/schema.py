@@ -42,6 +42,7 @@ from galaxy.schema.bco import XrefItem
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
     EncodedDatabaseIdField,
+    EncodedLibraryFolderDatabaseIdField,
     LibraryFolderDatabaseIdField,
     ModelClassField,
 )
@@ -830,7 +831,7 @@ class HistoryBase(Model):
         extra = Extra.allow  # Allow any other extra fields
 
 
-class HistoryContentItem(Model):
+class HistoryContentItemBase(Model):
     """Identifies a dataset or collection contained in a History."""
 
     history_content_type: HistoryContentType = Field(
@@ -838,7 +839,14 @@ class HistoryContentItem(Model):
         title="Content Type",
         description="The type of this item.",
     )
+
+
+class HistoryContentItem(HistoryContentItemBase):
     id: DecodedDatabaseIdField = EntityIdField
+
+
+class EncodedHistoryContentItem(HistoryContentItemBase):
+    id: EncodedDatabaseIdField = EntityIdField
 
 
 class UpdateContentItem(HistoryContentItem):
@@ -912,7 +920,7 @@ class HistoryContentBulkOperationPayload(Model):
 
 
 class BulkOperationItemError(Model):
-    item: HistoryContentItem
+    item: EncodedHistoryContentItem
     error: str
 
 
@@ -1598,13 +1606,20 @@ class JobSummary(JobBaseModel):
     )
 
 
-class DatasetSourceId(Model):
-    id: DecodedDatabaseIdField = EntityIdField
+class DatasetSourceIdBase(Model):
     src: DatasetSourceType = Field(
         ...,
         title="Source",
         description="The source of this dataset, either `hda` or `ldda` depending of its origin.",
     )
+
+
+class DatasetSourceId(DatasetSourceIdBase):
+    id: DecodedDatabaseIdField = EntityIdField
+
+
+class EncodedDatasetSourceId(DatasetSourceIdBase):
+    id: EncodedDatabaseIdField = EntityIdField
 
 
 class DatasetJobInfo(DatasetSourceId):
@@ -2215,12 +2230,12 @@ RoleDescriptionField = Field(title="Description", description="Description of th
 
 
 class BasicRoleModel(Model):
-    id: DecodedDatabaseIdField = RoleIdField
+    id: EncodedDatabaseIdField = RoleIdField
     name: str = RoleNameField
     type: str = Field(title="Type", description="Type or category of the role")
 
 
-class RoleModel(BasicRoleModel):
+class RoleModelResponse(BasicRoleModel):
     description: Optional[str] = RoleDescriptionField
     url: RelativeUrl = RelativeUrlField
     model_class: Literal["Role"] = ModelClassField("Role")
@@ -2233,26 +2248,25 @@ class RoleDefinitionModel(Model):
     group_ids: Optional[List[DecodedDatabaseIdField]] = Field(title="Group IDs", default=[])
 
 
-class RoleListModel(Model):
-    __root__: List[RoleModel]
+class RoleListResponse(Model):
+    __root__: List[RoleModelResponse]
 
 
 # The tuple should probably be another proper model instead?
 # Keeping it as a Tuple for now for backward compatibility
-# TODO: Use Tuple again when https://github.com/tiangolo/fastapi/issues/3665 is fixed upstream
-RoleNameIdTuple = List[str]  # Tuple[str, DecodedDatabaseIdField]
+RoleNameIdTuple = Tuple[str, DecodedDatabaseIdField]
 
 # Group_Roles -----------------------------------------------------------------
 
 
-class GroupRoleModel(Model):
-    id: DecodedDatabaseIdField = RoleIdField
+class GroupRoleResponse(Model):
+    id: EncodedDatabaseIdField = RoleIdField
     name: str = RoleNameField
     url: RelativeUrl = RelativeUrlField
 
 
-class GroupRoleListModel(Model):
-    __root__: List[GroupRoleModel]
+class GroupRoleListResponse(Model):
+    __root__: List[GroupRoleResponse]
 
 
 # Users -----------------------------------------------------------------
@@ -2264,14 +2278,14 @@ UserDescriptionField = Field(title="Description", description="Description of th
 # Group_Users -----------------------------------------------------------------
 
 
-class GroupUserModel(Model):
-    id: DecodedDatabaseIdField = UserIdField
+class GroupUserResponse(Model):
+    id: EncodedDatabaseIdField = UserIdField
     email: str = UserEmailField
     url: RelativeUrl = RelativeUrlField
 
 
-class GroupUserListModel(Model):
-    __root__: List[GroupUserModel]
+class GroupUserListResponse(Model):
+    __root__: List[GroupUserResponse]
 
 
 class ImportToolDataBundleUriSource(Model):
@@ -2372,7 +2386,7 @@ class LibraryPermissionScope(str, Enum):
 
 class LibraryLegacySummary(Model):
     model_class: Literal["Library"] = ModelClassField("Library")
-    id: DecodedDatabaseIdField = Field(
+    id: EncodedDatabaseIdField = Field(
         ...,
         title="ID",
         description="Encoded ID of the Library.",
@@ -2727,7 +2741,6 @@ class LibraryFolderContentsIndexQueryPayload(Model):
 
 
 class LibraryFolderItemBase(Model):
-    id: DecodedDatabaseIdField
     name: str
     type: str
     create_time: datetime = CreateTimeField
@@ -2737,12 +2750,14 @@ class LibraryFolderItemBase(Model):
 
 
 class FolderLibraryFolderItem(LibraryFolderItemBase):
+    id: EncodedLibraryFolderDatabaseIdField
     type: Literal["folder"]
     can_modify: bool
     description: Optional[str] = FolderDescriptionField
 
 
 class FileLibraryFolderItem(LibraryFolderItemBase):
+    id: EncodedDatabaseIdField
     type: Literal["file"]
     file_ext: str
     date_uploaded: datetime
@@ -2751,7 +2766,7 @@ class FileLibraryFolderItem(LibraryFolderItemBase):
     state: Dataset.states = DatasetStateField
     file_size: str
     raw_size: int
-    ldda_id: DecodedDatabaseIdField
+    ldda_id: EncodedDatabaseIdField
     tags: str
     message: Optional[str]
 
@@ -2760,13 +2775,13 @@ AnyLibraryFolderItem = Annotated[Union[FileLibraryFolderItem, FolderLibraryFolde
 
 
 class LibraryFolderMetadata(Model):
-    parent_library_id: DecodedDatabaseIdField
+    parent_library_id: EncodedDatabaseIdField
     folder_name: str
     folder_description: str
     total_rows: int
     can_modify_folder: bool
     can_add_library_item: bool
-    full_path: List[List[str]]
+    full_path: List[Tuple[str, str]]
 
 
 class LibraryFolderContentsIndexResult(Model):

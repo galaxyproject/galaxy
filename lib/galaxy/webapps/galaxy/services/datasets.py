@@ -60,6 +60,7 @@ from galaxy.schema.schema import (
     DatasetAssociationRoles,
     DatasetSourceId,
     DatasetSourceType,
+    EncodedDatasetSourceId,
     Model,
     UpdateDatasetPermissionsPayload,
 )
@@ -231,7 +232,7 @@ class ComputeDatasetHashPayload(Model):
 
 
 class DatasetErrorMessage(Model):
-    dataset: DatasetSourceId = Field(
+    dataset: EncodedDatasetSourceId = Field(
         description="The encoded ID of the dataset and its source.",
     )
     error_message: str = Field(
@@ -688,7 +689,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             except galaxy_exceptions.MessageException as e:
                 errors.append(
                     DatasetErrorMessage(
-                        dataset=DatasetSourceId(id=dataset.id, src=dataset.src),
+                        dataset=EncodedDatasetSourceId(id=dataset.id, src=dataset.src),
                         error_message=str(e),
                     )
                 )
