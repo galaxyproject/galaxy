@@ -13,7 +13,7 @@ import {
     type PostJobActions,
     type PostJobAction,
 } from "@/stores/workflowStepStore";
-import { assertDefined } from "@/utils/assertions";
+import { assertDefined, ensureDefined } from "@/utils/assertions";
 import type { UseScrollReturn } from "@vueuse/core";
 
 const props = defineProps<{
