@@ -317,8 +317,8 @@ export function setWindowTitle(title: string): void {
  * Found here: https://gist.github.com/vaiorabbit/5657561
  * Ref.: http://isthe.com/chongo/tech/comp/fnv/
  *
- * @param {string} str the input value
- * @returns {integer}
+ * @param str the input value
+ * @returns integer number
  */
 export function hashFnv32a(str: string): number {
     let hval = 0x811c9dc5;
