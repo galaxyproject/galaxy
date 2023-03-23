@@ -346,13 +346,15 @@ export async function waitForElementToBePresent(selector: string) {
 }
 
 /**
- * Delays the next operation the specified amount of time.
- * @param {number} delayInMilliseconds The amount of time to wait in milliseconds
+ * Async `setTimeout` utility.
+ * Resolves promise after set time
+ *
+ * @param milliseconds amount of time to wait in milliseconds
  */
-export async function delay(delayInMilliseconds: number) {
-    if (delayInMilliseconds > 0) {
-        await new Promise((r) => setTimeout(r, delayInMilliseconds));
-    }
+export function wait(milliseconds: number) {
+    return new Promise<void>((resolve) => {
+        setTimeout(() => resolve(), milliseconds);
+    });
 }
 
 export default {
@@ -371,5 +373,5 @@ export default {
     appendScriptStyle: appendScriptStyle,
     setWindowTitle: setWindowTitle,
     waitForElementToBePresent: waitForElementToBePresent,
-    delay: delay,
+    wait: wait,
 };

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import localize from "@/utils/localization";
-import { delay } from "@/utils/utils";
+import { wait } from "@/utils/utils";
 import CleanupOperationSummary from "./Cleanup/CleanupOperationSummary.vue";
 import CleanupResultDialog from "./Cleanup/CleanupResultDialog.vue";
 import ReviewCleanupDialog from "./Cleanup/ReviewCleanupDialog.vue";
@@ -36,7 +36,7 @@ function onReviewItems(operation: CleanupOperation, totalItems: number) {
 async function onConfirmCleanupSelected(selectedItems: CleanableItem[]) {
     cleanupResult.value = undefined;
     resultModal.value?.openModal();
-    await delay(1000);
+    await wait(1000);
     if (currentOperation.value) {
         cleanupResult.value = await currentOperation.value.cleanupItems(selectedItems);
         if (cleanupResult.value.hasUpdatedResults) {
