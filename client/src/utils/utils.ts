@@ -62,6 +62,8 @@ export function linkify(inputText: string): string {
 }
 
 /**
+ * @deprecated in favor of built in `structuredClone` method
+ *
  * This is a deep copy of the object input
  */
 export function clone<T>(obj: T): T {
