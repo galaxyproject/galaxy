@@ -21,6 +21,7 @@ from sqlalchemy.orm.scoping import scoped_session
 from galaxy import model
 from galaxy.model import store
 from galaxy.model.metadata import MetadataTempFile
+from galaxy.model.orm.now import now
 from galaxy.model.unittest_utils import GalaxyDataTestApp
 from galaxy.model.unittest_utils.store_fixtures import (
     deferred_hda_model_store_dict,
@@ -36,7 +37,6 @@ from ..test_galaxy_mapping import (
     _invocation_for_workflow,
     _workflow_from_steps,
 )
-from galaxy.model.orm.now import now
 
 TESTCASE_DIRECTORY = pathlib.Path(__file__).parent
 TEST_PATH_1 = TESTCASE_DIRECTORY / "1.txt"
@@ -466,7 +466,10 @@ def validate_invocation_collection_crate_directory(crate_directory):
     assert len(collections) == 3
     collection = collections[0]
     assert collection.type == "Collection"
-    assert collection["additionalType"] == "https://training.galaxyproject.org/training-material/faqs/galaxy/collections_build_list.html"
+    assert (
+        collection["additionalType"]
+        == "https://training.galaxyproject.org/training-material/faqs/galaxy/collections_build_list.html"
+    )
     assert len(collection["hasPart"]) == 2
     for dataset in collection["hasPart"]:
         assert dataset in root["hasPart"]

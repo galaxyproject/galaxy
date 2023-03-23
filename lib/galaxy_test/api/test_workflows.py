@@ -2826,7 +2826,10 @@ input collection 2:
             collections = [_ for _ in crate.contextual_entities if "Collection" in _.type]
             assert len(collections) == 3
             collection = collections[0]
-            assert collection["additionalType"] == "https://training.galaxyproject.org/training-material/faqs/galaxy/collections_build_list.html"
+            assert (
+                collection["additionalType"]
+                == "https://training.galaxyproject.org/training-material/faqs/galaxy/collections_build_list.html"
+            )
             assert collection.type == "Collection"
             assert len(collection["hasPart"]) == 2
             assert collection in wf_objects

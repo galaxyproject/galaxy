@@ -3,7 +3,6 @@ import os
 from typing import (
     Any,
     Dict,
-    Optional,
 )
 
 from rocrate.model.computationalworkflow import (
@@ -17,14 +16,9 @@ from rocrate.rocrate import ROCrate
 from galaxy.model import (
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
-    JobParameter,
-    JobToInputDatasetAssociation,
-    JobToOutputDatasetAssociation,
     Workflow,
     WorkflowInvocation,
     WorkflowInvocationStep,
-    WorkflowRequestInputStepParameter,
-    WorkflowStep,
 )
 
 logger = logging.getLogger(__name__)
@@ -249,9 +243,17 @@ class WorkflowRunCrateProfileBuilder:
         self.roc_engine_run = roc_engine_run
 
     def _add_attrs_files(self, crate: ROCrate):
-        targets = [ATTRS_FILENAME_HISTORY, ATTRS_FILENAME_DATASETS, ATTRS_FILENAME_JOBS, ATTRS_FILENAME_IMPLICIT_COLLECTION_JOBS,
-                   ATTRS_FILENAME_COLLECTIONS, ATTRS_FILENAME_EXPORT, ATTRS_FILENAME_LIBRARIES, ATTRS_FILENAME_LIBRARY_FOLDERS,
-                   ATTRS_FILENAME_INVOCATIONS]
+        targets = [
+            ATTRS_FILENAME_HISTORY,
+            ATTRS_FILENAME_DATASETS,
+            ATTRS_FILENAME_JOBS,
+            ATTRS_FILENAME_IMPLICIT_COLLECTION_JOBS,
+            ATTRS_FILENAME_COLLECTIONS,
+            ATTRS_FILENAME_EXPORT,
+            ATTRS_FILENAME_LIBRARIES,
+            ATTRS_FILENAME_LIBRARY_FOLDERS,
+            ATTRS_FILENAME_INVOCATIONS,
+        ]
         for attrs in targets:
             attrs_path = os.path.join(self.model_store.export_directory, attrs)
             description = " ".join(attrs.split("_")[:-1])
@@ -282,7 +284,7 @@ class WorkflowRunCrateProfileBuilder:
                         "version": GALAXY_EXPORT_VERSION,
                         "description": f"{description} provenance properties",
                         "encodingFormat": "json",
-                    }
+                    },
                 )
             )
 
@@ -290,19 +292,35 @@ class WorkflowRunCrateProfileBuilder:
         profiles = []
         for p in "process", "workflow":
             id_ = f"https://w3id.org/ro/wfrun/{p}/{PROFILES_VERSION}"
-            profiles.append(crate.add(ContextEntity(crate, id_, properties={
-                "@type": "CreativeWork",
-                "name": f"{p.title()} Run Crate",
-                "version": PROFILES_VERSION,
-            })))
+            profiles.append(
+                crate.add(
+                    ContextEntity(
+                        crate,
+                        id_,
+                        properties={
+                            "@type": "CreativeWork",
+                            "name": f"{p.title()} Run Crate",
+                            "version": PROFILES_VERSION,
+                        },
+                    )
+                )
+            )
         # FIXME: in the future, this could go out of sync with the wroc
         # profile added by ro-crate-py to the metadata descriptor
         wroc_profile_id = f"https://w3id.org/workflowhub/workflow-ro-crate/{WROC_PROFILE_VERSION}"
-        profiles.append(crate.add(ContextEntity(crate, wroc_profile_id, properties={
-            "@type": "CreativeWork",
-            "name": "Workflow RO-Crate",
-            "version": WROC_PROFILE_VERSION,
-        })))
+        profiles.append(
+            crate.add(
+                ContextEntity(
+                    crate,
+                    wroc_profile_id,
+                    properties={
+                        "@type": "CreativeWork",
+                        "name": "Workflow RO-Crate",
+                        "version": WROC_PROFILE_VERSION,
+                    },
+                )
+            )
+        )
         crate.root_dataset["conformsTo"] = profiles
 
     def _add_parameters(self, crate: ROCrate):
@@ -314,7 +332,11 @@ class WorkflowRunCrateProfileBuilder:
                 self.create_action.append_to("object", property_value)
             if step.workflow_step.type == "tool":
                 for tool_input in step.workflow_step.tool_inputs.keys():
-                    if tool_input not in self.ignored_parameter_type and tool_input not in step.workflow_step.inputs_by_name.keys() and not tool_input.startswith("__"):
+                    if (
+                        tool_input not in self.ignored_parameter_type
+                        and tool_input not in step.workflow_step.inputs_by_name.keys()
+                        and not tool_input.startswith("__")
+                    ):
                         property_value = self._add_step_tool_pv(step, tool_input, crate)
                         formal_param = self._add_step_tool_fp(step, tool_input, crate)
                         crate.mainEntity.append_to("input", formal_param)
@@ -337,7 +359,7 @@ class WorkflowRunCrateProfileBuilder:
 
     def _add_step_parameter_fp(self, step: WorkflowInvocationStep, crate: ROCrate):
         param_id = step.workflow_step.label
-        param_type = step.workflow_step.tool_inputs['parameter_type']
+        param_type = step.workflow_step.tool_inputs["parameter_type"]
         return ContextEntity(
             crate,
             f"{param_id}-param",
@@ -388,9 +410,7 @@ class WorkflowRunCrateProfileBuilder:
                 properties={
                     "@type": "FormalParameter",
                     "additionalType": "File",  # TODO: always a dataset/File?
-                    "description": hda.annotations[0].annotation
-                    if hda.annotations
-                    else hda.info or "",
+                    "description": hda.annotations[0].annotation if hda.annotations else hda.info or "",
                     "name": hda.name,
                 },
             )
@@ -404,9 +424,7 @@ class WorkflowRunCrateProfileBuilder:
                 properties={
                     "@type": "FormalParameter",
                     "additionalType": "File",  # TODO: always a dataset/File?
-                    "description": hdca.annotations[0].annotation
-                    if hdca.annotations
-                    else "",
+                    "description": hdca.annotations[0].annotation if hdca.annotations else "",
                     "name": hdca.name,
                 },
             )
