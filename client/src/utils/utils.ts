@@ -3,8 +3,6 @@
  * do not require their own classes/files
  */
 
-import _ from "underscore";
-import $ from "jquery";
 import axios, { type AxiosError, type AxiosResponse } from "axios";
 
 import { getAppRoot } from "@/onload/loadConfig";
