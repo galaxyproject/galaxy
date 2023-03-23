@@ -123,7 +123,7 @@ export default {
         },
         inputs() {
             const inputs = this.configForm.inputs;
-            Utils.deepeach(inputs, (input) => {
+            Utils.deepEach(inputs, (input) => {
                 if (input.type) {
                     if (["data", "data_collection"].indexOf(input.type) != -1) {
                         input.titleonly = true;
@@ -140,7 +140,7 @@ export default {
                     }
                 }
             });
-            Utils.deepeach(inputs, (input) => {
+            Utils.deepEach(inputs, (input) => {
                 if (input.type === "conditional") {
                     input.connectable = false;
                     input.test_param.collapsible_value = undefined;

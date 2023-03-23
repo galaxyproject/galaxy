@@ -16,18 +16,25 @@ export function iframe(src: string) {
     return `<iframe src="${src}" frameborder="0" style="width: 100%; height: 100%;"/>`;
 }
 
-/** Traverse through json */
-export function deepeach(dict: any, callback: any): void {
-    for (const i in dict) {
-        const d = dict[i];
-        if (_.isObject(d)) {
-            const new_dict = callback(d);
-            if (new_dict) {
-                dict[i] = new_dict;
-            }
-            deepeach(d, callback);
+/** Object with any internal structure. More specific key than built-in Object type */
+export type AnyObject = Record<string | number | symbol, any>;
+
+/**
+ * Call callback on every object in an object recursively
+ *
+ * @param object object to traverse
+ * @param callback ran on every nested child object
+ */
+export function deepEach<O extends AnyObject, V extends O[keyof O] extends AnyObject ? O[keyof O] : never>(
+    object: O,
+    callback: (object: V | AnyObject) => void
+): void {
+    Object.values(object).forEach((value) => {
+        if (typeof value === "object") {
+            callback(value);
+            deepEach(value, callback);
         }
-    }
+    });
 }
 
 /** Identifies urls and replaces them with anchors */
@@ -320,7 +327,7 @@ export default {
     sanitize: sanitize,
     textify: textify,
     isEmpty: isEmpty,
-    deepeach: deepeach,
+    deepEach: deepEach,
     isJSON: isJSON,
     clone: clone,
     linkify: linkify,
