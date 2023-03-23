@@ -1,7 +1,6 @@
 <template>
     <b-nav-item
         id="tool-panel-upload-button"
-        v-b-tooltip.hover.right
         :aria-label="title | localize"
         :title="title | localize"
         class="upload-button"
@@ -15,7 +14,8 @@
                 }" />
         </div>
         <span class="position-relative">
-            <font-awesome-icon icon="upload" />
+            <font-awesome-icon icon="upload" class="nav-icon" />
+            <span style="font-size: 0.7rem;">Upload</span>
         </span>
     </b-nav-item>
 </template>
@@ -72,3 +72,13 @@ export default {
     },
 };
 </script>
+<style scoped>
+
+.nav-icon {
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    align-content: center;
+    justify-content: center;
+}
+</style>

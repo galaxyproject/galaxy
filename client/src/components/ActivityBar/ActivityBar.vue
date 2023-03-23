@@ -6,6 +6,7 @@ import { useRoute, useRouter } from "vue-router/composables";
 import { computed, ref } from "vue";
 import UploadButton from "./Items/UploadButton.vue";
 import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
+import ActivityItem from "./ActivityItem";
 
 const route = useRoute();
 const router = useRouter();
@@ -30,17 +31,57 @@ function onToggleSidebar(toggle) {
 <template>
     <div class="d-flex">
         <b-nav vertical class="side-bar flex-nowrap p-1">
-            <b-nav-item
-                id="tool-search"
-                :class="{ 'nav-item-active': sidebarIsActive('search') }"
-                :title="'Search Tools and Workflows' | l"
-                @click="onToggleSidebar('search')">
-                <template>
-                    <span class="nav-icon fa fa-wrench" />
-                </template>
-            </b-nav-item>
+            <ActivityItem
+                id="tools"
+                icon="wrench"
+                title="Tools"
+                :is-active="sidebarIsActive('search')"
+                @click="onToggleSidebar('search')"
+            />
+            <upload-button />
+            <upload-button />
+            <upload-button />
+            <upload-button />
+            <upload-button />
+            <upload-button />
+            <upload-button />
+            <upload-button />
+            <upload-button />
+            <upload-button />
+            <upload-button />
+            <upload-button />
+            <upload-button />
+            <upload-button />
+            <upload-button />
+            <upload-button />
+            <upload-button />
+            <upload-button />
+            <upload-button />
+            <upload-button />
+            <upload-button />
+            <upload-button />
+            <upload-button />
+            <upload-button />
+            <upload-button />
+            <upload-button />
             <upload-button />
         </b-nav>
+        <div style="width: 3.3rem; background: red; position: absolute; left: 0; bottom: 0px;">
+            <b-nav vertical class="bottom-bar flex-nowrap p-1 m-1">
+                <b-nav-item
+                    id="tool-search"
+                    <template>
+                        <span class="nav-icon fa fa-gear" />
+                    </template>
+                </b-nav-item>
+                <b-nav-item
+                    id="tool-search"
+                    <template>
+                        <span class="nav-icon fa fa-caret-down" />
+                    </template>
+                </b-nav-item>
+            </b-nav>
+        </div>
         <div v-show="sidebarIsActive('search')" key="search">
             <ToolBox class="left-column" v-bind="toolBoxProperties" />
         </div>
@@ -75,6 +116,7 @@ function onToggleSidebar(toggle) {
     display: flex;
     align-items: center;
     align-content: center;
+    justify-content: center;
 }
 
 .panels-enter-active,
