@@ -79,24 +79,32 @@ export function isJSON(text: string): boolean {
     );
 }
 
+const emptyValues = ["__null__", "__undefined__", null, undefined] as const;
+
 /**
- * Checks if a value or list of values is `empty`
- * usually used for selectable options
- * @param{String}   value - Value or list to be validated
+ * Checks if a value or list of values is "empty".
+ * Usually used for selectable options
+ *
+ * Considers `null`, `undefined` and the string literals `__null__`, `__undefined__` as "empty"
+ *
+ * @param value Value or list of values to be validated
  */
 export function isEmpty(value: any | any[]) {
-    if (!(value instanceof Array)) {
-        value = [value];
-    }
-    if (value.length === 0) {
-        return true;
-    }
-    for (const i in value) {
-        if (["__null__", "__undefined__", null, undefined].indexOf(value[i]) > -1) {
+    if (!Array.isArray(value)) {
+        if (emptyValues.includes(value)) {
             return true;
+        } else {
+            return false;
         }
+    } else {
+        for (let index = 0; index < value.length; index++) {
+            if (emptyValues.includes(value[index])) {
+                return true;
+            }
+        }
+
+        return false;
     }
-    return false;
 }
 
 /**
@@ -318,7 +326,6 @@ export default {
     bytesToString: bytesToString,
     uid: uid,
     time: time,
-    sanitize: sanitize,
     textify: textify,
     isEmpty: isEmpty,
     deepEach: deepEach,
