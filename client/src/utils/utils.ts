@@ -72,7 +72,8 @@ export function clone<T>(obj: T): T {
 
 /**
  * Check if a string is a json string
- * @param{String}   text - Content to be validated
+ *
+ * @param text Content to be validated
  */
 export function isJSON(text: string): boolean {
     return /^[\],:{}\s]*$/.test(
