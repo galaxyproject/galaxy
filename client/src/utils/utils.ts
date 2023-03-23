@@ -168,25 +168,42 @@ export function get(options: getOptions): void {
 
 /**
  * Load a CSS file
- * @param{String}   url - Url of CSS file
+ *
+ * @param url Url of CSS file
  */
 export function cssLoadFile(url: string): void {
-    if (!$(`link[href^="${url}"]`).length) {
-        $(`<link href="${getAppRoot()}${url}" rel="stylesheet">`).appendTo("head");
+    const fullUrl = getAppRoot() + url;
+    const links = document.head.getElementsByTagName("link");
+
+    if (Array.from(links).find((link) => link.href === fullUrl)) {
+        return;
     }
+
+    const link = document.createElement("link");
+    link.type = "text/css";
+    link.rel = "stylesheet";
+    link.href = fullUrl;
+    document.head.appendChild(link);
 }
 
 /**
- * Safely merge to dictionaries
- * @param{Object}   options         - Target dictionary
- * @param{Object}   optionsDefault  - Source dictionary
+ * Safely merge two dictionaries
+ *
+ * @param options        Target dictionary
+ * @param optionsDefault Source dictionary
+ *
+ * @returns modified options dictionary or new object
  */
-export function merge(options: any, optionsDefault: any) {
-    if (options) {
-        return _.defaults(options, optionsDefault);
-    } else {
-        return optionsDefault;
-    }
+export function merge(options: AnyObject | null | undefined, optionsDefault: Readonly<AnyObject>) {
+    const object = options ?? {};
+
+    Object.entries(optionsDefault).forEach(([key, value]) => {
+        if (!object[key]) {
+            object[key] = value;
+        }
+    });
+
+    return object;
 }
 
 /**
