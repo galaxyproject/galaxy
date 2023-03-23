@@ -5,6 +5,7 @@ import logging
 import os
 import re
 import unittest
+from tempfile import mkdtemp
 from typing import (
     Any,
     Dict,
@@ -12,7 +13,6 @@ from typing import (
     Optional,
     TYPE_CHECKING,
 )
-
 from typing_extensions import (
     Literal,
     Protocol,
@@ -35,11 +35,39 @@ SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 # local_docker
 # local_docker_inline_container_resolvers (using only fallback resolver)_
 DOCKERIZED_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "dockerized_job_conf.yml")
+DOCKERIZED_JOB_CONFIG = {
+    'runners': {'local': {'load': 'galaxy.jobs.runners.local:LocalJobRunner', 'workers': 1}},
+    'execution': {
+        'default': 'local_docker',
+        'environments': {
+            'local_docker': {'runner': 'local', 'docker_enabled': True},
+        }
+    },
+    'tools': [
+        {'id': 'upload1', 'environment': 'local_upload'},
+    ]
+}
+
+SINGULARITY_JOB_CONFIG = {
+    'runners': {'local': {'load': 'galaxy.jobs.runners.local:LocalJobRunner', 'workers': 1}},
+    'execution': {
+        'default': 'local_singularity', 
+        'environments': {
+            'local_singularity': {'runner': 'local', 'singularity_enabled': True, 'singularity_run_extra_arguments': '--no-mount tmp'},
+            'local_upload': {'runner': 'local'}
+        }
+    },
+    'tools': [{'id': 'upload1', 'environment': 'local_upload'}]}
 
 # define an environment (local_singularity) for local execution with singularity enabled
 SINGULARITY_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "singularity_job_conf.yml")
 
 JOB_CONFIG_FOR_CONTAINER_TYPE = {
+    "docker": DOCKERIZED_JOB_CONFIG,
+    "singularity": SINGULARITY_JOB_CONFIG,
+}
+
+JOB_CONFIG_FILE_FOR_CONTAINER_TYPE = {
     "docker": DOCKERIZED_JOB_CONFIG_FILE,
     "singularity": SINGULARITY_JOB_CONFIG_FILE,
 }
@@ -93,6 +121,7 @@ class ContainerizedIntegrationTestCase(IntegrationTestCase):
     dataset_populator: DatasetPopulator
     framework_tool_and_types = True
     jobs_directory: str
+    allow_conda_fallback: bool = False
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -109,8 +138,20 @@ class ContainerizedIntegrationTestCase(IntegrationTestCase):
         super().handle_galaxy_config_kwds(config)
         cls.jobs_directory = cls._test_driver.mkdtemp()
         config["jobs_directory"] = cls.jobs_directory
-        config["job_config_file"] = JOB_CONFIG_FOR_CONTAINER_TYPE[cls.container_type]
-        disable_dependency_resolution(config)
+        config["job_config"] = JOB_CONFIG_FOR_CONTAINER_TYPE[cls.container_type]
+        # for almost all containerized tests we want to disable
+        # default (conda) resolution
+        # if conda fallback is allowed the conda env is auto installed on tool
+        # execution
+        if not cls.allow_conda_fallback:
+            disable_dependency_resolution(config)
+        else:
+            cls.conda_tmp_prefix = mkdtemp()
+            cls._test_driver.temp_directories.append(cls.conda_tmp_prefix)
+            config["use_cached_dependency_manager"] = True
+            config["conda_auto_init"] = True
+            config["conda_auto_install"] = True
+            config["conda_prefix"] = os.path.join(cls.conda_tmp_prefix, "conda")
 
     def _clear_container_cache(self):
         """
@@ -584,6 +625,23 @@ class ContainerResolverTestCases:
             namespace=self.assumptions["run"]["cache_namespace"],
         )
 
+    def _check_status(self: ResolverTestProtocol, status: Dict[str, Any], assumptions:Dict[str, Any]):
+        if "unresolved" in assumptions:
+            assert status["model_class"] == "NullDependency"
+            assert status["dependency_type"] is None
+            assert 'container_resolver' not in status
+            assert 'container_description' not in status
+        else:
+            assert status["model_class"] == "ContainerDependency"
+            assert status["dependency_type"] == self.container_type
+            assert status["container_resolver"]["resolver_type"] == assumptions["resolver_type"]
+            assert re.match(assumptions["identifier"], status["container_description"]["identifier"])
+            self._assert_container_in_cache(
+                assumptions["cached"],
+                container_name=assumptions["cache_name"],
+                namespace=assumptions["cache_namespace"],
+            )
+
     def test_api_container_resolvers_toolbox(self: ResolverTestProtocol):
         """
         test container resolvers via GET container_resolvers/toolbox
@@ -600,41 +658,27 @@ class ContainerResolverTestCases:
             "container_resolvers/toolbox",
             data={
                 "tool_ids": [self.tool_id],
+# TODO                "container_type": self.container_type,
             },
             admin=True,
         )
         response = create_response.json()
         assert len(response) == 1
         status = response[0]["status"]
-        assert status["model_class"] == "ContainerDependency"
-        assert status["dependency_type"] == self.container_type
-        assert status["container_resolver"]["resolver_type"] == self.assumptions["list"][0]["resolver_type"]
-        assert re.match(self.assumptions["list"][0]["identifier"], status["container_description"]["identifier"])
-        self._assert_container_in_cache(
-            self.assumptions["list"][0]["cached"],
-            container_name=self.assumptions["list"][0]["cache_name"],
-            namespace=self.assumptions["list"][0]["cache_namespace"],
-        )
+        self._check_status(status, self.assumptions["list"][0])
 
         create_response = self._get(
             "container_resolvers/toolbox",
             data={
                 "tool_ids": [self.tool_id],
+# TODO                "container_type": self.container_type,
             },
             admin=True,
         )
         response = create_response.json()
         assert len(response) == 1
         status = response[0]["status"]
-        assert status["model_class"] == "ContainerDependency"
-        assert status["dependency_type"] == self.container_type
-        assert status["container_resolver"]["resolver_type"] == self.assumptions["list"][1]["resolver_type"]
-        assert re.match(self.assumptions["list"][1]["identifier"], status["container_description"]["identifier"])
-        self._assert_container_in_cache(
-            self.assumptions["list"][1]["cached"],
-            container_name=self.assumptions["list"][1]["cache_name"],
-            namespace=self.assumptions["list"][1]["cache_namespace"],
-        )
+        self._check_status(status, self.assumptions["list"][1])
 
     def test_api_container_resolvers_toolbox_install(self: ResolverTestProtocol):
         """
@@ -650,7 +694,7 @@ class ContainerResolverTestCases:
             "container_resolvers/toolbox/install",
             data={
                 "tool_ids": json.dumps([self.tool_id]),
-                "container_type": self.container_type,
+# TODO                "container_type": self.container_type,
                 "include_containers": True,
             },
             admin=True,
@@ -659,22 +703,13 @@ class ContainerResolverTestCases:
         response = create_response.json()
         assert len(response) == 1
         status = response[0]["status"]
-        assert status
-        assert status["model_class"] == "ContainerDependency"
-        assert status["dependency_type"] == self.container_type
-        assert status["container_resolver"]["resolver_type"] == self.assumptions["build"][0]["resolver_type"]
-        assert re.match(self.assumptions["build"][0]["identifier"], status["container_description"]["identifier"])
-        self._assert_container_in_cache(
-            self.assumptions["build"][0]["cached"],
-            container_name=self.assumptions["build"][0]["cache_name"],
-            namespace=self.assumptions["build"][0]["cache_namespace"],
-        )
+        self._check_status(status, self.assumptions["build"][0])
 
         create_response = self._post(
             "container_resolvers/toolbox/install",
             data={
                 "tool_ids": json.dumps([self.tool_id]),
-                "container_type": self.container_type,
+# TODO                "container_type": self.container_type,
                 "include_containers": True,
             },
             admin=True,
@@ -683,15 +718,7 @@ class ContainerResolverTestCases:
         response = create_response.json()
         assert len(response) == 1
         status = response[0]["status"]
-        assert status["model_class"] == "ContainerDependency"
-        assert status["dependency_type"] == self.container_type
-        assert status["container_resolver"]["resolver_type"] == self.assumptions["build"][1]["resolver_type"]
-        assert re.match(self.assumptions["build"][1]["identifier"], status["container_description"]["identifier"])
-        self._assert_container_in_cache(
-            self.assumptions["build"][1]["cached"],
-            container_name=self.assumptions["build"][1]["cache_name"],
-            namespace=self.assumptions["build"][1]["cache_namespace"],
-        )
+        self._check_status(status, self.assumptions["build"][1])
 
 
 class TestMulledContainerResolver(ContainerizedIntegrationTestCase, ContainerResolverTestCases):
@@ -857,7 +884,7 @@ class TestMulledContainerResolverNoAutoInstall(TestMulledContainerResolver):
 class TestMulledSingularityContainerResolverNoAutoInstall(TestMulledSingularityContainerResolver):
     """
     Use the mulled singularity container resolver with auto_install: False
-    
+
     The only difference is that the first call to resolve also returns the path
     to the cached image (see assumptions["build"]["identifier"]). This is also used
     in the run, but I have no idea how to test this (in the generated job script
@@ -918,3 +945,96 @@ class TestMulledSingularityContainerResolverNoAutoInstall(TestMulledSingularityC
             },
         ],
     }
+
+
+class TestCondaFallBack(ContainerizedIntegrationTestCase, ContainerResolverTestCases):
+    """
+    test that Galaxy falls back to default dependency resolvers (i.e. conda) if no
+    container can be resolved
+
+    here we force container resolution to fail because only singularity resolvers
+    are configured on a docker destination.
+
+    - assumptions that need to be met is that tool is executed successfully (via conda)
+    - and listing and building containers does not work
+    """
+
+    allow_conda_fallback: bool = True
+    tool_id = "mulled_example_multi_1"
+    mulled_hash = "mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0"
+    container_resolvers_config: List[Dict[str, Any]] = [
+        {"type": "cached_mulled_singularity"},
+        {"type": "mulled_singularity"},
+    ]
+
+    assumptions: Dict[str, Any] = {
+        "run": {
+            "output": [
+                "bedtools v2.26.0",
+                # conda env does not suffer from broken library -> so different output
+                "samtools (Tools for alignments in the SAM format)",
+                "Version: 1.3.1",
+            ],
+            "cached": False,
+            "cache_name": f"quay.io/biocontainers/{mulled_hash}",
+            "cache_namespace": "biocontainers",
+        },
+        "list": [
+            {"unresolved": True},
+            {"unresolved": True},
+        ],
+        "build": [
+            {"unresolved": True},
+            {"unresolved": True},
+        ],
+    }
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config) -> None:
+        super().handle_galaxy_config_kwds(config)
+        config["container_resolvers"] = cls.container_resolvers_config
+
+
+class TestCondaFallBackAndRequireContainer(ContainerizedIntegrationTestCase, ContainerResolverTestCases):
+    """
+    test that we can disable fallback to the default resolvers (conda)
+    by setting the destination property require_container
+
+    same as TestCondaFallBack but tool needs to fail
+    """
+
+    allow_conda_fallback: bool = True
+    tool_id = "mulled_example_multi_1"
+    mulled_hash = "mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0"
+    container_resolvers_config: List[Dict[str, Any]] = [
+        {"type": "cached_mulled_singularity"},
+        {"type": "mulled_singularity"},
+    ]
+
+    assumptions: Dict[str, Any] = {
+        "run": {
+            "output": [
+                "bedtools v2.26.0",
+                # conda env does not suffer from broken library -> so different output
+                "samtools (Tools for alignments in the SAM format)",
+                "Version: 1.3.1",
+            ],
+            "cached": False,
+            "cache_name": f"quay.io/biocontainers/{mulled_hash}",
+            "cache_namespace": "biocontainers",
+        },
+        "list": [
+            {"unresolved": True},
+            {"unresolved": True},
+        ],
+        "build": [
+            {"unresolved": True},
+            {"unresolved": True},
+        ],
+    }
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config) -> None:
+        super().handle_galaxy_config_kwds(config)
+        config["job_config"]["execution"]["environments"]["local_docker"]["require_container"] = True
+        config["container_resolvers"] = cls.container_resolvers_config
