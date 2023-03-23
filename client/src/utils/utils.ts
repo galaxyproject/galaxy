@@ -80,14 +80,6 @@ export function isJSON(text: string): boolean {
 }
 
 /**
- * Sanitize/escape a string
- * @param{String}   content - Content to be sanitized
- */
-export function sanitize(content: string): string {
-    return $("<div/>").text(content).html();
-}
-
-/**
  * Checks if a value or list of values is `empty`
  * usually used for selectable options
  * @param{String}   value - Value or list to be validated
