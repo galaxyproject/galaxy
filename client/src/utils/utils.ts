@@ -275,15 +275,24 @@ export function time(): string {
     return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}, ${hours}:${minutes}`;
 }
 
-/** Append script and style tags to Galaxy main application */
+/**
+ * Append script and style tags to Galaxy main application
+ *
+ * @param data object containing script and style strings
+ */
 export function appendScriptStyle(data: { script?: string; styles?: string }) {
     // create a script tag inside head tag
     if (data.script && data.script !== "") {
-        $("<script/>", { type: "text/javascript" }).text(data.script).appendTo("head");
+        const tag = document.createElement("script");
+        tag.type = "text/javascript";
+        tag.textContent = data.script;
+        document.head.appendChild(tag);
     }
     // create a style tag inside head tag
     if (data.styles && data.styles !== "") {
-        $("<style/>", { type: "text/css" }).text(data.styles).appendTo("head");
+        const tag = document.createElement("style");
+        tag.textContent = data.styles;
+        document.head.appendChild(tag);
     }
 }
 
