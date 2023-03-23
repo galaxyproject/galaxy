@@ -104,7 +104,7 @@ class EncodedLibraryFolderDatabaseIdField(str, BaseDatabaseIdField):
             raise TypeError("String required")
         if not v.startswith("F"):
             raise TypeError("Invalid library folder ID. Folder IDs must start with an 'F'")
-        cls.ensure_valid(v)
+        cls.ensure_valid(v[1:])
         return cls(v)
 
     @classmethod

@@ -2407,7 +2407,7 @@ class LibraryLegacySummary(Model):
         title="Description",
         description="A short text describing the contents of the Library.",
     )
-    root_folder_id: LibraryFolderDatabaseIdField = Field(
+    root_folder_id: EncodedLibraryFolderDatabaseIdField = Field(
         ...,
         title="Root Folder ID",
         description="Encoded ID of the Library's base folder.",

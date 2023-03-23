@@ -74,13 +74,12 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
         for library in query:
             library_dict = self.library_manager.get_library_dict(trans, library, prefetched_ids)
             libraries.append(LibrarySummary(**library_dict))
-        return LibrarySummaryList.construct(__root__=libraries)
+        return LibrarySummaryList(__root__=libraries)
 
     def show(self, trans, id: DecodedDatabaseIdField) -> LibrarySummary:
         """Returns detailed information about a library."""
         library = self.library_manager.get(trans, id)
-        library_dict = self.library_manager.get_library_dict(trans, library)
-        return LibrarySummary.construct(**library_dict)
+        return self._to_summary(trans, library)
 
     def create(self, trans, payload: CreateLibraryPayload) -> LibrarySummary:
         """Creates a new library.
@@ -328,11 +327,9 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
         trans.sa_session.refresh(library)
         # Copy the permissions to the root folder
         trans.app.security_agent.copy_library_permissions(trans, library, library.root_folder)
-        item = library.to_dict(
-            view="element", value_mapper={"id": trans.security.encode_id, "root_folder_id": trans.security.encode_id}
-        )
-        return LibraryLegacySummary.construct(**item)
+        item = library.to_dict(view="element")
+        return LibraryLegacySummary(**item)
 
     def _to_summary(self, trans, library) -> LibrarySummary:
         library_dict = self.library_manager.get_library_dict(trans, library)
-        return LibrarySummary.construct(**library_dict)
+        return LibrarySummary(**library_dict)

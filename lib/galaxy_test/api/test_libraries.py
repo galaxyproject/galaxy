@@ -48,6 +48,12 @@ class TestLibrariesApi(ApiTestCase):
         assert ld
 
     @requires_new_library
+    def test_index(self):
+        self.library_populator.new_library("TestIndexLibraries")
+        libraries = self.library_populator.get_libraries()
+        assert len(libraries) > 0
+
+    @requires_new_library
     def test_delete(self):
         library = self.library_populator.new_library("DeleteTestLibrary")
         create_response = self._delete(f"libraries/{library['id']}", admin=True)
