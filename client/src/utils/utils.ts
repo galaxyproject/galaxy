@@ -207,16 +207,13 @@ export function merge(options: AnyObject | null | undefined, optionsDefault: Rea
 }
 
 /**
- * Round floating point 'number' to 'numPlaces' number of decimal places.
- * @param{number}   number      a floaing point number
- * @param{number}   numPlaces   number of decimal places
+ * Round floating point `number` to `numPlaces` number of decimal places.
+ *
+ * @param number    a floating point number
+ * @param numPlaces number of decimal places
  */
 export function roundToDecimalPlaces(number: number, numPlaces: number) {
-    let placesMultiplier = 1;
-    for (let i = 0; i < numPlaces; i++) {
-        placesMultiplier *= 10;
-    }
-    return Math.round(number * placesMultiplier) / placesMultiplier;
+    return parseFloat(number.toFixed(numPlaces));
 }
 
 // calculate on import
