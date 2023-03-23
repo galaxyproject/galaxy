@@ -37,21 +37,26 @@ export function deepEach<O extends AnyObject, V extends O[keyof O] extends AnyOb
     });
 }
 
-/** Identifies urls and replaces them with anchors */
+/**
+ * Identifies urls and replaces them with anchors
+ *
+ * @param inputText
+ * @returns string with <a> anchor tags, wrapping found URLs and e-mail addresses
+ */
 export function linkify(inputText: string): string {
-    let replacedText;
+    let replacedText = inputText;
 
     // URLs starting with http://, https://, or ftp://
-    const replacePattern1 = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%=~_|])/gim;
-    replacedText = inputText.replace(replacePattern1, '<a href="$1" target="_blank">$1</a>');
+    const urlProtocolPattern = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%=~_|])/gim;
+    replacedText = replacedText.replace(urlProtocolPattern, '<a href="$1" target="_blank">$1</a>');
 
     // URLs starting with "www." (without // before it, or it'd re-link the ones done above).
-    const replacePattern2 = /(^|[^/])(www\.[\S]+(\b|$))/gim;
-    replacedText = replacedText.replace(replacePattern2, '$1<a href="http://$2" target="_blank">$2</a>');
+    const urlPattern = /(^|[^/])(www\.[\S]+(\b|$))/gim;
+    replacedText = replacedText.replace(urlPattern, '$1<a href="http://$2" target="_blank">$2</a>');
 
     // Change email addresses to mailto:: links.
-    const replacePattern3 = /(([a-zA-Z0-9\-_.])+@[a-zA-Z_]+?(\.[a-zA-Z]{2,6})+)/gim;
-    replacedText = replacedText.replace(replacePattern3, '<a href="mailto:$1">$1</a>');
+    const emailPattern = /(([a-zA-Z0-9\-_.])+@[a-zA-Z_]+?(\.[a-zA-Z]{2,6})+)/gim;
+    replacedText = replacedText.replace(emailPattern, '<a href="mailto:$1">$1</a>');
 
     return replacedText;
 }
