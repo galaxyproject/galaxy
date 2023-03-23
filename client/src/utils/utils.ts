@@ -95,6 +95,10 @@ export function isEmpty(value: any | Readonly<any[]>) {
             return false;
         }
     } else {
+        if (value.length === 0) {
+            return true;
+        }
+
         for (let index = 0; index < value.length; index++) {
             if (emptyValues.includes(value[index])) {
                 return true;
