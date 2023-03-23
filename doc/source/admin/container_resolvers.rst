@@ -1,5 +1,6 @@
 .. _container_resolvers:
 
+
 Containers in Galaxy
 ====================
 
@@ -20,11 +21,11 @@ container registry.
 
 1. For each bioconda package a container is deployed
 2. Mulled containers are created and deployed by the infrastructure provided by the
-`multi-package-containers <https://github.com/BioContainers/multi-package-containers>`_
-repository. Mulled containers are added automatically to this repository for all tools
-in tool repositories that are crawled by the 
-`planemo monitor <https://github.com/galaxyproject/planemo-monitor>`_ repository
-(which includes for instance IUC and many other tool repositories).
+   `multi-package-containers <https://github.com/BioContainers/multi-package-containers>`_
+   repository. Mulled containers are added automatically to this repository for all tools
+   in tool repositories that are crawled by the 
+   `planemo monitor <https://github.com/galaxyproject/planemo-monitor>`_ repository
+   (which includes for instance IUC and many other tool repositories).
 
 Container Resolvers in Galaxy
 -----------------------------
@@ -37,11 +38,9 @@ different needs.
 
 Galaxy tries to execute jobs using containers if they are send
 to execution environments (previously called destinations) with either 
-
-- `docker_enabled <https://github.com/galaxyproject/galaxy/blob/0742d6e27702c60d1b8fe358ae03a267e3f252c3/lib/galaxy/config/sample/job_conf.sample.yml#L419>`_ or
-- `singularity_enabled <https://github.com/galaxyproject/galaxy/blob/0742d6e27702c60d1b8fe358ae03a267e3f252c3/lib/galaxy/config/sample/job_conf.sample.yml#L556>`_
-
-enabled. Note, the links above exemplify this for local execution environments,
+`docker_enabled <https://github.com/galaxyproject/galaxy/blob/0742d6e27702c60d1b8fe358ae03a267e3f252c3/lib/galaxy/config/sample/job_conf.sample.yml#L419>`_ or
+`singularity_enabled <https://github.com/galaxyproject/galaxy/blob/0742d6e27702c60d1b8fe358ae03a267e3f252c3/lib/galaxy/config/sample/job_conf.sample.yml#L556>`_
+enabled. Note, the links to the sample configurations exemplify this for local execution environments,
 but this works for any environment as long as ``docker`` or ``singularity`` are
 available.
 
@@ -53,7 +52,7 @@ If all configured container resolvers failed, i.e. no container description
 could be obtained, the tool is by default executed using 
 :doc:`standard dependency resolvers <dependency_resolvers>`, e.g. ``conda``.
 Alternatively, if the execution environment specifies
-`require_container <https://github.com/galaxyproject/galaxy/blob/0742d6e27702c60d1b8fe358ae03a267e3f252c3/lib/galaxy/config/sample/job_conf.yml.sample#L528>`_
+`require_container <https://github.com/galaxyproject/galaxy/blob/0742d6e27702c60d1b8fe358ae03a267e3f252c3/lib/galaxy/config/sample/job_conf.sample.yml#L528>`_
 the job fails in this case (TODO to be tested? or is it already).
 
 Besides determining a container description some container resolvers
@@ -65,10 +64,8 @@ Configuration:
 The list of container resolvers is defined using YAML. This can be
 either
 
-- globally in an extra file (``container_resolvers_config_file``) or
-inline the Galaxy configuration (``container_resolvers``) or
-- per execution environment using ``container_resolvers_config_file``
-or ``container_resolvers``
+- globally in an extra file (``container_resolvers_config_file``) or inline the Galaxy configuration (``container_resolvers``) or
+- per execution environment using ``container_resolvers_config_file`` or ``container_resolvers``
 
 Container resolvers defined for the execution environment
 take precedence over globally defined container resolvers.
@@ -96,7 +93,23 @@ The main types of container resolvers follow this naming scheme:
    It's important to note that similarities in the names not necessarily
    imply any similarity in the function of the container resolvers.
 
+There are the following mulled container resolvers:
+
+- ``mulled``
+- ``mulled_singularity``
+- ``cached_mulled``
+- ``cached_mulled_singularity``
+
+Furthermore there are the following explicit container resolvers:
+
+- ``explicit``
+- ``explicit_singularity``
+- ``cached_explicit_singularity``
+
+Note that there is no ``cached_explicit`` resolver.
+
 1. docker vs singularity
+""""""""""""""""""""""""
 
 Galaxy can execute tools in containers using ``docker`` or ``singularity``.
 The corresponding container resolvers yield container descriptions suitable
@@ -108,30 +121,11 @@ container resolvers are ignored (and may be omitted).
 
 Note that, for the execution with ``singularity`` Galaxy relies mostly on
 docker containers that are either executed directly or are converted
-to singularity images. The only exception are explicit container requirements of
-``type="singularity"``.
-
-There are important differences between Galaxy's cached docker and singularity
-container resolvers. The caching mechanism essentially executes a
-``docker pull`` or ``singularity pull``, respectively. For docker this creates
-an entry in the docker image cache (on the local node) whereas for
-singularity an image file is created in the specified ``cache_directory``.
-On distributed systems ``cache_directory`` needs to be accessible on all
-compute nodes.
-For singularity admins should also take care of the ``APPTAINER_CACHEDIR``
-directory.
-
-.. note::
-
-   Using a cached docker resolver has no additional value on distributed compute
-   systems since the cache is only available locally. 
-   Therefore an additional ``docker inspect ... ; [ $? -ne 0 ] && docker pull ...``
-   command is used in each job script. Clearly admins need to take care of
-   docker caches of the main and compute nodes.
-   For distributed compute systems built in techniques of docker may be useful:
-   https://docs.docker.com/registry/recipes/mirror/.
+to singularity images. An exception are for instance explicit container
+requirements of ``type="singularity"``.
 
 2. mulled vs explicit
+"""""""""""""""""""""
 
 Mulled container resolvers apply for requirements defined by tools that are
 a set of packages:
@@ -152,9 +146,10 @@ of a container requirement:
       <container type="docker">quay.io/qiime2/core:2022.8</container>
   </requirements>
 
-See also TODO link to `Additional resolver types`
+See also :ref:`additional_resolver_types`.
 
 3. cached vs non-cached
+"""""""""""""""""""""""
 
 While non-cached resolvers will yield a container description pointing to an online
 available docker container cached resolvers will store container images on disk and
@@ -164,34 +159,43 @@ This distinction is the weakest: some (by name) non-cached container resolvers
 can also resolve cached containers and are even responsible for the caching itself,
 i.e. they execute a ``pull``.
 
-There are the following mulled container resolvers:
+There are important differences between Galaxy's cached docker and singularity
+container resolvers. The caching mechanism essentially executes a
+``docker pull`` or ``singularity pull``, respectively. For docker this creates
+an entry in the docker image cache (on the local node) whereas for
+singularity an image file is created in the specified ``cache_directory``.
+On distributed systems ``cache_directory`` needs to be accessible on all
+compute nodes.
+For singularity admins should also take care of the ``APPTAINER_CACHEDIR``
+directory.
 
-- ``mulled``
-- ``mulled_singularity``
-- ``cached_mulled``
-- ``cached_mulled_singularity``
+.. note::
 
-Furthermore there are the following explicit container resolvers:
-
-- ``explicit``
-- ``explicit_singularity``
-- ``cached_explicit_singularity``
-
-Note that there is no ``cached_explicit`` resolver.
+   Using a cached docker resolver has no additional value on distributed compute
+   systems since the cache is only available locally. 
+   Therefore an additional ``docker inspect ... ; [ $? -ne 0 ] && docker pull ...``
+   command is used in each job script. Thereby a the container will be cached
+   after the tool run even if no cached container resolver was used.
+   Clearly admins need to take care of docker caches of the main and compute nodes.
+   For distributed compute systems built in techniques of docker may be useful:
+   https://docs.docker.com/registry/recipes/mirror/.
 
 Function of the ``resolve`` function of the main resolver types:
 ----------------------------------------------------------------
 
 The resolve function is called when 
 
-- opening the container tab in the dependency admin UI
-- triggering a build from the admin UI
-- when a job is prepared
+1. listing the  the container tab in the dependency admin UI
+2. triggering a build from the admin UI
+3. when a job is prepared 
 
 If the ``resolve`` function implements the caching of images then this only
-happens if ``install=True``.
+happens if its ``install`` parameter is set to ``True``. This is the case
+in case 
+
 
 1. Explicit resolvers
+"""""""""""""""""""""
 
 The uncached explicit resolvers (``explicit`` and ``explicit_singularity``) only
 compute a container description using an URI that suites the ``docker`` or
@@ -203,6 +207,7 @@ return a container description that points to the image file in the
 ``cache_directory``.
 
 2. Mulled resolvers
+"""""""""""""""""""
 
 All mulled resolvers compute a mulled hash that describes the requirements and
 is included in the container name (see above).
@@ -236,6 +241,9 @@ image).
     the uncached URI (if the default of ``auto_install=True`` is used; otherwise
     the cached image is used).
 
+
+.. _additional_resolver_types:
+
 Additional resolver types
 -------------------------
 
@@ -263,10 +271,10 @@ building.
 .. note::
 
     Instead of using these locally, it might be better to create multi package containers
-that are deployed to biocontainers using the infrastructure provided by the
-`multi-package-containers <https://github.com/BioContainers/multi-package-containers>`_
-repository, e.g. by adding more tool repositories to the
-`planemo monitor <https://github.com/galaxyproject/planemo-monitor>`_
+    that are deployed to biocontainers using the infrastructure provided by the
+    `multi-package-containers <https://github.com/BioContainers/multi-package-containers>`_
+    repository, e.g. by adding more tool repositories to the
+    `planemo monitor <https://github.com/galaxyproject/planemo-monitor>`_
 
 
 Parameters:
