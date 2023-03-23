@@ -131,12 +131,12 @@ export function textify(list: string[]): string {
 }
 
 /**
- * Request handler for GET
- * legacy layer from old $.ajax interface
- * @param{String}   url     - Url request is made to
- * @param{Function} success - Callback on success
- * @param{Function} error   - Callback on error
- * @param{Object}   data    - parameters to be sent with the request
+ * Request handler for GET.
+ *
+ * @property url     Url request is made to
+ * @property success Callback on success
+ * @property error   Callback on error
+ * @property data    parameters to be sent with the request
  */
 interface getOptions {
     url: string;
@@ -145,6 +145,10 @@ interface getOptions {
     error?: (error: AxiosError) => void;
 }
 
+/**
+ * @deprecated legacy layer for old $.ajax interface
+ * @param options
+ */
 export function get(options: getOptions): void {
     axios
         .get(options.url, { params: options.data })
