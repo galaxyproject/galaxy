@@ -459,7 +459,7 @@ export interface paths {
          *
          * **Note**: this is a volatile endpoint and settings and behavior may change.
          */
-        get: operations["archive_api_histories__history_id__contents_archive_get"];
+        get: operations["history_contents__archive"];
     };
     "/api/histories/{history_id}/contents/archive/{filename}.{format}": {
         /**
@@ -468,7 +468,7 @@ export interface paths {
          *
          * **Note**: this is a volatile endpoint and settings and behavior may change.
          */
-        get: operations["archive_api_histories__history_id__contents_archive__filename___format__get"];
+        get: operations["history_contents__archive_named"];
     };
     "/api/histories/{history_id}/contents/bulk": {
         /**
@@ -10034,7 +10034,7 @@ export interface operations {
             };
         };
     };
-    archive_api_histories__history_id__contents_archive_get: {
+    history_contents__archive: {
         /**
          * Build and return a compressed archive of the selected history contents.
          * @description Build and return a compressed archive of the selected history contents.
@@ -10043,10 +10043,6 @@ export interface operations {
          */
         parameters: {
             /** @description The name that the Archive will have (defaults to history name). */
-            /**
-             * @deprecated
-             * @description Output format of the archive.
-             */
             /** @description Whether to return the archive and file paths only (as JSON) and not an actual archive file. */
             /**
              * @description Generally a property name to filter by followed by an (often optional) hyphen and operator string.
@@ -10064,7 +10060,6 @@ export interface operations {
              */
             query?: {
                 filename?: string;
-                format?: string;
                 dry_run?: boolean;
                 q?: string[];
                 qv?: string[];
@@ -10096,7 +10091,7 @@ export interface operations {
             };
         };
     };
-    archive_api_histories__history_id__contents_archive__filename___format__get: {
+    history_contents__archive_named: {
         /**
          * Build and return a compressed archive of the selected history contents.
          * @description Build and return a compressed archive of the selected history contents.
@@ -10132,6 +10127,11 @@ export interface operations {
                 "run-as"?: string;
             };
             /** @description The ID of the History. */
+            /** @description The name that the Archive will have (defaults to history name). */
+            /**
+             * @deprecated
+             * @description Output format of the archive.
+             */
             path: {
                 history_id: string;
                 filename: string;
@@ -10724,6 +10724,10 @@ export interface operations {
                 "run-as"?: string;
             };
             /** @description The ID of the History. */
+            /**
+             * @description The type of the target history element.
+             * @example dataset
+             */
             path: {
                 history_id: string;
                 type: components["schemas"]["HistoryContentType"];

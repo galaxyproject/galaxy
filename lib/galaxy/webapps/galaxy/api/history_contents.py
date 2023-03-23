@@ -91,12 +91,15 @@ HistoryHDCAIDPathParam: DecodedDatabaseIdField = Path(
     ..., title="History Dataset Collection ID", description="The ID of the `HDCA` contained in the history."
 )
 
-ContentTypeQueryParam = Query(
-    default=None,
-    title="Content Type",
-    description="The type of the target history element.",
-    example=HistoryContentType.dataset,
-)
+
+def ContentTypeQueryParam(default: Optional[HistoryContentType]):
+    return Query(
+        default=default,
+        title="Content Type",
+        description="The type of the target history element.",
+        example=HistoryContentType.dataset,
+    )
+
 
 ContentTypePathParam = Path(
     title="Content Type",
@@ -224,6 +227,7 @@ LegacyTypesQueryParam = Query(
     deprecated=True,
 )
 
+
 LegacyDetailsQueryParam = Query(
     default=None,
     title="Details",
@@ -245,8 +249,7 @@ LegacyVisibleQueryParam = Query(
     deprecated=True,
 )
 
-ArchiveFilenamePathParam = Query(
-    default=None,
+ArchiveFilenamePathParam = Path(
     description="The name that the Archive will have (defaults to history name).",
 )
 
@@ -272,7 +275,7 @@ def get_legacy_index_query_params(
     correctly"""
     return parse_legacy_index_query_params(
         ids=ids,
-        types=types or None,
+        types=types,
         details=details,
         deleted=deleted,
         visible=visible,
@@ -290,12 +293,9 @@ def parse_legacy_index_query_params(
     """Parses (legacy) query parameters for the history contents `index` operation
     and returns a model containing the values in the correct type."""
     if types:
-        if isinstance(types, list) and len(types) == 1:  # Support ?types=dataset,dataset_collection
-            content_types = util.listify(types[0])
-        else:  # Support ?types=dataset&types=dataset_collection
-            content_types = util.listify(types)
+        content_types = parse_content_types(types)
     else:
-        content_types = [e.value for e in HistoryContentType]
+        content_types = [e for e in HistoryContentType]
 
     id_list = None
     if ids:
@@ -315,6 +315,14 @@ def parse_legacy_index_query_params(
         )
     except ValidationError as e:
         raise validation_error_to_message_exception(e)
+
+
+def parse_content_types(types: Union[List[str], str]) -> List[HistoryContentType]:
+    if isinstance(types, list) and len(types) == 1:  # Support ?types=dataset,dataset_collection
+        content_types = util.listify(types[0])
+    else:  # Support ?types=dataset&types=dataset_collection
+        content_types = util.listify(types)
+    return [HistoryContentType[content_type] for content_type in content_types]
 
 
 def parse_dataset_details(details: Optional[str]):
@@ -378,7 +386,7 @@ class FastAPIHistoryContents:
         trans: ProvidesHistoryContext = DependsOnTrans,
         history_id: DecodedDatabaseIdField = HistoryIDPathParam,
         index_params: HistoryContentsIndexParams = Depends(get_index_query_params),
-        type: HistoryContentType = Path(),
+        type: HistoryContentType = ContentTypePathParam,
         legacy_params: LegacyHistoryContentsIndexParams = Depends(get_legacy_index_query_params),
         serialization_params: SerializationParams = Depends(query_serialization_params),
         filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
@@ -392,7 +400,7 @@ class FastAPIHistoryContents:
 
         **Note**: Anonymous users are allowed to get their current history contents.
         """
-        legacy_params.types = legacy_params.types or [type]
+        legacy_params.types = [type]
         items = self.service.index(
             trans,
             history_id,
@@ -432,11 +440,7 @@ class FastAPIHistoryContents:
         trans: ProvidesHistoryContext = DependsOnTrans,
         history_id: DecodedDatabaseIdField = HistoryIDPathParam,
         index_params: HistoryContentsIndexParams = Depends(get_index_query_params),
-        type: Optional[HistoryContentType] = Query(
-            default=None,
-            include_in_schema=False,
-            deprecated=True,
-        ),
+        type: Optional[str] = Query(default=None, include_in_schema=False, deprecated=True),
         legacy_params: LegacyHistoryContentsIndexParams = Depends(get_legacy_index_query_params),
         serialization_params: SerializationParams = Depends(query_serialization_params),
         filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
@@ -450,10 +454,8 @@ class FastAPIHistoryContents:
 
         **Note**: Anonymous users are allowed to get their current history contents.
         """
-        if not legacy_params.types:
-            if type is not None:
-                legacy_params.types = [type]
-
+        if type is not None:
+            legacy_params.types = parse_content_types(type)
         items = self.service.index(
             trans,
             history_id,
@@ -524,7 +526,7 @@ class FastAPIHistoryContents:
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
         history_id: DecodedDatabaseIdField = HistoryIDPathParam,
-        type: HistoryContentType = ContentTypeQueryParam,
+        type: HistoryContentType = ContentTypeQueryParam(default=HistoryContentType.dataset),
         id: DecodedDatabaseIdField = HistoryItemIDPathParam,
         fuzzy_count: Optional[int] = FuzzyCountQueryParam,
         serialization_params: SerializationParams = Depends(query_serialization_params),
@@ -690,7 +692,7 @@ class FastAPIHistoryContents:
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
         history_id: DecodedDatabaseIdField = HistoryIDPathParam,
-        type: Optional[HistoryContentType] = ContentTypeQueryParam,
+        type: Optional[HistoryContentType] = ContentTypeQueryParam(default=None),
         serialization_params: SerializationParams = Depends(query_serialization_params),
         payload: CreateHistoryContentPayload = Body(...),
     ) -> Union[AnyHistoryContentItem, List[AnyHistoryContentItem]]:
@@ -805,7 +807,7 @@ class FastAPIHistoryContents:
         trans: ProvidesHistoryContext = DependsOnTrans,
         history_id: DecodedDatabaseIdField = HistoryIDPathParam,
         id: DecodedDatabaseIdField = HistoryItemIDPathParam,
-        type: HistoryContentType = ContentTypeQueryParam,
+        type: HistoryContentType = ContentTypeQueryParam(default=HistoryContentType.dataset),
         serialization_params: SerializationParams = Depends(query_serialization_params),
         payload: UpdateHistoryContentsPayload = Body(...),
     ) -> AnyHistoryContentItem:
@@ -860,7 +862,7 @@ class FastAPIHistoryContents:
         trans: ProvidesHistoryContext = DependsOnTrans,
         history_id: DecodedDatabaseIdField = HistoryIDPathParam,
         id: DecodedDatabaseIdField = HistoryItemIDPathParam,
-        type: HistoryContentType = ContentTypeQueryParam,
+        type: HistoryContentType = ContentTypeQueryParam(default=HistoryContentType.dataset),
         serialization_params: SerializationParams = Depends(query_serialization_params),
         purge: Optional[bool] = PurgeQueryParam,
         recursive: Optional[bool] = RecursiveQueryParam,
@@ -923,8 +925,8 @@ class FastAPIHistoryContents:
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
         history_id: DecodedDatabaseIdField = HistoryIDPathParam,
-        filename: Optional[str] = ArchiveFilenamePathParam,
-        format: Optional[str] = Path(
+        filename: str = ArchiveFilenamePathParam,
+        format: str = Path(
             description="Output format of the archive.",
             deprecated=True,  # Looks like is not really used?
         ),
