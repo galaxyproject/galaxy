@@ -11,11 +11,6 @@ import { getAppRoot } from "@/onload/loadConfig";
 import { getGalaxyInstance } from "@/app";
 import _l from "@/utils/localization";
 
-/** Builds a basic iframe */
-export function iframe(src: string) {
-    return `<iframe src="${src}" frameborder="0" style="width: 100%; height: 100%;"/>`;
-}
-
 /** Object with any internal structure. More specific key than built-in Object type */
 export type AnyObject = Record<string | number | symbol, any>;
 
@@ -328,7 +323,6 @@ export default {
     cssGetAttribute: cssGetAttribute,
     get: get,
     merge: merge,
-    iframe: iframe,
     bytesToString: bytesToString,
     uid: uid,
     time: time,
