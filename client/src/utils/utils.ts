@@ -332,14 +332,17 @@ export function hashFnv32a(str: string): number {
 
 /**
  * Return a promise, resolve it when element appears
- * @param selector
- * @returns {Promise<*>}
+ *
+ * @param selector css selector
+ *
+ * @returns Element
  */
 export async function waitForElementToBePresent(selector: string) {
     while (document.querySelector(selector) === null) {
         await new Promise((resolve) => requestAnimationFrame(resolve));
     }
-    return document.querySelector(selector);
+
+    return document.querySelector(selector) as Element;
 }
 
 /**
