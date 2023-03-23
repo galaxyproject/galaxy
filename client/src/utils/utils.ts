@@ -19,7 +19,7 @@ export type AnyObject = Record<string | number | symbol, any>;
  * @param callback ran on every nested child object
  */
 export function deepEach<O extends AnyObject, V extends O[keyof O] extends AnyObject ? O[keyof O] : never>(
-    object: O,
+    object: Readonly<O>,
     callback: (object: V | AnyObject) => void
 ): void {
     Object.values(object).forEach((value) => {
@@ -59,7 +59,7 @@ export function linkify(inputText: string): string {
  *
  * This is a deep copy of the object input
  */
-export function clone<T>(obj: T): T {
+export function clone<T>(obj: Readonly<T>): T {
     return JSON.parse(JSON.stringify(obj));
 }
 
@@ -87,7 +87,7 @@ const emptyValues = ["__null__", "__undefined__", null, undefined] as const;
  *
  * @param value Value or list of values to be validated
  */
-export function isEmpty(value: any | any[]) {
+export function isEmpty(value: any | Readonly<any[]>) {
     if (!Array.isArray(value)) {
         if (emptyValues.includes(value)) {
             return true;
@@ -117,7 +117,7 @@ export function isEmpty(value: any | any[]) {
  *
  * @param list List of strings to be converted in human readable list sentence
  */
-export function textify(list: string[]): string {
+export function textify(list: Readonly<string[]>): string {
     let string = list.toString().replace(/,/g, ", ");
     const pos = string.lastIndexOf(", ");
 
@@ -285,7 +285,7 @@ export function time(): string {
  *
  * @param data object containing script and style strings
  */
-export function appendScriptStyle(data: { script?: string; styles?: string }) {
+export function appendScriptStyle(data: Readonly<{ script?: string; styles?: string }>) {
     // create a script tag inside head tag
     if (data.script && data.script !== "") {
         const tag = document.createElement("script");
