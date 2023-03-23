@@ -262,9 +262,16 @@ export function bytesToString(size: number, normalFont = true, numPlaces = 1) {
     }
 }
 
-/** Create a unique id */
+let idCounter = 0;
+
+/**
+ * @deprecated in favor of useUid composable
+ *
+ * Create a unique id
+ */
 export function uid(): string {
-    return _.uniqueId("uid-");
+    idCounter += 1;
+    return `uid-${idCounter}`;
 }
 
 /** Create a time stamp */
