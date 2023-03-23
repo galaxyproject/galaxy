@@ -167,19 +167,6 @@ export function get(options: getOptions): void {
 }
 
 /**
- * Read a property value from CSS
- * @param{String}   classname   - CSS class
- * @param{String}   name        - CSS property
- */
-export function cssGetAttribute(classname: string, name: string): string {
-    const el = $(`<div class="${classname}"></div>`);
-    el.appendTo(":eq(0)");
-    const value = el.css(name);
-    el.remove();
-    return value;
-}
-
-/**
  * Load a CSS file
  * @param{String}   url - Url of CSS file
  */
@@ -331,7 +318,6 @@ export async function delay(delayInMilliseconds: number) {
 
 export default {
     cssLoadFile: cssLoadFile,
-    cssGetAttribute: cssGetAttribute,
     get: get,
     merge: merge,
     bytesToString: bytesToString,
