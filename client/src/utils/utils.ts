@@ -216,7 +216,6 @@ export function roundToDecimalPlaces(number: number, numPlaces: number) {
     return parseFloat(number.toFixed(numPlaces));
 }
 
-// calculate on import
 const kb = 1024;
 const mb = kb * kb;
 const gb = mb * kb;
@@ -224,12 +223,18 @@ const tb = gb * kb;
 
 /**
  * Format byte size to string with units
- * @param{Integer}   size           - Size in bytes
- * @param{Boolean}   normal_font    - Switches font between normal and bold
+ *
+ * @param size       Size in bytes
+ * @param normalFont Switches font between normal and bold
+ * @param numPlaces  decimalPlaces to round to
+ *
+ * @returns string representation of bytes,
+ * or `strong` tag with size in bytes and unit (as string),
+ * or `strong` tag with "-" (as string)
  */
-export function bytesToString(size: number, normal_font: boolean, numPlaces = 1) {
-    // identify unit
+export function bytesToString(size: number, normalFont = true, numPlaces = 1) {
     let unit = "";
+
     if (size >= tb) {
         size = size / tb;
         unit = "TB";
@@ -245,11 +250,12 @@ export function bytesToString(size: number, normal_font: boolean, numPlaces = 1)
     } else if (size > 0) {
         unit = "b";
     } else {
-        return normal_font ? "0 b" : "<strong>-</strong>";
+        return normalFont ? "0 b" : "<strong>-</strong>";
     }
-    // return formatted string
+
     const rounded = unit == "b" ? size : roundToDecimalPlaces(size, numPlaces);
-    if (normal_font) {
+
+    if (normalFont) {
         return `${rounded} ${unit}`;
     } else {
         return `<strong>${rounded}</strong> ${unit}`;
