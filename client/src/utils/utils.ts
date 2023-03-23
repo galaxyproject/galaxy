@@ -108,19 +108,26 @@ export function isEmpty(value: any | any[]) {
 }
 
 /**
- * Convert list to pretty string
- * @param{String}   lst - List of strings to be converted in human readable list sentence
+ * Convert list to pretty string.
+ *
+ * @example ```
+ * const list = [1, 2, 3];
+ * const pretty = textify(list);
+ * console.log(pretty);
+ * // outputs => 1, 2 or 3
+ * ```
+ *
+ * @param list List of strings to be converted in human readable list sentence
  */
-export function textify(lst: string[] | string): string {
-    if (Array.isArray(lst)) {
-        lst = lst.toString().replace(/,/g, ", ");
-        const pos = lst.lastIndexOf(", ");
-        if (pos != -1) {
-            lst = `${lst.substr(0, pos)} or ${lst.substr(pos + 2)}`;
-        }
-        return lst;
+export function textify(list: string[]): string {
+    let string = list.toString().replace(/,/g, ", ");
+    const pos = string.lastIndexOf(", ");
+
+    if (pos !== -1) {
+        string = `${string.substring(0, pos)} or ${string.substring(pos + 2)}`;
     }
-    return "";
+
+    return string;
 }
 
 /**
