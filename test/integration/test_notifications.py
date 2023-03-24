@@ -7,6 +7,10 @@ from typing import (
 )
 from uuid import uuid4
 
+from galaxy_test.base.populators import (
+    DatasetPopulator,
+    WorkflowPopulator,
+)
 from galaxy_test.driver.integration_util import IntegrationTestCase
 
 
@@ -31,6 +35,11 @@ class TestNotificationsIntegration(IntegrationTestCase):
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
         config["enable_notification_system"] = True
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
 
     def test_notification_status(self):
         user1 = self._create_test_user()
@@ -149,6 +158,59 @@ class TestNotificationsIntegration(IntegrationTestCase):
         with self._different_user(anon=True):
             response = self._post("notifications", data=request, json=True)
             self._assert_status_code_is(response, 403)
+
+    def test_sharing_items_creates_notifications_when_expected(self):
+        user1 = self._create_test_user()
+        user2 = self._create_test_user()
+        user_ids = [user1["id"], user2["id"]]
+
+        # User2 doesn't want to receive shared item notifications
+        with self._different_user(user2["email"]):
+            update_request = {
+                "preferences": {"new_shared_item": {"enabled": False, "channels": {"push": False}}},
+            }
+            update_response = self._put("notifications/preferences", data=update_request, json=True)
+            self._assert_status_code_is_ok(update_response)
+
+        # Share History with both users
+        history_id = self.dataset_populator.new_history("Notification test history")
+        self.dataset_populator.new_dataset(history_id)
+        payload = {"user_ids": user_ids, "share_option": "make_accessible_to_shared"}
+        sharing_response = self._put(f"histories/{history_id}/share_with_users", data=payload, json=True)
+        self._assert_status_code_is_ok(sharing_response)
+
+        # Share Workflow with both users
+        workflow_id = self.workflow_populator.simple_workflow("Notification test workflow")
+        payload = {"user_ids": user_ids}
+        sharing_response = self._put(f"workflows/{workflow_id}/share_with_users", data=payload, json=True)
+        self._assert_status_code_is_ok(sharing_response)
+
+        # Share Page with both users
+        page_id = self.dataset_populator.new_page(slug="notification-test-page")["id"]
+        payload = {"user_ids": user_ids}
+        sharing_response = self._put(f"pages/{page_id}/share_with_users", data=payload, json=True)
+        self._assert_status_code_is_ok(sharing_response)
+
+        # Share Visualization with both users
+        create_payload = {
+            "title": "Notification test visualization",
+            "slug": "notification-test-viz",
+            "type": "example",
+            "dbkey": "hg17",
+        }
+        response = self._post("visualizations", data=create_payload).json()
+        visualization_id = response["id"]
+        payload = {"user_ids": user_ids}
+        sharing_response = self._put(f"visualizations/{visualization_id}/share_with_users", data=payload, json=True)
+        self._assert_status_code_is_ok(sharing_response)
+
+        with self._different_user(user1["email"]):
+            notifications = self._get("notifications").json()
+            assert len(notifications) == 4
+
+        with self._different_user(user2["email"]):
+            notifications = self._get("notifications").json()
+            assert len(notifications) == 0
 
     def _create_test_user(self):
         user = self._setup_user(f"{uuid4()}@galaxy.test")

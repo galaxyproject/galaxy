@@ -61,6 +61,27 @@ class FastAPINotifications:
         return self.service.get_notifications_status(trans, since)
 
     @router.get(
+        "/api/notifications/preferences",
+        summary="Returns the current user's preferences for notifications.",
+    )
+    def get_notification_preferences(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> UserNotificationPreferences:
+        return self.service.get_user_notification_preferences(trans)
+
+    @router.put(
+        "/api/notifications/preferences",
+        summary="Updates the user's preferences for notifications.",
+    )
+    def update_notification_preferences(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        payload: UpdateUserNotificationPreferencesRequest = Body(),
+    ) -> UserNotificationPreferences:
+        return self.service.update_user_notification_preferences(trans, payload)
+
+    @router.get(
         "/api/notifications",
         summary="Returns the list of notifications associated with the user.",
     )
@@ -196,24 +217,3 @@ class FastAPINotifications:
     ) -> NotificationCreatedResponse:
         """These special kind of notifications will be always accessible to the user."""
         return self.service.broadcast(sender_context=trans, payload=payload)
-
-    @router.get(
-        "/api/notifications/preferences",
-        summary="Returns the current user's preferences for notifications.",
-    )
-    def get_notification_preferences(
-        self,
-        trans: ProvidesUserContext = DependsOnTrans,
-    ) -> UserNotificationPreferences:
-        return self.service.get_user_notification_preferences(trans)
-
-    @router.put(
-        "/api/notifications/preferences",
-        summary="Updates the user's preferences for notifications.",
-    )
-    def update_notification_preferences(
-        self,
-        trans: ProvidesUserContext = DependsOnTrans,
-        payload: UpdateUserNotificationPreferencesRequest = Body(),
-    ) -> UserNotificationPreferences:
-        return self.service.update_user_notification_preferences(trans, payload)

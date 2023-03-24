@@ -7774,7 +7774,10 @@ export interface components {
          * @description Base model definition with common configuration used by all derived models.
          */
         UpdateUserNotificationPreferencesRequest: {
-            preferences: components["schemas"]["UserNotificationPreferences"];
+            /** Preferences */
+            preferences: {
+                [key: string]: components["schemas"]["NotificationCategorySettings"] | undefined;
+            };
         };
         /**
          * UrlDataElement
@@ -7919,7 +7922,10 @@ export interface components {
          * @description Base model definition with common configuration used by all derived models.
          */
         UserNotificationPreferences: {
-            [key: string]: components["schemas"]["NotificationCategorySettings"] | undefined;
+            /** Preferences */
+            preferences: {
+                [key: string]: components["schemas"]["NotificationCategorySettings"] | undefined;
+            };
         };
         /**
          * UserNotificationResponse

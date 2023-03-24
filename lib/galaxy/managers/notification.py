@@ -263,7 +263,7 @@ class NotificationManager:
         self, user: User, request: UpdateUserNotificationPreferencesRequest
     ) -> UserNotificationPreferences:
         """Updates the user's notification preferences with the requested changes."""
-        notification_preferences = UserNotificationPreferences.default()
+        notification_preferences = self.get_user_notification_preferences(user)
         notification_preferences.update(request.preferences)
         with self.sa_session.begin():
             user.preferences[NOTIFICATION_PREFERENCES_SECTION_NAME] = notification_preferences.json()
