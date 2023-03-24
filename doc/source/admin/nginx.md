@@ -1,6 +1,8 @@
-```eval_rst
-.. |PROXY| replace:: nginx
-```
+---
+myst:
+    substitutions:
+        PROXY: nginx
+---
 
 # Proxying Galaxy with NGINX
 
@@ -15,20 +17,19 @@ proxy-oriented features.
 
 Instructions for [proxying with Apache](apache.md) are also available.
 
-[nginx]: http://nginx.org/en/
+[nginx]: https://nginx.org/en/
 [main]: https://galaxyproject.org/main/
 [test]: https://galaxyproject.org/test/
 [docker-galaxy]: https://github.com/bgruening/docker-galaxy-stable
 
 ## Prerequisites
 
-```eval_rst
-.. include:: _inc_proxy_prereq.rst
+```{include} _inc_proxy_prereq.md
 ```
 
 ### NGINX Proxy Prerequisities
 
-If you are **not** planning to use the recommended [tus.io method](#receiving-files-via-the-tus-protocol) to handle file uploads but want to use nginx to handle uploads, you will (most likely) not be able to use your package manager's version of nginx. The [Receiving Files With NGINX](#receiving-files-with-nginx) section explains this in detail and provides some options for installing *nginx + upload module* packages maintained by the Galaxy Committers Team.
+If you are **not** planning to use the recommended [tus.io method](#receiving-files-via-the-tus-protocol) to handle file uploads but want to use nginx to handle uploads, you will (most likely) not be able to use your package manager's version of nginx. The [Receiving Files With NGINX](#receiving-files-with-nginx-legacy) section explains this in detail and provides some options for installing *nginx + upload module* packages maintained by the Galaxy Committers Team.
 
 Otherwise, your system package manager's version of nginx should be suitable. Under Debian, the
 [nginx-light][nginx-light] package contains all the necessary modules used in this guide. On EL, the [EPEL][epel]
@@ -39,15 +40,12 @@ version of nginx is suitable.
 
 ## Basic Configuration
 
-```eval_rst
-.. include:: _inc_proxy_ssl.rst
+```{include} _inc_proxy_ssl.md
 ```
 
 ### Serving Galaxy at the Web Server Root
 
-```eval_rst
-.. include:: _inc_proxy_serving_root.rst
-.. _Galaxy Release 21.09 Proxy Documentation: https://docs.galaxyproject.org/en/release_21.09/admin/nginx.html
+```{include} _inc_proxy_serving_root.md
 ```
 
 The following configuration is not exhaustive, only the portions most relevant to serving Galaxy are shown, these should
@@ -225,10 +223,10 @@ previous section:
         # ...
     ```
 
-    ```eval_rst
-    .. note:: Older versions of Galaxy required you to set the ``cookie_path`` option. This is no longer necessary as of
-       Galaxy release 19.05 as it is now set automatically, but the (now undocumented) option still remains and
-       overrides the automatic setting. If you have this option set, unset it unless you know what you're doing.
+    ```{note}
+    Older versions of Galaxy required you to set the ``cookie_path`` option. This is no longer necessary as of
+    Galaxy release 19.05 as it is now set automatically, but the (now undocumented) option still remains and
+    overrides the automatic setting. If you have this option set, unset it unless you know what you're doing.
     ```
 
    Be sure to consult the [Scaling and Load Balancing](scaling.md) documentation.
@@ -365,7 +363,7 @@ but the Galaxy user interface will not use this method of uploading files.
 Galaxy receives files (e.g. dataset uploads) by streaming them in chunks through the proxy server and writing the files
 to disk. However, this again ties up the Galaxy process. nginx can assume this task instead and as an added benefit,
 speed up uploads. This is accomplished through the use of
-[nginx_upload_module](http://www.grid.net.ru/nginx/upload.en.html), a 3rd-party nginx module.
+[nginx_upload_module](https://www.nginx.com/resources/wiki/modules/upload/), a 3rd-party nginx module.
 
 To enable it, you must first download, compile and install nginx with the upload module, since prior to NGINX 1.11.5,
 nginx did not support shared modules, and the upload module is not yet shared-compatible. Because this is a tedious
@@ -433,10 +431,6 @@ galaxy:
     nginx_upload_path: '/_upload'
 ```
 
-```eval_rst
-.. _protect-reports:
-```
-
 ### Creating archives with mod-zip
 
 Galaxy creates zip archives when downloading multiple datasets from a history or a dataset library.
@@ -479,12 +473,13 @@ access arbitrary datasets in `/galaxy_root/database/files/` .
 Note that if you allow linking datasets from filesystem locations in your data libraries,
 these paths need to exposed in the same way.
 
+{#protect-reports}
 ### Use Galaxy Authentication to Protect Custom Paths
 
 You may find it useful to require authentication for access to certain paths on your server.  For example, Galaxy can
 run a separate reports app which gives useful information about your Galaxy instance. See the [Reports Configuration
 documentation](./reports) and [Peter Briggs' blog post on the
-subject](http://galacticengineer.blogspot.com/2015/06/exposing-galaxy-reports-via-nginx-in.html) for more.
+subject](https://galacticengineer.blogspot.com/2015/06/exposing-galaxy-reports-via-nginx-in.html) for more.
 
 After successfully following the blog post, Galaxy reports should be available at e.g. `https://galaxy.example.org/reports`.
 To secure this page to only Galaxy administrators, adjust your nginx config accordingly:

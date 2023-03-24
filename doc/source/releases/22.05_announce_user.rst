@@ -94,6 +94,7 @@ New Visualizations
 ===========================================================
 
 .. visualizations
+
 * Add gulp target for force-rebuild of viz plugins
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 13370`_
@@ -126,6 +127,7 @@ New Datatypes
 ===========================================================
 
 .. datatypes
+
 * Python code formatting standard, automatic
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 11162`_
@@ -206,6 +208,7 @@ Builtin Tool Updates
 ===========================================================
 
 .. tools
+
 * Python code formatting standard, automatic
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 11162`_

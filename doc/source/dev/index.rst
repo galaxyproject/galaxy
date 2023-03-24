@@ -22,5 +22,4 @@ A multi-hour long video playlist covering these slides can be found at
   debugging_tests
   debugging_galaxy
   debugging_galaxy_slurm
-  file_upload
   translating

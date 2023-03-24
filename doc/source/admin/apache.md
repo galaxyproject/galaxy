@@ -1,6 +1,9 @@
-```eval_rst
-.. |PROXY| replace:: Apache
-```
+---
+myst:
+    substitutions:
+        PROXY: Apache
+---
+
 # Proxying Galaxy with Apache
 
 In a production environment, it is recommended to run Galaxy behind a proxy web server for performance and security
@@ -21,8 +24,7 @@ also available.
 
 ## Prerequisites
 
-```eval_rst
-.. include:: _inc_proxy_prereq.rst
+```{include} _inc_proxy_prereq.md
 ```
 
 ### Apache Proxy Prerequisites
@@ -63,15 +65,12 @@ And on EL:
 
 ## Basic configuration
 
-```eval_rst
-.. include:: _inc_proxy_ssl.rst
+```{include} _inc_proxy_ssl.md
 ```
 
 ### Serving Galaxy at the Web Server Root
 
-```eval_rst
-.. include:: _inc_proxy_serving_root.rst
-.. _Galaxy Release 21.09 Proxy Documentation: https://docs.galaxyproject.org/en/release_21.09/admin/apache.html
+```{include} _inc_proxy_serving_root.md
 ```
 
 The following configuration is not exhaustive, only the portions most relevant to serving Galaxy are shown, these should
@@ -226,10 +225,10 @@ previous section:
         # ...
     ```
 
-    ```eval_rst
-    .. note:: Older versions of Galaxy required you to set the ``cookie_path`` option. This is no longer necessary as of
-       Galaxy release 19.05 as it is now set automatically, but the (now undocumented) option still remains and
-       overrides the automatic setting. If you have this option set, unset it unless you know what you're doing.
+    ```{note}
+    Older versions of Galaxy required you to set the ``cookie_path`` option. This is no longer necessary as of
+    Galaxy release 19.05 as it is now set automatically, but the (now undocumented) option still remains and
+    overrides the automatic setting. If you have this option set, unset it unless you know what you're doing.
     ```
 
    Be sure to consult the [Scaling and Load Balancing](scaling.md) documentation.
@@ -315,7 +314,7 @@ datasets. An example config is provided here that allows the UCSC Main/Test back
 ```
 
 **PLEASE NOTE that this introduces a security hole** , the impact of which depends on whether you have restricted access
-to the dataset via Galaxy's [internal dataset permissions](https://galaxyproject.org/learn/security-features/).
+to the dataset via Galaxy's [internal dataset permissions](https://galaxyproject.org/learn/privacy-features/).
 
 - By default, data in Galaxy is public. Normally with a Galaxy server behind authentication in a proxy server this is of
   little concern since only clients who've authenticated can access Galaxy. However, if display site exceptions are made
