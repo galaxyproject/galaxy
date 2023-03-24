@@ -309,6 +309,7 @@ class FastAPIDatasets:
     @router.get(
         "/api/histories/{history_id}/contents/{history_content_id}/metadata_file",
         summary="Returns the metadata file associated with this history item.",
+        name="get_metadata_file",
         tags=["histories"],
         operation_id="history_contents__get_metadata_file",
         response_class=GalaxyFileResponse,
