@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { formatDistanceToNowStrict } from "date-fns";
-import { computed, onMounted, onScopeDispose, reactive, ref, type PropType, type Ref } from "vue";
+import { computed, onMounted, onUnmounted, reactive, ref, type PropType, type Ref } from "vue";
 import { useRouter } from "vue-router/composables";
 import PreferredStorePopover from "./PreferredStorePopover.vue";
 import SelectPreferredStore from "./SelectPreferredStore.vue";
@@ -88,15 +88,17 @@ function updateTime() {
     }
 }
 
-let interval: ReturnType<typeof setInterval>;
+let interval: ReturnType<typeof setInterval> | undefined;
 
 onMounted(() => {
     updateTime();
     interval = setInterval(updateTime, 1000);
 });
 
-onScopeDispose(() => {
-    clearInterval(interval);
+onUnmounted(() => {
+    if (interval) {
+        clearInterval(interval);
+    }
 });
 </script>
 
