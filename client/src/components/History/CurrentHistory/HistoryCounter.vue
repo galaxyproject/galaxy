@@ -22,9 +22,6 @@ interface History {
     preferred_object_store_id: string;
 }
 
-/** @ts-ignore bad library types */
-library.add(faEyeSlash, faMapMarker, faTrash, faSync, faDatabase, faHdd);
-
 const props = defineProps({
     history: { type: Object as PropType<History>, required: true },
     isWatching: { type: Boolean, default: false },
@@ -35,6 +32,9 @@ const emit = defineEmits<{
     (e: "update:filter-text", newFilterText: string): void;
     (e: "reloadContents"): void;
 }>();
+
+// @ts-ignore bad library types
+library.add(faEyeSlash, faMapMarker, faTrash, faSync, faDatabase, faHdd);
 
 const router = useRouter();
 const { config } = useConfig(true);
