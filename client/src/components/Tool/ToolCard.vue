@@ -77,7 +77,7 @@ function onSetError(e) {
     errorText.value = e;
 }
 
-const { currentUser: user } = useCurrentUser(false, true);
+const { currentUser: user } = useCurrentUser(true);
 const hasUser = computed(() => !user.value.isAnonymous);
 const versions = computed(() => props.options.versions);
 const showVersions = computed(() => props.options.versions?.length > 1);

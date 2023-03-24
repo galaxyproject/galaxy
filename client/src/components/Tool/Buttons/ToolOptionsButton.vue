@@ -6,7 +6,7 @@ import Webhooks from "utils/webhooks";
 import ToolSourceMenuItem from "components/Tool/ToolSourceMenuItem";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-const { currentUser: user } = useCurrentUser(false, true);
+const { currentUser: user } = useCurrentUser(true);
 
 const props = defineProps({
     id: {
