@@ -167,25 +167,23 @@ class TestUserNotifications(NotificationManagerBaseTestCase):
     def test_update_user_notification_preferences(self):
         user = self._create_test_user()
         preferences = self.notification_manager.get_user_notification_preferences(user)
-        message_preferences = preferences.__root__.get(PersonalNotificationCategory.message)
+        message_preferences = preferences.get(PersonalNotificationCategory.message)
         assert message_preferences
         assert message_preferences.enabled is True
         assert message_preferences.channels.push is True
 
         update_request = UpdateUserNotificationPreferencesRequest(
-            preferences=UserNotificationPreferences(
-                __root__={
-                    PersonalNotificationCategory.message: NotificationCategorySettings(
-                        enabled=False,
-                        channels=NotificationChannelSettings(push=False),
-                    ),
-                }
-            )
+            preferences={
+                PersonalNotificationCategory.message: NotificationCategorySettings(
+                    enabled=False,
+                    channels=NotificationChannelSettings(push=False),
+                ),
+            }
         )
         updated_preferences = self.notification_manager.update_user_notification_preferences(user, update_request)
 
         updated_preferences = self.notification_manager.get_user_notification_preferences(user)
-        message_preferences = updated_preferences.__root__.get(PersonalNotificationCategory.message)
+        message_preferences = updated_preferences.get(PersonalNotificationCategory.message)
         assert message_preferences
         assert message_preferences.enabled is False
         assert message_preferences.channels.push is False
@@ -237,11 +235,9 @@ class TestUserNotifications(NotificationManagerBaseTestCase):
         user_a = users[0]
         user_b = users[1]
         update_request = UpdateUserNotificationPreferencesRequest(
-            preferences=UserNotificationPreferences(
-                __root__={
-                    PersonalNotificationCategory.message: NotificationCategorySettings(enabled=False),
-                }
-            )
+            preferences={
+                PersonalNotificationCategory.message: NotificationCategorySettings(enabled=False),
+            }
         )
         self.notification_manager.update_user_notification_preferences(user_a, update_request)
         self._send_message_notification_to_users(users)

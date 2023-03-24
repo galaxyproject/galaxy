@@ -243,19 +243,28 @@ class NotificationCategorySettings(Model):
     channels: NotificationChannelSettings = Field(default=NotificationChannelSettings())
 
 
-class UserNotificationPreferences(Model):
-    __root__: Dict[PersonalNotificationCategory, NotificationCategorySettings]
+PersonalNotificationPreferences = Dict[PersonalNotificationCategory, NotificationCategorySettings]
 
-    def update(self, other: "UserNotificationPreferences"):
-        self.__root__.update(other.__root__)
+
+class UserNotificationPreferences(Model):
+    preferences: PersonalNotificationPreferences
+
+    def update(
+        self,
+        other: Union["UserNotificationPreferences", PersonalNotificationPreferences],
+    ):
+        if isinstance(other, UserNotificationPreferences):
+            self.preferences.update(other.preferences)
+        else:
+            self.preferences.update(other)
 
     def get(self, category: PersonalNotificationCategory) -> NotificationCategorySettings:
-        return self.__root__[category]
+        return self.preferences[category]
 
     @classmethod
     def default(cls):
         return cls(
-            __root__={
+            preferences={
                 category: NotificationCategorySettings()
                 for category in PersonalNotificationCategory.__members__.values()
             }
@@ -263,4 +272,4 @@ class UserNotificationPreferences(Model):
 
 
 class UpdateUserNotificationPreferencesRequest(Model):
-    preferences: UserNotificationPreferences
+    preferences: PersonalNotificationPreferences
