@@ -15,8 +15,10 @@ export function useCurrentUser(noFetch: boolean | Ref<boolean> = false, fetchOnc
     const currentUser = computed(() => store.getters["user/currentUser"]);
     const currentFavorites = computed(() => store.getters["user/currentFavorites"]);
     onMounted(() => {
-        if (!unref(noFetch) && !(Object.keys(currentUser).length > 0) && unref(fetchOnce)) {
-            store.dispatch("user/loadUser");
+        if (!unref(noFetch)) {
+            if (!unref(fetchOnce) || !(Object.keys(currentUser).length > 0)) {
+                store.dispatch("user/loadUser");
+            }
         }
     });
     const addFavoriteTool = async (toolId: string) => {
