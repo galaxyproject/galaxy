@@ -89,11 +89,7 @@ const emptyValues = ["__null__", "__undefined__", null, undefined] as const;
  */
 export function isEmpty(value: any | Readonly<any[]>) {
     if (!Array.isArray(value)) {
-        if (emptyValues.includes(value)) {
-            return true;
-        } else {
-            return false;
-        }
+        return emptyValues.includes(value);
     } else {
         if (value.length === 0) {
             return true;
