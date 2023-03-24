@@ -122,7 +122,7 @@ function onToggleActive() {
 
 function onToggleVisible() {
     const actionKey = `HideDatasetAction${props.output.name}`;
-    const step =  { ...ensureDefined(stepStore.getStep(stepId.value)) };
+    const step = { ...ensureDefined(stepStore.getStep(stepId.value)) };
     if (isVisible.value) {
         step.post_job_actions = {
             ...step.post_job_actions,
