@@ -23,7 +23,7 @@ export function deepEach<O extends AnyObject, V extends O[keyof O] extends AnyOb
     callback: (object: V | AnyObject) => void
 ): void {
     Object.values(object).forEach((value) => {
-        if (typeof value === "object") {
+        if (Boolean(value) && typeof value === "object") {
             callback(value);
             deepEach(value, callback);
         }
