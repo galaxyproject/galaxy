@@ -308,6 +308,17 @@ export async function delay(delayInMilliseconds: number) {
     }
 }
 
+/**
+ * Returns a random number in given range
+ *
+ * @param min
+ * @param max
+ * @returns
+ */
+export function randomRange(min: number, max: number) {
+    return Math.random() * (max - min) + min;
+}
+
 export default {
     cssLoadFile: cssLoadFile,
     cssGetAttribute: cssGetAttribute,
