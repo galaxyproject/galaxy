@@ -441,6 +441,7 @@ class JobSearch:
                     )
                     data_conditions.append(
                         and_(
+                            a.job_id == model.Job.id,
                             a.name.in_(k),
                             a.dataset_id == b.id,  # b is the HDA used for the job
                             c.dataset_id == b.dataset_id,
