@@ -50,11 +50,11 @@ class _QIIME2ResultBase(CompressedZipArchive):
         dataset.peek = "\n".join(map(": ".join, self._peek(dataset)))
 
     def display_peek(self, dataset: DatasetProtocol) -> str:
-        def make_row(item):
-            return "<tr><th>%s</th><td>%s</td></td>" % tuple(html.escape(x) for x in item)
+        def make_row(pair):
+            return f"<tr><th>{pair[0]}</th><td>{html.escape(pair[1])}</td></tr>"
 
         table = ['<table cellspacing="0" cellpadding="2">']
-        table += list(map(make_row, self._peek(dataset, simple=True)))
+        table += [make_row(pair) for pair in self._peek(dataset, simple=True)]
         table += ["</table>"]
 
         return "".join(table)
