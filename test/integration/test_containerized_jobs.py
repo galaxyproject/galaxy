@@ -596,6 +596,13 @@ class ContainerResolverTestCases:
        - test consist of 2 calls to the route in order to check if a 2nd round picks
          up a potentially cached container
        - after each call check container_type, used resolver and if container has been cached
+
+    Note, for listing and building the test cases set the container type.
+    This is probably not what is done when listing containers in the admin UI,
+    but a container type is only set via the destination a job is executed on.
+    That is, in reality for listing and building both container types are allowed,
+    which might lead to unwanted outcomes if the container resolver config
+    contains resolvers for both container types (like the default does).
     """
 
     def test_tool_run(self: ResolverTestProtocol, history_id: str) -> None:
@@ -658,7 +665,7 @@ class ContainerResolverTestCases:
             "container_resolvers/toolbox",
             data={
                 "tool_ids": [self.tool_id],
-# TODO                "container_type": self.container_type,
+                "container_type": self.container_type,
             },
             admin=True,
         )
@@ -671,7 +678,7 @@ class ContainerResolverTestCases:
             "container_resolvers/toolbox",
             data={
                 "tool_ids": [self.tool_id],
-# TODO                "container_type": self.container_type,
+                "container_type": self.container_type,
             },
             admin=True,
         )
@@ -694,7 +701,7 @@ class ContainerResolverTestCases:
             "container_resolvers/toolbox/install",
             data={
                 "tool_ids": json.dumps([self.tool_id]),
-# TODO                "container_type": self.container_type,
+                "container_type": self.container_type,
                 "include_containers": True,
             },
             admin=True,
@@ -709,7 +716,7 @@ class ContainerResolverTestCases:
             "container_resolvers/toolbox/install",
             data={
                 "tool_ids": json.dumps([self.tool_id]),
-# TODO                "container_type": self.container_type,
+                "container_type": self.container_type,
                 "include_containers": True,
             },
             admin=True,
