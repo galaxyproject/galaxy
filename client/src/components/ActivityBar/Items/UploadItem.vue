@@ -1,44 +1,33 @@
 <template>
-    <b-nav-item
+    <ActivityItem
         id="tool-panel-upload-button"
-        :aria-label="title | localize"
-        :title="title | localize"
+        title="Upload"
+        icon="upload"
         class="upload-button"
+        :tooltip="tooltip"
         @click="showUploadDialog">
-        <div class="progress px-1">
-            <div
-                class="progress-bar progress-bar-notransition rounded"
-                :class="`progress-bar-${status}`"
-                :style="{
-                    width: `${percentage}%`,
-                }" />
-        </div>
-        <span class="position-relative">
-            <div class="nav-icon">
-                <Icon icon="upload" />
+        <template>
+            <div class="progress">
+                <div
+                    class="progress-bar progress-bar-notransition"
+                    :class="`progress-bar-${status}`"
+                    :style="{
+                        width: `${percentage}%`,
+                    }" />
             </div>
-            <div class="nav-title" v-localize>Upload</div>
-        </span>
-    </b-nav-item>
+        </template>
+    </ActivityItem>
 </template>
 
 <script>
 import Query from "utils/query-string-parsing";
-import { VBTooltip } from "bootstrap-vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faUpload } from "@fortawesome/free-solid-svg-icons";
 import { useGlobalUploadModal } from "composables/globalUploadModal";
-
-library.add(faUpload);
+import ActivityItem from "components/ActivityBar/ActivityItem";
 
 export default {
-    components: { FontAwesomeIcon },
-    directives: {
-        "v-b-tooltip": VBTooltip,
-    },
+    components: { ActivityItem },
     props: {
-        title: { type: String, default: "Download from URL or upload files from disk" },
+        tooltip: { type: String, default: "Download from URL or upload files from disk" },
     },
     setup() {
         const { openGlobalUploadModal } = useGlobalUploadModal();

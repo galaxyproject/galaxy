@@ -23,15 +23,18 @@ const emit = defineEmits<{
 <template>
     <b-nav-item
         :id="id"
-        :class="{ 'nav-item-active': isActive }"
+        :class="{ 'mb-1': true, 'nav-item-active': isActive }"
         :aria-label="title | l"
         :title="tooltip | l"
         @click="emit('click')">
         <template>
-            <div class="nav-icon">
-                <Icon :icon="icon" />
-            </div>
-            <div class="nav-title">{{ title }}</div>
+            <slot />
+            <span class="position-relative">
+                <div class="nav-icon">
+                    <Icon :icon="icon" />
+                </div>
+                <div class="nav-title">{{ title }}</div>
+            </span>
         </template>
     </b-nav-item>
 </template>

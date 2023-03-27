@@ -9,9 +9,8 @@
 
 .upload-button {
     @extend .w-100;
-    @extend .mb-2;
     @extend .position-relative;
-    border-radius: $border-radius;
+    border-radius: $border-radius-extralarge;
     cursor: pointer;
     .progress {
         @extend .position-absolute;
@@ -20,6 +19,9 @@
         top: 0;
         left: 0;
         background-color: transparent;
+        .progress-bar {
+            border-radius: $border-radius-extralarge;
+        }
         .progress-bar-danger {
             background: $state-danger-bg;
         }
