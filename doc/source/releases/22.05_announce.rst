@@ -28,6 +28,7 @@ Highlights
   The new migrations system is built on top of Alembic. The SQLAlchemy Migrate tool has been retired. 
   For usage, see `Galaxy's migrations documentation <https://github.com/galaxyproject/galaxy/blob/release_22.05/lib/galaxy/model/migrations/README.md>`__.
   For an architectural overview, see `pull request #13108 <https://github.com/galaxyproject/galaxy/pull/13108>`__.
+
 Also check out the `22.05 user release notes <22.05_announce_user.html>`__
 
 Get Galaxy

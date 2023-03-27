@@ -2,20 +2,20 @@
 
 The [basic installation instructions](https://getgalaxy.org) are suitable for development by a single user, but when setting up Galaxy for a multi-user production environment, there are some additional steps that should be taken for the best performance.
 
-### Why bother?
+## Why bother?
 
 By default, Galaxy:
 
 * Uses [SQLite](https://www.sqlite.org/) (a serverless database), so you don't have to run/configure a database server for quick or basic development.  However, while SQLite [supports concurrent access](https://sqlite.org/lockingv3.html) it does not support multiple concurrent writes, which can reduce system throughput.
 * Uses a built-in HTTP server, written in Python.  Much of the work performed by this server can be moved to [nginx](nginx.md) or [Apache](apache.md), which will increase performance.
 * Runs all tools locally.  Moving to a [cluster](cluster.md) will greatly increase capacity.
-* Runs in a single process, which is a performance problem in [CPython](http://en.wikipedia.org/wiki/CPython).
+* Runs in a single process, which is a performance problem in [CPython](https://en.wikipedia.org/wiki/CPython).
 
 Galaxy ships with this default configuration to ensure the simplest, most error-proof configuration possible when doing basic development.  As you'll soon see, the goal is to remove as much work as possible from the Galaxy process, since doing so will greatly speed up the performance of its remaining duties.  This is due to the Python Global Interpreter Lock (GIL), which is explained in detail in the [Advanced Configuration](#advanced-configuration) section.
 
-### Groundwork for scalability
+## Groundwork for scalability
 
-#### Use a clean environment
+### Use a clean environment
 
 Many of the following instructions are best practices for any production application.
 
@@ -37,7 +37,7 @@ nate@weyerbacher% sh run.sh
 
 ## Basic configuration
 
-The steps to install Galaxy mostly follow those of the [regular instructions](http://getgalaxy.org).  The difference is that after performing the groundwork above, you should initialize the configuration file (`cp config/galaxy.yml.sample config/galaxy.yml`) and modify it as outlined below before starting the server. If you make any changes to this configuration file while the server is running, you will have to restart the server for the changes to take effect.
+The steps to install Galaxy mostly follow those of the [regular instructions](https://getgalaxy.org).  The difference is that after performing the groundwork above, you should initialize the configuration file (`cp config/galaxy.yml.sample config/galaxy.yml`) and modify it as outlined below before starting the server. If you make any changes to this configuration file while the server is running, you will have to restart the server for the changes to take effect.
 
 ### Disable the developer settings
 
@@ -50,7 +50,7 @@ During deployment, you may run into problems with failed jobs.  By default, Gala
 
 ### Switching to PostgreSQL database server
 
-The most important recommendation is to switch to an actual database server.  By default, Galaxy will use [SQLite](http://www.sqlite.org/), which is a serverless simple file database engine.  Since it's serverless, all of the database processing occurs in the Galaxy process itself.  This has two downsides: it occupies the aforementioned GIL (meaning that the process is not free to do other tasks), and it is not nearly as efficient as a dedicated database server.  There are other drawbacks, too.  When load increases with multiple users, the risk of transactional locks also increases.  Locks will cause (among other things) timeouts and job errors.  If you start with SQLite and then later realize a need for a database server, you'll need to migrate your database or start over.  Galaxy does not provide an internal method to migrate data from SQLite, and although free conversion tools are available on the web, this process is non-trivial.
+The most important recommendation is to switch to an actual database server.  By default, Galaxy will use [SQLite](https://www.sqlite.org/), which is a serverless simple file database engine.  Since it's serverless, all of the database processing occurs in the Galaxy process itself.  This has two downsides: it occupies the aforementioned GIL (meaning that the process is not free to do other tasks), and it is not nearly as efficient as a dedicated database server.  There are other drawbacks, too.  When load increases with multiple users, the risk of transactional locks also increases.  Locks will cause (among other things) timeouts and job errors.  If you start with SQLite and then later realize a need for a database server, you'll need to migrate your database or start over.  Galaxy does not provide an internal method to migrate data from SQLite, and although free conversion tools are available on the web, this process is non-trivial.
 
 For this reason, Galaxy also supports PostgreSQL through our DB abstraction layer, [SQLAlchemy](https://www.sqlalchemy.org/).
 
@@ -92,11 +92,11 @@ mysql:///mydatabase?unix_socket=/var/run/mysqld/mysqld.sock
 
 Some tips when using MySQL:
 
-* If you encounter the "MySQL server has gone away" error, please note the `database_engine_option_pool_recycle` option in `config/galaxy.yml`. If this does not solve your problem, see [this post](http://gmod.827538.n3.nabble.com/template/NamlServlet.jtp?macro=print_post&node=2354941) on the Galaxy Development [mailing list](https://galaxyproject.org/mailing-lists/).
+* If you encounter the "MySQL server has gone away" error, please note the `database_engine_option_pool_recycle` option in `config/galaxy.yml`. If this does not solve your problem, see [this post](https://lists.galaxyproject.org/archives/list/galaxy-dev@lists.galaxyproject.org/message/FL2TMUL2HDMQYZEY2VKVIVATQF6GXZ5X/) on the Galaxy Development [mailing list](https://galaxyproject.org/mailing-lists/).
 
 * Please make sure the database output is in UTF-8, otherwise you may encounter Python TypeErrors.
 
-* If you are using [MySQL](https://dev.mysql.com/) with [MyISAM](https://dev.mysql.com/doc/refman/8.0/en/myisam-storage-engine.html) table engine, when Galaxy is in multiprocess configuration, workflow steps will [get executed out of order](http://dev.list.galaxyproject.org/Job-execution-order-mixed-up-tt4662488.html) and fail. Use [InnoDB](https://dev.mysql.com/doc/refman/8.0/en/innodb-storage-engine.html) engine instead or switch to [PostgreSQL](https://www.postgresql.org/).
+* If you are using [MySQL](https://dev.mysql.com/) with [MyISAM](https://dev.mysql.com/doc/refman/8.0/en/myisam-storage-engine.html) table engine, when Galaxy is in multiprocess configuration, workflow steps will [get executed out of order](https://lists.galaxyproject.org/archives/list/galaxy-dev@lists.galaxyproject.org/thread/4MV7YVL43NGNFOXGZ2MBESOPEIRHMAOD/#MK7ODDFJGZWS6W2F7NGOUY6AGT7DJDXT) and fail. Use [InnoDB](https://dev.mysql.com/doc/refman/8.0/en/innodb-storage-engine.html) engine instead or switch to [PostgreSQL](https://www.postgresql.org/).
 
 ### Using a proxy server
 
