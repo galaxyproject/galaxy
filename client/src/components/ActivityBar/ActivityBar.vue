@@ -30,7 +30,7 @@ function onToggleSidebar(toggle) {
 </script>
 <template>
     <div class="d-flex">
-        <b-nav vertical class="acitivity-bar flex-nowrap p-1">
+        <b-nav vertical class="activity-bar flex-nowrap p-1">
             <ActivityItem
                 id="tools"
                 icon="wrench"
@@ -66,18 +66,9 @@ function onToggleSidebar(toggle) {
             <upload-item />
             <upload-item />
         </b-nav>
-        <div class="acitivity-bar" style="background: red; position: absolute; left: 0; bottom: 0px">
-            <b-nav vertical class="bottom-bar flex-nowrap p-1 m-1">
-                <b-nav-item>
-                    <template>
-                        <span class="nav-icon fa fa-gear" />
-                    </template>
-                </b-nav-item>
-                <b-nav-item>
-                    <template>
-                        <span class="nav-icon fa fa-caret-down" />
-                    </template>
-                </b-nav-item>
+        <div class="activity-footer">
+            <b-nav vertical class="flex-nowrap p-1 m-1">
+                <ActivityItem id="settings" icon="cog" title="Configure" tooltip="Search and run tools" />
             </b-nav>
         </div>
         <div v-show="sidebarIsActive('search')" key="search">
@@ -93,14 +84,21 @@ function onToggleSidebar(toggle) {
     width: 15rem;
 }
 
-.acitivity-bar {
+.activity-bar {
     background: $panel-bg-color;
     overflow-y: auto;
     width: 4rem;
 }
 
-.acitivity-bar::-webkit-scrollbar {
+.activity-bar::-webkit-scrollbar {
     display: none;
+}
+
+.activity-footer {
+    @extend .activity-bar;
+    position: absolute;
+    left: 0;
+    bottom: 0px;
 }
 
 .panels-enter-active,
