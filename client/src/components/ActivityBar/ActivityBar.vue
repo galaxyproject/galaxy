@@ -4,7 +4,7 @@ import { useUserStore } from "@/stores/userStore";
 import { WindowManager } from "@/layout/window-manager";
 import { useRoute, useRouter } from "vue-router/composables";
 import { computed, ref } from "vue";
-import UploadButton from "./Items/UploadButton.vue";
+import UploadItem from "./Items/UploadItem.vue";
 import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
 import ActivityItem from "./ActivityItem";
 
@@ -38,33 +38,33 @@ function onToggleSidebar(toggle) {
                 :is-active="sidebarIsActive('search')"
                 @click="onToggleSidebar('search')"
             />
-            <upload-button />
-            <upload-button />
-            <upload-button />
-            <upload-button />
-            <upload-button />
-            <upload-button />
-            <upload-button />
-            <upload-button />
-            <upload-button />
-            <upload-button />
-            <upload-button />
-            <upload-button />
-            <upload-button />
-            <upload-button />
-            <upload-button />
-            <upload-button />
-            <upload-button />
-            <upload-button />
-            <upload-button />
-            <upload-button />
-            <upload-button />
-            <upload-button />
-            <upload-button />
-            <upload-button />
-            <upload-button />
-            <upload-button />
-            <upload-button />
+            <upload-item />
+            <upload-item />
+            <upload-item />
+            <upload-item />
+            <upload-item />
+            <upload-item />
+            <upload-item />
+            <upload-item />
+            <upload-item />
+            <upload-item />
+            <upload-item />
+            <upload-item />
+            <upload-item />
+            <upload-item />
+            <upload-item />
+            <upload-item />
+            <upload-item />
+            <upload-item />
+            <upload-item />
+            <upload-item />
+            <upload-item />
+            <upload-item />
+            <upload-item />
+            <upload-item />
+            <upload-item />
+            <upload-item />
+            <upload-item />
         </b-nav>
         <div style="width: 3.3rem; background: red; position: absolute; left: 0; bottom: 0px;">
             <b-nav vertical class="bottom-bar flex-nowrap p-1 m-1">
@@ -104,19 +104,6 @@ function onToggleSidebar(toggle) {
 
 .side-bar::-webkit-scrollbar {
     display: none;
-}
-
-.nav-item-active {
-    border-radius: 0.5rem;
-    background: $gray-300;
-}
-
-.nav-icon {
-    height: 2rem;
-    display: flex;
-    align-items: center;
-    align-content: center;
-    justify-content: center;
 }
 
 .panels-enter-active,

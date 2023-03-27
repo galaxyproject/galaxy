@@ -25,10 +25,11 @@ const emit = defineEmits<{
     <b-nav-item
         :id="id"
         :class="{ 'nav-item-active': isActive }"
+        :aria-label="title | l"
         :title="tooltip | l"
         @click="emit('click')">
         <template>
-            <div class="nav-icon m-0 p-0">
+            <div class="nav-icon">
                 <Icon :icon="icon" />
             </div>
             <div class="nav-title">{{ title }}</div>
@@ -54,5 +55,9 @@ const emit = defineEmits<{
 
 .nav-title {
     font-size: 0.7rem;
+    display:flex;
+    align-items: center;
+    align-content: center;
+    justify-content: center;
 }
 </style>
