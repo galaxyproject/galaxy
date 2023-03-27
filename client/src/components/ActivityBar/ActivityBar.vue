@@ -35,6 +35,7 @@ function onToggleSidebar(toggle) {
                 id="tools"
                 icon="wrench"
                 title="Tools"
+                tooltip="Search and run tools"
                 :is-active="sidebarIsActive('search')"
                 @click="onToggleSidebar('search')" />
             <upload-item />

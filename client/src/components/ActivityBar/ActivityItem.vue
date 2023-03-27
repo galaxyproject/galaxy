@@ -61,6 +61,9 @@ const emit = defineEmits<{
 
 .nav-title {
     @extend .nav-item;
+    margin-top: 0.7rem;
+    margin-bottom: 0.3rem;
+    line-height: 0rem;
     font-size: 0.7rem;
 }
 </style>
