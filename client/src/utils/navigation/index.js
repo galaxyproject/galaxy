@@ -76,7 +76,7 @@ function componentFromObject(name, object) {
             Object.keys(value).forEach((selectorKey) => {
                 const selectorValue = value[selectorKey];
                 if (selectorValue == undefined) {
-                    throw `Problem with selectors value ${selectorValue}`;
+                    throw Error(`Problem with selectors value ${selectorValue}`);
                 }
                 selectors[selectorKey] = selectorTemplateFromObject(selectorValue);
             });
@@ -116,7 +116,7 @@ class Component {
         if (hasOwnProperty("_")) {
             return this["_"];
         } else {
-            throw `No _ selector for [${this}]`;
+            throw Error(`No _ selector for [${this}]`);
         }
     }
 }

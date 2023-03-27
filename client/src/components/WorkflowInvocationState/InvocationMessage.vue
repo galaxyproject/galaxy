@@ -93,7 +93,7 @@ const stepDescription = computed(() => {
     } else if (messageLevel === "error") {
         return "This step failed the invocation";
     } else {
-        throw "Unknown message level";
+        throw Error("Unknown message level");
     }
 });
 

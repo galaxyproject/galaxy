@@ -12,5 +12,5 @@ export function errorMessageAsString(e: any, defaultMessage = "Request failed.")
 
 export function rethrowSimple(e: any): never {
     console.debug(e);
-    throw errorMessageAsString(e);
+    throw Error(errorMessageAsString(e));
 }

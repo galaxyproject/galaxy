@@ -29,7 +29,7 @@ function propsForStep(step: Step) {
 function stepForLabel(label: string, steps: Steps) {
     const step = Object.values(steps).find((step) => step.label === label);
     if (!step) {
-        throw "step not found for test";
+        throw Error("step not found for test");
     }
     return step;
 }
