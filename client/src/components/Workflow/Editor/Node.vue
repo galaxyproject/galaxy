@@ -49,7 +49,13 @@
                     triggers="hover"
                     placement="bottom"
                     :show.sync="popoverShow">
-                    <Recommendations :step-id="id" :datatypes-mapper="datatypesMapper" @onCreate="onCreate" />
+                    <div>
+                        <Recommendations
+                            v-if="popoverShow"
+                            :step-id="id"
+                            :datatypes-mapper="datatypesMapper"
+                            @onCreate="onCreate" />
+                    </div>
                 </b-popover>
             </b-button-group>
             <i :class="iconClass" />
