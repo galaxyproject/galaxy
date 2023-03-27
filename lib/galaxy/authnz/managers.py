@@ -327,12 +327,13 @@ class AuthnzManager:
             log.error(msg)
             return False
 
-    def refresh_expiring_oidc_tokens(self, trans):
-        if not isinstance(trans.user, model.User):
+    def refresh_expiring_oidc_tokens(self, trans, user=None):
+        user = trans.user or user
+        if not isinstance(user, model.User):
             return
-        for auth in trans.user.custos_auth or []:
+        for auth in user.custos_auth or []:
             self.refresh_expiring_oidc_tokens_for_provider(trans, auth)
-        for auth in trans.user.social_auth or []:
+        for auth in user.social_auth or []:
             self.refresh_expiring_oidc_tokens_for_provider(trans, auth)
 
     def authenticate(self, provider, trans, idphint=None):
