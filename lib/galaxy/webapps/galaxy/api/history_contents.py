@@ -271,7 +271,6 @@ DryRunQueryParam = Query(
 
 
 def get_legacy_index_query_params(
-
     ids: Optional[str] = LegacyIdsQueryParam,
     types: Optional[List[str]] = LegacyTypesQueryParam,
     details: Optional[str] = LegacyDetailsQueryParam,
