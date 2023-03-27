@@ -74,6 +74,36 @@ DatasetSourceQueryParam: DatasetSourceType = Query(
     description="Whether this dataset belongs to a history (HDA) or a library (LDDA).",
 )
 
+PreviewQueryParam = Query(
+    default=False,
+    description=(
+        "Whether to get preview contents to be directly displayed on the web. "
+        "If preview is False (default) the contents will be downloaded instead."
+    ),
+)
+
+FilenameQueryParam = Query(
+    default=None,
+    description="If non-null, get the specified filename from the extra files for this dataset.",
+)
+
+ToExtQueryParam = Query(
+    default=None,
+    description=(
+        "The file extension when downloading the display data. Use the value `data` to "
+        "let the server infer it from the data type."
+    ),
+)
+
+RawQueryParam = Query(
+    default=False,
+    description=(
+        "The query parameter 'raw' should be considered experimental and may be dropped at "
+        "some point in the future without warning. Generally, data should be processed by its "
+        "datatype prior to display."
+    ),
+)
+
 
 @router.cbv
 class FastAPIDatasets:
@@ -200,64 +230,66 @@ class FastAPIDatasets:
         return self.service.extra_files(trans, history_content_id)
 
     @router.get(
-        "/api/datasets/{history_content_id}/display",
+        "/api/histories/{history_id}/contents/{history_content_id}/display",
+        name="history_contents_display",
         summary="Displays (preview) or downloads dataset content.",
+        tags=["histories"],
         response_class=StreamingResponse,
     )
+    @router.head(
+        "/api/histories/{history_id}/contents/{history_content_id}/display",
+        name="history_contents_display",
+        summary="Check if dataset content can be previewed or downloaded.",
+        tags=["histories"],
+    )
+    def display_history_content(
+        self,
+        request: Request,
+        trans=DependsOnTrans,
+        history_id: Optional[DecodedDatabaseIdField] = Path(
+            description="The encoded database identifier of the History.",
+        ),
+        history_content_id: DecodedDatabaseIdField = DatasetIDPathParam,
+        preview: bool = PreviewQueryParam,
+        filename: Optional[str] = FilenameQueryParam,
+        to_ext: Optional[str] = ToExtQueryParam,
+        raw: bool = RawQueryParam,
+    ):
+        """Streams the dataset for download or the contents preview to be displayed in a browser."""
+        return self._display(request, trans, history_content_id, preview, filename, to_ext, raw)
+
     @router.get(
-        "/api/histories/{history_id}/contents/{history_content_id}/display",
-        name="history_contents_display",
+        "/api/datasets/{history_content_id}/display",
         summary="Displays (preview) or downloads dataset content.",
-        tags=["histories"],
         response_class=StreamingResponse,
     )
     @router.head(
         "/api/datasets/{history_content_id}/display",
         summary="Check if dataset content can be previewed or downloaded.",
-    )
-    @router.head(
-        "/api/histories/{history_id}/contents/{history_content_id}/display",
-        name="history_contents_display",
-        summary="Check if dataset content can be previewed or downloaded.",
-        tags=["histories"],
     )
     def display(
         self,
         request: Request,
         trans=DependsOnTrans,
-        history_id: Optional[DecodedDatabaseIdField] = Query(
-            default=None,
-            description="The encoded database identifier of the History.",
-        ),
         history_content_id: DecodedDatabaseIdField = DatasetIDPathParam,
-        preview: bool = Query(
-            default=False,
-            description=(
-                "Whether to get preview contents to be directly displayed on the web. "
-                "If preview is False (default) the contents will be downloaded instead."
-            ),
-        ),
-        filename: Optional[str] = Query(
-            default=None,
-            description="TODO",
-        ),
-        to_ext: Optional[str] = Query(
-            default=None,
-            description=(
-                "The file extension when downloading the display data. Use the value `data` to "
-                "let the server infer it from the data type."
-            ),
-        ),
-        raw: bool = Query(
-            default=False,
-            description=(
-                "The query parameter 'raw' should be considered experimental and may be dropped at "
-                "some point in the future without warning. Generally, data should be processed by its "
-                "datatype prior to display."
-            ),
-        ),
+        preview: bool = PreviewQueryParam,
+        filename: Optional[str] = FilenameQueryParam,
+        to_ext: Optional[str] = ToExtQueryParam,
+        raw: bool = RawQueryParam,
     ):
         """Streams the dataset for download or the contents preview to be displayed in a browser."""
+        return self._display(request, trans, history_content_id, preview, filename, to_ext, raw)
+
+    def _display(
+        self,
+        request: Request,
+        trans,
+        history_content_id: DecodedDatabaseIdField,
+        preview: bool,
+        filename: Optional[str],
+        to_ext: Optional[str],
+        raw: bool,
+    ):
         extra_params = get_query_parameters_from_request_excluding(
             request, {"preview", "filename", "to_ext", "raw", "dataset"}
         )
@@ -277,19 +309,15 @@ class FastAPIDatasets:
     @router.get(
         "/api/histories/{history_id}/contents/{history_content_id}/metadata_file",
         summary="Returns the metadata file associated with this history item.",
+        name="get_metadata_file",
         tags=["histories"],
+        operation_id="history_contents__get_metadata_file",
         response_class=GalaxyFileResponse,
     )
-    @router.get(
-        "/api/datasets/{history_content_id}/metadata_file",
-        summary="Returns the metadata file associated with this history item.",
-        response_class=GalaxyFileResponse,
-    )
-    def get_metadata_file(
+    def get_metadata_file_history_content(
         self,
         trans=DependsOnTrans,
-        history_id: Optional[DecodedDatabaseIdField] = Query(
-            default=None,
+        history_id: DecodedDatabaseIdField = Path(
             description="The encoded database identifier of the History.",
         ),
         history_content_id: DecodedDatabaseIdField = DatasetIDPathParam,
@@ -298,6 +326,31 @@ class FastAPIDatasets:
             description="The name of the metadata file to retrieve.",
         ),
     ):
+        return self._get_metadata_file(trans, history_content_id, metadata_file)
+
+    @router.get(
+        "/api/datasets/{history_content_id}/metadata_file",
+        summary="Returns the metadata file associated with this history item.",
+        response_class=GalaxyFileResponse,
+        operation_id="datasets__get_metadata_file",
+    )
+    def get_metadata_file_datasets(
+        self,
+        trans=DependsOnTrans,
+        history_content_id: DecodedDatabaseIdField = DatasetIDPathParam,
+        metadata_file: str = Query(
+            ...,
+            description="The name of the metadata file to retrieve.",
+        ),
+    ):
+        return self._get_metadata_file(trans, history_content_id, metadata_file)
+
+    def _get_metadata_file(
+        self,
+        trans,
+        history_content_id: DecodedDatabaseIdField,
+        metadata_file: str,
+    ) -> GalaxyFileResponse:
         metadata_file_path, headers = self.service.get_metadata_file(trans, history_content_id, metadata_file)
         return GalaxyFileResponse(path=cast(str, metadata_file_path), headers=headers)
 
