@@ -31,6 +31,7 @@ from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
 from galaxy.managers.markdown_util import generate_branded_pdf
 from galaxy.managers.model_stores import ModelStoreManager
+from galaxy.managers.notification import NotificationManager
 from galaxy.managers.tool_data import ToolDataImportManager
 from galaxy.metadata.set_metadata import set_metadata_portable
 from galaxy.model.base import transaction
@@ -416,3 +417,12 @@ def cleanup_short_term_storage(storage_monitor: ShortTermStorageMonitor):
 @galaxy_task(action="prune object store cache directories")
 def clean_object_store_caches(object_store: BaseObjectStore):
     check_caches(object_store.cache_targets())
+
+
+@galaxy_task(action="clean up expired notifications")
+def cleanup_expired_notifications(notification_manager: NotificationManager):
+    """Cleanup expired notifications."""
+    result = notification_manager.cleanup_expired_notifications()
+    log.info(
+        f"Successfully deleted {result.deleted_notifications_count} notifications and {result.deleted_associations_count} associations."
+    )

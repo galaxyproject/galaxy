@@ -2747,3 +2747,8 @@ galaxy:
   # to name a few examples.
   #enable_notification_system: false
 
+  # The interval in seconds between attempts to delete all expired
+  # notifications from the database (every 24 hours by default). Runs in
+  # a Celery task.
+  #expired_notifications_cleanup_interval: 86400
+
