@@ -204,15 +204,14 @@ def administrative_delete_datasets(
     # We really only need the id column here, but sqlalchemy barfs when
     # trying to select only 1 column
     hda_ids_query = sa.select(
-        (app.model.HistoryDatasetAssociation.__table__.c.id,
-         app.model.HistoryDatasetAssociation.__table__.c.deleted),
+        (app.model.HistoryDatasetAssociation.__table__.c.id, app.model.HistoryDatasetAssociation.__table__.c.deleted),
         whereclause=and_(
             app.model.Dataset.__table__.c.deleted == false(),
             app.model.HistoryDatasetAssociation.__table__.c.update_time < cutoff_time,
-            app.model.HistoryDatasetAssociation.__table__.c.deleted == false()),
-        from_obj=[sa.outerjoin(
-                  app.model.Dataset.__table__,
-                  app.model.HistoryDatasetAssociation.__table__)])
+            app.model.HistoryDatasetAssociation.__table__.c.deleted == false(),
+        ),
+        from_obj=[sa.outerjoin(app.model.Dataset.__table__, app.model.HistoryDatasetAssociation.__table__)],
+    )
 
     # Add all datasets associated with Histories to our list
     hda_ids = []
@@ -233,19 +232,22 @@ def administrative_delete_datasets(
     # Process each of the Dataset objects
     for hda_id in hda_ids:
         user_query = sa.select(
-            [app.model.HistoryDatasetAssociation.__table__,
-             app.model.History.__table__,
-             app.model.User.__table__],
-            whereclause=and_(
-                app.model.HistoryDatasetAssociation.__table__.c.id == hda_id),
-            from_obj=[sa.join(app.model.User.__table__,
-                              app.model.History.__table__)
-                      .join(app.model.HistoryDatasetAssociation.__table__)],
-            use_labels=True)
+            [app.model.HistoryDatasetAssociation.__table__, app.model.History.__table__, app.model.User.__table__],
+            whereclause=and_(app.model.HistoryDatasetAssociation.__table__.c.id == hda_id),
+            from_obj=[
+                sa.join(app.model.User.__table__, app.model.History.__table__).join(
+                    app.model.HistoryDatasetAssociation.__table__
+                )
+            ],
+            use_labels=True,
+        )
         for result in app.sa_session.execute(user_query):
             user_notifications[result[app.model.User.__table__.c.email]].append(
-                (result[app.model.HistoryDatasetAssociation.__table__.c.name],
-                 result[app.model.History.__table__.c.name]))
+                (
+                    result[app.model.HistoryDatasetAssociation.__table__.c.name],
+                    result[app.model.History.__table__.c.name],
+                )
+            )
             deleted_instance_count += 1
             if not info_only and not email_only:
                 # Get the HistoryDatasetAssociation objects
@@ -282,10 +284,12 @@ def _get_tool_id_for_hda(app, hda_id):
     # TODO Some datasets don't seem to have an entry in jtod or a copied_from
     if hda_id is None:
         return None
-    job = app.sa_session.query(app.model.Job).\
-        join(app.model.JobToOutputDatasetAssociation).\
-        filter(app.model.JobToOutputDatasetAssociation.__table__.c.dataset_id
-               == hda_id).first()
+    job = (
+        app.sa_session.query(app.model.Job)
+        .join(app.model.JobToOutputDatasetAssociation)
+        .filter(app.model.JobToOutputDatasetAssociation.__table__.c.dataset_id == hda_id)
+        .first()
+    )
     if job is not None:
         return job.tool_id
     else:
