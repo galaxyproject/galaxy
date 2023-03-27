@@ -27,6 +27,19 @@ def notification_test_data(subject: Optional[str] = None, message: Optional[str]
     }
 
 
+def notification_broadcast_test_data(subject: Optional[str] = None, message: Optional[str] = None):
+    return {
+        "source": "integration_tests",
+        "variant": "info",
+        "category": "broadcast",
+        "content": {
+            "category": "broadcast",
+            "subject": subject or "Testing Broadcast Subject",
+            "message": message or "Testing Broadcast Message",
+        },
+    }
+
+
 class TestNotificationsIntegration(IntegrationTestCase):
     task_based = False
     framework_tool_and_types = False
@@ -147,17 +160,80 @@ class TestNotificationsIntegration(IntegrationTestCase):
             self._assert_status_code_is_ok(response)
 
     def test_non_admin_users_cannot_create_notifications(self):
-        user = self._create_test_user()
-        request = {
-            "recipients": {"user_ids": [user["id"]]},
+        recipient_user = self._create_test_user()
+        notification_request = {
+            "recipients": {"user_ids": [recipient_user["id"]]},
             "notification": notification_test_data(),
         }
-        response = self._post("notifications", data=request, json=True)
+        response = self._post("notifications", data=notification_request, json=True)
+        self._assert_status_code_is(response, 403)
+
+        broadcast_notification_data = notification_broadcast_test_data()
+
+        response = self._post("notifications/broadcast", data=broadcast_notification_data, json=True)
         self._assert_status_code_is(response, 403)
 
         with self._different_user(anon=True):
-            response = self._post("notifications", data=request, json=True)
+            response = self._post("notifications", data=notification_request, json=True)
             self._assert_status_code_is(response, 403)
+
+            response = self._post("notifications/broadcast", data=broadcast_notification_data, json=True)
+            self._assert_status_code_is(response, 403)
+
+    def test_update_notifications(self):
+        recipient_user = self._create_test_user()
+        created_user_notification_response = self._send_test_notification_to(
+            [recipient_user["id"]], subject="User Notification to update"
+        )
+        assert created_user_notification_response["total_notifications_sent"] == 1
+        user_notification_id = created_user_notification_response["notification"]["id"]
+
+        created_broadcast_notification_response = self._send_broadcast_notification(
+            subject="Broadcasted Notification to update"
+        )
+        assert created_broadcast_notification_response["total_notifications_sent"] == 1
+        broadcasted_notification_id = created_broadcast_notification_response["notification"]["id"]
+
+        update_core_value_payload = {"source": "updated_source"}  # Core values are part of the notification itself
+        update_user_value_payload = {"seen": True}  # User values are from the association (seen, favorite, etc.)
+
+        # Regular users cannot update core notification values
+        update_response = self._put(f"notifications/{user_notification_id}", data=update_core_value_payload, json=True)
+        self._assert_status_code_is(update_response, 400)
+
+        update_response = self._put(
+            f"notifications/broadcast/{broadcasted_notification_id}", data=update_core_value_payload, json=True
+        )
+        self._assert_status_code_is(update_response, 403)
+
+        # Regular users cannot update associated values from other users (they don't exists for them)
+        update_response = self._put(f"notifications/{user_notification_id}", data=update_user_value_payload, json=True)
+        self._assert_status_code_is(update_response, 404)
+
+        # Recipient users can only update their associated values
+        with self._different_user(recipient_user["email"]):
+            update_response = self._put(
+                f"notifications/{user_notification_id}", data=update_core_value_payload, json=True
+            )
+            self._assert_status_code_is(update_response, 400)
+
+            update_response = self._put(
+                f"notifications/{user_notification_id}", data=update_user_value_payload, json=True
+            )
+            self._assert_status_code_is_ok(update_response)
+            updated_response = self._get(f"notifications/{user_notification_id}").json()
+            assert updated_response["seen_time"] is not None
+
+        # Admin users can update core values of broadcasted notifications
+        update_response = self._put(
+            f"notifications/broadcast/{broadcasted_notification_id}",
+            data=update_core_value_payload,
+            json=True,
+            admin=True,
+        )
+        self._assert_status_code_is_ok(update_response)
+        updated_response = self._get(f"notifications/broadcast/{broadcasted_notification_id}").json()
+        assert updated_response["source"] == "updated_source"
 
     def test_sharing_items_creates_notifications_when_expected(self):
         user1 = self._create_test_user()
@@ -235,16 +311,7 @@ class TestNotificationsIntegration(IntegrationTestCase):
         return created_response
 
     def _send_broadcast_notification(self, subject: Optional[str] = None, message: Optional[str] = None):
-        payload = {
-            "source": "integration_tests",
-            "variant": "urgent",
-            "category": "broadcast",
-            "content": {
-                "category": "broadcast",
-                "subject": subject or "Testing Broadcast",
-                "message": message or "Testing Broadcast Message",
-            },
-        }
+        payload = notification_broadcast_test_data()
         response = self._post("notifications/broadcast", data=payload, admin=True, json=True)
         self._assert_status_code_is_ok(response)
         notifications_status = response.json()
