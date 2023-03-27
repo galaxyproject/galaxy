@@ -14,8 +14,10 @@
                 }" />
         </div>
         <span class="position-relative">
-            <font-awesome-icon icon="upload" class="nav-icon" />
-            <span style="font-size: 0.7rem;">Upload</span>
+            <div class="nav-icon">
+                <Icon icon="upload" />
+            </div>
+            <div class="nav-title" v-localize>Upload</div>
         </span>
     </b-nav-item>
 </template>
@@ -72,13 +74,3 @@ export default {
     },
 };
 </script>
-<style scoped>
-
-.nav-icon {
-    height: 2rem;
-    display: flex;
-    align-items: center;
-    align-content: center;
-    justify-content: center;
-}
-</style>

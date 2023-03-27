@@ -18,7 +18,6 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
     (e: "click"): void;
 }>();
-
 </script>
 
 <template>
@@ -37,27 +36,28 @@ const emit = defineEmits<{
     </b-nav-item>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 @import "theme/blue.scss";
 
-.nav-item-active {
-    border-radius: 0.5rem;
-    background: $gray-300;
-}
-
-.nav-icon {
-    height: 2rem;
+.nav-item {
     display: flex;
     align-items: center;
     align-content: center;
     justify-content: center;
 }
 
+.nav-item-active {
+    border-radius: $border-radius-extralarge;
+    background: $gray-300;
+}
+
+.nav-icon {
+    @extend .nav-item;
+    font-size: 1rem;
+}
+
 .nav-title {
+    @extend .nav-item;
     font-size: 0.7rem;
-    display:flex;
-    align-items: center;
-    align-content: center;
-    justify-content: center;
 }
 </style>

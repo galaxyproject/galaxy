@@ -30,14 +30,13 @@ function onToggleSidebar(toggle) {
 </script>
 <template>
     <div class="d-flex">
-        <b-nav vertical class="side-bar flex-nowrap p-1">
+        <b-nav vertical class="acitivity-bar flex-nowrap p-1">
             <ActivityItem
                 id="tools"
                 icon="wrench"
                 title="Tools"
                 :is-active="sidebarIsActive('search')"
-                @click="onToggleSidebar('search')"
-            />
+                @click="onToggleSidebar('search')" />
             <upload-item />
             <upload-item />
             <upload-item />
@@ -66,16 +65,14 @@ function onToggleSidebar(toggle) {
             <upload-item />
             <upload-item />
         </b-nav>
-        <div style="width: 3.3rem; background: red; position: absolute; left: 0; bottom: 0px;">
+        <div class="acitivity-bar" style="background: red; position: absolute; left: 0; bottom: 0px">
             <b-nav vertical class="bottom-bar flex-nowrap p-1 m-1">
-                <b-nav-item
-                    id="tool-search"
+                <b-nav-item>
                     <template>
                         <span class="nav-icon fa fa-gear" />
                     </template>
                 </b-nav-item>
-                <b-nav-item
-                    id="tool-search"
+                <b-nav-item>
                     <template>
                         <span class="nav-icon fa fa-caret-down" />
                     </template>
@@ -88,21 +85,20 @@ function onToggleSidebar(toggle) {
     </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 @import "theme/blue.scss";
 
 .left-column {
-    min-width: 15rem;
-    max-width: 15rem;
     width: 15rem;
 }
 
-.side-bar {
+.acitivity-bar {
     background: $panel-bg-color;
     overflow-y: auto;
+    width: 4rem;
 }
 
-.side-bar::-webkit-scrollbar {
+.acitivity-bar::-webkit-scrollbar {
     display: none;
 }
 
