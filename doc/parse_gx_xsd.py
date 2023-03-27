@@ -17,7 +17,6 @@ markdown_buffer = StringIO()
 
 def main():
     """Entry point for the function that builds Markdown help for the Galaxy XSD."""
-    toc_list = []
     content_list = []
     found_tag = False
     with open(sys.argv[1]) as markdown_template:
@@ -25,16 +24,11 @@ def main():
             if line.startswith("$tag:"):
                 found_tag = True
                 tag = Tag(line.rstrip())
-                toc_list.append(tag.build_toc_entry())
                 content_list.append(tag.build_help())
             elif not found_tag:
                 print(line, end="")
             else:
                 raise Exception("No normal text allowed after the first $tag")
-    print("## Contents\n")
-    for el in toc_list:
-        print(el)
-    print("\n")
     for el in content_list:
         print(el, end="")
 
@@ -57,18 +51,8 @@ class Tag:
         self.title = title
 
     @property
-    def _anchor(self):
-        anchor = self.title
-        for _ in ["|", "_"]:
-            anchor = anchor.replace(_, "-")
-        return "#" + anchor
-
-    @property
     def _pretty_title(self):
         return " > ".join("``%s``" % p for p in self.title.split("|"))
-
-    def build_toc_entry(self):
-        return f"* [{self._pretty_title}]({self._anchor})"
 
     def build_help(self):
         tag = xmlschema_doc.find(self.xpath)

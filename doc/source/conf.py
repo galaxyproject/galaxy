@@ -53,6 +53,8 @@ myst_enable_extensions = [
     "deflist",
     "substitution",
 ]
+myst_heading_anchors = 5
+myst_heading_slug_func = "docutils.nodes.make_id"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]

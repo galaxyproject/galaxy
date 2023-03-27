@@ -3,9 +3,9 @@
 Galaxy supports the following authentication mechanisms:
 
 * [Galaxy Database](#galaxy-database) - Galaxy-specific login using e-mail address and password (the default);
-* [OIDC and OAuth2.0](#OIDC-and-OAuth2.0) - Login to Galaxy using your Google account, without having to create a Galaxy user;
+* [OIDC and OAuth2.0](#oidc-and-oauth2-0) - Login to Galaxy using your Google account, without having to create a Galaxy user;
 * [Authentication Framework](#authentication-framework) - A plugin-driven framework supporting LDAP/Active Directory and PAM;
-* [Proxy Authentication](#proxy_authentication) - HTTP [remote user](http://httpd.apache.org/docs/current/mod/mod_cgi.html#env) provided by any front-end Web server.
+* [Proxy Authentication](#remote-user-authentication) - HTTP [remote user](http://httpd.apache.org/docs/current/mod/mod_cgi.html#env) provided by any front-end Web server.
 
 ## Galaxy Database
 
