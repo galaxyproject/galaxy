@@ -2021,7 +2021,7 @@ class H5MLM(H5):
         to_ext: Optional[str] = None,
         **kwd,
     ):
-        headers = kwd.get("headers", {})
+        headers = kwd.pop("headers", {})
         preview = util.string_as_bool(preview)
 
         if to_ext or not preview:

@@ -284,12 +284,13 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
         if email is not None:
             email = unquote(email)
         activation_token = params.get("activation_token", None)
+        index_url = web.url_for(controller="root", action="index")
 
         if email is None or activation_token is None:
             #  We don't have the email or activation_token, show error.
             return trans.show_error_message(
-                "You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='%s'>Go to login page.</a>"
-            ) % web.url_for(controller="root", action="index")
+                f"You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='{index_url}'>Go to login page.</a>"
+            )
         else:
             # Find the user
             user = (
@@ -298,25 +299,24 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
             if not user:
                 # Probably wrong email address
                 return trans.show_error_message(
-                    "You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='%s'>Go to login page.</a>"
-                ) % web.url_for(controller="root", action="index")
+                    f"You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='{index_url}'>Go to login page.</a>"
+                )
             # If the user is active already don't try to activate
             if user.active is True:
                 return trans.show_ok_message(
-                    "Your account is already active. Nothing has changed. <br><a href='%s'>Go to login page.</a>"
-                ) % web.url_for(controller="root", action="index")
-            if user.activation_token == activation_token:
+                    f"Your account is already active. Nothing has changed. <br><a href='{index_url}'>Go to login page.</a>"
+                )
+            if user.activation_token == activation_token[:64]:
                 user.activation_token = None
                 self.user_manager.activate(user)
                 return trans.show_ok_message(
-                    "Your account has been successfully activated! <br><a href='%s'>Go to login page.</a>"
-                ) % web.url_for(controller="root", action="index")
+                    f"Your account has been successfully activated! <br><a href='{index_url}'>Go to login page.</a>"
+                )
             else:
                 #  Tokens don't match. Activation is denied.
                 return trans.show_error_message(
-                    "You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='%s'>Go to login page.</a>"
-                ) % web.url_for(controller="root", action="index")
-        return
+                    f"You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='{index_url}'>Go to login page.</a>"
+                )
 
     @expose_api_anonymous_and_sessionless
     def change_password(self, trans, payload=None, **kwd):

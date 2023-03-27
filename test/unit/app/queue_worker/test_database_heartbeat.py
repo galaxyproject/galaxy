@@ -46,7 +46,9 @@ def test_database_heartbeat(heartbeat_app):
     update_time = process.update_time
 
     def process_updated():
-        heartbeat_app.model.context.refresh(process)
+        session = heartbeat_app.model.context()
+        session.add(process)
+        session.refresh(process)
         next_update_time = process.update_time
         assert update_time < next_update_time
 

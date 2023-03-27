@@ -691,6 +691,9 @@ steps:
 
     @selenium_test
     def test_editor_embed_workflow(self):
+        self.setup_subworkflow()
+
+    def setup_subworkflow(self):
         workflow_populator = self.workflow_populator
         child_workflow_name = self._get_random_name()
         workflow_populator.upload_yaml_workflow(WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION, name=child_workflow_name)
@@ -728,6 +731,7 @@ steps:
         workflow = self.workflow_populator.download_workflow(parent_workflow_id)
         subworkflow_step = workflow["steps"]["2"]
         assert subworkflow_step["input_connections"]["input1"]["input_subworkflow_step_id"] == 0
+        return child_workflow_name
 
     @selenium_test
     def test_editor_insert_steps(self):
@@ -803,6 +807,25 @@ steps:
         save_button.wait_for_visible()
         # TODO: hook up best practice panel, disable save when "when" not connected
         # assert save_button.has_class("disabled")
+
+    def test_conditional_subworkflow_step(self):
+        child_workflow_name = self.setup_subworkflow()
+        editor = self.components.workflow_editor
+        # Insert a boolean parameter
+        self.workflow_editor_add_input(item_name="parameter_input")
+        param_type_element = editor.param_type_form.wait_for_present()
+        self.switch_param_type(param_type_element, "Boolean")
+        editor.label_input.wait_for_and_send_keys("param_input")
+        self.workflow_editor_click_option("Auto Layout")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        conditional_node = editor.node._(label=child_workflow_name)
+        conditional_node.wait_for_and_click()
+        conditional_toggle = editor.step_when.wait_for_present()
+        self.action_chains().move_to_element(conditional_toggle).click().perform()
+        conditional_node.input_terminal(name="when").wait_for_present()
+        self.workflow_editor_connect("param_input#output", f"{child_workflow_name}#when")
+        self.assert_connected("param_input#output", f"{child_workflow_name}#when")
+        self.assert_workflow_has_changes_and_save()
 
     def switch_param_type(self, element, param_type):
         self.action_chains().move_to_element(element).click().send_keys(param_type).send_keys(Keys.ENTER).perform()
@@ -917,6 +940,97 @@ steps:
         output_connector = self.tab_to("Press space to see a list of available inputs")
         output_connector.send_keys(Keys.SPACE)
         assert self.driver.switch_to.active_element.text == "No compatible input found in workflow"
+
+    @selenium_test
+    def test_insert_input_handling(self):
+        self.open_in_workflow_editor(
+            """class: GalaxyWorkflow
+inputs: []
+steps:
+  build_list:
+    tool_id: __BUILD_LIST__
+        """
+        )
+        editor = self.components.workflow_editor
+        node = editor.node._(label="build_list")
+        node.wait_for_and_click()
+        assert not node.has_class("input-terminal")
+        self.components.tool_form.repeat_insert.wait_for_and_click()
+        node.input_terminal(name="datasets_0|input").wait_for_present()
+        self.components.tool_form.repeat_insert.wait_for_and_click()
+        node.input_terminal(name="datasets_1|input").wait_for_present()
+        self.assert_workflow_has_changes_and_save()
+
+    @selenium_test
+    def test_workflow_output_handling(self):
+        self.open_in_workflow_editor(
+            """
+class: GalaxyWorkflow
+inputs: []
+outputs:
+  first_out:
+    outputSource: first/out_file1
+  second_out:
+    outputSource: second/out_file1
+steps:
+  first:
+    tool_id: create_2
+  second:
+    tool_id: create_2
+""",
+            auto_layout=True,
+        )
+        editor = self.components.workflow_editor
+        # assert both steps have one workflow output each
+        first = editor.node._(label="first")
+        first.workflow_output_toggle_active(name="out_file1").wait_for_visible()
+        first.workflow_output_toggle_active(name="out_file2").wait_for_absent()
+        second = editor.node._(label="second")
+        second.workflow_output_toggle_active(name="out_file1").wait_for_visible()
+        second.workflow_output_toggle_active(name="out_file2").wait_for_absent()
+        # toggle out_file1 on second step, both outputs not active
+        second.workflow_output_toggle(name="out_file1").wait_for_and_click()
+        # just toggling outputs doesn't set a label
+        second.workflow_output_toggle_active(name="out_file1").wait_for_absent()
+        second.workflow_output_toggle_active(name="out_file2").wait_for_absent()
+        # switch to first node
+        editor.node._(label="first").wait_for_and_click()
+        # toggle out_file1 on first step
+        first.workflow_output_toggle(name="out_file1").wait_for_and_click()
+        first.workflow_output_toggle_active(name="out_file1").wait_for_absent()
+        # turn out_file1 back on
+        first.workflow_output_toggle(name="out_file1").wait_for_and_click()
+        first.workflow_output_toggle_active(name="out_file1").wait_for_visible()
+        # turn out_file1 off
+        first.workflow_output_toggle(name="out_file1").wait_for_and_click()
+        first.workflow_output_toggle_active(name="out_file1").wait_for_absent()
+        editor.node._(label="second").wait_for_and_click()
+        editor.node._(label="first").wait_for_and_click()
+        # make sure workflow outputs are both off for second step
+        first.workflow_output_toggle_active(name="out_file1").wait_for_absent()
+        first.workflow_output_toggle_active(name="out_file2").wait_for_absent()
+        # add an output label
+        editor.configure_output(output="out_file1").wait_for_and_click()
+        output_label = editor.label_output(output="out_file1")
+        self.set_text_element(output_label, "workflow output label")
+        # should indicate active workflow output
+        first.workflow_output_toggle_active(name="out_file1").wait_for_visible()
+        self.set_text_element(output_label, "")
+        # deleting label also deletes active output
+        first.workflow_output_toggle_active(name="out_file1").wait_for_absent()
+        # set duplicate label
+        output_label = editor.label_output(output="out_file1")
+        self.set_text_element(output_label, "workflow output label")
+        editor.node._(label="second").wait_for_and_click()
+        editor.configure_output(output="out_file1").wait_for_and_click()
+        output_label = editor.label_output(output="out_file1")
+        self.set_text_element(output_label, "workflow output label")
+        # should show error
+        editor.duplicate_label_error(output="out_file1").wait_for_visible()
+        # make label unique
+        self.set_text_element(output_label, "workflow output label2")
+        # should not show error
+        editor.duplicate_label_error(output="out_file1").wait_for_absent()
 
     def workflow_editor_maximize_center_pane(self, collapse_left=True, collapse_right=True):
         if collapse_left:

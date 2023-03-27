@@ -244,7 +244,7 @@ def __path_permission_for_user(path: GenericPath, username: str) -> bool:
     other_permissions = int(oct_mode[-1])
     if (
         other_permissions >= 4
-        or (file_owner == username and owner_permissions >= 4)
+        or (file_owner.pw_name == username and owner_permissions >= 4)
         or (username in group_members and group_permissions >= 4)
     ):
         return True

@@ -62,6 +62,14 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         assert repository.owner == repo.owner
         assert repository.name == repo.name
 
+    def test_install_info(self):
+        # actually installing requires a whole Galaxy setup and the install manager but
+        # we can test the response validates against the future facing InstallInfo pydandic
+        # models.
+        populator = self.populator
+        repo = populator.setup_column_maker_and_get_metadata(prefix="repoforinstallinfo")
+        populator.get_install_info(repo)
+
     def test_get_ordered_installable_revisions(self):
         # Used in ephemeris...
         populator = self.populator

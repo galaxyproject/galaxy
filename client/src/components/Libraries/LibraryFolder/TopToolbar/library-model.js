@@ -1,6 +1,5 @@
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
-import { getGalaxyInstance } from "app";
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -140,7 +139,6 @@ var FolderContainer = Backbone.Model.extend({
     },
 
     parse: function (obj) {
-        const Galaxy = getGalaxyInstance();
         // empty the collection
         this.get("folder").reset();
         // response is not a simple array, it contains metadata
@@ -153,7 +151,7 @@ var FolderContainer = Backbone.Model.extend({
                 var file_item = new Ldda(obj.folder_contents[i]);
                 this.get("folder").add(file_item);
             } else {
-                Galaxy.emit.error("Unknown folder item type encountered while parsing response.");
+                console.error("Unknown folder item type encountered while parsing response.");
             }
         }
         return obj;
@@ -174,7 +172,7 @@ var HistoryContents = Backbone.Collection.extend({
         this.id = options.id;
     },
     url: function () {
-        return `${this.urlRoot + this.id}/contents`;
+        return `${this.urlRoot + this.id}/contents?shareable=true`;
     },
     model: HistoryItem,
 });

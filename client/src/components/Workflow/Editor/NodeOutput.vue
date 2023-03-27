@@ -1,10 +1,221 @@
+<script setup lang="ts">
+import DraggableWrapper from "./DraggablePan.vue";
+import { useCoordinatePosition, type ElementBounding } from "./composables/useCoordinatePosition";
+import { useTerminal } from "./composables/useTerminal";
+import { ref, computed, watch, nextTick, toRefs, onBeforeUnmount, type Ref } from "vue";
+import type { DatatypesMapperModel } from "@/components/Datatypes/model";
+import { useWorkflowStateStore, type XYPosition } from "@/stores/workflowEditorStateStore";
+import ConnectionMenu from "@/components/Workflow/Editor/ConnectionMenu.vue";
+import {
+    useWorkflowStepStore,
+    type OutputTerminalSource,
+    type Step,
+    type PostJobActions,
+    type PostJobAction,
+} from "@/stores/workflowStepStore";
+import { assertDefined } from "@/utils/assertions";
+import type { UseScrollReturn } from "@vueuse/core";
+
+const props = defineProps<{
+    output: OutputTerminalSource;
+    workflowOutputs: NonNullable<Step["workflow_outputs"]>;
+    stepType: Step["type"];
+    stepId: number;
+    postJobActions: PostJobActions;
+    stepPosition: NonNullable<Step["position"]>;
+    rootOffset: Ref<ElementBounding>;
+    scroll: UseScrollReturn;
+    scale: number;
+    datatypesMapper: DatatypesMapperModel;
+}>();
+
+const emit = defineEmits(["pan-by", "stopDragging", "onDragConnector"]);
+const stateStore = useWorkflowStateStore();
+const stepStore = useWorkflowStepStore();
+const el = ref(null);
+const { rootOffset, stepPosition, output, stepId, datatypesMapper } = toRefs(props);
+const position = useCoordinatePosition(el, rootOffset, stepPosition);
+const extensions = computed(() => {
+    let changeDatatype: PostJobAction | undefined;
+    if ("label" in props.output && props.postJobActions[`ChangeDatatypeAction${props.output.label}`]) {
+        changeDatatype = props.postJobActions[`ChangeDatatypeAction${props.output.label}`];
+    } else {
+        changeDatatype = props.postJobActions[`ChangeDatatypeAction${props.output.name}`];
+    }
+    let extensions =
+        changeDatatype?.action_arguments.newtype ||
+        ("extensions" in props.output && props.output.extensions) ||
+        ("type" in props.output && props.output.type) ||
+        "unspecified";
+    if (!Array.isArray(extensions)) {
+        extensions = [extensions];
+    }
+    return extensions;
+});
+const effectiveOutput = ref({ ...output.value, extensions: extensions.value });
+watch(extensions, () => {
+    effectiveOutput.value = { ...output.value, extensions: extensions.value };
+});
+const { terminal, isMappedOver: isMultiple } = useTerminal(stepId, effectiveOutput, datatypesMapper);
+
+const workflowOutput = computed(() =>
+    props.workflowOutputs.find((workflowOutput) => workflowOutput.output_name == props.output.name)
+);
+const activeClass = computed(() => workflowOutput.value && "mark-terminal-active");
+const isVisible = computed(() => {
+    const isHidden = `HideDatasetAction${props.output.name}` in props.postJobActions;
+    return !isHidden;
+});
+const visibleClass = computed(() => (isVisible.value ? "mark-terminal-visible" : "mark-terminal-hidden"));
+const visibleHint = computed(() => {
+    if (isVisible.value) {
+        return `Output will be visible in history. Click to hide output.`;
+    } else {
+        return `Output will be hidden in history. Click to make output visible.`;
+    }
+});
+const label = computed(() => {
+    const activeLabel = workflowOutput.value?.label || props.output.name;
+    return `${activeLabel} (${extensions.value.join(", ")})`;
+});
+const rowClass = computed(() => {
+    const classes = ["form-row", "dataRow", "output-data-row"];
+    if ("valid" in props.output && props.output?.valid === false) {
+        classes.push("form-row-error");
+    }
+    return classes;
+});
+
+const menu: Ref<InstanceType<typeof ConnectionMenu> | undefined> = ref();
+const icon: Ref<HTMLElement | undefined> = ref();
+const showChildComponent = ref(false);
+
+function closeMenu() {
+    showChildComponent.value = false;
+}
+
+async function toggleChildComponent() {
+    showChildComponent.value = !showChildComponent.value;
+    if (showChildComponent.value) {
+        await nextTick();
+        if (menu.value?.$el instanceof HTMLElement) {
+            menu.value!.$el.focus();
+        }
+    } else {
+        icon.value!.focus();
+    }
+}
+
+function onToggleActive() {
+    const step = stepStore.getStep(stepId.value);
+    assertDefined(step);
+    let stepWorkflowOutputs = [...(step.workflow_outputs || [])];
+    if (workflowOutput.value) {
+        stepWorkflowOutputs = stepWorkflowOutputs.filter(
+            (workflowOutput) => workflowOutput.output_name !== output.value.name
+        );
+    } else {
+        stepWorkflowOutputs.push({ output_name: output.value.name });
+    }
+    stepStore.updateStep({ ...step, workflow_outputs: stepWorkflowOutputs });
+}
+
+function onToggleVisible() {
+    const actionKey = `HideDatasetAction${props.output.name}`;
+    const step = stepStore.getStep(stepId.value);
+    assertDefined(step);
+    if (isVisible.value) {
+        step.post_job_actions = {
+            ...step.post_job_actions,
+            [actionKey]: {
+                action_type: "HideDatasetAction",
+                output_name: props.output.name,
+                action_arguments: {},
+            },
+        };
+    } else {
+        if (step.post_job_actions) {
+            const { [actionKey]: ignoreUnused, ...newPostJobActions } = step.post_job_actions;
+            step.post_job_actions = newPostJobActions;
+        } else {
+            step.post_job_actions = {};
+        }
+    }
+    stepStore.updateStep(step);
+}
+
+function onPanBy(panBy: XYPosition) {
+    emit("pan-by", panBy);
+}
+
+function onStopDragging() {
+    isDragging.value = false;
+    dragX.value = 0;
+    dragY.value = 0;
+    emit("stopDragging");
+}
+
+const dragX = ref(0);
+const dragY = ref(0);
+const isDragging = ref(false);
+
+const startX = computed(() => position.left + props.scroll.x.value / props.scale + position.width / 2);
+const startY = computed(() => position.top + props.scroll.y.value / props.scale + position.height / 2);
+const endX = computed(() => {
+    return (dragX.value || startX.value) + props.scroll.x.value / props.scale;
+});
+const endY = computed(() => {
+    return (dragY.value || startY.value) + props.scroll.y.value / props.scale;
+});
+const dragPosition = computed(() => {
+    return {
+        startX: startX.value,
+        endX: endX.value,
+        startY: startY.value,
+        endY: endY.value,
+    };
+});
+const terminalPosition = computed(() => {
+    return Object.freeze({ startX: startX.value, startY: startY.value });
+});
+
+watch([dragPosition, isDragging], () => {
+    if (isDragging.value) {
+        emit("onDragConnector", dragPosition.value, terminal.value);
+    }
+});
+
+watch(terminalPosition, () =>
+    stateStore.setOutputTerminalPosition(props.stepId, props.output.name, terminalPosition.value)
+);
+
+function onMove(dragPosition: XYPosition) {
+    dragX.value = dragPosition.x + position.width / 2;
+    dragY.value = dragPosition.y + position.height / 2;
+}
+
+const id = computed(() => `node-${props.stepId}-output-${props.output.name}`);
+const showCalloutActiveOutput = computed(() => props.stepType === "tool" || props.stepType === "subworkflow");
+const showCalloutVisible = computed(() => props.stepType === "tool");
+const terminalClass = computed(() => {
+    const cls = "terminal output-terminal";
+    if (isMultiple.value) {
+        return `${cls} multiple`;
+    }
+    return cls;
+});
+
+onBeforeUnmount(() => {
+    stateStore.deleteOutputTerminalPosition(props.stepId, props.output.name);
+});
+</script>
 <template>
-    <div :class="rowClass">
+    <div :class="rowClass" :data-output-name="output.name">
         <div
             v-if="showCalloutActiveOutput"
             v-b-tooltip
-            :class="['callout-terminal', output.name]"
-            title="Unchecked outputs will be hidden and are not available as subworkflow outputs."
+            class="callout-terminal"
+            title="Checked outputs will become primary workflow outputs and are available as subworkflow outputs."
             @keyup="onToggleActive"
             @click="onToggleActive">
             <i :class="['mark-terminal', activeClass]" />
@@ -12,7 +223,7 @@
         <div
             v-if="showCalloutVisible"
             v-b-tooltip
-            :class="['callout-terminal', output.name]"
+            class="callout-terminal"
             :title="visibleHint"
             @keyup="onToggleVisible"
             @click="onToggleVisible">
@@ -50,267 +261,3 @@
         </draggable-wrapper>
     </div>
 </template>
-
-<script>
-import DraggableWrapper from "./DraggablePan";
-import { useCoordinatePosition } from "./composables/useCoordinatePosition";
-import { useTerminal } from "./composables/useTerminal";
-import { ref, computed, watch, nextTick, toRefs } from "vue";
-import { DatatypesMapperModel } from "@/components/Datatypes/model";
-import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
-import ConnectionMenu from "@/components/Workflow/Editor/ConnectionMenu";
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
-
-export default {
-    components: {
-        ConnectionMenu,
-        DraggableWrapper,
-    },
-    props: {
-        output: {
-            type: Object,
-            required: true,
-        },
-        workflowOutputs: {
-            type: Array,
-            required: true,
-        },
-        stepType: {
-            type: String,
-            required: true,
-        },
-        stepId: {
-            type: Number,
-            required: true,
-        },
-        postJobActions: {
-            type: Object,
-            required: true,
-        },
-        stepPosition: {
-            type: Object,
-            required: true,
-        },
-        rootOffset: {
-            type: Object,
-            required: true,
-        },
-        scroll: {
-            type: Object,
-            required: true,
-        },
-        scale: {
-            type: Number,
-            required: true,
-        },
-        datatypesMapper: {
-            type: DatatypesMapperModel,
-            required: true,
-        },
-    },
-    setup(props) {
-        const stateStore = useWorkflowStateStore();
-        const stepStore = useWorkflowStepStore();
-        const el = ref(null);
-        const { rootOffset, stepPosition, output, stepId, datatypesMapper } = toRefs(props);
-        const position = useCoordinatePosition(el, rootOffset, stepPosition);
-        const extensions = computed(() => {
-            const changeDatatype =
-                props.postJobActions[`ChangeDatatypeAction${props.output.label}`] ||
-                props.postJobActions[`ChangeDatatypeAction${props.output.name}`];
-            let extensions =
-                changeDatatype?.action_arguments.newtype ||
-                props.output.extensions ||
-                props.output.type ||
-                "unspecified";
-            if (!Array.isArray(extensions)) {
-                extensions = [extensions];
-            }
-            return extensions;
-        });
-        const effectiveOutput = ref({ ...output.value, extensions: extensions.value });
-        watch(extensions, () => {
-            effectiveOutput.value = { ...output.value, extensions: extensions.value };
-        });
-        const { terminal, isMappedOver: isMultiple } = useTerminal(stepId, effectiveOutput, datatypesMapper);
-
-        const workflowOutput = computed(() =>
-            props.workflowOutputs.find((workflowOutput) => workflowOutput.output_name == props.output.name)
-        );
-        const activeClass = computed(() => workflowOutput.value && "mark-terminal-active");
-        const isVisible = computed(() => {
-            const isHidden = `HideDatasetAction${props.output.name}` in props.postJobActions;
-            return !isHidden;
-        });
-        const visibleClass = computed(() => (isVisible.value ? "mark-terminal-visible" : "mark-terminal-hidden"));
-        const visibleHint = computed(() => {
-            if (isVisible.value) {
-                return `Output will be visible in history. Click to hide output.`;
-            } else {
-                return `Output will be hidden in history. Click to make output visible.`;
-            }
-        });
-        const label = computed(() => {
-            const activeLabel = workflowOutput.value?.label || props.output.name;
-            return `${activeLabel} (${extensions.value.join(", ")})`;
-        });
-        const rowClass = computed(() => {
-            const classes = ["form-row", "dataRow", "output-data-row"];
-            if (props.output?.valid === false) {
-                classes.push("form-row-error");
-            }
-            return classes;
-        });
-
-        const menu = ref(null);
-        const icon = ref(null);
-        const showChildComponent = ref(false);
-
-        function closeMenu() {
-            showChildComponent.value = false;
-        }
-
-        async function toggleChildComponent() {
-            showChildComponent.value = !showChildComponent.value;
-            if (showChildComponent.value) {
-                await nextTick();
-                menu.value.$el.focus();
-            } else {
-                icon.value.focus();
-            }
-        }
-
-        function onToggleActive() {
-            const step = stepStore.getStep(stepId.value);
-            if (workflowOutput.value) {
-                step.workflow_outputs = step.workflow_outputs.filter(
-                    (workflowOutput) => workflowOutput.output_name !== output.value.name
-                );
-            } else {
-                step.workflow_outputs.push({ output_name: output.value.name });
-            }
-            stepStore.updateStep(step);
-        }
-
-        function onToggleVisible() {
-            const actionKey = `HideDatasetAction${props.output.name}`;
-            const step = stepStore.getStep(stepId.value);
-            if (isVisible.value) {
-                step.post_job_actions = {
-                    ...step.post_job_actions,
-                    [actionKey]: {
-                        action_type: "HideDatasetAction",
-                        output_name: props.output.name,
-                        action_arguments: {},
-                    },
-                };
-            } else {
-                const { [actionKey]: ignoreUnused, ...newPostJobActions } = step.post_job_actions;
-                step.post_job_actions = newPostJobActions;
-            }
-            stepStore.updateStep(step);
-        }
-
-        return {
-            el,
-            icon,
-            position,
-            activeClass,
-            visibleClass,
-            visibleHint,
-            rowClass,
-            isVisible,
-            terminal,
-            isMultiple,
-            label,
-            stateStore,
-            menu,
-            showChildComponent,
-            toggleChildComponent,
-            closeMenu,
-            effectiveOutput,
-            onToggleActive,
-            onToggleVisible,
-        };
-    },
-    data() {
-        return {
-            isDragging: false,
-            dragX: 0,
-            dragY: 0,
-        };
-    },
-    computed: {
-        terminalPosition() {
-            return Object.freeze({ startX: this.startX, startY: this.startY });
-        },
-        startX() {
-            return this.position.left + this.scroll.x.value / this.scale + this.position.width / 2;
-        },
-        startY() {
-            return this.position.top + this.scroll.y.value / this.scale + this.position.height / 2;
-        },
-        endX() {
-            return (this.dragX || this.startX) + this.scroll.x.value / this.scale;
-        },
-        endY() {
-            return (this.dragY || this.startY) + this.scroll.y.value / this.scale;
-        },
-        dragPosition() {
-            return {
-                startX: this.startX,
-                endX: this.endX,
-                startY: this.startY,
-                endY: this.endY,
-            };
-        },
-        id() {
-            return `node-${this.stepId}-output-${this.output.name}`;
-        },
-        showCalloutActiveOutput() {
-            return this.stepType === "tool" || this.stepType === "subworkflow";
-        },
-        showCalloutVisible() {
-            return this.stepType === "tool";
-        },
-        terminalClass() {
-            const cls = "terminal output-terminal";
-            if (this.isMultiple) {
-                return `${cls} multiple`;
-            }
-            return cls;
-        },
-    },
-    watch: {
-        terminalPosition(position) {
-            this.stateStore.setOutputTerminalPosition(this.stepId, this.output.name, position);
-        },
-        dragPosition() {
-            if (this.isDragging) {
-                this.$emit("onDragConnector", this.dragPosition, this.terminal);
-            }
-        },
-    },
-    beforeDestroy() {
-        this.stateStore.deleteOutputTerminalPosition({
-            stepId: this.stepId,
-            outputName: this.output.name,
-        });
-    },
-    methods: {
-        onPanBy(panBy) {
-            this.$emit("pan-by", panBy);
-        },
-        onMove(position, event) {
-            this.dragX = position.x + this.position.width / 2;
-            this.dragY = position.y + this.position.height / 2;
-        },
-        onStopDragging(e) {
-            this.isDragging = false;
-            this.dragX = 0;
-            this.dragY = 0;
-            this.$emit("stopDragging");
-        },
-    },
-};
-</script>

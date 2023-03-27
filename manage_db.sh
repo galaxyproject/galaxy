@@ -3,7 +3,7 @@
 #######
 # Use this script to manage Galaxy database schema migrations.
 # For help, run `sh manage_db.sh -h`. 
-# For detailed help, see documentation at lib/galaxy/model/migrations/README.md.
+# For detailed help, see documentation at https://docs.galaxyproject.org/en/master/admin/db_migration.html
 #######
 
 cd "$(dirname "$0")" || exit

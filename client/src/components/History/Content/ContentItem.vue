@@ -45,8 +45,7 @@
                     <span v-if="hasStateIcon" class="state-icon">
                         <icon fixed-width :icon="contentState.icon" :spin="contentState.spin" />
                     </span>
-                    <span class="id hid">{{ id }}</span>
-                    <span>:</span>
+                    <span class="id hid">{{ id }}:</span>
                     <span class="content-title name">{{ name }}</span>
                 </span>
                 <span v-if="item.purged" class="align-self-start btn-group p-1">

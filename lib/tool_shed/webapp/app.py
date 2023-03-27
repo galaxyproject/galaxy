@@ -32,6 +32,7 @@ from galaxy.web_stack import application_stack_instance
 from tool_shed.grids.repository_grid_filter_manager import RepositoryGridFilterManager
 from tool_shed.structured_app import ToolShedApp
 from tool_shed.util.hgweb_config import hgweb_config_manager
+from tool_shed.webapp.model.migrations import verify_database
 from . import config
 
 log = logging.getLogger(__name__)
@@ -65,10 +66,10 @@ class UniverseApplication(ToolShedApp, SentryClientMixin, HaltableContainer):
             db_url = self.config.database_connection
         else:
             db_url = f"sqlite:///{self.config.database}?isolation_level=IMMEDIATE"
-        # Initialize the Tool Shed database and check for appropriate schema version.
-        from tool_shed.webapp.model.migrate.check import create_or_verify_database
 
-        create_or_verify_database(db_url, self.config.database_engine_options)
+        # Initialize the Tool Shed database and check for appropriate schema version.
+        verify_database(db_url, self.config.database_engine_options)
+
         # Set up the Tool Shed database engine and ORM.
         from tool_shed.webapp.model import mapping
 

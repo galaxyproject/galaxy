@@ -1,7 +1,10 @@
 from typing import (
     Any,
     List,
+    TYPE_CHECKING,
 )
+
+from sqlalchemy import func
 
 from galaxy import model as m
 from galaxy.exceptions import (
@@ -10,6 +13,10 @@ from galaxy.exceptions import (
 )
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.structured_app import StructuredApp
+from .base import raise_filter_err
+
+if TYPE_CHECKING:
+    from galaxy.managers.base import OrmFilterParsersType
 
 
 class GenomesManager:
@@ -64,3 +71,30 @@ class GenomesManager:
             raise ReferenceDataError(f"Data tables not found for {index_type} for {id}")
         else:
             return f"{file_name}{ext}"
+
+
+class GenomeFilterMixin:
+    orm_filter_parsers: "OrmFilterParsersType"
+    valid_ops = ("eq", "contains", "has")
+
+    def create_genome_filter(self, attr, op, val):
+        def _create_genome_filter(model_class=None):
+            if op not in GenomeFilterMixin.valid_ops:
+                raise_filter_err(attr, op, val, "bad op in filter")
+            if model_class is None:
+                return True
+            # Doesn't filter genome_build for collections
+            if model_class.__name__ == "HistoryDatasetCollectionAssociation":
+                return False
+            column = func.json_extract(model_class.table.c._metadata, "$.dbkey")
+            lower_val = val.lower()  # Ignore case
+            if op == "eq":
+                cond = func.lower(column) == lower_val
+            else:
+                cond = func.lower(column).contains(lower_val, autoescape=True)
+            return cond
+
+        return _create_genome_filter
+
+    def _add_parsers(self):
+        self.orm_filter_parsers.update({"genome_build": self.create_genome_filter})

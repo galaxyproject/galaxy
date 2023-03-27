@@ -13,6 +13,7 @@ from typing import (
     Type,
 )
 
+from galaxy.model import database_utils
 from galaxy.util.facts import get_facts
 from .handlers import HANDLER_ASSIGNMENT_METHODS
 
@@ -56,26 +57,14 @@ class ApplicationStack:
         if app:
             log.debug("%s initialized", self.__class__.__name__)
 
-    def supports_returning(self):
+    def supports_returning(self) -> bool:
         if self._supports_returning is None:
-            job_table = self.app.model.Job.__table__
-            stmt = job_table.update().where(job_table.c.id == -1).returning(job_table.c.id)
-            try:
-                self.app.model.session.execute(stmt)
-                self._supports_returning = True
-            except Exception:
-                self._supports_returning = False
+            self._supports_returning = database_utils.supports_returning(self.app.model.engine)
         return self._supports_returning
 
-    def supports_skip_locked(self):
+    def supports_skip_locked(self) -> bool:
         if self._supports_skip_locked is None:
-            job_table = self.app.model.Job.__table__
-            stmt = job_table.select().where(job_table.c.id == -1).with_for_update(skip_locked=True)
-            try:
-                self.app.model.session.execute(stmt)
-                self._supports_skip_locked = True
-            except Exception:
-                self._supports_skip_locked = False
+            self._supports_skip_locked = database_utils.supports_skip_locked(self.app.model.engine)
         return self._supports_skip_locked
 
     def get_preferred_handler_assignment_method(self):

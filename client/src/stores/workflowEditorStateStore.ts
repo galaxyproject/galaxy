@@ -4,6 +4,16 @@ import { defineStore } from "pinia";
 import type { OutputTerminals } from "@/components/Workflow/Editor/modules/terminals";
 import type { UseElementBoundingReturn } from "@vueuse/core";
 
+export interface InputTerminalPosition {
+    endX: number;
+    endY: number;
+}
+
+export interface OutputTerminalPosition {
+    startX: number;
+    startY: number;
+}
+
 export interface TerminalPosition {
     startX: number;
     endX: number;
@@ -17,8 +27,8 @@ export interface XYPosition {
 }
 
 interface State {
-    inputTerminals: { [index: number]: { [index: string]: TerminalPosition } };
-    outputTerminals: { [index: number]: { [index: string]: TerminalPosition } };
+    inputTerminals: { [index: number]: { [index: string]: InputTerminalPosition } };
+    outputTerminals: { [index: number]: { [index: string]: OutputTerminalPosition } };
     draggingPosition: TerminalPosition | null;
     draggingTerminal: OutputTerminals | null;
     activeNodeId: number | null;
@@ -50,18 +60,18 @@ export const useWorkflowStateStore = defineStore("workflowStateStore", {
         },
     },
     actions: {
-        setInputTerminalPosition(stepId: number, inputName: string, position: TerminalPosition) {
-            if (!this.inputTerminals[stepId]) {
-                Vue.set(this.inputTerminals, stepId, { [inputName]: position });
+        setInputTerminalPosition(stepId: number, inputName: string, position: InputTerminalPosition) {
+            if (this.inputTerminals[stepId]) {
+                Vue.set(this.inputTerminals[stepId]!, inputName, position);
             } else {
-                Vue.set(this.inputTerminals[stepId], inputName, position);
+                Vue.set(this.inputTerminals, stepId, { [inputName]: position });
             }
         },
-        setOutputTerminalPosition(stepId: number, outputName: string, position: TerminalPosition) {
-            if (!this.outputTerminals[stepId]) {
-                Vue.set(this.outputTerminals, stepId, { [outputName]: position });
+        setOutputTerminalPosition(stepId: number, outputName: string, position: OutputTerminalPosition) {
+            if (this.outputTerminals[stepId]) {
+                Vue.set(this.outputTerminals[stepId]!, outputName, position);
             } else {
-                Vue.set(this.outputTerminals[stepId], outputName, position);
+                Vue.set(this.outputTerminals, stepId, { [outputName]: position });
             }
         },
         deleteInputTerminalPosition(stepId: number, inputName: string) {

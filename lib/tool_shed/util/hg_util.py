@@ -51,7 +51,7 @@ def archive_repository_revision(app, repository, archive_dir, changeset_revision
         raise Exception(error_message)
 
 
-def commit_changeset(repo_path, full_path_to_changeset, username, message):
+def commit_changeset(repo_path: str, full_path_to_changeset: str, username: str, message: str) -> None:
     try:
         subprocess.check_output(
             ["hg", "commit", "-u", username, "-m", message, full_path_to_changeset],

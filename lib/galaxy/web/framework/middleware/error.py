@@ -461,7 +461,7 @@ def send_report(rep, exc_data, html=True):
                 markupsafe.escape(str(rep)), output.getvalue()
             )
         else:
-            return "Additionally an error occurred while sending the " "%s report:\n%s" % (str(rep), output.getvalue())
+            return f"Additionally an error occurred while sending the {rep} report:\n{output.getvalue()}"
     else:
         return ""
 

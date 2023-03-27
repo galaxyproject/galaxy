@@ -1,79 +1,42 @@
-<template>
-    <div class="donemessagelarge">
-        <p>
-            Started tool <b>{{ toolName }}</b> and successfully added {{ nJobsText }} to the queue.
-        </p>
-        <p>The tool uses {{ nInputsText }}:</p>
-        <ul>
-            <li v-for="item of inputs" :key="item.hid">
-                <b>{{ item.hid }}: {{ item.name }}</b>
-            </li>
-        </ul>
-        <p>It produces {{ nOutputsText }}:</p>
-        <ul>
-            <li v-for="item of jobResponse.outputs" :key="item.hid">
-                <b>{{ item.hid }}: {{ item.name }}</b>
-            </li>
-        </ul>
-        <p>
-            You can check the status of queued jobs and view the resulting data by refreshing the History panel. When
-            the job has been run the status will change from 'running' to 'finished' if completed successfully or
-            'error' if problems were encountered.
-        </p>
-    </div>
-</template>
+<script setup lang="ts">
+import { computed, onMounted } from "vue";
+import { useJobStore } from "@/stores/jobStore";
+import { useRouter } from "vue-router/composables";
+import { getGalaxyInstance } from "@/app";
+import ToolEntryPoints from "@/components/ToolEntryPoints/ToolEntryPoints.vue";
+import ToolSuccessMessage from "./ToolSuccessMessage.vue";
+import ToolRecommendation from "../ToolRecommendation.vue";
+import Webhook from "@/components/Common/Webhook.vue";
 
-<script>
-export default {
-    props: {
-        jobDef: {
-            type: Object,
-            required: true,
-        },
-        jobResponse: {
-            type: Object,
-            required: true,
-        },
-        toolName: {
-            type: String,
-            required: true,
-        },
-    },
-    computed: {
-        inputs() {
-            const inputs = [];
-            const index = {};
-            for (const i in this.jobDef.inputs) {
-                const input = this.jobDef.inputs[i];
-                if (input && Array.isArray(input.values)) {
-                    for (const j of input.values) {
-                        if (j.src && !index[j.id]) {
-                            inputs.push(j);
-                            index[j.id] = true;
-                        }
-                    }
-                }
-            }
-            return inputs;
-        },
-        nInputs() {
-            return this.inputs.length;
-        },
-        nOutputs() {
-            return this.jobResponse && this.jobResponse.outputs ? this.jobResponse.outputs.length : 0;
-        },
-        nJobs() {
-            return this.jobResponse && this.jobResponse.jobs ? this.jobResponse.jobs.length : 0;
-        },
-        nJobsText() {
-            return this.nJobs > 1 ? `${this.nJobs} jobs` : `1 job`;
-        },
-        nInputsText() {
-            return this.nInputs > 1 ? `${this.nInputs} inputs` : `this input`;
-        },
-        nOutputsText() {
-            return this.nOutputs > 1 ? `${this.nOutputs} outputs` : `this output`;
-        },
-    },
-};
+const jobStore = useJobStore();
+const router = useRouter();
+
+const responseVal = computed(() => jobStore.getLatestResponse);
+
+/* lifecyle */
+onMounted(() => {
+    // no response means no ToolForm ran in this session (nothing in store)
+    if (Object.keys(responseVal.value).length === 0) {
+        router.push(`/`);
+    }
+});
+
+const jobDef = computed(() => responseVal.value.jobDef);
+const jobResponse = computed(() => responseVal.value.jobResponse);
+const toolName = computed(() => responseVal.value.toolName);
+
+// getGalaxyInstance is not reactive
+const configEnableRecommendations = getGalaxyInstance().config.enable_tool_recommendations;
+const showRecommendation: boolean = [true, "true"].includes(configEnableRecommendations);
 </script>
+
+<template>
+    <section v-if="jobResponse && jobDef">
+        <div v-if="jobResponse.produces_entry_points">
+            <ToolEntryPoints v-for="job in jobResponse.jobs" :key="job.id" :job-id="job.id" />
+        </div>
+        <ToolSuccessMessage :job-def="jobDef" :job-response="jobResponse" :tool-name="toolName" />
+        <Webhook type="tool" :tool-id="jobDef.tool_id" />
+        <ToolRecommendation v-if="showRecommendation" :tool-id="jobDef.tool_id" />
+    </section>
+</template>

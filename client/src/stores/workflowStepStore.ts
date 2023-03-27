@@ -3,12 +3,14 @@ import { defineStore } from "pinia";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { Connection } from "@/stores/workflowConnectionStore";
 import type { CollectionTypeDescriptor } from "@/components/Workflow/Editor/modules/collectionTypeDescription";
+import { assertDefined } from "@/utils/assertions";
 
 interface State {
     steps: { [index: string]: Step };
     stepIndex: number;
     stepMapOver: { [index: number]: CollectionTypeDescriptor };
     stepInputMapOver: StepInputMapOver;
+    stepExtraInputs: { [index: number]: InputTerminalSource[] };
 }
 
 interface StepPosition {
@@ -129,7 +131,7 @@ export interface ConnectionOutputLink {
     input_subworkflow_step_id?: number;
 }
 
-interface WorkflowOutputs {
+export interface WorkflowOutputs {
     [index: string]: {
         stepId: number;
         outputName: string;
@@ -146,38 +148,16 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
         stepMapOver: {} as { [index: number]: CollectionTypeDescriptor },
         stepInputMapOver: {} as StepInputMapOver,
         stepIndex: -1,
+        stepExtraInputs: {} as { [index: number]: InputTerminalSource[] },
     }),
     getters: {
         getStep(state: State) {
-            return (stepId: number): Step => {
+            return (stepId: number): Step | undefined => {
                 return state.steps[stepId.toString()];
             };
         },
         getStepExtraInputs(state: State) {
-            const extraInputs: { [index: number]: InputTerminalSource[] } = {};
-            Object.values(state.steps).forEach((step) => {
-                if (step?.when !== undefined) {
-                    Object.keys(step.input_connections).forEach((inputName) => {
-                        if (!step.inputs.find((input) => input.name === inputName) && step.when?.includes(inputName)) {
-                            const terminalSource = {
-                                name: inputName,
-                                optional: false,
-                                input_type: "parameter" as const,
-                                type: "boolean" as const,
-                                multiple: false,
-                                label: inputName,
-                                extensions: [],
-                            };
-                            if (extraInputs[step.id]) {
-                                extraInputs[step.id].push(terminalSource);
-                            } else {
-                                extraInputs[step.id] = [terminalSource];
-                            }
-                        }
-                    });
-                }
-            });
-            return (stepId: number) => extraInputs[stepId] || [];
+            return (stepId: number) => this.stepExtraInputs[stepId] || [];
         },
         getStepIndex(state: State) {
             return Math.max(...Object.values(state.steps).map((step) => step.id), state.stepIndex);
@@ -205,18 +185,19 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
     actions: {
         addStep(newStep: NewStep): Step {
             const stepId = newStep.id ? newStep.id : this.getStepIndex + 1;
-            newStep.id = stepId;
-            const step = newStep as Step;
+            const step = Object.freeze({ ...newStep, id: stepId } as Step);
             Vue.set(this.steps, stepId.toString(), step);
             const connectionStore = useConnectionStore();
             stepToConnections(step).map((connection) => connectionStore.addConnection(connection));
+            this.stepExtraInputs[step.id] = getStepExtraInputs(step);
             return step;
         },
         updateStep(this: State, step: Step) {
-            step.workflow_outputs = step.workflow_outputs?.filter((workflowOutput) =>
+            const workflow_outputs = step.workflow_outputs?.filter((workflowOutput) =>
                 step.outputs.find((output) => workflowOutput.output_name == output.name)
             );
-            this.steps[step.id.toString()] = step;
+            this.steps[step.id.toString()] = Object.freeze({ ...step, workflow_outputs });
+            this.stepExtraInputs[step.id] = getStepExtraInputs(step);
         },
         changeStepMapOver(stepId: number, mapOver: CollectionTypeDescriptor) {
             Vue.set(this.stepMapOver, stepId, mapOver);
@@ -226,13 +207,17 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
         },
         changeStepInputMapOver(stepId: number, inputName: string, mapOver: CollectionTypeDescriptor) {
             if (this.stepInputMapOver[stepId]) {
-                Vue.set(this.stepInputMapOver[stepId], inputName, mapOver);
+                Vue.set(this.stepInputMapOver[stepId]!, inputName, mapOver);
             } else {
                 Vue.set(this.stepInputMapOver, stepId, { [inputName]: mapOver });
             }
         },
         addConnection(connection: Connection) {
             const inputStep = this.getStep(connection.input.stepId);
+            assertDefined(
+                inputStep,
+                `Failed to add connection, because step with id ${connection.input.stepId} is undefined`
+            );
             const input = inputStep.inputs.find((input) => input.name === connection.input.name);
             const connectionLink: ConnectionOutputLink = {
                 output_name: connection.output.name,
@@ -241,21 +226,49 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
             if (input && "input_subworkflow_step_id" in input && input.input_subworkflow_step_id !== undefined) {
                 connectionLink["input_subworkflow_step_id"] = input.input_subworkflow_step_id;
             }
+            let connectionLinks: ConnectionOutputLink[] = [connectionLink];
+            let inputConnection = inputStep.input_connections[connection.input.name];
+            if (inputConnection) {
+                if (!Array.isArray(inputConnection)) {
+                    inputConnection = [inputConnection];
+                }
+                inputConnection = inputConnection.filter(
+                    (connection) =>
+                        !(connection.id === connectionLink.id && connection.output_name === connectionLink.output_name)
+                );
+                connectionLinks = [...connectionLinks, ...inputConnection];
+            }
             const updatedStep = {
                 ...inputStep,
                 input_connections: {
                     ...inputStep.input_connections,
-                    [connection.input.name]: connectionLink,
+                    [connection.input.name]: connectionLinks.sort((a, b) =>
+                        a.id === b.id ? a.output_name.localeCompare(b.output_name) : a.id - b.id
+                    ),
                 },
             };
             this.updateStep(updatedStep);
         },
         removeConnection(connection: Connection) {
             const inputStep = this.getStep(connection.input.stepId);
+            assertDefined(
+                inputStep,
+                `Failed to remove connection, because step with id ${connection.input.stepId} is undefined`
+            );
+
+            const inputConnections = inputStep.input_connections[connection.input.name];
             if (this.getStepExtraInputs(inputStep.id).find((input) => connection.input.name === input.name)) {
                 inputStep.input_connections[connection.input.name] = undefined;
             } else {
-                Vue.delete(inputStep.input_connections, connection.input.name);
+                if (Array.isArray(inputConnections)) {
+                    inputStep.input_connections[connection.input.name] = inputConnections.filter(
+                        (outputLink) =>
+                            !(outputLink.id === connection.output.stepId,
+                            outputLink.output_name === connection.output.name)
+                    );
+                } else {
+                    Vue.delete(inputStep.input_connections, connection.input.name);
+                }
             }
             this.updateStep(inputStep);
         },
@@ -263,8 +276,9 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
             const connectionStore = useConnectionStore();
             connectionStore
                 .getConnectionsForStep(stepId)
-                .map((connection) => connectionStore.removeConnection(connection.input));
+                .forEach((connection) => connectionStore.removeConnection(connection.id));
             Vue.delete(this.steps, stepId.toString());
+            Vue.delete(this.stepExtraInputs, stepId);
         },
     },
 });
@@ -301,4 +315,25 @@ export function stepToConnections(step: Step): Connection[] {
         });
     }
     return connections;
+}
+
+function getStepExtraInputs(step: Step) {
+    const extraInputs: InputTerminalSource[] = [];
+    if (step.when !== undefined) {
+        Object.keys(step.input_connections).forEach((inputName) => {
+            if (!step.inputs.find((input) => input.name === inputName) && step.when?.includes(inputName)) {
+                const terminalSource = {
+                    name: inputName,
+                    optional: false,
+                    input_type: "parameter" as const,
+                    type: "boolean" as const,
+                    multiple: false,
+                    label: inputName,
+                    extensions: [],
+                };
+                extraInputs.push(terminalSource);
+            }
+        });
+    }
+    return extraInputs;
 }

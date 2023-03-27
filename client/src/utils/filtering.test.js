@@ -1,8 +1,8 @@
-import { HistoryFilters } from "components/History/HistoryFilters";
+import { HistoryFilters } from "@/components/History/HistoryFilters";
 
 const filterTexts = [
     "name:'name of item' hid>10 hid<100 create-time>'2021-01-01' update-time<'2022-01-01' state:success extension:ext tag:first deleted:False visible:'TRUE'",
-    "name:'name of item' hid_gt:10 hid-lt:100 create_time-gt:'2021-01-01' update_time-lt:'2022-01-01' state:sUccEss extension:EXT tag:FirsT deleted:false visible:true",
+    'name:"name of item" hid_gt:10 hid-lt:100 create_time-gt:"2021-01-01" update_time-lt:\'2022-01-01\' state:sUccEss extension:EXT tag:FirsT deleted:false visible:true',
 ];
 
 describe("filtering", () => {
@@ -147,6 +147,12 @@ describe("filtering", () => {
         const filters = HistoryFilters.getFilters("tag:#test");
         expect(filters[0][0]).toBe("tag");
         expect(filters[0][1]).toBe("#test");
+        const filtersQuote = HistoryFilters.getFilters("tag:'#test me'");
+        expect(filtersQuote[0][0]).toBe("tag");
+        expect(filtersQuote[0][1]).toBe("#test me");
+        const filtersQuoteDouble = HistoryFilters.getFilters('tag:"#test me"');
+        expect(filtersQuoteDouble[0][0]).toBe("tag");
+        expect(filtersQuoteDouble[0][1]).toBe("#test me");
         const queryDict = HistoryFilters.getQueryDict("tag:#test");
         expect(queryDict["tag"]).toBe("name:test");
     });

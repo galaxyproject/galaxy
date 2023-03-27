@@ -333,7 +333,7 @@ class LibraryActions:
                 raise ObjectNotFound(message)
             elif (
                 not trans.app.security_agent.can_access_dataset(current_user_roles, item.dataset)
-                and item.history.user == trans.user
+                and item.user == trans.user
             ):
                 message = f"You do not have permission to access the history dataset with id ({str(item.id)})."
                 raise ItemAccessibilityException(message)

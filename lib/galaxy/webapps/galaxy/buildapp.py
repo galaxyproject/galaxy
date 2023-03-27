@@ -66,6 +66,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
         # Call app's shutdown method when the interpeter exits, this cleanly stops
         # the various Galaxy application daemon threads
         app.application_stack.register_postfork_function(atexit.register, app.shutdown)
+
     # Create the universe WSGI application
     webapp = GalaxyWebApplication(app, session_cookie="galaxysession", name="galaxy")
 
@@ -251,6 +252,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/datasets/{dataset_id}/preview")
     webapp.add_client_route("/datasets/{dataset_id}/show_params")
     webapp.add_client_route("/collection/{collection_id}/edit")
+    webapp.add_client_route("/jobs/submission/success")
     webapp.add_client_route("/jobs/{job_id}/view")
     webapp.add_client_route("/workflows/list")
     webapp.add_client_route("/workflows/list_published")
@@ -1303,13 +1305,7 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
         from paste import recursive
 
         app = wrap_if_allowed(app, stack, recursive.RecursiveMiddleware, args=(conf,))
-    # If sentry logging is enabled, log here before propogating up to
-    # the error middleware
-    sentry_dsn = conf.get("sentry_dsn", None)
-    if sentry_dsn:
-        from sentry_sdk.integrations.wsgi import SentryWsgiMiddleware
 
-        app = wrap_if_allowed(app, stack, SentryWsgiMiddleware)
     # Error middleware
     app = wrap_if_allowed(app, stack, ErrorMiddleware, args=(conf,))
     # Transaction logging (apache access.log style)

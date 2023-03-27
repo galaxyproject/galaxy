@@ -15,7 +15,11 @@ from galaxy_test.base.api_util import random_name
 from tool_shed_client.schema import (
     Category,
     CreateCategoryRequest,
+    CreateRepositoryRequest,
+    from_legacy_install_info,
+    GetInstallInfoRequest,
     GetOrderedInstallableRevisionsRequest,
+    InstallInfo,
     OrderedInstallableRevisions,
     Repository,
     RepositoryIndexRequest,
@@ -24,6 +28,7 @@ from tool_shed_client.schema import (
     RepositorySearchRequest,
     RepositorySearchResults,
     RepositoryUpdate,
+    RepositoryUpdateRequest,
     ResetMetadataOnRepositoryRequest,
     ResetMetadataOnRepositoryResponse,
     ToolSearchRequest,
@@ -66,6 +71,20 @@ class ToolShedPopulator:
         repository = self.setup_column_maker_repo(prefix=prefix)
         return self.get_metadata(repository)
 
+    def get_install_info(self, repository_metadata: RepositoryMetadata) -> InstallInfo:
+        revision_metadata = repository_metadata.latest_revision
+        repo = revision_metadata.repository
+        request = GetInstallInfoRequest(
+            owner=repo.owner,
+            name=repo.name,
+            changeset_revision=revision_metadata.changeset_revision,
+        )
+        revisions_response = self._api_interactor.get(
+            "repositories/get_repository_revision_install_info", params=request.dict()
+        )
+        api_asserts.assert_status_code_is_ok(revisions_response)
+        return from_legacy_install_info(revisions_response.json())
+
     def update_column_maker_repo(self, repository: HasRepositoryId) -> requests.Response:
         response = self.upload_revision(
             repository,
@@ -76,12 +95,14 @@ class ToolShedPopulator:
     def upload_revision_raw(
         self, repository: HasRepositoryId, path: Traversable, commit_message: str = DEFAULT_COMMIT_MESSAGE
     ) -> requests.Response:
-        body = {
-            "commit_message": commit_message,
-        }
+        body = RepositoryUpdateRequest(
+            commit_message=commit_message,
+        )
         files = {"file": path.open("rb")}
         repository_id = self._repository_id(repository)
-        response = self._api_interactor.post(f"repositories/{repository_id}/changeset_revision", json=body, files=files)
+        response = self._api_interactor.post(
+            f"repositories/{repository_id}/changeset_revision", params=body.dict(), files=files
+        )
         return response
 
     def upload_revision(
@@ -94,21 +115,15 @@ class ToolShedPopulator:
     def new_repository(self, category_id, prefix=DEFAULT_PREFIX) -> Repository:
         name = random_name(prefix=prefix)
         synopsis = random_name(prefix=prefix)
-        description = None
-        remote_repository_url = None
-        homepage_url = None
-        category_ids = category_id
-        type = "unrestricted"
-        body = {
-            "name": name,
-            "synopsis": synopsis,
-            "description": description,
-            "remote_repository_url": remote_repository_url,
-            "homepage_url": homepage_url,
-            "category_ids[]": category_ids,
-            "type": type,
-        }
-        response = self._api_interactor.post("repositories", json=body)
+        request = CreateRepositoryRequest(
+            name=name,
+            synopsis=synopsis,
+            category_ids=category_id,
+        )
+        return self.create_repository(request)
+
+    def create_repository(self, request: CreateRepositoryRequest) -> Repository:
+        response = self._api_interactor.post("repositories", json=request.dict(by_alias=True))
         api_asserts.assert_status_code_is_ok(response)
         return Repository(**response.json())
 

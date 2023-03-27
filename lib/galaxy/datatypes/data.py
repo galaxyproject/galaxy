@@ -539,7 +539,7 @@ class Data(metaclass=DataMeta):
                 trans.fill_template_mako(
                     "/dataset/large_file.mako",
                     truncated_data=open(dataset.file_name, "rb").read(max_peek_size),
-                    dataset=dataset,
+                    data=dataset,
                 ),
                 headers,
             )

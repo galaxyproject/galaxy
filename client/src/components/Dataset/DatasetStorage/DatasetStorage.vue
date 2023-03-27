@@ -16,17 +16,7 @@
             </p>
         </div>
         <div v-else>
-            <p>
-                This dataset is stored in
-                <span v-if="storageInfo.name" class="display-os-by-name">
-                    a Galaxy object store named <b>{{ storageInfo.name }}</b>
-                </span>
-                <span v-else-if="storageInfo.object_store_id" class="display-os-by-id">
-                    a Galaxy object store with id <b>{{ storageInfo.object_store_id }}</b>
-                </span>
-                <span v-else class="display-os-default"> the default configured Galaxy object store </span>.
-            </p>
-            <div v-html="descriptionRendered"></div>
+            <describe-object-store what="This dataset is stored in" :storage-info="storageInfo" />
         </div>
     </div>
 </template>
@@ -34,12 +24,13 @@
 <script>
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
-import LoadingSpan from "components/LoadingSpan";
-import MarkdownIt from "markdown-it";
 import { errorMessageAsString } from "utils/simple-error";
+import DescribeObjectStore from "components/ObjectStore/DescribeObjectStore";
+import LoadingSpan from "components/LoadingSpan";
 
 export default {
     components: {
+        DescribeObjectStore,
         LoadingSpan,
     },
     props: {
@@ -58,7 +49,6 @@ export default {
     data() {
         return {
             storageInfo: null,
-            descriptionRendered: null,
             errorMessage: null,
         };
     },
@@ -94,13 +84,7 @@ export default {
     methods: {
         handleResponse(response) {
             const storageInfo = response.data;
-            const description = storageInfo.description;
             this.storageInfo = storageInfo;
-            if (description) {
-                this.descriptionRendered = MarkdownIt({ html: true }).render(storageInfo.description);
-            } else {
-                this.descriptionRendered = null;
-            }
         },
     },
 };

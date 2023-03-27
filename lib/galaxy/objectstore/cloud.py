@@ -400,8 +400,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
     def _get_size_in_cloud(self, rel_path):
         try:
             obj = self.bucket.objects.get(rel_path)
-            if obj:
-                return obj.size
+            return obj.size
         except Exception:
             log.exception("Could not get size of key '%s' from S3", rel_path)
             return -1
@@ -608,6 +607,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
                 rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
                 open(os.path.join(self.staging_path, rel_path), "w").close()
                 self._push_to_os(rel_path, from_string="")
+        return self
 
     def _empty(self, obj, **kwargs):
         if self._exists(obj, **kwargs):

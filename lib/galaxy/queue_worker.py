@@ -216,12 +216,15 @@ def reload_sanitize_allowlist(app):
 
 
 def recalculate_user_disk_usage(app, **kwargs):
+    object_store = kwargs.get("object_store", None)
     user_id = kwargs.get("user_id", None)
     sa_session = app.model.context
+    if object_store is None:
+        log.error("Recalculate user disk usage task received without object_store.")
     if user_id:
         user = sa_session.query(app.model.User).get(user_id)
         if user:
-            user.calculate_and_set_disk_usage()
+            user.calculate_and_set_disk_usage(object_store)
         else:
             log.error(f"Recalculate user disk usage task failed, user {user_id} not found")
     else:

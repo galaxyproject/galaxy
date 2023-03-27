@@ -646,6 +646,7 @@ export default {
             const stepData = {
                 name: name,
                 content_id: contentId,
+                input_connections: {},
                 type: type,
                 outputs: [],
                 position: defaultPosition(this.graphOffset, this.transform),
@@ -655,6 +656,7 @@ export default {
             getModule(stepData, id, this.stateStore.setLoadingState).then((response) => {
                 this.stepStore.updateStep({
                     ...stepData,
+                    id: id,
                     tool_state: response.tool_state,
                     inputs: response.inputs,
                     outputs: response.outputs,

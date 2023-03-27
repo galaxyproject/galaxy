@@ -4,6 +4,7 @@
         <DelayedInput
             :class="!showAdvanced && 'mb-3'"
             :query="query"
+            :delay="100"
             :show-advanced="showAdvanced"
             :enable-advanced="enableAdvanced"
             :placeholder="showAdvanced ? 'any name' : placeholder"
@@ -109,7 +110,7 @@ export default {
                     this.$emit("onResults", this.favoritesResults);
                 } else {
                     // keys with sorting order
-                    const keys = { exact: 3, name: 2, description: 1, combined: 0 };
+                    const keys = { exact: 4, name: 3, hyphenated: 2, description: 1, combined: 0 };
                     this.$emit("onResults", searchToolsByKeys(this.toolsList, keys, q));
                 }
             } else {

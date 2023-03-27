@@ -36,6 +36,10 @@ from galaxy.util.tool_shed import (
     common_util,
     encoding_util,
 )
+from tool_shed_client.schema import (
+    ExtraRepoInfo,
+    RepositoryMetadataInstallInfoDict,
+)
 
 log = logging.getLogger(__name__)
 
@@ -73,7 +77,7 @@ class InstallRepositoryManager:
 
     def __get_install_info_from_tool_shed(
         self, tool_shed_url: str, name: str, owner: str, changeset_revision: str
-    ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
+    ) -> Tuple[RepositoryMetadataInstallInfoDict, List[ExtraRepoInfo]]:
         params = dict(name=name, owner=owner, changeset_revision=changeset_revision)
         pathspec = ["api", "repositories", "get_repository_revision_install_info"]
         try:
@@ -94,8 +98,8 @@ class InstallRepositoryManager:
             # Repository revision (RepositoryMetadata), and a dictionary including the additional
             # information required to install the repository.
             items = json.loads(util.unicodify(raw_text))
-            repository_revision_dict = items[1]
-            repo_info_dict = items[2]
+            repository_revision_dict: RepositoryMetadataInstallInfoDict = items[1]
+            repo_info_dict: ExtraRepoInfo = items[2]
         else:
             message = (
                 "Unable to retrieve installation information from tool shed %s for revision %s of repository %s owned by %s"
@@ -343,8 +347,8 @@ class InstallRepositoryManager:
     def __initiate_and_install_repositories(
         self,
         tool_shed_url: str,
-        repository_revision_dict: Dict[str, Any],
-        repo_info_dicts: List[Dict[str, Any]],
+        repository_revision_dict: RepositoryMetadataInstallInfoDict,
+        repo_info_dicts: List[ExtraRepoInfo],
         install_options: Dict[str, Any],
     ):
         try:

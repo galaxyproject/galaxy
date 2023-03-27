@@ -2108,6 +2108,15 @@ mapping:
           Determines the minimum log level that will be sent as an event to Sentry.
           Possible values are DEBUG, INFO, WARNING, ERROR or CRITICAL.
 
+      sentry_traces_sample_rate:
+        type: float
+        default: 0.0
+        required: false
+        desc: |
+          Set to a number between 0 and 1. With this option set, every transaction created
+          will have that percentage chance of being sent to Sentry. A value higher than 0
+          is required to analyze performance.
+
       statsd_host:
         type: str
         required: false
@@ -2897,13 +2906,6 @@ mapping:
           When the simplified workflow run form is rendered, should the invocation use job
           caching. This isn't a boolean so an option for 'show-selection' can be added later.
 
-      myexperiment_target_url:
-        type: str
-        default: www.myexperiment.org:80
-        required: false
-        desc: |
-          The URL to the myExperiment instance being used (omit scheme but include port).
-
       ftp_upload_site:
         type: str
         required: false
@@ -3561,6 +3563,9 @@ mapping:
 
           The `broker_url` option, if unset, defaults to the value of `amqp_internal_connection`.
           The `result_backend` option must be set if the `enable_celery_tasks` option is set.
+
+          The galaxy.fetch_data task can be disabled by setting its route to "disabled": `galaxy.fetch_data: disabled`.
+          (Other tasks cannot be disabled on a per-task basis at this time.)
 
           For details, see Celery documentation at https://docs.celeryq.dev/en/stable/userguide/configuration.html.
 

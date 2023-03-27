@@ -77,11 +77,10 @@
                 :input="input"
                 :step-id="id"
                 :datatypes-mapper="datatypesMapper"
-                :step-position="step.position"
+                :step-position="step.position ?? { top: 0, left: 0 }"
                 :root-offset="rootOffset"
                 :scroll="scroll"
                 :scale="scale"
-                v-on="$listeners"
                 @onChange="onChange" />
             <div v-if="showRule" class="rule" />
             <node-output
@@ -92,12 +91,12 @@
                 :post-job-actions="postJobActions"
                 :step-id="id"
                 :step-type="step.type"
-                :step-position="step.position"
+                :step-position="step.position ?? { top: 0, left: 0 }"
                 :root-offset="rootOffset"
                 :scroll="scroll"
                 :scale="scale"
                 :datatypes-mapper="datatypesMapper"
-                v-on="$listeners"
+                @onDragConnector="onDragConnector"
                 @stopDragging="onStopDragging"
                 @onChange="onChange" />
         </div>
@@ -117,7 +116,7 @@ import NodeOutput from "@/components/Workflow/Editor/NodeOutput.vue";
 import DraggableWrapper from "@/components/Workflow/Editor/DraggablePan.vue";
 import { computed, ref } from "vue";
 import { useNodePosition } from "@/components/Workflow/Editor/composables/useNodePosition";
-import { useWorkflowStateStore, type XYPosition } from "@/stores/workflowEditorStateStore";
+import { useWorkflowStateStore, type TerminalPosition, type XYPosition } from "@/stores/workflowEditorStateStore";
 import type { Step } from "@/stores/workflowStepStore";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import type { UseElementBoundingReturn, UseScrollReturn } from "@vueuse/core";
@@ -126,6 +125,7 @@ import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { faCodeBranch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
+import type { OutputTerminals } from "./modules/terminals";
 
 Vue.use(BootstrapVue);
 
@@ -158,6 +158,7 @@ const emit = defineEmits([
     "onClone",
     "onUpdateStepPosition",
     "pan-by",
+    "onDragConnector",
     "stopDragging",
 ]);
 
@@ -239,6 +240,10 @@ const outputs = computed(() => {
     }
     return [...stepOutputs, ...invalidOutputs.value];
 });
+
+function onDragConnector(dragPosition: TerminalPosition, terminal: OutputTerminals) {
+    emit("onDragConnector", dragPosition, terminal);
+}
 
 function onMoveTo(position: XYPosition) {
     emit("onUpdateStepPosition", props.id, {

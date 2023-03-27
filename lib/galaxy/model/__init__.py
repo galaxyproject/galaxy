@@ -27,6 +27,8 @@ from typing import (
     List,
     NamedTuple,
     Optional,
+    overload,
+    Set,
     Tuple,
     Type,
     TYPE_CHECKING,
@@ -39,6 +41,7 @@ from uuid import (
 
 import sqlalchemy
 from boltons.iterutils import remap
+from pydantic import BaseModel
 from social_core.storage import (
     AssociationMixin,
     CodeMixin,
@@ -51,6 +54,7 @@ from sqlalchemy import (
     and_,
     asc,
     BigInteger,
+    bindparam,
     Boolean,
     Column,
     DateTime,
@@ -98,7 +102,11 @@ from sqlalchemy.orm import (
 )
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.sql import exists
-from typing_extensions import Protocol
+from typing_extensions import (
+    Literal,
+    Protocol,
+    TypedDict,
+)
 
 import galaxy.exceptions
 import galaxy.model.metadata
@@ -175,6 +183,7 @@ JOB_METRIC_SCALE = 7
 # Tags that get automatically propagated from inputs to outputs when running jobs.
 AUTO_PROPAGATED_TAGS = ["name"]
 YIELD_PER_ROWS = 100
+CANNOT_SHARE_PRIVATE_DATASET_MESSAGE = "Attempting to share a non-shareable dataset."
 
 
 if TYPE_CHECKING:
@@ -525,6 +534,122 @@ class JobLike:
         raise NotImplementedError("Attempt to set stdout, must set tool_stderr or job_stderr")
 
 
+UNIQUE_DATASET_USER_USAGE = """
+WITH per_user_histories AS
+(
+    SELECT id
+    FROM history
+    WHERE user_id = :id
+        AND NOT purged
+),
+per_hist_hdas AS (
+    SELECT DISTINCT dataset_id
+    FROM history_dataset_association
+    WHERE NOT purged
+        AND history_id IN (SELECT id FROM per_user_histories)
+)
+SELECT COALESCE(SUM(COALESCE(dataset.total_size, dataset.file_size, 0)), 0)
+FROM dataset
+LEFT OUTER JOIN library_dataset_dataset_association ON dataset.id = library_dataset_dataset_association.dataset_id
+WHERE dataset.id IN (SELECT dataset_id FROM per_hist_hdas)
+    AND library_dataset_dataset_association.id IS NULL
+    AND (
+        {dataset_condition}
+    )
+"""
+
+
+def calculate_user_disk_usage_statements(user_id, quota_source_map, for_sqlite=False):
+    """Standalone function so can be reused for postgres directly in pgcleanup.py."""
+    statements = []
+    default_quota_enabled = quota_source_map.default_quota_enabled
+    default_exclude_ids = quota_source_map.default_usage_excluded_ids()
+    default_cond = "dataset.object_store_id IS NULL" if default_quota_enabled else ""
+    exclude_cond = "dataset.object_store_id NOT IN :exclude_object_store_ids" if default_exclude_ids else ""
+    use_or = " OR " if (default_cond != "" and exclude_cond != "") else ""
+    default_usage_dataset_condition = "{default_cond} {use_or} {exclude_cond}".format(
+        default_cond=default_cond,
+        exclude_cond=exclude_cond,
+        use_or=use_or,
+    )
+    default_usage = UNIQUE_DATASET_USER_USAGE.format(dataset_condition=default_usage_dataset_condition)
+    default_usage = (
+        """
+UPDATE galaxy_user SET disk_usage = (%s)
+WHERE id = :id
+"""
+        % default_usage
+    )
+    params = {"id": user_id}
+    if default_exclude_ids:
+        params["exclude_object_store_ids"] = default_exclude_ids
+    statements.append((default_usage, params))
+    source = quota_source_map.ids_per_quota_source()
+    # TODO: Merge a lot of these settings together by generating a temp table for
+    # the object_store_id to quota_source_label into a temp table of values
+    for quota_source_label, object_store_ids in source.items():
+        label_usage = UNIQUE_DATASET_USER_USAGE.format(
+            dataset_condition="dataset.object_store_id IN :include_object_store_ids"
+        )
+        if for_sqlite:
+            # hacky alternative for older sqlite
+            statement = """
+WITH new (user_id, quota_source_label, disk_usage) AS (
+    VALUES(:id, :label, ({label_usage}))
+)
+INSERT OR REPLACE INTO user_quota_source_usage (id, user_id, quota_source_label, disk_usage)
+SELECT old.id, new.user_id, new.quota_source_label, new.disk_usage
+FROM new
+    LEFT JOIN user_quota_source_usage AS old
+        ON new.user_id = old.user_id
+            AND new.quota_source_label = old.quota_source_label
+""".format(
+                label_usage=label_usage
+            )
+        else:
+            statement = """
+INSERT INTO user_quota_source_usage(user_id, quota_source_label, disk_usage)
+VALUES(:user_id, :label, ({label_usage}))
+ON CONFLICT
+ON constraint uqsu_unique_label_per_user
+DO UPDATE SET disk_usage = excluded.disk_usage
+""".format(
+                label_usage=label_usage
+            )
+        statements.append(
+            (statement, {"id": user_id, "label": quota_source_label, "include_object_store_ids": object_store_ids})
+        )
+
+    params = {"id": user_id}
+    source_labels = list(source.keys())
+    if len(source_labels) > 0:
+        clean_old_statement = """
+DELETE FROM user_quota_source_usage
+WHERE user_id = :id AND quota_source_label NOT IN :labels
+"""
+        params["labels"] = source_labels
+    else:
+        clean_old_statement = """
+DELETE FROM user_quota_source_usage
+WHERE user_id = :id AND quota_source_label IS NOT NULL
+"""
+    statements.append((clean_old_statement, params))
+    return statements
+
+
+# move these to galaxy.schema.schema once galaxy-data depends on
+# galaxy-schema.
+class UserQuotaBasicUsage(BaseModel):
+    quota_source_label: Optional[str]
+    total_disk_usage: float
+
+
+class UserQuotaUsage(UserQuotaBasicUsage):
+    quota_percent: Optional[float]
+    quota_bytes: Optional[int]
+    quota: Optional[str]
+
+
 class User(Base, Dictifiable, RepresentById):
     """
     Data for a Galaxy user or admin and relations to their
@@ -546,6 +671,7 @@ class User(Base, Dictifiable, RepresentById):
     last_password_change = Column(DateTime, default=now)
     external = Column(Boolean, default=False)
     form_values_id = Column(Integer, ForeignKey("form_values.id"), index=True)
+    preferred_object_store_id = Column(String(255), nullable=True)
     deleted = Column(Boolean, index=True, default=False)
     purged = Column(Boolean, index=True, default=False)
     disk_usage = Column(Numeric(15, 0), index=True)
@@ -571,6 +697,7 @@ class User(Base, Dictifiable, RepresentById):
         "GalaxySession", back_populates="user", order_by=lambda: desc(GalaxySession.update_time)  # type: ignore[has-type]
     )
     quotas = relationship("UserQuotaAssociation", back_populates="user")
+    quota_source_usages = relationship("UserQuotaSourceUsage", back_populates="user")
     social_auth = relationship("UserAuthnzToken", back_populates="user")
     stored_workflow_menu_entries = relationship(
         "StoredWorkflowMenuEntry",
@@ -620,6 +747,7 @@ class User(Base, Dictifiable, RepresentById):
         "deleted",
         "active",
         "last_password_change",
+        "preferred_object_store_id",
     ]
 
     def __init__(self, email=None, password=None, username=None):
@@ -727,14 +855,31 @@ class User(Base, Dictifiable, RepresentById):
                     roles.append(role)
         return roles
 
-    def get_disk_usage(self, nice_size=False):
+    def get_disk_usage(self, nice_size=False, quota_source_label=None):
         """
         Return byte count of disk space used by user or a human-readable
         string if `nice_size` is `True`.
         """
-        rval = 0
-        if self.disk_usage is not None:
-            rval = self.disk_usage
+        if quota_source_label is None:
+            rval = 0
+            if self.disk_usage is not None:
+                rval = self.disk_usage
+        else:
+            statement = """
+SELECT DISK_USAGE
+FROM user_quota_source_usage
+WHERE user_id = :user_id and quota_source_label = :label
+"""
+            sa_session = object_session(self)
+            params = {
+                "user_id": self.id,
+                "label": quota_source_label,
+            }
+            row = sa_session.execute(statement, params).fetchone()
+            if row is not None:
+                rval = row[0]
+            else:
+                rval = 0
         if nice_size:
             rval = galaxy.util.nice_size(rval)
         return rval
@@ -747,9 +892,36 @@ class User(Base, Dictifiable, RepresentById):
 
     total_disk_usage = property(get_disk_usage, set_disk_usage)
 
-    def adjust_total_disk_usage(self, amount):
+    def adjust_total_disk_usage(self, amount, quota_source_label):
+        assert amount is not None
         if amount != 0:
-            self.disk_usage = func.coalesce(self.table.c.disk_usage, 0) + amount
+            if quota_source_label is None:
+                self.disk_usage = func.coalesce(self.table.c.disk_usage, 0) + amount
+            else:
+                # else would work on newer sqlite - 3.24.0
+                sa_session = object_session(self)
+                if "sqlite" in sa_session.bind.dialect.name:
+                    # hacky alternative for older sqlite
+                    statement = """
+WITH new (user_id, quota_source_label) AS ( VALUES(:user_id, :label) )
+INSERT OR REPLACE INTO user_quota_source_usage (id, user_id, quota_source_label, disk_usage)
+SELECT old.id, new.user_id, new.quota_source_label, COALESCE(old.disk_usage + :amount, :amount)
+FROM new LEFT JOIN user_quota_source_usage AS old ON new.user_id = old.user_id AND NEW.quota_source_label = old.quota_source_label;
+"""
+                else:
+                    statement = """
+INSERT INTO user_quota_source_usage(user_id, disk_usage, quota_source_label)
+VALUES(:user_id, :amount, :label)
+ON CONFLICT
+    ON constraint uqsu_unique_label_per_user
+    DO UPDATE SET disk_usage = user_quota_source_usage.disk_usage + :amount
+"""
+                params = {
+                    "user_id": self.id,
+                    "amount": int(amount),
+                    "label": quota_source_label,
+                }
+                sa_session.execute(statement, params)
 
     def _get_social_auth(self, provider_backend):
         if not self.social_auth:
@@ -792,53 +964,58 @@ class User(Base, Dictifiable, RepresentById):
         """
         return self.get_disk_usage(nice_size=True)
 
-    def calculate_disk_usage(self):
+    def calculate_disk_usage_default_source(self, object_store):
         """
         Return byte count total of disk space used by all non-purged, non-library
-        HDAs in non-purged histories.
+        HDAs in non-purged histories assigned to default quota source.
         """
-        # maintain a list so that we don't double count
-        return self._calculate_or_set_disk_usage(dryrun=True)
+        # only used in set_user_disk_usage.py
+        assert object_store is not None
+        quota_source_map = object_store.get_quota_source_map()
+        default_quota_enabled = quota_source_map.default_quota_enabled
+        default_cond = "dataset.object_store_id IS NULL OR" if default_quota_enabled else ""
+        default_usage_dataset_condition = (
+            "{default_cond} dataset.object_store_id NOT IN :exclude_object_store_ids".format(
+                default_cond=default_cond,
+            )
+        )
+        default_usage = UNIQUE_DATASET_USER_USAGE.format(dataset_condition=default_usage_dataset_condition)
+        sql_calc = text(default_usage)
+        sql_calc = sql_calc.bindparams(bindparam("id"), bindparam("exclude_object_store_ids", expanding=True))
+        params = {"id": self.id, "exclude_object_store_ids": quota_source_map.default_usage_excluded_ids()}
+        sa_session = object_session(self)
+        usage = sa_session.scalar(sql_calc, params)
+        return usage
 
-    def calculate_and_set_disk_usage(self):
+    def calculate_and_set_disk_usage(self, object_store):
         """
         Calculates and sets user disk usage.
         """
-        self._calculate_or_set_disk_usage(dryrun=False)
+        self._calculate_or_set_disk_usage(object_store=object_store)
 
-    def _calculate_or_set_disk_usage(self, dryrun=True):
+    def _calculate_or_set_disk_usage(self, object_store):
         """
         Utility to calculate and return the disk usage.  If dryrun is False,
         the new value is set immediately.
         """
-        sql_calc = text(
-            """
-            WITH per_user_histories AS
-            (
-                SELECT id
-                FROM history
-                WHERE user_id = :id
-                    AND NOT purged
-            ),
-            per_hist_hdas AS (
-                SELECT DISTINCT dataset_id
-                FROM history_dataset_association
-                WHERE NOT purged
-                    AND history_id IN (SELECT id FROM per_user_histories)
-            )
-            SELECT SUM(COALESCE(dataset.total_size, dataset.file_size, 0))
-            FROM dataset
-            LEFT OUTER JOIN library_dataset_dataset_association ON dataset.id = library_dataset_dataset_association.dataset_id
-            WHERE dataset.id IN (SELECT dataset_id FROM per_hist_hdas)
-                AND library_dataset_dataset_association.id IS NULL
-        """
-        )
+        assert object_store is not None
+        quota_source_map = object_store.get_quota_source_map()
         sa_session = object_session(self)
-        usage = sa_session.scalar(sql_calc, {"id": self.id})
-        if not dryrun:
-            self.set_disk_usage(usage)
-            sa_session.flush()
-        return usage
+        for_sqlite = "sqlite" in sa_session.bind.dialect.name
+        statements = calculate_user_disk_usage_statements(self.id, quota_source_map, for_sqlite)
+        for sql, args in statements:
+            statement = text(sql)
+            binds = []
+            for key, _ in args.items():
+                expand_binding = key.endswith("s")
+                binds.append(bindparam(key, expanding=expand_binding))
+            statement = statement.bindparams(*binds)
+            sa_session.execute(statement, args)
+            # expire user.disk_usage so sqlalchemy knows to ignore
+            # the existing value - we're setting it in raw SQL for
+            # performance reasons and bypassing object properties.
+            sa_session.expire(self, ["disk_usage"])
+        sa_session.flush()
 
     @staticmethod
     def user_template_environment(user):
@@ -901,6 +1078,66 @@ class User(Base, Dictifiable, RepresentById):
         assoc = UserRoleAssociation(self, role)
         session.add(assoc)
         session.flush()
+
+    def dictify_usage(self, object_store=None) -> List[UserQuotaBasicUsage]:
+        """Include object_store to include empty/unused usage info."""
+        used_labels: Set[Union[str, None]] = set()
+        rval: List[UserQuotaBasicUsage] = [
+            UserQuotaBasicUsage(
+                quota_source_label=None,
+                total_disk_usage=float(self.disk_usage or 0),
+            )
+        ]
+        used_labels.add(None)
+        for quota_source_usage in self.quota_source_usages:
+            label = quota_source_usage.quota_source_label
+            rval.append(
+                UserQuotaBasicUsage(
+                    quota_source_label=label,
+                    total_disk_usage=float(quota_source_usage.disk_usage),
+                )
+            )
+            used_labels.add(label)
+
+        if object_store is not None:
+            for label in object_store.get_quota_source_map().ids_per_quota_source().keys():
+                if label not in used_labels:
+                    rval.append(
+                        UserQuotaBasicUsage(
+                            quota_source_label=label,
+                            total_disk_usage=0.0,
+                        )
+                    )
+
+        return rval
+
+    def dictify_usage_for(self, quota_source_label: Optional[str]) -> UserQuotaBasicUsage:
+        rval: UserQuotaBasicUsage
+        if quota_source_label is None:
+            rval = UserQuotaBasicUsage(
+                quota_source_label=None,
+                total_disk_usage=float(self.disk_usage or 0),
+            )
+        else:
+            quota_source_usage = self.quota_source_usage_for(quota_source_label)
+            if quota_source_usage is None:
+                rval = UserQuotaBasicUsage(
+                    quota_source_label=quota_source_label,
+                    total_disk_usage=0.0,
+                )
+            else:
+                rval = UserQuotaBasicUsage(
+                    quota_source_label=quota_source_label,
+                    total_disk_usage=float(quota_source_usage.disk_usage),
+                )
+
+        return rval
+
+    def quota_source_usage_for(self, quota_source_label: Optional[str]) -> Optional["UserQuotaSourceUsage"]:
+        for quota_source_usage in self.quota_source_usages:
+            if quota_source_usage.quota_source_label == quota_source_label:
+                return quota_source_usage
+        return None
 
 
 class PasswordResetToken(Base):
@@ -1044,6 +1281,8 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     imported = Column(Boolean, default=False, index=True)
     params = Column(TrimmedString(255), index=True)
     handler = Column(TrimmedString(255), index=True)
+    preferred_object_store_id = Column(String(255), nullable=True)
+    object_store_id_overrides = Column(JSONType)
 
     user = relationship("User")
     galaxy_session = relationship("GalaxySession")
@@ -1105,7 +1344,6 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         PAUSED = "paused"
         DELETING = "deleting"
         DELETED = "deleted"
-        DELETED_NEW = "deleted_new"  # now DELETING, remove after 21.0
         STOPPING = "stop"
         STOPPED = "stopped"
         SKIPPED = "skipped"
@@ -1141,7 +1379,6 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             states.ERROR,
             states.DELETING,
             states.DELETED,
-            states.DELETED_NEW,
         ]
 
     def io_dicts(self, exclude_implicit_outputs=False) -> IoDicts:
@@ -1516,6 +1753,19 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             params_dict[name] = value
         job_attrs["params"] = params_dict
         return job_attrs
+
+    def requires_shareable_storage(self, security_agent):
+        # An easy optimization would be to calculate this in galaxy.tools.actions when the
+        # job is created and all the output permissions are already known. Having to reload
+        # these permissions in the job code shouldn't strictly be needed.
+
+        requires_sharing = False
+        for dataset_assoc in self.output_datasets + self.output_library_datasets:
+            if not security_agent.dataset_is_private_to_a_user(dataset_assoc.dataset.dataset):
+                requires_sharing = True
+                break
+
+        return requires_sharing
 
     def to_dict(self, view="collection", system_details=False):
         if view == "admin_job_list":
@@ -2546,6 +2796,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     importable = Column(Boolean, default=False)
     slug = Column(TEXT)
     published = Column(Boolean, index=True, default=False)
+    preferred_object_store_id = Column(String(255), nullable=True)
 
     datasets = relationship(
         "HistoryDatasetAssociation", back_populates="history", cascade_backrefs=False, order_by=lambda: asc(HistoryDatasetAssociation.hid)  # type: ignore[has-type]
@@ -2644,6 +2895,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         "importable",
         "slug",
         "empty",
+        "preferred_object_store_id",
     ]
     default_name = "Unnamed history"
 
@@ -2748,7 +3000,9 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
                 dataset.hid = self._next_hid()
         add_object_to_object_session(dataset, self)
         if quota and is_dataset and self.user:
-            self.user.adjust_total_disk_usage(dataset.quota_amount(self.user))
+            quota_source_info = dataset.dataset.quota_source_info
+            if quota_source_info.use:
+                self.user.adjust_total_disk_usage(dataset.quota_amount(self.user), quota_source_info.label)
         dataset.history = self
         if is_dataset and genome_build not in [None, "?"]:
             self.genome_build = genome_build
@@ -2766,7 +3020,10 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
             self.__add_datasets_optimized(datasets, genome_build=genome_build)
             if quota and self.user:
                 disk_usage = sum(d.get_total_size() for d in datasets if is_hda(d))
-                self.user.adjust_total_disk_usage(disk_usage)
+                if disk_usage:
+                    quota_source_info = datasets[0].dataset.quota_source_info
+                    if quota_source_info.use:
+                        self.user.adjust_total_disk_usage(disk_usage, quota_source_info.label)
             sa_session.add_all(datasets)
             if flush:
                 sa_session.flush()
@@ -3066,7 +3323,14 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         visible = galaxy.util.string_as_bool_or_none(kwds.get("visible", None))
         if visible is not None:
             query = query.filter(content_class.visible == visible)
+        if "object_store_ids" in kwds:
+            if content_class == HistoryDatasetAssociation:
+                query = query.join(content_class.dataset).filter(
+                    Dataset.table.c.object_store_id.in_(kwds.get("object_store_ids"))
+                )
+            # else ignoring object_store_ids on HDCAs...
         if "ids" in kwds:
+            assert "object_store_ids" not in kwds
             ids = kwds["ids"]
             max_in_filter_length = kwds.get("max_in_filter_length", MAX_IN_FILTER_LENGTH)
             if len(ids) < max_in_filter_length:
@@ -3159,6 +3423,20 @@ class Role(Base, Dictifiable, RepresentById):
         self.deleted = deleted
 
 
+class UserQuotaSourceUsage(Base, Dictifiable, RepresentById):
+    __tablename__ = "user_quota_source_usage"
+    __table_args__ = (UniqueConstraint("user_id", "quota_source_label", name="uqsu_unique_label_per_user"),)
+
+    dict_element_visible_keys = ["disk_usage", "quota_source_label"]
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("galaxy_user.id"), index=True)
+    quota_source_label = Column(String(32), index=True)
+    # user had an index on disk_usage - does that make any sense? -John
+    disk_usage = Column(Numeric(15, 0), default=0, nullable=False)
+    user = relationship("User", back_populates="quota_source_usages")
+
+
 class UserQuotaAssociation(Base, Dictifiable, RepresentById):
     __tablename__ = "user_quota_association"
 
@@ -3199,6 +3477,7 @@ class GroupQuotaAssociation(Base, Dictifiable, RepresentById):
 
 class Quota(Base, Dictifiable, RepresentById):
     __tablename__ = "quota"
+    __table_args__ = (Index("ix_quota_quota_source_label", "quota_source_label"),)
 
     id = Column(Integer, primary_key=True)
     create_time = Column(DateTime, default=now)
@@ -3208,11 +3487,12 @@ class Quota(Base, Dictifiable, RepresentById):
     bytes = Column(BigInteger)
     operation = Column(String(8))
     deleted = Column(Boolean, index=True, default=False)
+    quota_source_label = Column(String(32), default=None)
     default = relationship("DefaultQuotaAssociation", back_populates="quota")
     groups = relationship("GroupQuotaAssociation", back_populates="quota")
     users = relationship("UserQuotaAssociation", back_populates="quota")
 
-    dict_collection_visible_keys = ["id", "name"]
+    dict_collection_visible_keys = ["id", "name", "quota_source_label"]
     dict_element_visible_keys = [
         "id",
         "name",
@@ -3223,10 +3503,11 @@ class Quota(Base, Dictifiable, RepresentById):
         "default",
         "users",
         "groups",
+        "quota_source_label",
     ]
     valid_operations = ("+", "-", "=")
 
-    def __init__(self, name=None, description=None, amount=0, operation="="):
+    def __init__(self, name=None, description=None, amount=0, operation="=", quota_source_label=None):
         self.name = name
         self.description = description
         if amount is None:
@@ -3234,6 +3515,7 @@ class Quota(Base, Dictifiable, RepresentById):
         else:
             self.bytes = amount
         self.operation = operation
+        self.quota_source_label = quota_source_label
 
     def get_amount(self):
         if self.bytes == -1:
@@ -3262,7 +3544,7 @@ class DefaultQuotaAssociation(Base, Dictifiable, RepresentById):
     id = Column(Integer, primary_key=True)
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, default=now, onupdate=now)
-    type = Column(String(32), index=True, unique=True)
+    type = Column(String(32), index=True)
     quota_id = Column(Integer, ForeignKey("quota.id"), index=True)
     quota = relationship("Quota", back_populates="default")
 
@@ -3572,14 +3854,27 @@ class Dataset(Base, StorableObject, Serializable):
     def in_ready_state(self):
         return self.state in self.ready_states
 
+    @property
+    def shareable(self):
+        """Return True if placed into an objectstore not labeled as ``private``."""
+        if self.external_filename:
+            return True
+        else:
+            object_store = self._assert_object_store_set()
+            return not object_store.is_private(self)
+
+    def ensure_shareable(self):
+        if not self.shareable:
+            raise Exception(CANNOT_SHARE_PRIVATE_DATASET_MESSAGE)
+
     def get_file_name(self):
         if self.purged:
             log.warning(f"Attempt to get file name of purged dataset {self.id}")
             return ""
         if not self.external_filename:
-            assert self.object_store is not None, f"Object Store has not been initialized for dataset {self.id}"
-            if self.object_store.exists(self):
-                file_name = self.object_store.get_filename(self)
+            object_store = self._assert_object_store_set()
+            if object_store.exists(self):
+                file_name = object_store.get_filename(self)
             else:
                 file_name = ""
             if not file_name and self.state not in (self.states.NEW, self.states.QUEUED):
@@ -3592,6 +3887,16 @@ class Dataset(Base, StorableObject, Serializable):
         # Make filename absolute
         return os.path.abspath(filename)
 
+    @property
+    def quota_source_label(self):
+        return self.quota_source_info.label
+
+    @property
+    def quota_source_info(self):
+        object_store_id = self.object_store_id
+        quota_source_map = self.object_store.get_quota_source_map()
+        return quota_source_map.get_quota_source_info(object_store_id)
+
     def set_file_name(self, filename):
         if not filename:
             self.external_filename = None
@@ -3599,6 +3904,10 @@ class Dataset(Base, StorableObject, Serializable):
             self.external_filename = filename
 
     file_name = property(get_file_name, set_file_name)
+
+    def _assert_object_store_set(self):
+        assert self.object_store is not None, f"Object Store has not been initialized for dataset {self.id}"
+        return self.object_store
 
     def get_extra_files_path(self):
         # Unlike get_file_name - external_extra_files_path is not backed by an
@@ -3646,16 +3955,24 @@ class Dataset(Base, StorableObject, Serializable):
     def _extra_files_rel_path(self):
         return self._extra_files_path or self.extra_files_path_name
 
-    def _calculate_size(self):
+    def _calculate_size(self) -> int:
         if self.external_filename:
             try:
                 return os.path.getsize(self.external_filename)
             except OSError:
                 return 0
-        else:
-            return self.object_store.size(self)
+        assert self.object_store
+        return self.object_store.size(self)
 
-    def get_size(self, nice_size=False, calculate_size=True):
+    @overload
+    def get_size(self, nice_size: Literal[False], calculate_size: bool = True) -> int:
+        ...
+
+    @overload
+    def get_size(self, nice_size: Literal[True], calculate_size: bool = True) -> str:
+        ...
+
+    def get_size(self, nice_size: bool = False, calculate_size: bool = True) -> Union[int, str]:
         """Returns the size of the data on disk"""
         if self.file_size:
             if nice_size:
@@ -4526,6 +4843,11 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         self.copied_from_history_dataset_association = copied_from_history_dataset_association
         self.copied_from_library_dataset_dataset_association = copied_from_library_dataset_dataset_association
 
+    @property
+    def user(self):
+        if self.history:
+            return self.history.user
+
     def __create_version__(self, session):
         state = inspect(self)
         changes = {}
@@ -4573,7 +4895,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         self.validated_state = other_hda.validated_state
         self.validated_state_message = other_hda.validated_state_message
         if include_tags and self.history:
-            self.copy_tags_from(self.history.user, other_hda)
+            self.copy_tags_from(self.user, other_hda)
         self.dataset = new_dataset or other_hda.dataset
         if old_dataset:
             old_dataset.full_delete()
@@ -4635,6 +4957,9 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         """
         Copy this HDA to a library optionally replacing an existing LDDA.
         """
+        if not self.dataset.shareable:
+            raise Exception("Attempting to share a non-shareable dataset.")
+
         if replace_dataset:
             # The replace_dataset param ( when not None ) refers to a LibraryDataset that
             #   is being replaced with a new version.
@@ -4699,10 +5024,10 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         """
         return self.dataset.get_access_roles(security_agent)
 
-    def purge_usage_from_quota(self, user):
+    def purge_usage_from_quota(self, user, quota_source_info):
         """Remove this HDA's quota_amount from user's quota."""
-        if user:
-            user.adjust_total_disk_usage(-self.quota_amount(user))
+        if user and quota_source_info.use:
+            user.adjust_total_disk_usage(-self.quota_amount(user), quota_source_info.label)
 
     def quota_amount(self, user):
         """
@@ -4721,7 +5046,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             for hda in self.dataset.history_associations:
                 if hda.id == self.id:
                     continue
-                if not hda.purged and hda.history and hda.history.user and hda.history.user == user:
+                if not hda.purged and hda.history and hda.user and hda.user == user:
                     break
             else:
                 rval += self.get_total_size()
@@ -7204,9 +7529,16 @@ class WorkflowStep(Base, RepresentById):
                     if inferred_order_index.isdigit():
                         input_subworkflow_steps = [self.subworkflow.step_by_index(int(inferred_order_index))]
                 if len(input_subworkflow_steps) != 1:
-                    raise galaxy.exceptions.MessageException(
-                        f"Invalid subworkflow connection at step index {self.order_index + 1}"
-                    )
+                    # `when` expression inputs don't need to be passed into subworkflow
+                    # In the absence of formal extra step inputs this seems like the best we can do.
+                    # A better way to do these validations is to validate that all required subworkflow inputs
+                    # are connected.
+                    if input_name not in (self.when_expression or ""):
+                        raise galaxy.exceptions.MessageException(
+                            f"Invalid subworkflow connection at step index {self.order_index + 1}"
+                        )
+                    else:
+                        input_subworkflow_steps = [None]
                 input_subworkflow_step = input_subworkflow_steps[0]
             conn.input_subworkflow_step = input_subworkflow_step
         return conn
@@ -7675,7 +8007,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         return [wid for wid in query.all()]
 
     @staticmethod
-    def poll_active_workflow_ids(sa_session, scheduler=None, handler=None):
+    def poll_active_workflow_ids(engine, scheduler=None, handler=None):
         and_conditions = [
             or_(
                 WorkflowInvocation.state == WorkflowInvocation.states.NEW,
@@ -7687,14 +8019,11 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         if handler is not None:
             and_conditions.append(WorkflowInvocation.handler == handler)
 
-        query = (
-            sa_session.query(WorkflowInvocation.id)
-            .filter(and_(*and_conditions))
-            .order_by(WorkflowInvocation.table.c.id.asc())
-        )
+        stmt = select(WorkflowInvocation.id).filter(and_(*and_conditions)).order_by(WorkflowInvocation.id.asc())
         # Immediately just load all ids into memory so time slicing logic
         # is relatively intutitive.
-        return [wid for wid in query.all()]
+        with engine.connect() as conn:
+            return conn.scalars(stmt).all()
 
     def add_output(self, workflow_output, step, output_object):
         if not hasattr(output_object, "history_content_type"):
@@ -8048,6 +8377,48 @@ class WorkflowInvocationMessage(Base, Dictifiable, Serializable):
         return self.workflow_invocation.history_id
 
 
+class EffectiveOutput(TypedDict):
+    """An output for the sake or determining full workflow outputs.
+
+    A workflow output might not be an effective output if it is an
+    output on a subworkflow or a parent workflow that doesn't declare
+    it an output.
+
+    This is currently only used for determining object store selections.
+    We don't want to capture subworkflow outputs that the user would like
+    to ignore and discard as effective workflow outputs.
+    """
+
+    output_name: str
+    step_id: int
+
+
+class WorkflowInvocationStepObjectStores(NamedTuple):
+    preferred_object_store_id: Optional[str]
+    preferred_outputs_object_store_id: Optional[str]
+    preferred_intermediate_object_store_id: Optional[str]
+    step_effective_outputs: Optional[List["EffectiveOutput"]]
+
+    def is_output_name_an_effective_output(self, output_name: str) -> bool:
+        if self.step_effective_outputs is None:
+            return True
+        else:
+            for effective_output in self.step_effective_outputs:
+                if effective_output["output_name"] == output_name:
+                    return True
+
+            return False
+
+    @property
+    def is_split_configuration(self):
+        preferred_outputs_object_store_id = self.preferred_outputs_object_store_id
+        preferred_intermediate_object_store_id = self.preferred_intermediate_object_store_id
+        has_typed_preferences = (
+            preferred_outputs_object_store_id is not None or preferred_intermediate_object_store_id is not None
+        )
+        return has_typed_preferences and preferred_outputs_object_store_id != preferred_intermediate_object_store_id
+
+
 class WorkflowInvocationStep(Base, Dictifiable, Serializable):
     __tablename__ = "workflow_invocation_step"
 
@@ -8144,6 +8515,36 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
         else:
             return []
 
+    @property
+    def preferred_object_stores(self) -> WorkflowInvocationStepObjectStores:
+        meta_type = WorkflowRequestInputParameter.types.META_PARAMETERS
+        preferred_object_store_id = None
+        preferred_outputs_object_store_id = None
+        preferred_intermediate_object_store_id = None
+        step_effective_outputs: Optional[List["EffectiveOutput"]] = None
+
+        workflow_invocation = self.workflow_invocation
+        for input_parameter in workflow_invocation.input_parameters:
+            if input_parameter.type != meta_type:
+                continue
+            if input_parameter.name == "preferred_object_store_id":
+                preferred_object_store_id = input_parameter.value
+            elif input_parameter.name == "preferred_outputs_object_store_id":
+                preferred_outputs_object_store_id = input_parameter.value
+            elif input_parameter.name == "preferred_intermediate_object_store_id":
+                preferred_intermediate_object_store_id = input_parameter.value
+            elif input_parameter.name == "effective_outputs":
+                all_effective_outputs = json.loads(input_parameter.value)
+                step_id = self.workflow_step_id
+                step_effective_outputs = [e for e in all_effective_outputs if e["step_id"] == step_id]
+
+        return WorkflowInvocationStepObjectStores(
+            preferred_object_store_id,
+            preferred_outputs_object_store_id,
+            preferred_intermediate_object_store_id,
+            step_effective_outputs,
+        )
+
     def _serialize(self, id_encoder, serialization_options):
         step_attrs = dict_for(self)
         step_attrs["state"] = self.state
@@ -8228,7 +8629,7 @@ class WorkflowRequestInputParameter(Base, Dictifiable, Serializable):
 
     id = Column(Integer, primary_key=True)
     workflow_invocation_id = Column(
-        Integer, ForeignKey("workflow_invocation.id", onupdate="CASCADE", ondelete="CASCADE")
+        Integer, ForeignKey("workflow_invocation.id", onupdate="CASCADE", ondelete="CASCADE"), index=True
     )
     name = Column(Unicode(255))
     value = Column(TEXT)
@@ -8258,7 +8659,7 @@ class WorkflowRequestStepState(Base, Dictifiable, Serializable):
 
     id = Column(Integer, primary_key=True)
     workflow_invocation_id = Column(
-        Integer, ForeignKey("workflow_invocation.id", onupdate="CASCADE", ondelete="CASCADE")
+        Integer, ForeignKey("workflow_invocation.id", onupdate="CASCADE", ondelete="CASCADE"), index=True
     )
     workflow_step_id = Column(Integer, ForeignKey("workflow_step.id"))
     value = Column(MutableJSONType)

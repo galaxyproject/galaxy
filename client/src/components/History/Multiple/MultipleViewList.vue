@@ -44,8 +44,8 @@ function removeHistoryFromList(history: History) {
     historyStore.unpinHistory(history.id);
 }
 
-if (!selectedHistories.value.length) {
-    historyStore.pinHistory(props.histories[0].id);
+if (!selectedHistories.value.length ?? props.histories.length > 0) {
+    historyStore.pinHistory(props.histories[0]!.id);
 }
 
 function addHistoriesToList(histories: History[]) {

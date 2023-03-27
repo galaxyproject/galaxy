@@ -669,7 +669,7 @@ export default {
         },
         /** sort initial list */
         _sortInitialList: function () {
-            //this.debug( '-- _sortInitialList' );
+            //console.debug( '-- _sortInitialList' );
             this._sortDatasetList(this.workingElements);
         },
 
@@ -813,7 +813,7 @@ export default {
             }
 
             // uncomment to see printlns while running tests
-            //this.debug = function(){ console.log.apply( console, arguments ); };
+            //console.debug = function(){ console.log.apply( console, arguments ); };
 
             // then try the remainder with something less strict
             strategy = strategy || this.strategy;
@@ -909,7 +909,7 @@ export default {
                 };
 
             return function _strategy(params) {
-                // this.debug("autopair _strategy ---------------------------");
+                // console.debug("autopair _strategy ---------------------------");
                 params = params || {};
                 var listA = params.listA;
                 var listB = params.listB;
@@ -923,8 +923,8 @@ export default {
 
                 var paired = [];
                 //console.debug( 'params:', JSON.stringify( params, null, '  ' ) );
-                // this.debug("starting list lens:", listA.length, listB.length);
-                // this.debug("bestMatch (starting):", JSON.stringify(bestMatch, null, "  "));
+                // console.debug("starting list lens:", listA.length, listB.length);
+                // console.debug("bestMatch (starting):", JSON.stringify(bestMatch, null, "  "));
 
                 while (indexA < listA.length) {
                     var matchTo = listA[indexA];
@@ -932,8 +932,8 @@ export default {
 
                     for (indexB = 0; indexB < listB.length; indexB++) {
                         var possible = listB[indexB];
-                        // this.debug(`${indexA}:${matchTo.name}`);
-                        // this.debug(`${indexB}:${possible.name}`);
+                        // console.debug(`${indexA}:${matchTo.name}`);
+                        // console.debug(`${indexB}:${possible.name}`);
 
                         // no matching with self
                         if (listA[indexA] !== listB[indexB]) {
@@ -946,16 +946,16 @@ export default {
                                     bestMatch: bestMatch,
                                 })
                             );
-                            // this.debug("bestMatch:", JSON.stringify(bestMatch, null, "  "));
+                            // console.debug("bestMatch:", JSON.stringify(bestMatch, null, "  "));
                             if (bestMatch.score === 1.0) {
-                                // this.debug("breaking early due to perfect match");
+                                // console.debug("breaking early due to perfect match");
                                 break;
                             }
                         }
                     }
                     var scoreThreshold = options.scoreThreshold.call(this);
-                    // this.debug("scoreThreshold:", scoreThreshold);
-                    // this.debug("bestMatch.score:", bestMatch.score);
+                    // console.debug("scoreThreshold:", scoreThreshold);
+                    // console.debug("bestMatch.score:", bestMatch.score);
 
                     if (bestMatch.score >= scoreThreshold) {
                         //console.debug( 'autoPairFnBuilder.strategy', listA[ indexA ].name, listB[ bestMatch.index ].name );
@@ -975,8 +975,8 @@ export default {
                         return paired;
                     }
                 }
-                // this.debug("paired:", JSON.stringify(paired, null, "  "));
-                // this.debug("autopair _strategy ---------------------------");
+                // console.debug("paired:", JSON.stringify(paired, null, "  "));
+                // console.debug("autopair _strategy ---------------------------");
                 return paired;
             };
         },

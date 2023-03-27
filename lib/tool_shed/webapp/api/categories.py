@@ -1,5 +1,6 @@
 import logging
 from typing import (
+    Any,
     Callable,
     Dict,
 )
@@ -84,6 +85,7 @@ class CategoriesController(BaseAPIController):
         sort_order = kwd.get("sort_order", "asc")
         page = kwd.get("page", None)
         category = suc.get_category(self.app, category_id)
+        category_dict: Dict[str, Any]
         if category is None:
             category_dict = dict(message=f"Unable to locate category record for id {str(id)}.", status="error")
             return category_dict

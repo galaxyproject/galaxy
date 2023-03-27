@@ -34,9 +34,9 @@ REQUEST_ID = ContextVar("request_id", default=_request_state.copy())
 class ModelMapping(Bunch):
     def __init__(self, model_modules, engine):
         self.engine = engine
-        SessionLocal = sessionmaker(autoflush=False, autocommit=True)
-        versioned_session(SessionLocal)
-        context = scoped_session(SessionLocal, scopefunc=self.request_scopefunc)
+        self._SessionLocal = sessionmaker(autoflush=False, autocommit=True)
+        versioned_session(self._SessionLocal)
+        context = scoped_session(self._SessionLocal, scopefunc=self.request_scopefunc)
         # For backward compatibility with "context.current"
         # deprecated?
         context.current = context
@@ -53,6 +53,15 @@ class ModelMapping(Bunch):
 
         context.remove()
         context.configure(bind=engine)
+
+    def new_session(self):
+        """
+        Return a new non-scoped Session object.
+
+        Use this when we need to operate on ORM entities, so a Connection object would be
+        insufficient; yet the operation must be independent of the main session (self.session).
+        """
+        return self._SessionLocal()
 
     def request_scopefunc(self):
         """

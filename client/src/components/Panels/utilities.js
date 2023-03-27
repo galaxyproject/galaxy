@@ -92,6 +92,8 @@ export function searchToolsByKeys(tools, keys, query) {
             let actualValue = "";
             if (key === "combined") {
                 actualValue = tool.name.toLowerCase() + " " + tool.description.toLowerCase();
+            } else if (key === "hyphenated") {
+                actualValue = tool.name.toLowerCase().replaceAll("-", " ");
             } else {
                 actualValue = tool[key] ? tool[key].toLowerCase() : "";
             }
@@ -112,6 +114,10 @@ export function normalizeTools(tools) {
     tools = hideToolsSection(tools);
     tools = flattenTools(tools);
     return tools;
+}
+
+export function hideToolsSection(tools) {
+    return tools.filter((section) => !TOOLS_RESULTS_SECTIONS_HIDE.includes(section.name));
 }
 
 export function removeDisabledTools(tools) {
@@ -191,10 +197,6 @@ function deleteEmptyToolsSections(tools, results) {
         });
 
     return tools;
-}
-
-function hideToolsSection(tools) {
-    return tools.filter((section) => !TOOLS_RESULTS_SECTIONS_HIDE.includes(section.name));
 }
 
 function flattenTools(tools) {

@@ -6,6 +6,9 @@ import ToolOptionsButton from "components/Tool/Buttons/ToolOptionsButton.vue";
 import ToolFooter from "components/Tool/ToolFooter";
 import ToolHelp from "components/Tool/ToolHelp";
 import Heading from "components/Common/Heading";
+import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore";
+import ToolTargetPreferredObjectStorePopover from "./ToolTargetPreferredObjectStorePopover";
+import { getAppRoot } from "onload/loadConfig";
 
 import { computed, ref, watch } from "vue";
 import { useCurrentUser } from "composables/user";
@@ -45,9 +48,17 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    allowObjectStoreSelection: {
+        type: Boolean,
+        default: false,
+    },
+    preferredObjectStoreId: {
+        type: String,
+        default: null,
+    },
 });
 
-const emit = defineEmits(["onChangeVersion"]);
+const emit = defineEmits(["onChangeVersion", "updatePreferredObjectStoreId"]);
 
 function onChangeVersion(v) {
     emit("onChangeVersion", v);
@@ -66,11 +77,24 @@ function onSetError(e) {
     errorText.value = e;
 }
 
-const { currentUser: user } = useCurrentUser();
+const { currentUser: user } = useCurrentUser(false, true);
 const hasUser = computed(() => !user.value.isAnonymous);
-
 const versions = computed(() => props.options.versions);
 const showVersions = computed(() => props.options.versions?.length > 1);
+
+const root = computed(() => getAppRoot());
+const showPreferredObjectStoreModal = ref(false);
+const toolPreferredObjectStoreId = ref(props.preferredObjectStoreId);
+
+function onShowObjectStoreSelect() {
+    showPreferredObjectStoreModal.value = true;
+}
+
+function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
+    showPreferredObjectStoreModal.value = false;
+    toolPreferredObjectStoreId.value = selectedToolPreferredObjectStoreId;
+    emit("updatePreferredObjectStoreId", selectedToolPreferredObjectStoreId);
+}
 </script>
 
 <template>
@@ -98,6 +122,33 @@ const showVersions = computed(() => props.options.versions?.length > 1);
                             :id="props.id"
                             :sharable-url="props.options.sharable_url"
                             :options="props.options" />
+                        <b-button
+                            v-if="allowObjectStoreSelection"
+                            id="tool-storage"
+                            role="button"
+                            variant="link"
+                            size="sm"
+                            class="float-right tool-storage"
+                            @click="onShowObjectStoreSelect">
+                            <span class="fa fa-hdd" />
+                        </b-button>
+                        <ToolTargetPreferredObjectStorePopover
+                            v-if="allowObjectStoreSelection"
+                            :tool-preferred-object-store-id="toolPreferredObjectStoreId"
+                            :user="user">
+                        </ToolTargetPreferredObjectStorePopover>
+                        <b-modal
+                            v-model="showPreferredObjectStoreModal"
+                            title="Tool Execution Preferred Object Store"
+                            modal-class="tool-preferred-object-store-modal"
+                            title-tag="h3"
+                            size="sm"
+                            hide-footer>
+                            <ToolSelectPreferredObjectStore
+                                :tool-preferred-object-store-id="toolPreferredObjectStoreId"
+                                :root="root"
+                                @updated="onUpdatePreferredObjectStoreId" />
+                        </b-modal>
                     </b-button-group>
                     <slot name="header-buttons" />
                 </div>

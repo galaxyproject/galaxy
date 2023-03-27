@@ -2,7 +2,7 @@ import RuleDefs from "@/components/RuleBuilder/rule-definitions";
 import SPEC_TEST_CASES from "./rules_dsl_spec.yml";
 
 function applyRules(rules: Array<any>, data: Array<Array<string>>, sources: Array<number>) {
-    const columns = Array(data[0].length).fill("new");
+    const columns = Array(data[0]?.length).fill("new");
     return RuleDefs.applyRules(data, sources, columns, rules);
 }
 

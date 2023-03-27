@@ -1,43 +1,56 @@
 <template>
-    <CurrentUser v-slot="{ user }">
-        <div>
-            <div class="h4 clearfix mb-3">
-                <b>Workflow: {{ model.name }}</b>
-                <ButtonSpinner id="run-workflow" class="float-right" title="Run Workflow" @onClick="onExecute" />
-                <b-dropdown
-                    v-if="showRuntimeSettings(user)"
-                    id="dropdown-form"
-                    ref="dropdown"
-                    class="workflow-run-settings float-right"
-                    style="margin-right: 10px"
-                    title="Workflow Run Settings"
-                    no-caret>
-                    <template v-slot:button-content>
-                        <span class="fa fa-cog" />
-                    </template>
-                    <b-dropdown-form>
-                        <b-form-checkbox v-model="sendToNewHistory" class="workflow-run-settings-target"
-                            >Send results to a new history</b-form-checkbox
-                        >
-                        <b-form-checkbox
-                            v-if="reuseAllowed(user)"
-                            v-model="useCachedJobs"
-                            title="This may skip executing jobs that you have already run."
-                            >Attempt to re-use jobs with identical parameters?</b-form-checkbox
-                        >
-                    </b-dropdown-form>
-                </b-dropdown>
+    <ConfigProvider v-slot="{ config }">
+        <CurrentUser v-slot="{ user }">
+            <div>
+                <div class="h4 clearfix mb-3">
+                    <b>Workflow: {{ model.name }}</b>
+                    <ButtonSpinner id="run-workflow" class="float-right" title="Run Workflow" @onClick="onExecute" />
+                    <b-dropdown
+                        v-if="showRuntimeSettings(user)"
+                        id="dropdown-form"
+                        ref="dropdown"
+                        class="workflow-run-settings float-right"
+                        style="margin-right: 10px"
+                        title="Workflow Run Settings"
+                        no-caret>
+                        <template v-slot:button-content>
+                            <span class="fa fa-cog" />
+                        </template>
+                        <b-dropdown-form>
+                            <b-form-checkbox v-model="sendToNewHistory" class="workflow-run-settings-target"
+                                >Send results to a new history</b-form-checkbox
+                            >
+                            <b-form-checkbox
+                                v-if="reuseAllowed(user)"
+                                v-model="useCachedJobs"
+                                title="This may skip executing jobs that you have already run."
+                                >Attempt to re-use jobs with identical parameters?</b-form-checkbox
+                            >
+                            <b-form-checkbox v-if="config.object_store_allows_id_selection" v-model="splitObjectStore"
+                                >Send outputs and intermediate to different object stores?</b-form-checkbox
+                            >
+                            <WorkflowStorageConfiguration
+                                v-if="config.object_store_allows_id_selection"
+                                :split-object-store="splitObjectStore"
+                                :invocation-preferred-object-store-id="preferredObjectStoreId"
+                                :invocation-intermediate-preferred-object-store-id="preferredIntermediateObjectStoreId"
+                                @updated="onStorageUpdate">
+                            </WorkflowStorageConfiguration>
+                        </b-dropdown-form>
+                    </b-dropdown>
+                </div>
+                <FormDisplay :inputs="formInputs" @onChange="onChange" />
+                <!-- Options to default one way or the other, disable if admins want, etc.. -->
+                <a href="#" class="workflow-expand-form-link" @click="$emit('showAdvanced')"
+                    >Expand to full workflow form.</a
+                >
             </div>
-            <FormDisplay :inputs="formInputs" @onChange="onChange" />
-            <!-- Options to default one way or the other, disable if admins want, etc.. -->
-            <a href="#" class="workflow-expand-form-link" @click="$emit('showAdvanced')"
-                >Expand to full workflow form.</a
-            >
-        </div>
-    </CurrentUser>
+        </CurrentUser>
+    </ConfigProvider>
 </template>
 
 <script>
+import ConfigProvider from "components/providers/ConfigProvider";
 import CurrentUser from "components/providers/CurrentUser";
 import FormDisplay from "components/Form/FormDisplay";
 import ButtonSpinner from "components/Common/ButtonSpinner";
@@ -45,12 +58,15 @@ import { invokeWorkflow } from "./services";
 import { isWorkflowInput } from "components/Workflow/constants";
 import { errorMessageAsString } from "utils/simple-error";
 import { allowCachedJobs } from "components/Tool/utilities";
+import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration";
 
 export default {
     components: {
         ButtonSpinner,
+        ConfigProvider,
         CurrentUser,
         FormDisplay,
+        WorkflowStorageConfiguration,
     },
     props: {
         model: {
@@ -73,6 +89,9 @@ export default {
             inputTypes: {},
             sendToNewHistory: newHistory,
             useCachedJobs: this.useJobCache, // TODO:
+            splitObjectStore: false,
+            preferredObjectStoreId: null,
+            preferredIntermediateObjectStoreId: null,
         };
     },
     computed: {
@@ -114,6 +133,13 @@ export default {
         onChange(data) {
             this.formData = data;
         },
+        onStorageUpdate: function (objectStoreId, intermediate) {
+            if (intermediate) {
+                this.preferredIntermediateObjectStoreId = objectStoreId;
+            } else {
+                this.preferredObjectStoreId = objectStoreId;
+            }
+        },
         onExecute() {
             const replacementParams = {};
             const inputs = {};
@@ -138,6 +164,18 @@ export default {
                 data.new_history_name = this.model.name;
             } else {
                 data.history_id = this.model.historyId;
+            }
+            if (this.splitObjectStore) {
+                if (this.preferredObjectStoreId != null) {
+                    data.preferred_outputs_object_store_id = this.preferredObjectStoreId;
+                }
+                if (this.preferredIntermediateObjectStoreId != null && this.splitObjectStore) {
+                    data.preferred_intermediate_object_store_id = this.preferredIntermediateObjectStoreId;
+                }
+            } else {
+                if (this.preferredObjectStoreId != null) {
+                    data.preferred_object_store_id = this.preferredObjectStoreId;
+                }
             }
             invokeWorkflow(this.model.workflowId, data)
                 .then((invocations) => {

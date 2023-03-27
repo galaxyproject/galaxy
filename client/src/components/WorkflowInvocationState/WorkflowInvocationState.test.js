@@ -3,6 +3,15 @@ import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 import Vuex from "vuex";
 import invocationData from "../Workflow/test/json/invocation.json";
+import { useConfig } from "composables/config";
+
+jest.mock("composables/config");
+useConfig.mockReturnValue({
+    config: {
+        enable_celery_tasks: true,
+    },
+    isLoaded: true,
+});
 
 const invocationJobsSummaryById = {
     id: "d9833097445452b0",

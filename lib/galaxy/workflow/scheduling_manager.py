@@ -325,37 +325,34 @@ class WorkflowRequestMonitor(Monitors):
                 return
 
     def __attempt_schedule(self, invocation_id, workflow_scheduler):
-        sa_session = self.app.model.context
-        workflow_invocation = sa_session.query(model.WorkflowInvocation).get(invocation_id)
+        with self.app.model.context() as session, session.begin():
+            workflow_invocation = session.get(model.WorkflowInvocation, invocation_id)
 
-        try:
-            if not workflow_invocation or not workflow_invocation.active:
+            try:
+                if not workflow_invocation or not workflow_invocation.active:
+                    return False
+
+                # This ensures we're only ever working on the 'first' active
+                # workflow invocation in a given history, to force sequential
+                # activation.
+                if self.app.config.history_local_serial_workflow_scheduling:
+                    for i in workflow_invocation.history.workflow_invocations:
+                        if i.active and i.id < workflow_invocation.id:
+                            return False
+                workflow_scheduler.schedule(workflow_invocation)
+                log.debug("Workflow invocation [%s] scheduled", workflow_invocation.id)
+            except Exception:
+                # TODO: eventually fail this - or fail it right away?
+                log.exception("Exception raised while attempting to schedule workflow request.")
                 return False
-
-            # This ensures we're only ever working on the 'first' active
-            # workflow invocation in a given history, to force sequential
-            # activation.
-            if self.app.config.history_local_serial_workflow_scheduling:
-                for i in workflow_invocation.history.workflow_invocations:
-                    if i.active and i.id < workflow_invocation.id:
-                        return False
-            workflow_scheduler.schedule(workflow_invocation)
-            log.debug("Workflow invocation [%s] scheduled", workflow_invocation.id)
-        except Exception:
-            # TODO: eventually fail this - or fail it right away?
-            log.exception("Exception raised while attempting to schedule workflow request.")
-            return False
-        finally:
-            sa_session.expunge_all()
 
         # A workflow was obtained and scheduled...
         return True
 
     def __active_invocation_ids(self, scheduler_id):
-        sa_session = self.app.model.context
         handler = self.app.config.server_name
         return model.WorkflowInvocation.poll_active_workflow_ids(
-            sa_session,
+            self.app.model.engine,
             scheduler=scheduler_id,
             handler=handler,
         )

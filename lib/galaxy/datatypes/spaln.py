@@ -129,7 +129,7 @@ class _SpalnDb(Data):
         If preview is `True` allows us to format the data shown in the central pane via the "eye" icon.
         If preview is `False` triggers download.
         """
-        headers = kwd.get("headers", {})
+        headers = kwd.pop("headers", {})
         if not preview:
             return super().display_data(
                 trans,

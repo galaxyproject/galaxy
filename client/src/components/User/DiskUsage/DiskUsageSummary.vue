@@ -88,7 +88,7 @@ export default {
         },
         async requestDiskUsageRecalculation() {
             try {
-                await axios.put(`${getAppRoot()}api/users/recalculate_disk_usage`);
+                await axios.put(`${getAppRoot()}api/users/current/recalculate_disk_usage`);
             } catch (e) {
                 rethrowSimple(e);
             }

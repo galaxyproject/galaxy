@@ -362,6 +362,13 @@ class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
         response.raise_for_status()
         assert response.json()["a_galaxy_workflow"] == "true"
 
+    def test_anon_can_see_workflow_preview(self):
+        workflow_id = self.workflow_populator.simple_workflow(name="test_preview", importable=True)
+        workflows_url = self._api_url(f"workflows/{workflow_id}/download", params={"style": "preview"})
+        response = get(workflows_url)
+        response.raise_for_status()
+        assert response.json()["name"] == "test_preview"
+
     def test_delete(self):
         workflow_id = self.workflow_populator.simple_workflow("test_delete")
         workflow_name = "test_delete"
@@ -6107,6 +6114,44 @@ input:
         workflow_object = self._download_workflow(workflow_id, style="editor")
         put_response = self._update_workflow(workflow_id, workflow_object)
         assert put_response.status_code == 200
+
+    def test_empty_collection_sort(self, history_id):
+        self._run_workflow(
+            """class: GalaxyWorkflow
+inputs:
+  input: collection
+  filter_file: data
+steps:
+  filter_collection:
+    tool_id: __FILTER_FROM_FILE__
+    in:
+       input: input
+       how|filter_source: filter_file
+  sort_collection_1:
+    tool_id: __SORTLIST__
+    in:
+      input: filter_collection/output_filtered
+  sort_collection_2:
+    tool_id: __SORTLIST__
+    in:
+      input: filter_collection/output_discarded
+  merge_collection:
+    tool_id: __MERGE_COLLECTION__
+    in:
+      inputs_0|input: sort_collection_1/output
+      inputs_1|input: sort_collection_2/output
+test_data:
+  input:
+    collection_type: list
+    elements:
+      - identifier: i1
+        content: "0"
+  filter_file: i1
+""",
+            history_id=history_id,
+            wait=True,
+            assert_ok=True,
+        )
 
     @skip_without_tool("random_lines1")
     def test_run_replace_params_over_default_delayed(self):

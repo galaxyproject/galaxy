@@ -527,10 +527,10 @@ class UsesHistoryItemAssertions(NavigatesGalaxyMixin):
         assert name == expected_name, name
 
     def assert_item_hid_text(self, hid):
-        # Check the text HID matches HID returned from API.
+        # Check the text HID matches HID returned from API.  The hid span includes a colon.
         item_body = self.history_panel_item_component(hid=hid)
         hid_text = item_body.hid.wait_for_text()
-        assert hid_text == str(hid), hid_text
+        assert hid_text == f"{hid}:", hid_text
 
 
 EXAMPLE_WORKFLOW_URL_1 = (

@@ -1,12 +1,22 @@
+import axios from "axios";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
+import { rethrowSimple } from "@/utils/simple-error";
 import Utils from "utils/utils";
 
-const Webhooks = Backbone.Collection.extend({
-    url: function () {
-        return `${getAppRoot()}api/webhooks`;
-    },
-});
+let webhookData = undefined;
+
+async function getWebHookData() {
+    if (webhookData === undefined) {
+        try {
+            const { data } = await axios.get(`${getAppRoot()}api/webhooks`);
+            webhookData = data;
+        } catch (e) {
+            rethrowSimple(e);
+        }
+    }
+    return webhookData;
+}
 
 const WebhookView = Backbone.View.extend({
     el: "#webhook-view",
@@ -18,16 +28,11 @@ const WebhookView = Backbone.View.extend({
         this.$el.attr("tool_id", toolId);
         this.$el.attr("tool_version", toolVersion);
 
-        const webhooks = new Webhooks();
-        webhooks.fetch({
-            success: (data) => {
-                if (options.type) {
-                    data.reset(filterType(data, options.type));
-                }
-                if (data.length > 0) {
-                    this.render(weightedRandomPick(data));
-                }
-            },
+        getWebHookData().then((data) => {
+            const filteredData = filterData(data, options);
+            if (filteredData.length > 0) {
+                this.render(weightedRandomPick(filteredData));
+            }
         });
     },
 
@@ -39,22 +44,23 @@ const WebhookView = Backbone.View.extend({
     },
 });
 
+function filterData(data, options) {
+    let filteredData = data;
+    if (options.type) {
+        filteredData = filterType(data, options.type);
+    }
+    return filteredData;
+}
+
 const load = (options) => {
-    const webhooks = new Webhooks();
-    webhooks.fetch({
-        async: options.async !== undefined ? options.async : true,
-        success: (data) => {
-            if (options.type) {
-                data.reset(filterType(data, options.type));
-            }
-            options.callback(data);
-        },
+    getWebHookData().then((data) => {
+        options.callback(filterData(data, options));
     });
 };
 
 function filterType(data, type) {
-    return data.models.filter((item) => {
-        const itype = item.get("type");
+    return data.filter((item) => {
+        const itype = item.type;
         if (itype) {
             return itype.indexOf(type) !== -1;
         } else {

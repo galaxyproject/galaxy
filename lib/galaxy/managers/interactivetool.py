@@ -211,6 +211,9 @@ class InteractiveToolManager:
             )
 
     def get_nonterminal_for_user_by_trans(self, trans):
+        if trans.user is None and trans.get_galaxy_session() is None:
+            return []
+
         if trans.user:
             jobs = trans.sa_session.query(trans.app.model.Job).filter(trans.app.model.Job.user == trans.user)
         else:

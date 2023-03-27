@@ -297,20 +297,6 @@ class ShedTwillTestCase(ShedApiTestCase):
         self.check_repository_changelog(repository)
         self.check_string_count_in_page("Repository metadata is associated with this change set.", metadata_count)
 
-    def check_exported_repository_dependency(self, dependency_filename, repository_name, repository_owner):
-        root, error_message = xml_util.parse_xml(dependency_filename)
-        for elem in root.findall("repository"):
-            if "changeset_revision" in elem:
-                raise AssertionError(
-                    "Exported repository %s with owner %s has a dependency with a defined changeset revision."
-                    % (repository_name, repository_owner)
-                )
-            if "toolshed" in elem:
-                raise AssertionError(
-                    "Exported repository %s with owner %s has a dependency with a defined tool shed."
-                    % (repository_name, repository_owner)
-                )
-
     def check_for_valid_tools(self, repository, strings_displayed=None, strings_not_displayed=None):
         if strings_displayed is None:
             strings_displayed = ["Valid tools"]
@@ -809,13 +795,6 @@ class ShedTwillTestCase(ShedApiTestCase):
         if not os.path.exists(temp_path):
             os.makedirs(temp_path)
         return temp_path
-
-    def get_datatypes_count(self):
-        params = {"upload_only": False}
-        self.visit_galaxy_url("/api/datatypes", params=params)
-        html = self.last_page()
-        datatypes = loads(html)
-        return len(datatypes)
 
     def get_filename(self, filename, filepath=None):
         if filepath is not None:
@@ -1356,14 +1335,6 @@ class ShedTwillTestCase(ShedApiTestCase):
             message = response_dict["message"]
             assert "The status has not changed in the tool shed for repository" in message, str(response_dict)
         return response_dict
-
-    def update_tool_shed_status(self):
-        api_key = get_admin_api_key()
-        response = requests.get(
-            f"{self.galaxy_url}/api/tool_shed_repositories/check_for_updates?key={api_key}",
-            timeout=DEFAULT_SOCKET_TIMEOUT,
-        )
-        assert response.status_code != 403, response.content
 
     def upload_file(
         self,

@@ -8,7 +8,10 @@ from argparse import ArgumentParser
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 
-from galaxy.model.migrations.dbscript import ParserBuilder
+from galaxy.model.migrations.dbscript import (
+    CONFIG_FILE_ARG,
+    ParserBuilder,
+)
 
 
 def main() -> None:
@@ -16,7 +19,7 @@ def main() -> None:
         prog="manage_db.sh",
         description="Common database schema migration operations",
     )
-    parser.add_argument("-c", "--galaxy-config", help="Alternate Galaxy configuration file", dest="config")
+    parser.add_argument("-c", f"{CONFIG_FILE_ARG}", help="Alternate Galaxy configuration file", dest="config")
 
     parser_builder = ParserBuilder(parser)
 

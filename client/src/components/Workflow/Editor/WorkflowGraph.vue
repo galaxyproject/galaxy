@@ -51,6 +51,7 @@ import { useWorkflowStepStore, type Step } from "@/stores/workflowStepStore";
 import { useD3Zoom } from "./composables/d3Zoom";
 import type { XYPosition } from "@/stores/workflowEditorStateStore";
 import type { OutputTerminals } from "./modules/terminals";
+import { assertDefined } from "@/utils/assertions";
 import { minZoom, maxZoom } from "./modules/zoomLevels";
 
 const emit = defineEmits(["transform", "graph-offset", "onRemove", "scrollTo"]);
@@ -78,8 +79,14 @@ watch(
     () => props.scrollToId,
     () => {
         if (props.scrollToId !== null) {
-            const { width: stepWidth, height: stepHeight } = stateStore.stepPosition[props.scrollToId];
-            const { position: stepPosition } = stepStore.getStep(props.scrollToId);
+            const scrollToPosition = stateStore.stepPosition[props.scrollToId];
+            const step = stepStore.getStep(props.scrollToId);
+
+            assertDefined(scrollToPosition);
+            assertDefined(step);
+
+            const { width: stepWidth, height: stepHeight } = scrollToPosition;
+            const { position: stepPosition } = step;
             if (stepPosition) {
                 const { width, height } = reactive(elementBounding);
                 const centerScreenX = width / 2;

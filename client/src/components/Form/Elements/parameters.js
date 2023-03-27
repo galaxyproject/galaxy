@@ -37,12 +37,11 @@ export default Backbone.View.extend({
 
     /** Returns an input field for a given field type */
     create: function (input_def) {
-        const Galaxy = getGalaxyInstance();
         var fieldClass = this.types[input_def.type];
         this.field = typeof this[fieldClass] === "function" ? this[fieldClass].call(this, input_def) : null;
         if (!this.field) {
             this.field = input_def.options ? this._fieldSelect(input_def) : this._fieldText(input_def);
-            Galaxy.emit.debug("form-parameters::_addRow()", `Auto matched field type (${input_def.type}).`);
+            console.debug("form-parameters::_addRow()", `Auto matched field type (${input_def.type}).`);
         }
         if (input_def.value === undefined) {
             input_def.value = null;

@@ -112,6 +112,7 @@ class ConfigSerializer(base.ModelSerializer):
         def _config_is_truthy(item, key, **context):
             return True if item.get(key) else False
 
+        object_store = self.app.object_store
         self.serializers: Dict[str, base.Serializer] = {
             # TODO: this is available from user data, remove
             "is_admin_user": lambda *a, **c: False,
@@ -120,7 +121,6 @@ class ConfigSerializer(base.ModelSerializer):
             "logo_src": _use_config,
             "logo_src_secondary": _use_config,
             "terms_url": _use_config,
-            "myexperiment_target_url": _use_config,
             "wiki_url": _use_config,
             "screencasts_url": _use_config,
             "citation_url": _use_config,
@@ -196,6 +196,11 @@ class ConfigSerializer(base.ModelSerializer):
             "expose_user_email": _use_config,
             "enable_tool_source_display": _use_config,
             "enable_celery_tasks": _use_config,
+            "quota_source_labels": lambda item, key, **context: list(
+                object_store.get_quota_source_map().get_quota_source_labels()
+            ),
+            "object_store_allows_id_selection": lambda item, key, **context: object_store.object_store_allows_id_selection(),
+            "object_store_ids_allowing_selection": lambda item, key, **context: object_store.object_store_ids_allowing_selection(),
             "user_library_import_dir_available": lambda item, key, **context: bool(item.get("user_library_import_dir")),
             "welcome_directory": _use_config,
             "themes": _use_config,

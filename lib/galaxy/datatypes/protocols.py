@@ -86,7 +86,7 @@ class DatasetProtocol(
     def get_mime(self) -> str:
         ...
 
-    def get_size(self) -> str:
+    def get_size(self) -> int:
         ...
 
     def has_data(self) -> bool:

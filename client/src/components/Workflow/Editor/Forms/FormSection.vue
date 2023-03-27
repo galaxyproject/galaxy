@@ -50,7 +50,7 @@ export default {
             required: true,
         },
         step: {
-            // type Step from "@/stores/workflowStepStore";
+            // type Step from @/stores/workflowStepStore
             type: Object,
             required: true,
         },

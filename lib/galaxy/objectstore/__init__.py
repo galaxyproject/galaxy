@@ -16,11 +16,19 @@ from typing import (
     Any,
     Dict,
     List,
+    NamedTuple,
+    Optional,
+    Set,
     Tuple,
     Type,
 )
 
 import yaml
+from pydantic import BaseModel
+from typing_extensions import (
+    Literal,
+    TypedDict,
+)
 
 from galaxy.exceptions import (
     ObjectInvalid,
@@ -43,8 +51,49 @@ from galaxy.util.sleeper import Sleeper
 NO_SESSION_ERROR_MESSAGE = (
     "Attempted to 'create' object store entity in configuration with no database session present."
 )
+DEFAULT_PRIVATE = False
+DEFAULT_QUOTA_SOURCE = None  # Just track quota right on user object in Galaxy.
+DEFAULT_QUOTA_ENABLED = True  # enable quota tracking in object stores by default
 
 log = logging.getLogger(__name__)
+
+BadgeSourceT = Literal["admin", "galaxy"]
+BadgeT = Literal[
+    "faster",
+    "slower",
+    "short_term",
+    "cloud",
+    "backed_up",
+    "not_backed_up",
+    "more_secure",
+    "less_secure",
+    "more_stable",
+    "less_stable",
+    "quota",
+    "no_quota",
+    "restricted",
+]
+
+BADGE_SPECIFICATION = [
+    {"type": "faster", "conflicts": ["slower"]},
+    {"type": "slower", "conflicts": ["faster"]},
+    {"type": "short_term", "conflicts": []},
+    {"type": "cloud", "conflicts": []},
+    {"type": "backed_up", "conflicts": ["not_backed_up"]},
+    {"type": "not_backed_up", "conflicts": ["backed_up"]},
+    {"type": "more_secure", "conflicts": ["less_secure"]},
+    {"type": "less_secure", "conflicts": ["more_secure"]},
+    {"type": "more_stable", "conflicts": ["less_stable"]},
+    {"type": "less_stable", "conflicts": ["more_stable"]},
+]
+KNOWN_BADGE_TYPES = [s["type"] for s in BADGE_SPECIFICATION]
+BADGE_SPECIFCATION_BY_TYPE = {s["type"]: s for s in BADGE_SPECIFICATION}
+
+
+class BadgeDict(TypedDict):
+    type: BadgeT
+    message: Optional[str]
+    source: BadgeSourceT
 
 
 class ObjectStore(metaclass=abc.ABCMeta):
@@ -105,6 +154,9 @@ class ObjectStore(metaclass=abc.ABCMeta):
 
         This method will create a proper directory structure for
         the file if the directory does not already exist.
+
+        The method returns the concrete objectstore the supplied object is stored
+        in.
         """
         raise NotImplementedError()
 
@@ -118,7 +170,7 @@ class ObjectStore(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def size(self, obj, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False):
+    def size(self, obj, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False) -> int:
         """
         Return size of the object identified by `obj`.
 
@@ -245,6 +297,35 @@ class ObjectStore(metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
+    def get_concrete_store_badges(self, obj) -> List[BadgeDict]:
+        """Return a list of dictified badges summarizing the object store configuration."""
+
+    @abc.abstractmethod
+    def is_private(self, obj):
+        """Return True iff supplied object is stored in private ConcreteObjectStore."""
+
+    def object_store_ids(self, private=None):
+        """Return IDs of all concrete object stores - either private ones or non-private ones.
+
+        This should just return an empty list for non-DistributedObjectStore object stores,
+        i.e. concrete objectstores and the HierarchicalObjectStore since these do not
+        use the object_store_id column for objects (Galaxy Datasets).
+        """
+        return []
+
+    def object_store_allows_id_selection(self) -> bool:
+        """Return True if this object store respects object_store_id and allow selection of this."""
+        return False
+
+    def object_store_ids_allowing_selection(self) -> List[str]:
+        """Return a non-emtpy list of allowed selectable object store IDs during creation."""
+        return []
+
+    def get_concrete_store_by_object_store_id(self, object_store_id: str) -> Optional["ConcreteObjectStore"]:
+        """If this is a distributed object store, get ConcreteObjectStore by object_store_id."""
+        return None
+
+    @abc.abstractmethod
     def get_store_usage_percent(self):
         """Return the percentage indicating how full the store is."""
         raise NotImplementedError()
@@ -260,6 +341,10 @@ class ObjectStore(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def to_dict(self) -> Dict[str, Any]:
         raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_quota_source_map(self):
+        """Return QuotaSourceMap describing mapping of object store IDs to quota sources."""
 
 
 class BaseObjectStore(ObjectStore):
@@ -284,6 +369,7 @@ class BaseObjectStore(ObjectStore):
         self.running = True
         self.config = config
         self.check_old_style = config.object_store_check_old_style
+        self.galaxy_enable_quotas = config.enable_quotas
         extra_dirs = {}
         extra_dirs["job_work"] = config.jobs_directory
         extra_dirs["temp"] = config.new_file_path
@@ -329,10 +415,11 @@ class BaseObjectStore(ObjectStore):
         extra_dirs = []
         for extra_dir_type, extra_dir_path in self.extra_dirs.items():
             extra_dirs.append({"type": extra_dir_type, "path": extra_dir_path})
+        store_type = self.store_type
         return {
             "config": config_to_dict(self.config),
             "extra_dirs": extra_dirs,
-            "type": self.store_type,
+            "type": store_type,
         }
 
     def _get_object_id(self, obj):
@@ -383,18 +470,45 @@ class BaseObjectStore(ObjectStore):
     def get_concrete_store_description_markdown(self, obj):
         return self._invoke("get_concrete_store_description_markdown", obj)
 
+    def get_concrete_store_badges(self, obj) -> List[BadgeDict]:
+        return self._invoke("get_concrete_store_badges", obj)
+
     def get_store_usage_percent(self):
         return self._invoke("get_store_usage_percent")
 
     def get_store_by(self, obj, **kwargs):
         return self._invoke("get_store_by", obj, **kwargs)
 
+    def is_private(self, obj):
+        return self._invoke("is_private", obj)
+
+    @classmethod
+    def parse_private_from_config_xml(clazz, config_xml):
+        private = DEFAULT_PRIVATE
+        if config_xml is not None:
+            private = asbool(config_xml.attrib.get("private", DEFAULT_PRIVATE))
+        return private
+
+    @classmethod
+    def parse_badges_from_config_xml(clazz, badges_xml):
+        badges = []
+        for e in badges_xml:
+            type = e.tag
+            message = e.text
+            badges.append({"type": type, "message": message})
+        return badges
+
+    def get_quota_source_map(self):
+        # I'd rather keep this abstract... but register_singleton wants it to be instantiable...
+        raise NotImplementedError()
+
 
 class ConcreteObjectStore(BaseObjectStore):
     """Subclass of ObjectStore for stores that don't delegate (non-nested).
 
-    Currently only adds store_by functionality. Which doesn't make
-    sense for the delegating object stores.
+    Adds store_by and quota_source functionality. These attributes do not make
+    sense for the delegating object stores, they should describe files at actually
+    persisted, not how a file is routed to a persistence source.
     """
 
     def __init__(self, config, config_dict=None, **kwargs):
@@ -416,13 +530,94 @@ class ConcreteObjectStore(BaseObjectStore):
         self.store_by = config_dict.get("store_by", None) or getattr(config, "object_store_store_by", "id")
         self.name = config_dict.get("name", None)
         self.description = config_dict.get("description", None)
+        # Annotate this as true to prevent sharing of data.
+        self.private = config_dict.get("private", DEFAULT_PRIVATE)
+        # short label describing the quota source or null to use default
+        # quota source right on user object.
+        quota_config = config_dict.get("quota", {})
+        self.quota_source = quota_config.get("source", DEFAULT_QUOTA_SOURCE)
+        self.quota_enabled = quota_config.get("enabled", DEFAULT_QUOTA_ENABLED)
+        raw_badges = config_dict.get("badges", [])
+        badges = []
+        badge_types: Set[str] = set()
+        badge_conflicts: Dict[str, str] = {}
+        for badge in raw_badges:
+            # when recovering serialized badges, skip ones that are set by Galaxy
+            badge_source = badge.get("source")
+            if badge_source and badge_source != "admin":
+                continue
+            assert "type" in badge
+            badge_type = badge["type"]
+            if badge_type not in KNOWN_BADGE_TYPES:
+                raise Exception(f"badge_type {badge_type} unimplemented/unknown {badge}")
+            message = badge.get("message", None)
+            badges.append({"type": badge_type, "message": message})
+            badge_types.add(badge_type)
+            if badge_type in badge_conflicts:
+                conflicting_badge_type = badge_conflicts[badge_type]
+                raise Exception(
+                    f"Conflicting badge to [{badge_type}] defined on the object store [{conflicting_badge_type}]."
+                )
+            conflicts = BADGE_SPECIFCATION_BY_TYPE[badge_type]["conflicts"]
+            for conflict in conflicts:
+                badge_conflicts[conflict] = badge_type
+        self.badges = badges
 
     def to_dict(self):
         rval = super().to_dict()
+        rval["private"] = self.private
         rval["store_by"] = self.store_by
         rval["name"] = self.name
         rval["description"] = self.description
+        rval["quota"] = {
+            "source": self.quota_source,
+            "enabled": self.quota_enabled,
+        }
+        rval["badges"] = self._get_concrete_store_badges(None)
         return rval
+
+    def to_model(self, object_store_id: str) -> "ConcreteObjectStoreModel":
+        return ConcreteObjectStoreModel(
+            object_store_id=object_store_id,
+            private=self.private,
+            name=self.name,
+            description=self.description,
+            quota=QuotaModel(source=self.quota_source, enabled=self.quota_enabled),
+            badges=self._get_concrete_store_badges(None),
+        )
+
+    def _get_concrete_store_badges(self, obj) -> List[BadgeDict]:
+        badge_dicts: List[BadgeDict] = []
+        for badge in self.badges:
+            badge_dict: BadgeDict = {
+                "source": "admin",
+                "type": badge["type"],
+                "message": badge["message"],
+            }
+            badge_dicts.append(badge_dict)
+
+        quota_badge_dict: BadgeDict
+        if self.galaxy_enable_quotas and self.quota_enabled:
+            quota_badge_dict = {
+                "type": "quota",
+                "message": None,
+                "source": "galaxy",
+            }
+        else:
+            quota_badge_dict = {
+                "type": "no_quota",
+                "message": None,
+                "source": "galaxy",
+            }
+        badge_dicts.append(quota_badge_dict)
+        if self.private:
+            restricted_badge_dict: BadgeDict = {
+                "type": "restricted",
+                "message": None,
+                "source": "galaxy",
+            }
+            badge_dicts.append(restricted_badge_dict)
+        return badge_dicts
 
     def _get_concrete_store_name(self, obj):
         return self.name
@@ -432,6 +627,16 @@ class ConcreteObjectStore(BaseObjectStore):
 
     def _get_store_by(self, obj):
         return self.store_by
+
+    def _is_private(self, obj):
+        return self.private
+
+    def get_quota_source_map(self):
+        quota_source_map = QuotaSourceMap(
+            self.quota_source,
+            self.quota_enabled,
+        )
+        return quota_source_map
 
 
 class DiskObjectStore(ConcreteObjectStore):
@@ -444,8 +649,8 @@ class DiskObjectStore(ConcreteObjectStore):
     >>> import tempfile
     >>> file_path=tempfile.mkdtemp()
     >>> obj = Bunch(id=1)
-    >>> s = DiskObjectStore(Bunch(umask=0o077, jobs_directory=file_path, new_file_path=file_path, object_store_check_old_style=False), dict(files_dir=file_path))
-    >>> s.create(obj)
+    >>> s = DiskObjectStore(Bunch(umask=0o077, jobs_directory=file_path, new_file_path=file_path, object_store_check_old_style=False, enable_quotas=True), dict(files_dir=file_path))
+    >>> o = s.create(obj)
     >>> s.exists(obj)
     True
     >>> assert s.get_filename(obj) == file_path + '/000/dataset_1.dat'
@@ -484,14 +689,22 @@ class DiskObjectStore(ConcreteObjectStore):
             if name is not None:
                 config_dict["name"] = name
             for e in config_xml:
-                if e.tag == "files_dir":
+                if e.tag == "quota":
+                    config_dict["quota"] = {
+                        "source": e.get("source", DEFAULT_QUOTA_SOURCE),
+                        "enabled": asbool(e.get("enabled", DEFAULT_QUOTA_ENABLED)),
+                    }
+                elif e.tag == "files_dir":
                     config_dict["files_dir"] = e.get("path")
                 elif e.tag == "description":
                     config_dict["description"] = e.text
+                elif e.tag == "badges":
+                    config_dict["badges"] = BaseObjectStore.parse_badges_from_config_xml(e)
                 else:
                     extra_dirs.append({"type": e.get("type"), "path": e.get("path")})
 
         config_dict["extra_dirs"] = extra_dirs
+        config_dict["private"] = BaseObjectStore.parse_private_from_config_xml(config_xml)
         return config_dict
 
     def to_dict(self):
@@ -572,7 +785,7 @@ class DiskObjectStore(ConcreteObjectStore):
             hash id (e.g., /files/dataset_10.dat (old) vs.
             /files/000/dataset_10.dat (new))
         """
-        base = os.path.abspath(self.extra_dirs.get(base_dir, self.file_path))
+        base = os.path.abspath(self.extra_dirs.get(base_dir) or self.file_path)
         # extra_dir should never be constructed from provided data but just
         # make sure there are no shenannigans afoot
         if extra_dir and extra_dir != os.path.normpath(extra_dir):
@@ -631,12 +844,13 @@ class DiskObjectStore(ConcreteObjectStore):
             if not dir_only:
                 open(path, "w").close()  # Should be rb?
                 umask_fix_perms(path, self.config.umask, 0o666)
+        return self
 
     def _empty(self, obj, **kwargs):
         """Override `ObjectStore`'s stub by checking file size on disk."""
         return self.size(obj, **kwargs) == 0
 
-    def _size(self, obj, **kwargs):
+    def _size(self, obj, **kwargs) -> int:
         """Override `ObjectStore`'s stub by return file size on disk.
 
         Returns 0 if the object doesn't exist yet or other error.
@@ -767,7 +981,8 @@ class NestedObjectStore(BaseObjectStore):
 
     def _create(self, obj, **kwargs):
         """Create a backing file in a random backend."""
-        random.choice(list(self.backends.values())).create(obj, **kwargs)
+        objectstore = random.choice(list(self.backends.values()))
+        return objectstore.create(obj, **kwargs)
 
     def _empty(self, obj, **kwargs):
         """For the first backend that has this `obj`, determine if it is empty."""
@@ -805,6 +1020,12 @@ class NestedObjectStore(BaseObjectStore):
 
     def _get_concrete_store_description_markdown(self, obj):
         return self._call_method("_get_concrete_store_description_markdown", obj, None, False)
+
+    def _get_concrete_store_badges(self, obj) -> List[BadgeDict]:
+        return self._call_method("_get_concrete_store_badges", obj, [], False)
+
+    def _is_private(self, obj):
+        return self._call_method("_is_private", obj, ObjectNotFound, True)
 
     def _get_store_by(self, obj):
         return self._call_method("_get_store_by", obj, None, False)
@@ -859,6 +1080,7 @@ class DistributedObjectStore(NestedObjectStore):
             removing backends when they get too full.
         """
         super().__init__(config, config_dict)
+        self._quota_source_map = None
 
         self.backends = {}
         self.weighted_backend_ids = []
@@ -868,11 +1090,14 @@ class DistributedObjectStore(NestedObjectStore):
         self.search_for_missing = config_dict.get("search_for_missing", True)
         random.seed()
 
+        user_selection_allowed = []
         for backend_def in config_dict["backends"]:
             backened_id = backend_def["id"]
             maxpctfull = backend_def.get("max_percent_full", 0)
             weight = backend_def["weight"]
-
+            allow_selection = backend_def.get("allow_selection")
+            if allow_selection:
+                user_selection_allowed.append(backened_id)
             backend = build_object_store_from_config(config, config_dict=backend_def, fsmon=fsmon)
 
             self.backends[backened_id] = backend
@@ -885,7 +1110,8 @@ class DistributedObjectStore(NestedObjectStore):
                 self.weighted_backend_ids.append(backened_id)
 
         self.original_weighted_backend_ids = self.weighted_backend_ids
-
+        self.user_selection_allowed = user_selection_allowed
+        self.allow_user_selection = bool(user_selection_allowed)
         self.sleeper = None
         if fsmon and (self.global_max_percent_full or [_ for _ in self.max_percent_full.values() if _ != 0.0]):
             self.sleeper = Sleeper()
@@ -914,6 +1140,7 @@ class DistributedObjectStore(NestedObjectStore):
             store_maxpctfull = float(b.get("maxpctfull", 0))
             store_type = b.get("type", "disk")
             store_by = b.get("store_by", None)
+            allow_selection = asbool(b.get("allow_selection"))
 
             objectstore_class, _ = type_to_object_store_class(store_type)
             backend_config_dict = objectstore_class.parse_xml(b)
@@ -921,6 +1148,7 @@ class DistributedObjectStore(NestedObjectStore):
             backend_config_dict["weight"] = store_weight
             backend_config_dict["max_percent_full"] = store_maxpctfull
             backend_config_dict["type"] = store_type
+            backend_config_dict["allow_selection"] = allow_selection
             if store_by is not None:
                 backend_config_dict["store_by"] = store_by
             backends.append(backend_config_dict)
@@ -980,25 +1208,27 @@ class DistributedObjectStore(NestedObjectStore):
 
     def _create(self, obj, **kwargs):
         """The only method in which obj.object_store_id may be None."""
-        if obj.object_store_id is None or not self._exists(obj, **kwargs):
-            if obj.object_store_id is None or obj.object_store_id not in self.backends:
+        object_store_id = obj.object_store_id
+        if object_store_id is None or not self._exists(obj, **kwargs):
+            if object_store_id is None or object_store_id not in self.backends:
                 try:
-                    obj.object_store_id = random.choice(self.weighted_backend_ids)
+                    object_store_id = random.choice(self.weighted_backend_ids)
+                    obj.object_store_id = object_store_id
                 except IndexError:
                     raise ObjectInvalid(
-                        "objectstore.create, could not generate "
-                        "obj.object_store_id: %s, kwargs: %s" % (str(obj), str(kwargs))
+                        f"objectstore.create, could not generate obj.object_store_id: {obj}, kwargs: {kwargs}"
                     )
                 log.debug(
-                    "Selected backend '%s' for creation of %s %s"
-                    % (obj.object_store_id, obj.__class__.__name__, obj.id)
+                    "Selected backend '%s' for creation of %s %s", object_store_id, obj.__class__.__name__, obj.id
                 )
             else:
                 log.debug(
                     "Using preferred backend '%s' for creation of %s %s"
-                    % (obj.object_store_id, obj.__class__.__name__, obj.id)
+                    % (object_store_id, obj.__class__.__name__, obj.id)
                 )
-            self.backends[obj.object_store_id].create(obj, **kwargs)
+            return self.backends[object_store_id].create(obj, **kwargs)
+        else:
+            return self.backends[object_store_id]
 
     def _call_method(self, method, obj, default, default_is_exception, **kwargs):
         object_store_id = self.__get_store_id_for(obj, **kwargs)
@@ -1011,6 +1241,21 @@ class DistributedObjectStore(NestedObjectStore):
             )
         else:
             return default
+
+    def get_quota_source_map(self):
+        if self._quota_source_map is None:
+            quota_source_map = QuotaSourceMap()
+            self._merge_quota_source_map(quota_source_map, self)
+            self._quota_source_map = quota_source_map
+        return self._quota_source_map
+
+    @classmethod
+    def _merge_quota_source_map(clz, quota_source_map, object_store):
+        for backend_id, backend in object_store.backends.items():
+            if isinstance(backend, DistributedObjectStore):
+                clz._merge_quota_source_map(quota_source_map, backend)
+            else:
+                quota_source_map.backends[backend_id] = backend.get_quota_source_map()
 
     def __get_store_id_for(self, obj, **kwargs):
         if obj.object_store_id is not None:
@@ -1034,9 +1279,28 @@ class DistributedObjectStore(NestedObjectStore):
                     return id
         return None
 
+    def object_store_ids(self, private=None):
+        object_store_ids = []
+        for backend_id, backend in self.backends.items():
+            object_store_ids.extend(backend.object_store_ids(private=private))
+            if backend.private is private or private is None:
+                object_store_ids.append(backend_id)
+        return object_store_ids
+
+    def object_store_allows_id_selection(self) -> bool:
+        """Return True if this object store respects object_store_id and allow selection of this."""
+        return self.allow_user_selection
+
+    def object_store_ids_allowing_selection(self) -> List[str]:
+        """Return a non-emtpy list of allowed selectable object store IDs during creation."""
+        return self.user_selection_allowed
+
+    def get_concrete_store_by_object_store_id(self, object_store_id: str) -> Optional["ConcreteObjectStore"]:
+        """If this is a distributed object store, get ConcreteObjectStore by object_store_id."""
+        return self.backends[object_store_id]
+
 
 class HierarchicalObjectStore(NestedObjectStore):
-
     """
     ObjectStore that defers to a list of backends.
 
@@ -1051,22 +1315,43 @@ class HierarchicalObjectStore(NestedObjectStore):
         super().__init__(config, config_dict)
 
         backends: Dict[int, ObjectStore] = {}
+        is_private = config_dict.get("private", DEFAULT_PRIVATE)
         for order, backend_def in enumerate(config_dict["backends"]):
+            backend_is_private = backend_def.get("private")
+            if backend_is_private is not None:
+                assert (
+                    is_private == backend_is_private
+                ), "The private attribute must be defined on the HierarchicalObjectStore and not contained concrete objectstores."
+            backend_quota = backend_def.get("quota")
+            if backend_quota is not None:
+                # Make sure just was using defaults - because cannot override what is
+                # is setup by the HierarchicalObjectStore.
+                assert backend_quota.get("source", DEFAULT_QUOTA_SOURCE) == DEFAULT_QUOTA_SOURCE
+                assert backend_quota.get("enabled", DEFAULT_QUOTA_ENABLED) == DEFAULT_QUOTA_ENABLED
+
             backends[order] = build_object_store_from_config(config, config_dict=backend_def, fsmon=fsmon)
 
         self.backends = backends
+        self.private = is_private
+        quota_config = config_dict.get("quota", {})
+        self.quota_source = quota_config.get("source", DEFAULT_QUOTA_SOURCE)
+        self.quota_enabled = quota_config.get("enabled", DEFAULT_QUOTA_ENABLED)
 
     @classmethod
     def parse_xml(clazz, config_xml):
         backends_list = []
+        is_private = BaseObjectStore.parse_private_from_config_xml(config_xml)
         for backend in sorted(config_xml.find("backends"), key=lambda b: int(b.get("order"))):
             store_type = backend.get("type")
             objectstore_class, _ = type_to_object_store_class(store_type)
             backend_config_dict = objectstore_class.parse_xml(backend)
+            backend_config_dict["private"] = is_private
             backend_config_dict["type"] = store_type
             backends_list.append(backend_config_dict)
 
-        return {"backends": backends_list}
+        config_dict = {"backends": backends_list}
+        config_dict["private"] = is_private
+        return config_dict
 
     def to_dict(self):
         as_dict = super().to_dict()
@@ -1075,6 +1360,7 @@ class HierarchicalObjectStore(NestedObjectStore):
             backend_as_dict = backend.to_dict()
             backends.append(backend_as_dict)
         as_dict["backends"] = backends
+        as_dict["private"] = self.private
         return as_dict
 
     def _exists(self, obj, **kwargs):
@@ -1086,7 +1372,34 @@ class HierarchicalObjectStore(NestedObjectStore):
 
     def _create(self, obj, **kwargs):
         """Call the primary object store."""
-        self.backends[0].create(obj, **kwargs)
+        return self.backends[0].create(obj, **kwargs)
+
+    def _is_private(self, obj):
+        # Unlink the DistributedObjectStore - the HierarchicalObjectStore does not use
+        # object_store_id - so all the contained object stores need to define is_private
+        # the same way.
+        return self.private
+
+    def get_quota_source_map(self):
+        quota_source_map = QuotaSourceMap(
+            self.quota_source,
+            self.quota_enabled,
+        )
+        return quota_source_map
+
+
+class QuotaModel(BaseModel):
+    source: Optional[str]
+    enabled: bool
+
+
+class ConcreteObjectStoreModel(BaseModel):
+    object_store_id: Optional[str]
+    private: bool
+    name: Optional[str]
+    description: Optional[str]
+    quota: QuotaModel
+    badges: List[BadgeDict]
 
 
 def type_to_object_store_class(store: str, fsmon: bool = False) -> Tuple[Type[BaseObjectStore], Dict[str, Any]]:
@@ -1229,6 +1542,7 @@ def config_to_dict(config):
     """Dict-ify the portion of a config object consumed by the ObjectStore class and its subclasses."""
     return {
         "object_store_check_old_style": config.object_store_check_old_style,
+        "enable_quotas": config.enable_quotas,
         "file_path": config.file_path,
         "umask": config.umask,
         "jobs_directory": config.jobs_directory,
@@ -1236,6 +1550,66 @@ def config_to_dict(config):
         "object_store_cache_path": config.object_store_cache_path,
         "gid": config.gid,
     }
+
+
+class QuotaSourceInfo(NamedTuple):
+    label: Optional[str]
+    use: bool
+
+
+class QuotaSourceMap:
+    def __init__(self, source=DEFAULT_QUOTA_SOURCE, enabled=DEFAULT_QUOTA_ENABLED):
+        self.default_quota_source = source
+        self.default_quota_enabled = enabled
+        self.info = QuotaSourceInfo(self.default_quota_source, self.default_quota_enabled)
+        self.backends = {}
+        self._labels = None
+
+    def get_quota_source_info(self, object_store_id):
+        if object_store_id in self.backends:
+            return self.backends[object_store_id].get_quota_source_info(object_store_id)
+        else:
+            return self.info
+
+    def get_quota_source_label(self, object_store_id):
+        if object_store_id in self.backends:
+            return self.backends[object_store_id].get_quota_source_label(object_store_id)
+        else:
+            return self.default_quota_source
+
+    def get_quota_source_labels(self):
+        if self._labels is None:
+            labels = set()
+            if self.default_quota_source:
+                labels.add(self.default_quota_source)
+            for backend in self.backends.values():
+                labels = labels.union(backend.get_quota_source_labels())
+            self._labels = labels
+        return self._labels
+
+    def default_usage_excluded_ids(self):
+        exclude_object_store_ids = []
+        for backend_id, backend_source_map in self.backends.items():
+            if backend_source_map.default_quota_source is not None:
+                exclude_object_store_ids.append(backend_id)
+            elif not backend_source_map.default_quota_enabled:
+                exclude_object_store_ids.append(backend_id)
+        return exclude_object_store_ids
+
+    def get_id_to_source_pairs(self):
+        pairs = []
+        for backend_id, backend_source_map in self.backends.items():
+            if backend_source_map.default_quota_source is not None and backend_source_map.default_quota_enabled:
+                pairs.append((backend_id, backend_source_map.default_quota_source))
+        return pairs
+
+    def ids_per_quota_source(self):
+        quota_sources: Dict[str, List[str]] = {}
+        for object_id, quota_source_label in self.get_id_to_source_pairs():
+            if quota_source_label not in quota_sources:
+                quota_sources[quota_source_label] = []
+            quota_sources[quota_source_label].append(object_id)
+        return quota_sources
 
 
 class ObjectStorePopulator:
@@ -1252,16 +1626,19 @@ class ObjectStorePopulator:
         self.object_store_id = None
         self.user = user
 
-    def set_object_store_id(self, data):
-        self.set_dataset_object_store_id(data.dataset)
+    def set_object_store_id(self, data, require_shareable=False):
+        self.set_dataset_object_store_id(data.dataset, require_shareable=require_shareable)
 
-    def set_dataset_object_store_id(self, dataset):
+    def set_dataset_object_store_id(self, dataset, require_shareable=True):
         # Create an empty file immediately.  The first dataset will be
         # created in the "default" store, all others will be created in
         # the same store as the first.
         dataset.object_store_id = self.object_store_id
         try:
-            self.object_store.create(dataset)
+            ensure_non_private = require_shareable
+            concrete_store = self.object_store.create(dataset, ensure_non_private=ensure_non_private)
+            if concrete_store.private and require_shareable:
+                raise Exception("Attempted to create shared output datasets in objectstore with sharing disabled")
         except ObjectInvalid:
             raise Exception("Unable to create output dataset: object store is full")
         self.object_store_id = dataset.object_store_id  # these will be the same thing after the first output

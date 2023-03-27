@@ -61,7 +61,7 @@
                     <td>${time_ago( hda.update_time )}</td>
                     <td>
                         %if hda.history and hda.history.user:
-                            ${hda.history.user.email}
+                            ${hda.user.email}
                         %else:
                             anonymous
                         %endif

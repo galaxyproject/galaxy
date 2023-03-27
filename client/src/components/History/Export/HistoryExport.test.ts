@@ -8,7 +8,7 @@ import {
 } from "@/components/Common/models/testData/exportData";
 import flushPromises from "flush-promises";
 import type { components } from "@/schema";
-import { getLocalVue } from "../../../../tests/jest/helpers";
+import { getLocalVue } from "@tests/jest/helpers";
 import HistoryExport from "./HistoryExport.vue";
 import { getExportRecords } from "./services";
 

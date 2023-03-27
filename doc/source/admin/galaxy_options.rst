@@ -2914,6 +2914,19 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``sentry_traces_sample_rate``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set to a number between 0 and 1. With this option set, every
+    transaction created will have that percentage chance of being sent
+    to Sentry. A value higher than 0 is required to analyze
+    performance.
+:Default: ``0.0``
+:Type: float
+
+
 ~~~~~~~~~~~~~~~
 ``statsd_host``
 ~~~~~~~~~~~~~~~
@@ -3973,17 +3986,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``myexperiment_target_url``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    The URL to the myExperiment instance being used (omit scheme but
-    include port).
-:Default: ``www.myexperiment.org:80``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~
 ``ftp_upload_site``
 ~~~~~~~~~~~~~~~~~~~
@@ -4879,6 +4881,9 @@
     The `broker_url` option, if unset, defaults to the value of
     `amqp_internal_connection`. The `result_backend` option must be
     set if the `enable_celery_tasks` option is set.
+    The galaxy.fetch_data task can be disabled by setting its route to
+    "disabled": `galaxy.fetch_data: disabled`. (Other tasks cannot be
+    disabled on a per-task basis at this time.)
     For details, see Celery documentation at
     https://docs.celeryq.dev/en/stable/userguide/configuration.html.
 :Default: ``{'task_routes': {'galaxy.fetch_data': 'galaxy.external', 'galaxy.set_job_metadata': 'galaxy.external'}}``
@@ -5076,14 +5081,15 @@
 :Type: str
 
 
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``enable_beacon_integration``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Enables user preferences and api endpoint for the beacon integration.
+    Enables user preferences and api endpoint for the beacon
+    integration.
 :Default: ``false``
 :Type: bool
+
 
 

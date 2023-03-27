@@ -367,6 +367,7 @@ class DefaultToolAction(ToolAction):
         completed_job=None,
         collection_info=None,
         job_callback=None,
+        preferred_object_store_id=None,
         flush_job=True,
         skip=False,
     ):
@@ -651,6 +652,7 @@ class DefaultToolAction(ToolAction):
                 data.state = "ok"
                 with open(data.dataset.file_name, "w") as out:
                     out.write(json.dumps(None))
+        job.preferred_object_store_id = preferred_object_store_id
         self._record_inputs(trans, tool, job, incoming, inp_data, inp_dataset_collections)
         self._record_outputs(job, out_data, output_collections)
         # execute immediate post job actions and associate post job actions that are to be executed after the job is complete

@@ -73,10 +73,12 @@
     "uuid": "16626ff6-6484-4db2-bffc-71b69ff05b80",
     "workflow_outputs": [],
     "input_connections": {
-      "input": {
-        "output_name": "output",
-        "id": 0
-      }
+      "input": [
+        {
+          "output_name": "output",
+          "id": 0
+        }
+      ]
     },
     "position": {
       "left": 231.74591064453125,

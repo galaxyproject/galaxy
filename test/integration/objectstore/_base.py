@@ -1,5 +1,4 @@
 import os
-import re
 import string
 import subprocess
 
@@ -49,25 +48,9 @@ def stop_minio(container_name):
     subprocess.check_call(["docker", "rm", "-f", container_name])
 
 
-class BaseObjectStoreIntegrationTestCase(integration_util.IntegrationTestCase):
+class BaseObjectStoreIntegrationTestCase(integration_util.IntegrationTestCase, integration_util.ConfiguresObjectStores):
     dataset_populator: DatasetPopulator
     framework_tool_and_types = True
-
-    @classmethod
-    def _configure_object_store(cls, template, config):
-        temp_directory = cls._test_driver.mkdtemp()
-        cls.object_stores_parent = temp_directory
-        config_path = os.path.join(temp_directory, "object_store_conf.xml")
-        xml = template.safe_substitute({"temp_directory": temp_directory})
-        with open(config_path, "w") as f:
-            f.write(xml)
-        config["object_store_config_file"] = config_path
-        for path in re.findall(r'files_dir path="([^"]*)"', xml):
-            assert path.startswith(temp_directory)
-            dir_name = os.path.basename(path)
-            os.path.join(temp_directory, dir_name)
-            os.makedirs(path)
-            setattr(cls, f"{dir_name}_path", path)
 
     def setUp(self):
         super().setUp()

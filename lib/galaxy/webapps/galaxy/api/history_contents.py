@@ -198,6 +198,11 @@ def get_legacy_index_query_params(
         description="Whether to return visible or hidden datasets only. Leave unset for both.",
         deprecated=True,
     ),
+    shareable: Optional[bool] = Query(
+        default=None,
+        title="Shareable",
+        description="Whether to return only shareable or not shareable datasets. Leave unset for both.",
+    ),
 ) -> LegacyHistoryContentsIndexParams:
     """This function is meant to be used as a dependency to render the OpenAPI documentation
     correctly"""
@@ -207,6 +212,7 @@ def get_legacy_index_query_params(
         details=details,
         deleted=deleted,
         visible=visible,
+        shareable=shareable,
     )
 
 
@@ -216,6 +222,7 @@ def parse_legacy_index_query_params(
     details: Optional[str] = None,
     deleted: Optional[bool] = None,
     visible: Optional[bool] = None,
+    shareable: Optional[bool] = None,
     **_,  # Additional params are ignored
 ) -> LegacyHistoryContentsIndexParams:
     """Parses (legacy) query parameters for the history contents `index` operation
@@ -242,6 +249,7 @@ def parse_legacy_index_query_params(
             ids=id_list,
             deleted=deleted,
             visible=visible,
+            shareable=shareable,
             dataset_details=dataset_details,
         )
     except ValidationError as e:
@@ -382,7 +390,7 @@ class FastAPIHistoryContents:
     @router.get(
         "/api/histories/{history_id}/contents/{id}",
         name="history_content",
-        summary="Return detailed information about an HDA within a history.",
+        summary="Return detailed information about an HDA within a history. ``/api/histories/{history_id}/contents/{type}s/{id}`` should be used instead.",
         deprecated=True,
     )
     def show(
@@ -635,7 +643,7 @@ class FastAPIHistoryContents:
     )
     @router.put(
         "/api/histories/{history_id}/contents/{id}",
-        summary="Updates the values for the history content item with the given ``ID``.",
+        summary="Updates the values for the history content item with the given ``ID``. ``/api/histories/{history_id}/contents/{type}s/{id}`` should be used instead.",
         deprecated=True,
     )
     def update(

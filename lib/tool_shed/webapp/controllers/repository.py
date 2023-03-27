@@ -1698,7 +1698,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 type=repository_type,
             )
 
-            repository, message = repository_util.update_repository(app=trans.app, trans=trans, id=id, **update_kwds)
+            repository, message = repository_util.update_repository(trans=trans, id=id, **update_kwds)
             if repository is None:
                 return trans.response.send_redirect(
                     web.url_for(

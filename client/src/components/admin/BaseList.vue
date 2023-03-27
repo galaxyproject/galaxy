@@ -13,7 +13,7 @@
             </b-button>
             {{ plural }} available.
         </div>
-        <b-table v-if="itemsVisible" striped :fields="fields" :items="items">
+        <b-table v-if="itemsVisible" striped no-sort-reset :fields="fields" :items="items">
             <template v-slot:cell(execute)="data">
                 <b-button
                     size="sm"

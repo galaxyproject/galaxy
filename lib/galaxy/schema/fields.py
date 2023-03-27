@@ -43,7 +43,7 @@ class BaseDatabaseIdField:
         field_schema.update(
             minLength=16,
             pattern="[0-9a-fA-F]+",
-            example=["0123456789ABCDEF"],
+            example="0123456789ABCDEF",
             type="string",
         )
 

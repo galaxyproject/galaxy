@@ -190,21 +190,19 @@ class SentryClientMixin:
                 "CRITICAL",
             ], f"Invalid sentry event level '{self.config.sentry.event_level}'"
 
-            def postfork_sentry_client():
-                import sentry_sdk
-                from sentry_sdk.integrations.logging import LoggingIntegration
+            import sentry_sdk
+            from sentry_sdk.integrations.logging import LoggingIntegration
 
-                sentry_logging = LoggingIntegration(
-                    level=logging.INFO,  # Capture info and above as breadcrumbs
-                    event_level=getattr(logging, event_level),  # Send errors as events
-                )
-                self.sentry_client = sentry_sdk.init(
-                    self.config.sentry_dsn,
-                    release=f"{self.config.version_major}.{self.config.version_minor}",
-                    integrations=[sentry_logging],
-                )
-
-            self.application_stack.register_postfork_function(postfork_sentry_client)
+            sentry_logging = LoggingIntegration(
+                level=logging.INFO,  # Capture info and above as breadcrumbs
+                event_level=getattr(logging, event_level),  # Send errors as events
+            )
+            self.sentry_client = sentry_sdk.init(
+                self.config.sentry_dsn,
+                release=f"{self.config.version_major}.{self.config.version_minor}",
+                integrations=[sentry_logging],
+                traces_sample_rate=self.config.sentry_traces_sample_rate,
+            )
 
 
 class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMixin):

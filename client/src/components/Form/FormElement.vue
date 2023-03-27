@@ -82,9 +82,8 @@ const collapsed = ref(false);
 const collapsible = computed(() => !props.disabled && collapsibleValue.value !== undefined);
 const connectable = computed(() => collapsible.value && Boolean(attrs.value["connectable"]));
 
-// Determines to wether expand or collapse the input
+// Determines whether to expand or collapse the input
 {
-    setValue(props.value);
     const valueJson = JSON.stringify(props.value);
     connected.value = valueJson === JSON.stringify(connectedValue);
     collapsed.value =
@@ -273,7 +272,7 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 :id="props.id"
                 v-model="currentValue"
                 :data-label="props.title"
-                :type="props.type ?? 'text'"
+                :type="props.type ?? (attrs.options ? 'select' : 'text')"
                 :attributes="attrs" />
             <FormInput v-else :id="props.id" v-model="currentValue" :area="attrs['area']" />
         </div>

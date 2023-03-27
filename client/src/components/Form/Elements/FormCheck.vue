@@ -3,7 +3,7 @@ import { computed, ref } from "vue";
 
 export interface FormCheckProps {
     value?: string | string[];
-    options: string[];
+    options: Array<[string, string]>;
 }
 
 const props = defineProps<FormCheckProps>();

@@ -819,6 +819,23 @@ class TestToolsApi(ApiTestCase, TestsTools):
     def test_apply_rules_6(self):
         self._apply_rules_and_check(rules_test_data.EXAMPLE_6)
 
+    @skip_without_tool("galaxy_json_sleep")
+    def test_dataset_hidden_after_job_finish(self):
+        with self.dataset_populator.test_history() as history_id:
+            inputs = {
+                "sleep_time": 5,
+            }
+            response = self._run("galaxy_json_sleep", history_id, inputs, assert_ok=True)
+            output = response["outputs"][0]
+            response = self._put(
+                f"histories/{history_id}/contents/datasets/{output['id']}", data={"visible": False}, json=True
+            )
+            response.raise_for_status()
+            output_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=output, wait=False)
+            assert not output_details["visible"]
+            output_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=output, wait=True)
+            assert not output_details["visible"]
+
     @skip_without_tool("multi_select")
     def test_multi_select_as_list(self):
         with self.dataset_populator.test_history(require_new=False) as history_id:

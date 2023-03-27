@@ -201,17 +201,12 @@ class Ipynb(Json):
         to_ext: Optional[str] = None,
         **kwd,
     ):
-        headers = kwd.get("headers", {})
         config = trans.app.config
         trust = getattr(config, "trust_jupyter_notebook_conversion", False)
         if trust:
-            return self._display_data_trusted(
-                trans, dataset, preview=preview, filename=filename, to_ext=to_ext, headers=headers, **kwd
-            )
+            return self._display_data_trusted(trans, dataset, preview=preview, filename=filename, to_ext=to_ext, **kwd)
         else:
-            return super().display_data(
-                trans, dataset, preview=preview, filename=filename, to_ext=to_ext, headers=headers, **kwd
-            )
+            return super().display_data(trans, dataset, preview=preview, filename=filename, to_ext=to_ext, **kwd)
 
     def _display_data_trusted(
         self,
@@ -222,7 +217,7 @@ class Ipynb(Json):
         to_ext: Optional[str] = None,
         **kwd,
     ) -> Tuple[IO, Headers]:
-        headers = kwd.get("headers", {})
+        headers = kwd.pop("headers", {})
         preview = string_as_bool(preview)
         if to_ext or not preview:
             return self._serve_raw(dataset, to_ext, headers, **kwd)

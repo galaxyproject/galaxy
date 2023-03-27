@@ -1,3 +1,5 @@
+import type { Last } from "types/utilityTypes";
+
 export const zoomLevels = [
     0.1, 0.2, 0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.33, 1.5, 2, 2.5, 3, 4, 5,
 ] as const;
@@ -5,7 +7,7 @@ export const zoomLevels = [
 export type ZoomLevel = (typeof zoomLevels)[number];
 
 export const minZoom = zoomLevels[0];
-export const maxZoom = zoomLevels[zoomLevels.length - 1];
+export const maxZoom = zoomLevels[zoomLevels.length - 1] as Last<typeof zoomLevels>;
 
 /**
  * Finds the closest snapped zoom level
@@ -30,7 +32,7 @@ export function getZoomInLevel(zoom: number): ZoomLevel {
     if (index === zoomLevels.length - 1) {
         return snapped;
     } else {
-        return zoomLevels[index + 1];
+        return zoomLevels[index + 1] as ZoomLevel;
     }
 }
 
@@ -46,7 +48,7 @@ export function getZoomOutLevel(zoom: number): ZoomLevel {
     if (index === 0) {
         return snapped;
     } else {
-        return zoomLevels[index - 1];
+        return zoomLevels[index - 1] as ZoomLevel;
     }
 }
 

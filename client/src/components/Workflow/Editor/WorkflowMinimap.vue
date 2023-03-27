@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, onMounted, ref, unref, watch } from "vue";
 import { useAnimationFrame } from "@/composables/sensors/animationFrame";
+import { useAnimationFrameThrottle } from "@/composables/throttle";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { AxisAlignedBoundingBox, Transform } from "./modules/geometry";
 import { useDraggable, type UseElementBoundingReturn } from "@vueuse/core";
@@ -22,20 +23,40 @@ const emit = defineEmits<{
 
 const stateStore = useWorkflowStateStore();
 
-/** bounding box following the viewport */
-const viewportBounds = computed(() => {
-    const bounds = new AxisAlignedBoundingBox();
-    bounds.x = -props.viewportPan.x / props.viewportScale;
-    bounds.y = -props.viewportPan.y / props.viewportScale;
-    bounds.width = unref(props.viewportBounds.width) / props.viewportScale;
-    bounds.height = unref(props.viewportBounds.height) / props.viewportScale;
-
-    return bounds;
-});
-
 /** reference to the main canvas element */
 const canvas: Ref<HTMLCanvasElement | null> = ref(null);
 let redraw = false;
+
+// it is important these throttles are defined before useAnimationFrame,
+// so that they are executed first in the frame loop
+const { throttle: viewportThrottle } = useAnimationFrameThrottle();
+const { throttle: dragThrottle } = useAnimationFrameThrottle();
+
+/** bounding box following the viewport */
+const viewportBounds = ref(new AxisAlignedBoundingBox());
+watch(
+    () => ({
+        x: props.viewportPan.x,
+        y: props.viewportPan.y,
+        scale: props.viewportScale,
+        width: unref(props.viewportBounds.width),
+        height: unref(props.viewportBounds.height),
+    }),
+    ({ x, y, scale, width, height }) => {
+        redraw = true;
+
+        viewportThrottle(() => {
+            const bounds = viewportBounds.value;
+
+            bounds.x = -x / scale;
+            bounds.y = -y / scale;
+            bounds.width = width / scale;
+            bounds.height = height / scale;
+
+            viewportBounds.value = bounds;
+        });
+    }
+);
 
 /** bounding box encompassing all nodes in the workflow */
 const aabb = new AxisAlignedBoundingBox();
@@ -49,12 +70,15 @@ function recalculateAABB() {
 
     Object.values(props.steps).forEach((step) => {
         const rect = stateStore.stepPosition[step.id];
-        aabb.fitRectangle({
-            x: step.position!.left,
-            y: step.position!.top,
-            width: rect.width,
-            height: rect.height,
-        });
+
+        if (rect) {
+            aabb.fitRectangle({
+                x: step.position!.left,
+                y: step.position!.top,
+                width: rect.width,
+                height: rect.height,
+            });
+        }
     });
 
     aabb.squareCenter();
@@ -67,8 +91,7 @@ function recalculateAABB() {
     }
 }
 
-// redraw if any of these props change
-watch(viewportBounds, () => (redraw = true));
+// redraw if any steps change
 watch(
     props.steps,
     () => {
@@ -161,7 +184,10 @@ function renderMinimap() {
     ctx.fillStyle = colors.node;
     okSteps.forEach((step) => {
         const rect = stateStore.stepPosition[step.id];
-        ctx.rect(step.position!.left, step.position!.top, rect.width, rect.height);
+
+        if (rect) {
+            ctx.rect(step.position!.left, step.position!.top, rect.width, rect.height);
+        }
     });
     ctx.fill();
 
@@ -169,7 +195,10 @@ function renderMinimap() {
     ctx.fillStyle = colors.error;
     errorSteps.forEach((step) => {
         const rect = stateStore.stepPosition[step.id];
-        ctx.rect(step.position!.left, step.position!.top, rect.width, rect.height);
+
+        if (rect) {
+            ctx.rect(step.position!.left, step.position!.top, rect.width, rect.height);
+        }
     });
     ctx.fill();
 
@@ -181,12 +210,16 @@ function renderMinimap() {
         ctx.strokeStyle = colors.selectedOutline;
         ctx.lineWidth = edge;
         const rect = stateStore.stepPosition[selectedStep.id];
-        ctx.rect(
-            selectedStep.position!.left - edge,
-            selectedStep.position!.top - edge,
-            rect.width + edge * 2,
-            rect.height + edge * 2
-        );
+
+        if (rect) {
+            ctx.rect(
+                selectedStep.position!.left - edge,
+                selectedStep.position!.top - edge,
+                rect.width + edge * 2,
+                rect.height + edge * 2
+            );
+        }
+
         ctx.stroke();
     }
 
@@ -244,18 +277,20 @@ useDraggable(canvas, {
         }
     },
     onMove: (position, event) => {
-        if (!dragViewport || Object.values(props.steps).length === 0) {
-            return;
-        }
+        dragThrottle(() => {
+            if (!dragViewport || Object.values(props.steps).length === 0) {
+                return;
+            }
 
-        // minimap coordinates to global coordinates, without translation
-        const [x, y] = canvasTransform
-            .resetTranslation()
-            .inverse()
-            .scale([scaleFactor.value, scaleFactor.value])
-            .apply([-event.movementX, -event.movementY]);
+            // minimap coordinates to global coordinates, without translation
+            const [x, y] = canvasTransform
+                .resetTranslation()
+                .inverse()
+                .scale([scaleFactor.value, scaleFactor.value])
+                .apply([-event.movementX, -event.movementY]);
 
-        emit("panBy", { x, y });
+            emit("panBy", { x, y });
+        });
     },
     onEnd(position, event) {
         // minimap coordinates to global coordinates
