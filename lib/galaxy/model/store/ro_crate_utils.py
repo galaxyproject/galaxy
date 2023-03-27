@@ -150,14 +150,15 @@ class WorkflowRunCrateProfileBuilder:
                 properties = {}
                 self._add_file(hda, properties, crate)
                 dataset_id = self.file_entities.get(hda.dataset.id)
-                dataset_ids.append({"@id": dataset_id.id})
+                if {"@id": dataset_id.id} not in dataset_ids:
+                    dataset_ids.append({"@id": dataset_id.id})
 
         collection_properties = {
             "name": name,
             "@type": "Collection",
             "additionalType": self.collection_type_mapping[hdca.collection.collection_type],
             "hasPart": dataset_ids,
-            "exampleOfWork": {"@id": f"{hdca.type_id}-param"},
+            "exampleOfWork": {"@id": f"#{hdca.type_id}-param"},
         }
         collection_entity = crate.add(
             ContextEntity(
@@ -283,7 +284,7 @@ class WorkflowRunCrateProfileBuilder:
                         "@type": "CreativeWork",
                         "version": GALAXY_EXPORT_VERSION,
                         "description": f"{description} provenance properties",
-                        "encodingFormat": "json",
+                        "encodingFormat": "application/json",
                     },
                 )
             )
@@ -330,17 +331,6 @@ class WorkflowRunCrateProfileBuilder:
                 formal_param = self._add_step_parameter_fp(step, crate)
                 crate.mainEntity.append_to("input", formal_param)
                 self.create_action.append_to("object", property_value)
-            if step.workflow_step.type == "tool":
-                for tool_input in step.workflow_step.tool_inputs.keys():
-                    if (
-                        tool_input not in self.ignored_parameter_type
-                        and tool_input not in step.workflow_step.inputs_by_name.keys()
-                        and not tool_input.startswith("__")
-                    ):
-                        property_value = self._add_step_tool_pv(step, tool_input, crate)
-                        formal_param = self._add_step_tool_fp(step, tool_input, crate)
-                        crate.mainEntity.append_to("input", formal_param)
-                        self.create_action.append_to("object", property_value)
 
     def _add_step_parameter_pv(self, step: WorkflowInvocationStep, crate: ROCrate):
         param_id = step.workflow_step.label
@@ -350,7 +340,7 @@ class WorkflowRunCrateProfileBuilder:
                 f"{param_id}-pv",
                 properties={
                     "@type": "PropertyValue",
-                    "name": f"{param_id} PropertyValue",
+                    "name": f"{param_id}",
                     "value": step.output_value.value,
                     "exampleOfWork": {"@id": f"#{param_id}-param"},
                 },
@@ -360,16 +350,20 @@ class WorkflowRunCrateProfileBuilder:
     def _add_step_parameter_fp(self, step: WorkflowInvocationStep, crate: ROCrate):
         param_id = step.workflow_step.label
         param_type = step.workflow_step.tool_inputs["parameter_type"]
-        return ContextEntity(
-            crate,
-            f"{param_id}-param",
-            properties={
-                "@type": "FormalParameter",
-                "additionalType": self.param_type_mapping[param_type],
-                "description": step.workflow_step.annotations[0].annotation if step.workflow_step.annotations else "",
-                "name": f"{param_id} parameter",
-                "valueRequired": str(not step.workflow_step.input_optional),
-            },
+        return crate.add(
+            ContextEntity(
+                crate,
+                f"{param_id}-param",
+                properties={
+                    "@type": "FormalParameter",
+                    "additionalType": self.param_type_mapping[param_type],
+                    "description": step.workflow_step.annotations[0].annotation
+                    if step.workflow_step.annotations
+                    else "",
+                    "name": f"{param_id}",
+                    "valueRequired": str(not step.workflow_step.input_optional),
+                },
+            )
         )
 
     def _add_step_tool_pv(self, step: WorkflowInvocationStep, tool_input: str, crate: ROCrate):
@@ -380,7 +374,7 @@ class WorkflowRunCrateProfileBuilder:
                 f"{param_id}-pv",
                 properties={
                     "@type": "PropertyValue",
-                    "name": f"{step.workflow_step.label} PropertyValue",
+                    "name": f"{step.workflow_step.label}",
                     "value": step.workflow_step.tool_inputs[tool_input],
                     "exampleOfWork": {"@id": f"#{param_id}-param"},
                 },
@@ -397,7 +391,7 @@ class WorkflowRunCrateProfileBuilder:
                 "@type": "FormalParameter",
                 "additionalType": self.param_type_mapping[param_type],
                 "description": step.workflow_step.annotations[0].annotation if step.workflow_step.annotations else "",
-                "name": f"{step.workflow_step.label} parameter",
+                "name": f"{step.workflow_step.label}",
                 "valueRequired": str(not step.workflow_step.input_optional),
             },
         )
@@ -423,7 +417,7 @@ class WorkflowRunCrateProfileBuilder:
                 f"{hdca.type_id}-param",
                 properties={
                     "@type": "FormalParameter",
-                    "additionalType": "File",  # TODO: always a dataset/File?
+                    "additionalType": "Collection",  # TODO: always a collection?
                     "description": hdca.annotations[0].annotation if hdca.annotations else "",
                     "name": hdca.name,
                 },

@@ -2821,7 +2821,7 @@ input collection 2:
             assert len(actions) == 1
             wf_action = actions[0]
             wf_objects = wf_action["object"]
-            assert len(workflow["input"]) == 4
+            assert len(workflow["input"]) == 3
             assert len(workflow["output"]) == 3
             collections = [_ for _ in crate.contextual_entities if "Collection" in _.type]
             assert len(collections) == 3
@@ -2837,7 +2837,7 @@ input collection 2:
             coll_dataset = collection["hasPart"][0].id
             assert coll_dataset in [_.id for _ in collections[2]["hasPart"]]
             property_values = [_ for _ in crate.contextual_entities if "PropertyValue" in _.type]
-            assert len(property_values) == 2
+            assert len(property_values) == 1
             for pv in property_values:
                 assert pv in wf_objects
                 assert pv["exampleOfWork"] in workflow["input"]
