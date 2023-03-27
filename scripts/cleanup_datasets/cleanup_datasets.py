@@ -255,13 +255,13 @@ def purge_histories(app, cutoff_time, remove_from_disk, info_only=False, force_r
         histories = app.sa_session.query(app.model.History) \
                                   .filter(and_(app.model.History.__table__.c.deleted == true(),
                                                app.model.History.update_time < cutoff_time)) \
-                                  .options(eagerload('datasets'))
+                                  .options(joinedload('datasets'))
     else:
         histories = app.sa_session.query(app.model.History) \
                                   .filter(and_(app.model.History.__table__.c.deleted == true(),
                                                app.model.History.__table__.c.purged == false(),
                                                app.model.History.update_time < cutoff_time)) \
-                                  .options(eagerload('datasets'))
+                                  .options(joinedload('datasets'))
     for history in histories:
         log.info("### Processing history id %d (%s)", history.id, unicodify(history.name))
         for dataset_assoc in history.datasets:
