@@ -31,6 +31,7 @@ from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
 from galaxy.managers.markdown_util import generate_branded_pdf
 from galaxy.managers.model_stores import ModelStoreManager
+from galaxy.managers.notification import NotificationManager
 from galaxy.managers.tool_data import ToolDataImportManager
 from galaxy.metadata.set_metadata import set_metadata_portable
 from galaxy.model.scoped_session import galaxy_scoped_session
@@ -406,3 +407,12 @@ def prune_history_audit_table(sa_session: galaxy_scoped_session):
 def cleanup_short_term_storage(storage_monitor: ShortTermStorageMonitor):
     """Cleanup short term storage."""
     storage_monitor.cleanup()
+
+
+@galaxy_task(action="clean up expired notifications")
+def cleanup_expired_notifications(notification_manager: NotificationManager):
+    """Cleanup expired notifications."""
+    result = notification_manager.cleanup_expired_notifications()
+    log.info(
+        f"Successfully deleted {result.deleted_notifications_count} notifications and {result.deleted_associations_count} associations."
+    )

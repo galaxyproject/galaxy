@@ -3775,3 +3775,10 @@ mapping:
           The system allows notification scheduling and expiration, and users can opt-out of specific notification categories or channels. They can also mark certain notifications as favorites to prevent expiration and manually delete notifications.
 
           Admins can schedule and broadcast notifications that will be visible to all users, including special server-wide announcements such as scheduled maintenance, high load warnings, and event announcements, to name a few examples.
+
+      expired_notifications_cleanup_interval:
+        type: int
+        required: false
+        default: 86400
+        desc: |
+          The interval in seconds between attempts to delete all expired notifications from the database (every 24 hours by default). Runs in a Celery task.

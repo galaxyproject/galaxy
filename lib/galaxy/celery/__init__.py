@@ -214,6 +214,7 @@ def setup_periodic_tasks(config, celery_app):
     beat_schedule: Dict[str, Dict[str, Any]] = {}
     schedule_task("prune_history_audit_table", config.history_audit_table_prune_interval)
     schedule_task("cleanup_short_term_storage", config.short_term_storage_cleanup_interval)
+    schedule_task("cleanup_expired_notifications", config.expired_notifications_cleanup_interval)
 
     if beat_schedule:
         celery_app.conf.beat_schedule = beat_schedule
