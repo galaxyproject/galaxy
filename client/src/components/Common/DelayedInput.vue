@@ -9,6 +9,8 @@
             :placeholder="placeholder"
             @input="delayQuery"
             @change="setQuery"
+            @focus="selectText"
+            @blur="textSelected = false"
             @keydown.esc="setQuery('')" />
         <b-input-group-append>
             <b-button
@@ -69,6 +71,7 @@ export default {
             queryCurrent: null,
             titleClear: "clear search (esc)",
             titleAdvanced: "toggle advanced search",
+            textSelected: true,
         };
     },
     watch: {
@@ -97,6 +100,15 @@ export default {
             if (this.queryCurrent !== this.queryInput || this.queryCurrent !== queryNew) {
                 this.queryCurrent = this.queryInput = queryNew;
                 this.$emit("change", this.queryCurrent);
+            }
+        },
+        selectText() {
+            if (!this.textSelected) {
+                this.$refs.toolInput.select();
+                this.textSelected = true;
+            } else {
+                this.$refs.toolInput.focus();
+                this.textSelected = false;
             }
         },
         clearBox() {
