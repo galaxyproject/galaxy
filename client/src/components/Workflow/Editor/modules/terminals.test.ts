@@ -386,16 +386,13 @@ describe("canAccept", () => {
         expect(collectionIn.canAccept(pairedOut).canAccept).toBe(false);
         expect(collectionIn.canAccept(pairedOut).reason).toBe("Incompatible collection type(s) for attachment.");
     });
-    it("rejects mapping over collection input if other inputs have an incompatible map over collection type", () => {
+    it("accepts a collection input if other input has a map over collection type", () => {
         const collectionOut = terminals["list input"]!["output"] as OutputCollectionTerminal;
         const listListOut = terminals["list:list input"]!["output"] as OutputCollectionTerminal;
         const listOneIn = terminals["two list inputs"]!["kind|f1"] as InputCollectionTerminal;
         const listTwoIn = terminals["two list inputs"]!["kind|f2"] as InputCollectionTerminal;
         listOneIn.connect(listListOut);
-        expect(listTwoIn.canAccept(collectionOut).canAccept).toBe(false);
-        expect(listTwoIn.canAccept(collectionOut).reason).toBe(
-            "Can't map over this input with output collection type - other inputs have an incompatible map over collection type. Disconnect inputs (and potentially outputs) and retry."
-        );
+        expect(listTwoIn.canAccept(collectionOut).canAccept).toBe(true);
     });
     it("rejects mapping over collection input if outputs constrain input to incompatible collection type", () => {
         const collectionOut = terminals["list input"]!["output"] as OutputCollectionTerminal;
@@ -405,11 +402,15 @@ describe("canAccept", () => {
         const mapOverOut = terminals["two list inputs"]!["out1"] as OutputTerminal;
         const dataIn = terminals["simple data"]!["input"] as InputTerminal;
         listOneIn.connect(listListOut);
+        // two list inputs constrained to a list map over
         dataIn.connect(mapOverOut);
         listOneIn.disconnect(listListOut);
-        // TODO: this should be possible eventually IMHO
-        expect(listTwoIn.canAccept(collectionOut).canAccept).toBe(false);
-        expect(listTwoIn.canAccept(collectionOut).reason).toBe(
+        // still constrained to list map over via output connection
+        // can accept other input
+        expect(listTwoIn.canAccept(collectionOut).canAccept).toBe(true);
+        // but cannot accept on the constrained input
+        expect(listOneIn.canAccept(collectionOut).canAccept).toBe(false);
+        expect(listOneIn.canAccept(collectionOut).reason).toBe(
             "Can't map over this input with output collection type - this step has outputs defined constraining the mapping of this tool. Disconnect outputs and retry."
         );
     });
@@ -463,7 +464,7 @@ describe("canAccept", () => {
         );
     });
     it("rejects connections to input collection constrained by other input", () => {
-        const collectionOut = terminals["list input"]!["output"] as OutputCollectionTerminal;
+        const listListListOut = terminals["list:list:list input"]!["output"] as OutputCollectionTerminal;
         const dataIn = terminals["simple data"]!["input"] as InputTerminal;
         const listOneIn = terminals["two list inputs"]!["kind|f1"] as InputCollectionTerminal;
         const listTwoIn = terminals["two list inputs"]!["kind|f2"] as InputCollectionTerminal;
@@ -473,8 +474,8 @@ describe("canAccept", () => {
         listOneIn.connect(listListOut);
         dataIn.connect(mapOverOut);
         // Can't connect list as output acts like "list:list"
-        expect(listTwoIn.canAccept(collectionOut).canAccept).toBe(false);
-        expect(listTwoIn.canAccept(collectionOut).reason).toBe(
+        expect(listTwoIn.canAccept(listListListOut).canAccept).toBe(false);
+        expect(listTwoIn.canAccept(listListListOut).reason).toBe(
             "Can't map over this input with output collection type - other inputs have an incompatible map over collection type. Disconnect inputs (and potentially outputs) and retry."
         );
     });

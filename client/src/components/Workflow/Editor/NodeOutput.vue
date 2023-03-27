@@ -13,7 +13,7 @@ import {
     type PostJobActions,
     type PostJobAction,
 } from "@/stores/workflowStepStore";
-import { assertDefined } from "@/utils/assertions";
+import { assertDefined, ensureDefined } from "@/utils/assertions";
 import type { UseScrollReturn } from "@vueuse/core";
 
 const props = defineProps<{
@@ -122,8 +122,7 @@ function onToggleActive() {
 
 function onToggleVisible() {
     const actionKey = `HideDatasetAction${props.output.name}`;
-    const step = stepStore.getStep(stepId.value);
-    assertDefined(step);
+    const step = { ...ensureDefined(stepStore.getStep(stepId.value)) };
     if (isVisible.value) {
         step.post_job_actions = {
             ...step.post_job_actions,

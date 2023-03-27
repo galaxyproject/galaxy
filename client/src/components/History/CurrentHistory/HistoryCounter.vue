@@ -117,6 +117,7 @@ export default {
         history: { type: Object, required: true },
         isWatching: { type: Boolean, default: false },
         lastChecked: { type: Date, default: null },
+        filterText: { type: String, default: "" },
     },
     data() {
         return {
@@ -138,6 +139,20 @@ export default {
         },
         setFilter(newFilterText) {
             this.$emit("update:filter-text", newFilterText);
+        },
+        toggleDeleted() {
+            if (this.filterText === "deleted:true") {
+                this.setFilter("");
+            } else {
+                this.setFilter("deleted:true");
+            }
+        },
+        toggleHidden() {
+            if (this.filterText === "visible:false") {
+                this.setFilter("");
+            } else {
+                this.setFilter("visible:false");
+            }
         },
         updateTime() {
             const diffToNow = formatDistanceToNowStrict(this.lastChecked, { addSuffix: true, includeSeconds: true });

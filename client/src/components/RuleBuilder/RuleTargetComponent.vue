@@ -3,7 +3,7 @@
         class="rule-link dropdown-item"
         href="javascript:void(0)"
         :class="linkClassName"
-        @click="builder.addNewRule(ruleType)"
+        @click="$emit('addNewRule', ruleType)"
         >{{ title }}</a
     >
 </template>
@@ -16,9 +16,6 @@ export default {
     props: {
         ruleType: {
             type: String,
-            required: true,
-        },
-        builder: {
             required: true,
         },
     },

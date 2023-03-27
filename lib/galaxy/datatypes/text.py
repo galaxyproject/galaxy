@@ -1391,6 +1391,9 @@ class FormattedDensity(Text):
         >>> fname = get_test_fname('Si.den_fmt')
         >>> FormattedDensity().sniff(fname)
         True
+        >>> fname = get_test_fname('YbCuAs2.den_fmt')
+        >>> FormattedDensity().sniff(fname)
+        True
         >>> fname = get_test_fname('Si.param')
         >>> FormattedDensity().sniff(fname)
         False
@@ -1398,6 +1401,11 @@ class FormattedDensity(Text):
         begin_header = "BEGIN header"
         end_header = 'END header: data is "<a b c> charge" in units of electrons/grid_point * number'
         grid_points = "of grid_points"
+        end_header_spin = 'END header: data is "<a b c> charge spin" in units of electrons/grid_point * nu'
+        grid_points_spin = "mber of grid_points"
         handle = file_prefix.string_io()
         lines = handle.readlines()
-        return lines[0].strip() == begin_header and lines[9].strip() == end_header and lines[10].strip() == grid_points
+        return lines[0].strip() == begin_header and (
+            (lines[9].strip() == end_header and lines[10].strip() == grid_points)
+            or (lines[9].strip() == end_header_spin and lines[10].strip() == grid_points_spin)
+        )
