@@ -60,7 +60,7 @@ async function generateBcoContent() {
             maxRetries -= 1;
         }
         if (!pollingResponse.data) {
-            throw "Timeout waiting for BioCompute Object export result!";
+            throw Error("Timeout waiting for BioCompute Object export result!");
         } else {
             const resultResponse = await axios.get(resultUrl);
             return resultResponse.data;

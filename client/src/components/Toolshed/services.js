@@ -40,7 +40,7 @@ export class Services {
             const data = response.data;
             const table = Object.keys(data).map((key) => data[key]);
             if (table.length === 0) {
-                throw "Repository does not contain any installable revisions.";
+                throw Error("Repository does not contain any installable revisions.");
             }
             table.sort((a, b) => b.numeric_revision - a.numeric_revision);
             table.forEach((x) => {
@@ -67,7 +67,7 @@ export class Services {
                 result.repository_url = `${toolshedUrl}repository?repository_id=${result.id}`;
                 return result;
             } else {
-                throw "Repository details not found.";
+                throw Error("Repository details not found.");
             }
         } catch (e) {
             rethrowSimple(e);

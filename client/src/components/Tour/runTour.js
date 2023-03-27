@@ -20,7 +20,7 @@ function getElement(selector) {
         try {
             return document.querySelector(selector);
         } catch (error) {
-            throw `Tour - Invalid selector. ${selector}`;
+            throw Error(`Tour - Invalid selector. ${selector}`);
         }
     }
 }

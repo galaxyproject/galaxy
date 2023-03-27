@@ -19,9 +19,9 @@ describe("model.js", () => {
         const model = new Model();
         try {
             model.add({ idx: 1 });
-            throw "Accepted invalid record.";
+            throw Error("Accepted invalid record.");
         } catch (error) {
-            expect(error).toBe("Invalid record with no <id>.");
+            expect(error.message).toBe("Invalid record with no <id>.");
         }
         model.add({ id: 1 });
         expect(model.count()).toBe(1);

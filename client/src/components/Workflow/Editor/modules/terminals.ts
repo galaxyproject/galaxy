@@ -218,7 +218,7 @@ class BaseInputTerminal extends Terminal {
     }
     attachable(terminal: BaseOutputTerminal): ConnectionAcceptable {
         // TODO: provide through Mixin
-        throw "Subclass needs to implement this";
+        throw Error("Subclass needs to implement this");
     }
     _getOutputStepsMapOver() {
         const connections = this._getOutputConnections();
@@ -947,5 +947,5 @@ export function terminalFactory<T extends TerminalSourceAndInvalid>(
     if (isInvalidOutputArg(terminalSource)) {
         return new InvalidOutputTerminal(terminalSource) as TerminalOf<T>;
     }
-    throw `Could not build terminal for ${terminalSource}`;
+    throw Error(`Could not build terminal for ${terminalSource}`);
 }
