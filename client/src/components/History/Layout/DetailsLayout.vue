@@ -30,7 +30,9 @@
                 max-rows="4"
                 data-description="name input"
                 @keyup.enter="onSave"
-                @keyup.esc="onToggle" />
+                @keyup.esc="onToggle"
+                @focus="selectText"
+                @blur="textSelected = false" />
             <b-textarea
                 v-if="showAnnotation"
                 v-model="localProps.annotation"
@@ -87,6 +89,7 @@ export default {
         return {
             editing: false,
             localProps: {},
+            textSelected: false,
         };
     },
     computed: {
@@ -121,6 +124,15 @@ export default {
                     this.$refs.name.focus();
                 }
             });
+        },
+        selectText() {
+            if (!this.textSelected) {
+                this.$refs.name.select();
+                this.textSelected = true;
+            } else {
+                this.$refs.name.focus();
+                this.textSelected = false;
+            }
         },
     },
 };
