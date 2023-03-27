@@ -198,8 +198,8 @@ class NotificationManager:
             raise ObjectNotFound
         return result
 
-    def get_all_broadcasted_notifications(self, since: Optional[datetime] = None):
-        stmt = self._broadcasted_notifications_query(since)
+    def get_all_broadcasted_notifications(self, since: Optional[datetime] = None, active_only: Optional[bool] = True):
+        stmt = self._broadcasted_notifications_query(since, active_only)
         result = self.sa_session.execute(stmt).fetchall()
         return result
 
@@ -244,6 +244,8 @@ class NotificationManager:
                 stmt = stmt.values(publication_time=request.publication_time)
             if request.expiration_time is not None:
                 stmt = stmt.values(expiration_time=request.expiration_time)
+            if request.content is not None:
+                stmt = stmt.values(content=request.content.json())
             result = self.sa_session.execute(stmt)
             updated_row_count = result.rowcount
         return updated_row_count
@@ -336,6 +338,14 @@ class NotificationManager:
                 .execution_options(synchronize_session="fetch")
             )
             self.sa_session.execute(delete_non_favorite_expired_associations_query)
+
+            # Delete broadcasted
+            delete_expired_broadcasted_notifications_query = (
+                delete(Notification)
+                .where(has_expired)
+                .where(Notification.category == MandatoryNotificationCategory.broadcast)
+            )
+            self.sa_session.execute(delete_expired_broadcasted_notifications_query)
 
     def _create_notification_model(self, payload: NotificationCreateData):
         notification = Notification(

@@ -218,6 +218,7 @@ class NotificationBroadcastUpdateRequest(NotificationUpdateRequest):
     variant: Optional[NotificationVariant]
     publication_time: Optional[datetime]
     expiration_time: Optional[datetime]
+    content: Optional[BroadcastNotificationContent]
 
 
 class NotificationsBatchRequest(Model):
