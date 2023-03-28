@@ -223,7 +223,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
     def __has_guest_ports(self, job_wrapper):
         # Check if job has guest ports or interactive tool entry points that would signal that
         log.debug(
-            f"Checking if job {job_wrapper.get_id_tag()} is an interactive tool. guest ports: {job_wrapper.guest_ports}. interactive entry points: {job_wrapper.interactivetool_entry_points}"
+            f"Checking if job {job_wrapper.get_id_tag()} is an interactive tool. guest ports: {job_wrapper.guest_ports}. interactive entry points: {job_wrapper.get_job().interactivetool_entry_points}"
         )
         return bool(job_wrapper.guest_ports) or bool(job_wrapper.get_job().interactivetool_entry_points)
 
