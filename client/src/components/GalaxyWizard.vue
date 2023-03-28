@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import axios from "axios";
 import { ref } from "vue";
 import Heading from "./Common/Heading.vue";
@@ -21,7 +21,7 @@ function submitQuery() {
             queryResponse.value = response.data;
         })
         .catch(function (error) {
-            console.log(error);
+            console.error(error);
         })
         .finally(() => {
             busy.value = false;
@@ -37,15 +37,9 @@ function submitQuery() {
                 id="wizardinput"
                 v-model="query"
                 style="width: 100%"
-                placeholder="What's the difference in fasta and fastq?"
+                placeholder="What's the difference in fasta and fastq files?"
                 @keyup.enter="submitQuery" />
         </div>
-        <!-- input button  -->
-        <!--
-        <div class="mt-2">
-            <button :disabled="queryDisabled" @click.prevent="submitQuery">Query</button>
-        </div>
-        -->
         <!-- spinner when busy -->
         <div class="mt-4">
             <div v-if="busy">
@@ -53,8 +47,12 @@ function submitQuery() {
                 <b-skeleton animation="wave" width="55%"></b-skeleton>
                 <b-skeleton animation="wave" width="70%"></b-skeleton>
             </div>
-            {{ queryResponse }}
+            <div v-else class="chatResponse">{{ queryResponse }}</div>
         </div>
     </div>
 </template>
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.chatResponse {
+    white-space: pre-wrap;
+}
+</style>
