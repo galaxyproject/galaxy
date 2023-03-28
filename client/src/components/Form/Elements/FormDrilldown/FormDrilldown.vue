@@ -7,14 +7,16 @@ export interface FormDrilldownProps {
     id: string;
     value?: string | string[];
     options: Array<Option>;
+    multiple: boolean;
 }
 
 const props = withDefaults(defineProps<FormDrilldownProps>(), {
     value: null,
+    multiple: false,
 });
 
 const emit = defineEmits<{
-    (e: "input", value: string[] | null): void;
+    (e: "input", value: string[] | null | string): void;
 }>();
 
 const hasOptions = computed(() => {
@@ -37,18 +39,24 @@ const currentValue = computed({
 });
 
 function handleClick(value: string) {
-    const newValue = currentValue.value.slice();
-    const index = newValue.indexOf(value);
-    if (index !== -1) {
-        newValue.splice(index, 1);
-    } else {
-        newValue.push(value);
+    if (props.multiple) {
+        const newValue = currentValue.value.slice();
+        const index = newValue.indexOf(value);
+        if (index !== -1) {
+            newValue.splice(index, 1);
+        } else {
+            newValue.push(value);
+        }
+        if (newValue.length === 0) {
+            emit("input", null);
+        } else {
+            emit("input", newValue);
+        }
     }
-    if (newValue.length === 0) {
-        emit("input", null);
-    } else {
-        emit("input", newValue);
+    if (!props.multiple) {
+        emit("input", value);
     }
+    
 }
 
 //TODO implement selectAll
@@ -56,6 +64,10 @@ function handleClick(value: string) {
 
 <template>
     <div v-if="hasOptions">
-        <form-drilldown-list :current-value="currentValue" :options="options" :handle-click="handleClick" />
+        <form-drilldown-list
+            :multiple="props.multiple"
+            :current-value="currentValue"
+            :options="options"
+            :handle-click="handleClick" />
     </div>
 </template>

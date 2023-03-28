@@ -268,7 +268,8 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 v-else-if="props.type === 'drill_down'"
                 :id="id"
                 v-model="currentValue"
-                :options="attrs.options" />
+                :options="attrs.options"
+                :multiple="attrs.multiple" />
             <FormColor v-else-if="props.type === 'color'" :id="props.id" v-model="currentValue" />
             <FormDirectory v-else-if="props.type === 'directory_uri'" v-model="currentValue" />
             <FormUpload v-else-if="props.type === 'upload'" v-model="currentValue" />

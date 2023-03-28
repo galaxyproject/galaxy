@@ -7,6 +7,7 @@ export interface Props {
     currentValue: string[];
     option: Option;
     handleClick: Function;
+    multiple: boolean;
 }
 
 const props = defineProps<Props>();
@@ -33,12 +34,14 @@ function toggleChildren() {
             <icon v-if="showChildren" fixed-width icon="minus-square" />
             <icon v-else fixed-width icon="plus-square" />
         </span>
-        <b-form-checkbox class="d-inline" :checked="isChecked" @change="handleClick(option.value)" />
+        <b-form-checkbox v-if="multiple" class="d-inline" :checked="isChecked" @change="handleClick(option.value)" />
+        <b-form-radio v-else class="d-inline" :selected="isChecked" @change="handleClick(option.value)" />
         {{ option.name }}
         <form-drilldown-list
             v-if="hasOptions"
             v-show="showChildren"
             :current-value="currentValue"
+            :multiple="props.multiple"
             :options="option.options"
             :handle-click="handleClick" />
     </li>
