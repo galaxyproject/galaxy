@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import Popper from "./Popper.vue";
 
 export interface Props {
     id: string;
@@ -21,22 +22,28 @@ const emit = defineEmits<{
 </script>
 
 <template>
-    <b-nav-item
-        :id="id"
-        :class="{ 'mb-1': true, 'nav-item-active': isActive }"
-        :aria-label="title | l"
-        :title="tooltip | l"
-        @click="emit('click')">
-        <template>
-            <slot />
-            <span class="position-relative">
-                <div class="nav-icon">
-                    <Icon :icon="icon" />
-                </div>
-                <div class="nav-title">{{ title }}</div>
-            </span>
-        </template>
-    </b-nav-item>
+    <div>
+        <Popper reference-is="span" popper-is="span" placement="right">
+            <template #reference>
+                <b-nav-item
+                    :id="id"
+                    :class="{ 'mb-1': true, 'nav-item-active': isActive }"
+                    :aria-label="title | l"
+                    @click="emit('click')">
+                    <template>
+                        <slot />
+                        <span class="position-relative">
+                            <div class="nav-icon">
+                                <Icon :icon="icon" />
+                            </div>
+                            <div class="nav-title">{{ title }}</div>
+                        </span>
+                    </template>
+                </b-nav-item>
+            </template>
+            <div style="background: red; width: 10rem;">{{ tooltip | l }}</div>
+        </Popper>
+    </div>
 </template>
 
 <style scoped lang="scss">
