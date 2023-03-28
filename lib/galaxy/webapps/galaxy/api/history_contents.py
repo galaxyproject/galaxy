@@ -249,7 +249,7 @@ LegacyVisibleQueryParam = Query(
     deprecated=True,
 )
 
-ShareableQueryParam = Query(
+LegacyShareableQueryParam = Query(
     default=None,
     title="Shareable",
     description="Whether to return only shareable or not shareable datasets. Leave unset for both.",
@@ -276,7 +276,7 @@ def get_legacy_index_query_params(
     details: Optional[str] = LegacyDetailsQueryParam,
     deleted: Optional[bool] = LegacyDeletedQueryParam,
     visible: Optional[bool] = LegacyVisibleQueryParam,
-    shareable: Optional[bool] = ShareableQueryParam,
+    shareable: Optional[bool] = LegacyShareableQueryParam,
 ) -> LegacyHistoryContentsIndexParams:
     """This function is meant to be used as a dependency to render the OpenAPI documentation
     correctly"""
