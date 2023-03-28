@@ -94,7 +94,9 @@ export default {
             svgElem.setAttribute("viewBox", -translateX + " 0 " + 0.5 * clientW + " " + clientH);
             svgElem.setAttribute("preserveAspectRatio", "xMidYMid meet");
             var d3Tree = d3.tree().size([clientH, clientW]);
-            root = d3.hierarchy(predictedTools, function(d) { return d.children; });
+            root = d3.hierarchy(predictedTools, (d) => {
+                return d.children;
+            });
             root.x0 = parseInt(clientH / 2);
             root.y0 = 0;
             const collapse = (d) => {
@@ -109,7 +111,7 @@ export default {
                 const path = `M ${s.y} ${s.x}
                               C ${(s.y + d.y) / 2} ${s.x},
                               ${(s.y + d.y) / 2} ${d.x},
-                              ${d.y} ${d.x}`
+                              ${d.y} ${d.x}`;
                 return path;
             };
             const click = (e, d) => {
@@ -135,8 +137,9 @@ export default {
                 nodes.forEach((d) => {
                     d.y = d.depth * (clientW / 10);
                 });
-                const node = svg.selectAll('g.node')
-                    .data(nodes, function(d) {return d.id || (d.id = ++i); }); 
+                const node = svg.selectAll("g.node").data(nodes, (d) => {
+                    return d.id || (d.id = ++i);
+                });
                 const nodeEnter = node
                     .enter()
                     .append("g")
@@ -145,9 +148,7 @@ export default {
                         return "translate(" + source.y0 + "," + source.x0 + ")";
                     })
                     .on("click", click);
-                nodeEnter.append("circle")
-                    .attr('class', 'node')
-                    .attr('r', 1e-6)
+                nodeEnter.append("circle").attr("class", "node").attr("r", 1e-6);
                 nodeEnter
                     .append("text")
                     .attr("dy", ".35em")
@@ -168,25 +169,27 @@ export default {
                     return d.children ? d.data.name : "Open tool - " + d.data.name;
                 });
                 const nodeUpdate = nodeEnter.merge(node);
-                nodeUpdate.transition()
+                nodeUpdate
+                    .transition()
                     .duration(duration)
-                    .attr("transform", function(d) { 
+                    .attr("transform", (d) => {
                         return "translate(" + d.y + "," + d.x + ")";
                     });
                 nodeUpdate.select("circle.node").attr("r", 2.5);
-                const nodeExit = node.exit()
+                const nodeExit = node
+                    .exit()
                     .transition()
                     .duration(duration)
                     .attr("transform", (d) => {
                         return "translate(" + source.y + "," + source.x + ")";
                     })
                     .remove();
-                nodeExit.select('circle')
-                    .attr('r', 1e-6);
+                nodeExit.select("circle").attr("r", 1e-6);
                 const link = svg.selectAll("path.link").data(links, (d) => {
                     return d.data.id;
                 });
-                const linkEnter = link.enter()
+                const linkEnter = link
+                    .enter()
                     .insert("path", "g")
                     .attr("class", "link")
                     .attr("d", (d) => {
@@ -194,7 +197,8 @@ export default {
                         return diagonal(o, o);
                     });
                 const linkUpdate = linkEnter.merge(link);
-                linkUpdate.transition()
+                linkUpdate
+                    .transition()
                     .duration(duration)
                     .attr("d", (d) => {
                         return diagonal(d, d.parent);
