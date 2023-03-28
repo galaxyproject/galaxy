@@ -3,7 +3,10 @@ API Controller providing Chat functionality
 """
 import logging
 
-import openai
+try:
+    import openai
+except ImportError:
+    openai = None
 
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import ConfigurationError
@@ -31,7 +34,7 @@ class ChatAPI:
     def query(self, query: ChatPayload) -> str:
         """We're off to ask the wizard"""
 
-        if self.config.openai_api_key is None:
+        if openai is None or self.config.openai_api_key is None:
             raise ConfigurationError("OpenAI is not configured for this instance.")
         else:
             openai.api_key = self.config.openai_api_key
