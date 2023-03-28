@@ -110,8 +110,11 @@ class FastAPINotifications:
         "/api/notifications/broadcast",
         summary="Returns all currently active broadcasted notifications.",
     )
-    def get_all_broadcasted(self) -> BroadcastNotificationListResponse:
-        return self.service.get_all_broadcasted_notifications()
+    def get_all_broadcasted(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> BroadcastNotificationListResponse:
+        return self.service.get_all_broadcasted_notifications(trans)
 
     @router.get(
         "/api/notifications/{notification_id}",

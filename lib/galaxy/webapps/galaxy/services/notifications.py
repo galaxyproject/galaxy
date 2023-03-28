@@ -107,9 +107,11 @@ class NotificationService(ServiceBase):
         except ObjectNotFound:
             self._raise_notification_not_found(notification_id)
 
-    def get_all_broadcasted_notifications(self) -> BroadcastNotificationListResponse:
-        """Gets all the `broadcasted` notifications currently published."""
-        broadcasted_notifications = self._get_all_broadcasted()
+    def get_all_broadcasted_notifications(self, user_context: ProvidesUserContext) -> BroadcastNotificationListResponse:
+        """Gets all the `broadcasted` notifications currently published.
+        Admin users will also get inactive notifications (scheduled or recently expired)."""
+        active_only = not user_context.user_is_admin
+        broadcasted_notifications = self._get_all_broadcasted(active_only=active_only)
         return BroadcastNotificationListResponse(__root__=broadcasted_notifications)
 
     def get_user_notification(self, user: User, notification_id: int) -> UserNotificationResponse:
@@ -190,8 +192,10 @@ class NotificationService(ServiceBase):
         if not request.has_changes():
             raise RequestParameterInvalidException("Please specify at least one value to update for notifications.")
 
-    def _get_all_broadcasted(self, since: Optional[datetime] = None) -> List[BroadcastNotificationResponse]:
-        notifications = self.notification_manager.get_all_broadcasted_notifications(since)
+    def _get_all_broadcasted(
+        self, since: Optional[datetime] = None, active_only: Optional[bool] = True
+    ) -> List[BroadcastNotificationResponse]:
+        notifications = self.notification_manager.get_all_broadcasted_notifications(since, active_only)
         broadcasted_notifications = [
             BroadcastNotificationResponse.from_orm(notification) for notification in notifications
         ]
