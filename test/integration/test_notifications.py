@@ -44,6 +44,7 @@ def notification_broadcast_test_data(subject: Optional[str] = None, message: Opt
 
 
 class TestNotificationsIntegration(IntegrationTestCase):
+    dataset_populator: DatasetPopulator
     task_based = False
     framework_tool_and_types = False
 
