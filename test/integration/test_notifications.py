@@ -1,4 +1,7 @@
-from datetime import datetime
+from datetime import (
+    datetime,
+    timedelta,
+)
 from typing import (
     Any,
     Dict,
@@ -235,6 +238,27 @@ class TestNotificationsIntegration(IntegrationTestCase):
         updated_response = self._get(f"notifications/broadcast/{broadcasted_notification_id}").json()
         assert updated_response["source"] == "updated_source"
 
+    def test_admins_get_all_broadcasted_even_inactive(self):
+        tomorrow = datetime.utcnow() + timedelta(days=1)
+        yesterday = datetime.utcnow() - timedelta(days=1)
+        self._send_broadcast_notification(subject="Active")
+        self._send_broadcast_notification(subject="Scheduled", publication_time=tomorrow)
+        self._send_broadcast_notification(subject="Expired", expiration_time=yesterday)
+
+        # Regular users will only get active (published and non-expired) broadcasted notifications
+        response_from_user = self._get("notifications/broadcast").json()
+        subjects = [notification["content"]["subject"] for notification in response_from_user]
+        assert "Active" in subjects
+        assert "Scheduled" not in subjects
+        assert "Expired" not in subjects
+
+        # Admins will get all broadcasted notifications even inactive ones
+        response_from_admin = self._get("notifications/broadcast", admin=True).json()
+        subjects = [notification["content"]["subject"] for notification in response_from_admin]
+        assert "Active" in subjects
+        assert "Scheduled" in subjects
+        assert "Expired" in subjects
+
     def test_sharing_items_creates_notifications_when_expected(self):
         user1 = self._create_test_user()
         user2 = self._create_test_user()
@@ -310,8 +334,22 @@ class TestNotificationsIntegration(IntegrationTestCase):
         created_response = response.json()
         return created_response
 
-    def _send_broadcast_notification(self, subject: Optional[str] = None, message: Optional[str] = None):
+    def _send_broadcast_notification(
+        self,
+        subject: Optional[str] = None,
+        message: Optional[str] = None,
+        publication_time: Optional[datetime] = None,
+        expiration_time: Optional[datetime] = None,
+    ):
         payload = notification_broadcast_test_data()
+        if subject is not None:
+            payload["content"]["subject"] = subject
+        if message is not None:
+            payload["content"]["message"] = message
+        if publication_time is not None:
+            payload["publication_time"] = publication_time.isoformat()
+        if expiration_time is not None:
+            payload["expiration_time"] = expiration_time.isoformat()
         response = self._post("notifications/broadcast", data=payload, admin=True, json=True)
         self._assert_status_code_is_ok(response)
         notifications_status = response.json()
