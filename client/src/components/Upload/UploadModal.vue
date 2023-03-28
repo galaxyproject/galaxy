@@ -7,7 +7,7 @@ import { getAppRoot } from "onload";
 import { useCurrentUser } from "composables/user";
 import { useUserHistories } from "composables/userHistories";
 import { useConfig } from "composables/config";
-import { wait } from "@/utils/wait";
+import { wait } from "@/utils/utils";
 
 const { currentUser } = useCurrentUser();
 const { currentHistoryId } = useUserHistories(currentUser);

@@ -3,62 +3,70 @@
  * do not require their own classes/files
  */
 
-import _ from "underscore";
-import $ from "jquery";
 import axios, { type AxiosError, type AxiosResponse } from "axios";
 
 import { getAppRoot } from "@/onload/loadConfig";
 import { getGalaxyInstance } from "@/app";
 import _l from "@/utils/localization";
 
-/** Builds a basic iframe */
-export function iframe(src: string) {
-    return `<iframe src="${src}" frameborder="0" style="width: 100%; height: 100%;"/>`;
-}
+/** Object with any internal structure. More specific key than built-in Object type */
+export type AnyObject = Record<string | number | symbol, any>;
 
-/** Traverse through json */
-export function deepeach(dict: any, callback: any): void {
-    for (const i in dict) {
-        const d = dict[i];
-        if (_.isObject(d)) {
-            const new_dict = callback(d);
-            if (new_dict) {
-                dict[i] = new_dict;
-            }
-            deepeach(d, callback);
+/**
+ * Call callback on every object in an object recursively
+ *
+ * @param object object to traverse
+ * @param callback ran on every nested child object
+ */
+export function deepEach<O extends AnyObject, V extends O[keyof O] extends AnyObject ? O[keyof O] : never>(
+    object: Readonly<O>,
+    callback: (object: V | AnyObject) => void
+): void {
+    Object.values(object).forEach((value) => {
+        if (Boolean(value) && typeof value === "object") {
+            callback(value);
+            deepEach(value, callback);
         }
-    }
+    });
 }
 
-/** Identifies urls and replaces them with anchors */
+/**
+ * Identifies urls and replaces them with anchors
+ *
+ * @param inputText
+ * @returns string with <a> anchor tags, wrapping found URLs and e-mail addresses
+ */
 export function linkify(inputText: string): string {
-    let replacedText;
+    let replacedText = inputText;
 
     // URLs starting with http://, https://, or ftp://
-    const replacePattern1 = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%=~_|])/gim;
-    replacedText = inputText.replace(replacePattern1, '<a href="$1" target="_blank">$1</a>');
+    const urlProtocolPattern = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%=~_|])/gim;
+    replacedText = replacedText.replace(urlProtocolPattern, '<a href="$1" target="_blank">$1</a>');
 
     // URLs starting with "www." (without // before it, or it'd re-link the ones done above).
-    const replacePattern2 = /(^|[^/])(www\.[\S]+(\b|$))/gim;
-    replacedText = replacedText.replace(replacePattern2, '$1<a href="http://$2" target="_blank">$2</a>');
+    const urlPattern = /(^|[^/])(www\.[\S]+(\b|$))/gim;
+    replacedText = replacedText.replace(urlPattern, '$1<a href="http://$2" target="_blank">$2</a>');
 
     // Change email addresses to mailto:: links.
-    const replacePattern3 = /(([a-zA-Z0-9\-_.])+@[a-zA-Z_]+?(\.[a-zA-Z]{2,6})+)/gim;
-    replacedText = replacedText.replace(replacePattern3, '<a href="mailto:$1">$1</a>');
+    const emailPattern = /(([a-zA-Z0-9\-_.])+@[a-zA-Z_]+?(\.[a-zA-Z]{2,6})+)/gim;
+    replacedText = replacedText.replace(emailPattern, '<a href="mailto:$1">$1</a>');
 
     return replacedText;
 }
 
 /**
+ * @deprecated in favor of built in `structuredClone` method
+ *
  * This is a deep copy of the object input
  */
-export function clone<T>(obj: T): T {
+export function clone<T>(obj: Readonly<T>): T {
     return JSON.parse(JSON.stringify(obj));
 }
 
 /**
  * Check if a string is a json string
- * @param{String}   text - Content to be validated
+ *
+ * @param text Content to be validated
  */
 export function isJSON(text: string): boolean {
     return /^[\],:{}\s]*$/.test(
@@ -69,57 +77,64 @@ export function isJSON(text: string): boolean {
     );
 }
 
-/**
- * Sanitize/escape a string
- * @param{String}   content - Content to be sanitized
- */
-export function sanitize(content: string): string {
-    return $("<div/>").text(content).html();
-}
+const emptyValues = ["__null__", "__undefined__", null, undefined] as const;
 
 /**
- * Checks if a value or list of values is `empty`
- * usually used for selectable options
- * @param{String}   value - Value or list to be validated
+ * Checks if a value or list of values is "empty".
+ * Usually used for selectable options
+ *
+ * Considers `null`, `undefined` and the string literals `__null__`, `__undefined__` as "empty"
+ *
+ * @param value Value or list of values to be validated
  */
-export function isEmpty(value: any | any[]) {
-    if (!(value instanceof Array)) {
-        value = [value];
-    }
-    if (value.length === 0) {
-        return true;
-    }
-    for (const i in value) {
-        if (["__null__", "__undefined__", null, undefined].indexOf(value[i]) > -1) {
+export function isEmpty(value: any | Readonly<any[]>) {
+    if (!Array.isArray(value)) {
+        return emptyValues.includes(value);
+    } else {
+        if (value.length === 0) {
             return true;
         }
-    }
-    return false;
-}
 
-/**
- * Convert list to pretty string
- * @param{String}   lst - List of strings to be converted in human readable list sentence
- */
-export function textify(lst: string[] | string): string {
-    if (Array.isArray(lst)) {
-        lst = lst.toString().replace(/,/g, ", ");
-        const pos = lst.lastIndexOf(", ");
-        if (pos != -1) {
-            lst = `${lst.substr(0, pos)} or ${lst.substr(pos + 2)}`;
+        for (let index = 0; index < value.length; index++) {
+            if (emptyValues.includes(value[index])) {
+                return true;
+            }
         }
-        return lst;
+
+        return false;
     }
-    return "";
 }
 
 /**
- * Request handler for GET
- * legacy layer from old $.ajax interface
- * @param{String}   url     - Url request is made to
- * @param{Function} success - Callback on success
- * @param{Function} error   - Callback on error
- * @param{Object}   data    - parameters to be sent with the request
+ * Convert list to pretty string.
+ *
+ * @example ```
+ * const list = [1, 2, 3];
+ * const pretty = textify(list);
+ * console.log(pretty);
+ * // outputs => 1, 2 or 3
+ * ```
+ *
+ * @param list List of strings to be converted in human readable list sentence
+ */
+export function textify(list: Readonly<string[]>): string {
+    let string = list.toString().replace(/,/g, ", ");
+    const pos = string.lastIndexOf(", ");
+
+    if (pos !== -1) {
+        string = `${string.substring(0, pos)} or ${string.substring(pos + 2)}`;
+    }
+
+    return string;
+}
+
+/**
+ * Request handler for GET.
+ *
+ * @property url     Url request is made to
+ * @property success Callback on success
+ * @property error   Callback on error
+ * @property data    parameters to be sent with the request
  */
 interface getOptions {
     url: string;
@@ -128,6 +143,10 @@ interface getOptions {
     error?: (error: AxiosError) => void;
 }
 
+/**
+ * @deprecated legacy layer for old $.ajax interface
+ * @param options
+ */
 export function get(options: getOptions): void {
     axios
         .get(options.url, { params: options.data })
@@ -146,55 +165,55 @@ export function get(options: getOptions): void {
 }
 
 /**
- * Read a property value from CSS
- * @param{String}   classname   - CSS class
- * @param{String}   name        - CSS property
- */
-export function cssGetAttribute(classname: string, name: string): string {
-    const el = $(`<div class="${classname}"></div>`);
-    el.appendTo(":eq(0)");
-    const value = el.css(name);
-    el.remove();
-    return value;
-}
-
-/**
  * Load a CSS file
- * @param{String}   url - Url of CSS file
+ *
+ * @param url Url of CSS file
  */
 export function cssLoadFile(url: string): void {
-    if (!$(`link[href^="${url}"]`).length) {
-        $(`<link href="${getAppRoot()}${url}" rel="stylesheet">`).appendTo("head");
+    const fullUrl = getAppRoot() + url;
+    const links = document.head.getElementsByTagName("link");
+
+    if (Array.from(links).find((link) => link.href === fullUrl)) {
+        return;
     }
+
+    const link = document.createElement("link");
+    link.type = "text/css";
+    link.rel = "stylesheet";
+    link.href = fullUrl;
+    document.head.appendChild(link);
 }
 
 /**
- * Safely merge to dictionaries
- * @param{Object}   options         - Target dictionary
- * @param{Object}   optionsDefault  - Source dictionary
+ * Safely merge two dictionaries
+ *
+ * @param options        Target dictionary
+ * @param optionsDefault Source dictionary
+ *
+ * @returns modified options dictionary or new object
  */
-export function merge(options: any, optionsDefault: any) {
-    if (options) {
-        return _.defaults(options, optionsDefault);
-    } else {
-        return optionsDefault;
-    }
+export function merge(options: AnyObject | null | undefined, optionsDefault: Readonly<AnyObject>) {
+    const object = options ?? {};
+
+    Object.entries(optionsDefault).forEach(([key, value]) => {
+        if (!object[key]) {
+            object[key] = value;
+        }
+    });
+
+    return object;
 }
 
 /**
- * Round floating point 'number' to 'numPlaces' number of decimal places.
- * @param{number}   number      a floaing point number
- * @param{number}   numPlaces   number of decimal places
+ * Round floating point `number` to `numPlaces` number of decimal places.
+ *
+ * @param number    a floating point number
+ * @param numPlaces number of decimal places
  */
 export function roundToDecimalPlaces(number: number, numPlaces: number) {
-    let placesMultiplier = 1;
-    for (let i = 0; i < numPlaces; i++) {
-        placesMultiplier *= 10;
-    }
-    return Math.round(number * placesMultiplier) / placesMultiplier;
+    return parseFloat(number.toFixed(numPlaces));
 }
 
-// calculate on import
 const kb = 1024;
 const mb = kb * kb;
 const gb = mb * kb;
@@ -202,12 +221,18 @@ const tb = gb * kb;
 
 /**
  * Format byte size to string with units
- * @param{Integer}   size           - Size in bytes
- * @param{Boolean}   normal_font    - Switches font between normal and bold
+ *
+ * @param size       Size in bytes
+ * @param normalFont Switches font between normal and bold
+ * @param numPlaces  decimalPlaces to round to
+ *
+ * @returns string representation of bytes,
+ * or `strong` tag with size in bytes and unit (as string),
+ * or `strong` tag with "-" (as string)
  */
-export function bytesToString(size: number, normal_font: boolean, numPlaces = 1) {
-    // identify unit
+export function bytesToString(size: number, normalFont = true, numPlaces = 1) {
     let unit = "";
+
     if (size >= tb) {
         size = size / tb;
         unit = "TB";
@@ -223,20 +248,28 @@ export function bytesToString(size: number, normal_font: boolean, numPlaces = 1)
     } else if (size > 0) {
         unit = "b";
     } else {
-        return normal_font ? "0 b" : "<strong>-</strong>";
+        return normalFont ? "0 b" : "<strong>-</strong>";
     }
-    // return formatted string
+
     const rounded = unit == "b" ? size : roundToDecimalPlaces(size, numPlaces);
-    if (normal_font) {
+
+    if (normalFont) {
         return `${rounded} ${unit}`;
     } else {
         return `<strong>${rounded}</strong> ${unit}`;
     }
 }
 
-/** Create a unique id */
+let idCounter = 0;
+
+/**
+ * @deprecated in favor of useUid composable
+ *
+ * Create a unique id
+ */
 export function uid(): string {
-    return _.uniqueId("uid-");
+    idCounter += 1;
+    return `uid-${idCounter}`;
 }
 
 /** Create a time stamp */
@@ -247,15 +280,24 @@ export function time(): string {
     return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}, ${hours}:${minutes}`;
 }
 
-/** Append script and style tags to Galaxy main application */
-export function appendScriptStyle(data: { script?: string; styles?: string }) {
+/**
+ * Append script and style tags to Galaxy main application
+ *
+ * @param data object containing script and style strings
+ */
+export function appendScriptStyle(data: Readonly<{ script?: string; styles?: string }>) {
     // create a script tag inside head tag
     if (data.script && data.script !== "") {
-        $("<script/>", { type: "text/javascript" }).text(data.script).appendTo("head");
+        const tag = document.createElement("script");
+        tag.type = "text/javascript";
+        tag.textContent = data.script;
+        document.head.appendChild(tag);
     }
     // create a style tag inside head tag
     if (data.styles && data.styles !== "") {
-        $("<style/>", { type: "text/css" }).text(data.styles).appendTo("head");
+        const tag = document.createElement("style");
+        tag.textContent = data.styles;
+        document.head.appendChild(tag);
     }
 }
 
@@ -273,8 +315,8 @@ export function setWindowTitle(title: string): void {
  * Found here: https://gist.github.com/vaiorabbit/5657561
  * Ref.: http://isthe.com/chongo/tech/comp/fnv/
  *
- * @param {string} str the input value
- * @returns {integer}
+ * @param str the input value
+ * @returns integer number
  */
 export function hashFnv32a(str: string): number {
     let hval = 0x811c9dc5;
@@ -288,44 +330,46 @@ export function hashFnv32a(str: string): number {
 
 /**
  * Return a promise, resolve it when element appears
- * @param selector
- * @returns {Promise<*>}
+ *
+ * @param selector css selector
+ *
+ * @returns Element
  */
 export async function waitForElementToBePresent(selector: string) {
     while (document.querySelector(selector) === null) {
         await new Promise((resolve) => requestAnimationFrame(resolve));
     }
-    return document.querySelector(selector);
+
+    return document.querySelector(selector) as Element;
 }
 
 /**
- * Delays the next operation the specified amount of time.
- * @param {number} delayInMilliseconds The amount of time to wait in milliseconds
+ * Async `setTimeout` utility.
+ * Resolves promise after set time
+ *
+ * @param milliseconds amount of time to wait in milliseconds
  */
-export async function delay(delayInMilliseconds: number) {
-    if (delayInMilliseconds > 0) {
-        await new Promise((r) => setTimeout(r, delayInMilliseconds));
-    }
+export function wait(milliseconds: number) {
+    return new Promise<void>((resolve) => {
+        setTimeout(() => resolve(), milliseconds);
+    });
 }
 
 export default {
-    cssLoadFile: cssLoadFile,
-    cssGetAttribute: cssGetAttribute,
-    get: get,
-    merge: merge,
-    iframe: iframe,
-    bytesToString: bytesToString,
-    uid: uid,
-    time: time,
-    sanitize: sanitize,
-    textify: textify,
-    isEmpty: isEmpty,
-    deepeach: deepeach,
-    isJSON: isJSON,
-    clone: clone,
-    linkify: linkify,
-    appendScriptStyle: appendScriptStyle,
-    setWindowTitle: setWindowTitle,
-    waitForElementToBePresent: waitForElementToBePresent,
-    delay: delay,
+    cssLoadFile,
+    get,
+    merge,
+    bytesToString,
+    uid,
+    time,
+    textify,
+    isEmpty,
+    deepEach,
+    isJSON,
+    clone,
+    linkify,
+    appendScriptStyle,
+    setWindowTitle,
+    waitForElementToBePresent,
+    wait,
 };

@@ -75,6 +75,7 @@ async function mountCleanupOperationSummaryWith(
         localVue,
     });
     await flushPromises();
+    await flushPromises();
     return wrapper;
 }
 
