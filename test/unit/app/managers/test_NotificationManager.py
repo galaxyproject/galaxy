@@ -184,14 +184,12 @@ class TestBroadcastNotifications(NotificationManagerBaseTestCase):
         actual_notification = self._send_broadcast_notification(notification_data)
 
         now = datetime.utcnow()
+        expected_content = BroadcastNotificationContent(subject="Updated Notification", message="Updated Message")
         update_request = NotificationBroadcastUpdateRequest(
             source="updated_source",
             variant=NotificationVariant.warning,
             publication_time=now,
-            content=BroadcastNotificationContent(
-                subject="Updated Notification",
-                message="Updated Message",
-            ),
+            content=expected_content,
         )
         updated_count = self.notification_manager.update_broadcasted_notification(
             actual_notification.id, update_request
@@ -202,8 +200,8 @@ class TestBroadcastNotifications(NotificationManagerBaseTestCase):
         assert updated_notification.variant == update_request.variant
         assert updated_notification.publication_time == update_request.publication_time
         content = json.loads(updated_notification.content)
-        assert content["subject"] == update_request.content.subject
-        assert content["message"] == update_request.content.message
+        assert content["subject"] == expected_content.subject
+        assert content["message"] == expected_content.message
 
     def test_cleanup_expired_broadcast_notifications(self):
         one_hour_ago = datetime.utcnow() - timedelta(hours=1)
