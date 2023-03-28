@@ -173,6 +173,7 @@ def add_empty_response_middleware(app: FastAPI) -> None:
 
 def add_sentry_middleware(app: FastAPI) -> None:
     from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
+
     app.add_middleware(SentryAsgiMiddleware)
 
 
