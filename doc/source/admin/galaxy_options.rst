@@ -1941,18 +1941,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~
-``use_legacy_history``
-~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Server-wide default selection to use the legacy history during the
-    transition period, after which this option will disappear.  Users
-    will remain able to swap back and forth per their preference.
-:Default: ``false``
-:Type: bool
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``user_preferences_extra_conf_path``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
