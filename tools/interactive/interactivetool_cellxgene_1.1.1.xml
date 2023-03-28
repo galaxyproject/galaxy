@@ -17,21 +17,21 @@
     <command><![CDATA[
     #import re
     #set $fancy_name = '/tmp/galaxy_cellxgene_' + re.sub('[^\w\-_]', '_', $infile.element_identifier) + '.h5ad'
-	
+
     #if ($var_name and $make_unique) or $layer:
     python '${anndata_unique_var_gene_symbols}' '${infile}' '${fancy_name}' '${var_name}' '${make_unique}' '${layer}'
     #else  
     cp '${infile}' '${fancy_name}'
     #end if
-	&&
-	mkdir annotation_files
-	&&
+    &&
+    mkdir annotation_files
+    &&
     cellxgene launch --host 0.0.0.0 --port 80 
         --user-generated-data-dir annotation_files
     #if $var_name and not $make_unique:
         --var-names $var_name
     #end if
-	'${fancy_name}'
+    '${fancy_name}'
     ]]>
     </command>
     <configfiles>
