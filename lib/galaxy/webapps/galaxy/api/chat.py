@@ -22,6 +22,7 @@ You are a highly intelligent question answering agent, expert on the Galaxy anal
 You will try to answer questions about Galaxy, and if you don't know the answer, you will ask the user to rephrase the question.
 """
 
+
 @router.cbv
 class ChatAPI:
     config: GalaxyAppConfiguration = depends(GalaxyAppConfiguration)
@@ -44,5 +45,5 @@ class ChatAPI:
             temperature=0,
         )
 
-        answer = response['choices'][0]['message']['content']
+        answer = response["choices"][0]["message"]["content"]
         return answer
