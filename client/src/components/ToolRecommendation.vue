@@ -91,16 +91,12 @@ export default {
             const clientH = svgElem.clientHeight;
             const clientW = svgElem.clientWidth;
             const translateX = parseInt(clientW * 0.15);
-
             svgElem.setAttribute("viewBox", -translateX + " 0 " + 0.5 * clientW + " " + clientH);
             svgElem.setAttribute("preserveAspectRatio", "xMidYMid meet");
-
             var d3Tree = d3.tree().size([clientH, clientW]);
-
             root = d3.hierarchy(predictedTools, function(d) { return d.children; });
             root.x0 = parseInt(clientH / 2);
             root.y0 = 0;
-
             const collapse = (d) => {
                 if (d.children) {
                     d._children = d.children;
@@ -108,7 +104,6 @@ export default {
                     d.children = null;
                 }
             };
-            // Collapse after the second level
             root.children.forEach(collapse);
             const diagonal = (s, d) => {
                 const path = `M ${s.y} ${s.x}
@@ -179,7 +174,6 @@ export default {
                         return "translate(" + d.y + "," + d.x + ")";
                     });
                 nodeUpdate.select("circle.node").attr("r", 2.5);
-                // Transition exiting nodes to the parent's new position.
                 const nodeExit = node.exit()
                     .transition()
                     .duration(duration)
@@ -187,13 +181,11 @@ export default {
                         return "translate(" + source.y + "," + source.x + ")";
                     })
                     .remove();
-                // On exit reduce the node circles size to 0
                 nodeExit.select('circle')
                     .attr('r', 1e-6);
                 const link = svg.selectAll("path.link").data(links, (d) => {
                     return d.data.id;
                 });
-                // Enter any new links at the parent's previous position.
                 const linkEnter = link.enter()
                     .insert("path", "g")
                     .attr("class", "link")
@@ -202,16 +194,13 @@ export default {
                         return diagonal(o, o);
                     });
                 const linkUpdate = linkEnter.merge(link);
-                // Transition back to the parent element position
                 linkUpdate.transition()
                     .duration(duration)
                     .attr("d", (d) => {
                         return diagonal(d, d.parent);
                     });
-                // Transition links to their new position.
                 link.transition().duration(duration).attr("d", diagonal);
-                // Transition exiting nodes to the parent's new position.
-                const linkExit = link.exit()
+                link.exit()
                     .transition()
                     .duration(duration)
                     .attr("d", (d) => {
@@ -219,7 +208,6 @@ export default {
                         return diagonal(o, o);
                     })
                     .remove();
-                // Stash the old positions for transition.
                 nodes.forEach((d) => {
                     d.x0 = d.x;
                     d.y0 = d.y;
