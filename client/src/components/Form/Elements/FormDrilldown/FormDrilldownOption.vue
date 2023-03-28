@@ -23,6 +23,7 @@ const isChecked = computed(() => {
     return props.currentValue.indexOf(optionValue) !== -1;
 });
 
+
 function toggleChildren() {
     showChildren.value = !showChildren.value;
 }
@@ -35,7 +36,7 @@ function toggleChildren() {
             <icon v-else fixed-width icon="plus-square" />
         </span>
         <b-form-checkbox v-if="multiple" class="d-inline" :checked="isChecked" @change="handleClick(option.value)" />
-        <b-form-radio v-else class="d-inline" :selected="isChecked" @change="handleClick(option.value)" />
+        <b-form-radio v-else class="d-inline" :selected="isChecked" name="selectedOption" @change="handleClick(option.value)" />
         {{ option.name }}
         <form-drilldown-list
             v-if="hasOptions"
