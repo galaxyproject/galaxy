@@ -34,7 +34,7 @@
         <b-card-body>
             <LoadingSpan v-if="loading" message="Loading Workflow" />
             <div v-else :class="!expanded && 'content-height'">
-                <b-alert v-if="errorContent" variant="danger" show>
+                <b-alert v-if="showError" variant="danger" show>
                     <b>Please fix the following error(s):</b>
                     <ul v-if="typeof errorContent === 'object'" class="my-2">
                         <li v-for="(errorValue, errorKey) in errorContent" :key="errorKey">
@@ -43,7 +43,7 @@
                     </ul>
                     <div v-else>{{ errorContent }}</div>
                 </b-alert>
-                <div v-else>
+                <div v-if="showItem">
                     <div v-for="step in itemContent.steps" :key="step.order_index" class="mb-2">
                         <div>Step {{ step.order_index + 1 }}: {{ step.label }}</div>
                         <WorkflowTree :input="step" :skip-head="true" />
@@ -55,8 +55,8 @@
 </template>
 
 <script>
+import axios from "axios";
 import { withPrefix } from "utils/redirect";
-import { urlData } from "utils/url";
 import LoadingSpan from "components/LoadingSpan";
 import WorkflowTree from "./WorkflowTree";
 export default {
@@ -98,16 +98,23 @@ export default {
         itemUrl() {
             return `/api/workflows/${this.args.workflow_id}/download?style=preview`;
         },
+        showError() {
+            return this.errorContent !== null;
+        },
+        showItem() {
+            return this.itemContent !== null;
+        },
     },
     created() {
         const url = this.itemUrl;
-        urlData({ url })
-            .then((data) => {
-                this.itemContent = data;
+        axios
+            .get(url)
+            .then((response) => {
+                this.itemContent = response.data;
                 this.loading = false;
             })
-            .catch((errorContent) => {
-                this.errorContent = errorContent;
+            .catch((error) => {
+                this.errorContent = error.response.data.err_msg;
                 this.loading = false;
             });
     },

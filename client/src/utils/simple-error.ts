@@ -1,4 +1,6 @@
 export function errorMessageAsString(e: any, defaultMessage = "Request failed.") {
+    // Note that despite the name, this can actually currently return an object,
+    // depending on what data.err_msg is (e.g. an object)
     let message = defaultMessage;
     if (e && e.response && e.response.data && e.response.data.err_msg) {
         message = e.response.data.err_msg;
