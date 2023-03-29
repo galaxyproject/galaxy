@@ -87,6 +87,7 @@ function onToggleSidebar(toggle) {
 .activity-bar {
     background: $panel-bg-color;
     overflow-y: auto;
+    overflow-x: hidden;
     width: 4rem;
 }
 
