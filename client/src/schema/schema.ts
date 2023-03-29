@@ -1572,7 +1572,7 @@ export interface components {
         BulkOperationItemError: {
             /** Error */
             error: string;
-            item: components["schemas"]["HistoryContentItem"];
+            item: components["schemas"]["EncodedHistoryContentItem"];
         };
         /**
          * ChangeDatatypeOperationParams
@@ -2321,7 +2321,7 @@ export interface components {
              * Collection Type
              * @description The type of the collection, can be `list`, `paired`, or define subcollections using `:` as separator like `list:paired` or `list:list`.
              */
-            collection_type?: string;
+            collection_type: string;
             /**
              * Contents URL
              * @description The relative URL to access the contents of this History.
@@ -2481,7 +2481,7 @@ export interface components {
              * Dataset
              * @description The encoded ID of the dataset and its source.
              */
-            dataset: components["schemas"]["DatasetSourceId"];
+            dataset: components["schemas"]["EncodedDatasetSourceId"];
             /**
              * Error Message
              * @description The error message returned while processing this dataset.
@@ -2915,6 +2915,40 @@ export interface components {
          * @enum {string}
          */
         ElementsFromType: "archive" | "bagit" | "bagit_archive" | "directory";
+        /**
+         * EncodedDatasetSourceId
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        EncodedDatasetSourceId: {
+            /**
+             * ID
+             * @description The encoded ID of this entity.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Source
+             * @description The source of this dataset, either `hda` or `ldda` depending of its origin.
+             */
+            src: components["schemas"]["DatasetSourceType"];
+        };
+        /**
+         * EncodedHistoryContentItem
+         * @description Identifies a dataset or collection contained in a History.
+         */
+        EncodedHistoryContentItem: {
+            /**
+             * Content Type
+             * @description The type of this item.
+             */
+            history_content_type: components["schemas"]["HistoryContentType"];
+            /**
+             * ID
+             * @description The encoded ID of this entity.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+        };
         /**
          * ExportHistoryArchivePayload
          * @description Base model definition with common configuration used by all derived models.
@@ -3392,15 +3426,15 @@ export interface components {
             model_class: "GroupQuotaAssociation";
         };
         /**
-         * GroupRoleListModel
+         * GroupRoleListResponse
          * @description Base model definition with common configuration used by all derived models.
          */
-        GroupRoleListModel: components["schemas"]["GroupRoleModel"][];
+        GroupRoleListResponse: components["schemas"]["GroupRoleResponse"][];
         /**
-         * GroupRoleModel
+         * GroupRoleResponse
          * @description Base model definition with common configuration used by all derived models.
          */
-        GroupRoleModel: {
+        GroupRoleResponse: {
             /**
              * ID
              * @description Encoded ID of the role
@@ -3420,15 +3454,15 @@ export interface components {
             url: string;
         };
         /**
-         * GroupUserListModel
+         * GroupUserListResponse
          * @description Base model definition with common configuration used by all derived models.
          */
-        GroupUserListModel: components["schemas"]["GroupUserModel"][];
+        GroupUserListResponse: components["schemas"]["GroupUserResponse"][];
         /**
-         * GroupUserModel
+         * GroupUserResponse
          * @description Base model definition with common configuration used by all derived models.
          */
-        GroupUserModel: {
+        GroupUserResponse: {
             /**
              * Email
              * @description Email of the user
@@ -3844,7 +3878,7 @@ export interface components {
              * Collection Type
              * @description The type of the collection, can be `list`, `paired`, or define subcollections using `:` as separator like `list:paired` or `list:list`.
              */
-            collection_type?: string;
+            collection_type: string;
             /**
              * Contents URL
              * @description The relative URL to access the contents of this History.
@@ -3989,7 +4023,7 @@ export interface components {
              * Collection Type
              * @description The type of the collection, can be `list`, `paired`, or define subcollections using `:` as separator like `list:paired` or `list:list`.
              */
-            collection_type?: string;
+            collection_type: string;
             /**
              * Contents URL
              * @description The relative URL to access the contents of this History.
@@ -5030,7 +5064,7 @@ export interface components {
         LibraryAvailablePermissions: {
             /**
              * Page
-             * @description Current page .
+             * @description Current page.
              */
             page: number;
             /**
@@ -5542,12 +5576,12 @@ export interface components {
              *
              * @example 0123456789ABCDEF
              */
-            content?: string;
+            content: string;
             /**
              * Source
              * @description The source of the content. Can be other history element to be copied or library elements.
              */
-            source?: components["schemas"]["DatasetSourceType"];
+            source: components["schemas"]["DatasetSourceType"];
         };
         /**
          * MetadataFile
@@ -6338,15 +6372,15 @@ export interface components {
             user_ids?: string[];
         };
         /**
-         * RoleListModel
+         * RoleListResponse
          * @description Base model definition with common configuration used by all derived models.
          */
-        RoleListModel: components["schemas"]["RoleModel"][];
+        RoleListResponse: components["schemas"]["RoleModelResponse"][];
         /**
-         * RoleModel
+         * RoleModelResponse
          * @description Base model definition with common configuration used by all derived models.
          */
-        RoleModel: {
+        RoleModelResponse: {
             /**
              * Description
              * @description Description of the role
@@ -9216,7 +9250,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupRoleListModel"];
+                    "application/json": components["schemas"]["GroupRoleListResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9245,7 +9279,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupRoleModel"];
+                    "application/json": components["schemas"]["GroupRoleResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9274,7 +9308,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupRoleModel"];
+                    "application/json": components["schemas"]["GroupRoleResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9303,7 +9337,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupRoleModel"];
+                    "application/json": components["schemas"]["GroupRoleResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9335,7 +9369,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupUserModel"];
+                    "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9368,7 +9402,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupUserModel"];
+                    "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9401,7 +9435,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupUserModel"];
+                    "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9432,7 +9466,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupUserListModel"];
+                    "application/json": components["schemas"]["GroupUserListResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9464,7 +9498,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupUserModel"];
+                    "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9497,7 +9531,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupUserModel"];
+                    "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9530,7 +9564,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupUserModel"];
+                    "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
             /** @description Validation Error */
@@ -13419,7 +13453,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["RoleListModel"];
+                    "application/json": components["schemas"]["RoleListResponse"];
                 };
             };
             /** @description Validation Error */
@@ -13447,7 +13481,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["RoleModel"];
+                    "application/json": components["schemas"]["RoleModelResponse"];
                 };
             };
             /** @description Validation Error */
@@ -13473,7 +13507,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["RoleModel"];
+                    "application/json": components["schemas"]["RoleModelResponse"];
                 };
             };
             /** @description Validation Error */

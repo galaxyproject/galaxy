@@ -159,10 +159,8 @@ def main():
             template_file = default_template
         else:
             parser.error(
-                "Default template (%s) or sample template (%s) not "
-                "found, please specify template as an option "
-                "(--template)." % default_template,
-                sample_template_file,
+                "Default template ({default_template}) or sample template ({sample_template_file}) not "
+                "found, please specify template as an option (--template)."
             )
     elif not os.path.exists(template_file):
         parser.error("Specified template file (%s) not found." % template_file)

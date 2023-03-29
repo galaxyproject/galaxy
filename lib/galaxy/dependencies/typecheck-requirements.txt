@@ -1,4 +1,5 @@
 mypy
+pydantic  # for pydantic.mypy plugin
 types-bleach
 types-boto
 types-contextvars

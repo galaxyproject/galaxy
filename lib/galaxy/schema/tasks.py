@@ -99,12 +99,10 @@ class MaterializeDatasetInstanceTaskRequest(BaseModel):
     history_id: int
     user: RequestUser
     source: DatasetSourceType = Field(
-        None,
         title="Source",
         description="The source of the content. Can be other history element to be copied or library elements.",
     )
     content: int = Field(
-        None,
         title="Content",
         description=(
             "Depending on the `source` it can be:\n"

@@ -5249,8 +5249,6 @@ class Library(Base, Dictifiable, HasName, Serializable):
         We prepend an F to folders.
         """
         rval = super().to_dict(view=view, value_mapper=value_mapper)
-        if "root_folder_id" in rval:
-            rval["root_folder_id"] = f"F{str(rval['root_folder_id'])}"
         return rval
 
     def get_active_folders(self, folder, folders=None):

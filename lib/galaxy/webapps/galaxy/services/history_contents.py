@@ -84,6 +84,7 @@ from galaxy.schema.schema import (
     CreateNewCollectionPayload,
     DatasetAssociationRoles,
     DeleteHistoryContentPayload,
+    EncodedHistoryContentItem,
     HistoryContentBulkOperationPayload,
     HistoryContentBulkOperationResult,
     HistoryContentItem,
@@ -1326,10 +1327,8 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             self.item_operator.apply(operation, item, params, trans)
             return None
         except BaseException as exc:
-            return BulkOperationItemError.construct(
-                item=HistoryContentItem.construct(
-                    id=self.encode_id(item.id), history_content_type=item.history_content_type
-                ),
+            return BulkOperationItemError(
+                item=EncodedHistoryContentItem(id=item.id, history_content_type=item.history_content_type),
                 error=str(exc),
             )
 
