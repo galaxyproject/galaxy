@@ -31,7 +31,9 @@ const emit = defineEmits<{
                     :aria-label="title | l"
                     @click="emit('click')">
                     <template>
-                        <slot />
+                        <span class="position-relative">
+                            <slot />
+                        </span>
                         <span class="position-relative">
                             <div class="nav-icon">
                                 <Icon :icon="icon" />

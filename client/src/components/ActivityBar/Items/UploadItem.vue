@@ -3,11 +3,10 @@
         id="tool-panel-upload-button"
         title="Upload"
         icon="upload"
-        class="upload-button"
         :tooltip="tooltip"
         @click="showUploadDialog">
         <template>
-            <div class="progress">
+            <div class="upload-item-progress">
                 <div
                     class="progress-bar progress-bar-notransition"
                     :class="`progress-bar-${status}`"
