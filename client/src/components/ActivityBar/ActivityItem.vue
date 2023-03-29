@@ -42,7 +42,7 @@ const emit = defineEmits<{
                                     'bg-success': progressStatus === 'success',
                                 }"
                                 :style="{
-                                    width: `${progressPercentage}%`,
+                                    width: `${Math.round(progressPercentage)}%`,
                                 }" />
                         </span>
                         <span class="position-relative">

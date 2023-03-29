@@ -31,7 +31,7 @@ function setStatus(val: string): void {
 }
 
 function setPercentage(val: number): void {
-    percentage.value = Math.round(val);
+    percentage.value = val;
 }
 </script>
 
