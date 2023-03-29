@@ -12,7 +12,7 @@
 <script lang="ts">
 import { defineComponent, ref, toRef, computed, watch } from "vue";
 import type { UnwrapRef, PropType } from "vue";
-import { usePopperjs } from "./hook";
+import { usePopperjs } from "./usePopper";
 let popperUid = 0;
 
 export default defineComponent({

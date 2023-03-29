@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import Popper from "./Popper.vue";
+import Popper from "components/Popper/Popper.vue";
 
 export interface Props {
     id: string;
