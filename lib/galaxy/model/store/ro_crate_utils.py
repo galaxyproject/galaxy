@@ -3,6 +3,7 @@ import os
 from typing import (
     Any,
     Dict,
+    Union,
 )
 
 from rocrate.model.computationalworkflow import (
@@ -10,6 +11,7 @@ from rocrate.model.computationalworkflow import (
     WorkflowDescription,
 )
 from rocrate.model.contextentity import ContextEntity
+from rocrate.model.file import File
 from rocrate.model.softwareapplication import SoftwareApplication
 from rocrate.rocrate import ROCrate
 
@@ -102,7 +104,7 @@ class WorkflowRunCrateProfileBuilder:
         self._add_attrs_files(crate)
         return crate
 
-    def _add_file(self, dataset: HistoryDatasetAssociation, properties: Dict, crate: ROCrate) -> Dict[int, Any]:
+    def _add_file(self, dataset: HistoryDatasetAssociation, properties: Dict[Any, Any], crate: ROCrate) -> File:
         if dataset.dataset.id in self.model_store.dataset_id_to_path:
             filename, _ = self.model_store.dataset_id_to_path[dataset.dataset.id]
             if not filename:
@@ -120,7 +122,7 @@ class WorkflowRunCrateProfileBuilder:
 
             return file_entity
 
-    def _add_files(self, crate: ROCrate) -> Dict[int, Any]:
+    def _add_files(self, crate: ROCrate):
         for wfda in self.invocation.input_datasets:
             if not self.file_entities.get(wfda.dataset.dataset.id):
                 properties = {
@@ -141,17 +143,18 @@ class WorkflowRunCrateProfileBuilder:
                 crate.mainEntity.append_to("output", dataset_formal_param)
                 self.create_action.append_to("result", file_entity)
 
-    def _add_collection(self, hdca: HistoryDatasetCollectionAssociation, crate: ROCrate) -> Dict[int, Any]:
+    def _add_collection(self, hdca: HistoryDatasetCollectionAssociation, crate: ROCrate) -> ContextEntity:
 
         name = hdca.name
         dataset_ids = []
         for hda in hdca.dataset_instances:
             if hda.dataset:
-                properties = {}
+                properties: Dict[Any, Any] = {}
                 self._add_file(hda, properties, crate)
                 dataset_id = self.file_entities.get(hda.dataset.id)
-                if {"@id": dataset_id.id} not in dataset_ids:
-                    dataset_ids.append({"@id": dataset_id.id})
+                if dataset_id:
+                    if {"@id": dataset_id.id} not in dataset_ids:
+                        dataset_ids.append({"@id": dataset_id.id})
 
         collection_properties = {
             "name": name,
@@ -173,7 +176,7 @@ class WorkflowRunCrateProfileBuilder:
 
         return collection_entity
 
-    def _add_collections(self, crate: ROCrate) -> Dict[int, Any]:
+    def _add_collections(self, crate: ROCrate):
         for wfdca in self.invocation.input_dataset_collections:
             collection_entity = self._add_collection(wfdca.dataset_collection, crate)
             collection_formal_param = self._add_collection_formal_parameter(wfdca.dataset_collection, crate)
@@ -357,9 +360,7 @@ class WorkflowRunCrateProfileBuilder:
                 properties={
                     "@type": "FormalParameter",
                     "additionalType": self.param_type_mapping[param_type],
-                    "description": step.workflow_step.annotations[0].annotation
-                    if step.workflow_step.annotations
-                    else "",
+                    "description": self._get_association_description(step.workflow_step),
                     "name": f"{param_id}",
                     "valueRequired": str(not step.workflow_step.input_optional),
                 },
@@ -390,7 +391,7 @@ class WorkflowRunCrateProfileBuilder:
             properties={
                 "@type": "FormalParameter",
                 "additionalType": self.param_type_mapping[param_type],
-                "description": step.workflow_step.annotations[0].annotation if step.workflow_step.annotations else "",
+                "description": self._get_association_description(step.workflow_step),
                 "name": f"{step.workflow_step.label}",
                 "valueRequired": str(not step.workflow_step.input_optional),
             },
@@ -403,8 +404,8 @@ class WorkflowRunCrateProfileBuilder:
                 str(hda.dataset.uuid),
                 properties={
                     "@type": "FormalParameter",
-                    "additionalType": "File",  # TODO: always a dataset/File?
-                    "description": hda.annotations[0].annotation if hda.annotations else hda.info or "",
+                    "additionalType": "File",
+                    "description": self._get_association_description(hda),
                     "name": hda.name,
                 },
             )
@@ -417,9 +418,16 @@ class WorkflowRunCrateProfileBuilder:
                 f"{hdca.type_id}-param",
                 properties={
                     "@type": "FormalParameter",
-                    "additionalType": "Collection",  # TODO: always a collection?
-                    "description": hdca.annotations[0].annotation if hdca.annotations else "",
+                    "additionalType": "Collection",
+                    "description": self._get_association_description(hdca),
                     "name": hdca.name,
                 },
             )
         )
+
+    def _get_association_description(self, association: Any) -> str:
+        if hasattr(association, "annotations"):
+            return association.annotations[0].annotation if association.annotations else ""
+        elif hasattr(association, "info"):
+            return association.info
+        return ""
