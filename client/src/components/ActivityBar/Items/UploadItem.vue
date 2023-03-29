@@ -3,19 +3,10 @@
         id="tool-panel-upload-button"
         title="Upload"
         icon="upload"
+        :progress-percentage="percentage"
+        :progress-status="status"
         :tooltip="tooltip"
-        @click="showUploadDialog">
-        <template>
-            <div class="upload-item-progress progress">
-                <div
-                    class="progress-bar progress-bar-notransition"
-                    :class="`progress-bar-${status}`"
-                    :style="{
-                        width: `${percentage}%`,
-                    }" />
-            </div>
-        </template>
-    </ActivityItem>
+        @click="showUploadDialog" />
 </template>
 
 <script>

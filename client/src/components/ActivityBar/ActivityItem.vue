@@ -8,6 +8,8 @@ export interface Props {
     icon?: string;
     isActive?: boolean;
     tooltip?: string;
+    progressPercentage: number;
+    progressStatus: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -32,7 +34,14 @@ const emit = defineEmits<{
                     @click="emit('click')">
                     <template>
                         <span class="nav-background position-absolute">
-                            <slot />
+                            <div class="upload-item-progress progress">
+                                <div
+                                    class="progress-bar progress-bar-notransition"
+                                    :class="`progress-bar-${progressStatus}`"
+                                    :style="{
+                                        width: `${progressPercentage}%`,
+                                    }" />
+                            </div>
                         </span>
                         <span class="position-relative">
                             <div class="nav-icon">
@@ -43,7 +52,7 @@ const emit = defineEmits<{
                     </template>
                 </b-nav-item>
             </template>
-            <div style="background: red; width: 10rem;">{{ tooltip | l }}</div>
+            <div style="background: red; width: 10rem">{{ tooltip | l }}</div>
         </Popper>
     </div>
 </template>
