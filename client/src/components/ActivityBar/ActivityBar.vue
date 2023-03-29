@@ -5,6 +5,7 @@ import { WindowManager } from "@/layout/window-manager";
 import { useRoute, useRouter } from "vue-router/composables";
 import { computed, ref } from "vue";
 import UploadItem from "./Items/UploadItem.vue";
+import WorkflowItem from "./Items/WorkflowItem.vue";
 import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
 import ActivityItem from "./ActivityItem";
 
@@ -38,6 +39,7 @@ function onToggleSidebar(toggle) {
                 tooltip="Search and run tools"
                 :is-active="sidebarIsActive('search')"
                 @click="onToggleSidebar('search')" />
+            <workflow-item />
             <upload-item />
             <upload-item />
             <upload-item />
