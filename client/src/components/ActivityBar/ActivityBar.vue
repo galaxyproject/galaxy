@@ -39,7 +39,7 @@ function onToggleSidebar(toggle) {
                 tooltip="Search and run tools"
                 :is-active="sidebarIsActive('search')"
                 @click="onToggleSidebar('search')" />
-            <workflow-item />
+            <workflow-item :workflows="toolBoxProperties.storedWorkflowMenuEntries" />
             <upload-item />
             <upload-item />
             <upload-item />

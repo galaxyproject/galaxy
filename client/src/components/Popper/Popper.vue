@@ -3,7 +3,7 @@
         <component :is="referenceIs" v-bind="referenceProps" ref="reference">
             <slot name="reference" />
         </component>
-        <component class="popper-element" v-show="visible" :is="popperIs" v-bind="popperProps" ref="popper">
+        <component class="popper-element mt-1" v-show="visible" :is="popperIs" v-bind="popperProps" ref="popper">
             <div class="popper-arrow" data-popper-arrow />
             <slot />
         </component>

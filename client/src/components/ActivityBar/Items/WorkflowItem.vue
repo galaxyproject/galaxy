@@ -1,32 +1,44 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, type Ref } from "vue";
+import { computed } from "vue";
 import ActivityItem from "components/ActivityBar/ActivityItem.vue";
 
-const workflows = ref([{
-    name: "Show all workflows",
-    value: "/workflows/list",
-},
-{
-    name: "Another random 1",
-    value: "/workflows/run?id=5114a2a207b7caff",
-},
-{
-    name: "Some random workflow currently noted as static option",
-    value: "/workflows/run?id=6fc9fbb81c497f69",
-}]);
+interface Workflow {
+    id: string;
+    name: string;
+}
 
-onMounted(() => {
+export interface Props {
+    workflows: Workflow[];
+}
+
+const props = withDefaults(defineProps<Props>(), {});
+
+const activityOptions = computed(() => {
+    return [
+        {
+            name: "All workflows",
+            value: `/workflows/list`,
+        },
+        ...props.workflows.map((workflow) => {
+            return {
+                name: workflow.name,
+                value: `/workflows/run?id=${workflow.id}`,
+            };
+        }),
+    ];
 });
 
-onUnmounted(() => {
+const hasWorkflows = computed(() => {
+    return props.workflows && props.workflows.length > 0;
 });
 </script>
 
 <template>
     <ActivityItem
+        v-if="hasWorkflows"
         id="activity-workflow"
         title="Workflow"
         tooltip="Select a Workflow:"
         icon="sitemap"
-        :options="workflows" />
+        :options="activityOptions" />
 </template>

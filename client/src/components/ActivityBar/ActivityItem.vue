@@ -22,7 +22,6 @@ const props = withDefaults(defineProps<Props>(), {
     icon: "question",
     isActive: false,
     tooltip: null,
-    options: [],
 });
 
 const emit = defineEmits<{
@@ -64,7 +63,7 @@ const emit = defineEmits<{
             <div class="px-2 py-1">
                 <small v-if="tooltip">{{ tooltip | l }}</small>
                 <small v-else>No tooltip available for this item</small>
-                <div v-if="options.length > 0" class="p-1">
+                <div v-if="options" class="nav-options p-1">
                     <router-link v-for="option in options" :to="option.value">
                         <b-button size="sm" variant="info" class="text-break w-100 my-1">
                             {{ option.name }}
@@ -102,6 +101,12 @@ const emit = defineEmits<{
     margin-bottom: 0.3rem;
     line-height: 0rem;
     font-size: 0.7rem;
+}
+
+.nav-options {
+    max-height: 20rem;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 .progress {
