@@ -54,13 +54,6 @@
                         :query-filter="queryFilter"
                         @onClick="onOpen" />
                 </div>
-                <tool-section :category="{ text: workflowTitle }" />
-                <div id="internal-workflows" class="toolSectionBody">
-                    <div class="toolSectionBg" />
-                    <div v-for="wf in workflows" :key="wf.id" class="toolTitle">
-                        <a class="title-link" :href="wf.href">{{ wf.title }}</a>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -96,14 +89,6 @@ export default {
         },
         currentPanelView: {
             type: String,
-        },
-        storedWorkflowMenuEntries: {
-            type: Array,
-            required: true,
-        },
-        workflowTitle: {
-            type: String,
-            default: _l("Workflows"),
         },
     },
     setup() {
@@ -142,22 +127,6 @@ export default {
         isUser() {
             const Galaxy = getGalaxyInstance();
             return !!(Galaxy.user && Galaxy.user.id);
-        },
-        workflows() {
-            return [
-                {
-                    title: _l("All workflows"),
-                    href: `${getAppRoot()}workflows/list`,
-                    id: "list",
-                },
-                ...this.storedWorkflowMenuEntries.map((menuEntry) => {
-                    return {
-                        id: menuEntry.id,
-                        title: menuEntry.name,
-                        href: `${getAppRoot()}workflows/run?id=${menuEntry.id}`,
-                    };
-                }),
-            ];
         },
         hasResults() {
             return this.results && this.results.length > 0;

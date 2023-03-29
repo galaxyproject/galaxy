@@ -14,11 +14,9 @@ const router = useRouter();
 const showCenter = ref(false);
 const userStore = useUserStore();
 
-const toolBoxProperties = computed(() => {
+const storedWorkflowMenuEntries = computed(() => {
     const Galaxy = getGalaxyInstance();
-    return {
-        storedWorkflowMenuEntries: Galaxy.config.stored_workflow_menu_entries,
-    };
+    return Galaxy.config.stored_workflow_menu_entries;
 });
 
 function sidebarIsActive(menuKey) {
@@ -40,7 +38,7 @@ function onToggleSidebar(toggle) {
                 :is-active="sidebarIsActive('search')"
                 @click="onToggleSidebar('search')" />
             <upload-item />
-            <workflow-item :workflows="toolBoxProperties.storedWorkflowMenuEntries" />
+            <workflow-item :workflows="storedWorkflowMenuEntries" />
             <upload-item />
             <upload-item />
             <upload-item />
@@ -74,7 +72,7 @@ function onToggleSidebar(toggle) {
             </b-nav>
         </div>
         <div v-show="sidebarIsActive('search')" key="search">
-            <ToolBox class="left-column" v-bind="toolBoxProperties" />
+            <ToolBox class="left-column" />
         </div>
     </div>
 </template>
