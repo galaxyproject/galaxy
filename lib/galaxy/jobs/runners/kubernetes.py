@@ -108,6 +108,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_unschedulable_walltime_limit=dict(map=int, valid=lambda x: not x or int(x) >= 0, default=None),
             k8s_interactivetools_use_ssl=dict(map=bool, default=False),
             k8s_interactivetools_ingress_annotations=dict(map=str),
+            k8s_interactivetools_ingress_class=dict(map=str, default=None),
         )
 
         if "runner_param_specs" not in kwargs:
@@ -471,7 +472,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 "annotations": {"app.galaxyproject.org/tool_id": ajs.job_wrapper.tool.id},
             },
             "spec": {
-                "ingressClassName": "nginx",
                 "rules": [
                     {
                         "host": ep["domain"],
@@ -496,6 +496,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 ],
             },
         }
+        default_ingress_class = self.runner_params.get("k8s_interactivetools_ingress_class")
+        if default_ingress_class:
+            k8s_spec_template["spec"]["ingressClassName"] = default_ingress_class
         if self.runner_params.get("k8s_interactivetools_use_ssl"):
             domains = list({e["domain"] for e in entry_points})
             k8s_spec_template["spec"]["tls"] = [
