@@ -140,41 +140,37 @@ class TestBroadcastNotifications(NotificationManagerBaseTestCase):
         assert actual_notification.id == created_notification.id
 
     def test_get_all_broadcasted_notifications(self):
-        past_month = datetime.utcnow() - timedelta(days=30)
-        notification_data = self._default_broadcast_notification_data()
-        notification_data["content"]["subject"] = "Old Notification"
-        notification_data["publication_time"] = past_month
-        self._send_broadcast_notification(notification_data)
-
         now = datetime.utcnow()
+        next_week = now + timedelta(days=7)
+        next_month = now + timedelta(days=30)
+
         notification_data = self._default_broadcast_notification_data()
         notification_data["content"]["subject"] = "Recent Notification"
         notification_data["publication_time"] = now
         self._send_broadcast_notification(notification_data)
 
-        next_month = datetime.utcnow() + timedelta(days=30)
         notification_data = self._default_broadcast_notification_data()
-        notification_data["content"]["subject"] = "Scheduled Notification"
+        notification_data["content"]["subject"] = "Scheduled Next Week Notification"
+        notification_data["publication_time"] = next_week
+        self._send_broadcast_notification(notification_data)
+
+        notification_data = self._default_broadcast_notification_data()
+        notification_data["content"]["subject"] = "Scheduled Next Month Notification"
         notification_data["publication_time"] = next_month
         self._send_broadcast_notification(notification_data)
 
         notifications = self.notification_manager.get_all_broadcasted_notifications()
-        assert len(notifications) == 2
-        assert json.loads(notifications[0].content)["subject"] == "Old Notification"
-        assert json.loads(notifications[1].content)["subject"] == "Recent Notification"
-
-        recently = now - timedelta(minutes=5)
-        notifications = self.notification_manager.get_all_broadcasted_notifications(since=recently)
         assert len(notifications) == 1
         assert json.loads(notifications[0].content)["subject"] == "Recent Notification"
 
-        notifications = self.notification_manager.get_all_broadcasted_notifications(since=next_month)
-        assert len(notifications) == 0
-
-        next_week = now + timedelta(days=7)
         notifications = self.notification_manager.get_all_broadcasted_notifications(since=next_week, active_only=False)
+        assert len(notifications) == 2
+        assert json.loads(notifications[0].content)["subject"] == "Scheduled Next Week Notification"
+        assert json.loads(notifications[1].content)["subject"] == "Scheduled Next Month Notification"
+
+        notifications = self.notification_manager.get_all_broadcasted_notifications(since=next_month, active_only=False)
         assert len(notifications) == 1
-        assert json.loads(notifications[0].content)["subject"] == "Scheduled Notification"
+        assert json.loads(notifications[0].content)["subject"] == "Scheduled Next Month Notification"
 
     def test_update_broadcasted_notification(self):
         next_month = datetime.utcnow() + timedelta(days=30)
