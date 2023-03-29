@@ -3,7 +3,6 @@ import os
 from typing import (
     Any,
     Dict,
-    Union,
 )
 
 from rocrate.model.computationalworkflow import (
