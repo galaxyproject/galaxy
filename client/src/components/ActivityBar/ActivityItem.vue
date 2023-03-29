@@ -2,6 +2,11 @@
 import { ref } from "vue";
 import Popper from "components/Popper/Popper.vue";
 
+interface Option {
+    name: string;
+    value: string;
+}
+
 export interface Props {
     id: string;
     title: string;
@@ -10,12 +15,14 @@ export interface Props {
     tooltip?: string;
     progressPercentage?: number;
     progressStatus?: string;
+    options?: Option[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
     icon: "question",
     isActive: false,
     tooltip: null,
+    options: [],
 });
 
 const emit = defineEmits<{
@@ -57,6 +64,13 @@ const emit = defineEmits<{
             <div class="px-2 py-1">
                 <small v-if="tooltip">{{ tooltip | l }}</small>
                 <small v-else>No tooltip available for this item</small>
+                <div v-if="options.length > 0" class="p-1">
+                    <router-link v-for="option in options" :to="option.value">
+                        <b-button size="sm" variant="info" class="text-break w-100 my-1">
+                            {{ option.name }}
+                        </b-button>
+                    </router-link>
+                </div>
             </div>
         </Popper>
     </div>

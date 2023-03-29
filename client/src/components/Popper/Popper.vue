@@ -111,7 +111,7 @@ export default defineComponent({
     color: $brand-light;
     border-radius: $border-radius-base;
     max-width: 12rem;
-    opacity: 0.9;
+    opacity: 0.95;
 }
 
 .popper-arrow,
