@@ -8,8 +8,6 @@ import { useGlobalUploadModal } from "composables/globalUploadModal.js";
 // @ts-ignore
 import { eventHub } from "components/plugins/eventHub.js";
 
-const { openGlobalUploadModal } = useGlobalUploadModal();
-
 const status: Ref<string> = ref("success");
 const percentage: Ref<number> = ref(0);
 
