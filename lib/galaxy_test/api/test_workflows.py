@@ -2751,8 +2751,7 @@ steps:
       advanced:
         conflict:
           __current_case__: 0
-          duplicate_options: suffix_conflict
-          suffix_pattern: _#
+          duplicate_options: keep_first
       inputs:
       - __index__: 0
         input:
