@@ -55,7 +55,8 @@ const emit = defineEmits<{
                 </b-nav-item>
             </template>
             <div class="px-2 py-1">
-                <small>{{ tooltip | l }}</small>
+                <small v-if="tooltip">{{ tooltip | l }}</small>
+                <small v-else>No tooltip available for this item</small>
             </div>
         </Popper>
     </div>

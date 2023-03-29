@@ -1,55 +1,47 @@
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted, type Ref } from "vue";
+import ActivityItem from "components/ActivityBar/ActivityItem.vue";
+// @ts-ignore
+import { get } from "utils/query-string-parsing.js";
+// @ts-ignore
+import { useGlobalUploadModal } from "composables/globalUploadModal.js";
+// @ts-ignore
+import { eventHub } from "components/plugins/eventHub.js";
+
+const { openGlobalUploadModal } = useGlobalUploadModal();
+
+const status: Ref<string> = ref("success");
+const percentage: Ref<number> = ref(0);
+
+onMounted(() => {
+    eventHub.$on("upload:status", setStatus);
+    eventHub.$on("upload:percentage", setPercentage);
+    if (get("tool_id") == "upload1") {
+        openGlobalUploadModal();
+    }
+});
+
+onUnmounted(() => {
+    eventHub.$off("upload:status", setStatus);
+    eventHub.$off("upload:percentage", setPercentage);
+});
+
+function setStatus(val: string): void {
+    status.value = val;
+}
+
+function setPercentage(val: number): void {
+    percentage.value = Math.round(val);
+}
+</script>
+
 <template>
     <ActivityItem
         id="tool-panel-upload-button"
         title="Upload"
+        tooltip="Download from URL or upload files from disk"
         icon="upload"
         :progress-percentage="percentage"
         :progress-status="status"
-        :tooltip="tooltip"
-        @click="showUploadDialog" />
+        @click="openGlobalUploadModal" />
 </template>
-
-<script>
-import Query from "utils/query-string-parsing";
-import { useGlobalUploadModal } from "composables/globalUploadModal";
-import ActivityItem from "components/ActivityBar/ActivityItem";
-
-export default {
-    components: { ActivityItem },
-    props: {
-        tooltip: { type: String, default: "Download from URL or upload files from disk" },
-    },
-    setup() {
-        const { openGlobalUploadModal } = useGlobalUploadModal();
-        return { openGlobalUploadModal };
-    },
-    data() {
-        return {
-            status: "success",
-            percentage: 0,
-        };
-    },
-    mounted() {
-        this.eventHub.$on("upload:status", this.setStatus);
-        this.eventHub.$on("upload:percentage", this.setPercentage);
-        if (Query.get("tool_id") == "upload1") {
-            this.showUploadDialog();
-        }
-    },
-    beforeDestroy() {
-        this.eventHub.$off("upload:status", this.setStatus);
-        this.eventHub.$off("upload:percentage", this.setPercentage);
-    },
-    methods: {
-        showUploadDialog() {
-            this.openGlobalUploadModal();
-        },
-        setStatus(val) {
-            this.status = val;
-        },
-        setPercentage(val) {
-            this.percentage = Math.round(val);
-        },
-    },
-};
-</script>
