@@ -234,13 +234,7 @@ const invalidOutputs = computed(() => {
     });
 });
 const outputs = computed(() => {
-    let stepOutputs = props.step.outputs;
-    if (props.step.when) {
-        stepOutputs = stepOutputs.map((output) => {
-            return { ...output, optional: true };
-        });
-    }
-    return [...stepOutputs, ...invalidOutputs.value];
+    return [...props.step.outputs, ...invalidOutputs.value];
 });
 
 function onDragConnector(dragPosition: TerminalPosition, terminal: OutputTerminals) {

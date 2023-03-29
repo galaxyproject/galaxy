@@ -1,4 +1,5 @@
 import json
+from typing import Optional
 
 import pytest
 import yaml
@@ -1032,6 +1033,55 @@ steps:
         # should not show error
         editor.duplicate_label_error(output="out_file1").wait_for_absent()
 
+    @selenium_test
+    def test_map_over_output_indicator(self):
+        self.open_in_workflow_editor(
+            """
+class: GalaxyWorkflow
+inputs:
+  list:
+    type: collection
+    collection_type: "list"
+  nested_list:
+    type: collection
+    collection_type: "list:list"
+steps:
+  filter:
+    tool_id: __FILTER_FROM_FILE__
+"""
+        )
+        self.assert_node_output_is("filter#output_filtered", "any")
+        self.workflow_editor_connect("list#output", "filter#input")
+        self.assert_node_output_is("filter#output_filtered", "list")
+        self.workflow_editor_connect("nested_list#output", "filter#how|filter_source")
+        self.assert_node_output_is("filter#output_filtered", "list", "list:list:list")
+        self.workflow_editor_destroy_connection("filter#how|filter_source")
+        self.assert_node_output_is("filter#output_filtered", "list")
+
+    def assert_node_output_is(self, label: str, output_type: str, map_over_type: Optional[str] = None):
+        editor = self.components.workflow_editor
+        node_label, output_name = label.split("#")
+        node = editor.node._(label=node_label)
+        node.wait_for_present()
+        output_element = node.output_terminal(name=output_name).wait_for_visible()
+        self.hover_over(output_element)
+        element = self.components._.tooltip_inner.wait_for_present()
+        assert f"output is {output_type}" in element.text, element.text
+        if map_over_type is None:
+            assert "mapped-over" not in element.text
+        else:
+            fragment = " and mapped-over to produce a "
+            if map_over_type == "list:paired":
+                fragment += "list of pairs dataset collection"
+            elif map_over_type == "list:list":
+                fragment += "list of lists dataset collection"
+            elif map_over_type.count(":") > 1:
+                fragment += f"dataset collection with {map_over_type.count(':') + 1} levels of nesting"
+            else:
+                fragment += f"{map_over_type}"
+            assert fragment in element.text
+        self.click_center()
+
     def workflow_editor_maximize_center_pane(self, collapse_left=True, collapse_right=True):
         if collapse_left:
             self.components._.left_panel_collapse.wait_for_and_click()
@@ -1091,8 +1141,8 @@ steps:
         output_element = output_terminal.wait_for_present()
         input_element = input_terminal.wait_for_present()
 
-        source_id = output_element.get_attribute("id")
-        sink_id = input_element.get_attribute("id")
+        source_id = output_element.get_attribute("id").replace("|", r"\|")
+        sink_id = input_element.get_attribute("id").replace("|", r"\|")
 
         return source_id, sink_id
 
