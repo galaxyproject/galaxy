@@ -179,9 +179,36 @@ export function dLDistance(query, value) {
                 matrix[i][j] = Math.min(matrix[i][j], matrix[i - 2][j - 2] + cost);
             }
         }
+        }
+
+    // Search for a row or column with a value below the threshold
+    let row = -1
+    let col = -1
+    for (let i = 1; i <= searchTerm.length; i++) {
+      for (let j = 1; j <= toolName.length; j++) {
+        if (matrix[i][j] <= threshold) {
+          row = i
+          col = j
+          break
+        }
+      }
+      if (row !== -1) {
+        break
+      }
     }
 
-    // If the Damerau-Levenshtein distance is less than or equal to 2,
+    // If a row or column was found, check for a partial match
+    if (row !== -1) {
+        const substr = toolName.substring(col - 1 - searchTerm.length + row, col)
+        const similarity = (searchTerm.length - matrix[row][col]) / searchTerm.length
+        if (similarity >= minSimilarity && substr.includes(searchTerm)) {
+            return matrix[searchTerm.length][toolName.length] <= 1;
+        }
+        }
+
+        
+
+    // If the Damerau-Levenshtein distance is less than or equal to 1,
     // consider the tool a match
     return matrix[searchTerm.length][toolName.length] <= 1;
 }
