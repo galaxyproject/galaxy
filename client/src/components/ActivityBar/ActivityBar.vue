@@ -14,7 +14,7 @@ const router = useRouter();
 const showCenter = ref(false);
 const userStore = useUserStore();
 
-const storedWorkflowMenuEntries = computed(() => {
+const workflows = computed(() => {
     const Galaxy = getGalaxyInstance();
     return Galaxy.config.stored_workflow_menu_entries;
 });
@@ -26,10 +26,15 @@ function sidebarIsActive(menuKey) {
 function onToggleSidebar(toggle) {
     userStore.toggleSideBar(toggle);
 }
+
+function showVisualizationList() {
+    router.push("/visualizations");
+}
 </script>
 <template>
     <div class="d-flex">
         <b-nav vertical class="activity-bar flex-nowrap p-1">
+            <upload-item />
             <ActivityItem
                 id="tools"
                 icon="wrench"
@@ -37,34 +42,13 @@ function onToggleSidebar(toggle) {
                 tooltip="Search and run tools"
                 :is-active="sidebarIsActive('search')"
                 @click="onToggleSidebar('search')" />
-            <upload-item />
-            <workflow-item :workflows="storedWorkflowMenuEntries" />
-            <upload-item />
-            <upload-item />
-            <upload-item />
-            <upload-item />
-            <upload-item />
-            <upload-item />
-            <upload-item />
-            <upload-item />
-            <upload-item />
-            <upload-item />
-            <upload-item />
-            <upload-item />
-            <upload-item />
-            <upload-item />
-            <upload-item />
-            <upload-item />
-            <upload-item />
-            <upload-item />
-            <upload-item />
-            <upload-item />
-            <upload-item />
-            <upload-item />
-            <upload-item />
-            <upload-item />
-            <upload-item />
-            <upload-item />
+            <workflow-item :workflows="workflows" />
+            <ActivityItem
+                id="activity-visualization"
+                icon="chart-bar"
+                title="Visualize"
+                tooltip="Visualize datasets"
+                @click="showVisualizationList" />
         </b-nav>
         <div class="activity-footer">
             <b-nav vertical class="flex-nowrap p-1">
