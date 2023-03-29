@@ -1,3 +1,55 @@
+<script setup>
+import axios from "axios";
+import { computed, ref, onMounted } from "vue";
+import { withPrefix } from "utils/redirect";
+import LoadingSpan from "components/LoadingSpan";
+import WorkflowTree from "./WorkflowTree";
+
+const props = defineProps({
+    args: {
+        type: Object,
+        required: true,
+    },
+    embedded: {
+        type: Boolean,
+        default: false,
+    },
+    expanded: {
+        type: Boolean,
+        default: false,
+    },
+});
+
+const errorContent = ref(null);
+const itemContent = ref(null);
+const loading = ref(true);
+
+const workflowName = computed(() => (itemContent.value ? itemContent.value.name : "..."));
+const downloadUrl = computed(() =>
+    withPrefix(`/api/workflows/${props.args.workflow_id}/download?format=json-download`)
+);
+const importUrl = computed(() => withPrefix(`/workflow/imp?id=${props.args.workflow_id}`));
+const itemUrl = computed(() => withPrefix(`/api/workflows/${props.args.workflow_id}/download?style=preview`));
+
+const showError = computed(() => errorContent.value !== null);
+const showItem = computed(() => itemContent.value !== null);
+
+onMounted(async () => {
+    axios
+        .get(itemUrl.value)
+        .then((response) => {
+            console.debug(response);
+            itemContent.value = response.data;
+            loading.value = false;
+        })
+        .catch((error) => {
+            console.debug(error);
+            errorContent.value = error.response.data.err_msg;
+            loading.value = false;
+        });
+});
+</script>
+
 <template>
     <b-card body-class="p-0">
         <b-card-header v-if="!embedded">
@@ -53,73 +105,6 @@
         </b-card-body>
     </b-card>
 </template>
-
-<script>
-import axios from "axios";
-import { withPrefix } from "utils/redirect";
-import LoadingSpan from "components/LoadingSpan";
-import WorkflowTree from "./WorkflowTree";
-export default {
-    components: {
-        LoadingSpan,
-        WorkflowTree,
-    },
-    props: {
-        args: {
-            type: Object,
-            required: true,
-        },
-        embedded: {
-            type: Boolean,
-            default: false,
-        },
-        expanded: {
-            type: Boolean,
-            default: false,
-        },
-    },
-    data() {
-        return {
-            errorContent: null,
-            itemContent: null,
-            loading: true,
-        };
-    },
-    computed: {
-        workflowName() {
-            return this.itemContent ? this.itemContent.name : "...";
-        },
-        downloadUrl() {
-            return withPrefix(`/api/workflows/${this.args.workflow_id}/download?format=json-download`);
-        },
-        importUrl() {
-            return withPrefix(`/workflow/imp?id=${this.args.workflow_id}`);
-        },
-        itemUrl() {
-            return `/api/workflows/${this.args.workflow_id}/download?style=preview`;
-        },
-        showError() {
-            return this.errorContent !== null;
-        },
-        showItem() {
-            return this.itemContent !== null;
-        },
-    },
-    created() {
-        const url = this.itemUrl;
-        axios
-            .get(url)
-            .then((response) => {
-                this.itemContent = response.data;
-                this.loading = false;
-            })
-            .catch((error) => {
-                this.errorContent = error.response.data.err_msg;
-                this.loading = false;
-            });
-    },
-};
-</script>
 <style scoped>
 .content-height {
     max-height: 15rem;
