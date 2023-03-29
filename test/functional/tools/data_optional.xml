@@ -1,0 +1,31 @@
+<tool id="data_optional" name="data select" version="1.0.0">
+    <command><![CDATA[
+        echo INPUT $names >> '$output' &&
+
+        ## verify that ext is "data" for absent optional input
+        echo INPUT ext $names.ext >> '$output' &&
+
+        ## verify that is_of_type for absent optional input
+        ## does not evaluate to True for any of the allowed datatypes
+        echo ISOFTYPE mothur.names $names.is_of_type("mothur.names") >> '$output' &&
+        echo ISOFTYPE mothur.count_table $names.is_of_type("mothur.count_table") >> '$output'
+    ]]></command>
+    <inputs>
+        <param name="names" type="data" format="mothur.names,mothur.count_table" optional="true"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt"/>
+    </outputs>
+    <tests>
+        <test>
+            <output name="output">
+                <assert_contents>
+                    <has_line line="INPUT None" />
+                    <has_line line="INPUT ext data" />
+                    <has_line line="ISOFTYPE mothur.names False" />
+                    <has_line line="ISOFTYPE mothur.count_table False" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>
