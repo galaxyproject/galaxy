@@ -3,7 +3,8 @@
         <component :is="referenceIs" v-bind="referenceProps" ref="reference">
             <slot name="reference" />
         </component>
-        <component class="popper-box" v-show="visible" :is="popperIs" v-bind="popperProps" ref="popper">
+        <component class="popper-element" v-show="visible" :is="popperIs" v-bind="popperProps" ref="popper">
+            <div class="popper-arrow" data-popper-arrow />
             <slot />
         </component>
     </div>
@@ -100,3 +101,46 @@ export default defineComponent({
     },
 });
 </script>
+
+<style scoped lang="scss">
+@import "theme/blue.scss";
+
+.popper-element {
+    z-index: 9999;
+    background: $brand-dark;
+    color: $brand-light;
+    border-radius: $border-radius-base;
+    max-width: 12rem;
+    opacity: 0.9;
+}
+
+.popper-arrow,
+.popper-arrow:before {
+    height: 10px;
+    width: 10px;
+    position: absolute;
+    z-index: -1;
+}
+
+.popper-arrow:before {
+    background: $brand-dark;
+    content: "";
+    transform: rotate(45deg);
+}
+
+.popper-element[data-popper-placement^="top"] > .popper-arrow {
+    bottom: -5px;
+}
+
+.popper-element[data-popper-placement^="bottom"] > .popper-arrow {
+    top: -5px;
+}
+
+.popper-element[data-popper-placement^="left"] > .popper-arrow {
+    right: -5px;
+}
+
+.popper-element[data-popper-placement^="right"] > .popper-arrow {
+    left: -5px;
+}
+</style>

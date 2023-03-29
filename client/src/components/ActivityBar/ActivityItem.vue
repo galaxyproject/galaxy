@@ -54,7 +54,9 @@ const emit = defineEmits<{
                     </template>
                 </b-nav-item>
             </template>
-            <div style="background: red; width: 10rem">{{ tooltip | l }}</div>
+            <div class="px-2 py-1">
+                <small>{{ tooltip | l }}</small>
+            </div>
         </Popper>
     </div>
 </template>

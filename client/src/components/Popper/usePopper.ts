@@ -133,7 +133,7 @@ export function usePopperjs(
             clearTimeout(timer.value);
             timer.value = setTimeout(() => {
                 doOpen();
-            }, unref(options?.delayOnMouseover) ?? 200);
+            }, unref(options?.delayOnMouseover) ?? 100);
         }
     };
     const doMouseout = () => {
@@ -143,7 +143,7 @@ export function usePopperjs(
             clearTimeout(timer.value);
             timer.value = setTimeout(() => {
                 doClose();
-            }, unref(options?.delayOnMouseout) ?? 200);
+            }, unref(options?.delayOnMouseout) ?? 100);
         }
     };
 
