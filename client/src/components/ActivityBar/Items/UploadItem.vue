@@ -2,11 +2,13 @@
 import { ref, onMounted, onUnmounted, type Ref } from "vue";
 import ActivityItem from "components/ActivityBar/ActivityItem.vue";
 // @ts-ignore
-import { get } from "utils/query-string-parsing.js";
+import Query from "utils/query-string-parsing.js";
 // @ts-ignore
 import { useGlobalUploadModal } from "composables/globalUploadModal.js";
 // @ts-ignore
 import { eventHub } from "components/plugins/eventHub.js";
+
+const { openGlobalUploadModal } = useGlobalUploadModal();
 
 const status: Ref<string> = ref("success");
 const percentage: Ref<number> = ref(0);
@@ -14,7 +16,7 @@ const percentage: Ref<number> = ref(0);
 onMounted(() => {
     eventHub.$on("upload:status", setStatus);
     eventHub.$on("upload:percentage", setPercentage);
-    if (get("tool_id") == "upload1") {
+    if (Query.get("tool_id") == "upload1") {
         openGlobalUploadModal();
     }
 });

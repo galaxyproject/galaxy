@@ -70,6 +70,7 @@
 import ToolSection from "./Common/ToolSection";
 import ToolSearch from "./Common/ToolSearch";
 import { UploadButton } from "components/Upload";
+import { useGlobalUploadModal } from "composables/globalUploadModal";
 import { openGlobalUploadModal } from "components/Upload";
 import FavoritesButton from "./Buttons/FavoritesButton";
 import PanelViewButton from "./Buttons/PanelViewButton";
@@ -106,6 +107,7 @@ export default {
         },
     },
     setup() {
+        const { openGlobalUploadModal } = useGlobalUploadModal();
         return { openGlobalUploadModal };
     },
     data() {

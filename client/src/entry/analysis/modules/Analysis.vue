@@ -1,9 +1,10 @@
 <script setup>
 import { getGalaxyInstance } from "app";
-import CenterFrame from "./CenterFrame";
+import CenterFrame from "./CenterFrame.vue";
 import { useUserStore } from "@/stores/userStore";
 import HistoryIndex from "@/components/History/Index.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
+import DragAndDropModal from "@/components/Upload/DragAndDropModal.vue";
 import { WindowManager } from "@/layout/window-manager";
 import { useRoute, useRouter } from "vue-router/composables";
 import { computed, ref, onMounted, onUnmounted } from "vue";

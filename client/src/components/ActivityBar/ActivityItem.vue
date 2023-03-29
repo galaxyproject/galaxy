@@ -8,8 +8,8 @@ export interface Props {
     icon?: string;
     isActive?: boolean;
     tooltip?: string;
-    progressPercentage: number;
-    progressStatus: string;
+    progressPercentage?: number;
+    progressStatus?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
