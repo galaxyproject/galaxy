@@ -6,7 +6,7 @@
         :tooltip="tooltip"
         @click="showUploadDialog">
         <template>
-            <div class="upload-item-progress">
+            <div class="upload-item-progress progress">
                 <div
                     class="progress-bar progress-bar-notransition"
                     :class="`progress-bar-${status}`"

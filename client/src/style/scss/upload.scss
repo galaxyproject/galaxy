@@ -17,11 +17,8 @@
 }
 
 .upload-item-progress {
-    @extend .position-absolute;
     @extend .w-100;
     @extend .h-100;
-    top: 0;
-    left: 0;
     background-color: transparent;
     .progress-bar {
         border-radius: $border-radius-extralarge;

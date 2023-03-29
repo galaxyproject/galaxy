@@ -27,11 +27,11 @@ const emit = defineEmits<{
             <template #reference>
                 <b-nav-item
                     :id="id"
-                    :class="{ 'mb-1': true, 'nav-item-active': isActive }"
+                    :class="{ 'position-relative mb-1': true, 'nav-item-active': isActive }"
                     :aria-label="title | l"
                     @click="emit('click')">
                     <template>
-                        <span class="position-relative">
+                        <span class="nav-background position-absolute">
                             <slot />
                         </span>
                         <span class="position-relative">
@@ -74,5 +74,12 @@ const emit = defineEmits<{
     margin-bottom: 0.3rem;
     line-height: 0rem;
     font-size: 0.7rem;
+}
+
+.nav-background {
+    width: 100%;
+    height: 100%;
+    left: 0;
+    top: 0;
 }
 </style>

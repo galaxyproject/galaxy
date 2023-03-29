@@ -67,7 +67,7 @@ function onToggleSidebar(toggle) {
             <upload-item />
         </b-nav>
         <div class="activity-footer">
-            <b-nav vertical class="flex-nowrap p-1 m-1">
+            <b-nav vertical class="flex-nowrap p-1">
                 <ActivityItem id="settings" icon="cog" title="Configure" tooltip="Search and run tools" />
             </b-nav>
         </div>
