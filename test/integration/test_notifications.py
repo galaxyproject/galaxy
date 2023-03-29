@@ -65,16 +65,16 @@ class TestNotificationsIntegration(IntegrationTestCase):
         before_creating_notifications = datetime.utcnow()
 
         # Only user1 will receive this notification
-        created_response = self._send_test_notification_to([user1["id"]], message="test_notification_status 1")
-        assert created_response["total_notifications_sent"] == 1
+        created_response_1 = self._send_test_notification_to([user1["id"]], message="test_notification_status 1")
+        assert created_response_1["total_notifications_sent"] == 1
 
         # Both user1 and user2 will receive this notification
-        created_response = self._send_test_notification_to([user1["id"], user2["id"]], "test_notification_status 2")
-        assert created_response["total_notifications_sent"] == 2
+        created_response_2 = self._send_test_notification_to([user1["id"], user2["id"]], "test_notification_status 2")
+        assert created_response_2["total_notifications_sent"] == 2
 
         # All users will receive this broadcasted notification
-        created_response = self._send_broadcast_notification("test_notification_status 3")
-        assert created_response["total_notifications_sent"] == 1
+        created_response_3 = self._send_broadcast_notification("test_notification_status 3")
+        assert created_response_3["total_notifications_sent"] == 1
 
         after_creating_notifications = datetime.utcnow()
 
@@ -109,6 +109,14 @@ class TestNotificationsIntegration(IntegrationTestCase):
             status = self._get_notifications_status_since(after_creating_notifications)
             assert status["total_unread_count"] == 1
             assert len(status["notifications"]) == 0
+            assert len(status["broadcasts"]) == 0
+
+            # Updating a notification association value should return that notification in the next request
+            notification_id = created_response_2["notification"]["id"]
+            self._update_notification(notification_id, update_state={"seen": True})
+            status = self._get_notifications_status_since(after_creating_notifications)
+            assert status["total_unread_count"] == 0
+            assert len(status["notifications"]) == 1
             assert len(status["broadcasts"]) == 0
 
         with self._different_user(anon=True):

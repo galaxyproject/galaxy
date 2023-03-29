@@ -13,6 +13,7 @@ from sqlalchemy import (
     delete,
     false,
     func,
+    or_,
     select,
     union,
     update,
@@ -59,7 +60,21 @@ class NotificationManager:
         self.sa_session = sa_session
         self.config = config
         self.recipient_resolver = NotificationRecipientResolver(strategy=DefaultStrategy(sa_session))
-        self.notification_columns = [
+        self.user_notification_columns = [
+            Notification.id,
+            Notification.source,
+            Notification.category,
+            Notification.variant,
+            Notification.create_time,
+            UserNotificationAssociation.update_time,
+            Notification.publication_time,
+            Notification.expiration_time,
+            Notification.content,
+            UserNotificationAssociation.seen_time,
+            UserNotificationAssociation.favorite,
+            UserNotificationAssociation.deleted,
+        ]
+        self.broadcast_notification_columns = [
             Notification.id,
             Notification.source,
             Notification.category,
@@ -70,12 +85,6 @@ class NotificationManager:
             Notification.expiration_time,
             Notification.content,
         ]
-        self.user_notification_columns = self.notification_columns + [
-            UserNotificationAssociation.seen_time,
-            UserNotificationAssociation.favorite,
-            UserNotificationAssociation.deleted,
-        ]
-        self.broadcast_notification_columns = self.notification_columns
 
     @property
     def notifications_enabled(self):
@@ -385,7 +394,12 @@ class NotificationManager:
             .where(UserNotificationAssociation.user_id == user.id)
         )
         if since is not None:
-            stmt = stmt.where(Notification.publication_time > since)
+            stmt = stmt.where(
+                or_(
+                    UserNotificationAssociation.update_time >= since,
+                    Notification.publication_time >= since,
+                )
+            )
         if active_only:
             stmt = stmt.where(self._notification_is_active)
             stmt = stmt.where(UserNotificationAssociation.deleted == false())
@@ -399,7 +413,12 @@ class NotificationManager:
             .where(Notification.category == MandatoryNotificationCategory.broadcast)
         )
         if since is not None:
-            stmt = stmt.where(Notification.publication_time > since)
+            stmt = stmt.where(
+                or_(
+                    Notification.update_time >= since,
+                    Notification.publication_time >= since,
+                )
+            )
         if active_only:
             stmt = stmt.where(self._notification_is_active)
         return stmt
