@@ -9,8 +9,6 @@
                 :toolbox="currentPanel"
                 :panel-views="config.panel_views"
                 :current-panel-view="currentPanelView"
-                :stored-workflow-menu-entries="storedWorkflowMenuEntries"
-                :workflow-title="workflowTitle"
                 @updatePanelView="updatePanelView">
             </ToolBox>
         </ToolPanelViewProvider>
@@ -29,16 +27,6 @@ export default {
         ConfigProvider,
         ToolBox,
         ToolPanelViewProvider,
-    },
-    props: {
-        storedWorkflowMenuEntries: {
-            type: Array,
-            required: true,
-        },
-        workflowTitle: {
-            type: String,
-            default: _l("Workflows"),
-        },
     },
     methods: {
         updatePanelView(panelView) {
