@@ -23,7 +23,7 @@ const props = withDefaults(defineProps<SelectObjectStoreProps>(), {
 const loading = ref(true);
 const error = ref(props.parentError);
 const popoverProps = {
-    plaement: "rightbottom",
+    placement: "rightbottom",
     boundary: "window", // don't warp the popover to squeeze it into this modal
 };
 const objectStores = ref<Array<object>>([]);
