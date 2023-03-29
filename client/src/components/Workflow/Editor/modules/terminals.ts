@@ -349,9 +349,6 @@ class BaseInputTerminal extends Terminal {
                 });
             }
             const postJobActionKey = `ChangeDatatypeAction${connection.output.name}`;
-            if (outputStep.when) {
-                terminalSource = { ...terminalSource, optional: true };
-            }
             if (
                 "extensions" in terminalSource &&
                 outputStep.post_job_actions &&
@@ -611,7 +608,7 @@ class BaseOutputTerminal extends Terminal {
     constructor(attr: BaseOutputTerminalArgs) {
         super(attr);
         this.datatypes = attr.datatypes;
-        this.optional = attr.optional;
+        this.optional = attr.optional || Boolean(this.stepStore.getStep(this.stepId)?.when);
         this.terminalType = "output";
     }
     getConnectedTerminals(): InputTerminalsAndInvalid[] {

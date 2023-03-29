@@ -11,7 +11,7 @@ export function useTerminal(
 ) {
     const terminal: Ref<ReturnType<typeof terminalFactory> | null> = ref(null);
     const stepStore = useWorkflowStepStore();
-    const step = computed(() => stepStore.getStep(stepId.value))
+    const step = computed(() => stepStore.getStep(stepId.value));
     const isMappedOver = computed(() => stepStore.stepMapOver[stepId.value]?.isCollection ?? false);
 
     watch(
