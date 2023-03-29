@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { useRouter } from "vue-router/composables";
 import ActivityItem from "components/ActivityBar/ActivityItem.vue";
 
 interface Workflow {
@@ -12,6 +13,7 @@ export interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {});
+const router = useRouter();
 
 const activityOptions = computed(() => {
     return [
@@ -31,6 +33,10 @@ const activityOptions = computed(() => {
 const hasWorkflows = computed(() => {
     return props.workflows && props.workflows.length > 0;
 });
+
+function showWorkflowList(): void {
+    router.push("/workflows/list");
+}
 </script>
 
 <template>
@@ -40,5 +46,6 @@ const hasWorkflows = computed(() => {
         title="Workflow"
         tooltip="Select a Workflow:"
         icon="sitemap"
-        :options="activityOptions" />
+        :options="activityOptions"
+        @click="showWorkflowList" />
 </template>

@@ -68,7 +68,7 @@ function onToggleSidebar(toggle) {
         </b-nav>
         <div class="activity-footer">
             <b-nav vertical class="flex-nowrap p-1">
-                <ActivityItem id="settings" icon="cog" title="Configure" tooltip="Search and run tools" />
+                <ActivityItem id="settings" icon="cog" title="Configure" tooltip="Configure the Activity Bar" />
             </b-nav>
         </div>
         <div v-show="sidebarIsActive('search')" key="search">
