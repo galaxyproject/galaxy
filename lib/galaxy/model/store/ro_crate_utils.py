@@ -143,7 +143,6 @@ class WorkflowRunCrateProfileBuilder:
                 self.create_action.append_to("result", file_entity)
 
     def _add_collection(self, hdca: HistoryDatasetCollectionAssociation, crate: ROCrate) -> ContextEntity:
-
         name = hdca.name
         dataset_ids = []
         for hda in hdca.dataset_instances:
@@ -261,7 +260,6 @@ class WorkflowRunCrateProfileBuilder:
             attrs_path = os.path.join(self.model_store.export_directory, attrs)
             description = " ".join(attrs.split("_")[:-1])
             if os.path.exists(attrs_path):
-
                 properties = {
                     "@type": "File",
                     "version": GALAXY_EXPORT_VERSION,
