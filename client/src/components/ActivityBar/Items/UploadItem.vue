@@ -25,7 +25,7 @@ export default {
     },
     data() {
         return {
-            status: "",
+            status: "success",
             percentage: 0,
         };
     },

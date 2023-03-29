@@ -29,19 +29,21 @@ const emit = defineEmits<{
             <template #reference>
                 <b-nav-item
                     :id="id"
-                    :class="{ 'position-relative mb-1': true, 'nav-item-active': isActive }"
+                    class="position-relative mb-1"
+                    :class="{ 'nav-item-active': isActive }"
                     :aria-label="title | l"
                     @click="emit('click')">
                     <template>
-                        <span class="nav-background position-absolute">
-                            <div class="upload-item-progress progress">
-                                <div
-                                    class="progress-bar progress-bar-notransition"
-                                    :class="`progress-bar-${progressStatus}`"
-                                    :style="{
-                                        width: `${progressPercentage}%`,
-                                    }" />
-                            </div>
+                        <span v-if="!!progressStatus" class="progress">
+                            <div
+                                class="progress-bar notransition"
+                                :class="{
+                                    'bg-danger': progressStatus === 'danger',
+                                    'bg-success': progressStatus === 'success',
+                                }"
+                                :style="{
+                                    width: `${progressPercentage}%`,
+                                }" />
                         </span>
                         <span class="position-relative">
                             <div class="nav-icon">
@@ -85,10 +87,20 @@ const emit = defineEmits<{
     font-size: 0.7rem;
 }
 
-.nav-background {
+.progress {
+    border-radius: $border-radius-extralarge;
+    position: absolute;
     width: 100%;
     height: 100%;
     left: 0;
     top: 0;
+}
+
+.notransition {
+    -webkit-transition: none;
+    -moz-transition: none;
+    -ms-transition: none;
+    -o-transition: none;
+    transition: none;
 }
 </style>
