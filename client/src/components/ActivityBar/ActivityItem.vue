@@ -88,6 +88,7 @@ const emit = defineEmits<{
 }
 
 .progress {
+    background: transparent;
     border-radius: $border-radius-extralarge;
     position: absolute;
     width: 100%;
