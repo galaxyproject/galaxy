@@ -11,6 +11,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    TYPE_CHECKING,
     Union,
 )
 
@@ -62,6 +63,9 @@ from galaxy.util import (
 from galaxy.util.template import fill_template
 from galaxy.work.context import WorkRequestContext
 
+if TYPE_CHECKING:
+    from galaxy.tools import Tool
+
 log = logging.getLogger(__name__)
 
 
@@ -104,7 +108,7 @@ class ToolEvaluator:
     job: model.Job
     materialize_datasets: bool = True
 
-    def __init__(self, app: MinimalToolApp, tool, job, local_working_directory):
+    def __init__(self, app: MinimalToolApp, tool: "Tool", job, local_working_directory):
         self.app = app
         self.job = job
         self.tool = tool
@@ -313,57 +317,56 @@ class ToolEvaluator:
         do_walk(inputs, input_values)
 
     def __populate_wrappers(self, param_dict, input_datasets, job_working_directory):
-        def wrap_input(input_values, input):
-            value = input_values[input.name]
-            if isinstance(input, DataToolParameter) and input.multiple:
-                dataset_instances = DatasetListWrapper.to_dataset_instances(value)
-                input_values[input.name] = DatasetListWrapper(
-                    job_working_directory,
-                    dataset_instances,
-                    compute_environment=self.compute_environment,
-                    datatypes_registry=self.app.datatypes_registry,
-                    tool=self.tool,
-                    name=input.name,
-                    formats=input.formats,
-                )
-
-            elif isinstance(input, DataToolParameter):
-                dataset = input_values[input.name]
-                wrapper_kwds = dict(
-                    datatypes_registry=self.app.datatypes_registry,
-                    tool=self.tool,
-                    name=input.name,
-                    compute_environment=self.compute_environment,
-                )
-                element_identifier = element_identifier_mapper.identifier(dataset, param_dict)
-                if element_identifier:
-                    wrapper_kwds["identifier"] = element_identifier
-                input_values[input.name] = DatasetFilenameWrapper(dataset, **wrapper_kwds)
-            elif isinstance(input, DataCollectionToolParameter):
-                dataset_collection = value
-                wrapper_kwds = dict(
-                    datatypes_registry=self.app.datatypes_registry,
-                    compute_environment=self.compute_environment,
-                    tool=self.tool,
-                    name=input.name,
-                )
-                wrapper = DatasetCollectionWrapper(job_working_directory, dataset_collection, **wrapper_kwds)
-                input_values[input.name] = wrapper
-            elif isinstance(input, SelectToolParameter):
-                if input.multiple:
-                    value = listify(value)
-                input_values[input.name] = SelectToolParameterWrapper(
-                    input, value, other_values=param_dict, compute_environment=self.compute_environment
-                )
-            else:
-                input_values[input.name] = InputValueWrapper(
-                    input, value, param_dict, profile=self.tool and self.tool.profile
-                )
-
         # HACK: only wrap if check_values is not false, this deals with external
         #       tools where the inputs don't even get passed through. These
         #       tools (e.g. UCSC) should really be handled in a special way.
         if self.tool.check_values:
+
+            def wrap_input(input_values, input):
+                value = input_values[input.name]
+                if isinstance(input, DataToolParameter) and input.multiple:
+                    dataset_instances = DatasetListWrapper.to_dataset_instances(value)
+                    input_values[input.name] = DatasetListWrapper(
+                        job_working_directory,
+                        dataset_instances,
+                        compute_environment=self.compute_environment,
+                        datatypes_registry=self.app.datatypes_registry,
+                        tool=self.tool,
+                        name=input.name,
+                        formats=input.formats,
+                    )
+
+                elif isinstance(input, DataToolParameter):
+                    dataset = input_values[input.name]
+                    wrapper_kwds = dict(
+                        datatypes_registry=self.app.datatypes_registry,
+                        tool=self.tool,
+                        name=input.name,
+                        compute_environment=self.compute_environment,
+                    )
+                    element_identifier = element_identifier_mapper.identifier(dataset, param_dict)
+                    if element_identifier:
+                        wrapper_kwds["identifier"] = element_identifier
+                    input_values[input.name] = DatasetFilenameWrapper(dataset, **wrapper_kwds)
+                elif isinstance(input, DataCollectionToolParameter):
+                    dataset_collection = value
+                    wrapper_kwds = dict(
+                        datatypes_registry=self.app.datatypes_registry,
+                        compute_environment=self.compute_environment,
+                        tool=self.tool,
+                        name=input.name,
+                    )
+                    wrapper = DatasetCollectionWrapper(job_working_directory, dataset_collection, **wrapper_kwds)
+                    input_values[input.name] = wrapper
+                elif isinstance(input, SelectToolParameter):
+                    if input.multiple:
+                        value = listify(value)
+                    input_values[input.name] = SelectToolParameterWrapper(
+                        input, value, other_values=param_dict, compute_environment=self.compute_environment
+                    )
+                else:
+                    input_values[input.name] = InputValueWrapper(input, value, param_dict, profile=self.tool.profile)
+
             element_identifier_mapper = ElementIdentifierMapper(input_datasets)
             self.__walk_inputs(self.tool.inputs, param_dict, wrap_input)
 
@@ -452,7 +455,7 @@ class ToolEvaluator:
         for out_name, output in self.tool.outputs.items():
             if out_name not in param_dict and output.filters:
                 # Assume the reason we lack this output is because a filter
-                # failed to pass; for tool writing convienence, provide a
+                # failed to pass; for tool writing convenience, provide a
                 # NoneDataset
                 ext = getattr(output, "format", None)  # populate only for output datasets (not collections)
                 param_dict[out_name] = NoneDataset(datatypes_registry=self.app.datatypes_registry, ext=ext)

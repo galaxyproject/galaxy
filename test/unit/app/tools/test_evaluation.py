@@ -1,4 +1,8 @@
 import os
+from typing import (
+    cast,
+    TYPE_CHECKING,
+)
 
 from galaxy.app_unittest_utils.tools_support import UsesApp
 from galaxy.job_execution.compute_environment import SimpleComputeEnvironment
@@ -31,6 +35,9 @@ from galaxy.util import XML
 from galaxy.util.bunch import Bunch
 from galaxy.util.unittest import TestCase
 
+if TYPE_CHECKING:
+    from galaxy.tools import Tool
+
 # To Test:
 # - param_file handling.
 TEST_TOOL_DIRECTORY = "/path/to/the/tool"
@@ -45,7 +52,7 @@ class TestToolEvaluator(TestCase, UsesApp):
         self.job.history = History()
         self.job.history.id = 42
         self.job.parameters = [JobParameter(name="thresh", value="4")]
-        self.evaluator = ToolEvaluator(self.app, self.tool, self.job, self.test_directory)
+        self.evaluator = ToolEvaluator(self.app, cast("Tool", self.tool), self.job, self.test_directory)
 
     def tearDown(self):
         self.tear_down_app()

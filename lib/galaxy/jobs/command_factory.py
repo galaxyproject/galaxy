@@ -136,6 +136,7 @@ def build_command(
 
     if job_wrapper.is_cwl_job:
         # Minimal metadata needed by the relocate script
+        assert job_wrapper.tool
         cwl_metadata_params = {
             "job_metadata": join("working", job_wrapper.tool.provided_metadata_file),
             "job_id_tag": job_wrapper.get_id_tag(),
