@@ -457,7 +457,6 @@ def validate_invocation_collection_crate_directory(crate_directory):
     assert len(actions) == 1
     wf_action = actions[0]
     assert wf_action in root["mentions"]
-    # wf_objects = wf_action["object"]
     assert len(workflow["input"]) == 2
     assert len(workflow["output"]) == 1
     assert len(root["mentions"]) == 4
