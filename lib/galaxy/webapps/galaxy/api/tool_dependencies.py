@@ -209,13 +209,13 @@ class ToolDependenciesAPIController(BaseGalaxyAPIController):
         :type   index:    int
         :param  index:    index of the dependency resolver
         :type   tool_ids: str
-        :param  tool_ids: tool_id to install dependency for
+        :param  tool_ids: comma separated tool_ids to summarize dependencies for
         :type   resolver_type:  str
-        :param  resolver_type:  restrict to uninstall to specified resolver type
+        :param  resolver_type:  restrict to specified resolver type
         :type   include_containers: bool
         :param  include_containers: include container resolvers in resolution
         :type   container_type: str
-        :param  container_type: restrict to uninstall to specified container type
+        :param  container_type: restrict to specified container type
         :type   index_by: str
         :param  index_by: By default consider only context of requirements, group tools by requirements.
                           Set this to 'tools' to summarize across all tools though. Tools may provide additional
