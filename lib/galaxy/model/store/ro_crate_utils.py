@@ -107,7 +107,7 @@ class WorkflowRunCrateProfileBuilder:
         if dataset.dataset.id in self.model_store.dataset_id_to_path:
             filename, _ = self.model_store.dataset_id_to_path[dataset.dataset.id]
             if not filename:
-                filename = f"datasets/dataset_{str(dataset.dataset.uuid)}"
+                filename = f"datasets/dataset_{dataset.dataset.uuid}"
             name = dataset.name
             encoding_format = dataset.datatype.get_mime()
             properties["name"] = name
@@ -125,7 +125,7 @@ class WorkflowRunCrateProfileBuilder:
         for wfda in self.invocation.input_datasets:
             if not self.file_entities.get(wfda.dataset.dataset.id):
                 properties = {
-                    "exampleOfWork": {"@id": f"#{str(wfda.dataset.dataset.uuid)}"},
+                    "exampleOfWork": {"@id": f"#{wfda.dataset.dataset.uuid}"},
                 }
                 file_entity = self._add_file(wfda.dataset, properties, crate)
                 dataset_formal_param = self._add_dataset_formal_parameter(wfda.dataset, crate)
@@ -135,7 +135,7 @@ class WorkflowRunCrateProfileBuilder:
         for wfda in self.invocation.output_datasets:
             if not self.file_entities.get(wfda.dataset.dataset.id):
                 properties = {
-                    "exampleOfWork": {"@id": f"#{str(wfda.dataset.dataset.uuid)}"},
+                    "exampleOfWork": {"@id": f"#{wfda.dataset.dataset.uuid}"},
                 }
                 file_entity = self._add_file(wfda.dataset, properties, crate)
                 dataset_formal_param = self._add_dataset_formal_parameter(wfda.dataset, crate)
