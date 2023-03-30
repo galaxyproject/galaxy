@@ -4,6 +4,9 @@
             You are logged in. You can now connect the Galaxy user account with the email <i>{{ userEmail }}</i
             >, to your preferred external provider.
         </b-alert>
+        <b-alert :show="!!existingEmail" variant="warning">
+            Note: There already exists a user with the email <i>{{ existingEmail }}</i>. Your account has been linked to the external identity with the same email.
+        </b-alert>
         <header>
             <b-alert
                 dismissible
@@ -92,6 +95,8 @@ import { getGalaxyInstance } from "app";
 import svc from "./service";
 import { userLogout } from "utils/logout";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin.vue";
+import { sanitize } from "dompurify";
+import { Toast } from "composables/toast";
 
 Vue.use(BootstrapVue);
 
@@ -120,6 +125,10 @@ export default {
         deleteButtonVariant() {
             return this.showDeleted ? "primary" : "secondary";
         },
+        existingEmail() {
+            var urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get("email_exists");
+        },
         hasDoomed: {
             get() {
                 return this.doomedItem !== null;
@@ -136,6 +145,9 @@ export default {
     },
     created() {
         this.loadIdentities();
+        const params = new URLSearchParams(window.location.search);
+        const notificationMessage = sanitize(params.get("notification"));
+        Toast.success(notificationMessage);
     },
     methods: {
         loadIdentities() {

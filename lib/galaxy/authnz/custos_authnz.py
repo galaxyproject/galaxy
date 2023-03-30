@@ -14,7 +14,10 @@ import requests
 from oauthlib.common import generate_nonce
 from requests_oauthlib import OAuth2Session
 
-from galaxy import util
+from galaxy import (
+    exceptions,
+    util,
+)
 from galaxy.model import (
     CustosAuthnzToken,
     User,
@@ -127,8 +130,8 @@ class CustosAuthnz(IdentityProvider):
         custos_authnz_token = self._get_custos_authnz_token(trans.sa_session, user_id, self.config["provider"])
         if custos_authnz_token is None:
             user = trans.user
+            existing_user = trans.sa_session.query(User).filter_by(email=email).first()
             if not user:
-                existing_user = trans.sa_session.query(User).filter_by(email=email).first()
                 if existing_user:
                     # If there is only a single external authentication
                     # provider in use, trust the user provided and
@@ -170,6 +173,17 @@ class CustosAuthnz(IdentityProvider):
                 expiration_time=expiration_time,
                 refresh_expiration_time=refresh_expiration_time,
             )
+            label = self.config['label']
+            if existing_user:
+                redirect_url = (
+                    f"{login_redirect_url}user/external_ids"
+                    f"?email_exists={email}"
+                    f"&notification=Your%20{label}%20identity%20has%20been%20linked"
+                    "%20to%20your%20Galaxy%20account.")
+            else:
+                redirect_url = (
+                    f"/?notification=Your%20{label}%20identity%20has%20been%20linked"
+                    "%20to%20your%20Galaxy%20account.")
         else:
             custos_authnz_token.access_token = access_token
             custos_authnz_token.id_token = id_token

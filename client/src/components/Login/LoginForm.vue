@@ -24,6 +24,12 @@
                                             v-model="login"
                                             name="login"
                                             type="text" />
+                                        <b-form-input
+                                            v-else
+                                            disabled
+                                            :value="connectExternalEmail"
+                                            name="login"
+                                            type="text" />
                                     </b-form-group>
                                     <b-form-group :label="labelPassword">
                                         <b-form-input v-model="password" name="password" type="password" />
