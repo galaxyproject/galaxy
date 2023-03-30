@@ -200,12 +200,11 @@ class ToolDependenciesAPIController(BaseGalaxyAPIController):
         Container resolution via this API is especially experimental and the container resolution
         API should be used to summarize this information instead in most cases.
 
-        The results are computed with `_requirements_to_dependencies_dict()` of
-        `tool_util.deps.DependencyManager` Note that for container resolution by
-        default resolvers are skipped that require online access or may
-        build/cache a container, i.e.  resolvers that
-        - define `builds_on_resolution` i.e. `build_mulled` and `build_mulled_singularity`
-        - unless `install=True` only resolvers starting with `"cached"`, `"explicit"`, or `"fallback"` are used
+        Note that for container resolution by default resolvers are skipped that require online access
+        or may build/cache a container, i.e.
+        - `build_mulled` and `build_mulled_singularity`
+        - and unless `install=True` only resolvers whose name starts with `"cached"`, `"explicit"`,
+          or `"fallback"` are used
 
         :type   index:    int
         :param  index:    index of the dependency resolver
