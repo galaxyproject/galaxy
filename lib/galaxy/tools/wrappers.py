@@ -47,7 +47,6 @@ if TYPE_CHECKING:
     from galaxy.model.metadata import MetadataCollection
     from galaxy.tools import Tool
     from galaxy.tools.parameters.basic import (
-        BaseDataToolParameter,
         SelectToolParameter,
         ToolParameter,
     )
@@ -357,22 +356,12 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         io_type: str = "input",
         formats: Optional[List[str]] = None,
     ) -> None:
+        dataset_instance: Optional[DatasetInstance] = None
         if not dataset:
-            dataset_instance: Optional[DatasetInstance] = None
-            ext = "data"
-            if tool is not None and name is not None:
-                try:
-                    tool_input = tool.inputs[name]
-                    if TYPE_CHECKING:
-                        assert isinstance(tool_input, BaseDataToolParameter)
-                    # TODO: allow this to work when working with grouping
-                    ext = tool_input.extensions[0]
-                except Exception:
-                    pass
             self.dataset = cast(
                 DatasetInstance,
                 wrap_with_safe_string(
-                    NoneDataset(datatypes_registry=datatypes_registry, ext=ext),
+                    NoneDataset(datatypes_registry=datatypes_registry),
                     no_wrap_classes=ToolParameterValueWrapper,
                 ),
             )
