@@ -425,7 +425,6 @@ def validate_other_entities(ro_crate: ROCrate):
     inputs = workflow["input"]
     outputs = workflow["output"]
     assert inputs[0]["additionalType"] == "File"
-    # assert inputs[1]["additionalType"] == "Text"
     assert outputs[0]["additionalType"] == "File"
 
     for entity in inputs + outputs:
