@@ -92,7 +92,7 @@ class RemoteFilesManager:
             # rip out directories, ensure sorted by path
             index = [i for i in index if i["class"] == "File"]
             index = sorted(index, key=itemgetter("path"))
-        if format == RemoteFilesFormat.jstree:
+        elif format == RemoteFilesFormat.jstree:
             if disable is None:
                 disable = RemoteFilesDisableMode.folders
 
