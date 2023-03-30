@@ -1905,3 +1905,11 @@ class StructuredExecutionTimer:
     @property
     def elapsed(self):
         return time.time() - self.begin
+
+
+def enum_values(enum_class):
+    """
+    Return a list of member values of enumeration enum_class.
+    Values are in member definition order.
+    """
+    return [item.value for key, item in enum_class.__members__.items()]
