@@ -154,6 +154,8 @@ export function flattenTools(tools) {
 export function dLDistance(query, value) {
     const searchTerm = query;
     const toolName = value;
+    const threshold = 1;
+    const minSimilarity = 1;
 
     // Initialize the matrix for the Damerau-Levenshtein distance algorithm
     const matrix = [];
@@ -201,8 +203,9 @@ export function dLDistance(query, value) {
     if (row !== -1) {
         const substr = toolName.substring(col - 1 - searchTerm.length + row, col)
         const similarity = (searchTerm.length - matrix[row][col]) / searchTerm.length
-        if (similarity >= minSimilarity && substr.includes(searchTerm)) {
-            return matrix[searchTerm.length][toolName.length] <= 1;
+        if (similarity >= minSimilarity) {
+            console.log('hi')
+            return matrix[searchTerm.length][toolName.length];
         }
         }
 
@@ -210,7 +213,7 @@ export function dLDistance(query, value) {
 
     // If the Damerau-Levenshtein distance is less than or equal to 1,
     // consider the tool a match
-    return matrix[searchTerm.length][toolName.length] <= 1;
+    return matrix[searchTerm.length][toolName.length] <= 2;
 }
 
 function isToolObject(tool) {
