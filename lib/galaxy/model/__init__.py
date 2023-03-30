@@ -6548,6 +6548,9 @@ class HistoryDatasetCollectionAssociation(
             stm = stm.add_columns(col)
             return stm
 
+        if not object_session(self):
+            return None  # no session means object is not persistant; therefore, it has no associated jobs.
+
         engine = object_session(self).bind
         with engine.connect() as conn:
             counts = conn.execute(build_statement()).one()
