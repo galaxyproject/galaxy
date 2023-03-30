@@ -6557,10 +6557,7 @@ class HistoryDatasetCollectionAssociation(
     @property
     def job_state_summary_dict(self):
         if self.job_state_summary:
-            states = self.job_state_summary.__dict__.copy()
-            del states["_sa_instance_state"]
-            del states["hdca_id"]
-            return states
+            return self.job_state_summary._asdict()
 
     @property
     def dataset_dbkeys_and_extensions_summary(self):
