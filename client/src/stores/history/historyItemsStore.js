@@ -68,17 +68,18 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
             const params = `v=dev&order=hid&offset=${offset}&limit=${limit}`;
             const url = `/api/histories/${historyId}/contents?${params}&${queryString}`;
             const headers = { accept: "application/vnd.galaxy.history.contents.stats+json" };
-            await queue.enqueue(urlData, { url, headers }, historyId).then((data) => {
-                const stats = data.stats;
-                this.totalMatchesCount = stats.total_matches;
-                const payload = data.contents;
-                const relatedHid = HistoryFilters.getFilterValue(filterText, "related");
-                this.saveHistoryItems(historyId, payload, relatedHid);
-            })
-            .catch((error) => {
-                console.error(error);
-                Vue.set(this.error, `${historyId}-${filterText}`, error);
-            });
+            await queue
+                .enqueue(urlData, { url, headers }, historyId)
+                .then((data) => {
+                    const stats = data.stats;
+                    this.totalMatchesCount = stats.total_matches;
+                    const payload = data.contents;
+                    const relatedHid = HistoryFilters.getFilterValue(filterText, "related");
+                    this.saveHistoryItems(historyId, payload, relatedHid);
+                })
+                .catch((error) => {
+                    Vue.set(this.error, `${historyId}-${filterText}`, error);
+                });
         },
         // Setters
         saveHistoryItems(historyId, payload, relatedHid = null) {

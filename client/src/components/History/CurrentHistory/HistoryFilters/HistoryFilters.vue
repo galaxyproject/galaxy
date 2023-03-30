@@ -63,22 +63,47 @@
             <small>Filter by database:</small>
             <b-form-input v-model="filterSettings['genome_build:']" size="sm" placeholder="any database" />
             <small class="mt-1">Filter by related to item index:</small>
-            <b-form-input v-model="filterSettings['related:']" size="sm" placeholder="index equals" />
+            <b-form-input
+                v-model="filterSettings['related:']"
+                v-b-tooltip="hasError('related')"
+                size="sm"
+                placeholder="index equals"
+                :autofocus="hasError('related') !== ''" />
             <small class="mt-1">Filter by item index:</small>
             <b-form-group class="m-0">
                 <b-input-group>
-                    <b-form-input v-model="filterSettings['hid>']" size="sm" placeholder="index greater" />
-                    <b-form-input v-model="filterSettings['hid<']" size="sm" placeholder="index lower" />
+                    <b-form-input
+                        v-model="filterSettings['hid>']"
+                        v-b-tooltip="hasError('hid', 'gt')"
+                        size="sm"
+                        placeholder="index greater"
+                        :autofocus="hasError('hid', 'gt') !== ''" />
+                    <b-form-input
+                        v-model="filterSettings['hid<']"
+                        v-b-tooltip="hasError('hid', 'lt')"
+                        size="sm"
+                        placeholder="index lower"
+                        :autofocus="hasError('hid', 'lt') !== ''" />
                 </b-input-group>
             </b-form-group>
             <small class="mt-1">Filter by creation time:</small>
             <b-form-group class="m-0">
                 <b-input-group>
-                    <b-form-input v-model="create_time_gt" size="sm" placeholder="created after" />
+                    <b-form-input
+                        v-model="create_time_gt"
+                        v-b-tooltip="hasError('create_time', 'gt')"
+                        size="sm"
+                        placeholder="created after"
+                        :autofocus="hasError('create_time', 'gt') !== ''" />
                     <b-input-group-append>
                         <b-form-datepicker v-model="create_time_gt" reset-button button-only size="sm" />
                     </b-input-group-append>
-                    <b-form-input v-model="create_time_lt" size="sm" placeholder="created before" />
+                    <b-form-input
+                        v-model="create_time_lt"
+                        v-b-tooltip="hasError('create_time', 'lt')"
+                        size="sm"
+                        placeholder="created before"
+                        :autofocus="hasError('create_time', 'lt') !== ''" />
                     <b-input-group-append>
                         <b-form-datepicker v-model="create_time_lt" reset-button button-only size="sm" />
                     </b-input-group-append>
@@ -115,6 +140,7 @@ export default {
     props: {
         filterText: { type: String, default: null },
         showAdvanced: { type: Boolean, default: false },
+        searchError: { type: Object, required: false },
     },
     data() {
         return {
@@ -147,8 +173,23 @@ export default {
             this.create_time_gt = this.filterSettings["create_time>"];
             this.create_time_lt = this.filterSettings["create_time<"];
         },
+        searchError(newVal) {
+            if (newVal) {
+                this.onToggle();
+            }
+        },
     },
     methods: {
+        hasError(col, op = "eq") {
+            if (
+                this.searchError &&
+                (this.searchError.column == col || this.searchError.col == col) &&
+                (this.searchError.operation == op || this.searchError.op == op)
+            ) {
+                return this.searchError.ValueError || this.searchError.err_msg;
+            }
+            return "";
+        },
         onOption(name, value) {
             this.filterSettings[name] = value;
         },

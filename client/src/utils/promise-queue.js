@@ -26,8 +26,15 @@ export class LastQueue {
             delete this.nextPromise[nextKey];
             this.pendingPromise = true;
             try {
-                const payload = await item.action(item.args);
-                item.resolve(payload);
+                const { url, headers } = item.args;
+                const response = await fetch(url, { headers });
+                if (!response.ok) {
+                    const error = await response.json();
+                    item.reject(error);
+                } else {
+                    const payload = await response.json();
+                    item.resolve(payload);
+                }
             } catch (e) {
                 item.reject(e);
             } finally {

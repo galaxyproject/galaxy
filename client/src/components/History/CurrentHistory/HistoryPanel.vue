@@ -31,7 +31,8 @@
                     v-if="showControls"
                     class="content-operations-filters mx-3"
                     :filter-text.sync="filterText"
-                    :show-advanced.sync="showAdvanced" />
+                    :show-advanced.sync="showAdvanced"
+                    :search-error="searchError" />
                 <section v-if="!showAdvanced">
                     <HistoryDetails
                         :history="history"
@@ -93,8 +94,8 @@
                         </b-alert>
                         <div v-else-if="itemsLoaded.length === 0">
                             <HistoryEmpty v-if="queryDefault" class="m-2" />
-                            <b-alert v-else-if="historySearchError" class="m-2" variant="danger" show>
-                                {{ historySearchError }}
+                            <b-alert v-else-if="searchError" class="m-2" variant="danger" show>
+                                {{ searchErrorMessage }}
                             </b-alert>
                             <b-alert v-else class="m-2" variant="info" show>
                                 No data found for selected filter.
@@ -251,9 +252,14 @@ export default {
             const { getWatchingVisibility } = storeToRefs(useHistoryItemsStore());
             return getWatchingVisibility.value;
         },
-        /** @returns {String} */
-        historySearchError() {
+        /** @returns {Object} */
+        searchError() {
             return useHistoryItemsStore().error[`${this.historyId}-${this.filterText}`];
+        },
+        /** @returns {String} */
+        searchErrorMessage() {
+            const { column, col, operation, op, value, val, err_msg } = this.searchError;
+            return `For filter:"${column || col}-${operation || op}" and value:"${value || val}", Error: ${err_msg}`;
         },
         /** @returns {String} */
         storeFilterText() {
