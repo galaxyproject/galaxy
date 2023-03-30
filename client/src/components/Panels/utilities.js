@@ -135,7 +135,7 @@ export function searchToolsByKeys(tools, keys, query) {
                 returnedTools.push({ id: tool.id, order });
                 break;
             }
-            else if (key !== "combined" && queryLowerCase.length >= 5 && dLDistance(queryLowerCase, actualValue)) {
+            else if (key !== "combined" && queryLowerCase.length >= 6 && dLDistance(queryLowerCase, actualValue)) {
                 returnedTools.push({ id: tool.id, order });
             }
         }
@@ -153,67 +153,35 @@ export function flattenTools(tools) {
 
 export function dLDistance(query, value) {
     const searchTerm = query;
+    const queryLength = query.length;
     const toolName = value;
     const threshold = 1;
-    const minSimilarity = 1;
 
     // Initialize the matrix for the Damerau-Levenshtein distance algorithm
-    const matrix = [];
-    for (let i = 0; i <= searchTerm.length; i++) {
-        matrix[i] = [];
-        for (let j = 0; j <= toolName.length; j++) {
-            matrix[i][j] = 0;
-        }
-    }
-    for (let i = 1; i <= searchTerm.length; i++) {
-        matrix[i][0] = i;
-    }
-    for (let j = 1; j <= toolName.length; j++) {
-        matrix[0][j] = j;
-    }
+    const substrings = [];
+    for (let i = 0; i <= toolName.length - queryLength; i++) {
+        substrings.push(toolName.substring(i, i + queryLength));
+      }
 
-    // Fill in the matrix using the Damerau-Levenshtein distance algorithm
-    for (let i = 1; i <= searchTerm.length; i++) {
-        for (let j = 1; j <= toolName.length; j++) {
-            const cost = searchTerm[i - 1] === toolName[j - 1] ? 0 : 1;
-            matrix[i][j] = Math.min(matrix[i - 1][j] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j - 1] + cost);
-            if (i > 1 && j > 1 && searchTerm[i - 1] === toolName[j - 2] && searchTerm[i - 2] === toolName[j - 1]) {
+    // Initialize the matrix for the Damerau-Levenshtein distance algorithm
+    for (let substring of substrings) {
+        const matrix = [];
+        for (let i = 0; i <= queryLength; i++) {
+            matrix[i] = [];
+            for (let j = 0; j <= substring.length; j++) {
+                const cost = i === 0 || j === 0 ? i + j : searchTerm[i - 1] === substring[j - 1] ? matrix[i - 1][j - 1] : Math.min(matrix[i][j - 1], matrix[i - 1][j], matrix[i - 1][j - 1]) + 1;
+                matrix[i][j] = cost;
+                if (i > 1 && j > 1 && searchTerm[i - 1] === substring[j - 2] && searchTerm[i - 2] === substring[j - 1]) {
                 matrix[i][j] = Math.min(matrix[i][j], matrix[i - 2][j - 2] + cost);
+                }
             }
         }
-        }
-
-    // Search for a row or column with a value below the threshold
-    let row = -1
-    let col = -1
-    for (let i = 1; i <= searchTerm.length; i++) {
-      for (let j = 1; j <= toolName.length; j++) {
-        if (matrix[i][j] <= threshold) {
-          row = i
-          col = j
-          break
-        }
-      }
-      if (row !== -1) {
-        break
-      }
+        // Check if the substring matches our required threshold for a match
+        if (matrix[queryLength][substring.length] <= threshold){
+            return true;
+        }  
     }
-
-    // If a row or column was found, check for a partial match
-    if (row !== -1) {
-        const substr = toolName.substring(col - 1 - searchTerm.length + row, col)
-        const similarity = (searchTerm.length - matrix[row][col]) / searchTerm.length
-        if (similarity >= minSimilarity) {
-            console.log('hi')
-            return matrix[searchTerm.length][toolName.length];
-        }
-        }
-
-        
-
-    // If the Damerau-Levenshtein distance is less than or equal to 1,
-    // consider the tool a match
-    return matrix[searchTerm.length][toolName.length] <= 2;
+    return false;
 }
 
 function isToolObject(tool) {
