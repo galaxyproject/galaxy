@@ -55,12 +55,12 @@ def assert_has_archive_member(
     path,
     verify_assertions_function,
     children,
-    all="false",
-    n: Optional[int] = None,
-    delta: int = 0,
-    min: Optional[int] = None,
-    max: Optional[int] = None,
-    negate: bool = False,
+    all="False",
+    n: Optional[str] = None,
+    delta: str = "0",
+    min: Optional[str] = None,
+    max: Optional[str] = None,
+    negate: str = "False",
 ):
     """Recursively checks the specified children assertions against the text of
     the first element matching the specified path found within the archive.

@@ -5,11 +5,11 @@ from ._util import _assert_number
 
 def assert_has_size(
     output_bytes,
-    value: Optional[int] = None,
-    delta: int = 0,
-    min: Optional[int] = None,
-    max: Optional[int] = None,
-    negate: bool = False,
+    value: Optional[str] = None,
+    delta: str = "0",
+    min: Optional[str] = None,
+    max: Optional[str] = None,
+    negate: str = "False",
 ):
     """
     Asserts the specified output has a size of the specified value,

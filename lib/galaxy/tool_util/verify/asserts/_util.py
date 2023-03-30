@@ -1,10 +1,24 @@
 from math import inf
+from typing import (
+    Any,
+    Callable,
+    Optional
+)
 
 from galaxy.util import asbool
 from galaxy.util.bytesize import parse_bytesize
 
 
-def _assert_number(count, n, delta, min, max, negate, n_text, min_max_text):
+def _assert_number(
+    count,
+    n: Optional[str],
+    delta: str,
+    min: Optional[str],
+    max: Optional[str],
+    negate: str,
+    n_text,
+    min_max_text
+):
     """
     helper function for assering that count is in
     - [n-delta:n+delta]
@@ -26,12 +40,12 @@ def _assert_number(count, n, delta, min, max, negate, n_text, min_max_text):
         )
     if min is not None or max is not None:
         if min is None:
-            min = -inf  # also replacing min/max for output
+            min = "-inf"  # also replacing min/max for output
             min_bytes = -inf
         else:
             min_bytes = parse_bytesize(min)
         if max is None:
-            max = inf
+            max = "inf"
             max_bytes = inf
         else:
             max_bytes = parse_bytesize(max)
@@ -42,7 +56,18 @@ def _assert_number(count, n, delta, min, max, negate, n_text, min_max_text):
 
 
 def _assert_presence_number(
-    output, text, n, delta, min, max, negate, check_presence_foo, count_foo, presence_text, n_text, min_max_text
+    output,
+    text,
+    n: Optional[str],
+    delta: str,
+    min: Optional[str],
+    max: Optional[str],
+    negate: str,
+    check_presence_foo: Callable[[Any, Any], bool],
+    count_foo: Callable[[Any, Any], int],
+    presence_text: str,
+    n_text: str,
+    min_max_text: str
 ):
     """
     helper function to assert that
