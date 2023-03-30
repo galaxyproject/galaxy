@@ -1,16 +1,16 @@
-from typing import Optional
+from typing import Union, Optional
 
 from ._util import _assert_number
 
 
 def assert_has_size(
-    output_bytes,
-    value: Optional[str] = None,
-    delta: str = "0",
-    min: Optional[str] = None,
-    max: Optional[str] = None,
-    negate: str = "False",
-):
+    output_bytes: bytes,
+    value: Optional[Union[int, str]] = None,
+    delta: Union[int, str] = 0,
+    min: Optional[Union[int, str]] = None,
+    max: Optional[Union[int, str]] = None,
+    negate: Union[bool, str] = False,
+) -> None:
     """
     Asserts the specified output has a size of the specified value,
     allowing for absolute (delta) and relative (delta_frac) difference.

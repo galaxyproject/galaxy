@@ -1,8 +1,9 @@
 from math import inf
 from typing import (
-    Any,
     Callable,
-    Optional
+    Optional,
+    TypeVar,
+    Union,
 )
 
 from galaxy.util import asbool
@@ -10,15 +11,15 @@ from galaxy.util.bytesize import parse_bytesize
 
 
 def _assert_number(
-    count,
-    n: Optional[str],
-    delta: str,
-    min: Optional[str],
-    max: Optional[str],
-    negate: str,
-    n_text,
-    min_max_text
-):
+    count: int,
+    n: Optional[Union[int, str]],
+    delta: Union[int, str],
+    min: Optional[Union[int, str]],
+    max: Optional[Union[int, str]],
+    negate: Union[bool, str],
+    n_text: str,
+    min_max_text: str,
+) -> None:
     """
     helper function for assering that count is in
     - [n-delta:n+delta]
@@ -55,20 +56,24 @@ def _assert_number(
         )
 
 
+OutputType = TypeVar("OutputType")
+TextType = TypeVar("TextType")
+
+
 def _assert_presence_number(
-    output,
-    text,
-    n: Optional[str],
-    delta: str,
-    min: Optional[str],
-    max: Optional[str],
-    negate: str,
-    check_presence_foo: Callable[[Any, Any], bool],
-    count_foo: Callable[[Any, Any], int],
+    output: OutputType,
+    text: TextType,
+    n: Optional[Union[int, str]],
+    delta: Union[int, str],
+    min: Optional[Union[int, str]],
+    max: Optional[Union[int, str]],
+    negate: Union[bool, str],
+    check_presence_foo: Callable[[OutputType, TextType], bool],
+    count_foo: Callable[[OutputType, TextType], int],
     presence_text: str,
     n_text: str,
-    min_max_text: str
-):
+    min_max_text: str,
+) -> None:
     """
     helper function to assert that
     - text is present in output using check_presence_foo
