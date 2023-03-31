@@ -393,6 +393,11 @@ class NavigatesGalaxy(HasDriver):
     def history_panel_wait_for_hid_deferred(self, hid, allowed_force_refreshes=0):
         return self.history_panel_wait_for_hid_state(hid, "deferred", allowed_force_refreshes=allowed_force_refreshes)
 
+    def wait_for_hid_ok_and_open_details(self, hid):
+        self.history_panel_wait_for_hid_ok(hid, allowed_force_refreshes=1)
+        self.history_panel_click_item_title(hid=hid)
+        self.history_panel_item_view_dataset_details(hid)
+
     def history_panel_item_component(self, history_item=None, hid=None, multi_history_panel=False):
         assert hid
         return self.content_item_by_attributes(hid=hid, multi_history_panel=multi_history_panel)
@@ -1078,6 +1083,41 @@ class NavigatesGalaxy(HasDriver):
     def admin_open(self):
         self.components.masthead.admin.wait_for_and_click()
 
+    def create_quota(
+        self,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        amount: Optional[str] = None,
+        quota_source_label: Optional[str] = None,
+        user: Optional[str] = None,
+    ):
+        admin_component = self.components.admin
+
+        self.admin_open()
+        quota_link = admin_component.index.quotas
+        quota_link.wait_for_and_click()
+        quota_component = admin_component.quota
+
+        quota_component.add_new.wait_for_and_click()
+        form = quota_component.add_form.wait_for_visible()
+
+        name = name or self._get_random_name()
+        description = description or f"quota description for {name}"
+        amount = amount or ""
+        self.fill(
+            form,
+            {
+                "name": name,
+                "description": description,
+                "amount": amount,
+            },
+        )
+        if quota_source_label:
+            self.select2_set_value("#quota_source_label", quota_source_label)
+        if user:
+            self.select2_set_value("#in_users", user)
+        quota_component.add_form_submit.wait_for_and_click()
+
     def select_dataset_from_lib_import_modal(self, filenames):
         for name in filenames:
             self.components.libraries.folder.select_import_dir_item(name=name).wait_for_and_click()
@@ -1376,6 +1416,22 @@ class NavigatesGalaxy(HasDriver):
         self.driver.execute_script("arguments[0].scrollIntoView(true);", tool_element)
         tool_link.wait_for_and_click()
 
+    def run_environment_test_tool(self, inttest_value="42", select_storage: Optional[str] = None):
+        self.home()
+        self.tool_open("environment_variables")
+        if select_storage:
+            self.components.tool_form.storage_options.wait_for_and_click()
+            self.select_storage(select_storage)
+        self.tool_set_value("inttest", inttest_value)
+        self.tool_form_execute()
+
+    def select_storage(self, storage_id: str) -> None:
+        selection_component = self.components.preferences.object_store_selection
+        selection_component.option_buttons.wait_for_present()
+        button = selection_component.option_button(object_store_id=storage_id)
+        button.wait_for_and_click()
+        selection_component.option_buttons.wait_for_absent_or_hidden()
+
     def create_page_and_edit(self, name=None, slug=None, screenshot_name=None):
         name = self.create_page(name=name, slug=slug, screenshot_name=screenshot_name)
         self.click_grid_popup_option(name, "Edit content")
@@ -1595,7 +1651,7 @@ class NavigatesGalaxy(HasDriver):
 
     def history_panel_item_view_dataset_details(self, hid):
         item = self.history_panel_item_component(hid=hid)
-        item.dataset_operations_dropdown.wait_for_and_click()
+        item.dataset_operations.wait_for_visible()
         item.info_button.wait_for_and_click()
         self.components.dataset_details._.wait_for_visible()
 

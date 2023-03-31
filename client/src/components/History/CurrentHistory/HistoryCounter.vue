@@ -69,7 +69,7 @@
                         :title="reloadButtonTitle"
                         :variant="reloadButtonVariant"
                         size="sm"
-                        class="rounded-0 text-decoration-none"
+                        class="rounded-0 text-decoration-none history-refresh-button"
                         @click="reloadContents()">
                         <span :class="reloadButtonCls" />
                     </b-button>

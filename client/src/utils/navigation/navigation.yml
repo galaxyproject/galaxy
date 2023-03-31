@@ -130,7 +130,10 @@ object_store_details:
   selectors:
     stored_by_name: '.display-os-by-name'
     badge_of_type: '.object-store-badge-wrapper [data-badge-type="${type}"]'
-
+    usage_details: '.quota-usage-bar'
+    usage_bytes: '.quota-usage'
+    usage_percent: '.quota-percent-text'
+    usage_progress: '.quota-usage-bar .progress'
 
 history_panel:
   menu:
@@ -207,7 +210,7 @@ history_panel:
       alltags: '${_} .stateless-tags .tag'
       metadata_file_download: '${_} [data-description="download ${metadata_name}"]'
 
-      dataset_operations_dropdown: '${_}  .dataset-actions'
+      dataset_operations: '${_} .dataset-actions'
 
   # re-usable history editor, scoped for use in different layout scenarios (multi, etc.)
   editor:
@@ -781,6 +784,13 @@ admin:
       repo_search: '#toolshed-repo-search'
       search_results: '#shed-search-results'
       upgrade_notification: '#repository-table .badge'
+
+  quota:
+    selectors:
+      add_new: '.quotas .manage-table-actions .action-button'
+      items: '.quotas tbody tr td'
+      add_form: "[url='/admin/create_quota']"
+      add_form_submit: "[url='/admin/create_quota'] #submit"
 
   index:
     selectors:

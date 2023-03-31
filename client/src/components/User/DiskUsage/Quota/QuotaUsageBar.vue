@@ -60,11 +60,15 @@ defineExpose({
             </span>
             {{ storageSourceText }}
         </component>
-        <component :is="usageTag" v-if="!compact">
+        <component
+            :is="usageTag"
+            v-if="!compact"
+            :data-quota-usage="quotaUsage.totalDiskUsageInBytes"
+            class="quota-usage">
             <b>{{ quotaUsage.niceTotalDiskUsage }}</b>
             <span v-if="quotaHasLimit"> of {{ quotaUsage.niceQuota }}</span> used
         </component>
-        <span v-if="quotaHasLimit && !compact" class="quota-percent-text">
+        <span v-if="quotaHasLimit && !compact" class="quota-percent-text" :data-quota-percent="quotaUsage.quotaPercent">
             {{ quotaUsage.quotaPercent }}{{ percentOfDiskQuotaUsedText }}
         </span>
         <b-progress
