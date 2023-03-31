@@ -56,6 +56,8 @@ from sqlalchemy import (
     BigInteger,
     bindparam,
     Boolean,
+    case,
+    column,
     Column,
     DateTime,
     desc,
@@ -126,13 +128,13 @@ from galaxy.model.item_attrs import (
 )
 from galaxy.model.orm.now import now
 from galaxy.model.orm.util import add_object_to_object_session
-from galaxy.model.view import HistoryDatasetCollectionJobStateSummary
 from galaxy.objectstore import ObjectStore
 from galaxy.security import get_permitted_actions
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.security.validate_user_input import validate_password_str
 from galaxy.util import (
     directory_hash_id,
+    enum_values,
     listify,
     ready_name_for_url,
     unicodify,
@@ -6439,12 +6441,9 @@ class HistoryDatasetCollectionAssociation(
         uselist=False,
     )
     job_state_summary = relationship(
-        HistoryDatasetCollectionJobStateSummary,
-        primaryjoin=(
-            lambda: HistoryDatasetCollectionAssociation.id
-            == HistoryDatasetCollectionJobStateSummary.__table__.c.hdca_id
-        ),
-        foreign_keys=HistoryDatasetCollectionJobStateSummary.__table__.c.hdca_id,
+        "HistoryDatasetCollectionJobStateSummary",
+        primaryjoin=(lambda: HistoryDatasetCollectionAssociation.id == HistoryDatasetCollectionJobStateSummary.hdca_id),
+        foreign_keys="HistoryDatasetCollectionJobStateSummary.hdca_id",
         uselist=False,
     )
     tags = relationship(
@@ -10555,3 +10554,49 @@ def receive_init(target, args, kwargs):
         if obj:
             add_object_to_object_session(target, obj)
             return  # Once is enough.
+
+
+def _build_hdcjss_statement():
+    state_label = "state"  # used to generate `SELECT job.state AS state`, and then refer to it in aggregates.
+    hdca_label = "hdca_id"
+    job_label = "job_id"
+
+    hdca = HistoryDatasetCollectionAssociation
+    icj = ImplicitCollectionJobs
+    icjja = ImplicitCollectionJobsJobAssociation
+
+    # Select job states joining on icjja > icj > hdca
+    # (We are selecting Job.id in addition to Job.state because otherwise the UNION operation
+    #  will get rid of duplicates, making aggregates meaningless.)
+    subq1 = (
+        select(hdca.id.label(hdca_label), Job.id.label(job_label), Job.state.label(state_label))
+        .outerjoin(icj, icj.id == hdca.implicit_collection_jobs_id)
+        .outerjoin(icjja, icj.id == icjja.implicit_collection_jobs_id)
+        .outerjoin(Job, icjja.job_id == Job.id)
+    )
+
+    # Select job states joining on hdca
+    subq2 = select(hdca.id.label(hdca_label), Job.id.label(job_label), Job.state.label(state_label)).outerjoin(
+        Job, hdca.job_id == Job.id
+    )
+
+    # Combine subqueries
+    subq = subq1.union(subq2)
+
+    # Build and return final query
+    stm = select(column(hdca_label)).select_from(subq)
+    # Add aggregate columns for each job state
+    for state in enum_values(Job.states):
+        col = func.sum(case((column(state_label) == state, 1), else_=0)).label(state)
+        stm = stm.add_columns(col)
+    # Add aggregate column for all jobs
+    col = func.sum(case((column(job_label) == None, 0), else_=1)).label("all_jobs")
+    stm = stm.add_columns(col)
+
+    stm = stm.group_by(column(hdca_label))
+    return stm.subquery()
+
+
+class HistoryDatasetCollectionJobStateSummary(Base):
+    __table__ = _build_hdcjss_statement()
+    __mapper_args__ = {"primary_key": [__table__.c.hdca_id]}
