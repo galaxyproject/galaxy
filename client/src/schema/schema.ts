@@ -3580,6 +3580,8 @@ export interface components {
              * @description The current state of this dataset.
              */
             state: components["schemas"]["galaxy__model__Dataset__states"];
+            /** Tags */
+            tags: string[];
         };
         /**
          * HDASummary

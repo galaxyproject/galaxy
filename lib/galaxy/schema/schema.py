@@ -646,6 +646,7 @@ class HDAObject(Model):
     state: Dataset.states = DatasetStateField
     hda_ldda: DatasetSourceType = HdaLddaField
     history_id: DecodedDatabaseIdField = HistoryIdField
+    tags: List[str]
 
     class Config:
         extra = Extra.allow  # Can contain more fields like metadata_*
