@@ -203,7 +203,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         except exceptions.ItemDeletionException:
             raise
         except Exception:
-            raise exceptions.RequestParameterInvalidException("Invalid user id specified", id=id)
+            raise exceptions.RequestParameterInvalidException("Invalid user id specified")
         return self.user_serializer.serialize_to_view(user, view="detailed")
 
     @expose_api
@@ -1052,7 +1052,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
     def _get_user(self, trans, id):
         user = self.get_user(trans, id)
         if not user:
-            raise exceptions.RequestParameterInvalidException(f"Invalid user ({id}).")
+            raise exceptions.RequestParameterInvalidException("Invalid user specified.")
         if user != trans.user and not trans.user_is_admin:
             raise exceptions.InsufficientPermissionsException("Access denied.")
         return user

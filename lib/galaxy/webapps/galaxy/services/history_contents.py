@@ -1372,7 +1372,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         decoded_ldda_id = self.decode_id(ldda_id)
         ld = self.ldda_manager.get(trans, decoded_ldda_id)
         if type(ld) is not LibraryDataset:
-            raise exceptions.RequestParameterInvalidException(f"Library content id ( {ldda_id} ) is not a dataset")
+            raise exceptions.RequestParameterInvalidException("Library content id is not a dataset")
         hda = ld.library_dataset_dataset_association.to_history_dataset_association(history, add_to_history=True)
         return hda
 

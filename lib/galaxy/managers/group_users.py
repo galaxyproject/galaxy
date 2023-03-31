@@ -71,14 +71,14 @@ class GroupUsersManager:
         decoded_group_id = decode_id(self._app, encoded_group_id)
         group = trans.sa_session.query(model.Group).get(decoded_group_id)
         if group is None:
-            raise ObjectNotFound(f"Group with id {encoded_group_id} was not found.")
+            raise ObjectNotFound("Group with the id provided was not found.")
         return group
 
     def _get_user(self, trans: ProvidesAppContext, encoded_user_id: EncodedDatabaseIdField) -> model.User:
         decoded_user_id = decode_id(self._app, encoded_user_id)
         user = trans.sa_session.query(model.User).get(decoded_user_id)
         if user is None:
-            raise ObjectNotFound(f"User with id {encoded_user_id} was not found.")
+            raise ObjectNotFound("User with the id provided was not found.")
         return user
 
     def _get_group_user(

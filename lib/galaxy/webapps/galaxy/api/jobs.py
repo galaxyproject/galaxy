@@ -322,7 +322,7 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         """
         job = self.__get_job(trans, id)
         if not job:
-            raise exceptions.ObjectNotFound(f"Could not access job with id '{id}'")
+            raise exceptions.ObjectNotFound("Could not access job with the given id")
         if job.state == job.states.PAUSED:
             job.resume()
         else:
@@ -417,7 +417,7 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         job = self.__get_job(trans, id)
         if not job:
-            raise exceptions.ObjectNotFound(f"Could not access job with id '{id}'")
+            raise exceptions.ObjectNotFound("Could not access job with the given id")
         tool = self.app.toolbox.get_tool(job.tool_id, kwd.get("tool_version") or job.tool_version)
         if tool is None:
             raise exceptions.ObjectNotFound("Requested tool not found")
