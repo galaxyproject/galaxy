@@ -6504,6 +6504,11 @@ class HistoryDatasetCollectionAssociation(
         """
         if not self._job_state_summary:
             self._job_state_summary = self._get_job_state_summary()
+            # if summary exists, but there are no jobs, load zeroes for all other counts (otherwise they will be None)
+            if self._job_state_summary and self._job_state_summary.all_jobs == 0:
+                zeroes = [0] * (len(Job.states) + 1)
+                self._job_state_summary = JobStateSummary._make(zeroes)
+
         return self._job_state_summary
 
     def _get_job_state_summary(self):
