@@ -10590,7 +10590,9 @@ def _build_hdcjss_statement():
         col = func.sum(case((column(state_label) == state, 1), else_=0)).label(state)
         stm = stm.add_columns(col)
     # Add aggregate column for all jobs
-    col = func.sum(case((column(job_label) == None, 0), else_=1)).label("all_jobs")
+    col = func.sum(case((column(job_label) == None, 0), else_=1)).label(  # noqa: E711  # translated to sql: `IS NULL`
+        "all_jobs"
+    )
     stm = stm.add_columns(col)
 
     stm = stm.group_by(column(hdca_label))
