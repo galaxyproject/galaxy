@@ -5,6 +5,7 @@ import type { States, HelpText } from "./stateTypes";
 
 const props = defineProps({
     showHelp: { type: Boolean, default: false },
+    excludeStates: { type: Array<keyof typeof STATES>, required: false, default: () => [] },
 });
 
 const emit = defineEmits<{
@@ -26,6 +27,12 @@ const helpText: HelpText = {
     failed: "The job failed to run.",
     ok: "The dataset has no errors.",
 };
+
+if (props.excludeStates) {
+    for (const state of props.excludeStates) {
+        delete states[state];
+    }
+}
 
 function onFilter(value: string) {
     propShowHelp.value = false;

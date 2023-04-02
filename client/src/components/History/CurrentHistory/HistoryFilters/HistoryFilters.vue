@@ -52,7 +52,7 @@
                         <icon icon="question" />
                     </b-button>
                 </b-input-group-append>
-                <StatesInfo :show-help.sync="showHelp" @set-filter="onOption" />
+                <StatesInfo :show-help.sync="showHelp" :exclude-states="excludeStates" @set-filter="onOption" />
             </b-input-group>
             <small>Filter by database:</small>
             <b-form-input v-model="filterSettings['genome_build:']" size="sm" placeholder="any database" />
@@ -114,7 +114,7 @@ export default {
         return {
             create_time_gt: "",
             create_time_lt: "",
-            states: Object.keys(STATES),
+            excludeStates: ["empty", "failed", "upload"],
             showHelp: false,
         };
     },
@@ -131,6 +131,9 @@ export default {
                     this.updateFilter(newVal);
                 }
             },
+        },
+        states() {
+            return Object.keys(STATES).filter((state) => !this.excludeStates.includes(state));
         },
     },
     watch: {
