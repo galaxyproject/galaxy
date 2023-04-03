@@ -11,11 +11,10 @@ const topTenHistoriesBySizeData = ref<DataValuePoint[] | null>(null);
 const activeVsDeletedTotalSizeData = ref<DataValuePoint[] | null>(null);
 
 onMounted(async () => {
-    const historiesSizeSummary = await getAllHistoriesSizeSummary();
+    const allHistoriesSizeSummary = await getAllHistoriesSizeSummary();
 
-    topTenHistoriesBySizeData.value = buildTopTenHistoriesBySizeData(historiesSizeSummary);
-
-    activeVsDeletedTotalSizeData.value = buildActiveVsDeletedTotalSizeData(historiesSizeSummary);
+    topTenHistoriesBySizeData.value = buildTopTenHistoriesBySizeData(allHistoriesSizeSummary);
+    activeVsDeletedTotalSizeData.value = buildActiveVsDeletedTotalSizeData(allHistoriesSizeSummary);
 });
 
 function buildTopTenHistoriesBySizeData(historiesSizeSummary: HistorySizeSummary[]): DataValuePoint[] {
@@ -58,24 +57,28 @@ function bytesLabelFormatter(dataPoint: DataValuePoint): string {
         <h2 class="text-center my-3">
             <b>Histories Storage Overview</b>
         </h2>
-        <p class="text-center">Here you can find various graphs displaying the storage size taken by your histories.</p>
+        <p class="text-center mx-5">
+            Here you can find various graphs displaying the storage size taken by all your histories. This includes
+            deleted histories, as they still take storage space until their contents are permanently deleted. You can
+            always recover the space by permanently deleting those from the <i>Discarded Items</i> section of the
+            <b-link to="management">
+                <b>Storage Manager</b>
+            </b-link>
+            page.
+        </p>
         <PieChart
             v-if="topTenHistoriesBySizeData"
             title="Top 10 Histories by Size"
+            description="These are the 10 histories that take the most space on your storage."
             :data="topTenHistoriesBySizeData"
             :label-formatter="bytesLabelFormatter"
             :tooltip-formatter="bytesLabelFormatter" />
         <PieChart
             v-if="activeVsDeletedTotalSizeData"
             title="Active vs Deleted Total Size"
+            description="This graph shows the total size of your histories, separated by whether they are active or deleted."
             :data="activeVsDeletedTotalSizeData"
             :label-formatter="bytesLabelFormatter"
             :tooltip-formatter="bytesLabelFormatter" />
     </div>
 </template>
-
-<style lang="css" scoped>
-.pieChart {
-    text-align: center;
-}
-</style>
