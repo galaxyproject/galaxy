@@ -6,6 +6,7 @@ import levenshteinDistance from "utils/levenshtein";
 
 const TOOLS_RESULTS_SORT_LABEL = "apiSort";
 const TOOLS_RESULTS_SECTIONS_HIDE = ["Expression Tools"];
+const STRING_REPLACEMENTS = [" ", "-", "(", ")", "'", ":"];
 
 // Converts filterSettings { key: value } to query = "key:value"
 export function createWorkflowQuery(filterSettings) {
@@ -116,6 +117,8 @@ export function hasResults(results) {
 }
 
 // Given toolbox, keys to sort/search results by and a search query,
+// Does a direct string.match() comparison to find results,
+// If that produces nothing, runs levenshtein distance alg to allow misspells
 // Returns tool ids sorted by order of keys that are being searched
 export function searchToolsByKeys(tools, keys, query) {
     const returnedTools = [];
@@ -123,31 +126,38 @@ export function searchToolsByKeys(tools, keys, query) {
     let usesDl = true;
     for (const tool of tools) {
         for (const key of Object.keys(keys)) {
-            let actualValue = "";
-            if (key === "combined") {
-                actualValue = tool.name.toLowerCase() + " " + tool.description.toLowerCase();
-            } else if (key === "hyphenated") {
-                actualValue = tool.name.toLowerCase().replaceAll("-", " ");
-            } else {
-                actualValue = tool[key] ? tool[key].toLowerCase() : "";
-            }
-            const queryLowerCase = query.trim().toLowerCase();
-            // do we care for exact matches && is it an exact match ?
-            const order = keys.exact && actualValue === queryLowerCase ? keys.exact : keys[key];
-            const distance =
-                queryLowerCase.length >= minimumQueryLength ? dLDistance(queryLowerCase, actualValue) : null;
-            if (actualValue.match(queryLowerCase)) {
-                returnedTools.push({ id: tool.id, order, usesDl: false });
-                usesDl = false;
-                break;
-            } else if (key !== "combined" && distance && usesDl) {
-                returnedTools.push({ id: tool.id, order });
-                break;
+            if (tool[key] || key === "combined") {
+                let queryValue = query.trim().toLowerCase();
+                let actualValue = "";
+                if (key === "combined") {
+                    actualValue = (tool.name + tool.description).trim().toLowerCase();
+                } else {
+                    actualValue = tool[key].trim().toLowerCase();
+                }
+                STRING_REPLACEMENTS.forEach((rep) => {
+                    queryValue = queryValue.replaceAll(rep, "");
+                    actualValue = actualValue.replaceAll(rep, "");
+                });
+                // do we care for exact matches && is it an exact match ?
+                const order = keys.exact && actualValue === queryValue ? keys.exact : keys[key];
+                const distance = queryValue.length >= minimumQueryLength ? dLDistance(queryValue, actualValue) : null;
+                if (actualValue.match(queryValue)) {
+                    returnedTools.push({ id: tool.id, order, usesDl: false });
+                    usesDl = false;
+                    break;
+                } else if (key !== "exact" && distance && usesDl) {
+                    returnedTools.push({ id: tool.id, order, usesDl: true });
+                    break;
+                }
             }
         }
     }
+    const orderedTools = orderBy(returnedTools, ["order"], ["desc"]);
     // sorting results by indexed order of keys
-    return orderBy(returnedTools, ["order"], ["desc"]).map((tool) => tool.id);
+    if (!usesDl) {
+        return orderedTools.filter((tool) => !tool.usesDl).map((tool) => tool.id);
+    }
+    return orderedTools.map((tool) => tool.id);
 }
 
 export function flattenTools(tools) {
