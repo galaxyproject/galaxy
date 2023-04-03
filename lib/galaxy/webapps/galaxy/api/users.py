@@ -306,12 +306,12 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             # check that the user is requesting themselves (and they aren't del'd) unless admin
             if not trans.user_is_admin:
                 if trans.user != user or user.deleted:
-                    raise exceptions.RequestParameterInvalidException("Invalid user id specified", id=user_id)
+                    raise exceptions.RequestParameterInvalidException("Invalid user id specified")
             return user
         except exceptions.MessageException:
             raise
         except Exception:
-            raise exceptions.RequestParameterInvalidException("Invalid user id specified", id=user_id)
+            raise exceptions.RequestParameterInvalidException("Invalid user id specified")
 
     @expose_api
     def create(self, trans: GalaxyWebTransaction, payload: dict, **kwd):
@@ -389,7 +389,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             if trans.user == user_to_update:
                 self.user_manager.delete(user_to_update)
             else:
-                raise exceptions.InsufficientPermissionsException("You may only delete your own account.", id=id)
+                raise exceptions.InsufficientPermissionsException("You may only delete your own account.")
         return self.user_serializer.serialize_to_view(user_to_update, view="detailed")
 
     @web.require_admin
@@ -1115,7 +1115,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
     def _get_user(self, trans, id):
         user = self.get_user(trans, id)
         if not user:
-            raise exceptions.RequestParameterInvalidException(f"Invalid user ({id}).")
+            raise exceptions.RequestParameterInvalidException("Invalid user id specified.")
         if user != trans.user and not trans.user_is_admin:
             raise exceptions.InsufficientPermissionsException("Access denied.")
         return user
