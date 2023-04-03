@@ -1,30 +1,52 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { BCard } from "bootstrap-vue";
+import { onMounted, ref, computed } from "vue";
 import * as d3 from "d3";
 
 import type { DataValuePoint } from ".";
 
+type DataValueFormatter = (dataPoint: DataValuePoint) => string;
+
 interface PieChartProps {
     title: string;
     data: DataValuePoint[];
+    description?: string;
     width?: number;
     height?: number;
-    labelFormatter?: (dataPoint: DataValuePoint) => string;
-    tooltipFormatter?: (dataPoint: DataValuePoint) => string;
+    labelFormatter?: DataValueFormatter;
+    tooltipFormatter?: DataValueFormatter;
 }
 
 const props = withDefaults(defineProps<PieChartProps>(), {
-    width: 1000,
+    description: undefined,
+    width: 400,
     height: 400,
     labelFormatter: (dataPoint: DataValuePoint) => `${dataPoint.label}: ${dataPoint.value}`,
     tooltipFormatter: (dataPoint: DataValuePoint) => `${dataPoint.label}: ${dataPoint.value}`,
 });
 
-const chart = ref(null);
+const emit = defineEmits<{
+    (e: "show-tooltip", dataPoint: DataValuePoint, mouseX: number, mouseY: number): void;
+    (e: "hide-tooltip"): void;
+}>();
+
+const pieChart = ref(null);
+const legend = ref(null);
+
+const hasData = computed(
+    () => props.data.length > 0 && props.data.reduce((total, dataPoint) => total + dataPoint.value, 0) > 0
+);
 
 onMounted(() => {
     drawChart();
+    createLegend();
 });
+
+const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+function entryColor(d: DataValuePoint): string {
+    return color(`${d.index}`);
+}
 
 function drawChart() {
     const data = props.data;
@@ -34,47 +56,46 @@ function drawChart() {
     const radius = height / 2.2;
 
     const svg = d3
-        .select(chart.value)
+        .select(pieChart.value)
         .append("svg")
         .attr("width", width)
         .attr("height", height)
         .append("g")
-        .attr("transform", `translate(${width / 2},${height / 2})`)
-        .text(props.title);
+        .attr("transform", `translate(${width / 2},${height / 2})`);
 
-    const color = d3.scaleOrdinal(d3.schemeCategory10);
-
-    // @ts-ignore
-    const pie = d3.pie().value((d) => d.value);
+    const pie = d3.pie<DataValuePoint>().value((d) => d.value);
     const arc = d3.arc().innerRadius(0).outerRadius(radius);
 
-    // @ts-ignore
     const arcs = svg.selectAll("arc").data(pie(data)).enter().append("g").attr("class", "arc");
 
     arcs.append("path")
         // @ts-ignore
         .attr("d", arc)
         // @ts-ignore
-        .attr("fill", (d) => color(dataKey(d)));
-
-    // Create Legend
-    svg.append("g")
-        .attr("transform", `translate(${width / 4},-${height / 2.5})`)
-        .call((container) => createLegend(container, color, props.data));
-
-    addTooltips(svg);
+        .attr("fill", entryColor)
+        .on("mouseenter", (event, d) => {
+            emit("show-tooltip", d.data, event.pageX, event.pageY);
+        })
+        .on("mouseleave", () => {
+            emit("hide-tooltip");
+        });
 }
 
-function createLegend(
-    container: d3.Selection<any, any, any, any>,
-    color: d3.ScaleOrdinal<string, string>,
-    data: DataValuePoint[]
-) {
-    const titlePadding = 14; // padding between title and entries
-    const entrySpacing = 18; // spacing between legend entries
-    const entryRadius = 5; // radius of legend entry marks
-    const labelOffset = 4; // additional horizontal offset of text labels
-    const baselineOffset = 4; // text baseline offset, depends on radius and font size
+function createLegend() {
+    const data = props.data;
+    const titlePadding = 20;
+    const entrySpacing = 18;
+    const entryRadius = 5;
+    const labelOffset = 4;
+    const baselineOffset = 4;
+
+    const height = titlePadding + data.length * entrySpacing + 50;
+    const container = d3
+        .select(legend.value)
+        .append("svg")
+        .attr("height", height)
+        .append("g")
+        .attr("transform", `translate(0,${titlePadding})`);
 
     container
         .append("text")
@@ -83,7 +104,7 @@ function createLegend(
         .attr("fill", "black")
         .attr("font-weight", "bold")
         .attr("font-size", "16px")
-        .text(props.title);
+        .text("Legend");
 
     const entries = container
         .selectAll("g")
@@ -93,55 +114,50 @@ function createLegend(
 
     entries
         .append("circle")
-        .attr("cx", entryRadius) // offset symbol x-position by radius
+        .attr("cx", entryRadius)
         .attr("r", entryRadius)
-        .attr("fill", (d) => color(dataKey(d)));
+        .attr("fill", (d) => entryColor(d));
 
     entries
         .append("text")
-        .attr("x", 2 * entryRadius + labelOffset) // place labels to the left of symbols
-        .attr("y", baselineOffset) // adjust label y-position for proper alignment
+        .attr("x", 2 * entryRadius + labelOffset)
+        .attr("y", baselineOffset)
         .attr("fill", "black")
         .attr("font-size", "14px")
-        .text((d) => props.tooltipFormatter(d));
-}
-
-function addTooltips(svg: d3.Selection<SVGGElement, unknown, null, undefined>) {
-    const tooltip = d3.select(chart.value).append("div").attr("class", "tooltip").style("opacity", 0);
-
-    svg.selectAll("path")
-        .on("mouseover", (event, d) => {
-            tooltip.transition().duration(200).style("opacity", 1.0);
-            tooltip
-                // @ts-ignore
-                .html(props.tooltipFormatter(d.data))
-                .style("font-size", "18px")
-                .style("left", `${event.pageX}px`)
-                .style("top", `${event.pageY - 28}px`);
-        })
-        .on("mouseout", () => {
-            tooltip.transition().duration(500).style("opacity", 0);
-        });
-}
-
-function dataKey(d: DataValuePoint): string {
-    return `${d.index}`;
+        .text((d) => props.labelFormatter(d));
 }
 </script>
 
 <template>
-    <div ref="chart" class="pieChart"></div>
+    <b-card class="mb-3 mx-3">
+        <template v-slot:header>
+            <h3 class="text-center my-1">
+                <b>{{ title }}</b>
+            </h3>
+        </template>
+        <div v-if="hasData">
+            <p class="text-center">{{ description }}</p>
+            <div class="chartArea">
+                <div ref="pieChart" class="pieChart"></div>
+                <div ref="legend" class="legend"></div>
+            </div>
+        </div>
+        <div v-else class="text-center">
+            <p class="text-muted">No data to display. Populate some histories with datasets and come back.</p>
+        </div>
+    </b-card>
 </template>
 
 <style lang="css" scoped>
+.chartArea {
+    display: flex;
+    justify-content: center;
+}
 .pieChart {
-    text-align: center;
+    float: right;
 }
 
-.tooltip {
-    position: absolute;
-    background-color: white;
-    border: 1px solid #ddd;
-    padding: 10px;
+.legend {
+    float: left;
 }
 </style>
