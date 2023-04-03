@@ -4,7 +4,6 @@
 import { orderBy } from "lodash";
 import levenshteinDistance from "utils/levenshtein";
 
-
 const TOOLS_RESULTS_SORT_LABEL = "apiSort";
 const TOOLS_RESULTS_SECTIONS_HIDE = ["Expression Tools"];
 
@@ -120,7 +119,7 @@ export function hasResults(results) {
 // Returns tool ids sorted by order of keys that are being searched
 export function searchToolsByKeys(tools, keys, query) {
     const returnedTools = [];
-    const minimumQueryLength = 5
+    const minimumQueryLength = 5;
     let usesDl = true;
     for (const tool of tools) {
         for (const key of Object.keys(keys)) {
@@ -135,14 +134,14 @@ export function searchToolsByKeys(tools, keys, query) {
             const queryLowerCase = query.trim().toLowerCase();
             // do we care for exact matches && is it an exact match ?
             const order = keys.exact && actualValue === queryLowerCase ? keys.exact : keys[key];
-            const distance = queryLowerCase.length >= minimumQueryLength ? dLDistance(queryLowerCase, actualValue) : null;
+            const distance =
+                queryLowerCase.length >= minimumQueryLength ? dLDistance(queryLowerCase, actualValue) : null;
             if (actualValue.match(queryLowerCase)) {
                 returnedTools.push({ id: tool.id, order, usesDl: false });
                 usesDl = false;
                 break;
-            }
-            else if (key !== "combined" && distance && usesDl) {
-                returnedTools.push({ id: tool.id, order});
+            } else if (key !== "combined" && distance && usesDl) {
+                returnedTools.push({ id: tool.id, order });
                 break;
             }
         }
@@ -165,15 +164,15 @@ export function dLDistance(query, toolName) {
     const substrings = [];
     for (let i = 0; i <= toolName.length - query.length; i++) {
         substrings.push(toolName.substring(i, i + query.length));
-      }
-      
+    }
+
     // Call the levenshteinDistance algorithm with transpositions on the query and each tool name substring
-    for (let substring of substrings) {
-        let distance = levenshteinDistance(query,substring,true)
+    for (const substring of substrings) {
+        const distance = levenshteinDistance(query, substring, true);
         // Check if the substring matches our required threshold for a match
-        if (distance <= matchThreshold){
+        if (distance <= matchThreshold) {
             return true;
-        }  
+        }
     }
     return false;
 }
