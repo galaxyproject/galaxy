@@ -3272,6 +3272,7 @@ class DataManagerTool(OutputParameterJSONTool):
 
 class DatabaseOperationTool(Tool):
     default_tool_action = ModelOperationToolAction
+    require_terminal_states = True
     require_dataset_ok = True
     tool_type_local = True
 
@@ -3279,8 +3280,10 @@ class DatabaseOperationTool(Tool):
     def valid_input_states(self):
         if self.require_dataset_ok:
             return (model.Dataset.states.OK,)
-        else:
+        elif self.require_terminal_states:
             return model.Dataset.terminal_states
+        else:
+            return model.Dataset.valid_input_states
 
     @property
     def allow_errored_inputs(self):
@@ -3288,7 +3291,7 @@ class DatabaseOperationTool(Tool):
 
     def check_inputs_ready(self, input_datasets, input_dataset_collections):
         def check_dataset_state(state):
-            if state in model.Dataset.non_ready_states:
+            if self.require_terminal_states and state in model.Dataset.non_ready_states:
                 raise ToolInputsNotReadyException("An input dataset is pending.")
 
             if self.require_dataset_ok:
@@ -3324,6 +3327,8 @@ class DatabaseOperationTool(Tool):
 
 class UnzipCollectionTool(DatabaseOperationTool):
     tool_type = "unzip_collection"
+    require_terminal_states = False
+    require_dataset_ok = False
 
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         has_collection = incoming["input"]
@@ -3345,6 +3350,8 @@ class UnzipCollectionTool(DatabaseOperationTool):
 
 class ZipCollectionTool(DatabaseOperationTool):
     tool_type = "zip_collection"
+    require_terminal_states = False
+    require_dataset_ok = False
 
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         forward_o = incoming["input_forward"]
@@ -3362,6 +3369,8 @@ class ZipCollectionTool(DatabaseOperationTool):
 
 class BuildListCollectionTool(DatabaseOperationTool):
     tool_type = "build_list"
+    require_terminal_states = False
+    require_dataset_ok = False
 
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         new_elements = {}
@@ -3389,6 +3398,8 @@ class BuildListCollectionTool(DatabaseOperationTool):
 
 class ExtractDatasetCollectionTool(DatabaseOperationTool):
     tool_type = "extract_dataset"
+    require_terminal_states = False
+    require_dataset_ok = False
 
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, tags=None, **kwds):
         has_collection = incoming["input"]
@@ -3419,6 +3430,8 @@ class ExtractDatasetCollectionTool(DatabaseOperationTool):
 
 class MergeCollectionTool(DatabaseOperationTool):
     tool_type = "merge_collection"
+    require_terminal_states = False
+    require_dataset_ok = False
 
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         input_lists = []
@@ -3502,6 +3515,9 @@ class MergeCollectionTool(DatabaseOperationTool):
 
 
 class FilterDatasetsTool(DatabaseOperationTool):
+    require_terminal_states = True
+    require_dataset_ok = False
+
     def _get_new_elements(self, history, elements_to_copy):
         new_elements = {}
         for dce in elements_to_copy:
@@ -3574,6 +3590,8 @@ class FilterEmptyDatasetsTool(FilterDatasetsTool):
 
 class FlattenTool(DatabaseOperationTool):
     tool_type = "flatten_collection"
+    require_terminal_states = False
+    require_dataset_ok = False
 
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
@@ -3602,6 +3620,8 @@ class FlattenTool(DatabaseOperationTool):
 
 class SortTool(DatabaseOperationTool):
     tool_type = "sort_collection"
+    require_terminal_states = False
+    require_dataset_ok = False
 
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
@@ -3733,6 +3753,11 @@ class ApplyRulesTool(DatabaseOperationTool):
 
 class TagFromFileTool(DatabaseOperationTool):
     tool_type = "tag_from_file"
+    # We don't currently discriminate which input has to be in which state
+    # so we do need all inputs to be "ok", when in fact only the file input
+    # needs to be ok.
+    # require_terminal_states = True
+    # require_dataset_ok = False
 
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, tag_handler, **kwds):
         hdca = incoming["input"]
@@ -3841,6 +3866,8 @@ class FilterFromFileTool(DatabaseOperationTool):
 
 class DuplicateFileToCollectionTool(DatabaseOperationTool):
     tool_type = "duplicate_file_to_collection"
+    require_terminal_states = False
+    require_dataset_ok = False
 
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         hda = incoming["input"]

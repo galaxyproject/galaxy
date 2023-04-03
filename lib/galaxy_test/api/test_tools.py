@@ -694,6 +694,30 @@ class TestToolsApi(ApiTestCase, TestsTools):
             )
             assert zipped_hdca["collection_type"] == "list:paired"
 
+    @skip_without_tool("__EXTRACT_DATASET__")
+    @skip_without_tool("cat_data_and_sleep")
+    def test_database_operation_tool_with_pending_inputs(self):
+        with self.dataset_populator.test_history(require_new=False) as history_id:
+            hdca1_id = self.dataset_collection_populator.create_list_in_history(
+                history_id, contents=["a\nb\nc\nd", "e\nf\ng\nh"], wait=True
+            ).json()["outputs"][0]["id"]
+            self.dataset_populator.run_tool(
+                tool_id="cat_data_and_sleep",
+                inputs={
+                    "sleep_time": 15,
+                    "input1": {"batch": True, "values": [{"src": "hdca", "id": hdca1_id}]},
+                },
+                history_id=history_id,
+            )
+            run_response = self.dataset_populator.run_tool(
+                tool_id="__EXTRACT_DATASET__",
+                inputs={
+                    "data_collection": {"src": "hdca", "id": hdca1_id},
+                },
+                history_id=history_id,
+            )
+            assert run_response["outputs"][0]["state"] != "ok"
+
     @skip_without_tool("__FILTER_FAILED_DATASETS__")
     def test_filter_failed_list(self):
         with self.dataset_populator.test_history(require_new=False) as history_id:
