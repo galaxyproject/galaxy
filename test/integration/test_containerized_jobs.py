@@ -220,6 +220,7 @@ class TestInlineContainerConfiguration(TestMappingContainerResolver):
         config["jobs_directory"] = cls.jobs_directory
         config["job_config_file"] = cls.job_config_file
         disable_dependency_resolution(config)
+        config.pop("container_resolvers_config_file")
         container_resolvers_config = [
             {
                 "type": "mapping",
@@ -227,6 +228,68 @@ class TestInlineContainerConfiguration(TestMappingContainerResolver):
                     {
                         "container_type": "docker",
                         "tool_id": "mulled_example_broken_no_requirements",
+                        "identifier": "quay.io/biocontainers/bwa:0.7.15--0",
+                    }
+                ],
+            }
+        ]
+        config["container_resolvers"] = container_resolvers_config
+
+
+class TestPerDestinationContainerConfiguration(TestMappingContainerResolver):
+    """
+    This tests:
+    - that container_resolvers_config_file works when specified in a destination
+    - and it does so also in presence of a global container_resolvers_config
+    """
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        # make sure that job_config_file is unset and set job_config
+        # its the same content as dockerized_job_conf.yml + the per
+        # destination container_resolver_config_file
+        try:
+            config.pop("job_config_file")
+        except KeyError:
+            pass
+        config["job_config"] = {
+            "runners": {"local": {"load": "galaxy.jobs.runners.local:LocalJobRunner", "workers": 1}},
+            "execution": {
+                "default": "local_docker",
+                "environments": {
+                    "local_docker": {"runner": "local", "docker_enabled": True},
+                    "local_docker_inline_container_resolvers": {
+                        "runner": "local",
+                        "docker_enabled": True,
+                        "container_resolvers_config_file": os.path.join(
+                            SCRIPT_DIRECTORY, "fallback_container_resolver.yml"
+                        ),
+                    },
+                },
+            },
+            "tools": [
+                {"id": "upload1", "environment": "local_upload"},
+                {
+                    "id": "mulled_example_broken_no_requirements",
+                    "environment": "local_docker_inline_container_resolvers",
+                },
+            ],
+        }
+        # define a global container_resolvers (that can not work .. thereby
+        # showing that the per destination config is used) and make sure that
+        # container_resolvers_config_file is not set
+        try:
+            config.pop("container_resolvers_config_file")
+        except KeyError:
+            pass
+        container_resolvers_config = [
+            {
+                "type": "mapping",
+                "mappings": [
+                    {
+                        "container_type": "docker",
+                        "tool_id": "some_bogus_too_id",
                         "identifier": "quay.io/biocontainers/bwa:0.7.15--0",
                     }
                 ],

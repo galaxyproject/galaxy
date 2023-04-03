@@ -79,14 +79,16 @@ class ContainerFinder:
         destination_id = destination_info.get("id")  # Probably not the way to get the ID?
         destination_container_registry = None
         if destination_id and destination_id not in self.destination_container_registeries:
-            if "container_resolvers" in destination_info:
+            if "container_resolvers" in destination_info or "container_resolvers_config_file" in destination_info:
                 destination_container_registry = ContainerRegistry(
                     self.app_info,
                     destination_info=destination_info,
                     mulled_resolution_cache=self.mulled_resolution_cache,
                 )
                 self.destination_container_registeries[destination_id] = destination_container_registry
-        elif not destination_id and "container_resolvers" in destination_info:
+        elif not destination_id and (
+            "container_resolvers" in destination_info or "container_resolvers_config_file" in destination_info
+        ):
             destination_container_registry = ContainerRegistry(
                 self.app_info, destination_info=destination_info, mulled_resolution_cache=self.mulled_resolution_cache
             )
@@ -249,9 +251,11 @@ class ContainerRegistry:
         app_conf_file = getattr(app_info, "container_resolvers_config_file", None)
         app_conf_dict = getattr(app_info, "container_resolvers_config_dict", None)
 
-        if destination_info is not None:
-            conf_file = destination_info.get("container_resolvers_config_file", app_conf_file)
-            conf_dict = destination_info.get("container_resolvers", app_conf_dict)
+        if destination_info is not None and (
+            "container_resolvers" in destination_info or "container_resolvers_config_file" in destination_info
+        ):
+            conf_file = destination_info.get("container_resolvers_config_file")
+            conf_dict = destination_info.get("container_resolvers")
         else:
             conf_file = app_conf_file
             conf_dict = app_conf_dict
