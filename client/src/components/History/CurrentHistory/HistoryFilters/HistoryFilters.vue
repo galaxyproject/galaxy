@@ -44,8 +44,16 @@
             <small class="mt-1">Filter by tag:</small>
             <b-form-input v-model="filterSettings['tag:']" size="sm" placeholder="any tag" />
             <small class="mt-1">Filter by state:</small>
-            <b-form-input v-model="filterSettings['state:']" size="sm" placeholder="any state" list="stateSelect" />
-            <b-form-datalist id="stateSelect" :options="states"></b-form-datalist>
+            <b-input-group>
+                <b-form-input v-model="filterSettings['state:']" size="sm" placeholder="any state" list="stateSelect" />
+                <b-form-datalist id="stateSelect" :options="states"></b-form-datalist>
+                <b-input-group-append>
+                    <b-button title="States Help" size="sm" @click="showHelp = true">
+                        <icon icon="question" />
+                    </b-button>
+                </b-input-group-append>
+                <StatesInfo :show-help.sync="showHelp" :exclude-states="excludeStates" @set-filter="onOption" />
+            </b-input-group>
             <small>Filter by database:</small>
             <b-form-input v-model="filterSettings['genome_build:']" size="sm" placeholder="any database" />
             <small class="mt-1">Filter by related to item index:</small>
@@ -89,12 +97,14 @@
 import DebouncedInput from "components/DebouncedInput";
 import HistoryFiltersDefault from "./HistoryFiltersDefault";
 import { STATES } from "components/History/Content/model/states";
+import StatesInfo from "components/History/Content/model/StatesInfo";
 import { HistoryFilters } from "components/History/HistoryFilters";
 
 export default {
     components: {
         DebouncedInput,
         HistoryFiltersDefault,
+        StatesInfo,
     },
     props: {
         filterText: { type: String, default: null },
@@ -104,6 +114,8 @@ export default {
         return {
             create_time_gt: "",
             create_time_lt: "",
+            excludeStates: ["empty", "failed", "upload"],
+            showHelp: false,
         };
     },
     computed: {
@@ -121,7 +133,7 @@ export default {
             },
         },
         states() {
-            return Object.keys(STATES);
+            return Object.keys(STATES).filter((state) => !this.excludeStates.includes(state));
         },
     },
     watch: {
