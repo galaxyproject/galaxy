@@ -120,8 +120,7 @@ export function hasResults(results) {
 // Returns tool ids sorted by order of keys that are being searched
 export function searchToolsByKeys(tools, keys, query) {
     const returnedTools = [];
-    let lowestDistance = null;
-    let closestTool = null;
+    const minimumQueryLength = 5
     let usesDl = true;
     for (const tool of tools) {
         for (const key of Object.keys(keys)) {
@@ -136,20 +135,14 @@ export function searchToolsByKeys(tools, keys, query) {
             const queryLowerCase = query.trim().toLowerCase();
             // do we care for exact matches && is it an exact match ?
             const order = keys.exact && actualValue === queryLowerCase ? keys.exact : keys[key];
-            const distance = queryLowerCase.length >= 6 ? dLDistance(queryLowerCase, actualValue) : null;
+            const distance = queryLowerCase.length >= minimumQueryLength ? dLDistance(queryLowerCase, actualValue) : null;
             if (actualValue.match(queryLowerCase)) {
                 returnedTools.push({ id: tool.id, order, usesDl: false });
-                lowestDistance = 0;
-                closestTool = null;
                 usesDl = false;
                 break;
             }
             else if (key !== "combined" && distance && usesDl) {
-                if (key == "name" && distance && distance < lowestDistance) {
-                    lowestDistance = 
-                    closestTool = tool.name + tool.description;
-                }
-                returnedTools.push({ id: tool.id, order, usesDl: true });
+                returnedTools.push({ id: tool.id, order});
                 break;
             }
         }
