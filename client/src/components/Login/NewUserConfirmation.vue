@@ -95,9 +95,10 @@ export default {
         },
         submit() {
             const urlParams = new URLSearchParams(window.location.search);
-            const token = urlParams.get("custos_token");
+            const token = urlParams.get("provider_token");
+            const provider = urlParams.get("provider");
             axios
-                .post(withPrefix(`/authnz/custos/create_user?token=${token}`))
+                .post(withPrefix(`/authnz/${provider}/create_user?token=${token}`))
                 .then((response) => {
                     if (response.data.redirect_uri) {
                         window.location = response.data.redirect_uri;
