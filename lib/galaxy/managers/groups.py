@@ -104,7 +104,7 @@ class GroupsManager:
         decoded_group_id = self._decode_id(encoded_id)
         group = trans.sa_session.query(model.Group).get(decoded_group_id)
         if group is None:
-            raise ObjectNotFound(f"Group with id {encoded_id} was not found.")
+            raise ObjectNotFound("Group with the provided id was not found.")
         return group
 
     def _get_users_by_encoded_ids(

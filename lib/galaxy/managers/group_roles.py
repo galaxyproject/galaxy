@@ -68,14 +68,14 @@ class GroupRolesManager:
         decoded_group_id = decode_id(self._app, encoded_group_id)
         group = trans.sa_session.query(model.Group).get(decoded_group_id)
         if not group:
-            raise ObjectNotFound(f"Group with id {encoded_group_id} was not found.")
+            raise ObjectNotFound("Group with the id provided was not found.")
         return group
 
     def _get_role(self, trans: ProvidesAppContext, encoded_role_id: EncodedDatabaseIdField) -> model.Role:
         decoded_role_id = decode_id(self._app, encoded_role_id)
         role = trans.sa_session.query(model.Role).get(decoded_role_id)
         if not role:
-            raise ObjectNotFound(f"Role with id {encoded_role_id} was not found.")
+            raise ObjectNotFound("Role with the id provided was not found.")
         return role
 
     def _get_group_role(

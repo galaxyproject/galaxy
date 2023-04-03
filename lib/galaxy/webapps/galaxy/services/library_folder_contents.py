@@ -82,7 +82,7 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
                 log.warning(
                     f"SECURITY: Anonymous user is trying to load restricted folder with ID of {decoded_folder_id}"
                 )
-            raise exceptions.ObjectNotFound(f"Folder with the id provided ( {folder_id} ) was not found")
+            raise exceptions.ObjectNotFound("Folder with the id provided was not found")
 
         folder_contents = []
         update_time = ""
