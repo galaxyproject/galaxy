@@ -56,14 +56,31 @@ function handleClick(value: string) {
     if (!props.multiple) {
         emit("input", value);
     }
-    
 }
 
-//TODO implement selectAll
+function selectAll(selected: boolean) {
+    const newValue: string[] = [];
+    if (selected) {
+        props.options.forEach((option) => {
+            selectRecursively(option, newValue);
+        });
+    }
+    emit("input", newValue.length === 0 ? null : newValue);
+}
+
+function selectRecursively(option: Option, currentValue: string[]) {
+    currentValue.push(option.value);
+    if (option.options.length > 0) {
+        option.options.forEach((option) => {
+            selectRecursively(option, currentValue);
+        });
+    }
+}
 </script>
 
 <template>
     <div v-if="hasOptions">
+        <b-form-checkbox v-if="props.multiple" class="d-inline" :selected="false" @change="selectAll" />
         <form-drilldown-list
             :multiple="props.multiple"
             :current-value="currentValue"
