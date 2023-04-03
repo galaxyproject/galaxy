@@ -16,6 +16,7 @@
         <input>
             <name>explorer</name>
             <value>false</value>
+            <type>boolean</type>
         </input>
     </settings>
 </visualization>

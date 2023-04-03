@@ -108,6 +108,7 @@ class DatasetContentType(str, Enum):
     stats = "stats"
     data = "data"
 
+
 class ConcreteObjectStoreQuotaSourceDetails(Model):
     source: Optional[str] = Field(
         description="The quota source label corresponding to the object store the dataset is stored in (or would be stored in)"
