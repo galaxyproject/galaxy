@@ -86,14 +86,13 @@ export default {
             const duration = 750;
             const maxTextLength = 20;
             const svg = d3.select("#tool-recommendation").append("svg").attr("class", "tree-size").append("g");
-            const gElem = svg._groups[0][0];
-            const svgElem = gElem.parentNode;
+            const svgElem = svg.node().parentElement;
             const clientH = svgElem.clientHeight;
             const clientW = svgElem.clientWidth;
             const translateX = parseInt(clientW * 0.15);
             svgElem.setAttribute("viewBox", -translateX + " 0 " + 0.5 * clientW + " " + clientH);
             svgElem.setAttribute("preserveAspectRatio", "xMidYMid meet");
-            var d3Tree = d3.tree().size([clientH, clientW]);
+            const d3Tree = d3.tree().size([clientH, clientW]);
             root = d3.hierarchy(predictedTools, (d) => {
                 return d.children;
             });
