@@ -42,6 +42,9 @@
                 <div v-else-if="queryFinished" class="pb-2">
                     <b-badge class="alert-danger w-100">No results found!</b-badge>
                 </div>
+                <div v-else-if="misspelled" class="pb-2">
+                    <b-badge class="alert-danger w-100">You made a typo!</b-badge>
+                </div>
             </section>
         </div>
         <div v-if="!showAdvanced" class="unified-panel-body">
@@ -124,6 +127,9 @@ export default {
         },
         queryFinished() {
             return this.query && this.queryPending != true;
+        },
+        misspelled(){
+            return this.query && this.query.length >= 2;
         },
         sections() {
             if (this.showSections) {

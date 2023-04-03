@@ -166,19 +166,17 @@ export function flattenTools(tools) {
     return normalizedTools;
 
 export function dLDistance(query, toolName) {
-    const searchTerm = query;
-    const queryLength = query.length;
     const matchThreshold = 1;
 
     // Create array of all substrings of query length for a given tool name
     const substrings = [];
-    for (let i = 0; i <= toolName.length - queryLength; i++) {
-        substrings.push(toolName.substring(i, i + queryLength));
+    for (let i = 0; i <= toolName.length - query.length; i++) {
+        substrings.push(toolName.substring(i, i + query.length));
       }
-
+      
     // Call the levenshteinDistance algorithm with transpositions on the query and each tool name substring
     for (let substring of substrings) {
-        let distance = levenshteinDistance(searchTerm,substring,true)
+        let distance = levenshteinDistance(query,substring,true)
         // Check if the substring matches our required threshold for a match
         if (distance <= matchThreshold){
             return true;
