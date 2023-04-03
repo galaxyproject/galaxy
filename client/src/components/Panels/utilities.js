@@ -2,6 +2,8 @@
  * Utilities file for Panel Searches (panel/client search + advanced/backend search)
  */
 import { orderBy } from "lodash";
+import levenshteinDistance from "utils/levenshtein";
+
 
 const TOOLS_RESULTS_SORT_LABEL = "apiSort";
 const TOOLS_RESULTS_SECTIONS_HIDE = ["Expression Tools"];
@@ -118,6 +120,9 @@ export function hasResults(results) {
 // Returns tool ids sorted by order of keys that are being searched
 export function searchToolsByKeys(tools, keys, query) {
     const returnedTools = [];
+    let lowestDistance = null;
+    let closestTool = null;
+    let usesDl = true;
     for (const tool of tools) {
         for (const key of Object.keys(keys)) {
             let actualValue = "";
@@ -131,12 +136,21 @@ export function searchToolsByKeys(tools, keys, query) {
             const queryLowerCase = query.trim().toLowerCase();
             // do we care for exact matches && is it an exact match ?
             const order = keys.exact && actualValue === queryLowerCase ? keys.exact : keys[key];
+            const distance = queryLowerCase.length >= 6 ? dLDistance(queryLowerCase, actualValue) : null;
             if (actualValue.match(queryLowerCase)) {
-                returnedTools.push({ id: tool.id, order });
+                returnedTools.push({ id: tool.id, order, usesDl: false });
+                lowestDistance = 0;
+                closestTool = null;
+                usesDl = false;
                 break;
             }
-            else if (key !== "combined" && queryLowerCase.length >= 6 && dLDistance(queryLowerCase, actualValue)) {
-                returnedTools.push({ id: tool.id, order });
+            else if (key !== "combined" && distance && usesDl) {
+                if (key == "name" && distance && distance < lowestDistance) {
+                    lowestDistance = 
+                    closestTool = tool.name + tool.description;
+                }
+                returnedTools.push({ id: tool.id, order, usesDl: true });
+                break;
             }
         }
     }
@@ -151,33 +165,22 @@ export function flattenTools(tools) {
     });
     return normalizedTools;
 
-export function dLDistance(query, value) {
+export function dLDistance(query, toolName) {
     const searchTerm = query;
     const queryLength = query.length;
-    const toolName = value;
-    const threshold = 1;
+    const matchThreshold = 1;
 
-    // Initialize the matrix for the Damerau-Levenshtein distance algorithm
+    // Create array of all substrings of query length for a given tool name
     const substrings = [];
     for (let i = 0; i <= toolName.length - queryLength; i++) {
         substrings.push(toolName.substring(i, i + queryLength));
       }
 
-    // Initialize the matrix for the Damerau-Levenshtein distance algorithm
+    // Call the levenshteinDistance algorithm with transpositions on the query and each tool name substring
     for (let substring of substrings) {
-        const matrix = [];
-        for (let i = 0; i <= queryLength; i++) {
-            matrix[i] = [];
-            for (let j = 0; j <= substring.length; j++) {
-                const cost = i === 0 || j === 0 ? i + j : searchTerm[i - 1] === substring[j - 1] ? matrix[i - 1][j - 1] : Math.min(matrix[i][j - 1], matrix[i - 1][j], matrix[i - 1][j - 1]) + 1;
-                matrix[i][j] = cost;
-                if (i > 1 && j > 1 && searchTerm[i - 1] === substring[j - 2] && searchTerm[i - 2] === substring[j - 1]) {
-                matrix[i][j] = Math.min(matrix[i][j], matrix[i - 2][j - 2] + cost);
-                }
-            }
-        }
+        let distance = levenshteinDistance(searchTerm,substring,true)
         // Check if the substring matches our required threshold for a match
-        if (matrix[queryLength][substring.length] <= threshold){
+        if (distance <= matchThreshold){
             return true;
         }  
     }
