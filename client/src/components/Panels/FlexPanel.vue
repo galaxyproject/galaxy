@@ -21,10 +21,23 @@ function toggle() {
         <div class="d-flex flex-column">
             <slot v-if="show" />
             <div v-else class="flex-fill" />
-            <div class="align-self-end px-2 py-1" @click="toggle">
-                <icon v-if="show" icon="chevron-right" />
+            <div class="flex-panel-footer d-flex px-2 p-1" :class="{ 'flex-panel-border': !show }" @click="toggle">
+                <div class="flex-fill" />
+                <icon v-if="show" class="align-self-end" icon="chevron-right" />
                 <icon v-else icon="chevron-left" />
             </div>
         </div>
     </div>
 </template>
+
+<style>
+@import "theme/blue.scss";
+.flex-panel-footer {
+    background: $panel-footer-bg-color;
+    cursor: pointer;
+}
+.flex-panel-border {
+    border: $border-default;
+    border-top-left-radius: $border-radius-base;
+}
+</style>
