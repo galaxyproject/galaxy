@@ -5,6 +5,7 @@ import { useUserStore } from "@/stores/userStore";
 import HistoryIndex from "@/components/History/Index.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import DragAndDropModal from "@/components/Upload/DragAndDropModal.vue";
+import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import { WindowManager } from "@/layout/window-manager";
 import { useRoute, useRouter } from "vue-router/composables";
 import { computed, ref, onMounted, onUnmounted } from "vue";
@@ -57,7 +58,9 @@ onUnmounted(() => {
             <CenterFrame v-show="showCenter" id="galaxy_main" @load="onLoad" />
             <router-view v-show="!showCenter" :key="$route.fullPath" class="h-100" />
         </div>
-        <HistoryIndex v-if="showPanels" class="right-column" />
+        <FlexPanel side="right">
+            <HistoryIndex v-if="showPanels" class="right-column" />
+        </FlexPanel>
         <DragAndDropModal />
     </div>
 </template>
