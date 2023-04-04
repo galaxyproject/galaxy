@@ -18,7 +18,7 @@ function toggle() {
 
 <template>
     <div class="d-flex">
-        <div class="d-flex flex-column">
+        <div class="d-flex flex-column" :class="{ 'flex-panel-column': show }">
             <slot v-if="show" />
             <div v-else class="flex-fill" />
             <div class="flex-panel-footer d-flex px-2 p-1" :class="{ 'flex-panel-border': !show }" @click="toggle">
@@ -32,6 +32,9 @@ function toggle() {
 
 <style>
 @import "theme/blue.scss";
+.flex-panel-column {
+    width: 18rem;
+}
 .flex-panel-footer {
     background: $panel-footer-bg-color;
     cursor: pointer;

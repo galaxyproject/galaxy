@@ -59,18 +59,8 @@ onUnmounted(() => {
             <router-view v-show="!showCenter" :key="$route.fullPath" class="h-100" />
         </div>
         <FlexPanel side="right">
-            <HistoryIndex v-if="showPanels" class="right-column" />
+            <HistoryIndex v-if="showPanels" />
         </FlexPanel>
         <DragAndDropModal />
     </div>
 </template>
-
-<style scoped>
-@import "theme/blue.scss";
-
-.right-column {
-    min-width: 18rem;
-    max-width: 18rem;
-    width: 18rem;
-}
-</style>
