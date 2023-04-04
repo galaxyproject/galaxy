@@ -120,7 +120,7 @@ export function hasResults(results) {
 // Does a direct string.match() comparison to find results,
 // If that produces nothing, runs levenshtein distance alg to allow misspells
 // Returns tool ids sorted by order of keys that are being searched
-export function searchToolsByKeys(tools, keys, query, usesDl = false) {
+export function searchToolsByKeys(tools, keys, query, usesDl = false, usesDLAgain = false) {
     const returnedTools = [];
     const minimumQueryLength = 5;
     for (const tool of tools) {
@@ -142,8 +142,11 @@ export function searchToolsByKeys(tools, keys, query, usesDl = false) {
                 if (!usesDl && actualValue.match(queryValue)) {
                     returnedTools.push({ id: tool.id, order });
                     break;
-                } else if (usesDl && queryValue.length >= minimumQueryLength) {
-                    if (dLDistance(queryValue, actualValue)) {
+                } else if (queryValue.length >= minimumQueryLength) {
+                    if (usesDl && key == "name" && dLDistance(queryValue, actualValue)) {
+                        returnedTools.push({ id: tool.id, order });
+                        break;
+                    } else if (usesDLAgain && key != "name" && dLDistance(queryValue, actualValue)) {
                         returnedTools.push({ id: tool.id, order });
                         break;
                     }
@@ -154,6 +157,8 @@ export function searchToolsByKeys(tools, keys, query, usesDl = false) {
     // no results with string.match(): maybe user misspelled, so try usesDl = true
     if (!usesDl && returnedTools.length == 0) {
         return searchToolsByKeys(tools, keys, query, true);
+    } else if (!usesDLAgain && returnedTools.length == 0) {
+        return searchToolsByKeys(tools, keys, query, false, true);
     }
     // sorting results by indexed order of keys
     return orderBy(returnedTools, ["order"], ["desc"]).map((tool) => tool.id);
@@ -186,7 +191,12 @@ function dLDistance(query, toolName) {
         );
     }
     // check to see if any substings have a levenshtein distance less than the max distance and return True or False
-    return substrings.concat(toolName).some((substring) => levenshteinDistance(query, substring, true) <= maxDistance);
+    for (const substring of substrings) {
+        if (levenshteinDistance(query, substring, true) <= maxDistance) {
+            return true;
+        }
+    }
+    return false;
 }
 
 function isToolObject(tool) {
