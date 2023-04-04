@@ -1,3 +1,4 @@
+import mimetypes
 from tempfile import NamedTemporaryFile
 from typing import (
     Any,
@@ -125,10 +126,7 @@ def model_store_storage_target(
 ) -> ShortTermStorageTarget:
     cleaned_filename = ready_name_for_url(file_name)
     filename_with_extension = f"{cleaned_filename}.{model_store_format}"
-    if model_store_format.endswith("gz"):
-        mime_type = "application/x-gzip"
-    else:
-        mime_type = "application/x-tar"
+    mime_type = mimetypes.guess_type(filename_with_extension)[0] or "application/octet-stream"
 
     return short_term_storage_allocator.new_target(
         filename_with_extension,
