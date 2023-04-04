@@ -116,7 +116,7 @@ describe("test helpers in tool searching utilities", () => {
     it("test tool fuzzy search", async () => {
         const expectedResults = ["__FILTER_FAILED_DATASETS__", "__FILTER_EMPTY_DATASETS__"];
         const keys = { description: 1, name: 2, combined: 0 };
-        const queries = [" filtr", "FILYER", "Fitler", "dataseas from a collection"]; // deletion, substitution, transpose, description
+        const queries = ["Fillter", " filtr", "FILYER", "Fitler", "datases from a collection", "from a colleection"];
         queries.forEach((q) => {
             const results = searchToolsByKeys(normalizeTools(toolsList), keys, q);
             expect(results).toEqual(expectedResults);

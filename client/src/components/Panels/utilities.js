@@ -120,10 +120,9 @@ export function hasResults(results) {
 // Does a direct string.match() comparison to find results,
 // If that produces nothing, runs levenshtein distance alg to allow misspells
 // Returns tool ids sorted by order of keys that are being searched
-export function searchToolsByKeys(tools, keys, query) {
+export function searchToolsByKeys(tools, keys, query, usesDl = false) {
     const returnedTools = [];
     const minimumQueryLength = 5;
-    let usesDl = true;
     for (const tool of tools) {
         for (const key of Object.keys(keys)) {
             if (tool[key] || key === "combined") {
@@ -140,24 +139,26 @@ export function searchToolsByKeys(tools, keys, query) {
                 });
                 // do we care for exact matches && is it an exact match ?
                 const order = keys.exact && actualValue === queryValue ? keys.exact : keys[key];
-                const distance = queryValue.length >= minimumQueryLength ? dLDistance(queryValue, actualValue) : null;
-                if (actualValue.match(queryValue)) {
-                    returnedTools.push({ id: tool.id, order, usesDl: false });
-                    usesDl = false;
+                if (!usesDl && actualValue.match(queryValue)) {
+                    returnedTools.push({ id: tool.id, order });
                     break;
-                } else if (key !== "exact" && distance && usesDl) {
-                    returnedTools.push({ id: tool.id, order, usesDl: true });
-                    break;
+                } else if (usesDl) {
+                    const distance =
+                        queryValue.length >= minimumQueryLength ? dLDistance(queryValue, actualValue) : null;
+                    if (distance) {
+                        returnedTools.push({ id: tool.id, order });
+                        break;
+                    }
                 }
             }
         }
     }
-    const orderedTools = orderBy(returnedTools, ["order"], ["desc"]);
-    // sorting results by indexed order of keys
-    if (!usesDl) {
-        return orderedTools.filter((tool) => !tool.usesDl).map((tool) => tool.id);
+    // no results with string.match(): maybe user misspelled, so try usesDl = true
+    if (!usesDl && returnedTools.length == 0) {
+        return searchToolsByKeys(tools, keys, query, true);
     }
-    return orderedTools.map((tool) => tool.id);
+    // sorting results by indexed order of keys
+    return orderBy(returnedTools, ["order"], ["desc"]).map((tool) => tool.id);
 }
 
 export function flattenTools(tools) {
@@ -171,15 +172,23 @@ export function dLDistance(query, toolName) {
     // Max distance a query and tool name substring can be apart
     const maxDistance = 1;
     // Create an array of all toolName substrings that are query length, query length -1, and query length + 1
-    const substrings = Array.from({ length: toolName.length - query.length + 1 }, (_, i) => toolName.substr(i, query.length));
+    const substrings = Array.from({ length: toolName.length - query.length + 1 }, (_, i) =>
+        toolName.substr(i, query.length)
+    );
     if (query.length > 1) {
-        substrings.push(...Array.from({ length: toolName.length - query.length + 2 }, (_, i) => toolName.substr(i, query.length - 1)));
+        substrings.push(
+            ...Array.from({ length: toolName.length - query.length + 2 }, (_, i) =>
+                toolName.substr(i, query.length - 1)
+            )
+        );
     }
     if (toolName.length > query.length) {
-        substrings.push(...Array.from({ length: toolName.length - query.length }, (_, i) => toolName.substr(i, query.length + 1)));
+        substrings.push(
+            ...Array.from({ length: toolName.length - query.length }, (_, i) => toolName.substr(i, query.length + 1))
+        );
     }
     // check to see if any substings have a levenshtein distance less than the max distance and return True or False
-    return substrings.concat(toolName).some(substring => levenshteinDistance(query, substring, true) <= maxDistance);
+    return substrings.concat(toolName).some((substring) => levenshteinDistance(query, substring, true) <= maxDistance);
 }
 
 function isToolObject(tool) {
