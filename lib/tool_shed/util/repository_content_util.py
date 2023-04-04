@@ -30,7 +30,6 @@ def upload_tar(
         message = "{} Invalid paths were: {}".format(" ".join(check_results.errors), ", ".join(check_results.invalid))
         return False, message, [], "", undesirable_dirs_removed, undesirable_files_removed
     else:
-        repository.hg_repo
         repo_dir = repository.repo_path(trans.app)
         if upload_point is not None:
             full_path = os.path.abspath(os.path.join(repo_dir, upload_point))
