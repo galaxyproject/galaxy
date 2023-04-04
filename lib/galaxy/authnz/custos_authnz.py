@@ -14,10 +14,7 @@ import requests
 from oauthlib.common import generate_nonce
 from requests_oauthlib import OAuth2Session
 
-from galaxy import (
-    exceptions,
-    util,
-)
+from galaxy import util
 from galaxy.model import (
     CustosAuthnzToken,
     User,
@@ -174,7 +171,7 @@ class CustosAuthnz(IdentityProvider):
                 refresh_expiration_time=refresh_expiration_time,
             )
             label = self.config['label']
-            if existing_user:
+            if existing_user and existing_user != user:
                 redirect_url = (
                     f"{login_redirect_url}user/external_ids"
                     f"?email_exists={email}"
