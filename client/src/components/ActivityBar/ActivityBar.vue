@@ -33,26 +33,30 @@ function showVisualizationList() {
 </script>
 <template>
     <div class="d-flex">
-        <b-nav vertical class="activity-bar flex-nowrap p-1">
-            <upload-item />
-            <ActivityItem
-                id="tools"
-                icon="wrench"
-                title="Tools"
-                tooltip="Search and run tools"
-                :is-active="sidebarIsActive('search')"
-                @click="onToggleSidebar('search')" />
-            <workflow-item :workflows="workflows" />
-            <ActivityItem
-                id="activity-visualization"
-                icon="chart-bar"
-                title="Visualize"
-                tooltip="Visualize datasets"
-                @click="showVisualizationList" />
-        </b-nav>
-        <div class="activity-footer">
+        <div class="activity-bar d-flex flex-column">
+            <b-nav vertical class="flex-nowrap p-1 h-100 vertical-overflow">
+                <upload-item />
+                <ActivityItem
+                    id="activity-tools"
+                    icon="wrench"
+                    title="Tools"
+                    tooltip="Search and run tools"
+                    :is-active="sidebarIsActive('search')"
+                    @click="onToggleSidebar('search')" />
+                <workflow-item :workflows="workflows" />
+                <ActivityItem
+                    id="activity-visualization"
+                    icon="chart-bar"
+                    title="Visualize"
+                    tooltip="Visualize datasets"
+                    @click="showVisualizationList" />
+            </b-nav>
             <b-nav vertical class="flex-nowrap p-1">
-                <ActivityItem id="settings" icon="cog" title="Configure" tooltip="Configure the Activity Bar" />
+                <ActivityItem
+                    id="activity-settings"
+                    icon="cog"
+                    title="Configure"
+                    tooltip="Configure the Activity Bar" />
             </b-nav>
         </div>
         <div v-show="sidebarIsActive('search')" key="search">
@@ -70,20 +74,11 @@ function showVisualizationList() {
 
 .activity-bar {
     background: $panel-bg-color;
-    overflow-y: auto;
-    overflow-x: hidden;
     width: 4rem;
 }
 
 .activity-bar::-webkit-scrollbar {
     display: none;
-}
-
-.activity-footer {
-    @extend .activity-bar;
-    position: absolute;
-    left: 0;
-    bottom: 0px;
 }
 
 .panels-enter-active,
@@ -94,5 +89,10 @@ function showVisualizationList() {
 .panels-enter,
 .panels-leave-to {
     transform: translateX(-100%);
+}
+
+.vertical-overflow {
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 </style>
