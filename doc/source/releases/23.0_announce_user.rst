@@ -71,7 +71,7 @@ It's easier than ever to change the datatype of every dataset in a collection us
 
 .. raw:: html
 
-   <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/SNvne6GdKzs" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen alt="Video of a user using the new search interface to find collection operations tools, and then a Filter tool."></iframe>
+   <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/SNvne6GdKzs" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen alt="Video of a user changing the datatype for a dataset collection."></iframe>
 
 
 RO-Crate / Biocompute Workflow Invocation Export
