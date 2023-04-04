@@ -142,10 +142,8 @@ export function searchToolsByKeys(tools, keys, query, usesDl = false) {
                 if (!usesDl && actualValue.match(queryValue)) {
                     returnedTools.push({ id: tool.id, order });
                     break;
-                } else if (usesDl) {
-                    const distance =
-                        queryValue.length >= minimumQueryLength ? dLDistance(queryValue, actualValue) : null;
-                    if (distance) {
+                } else if (usesDl && queryValue.length >= minimumQueryLength) {
+                    if (dLDistance(queryValue, actualValue)) {
                         returnedTools.push({ id: tool.id, order });
                         break;
                     }
@@ -168,7 +166,7 @@ export function flattenTools(tools) {
     });
     return normalizedTools;
 
-export function dLDistance(query, toolName) {
+function dLDistance(query, toolName) {
     // Max distance a query and tool name substring can be apart
     const maxDistance = 1;
     // Create an array of all toolName substrings that are query length, query length -1, and query length + 1
