@@ -169,22 +169,11 @@ export function flattenTools(tools) {
 
 export function dLDistance(query, toolName) {
     const matchThreshold = 1;
-
-    // Create array of all substrings of query length for a given tool name
-    const substrings = [];
-    for (let i = 0; i <= toolName.length - query.length; i++) {
-        substrings.push(toolName.substring(i, i + query.length));
+    const substrings = Array.from({ length: toolName.length - query.length + 1 }, (_, i) => toolName.substr(i, query.length));
+    if (query.length > 1) {
+        substrings.push(...Array.from({ length: toolName.length - query.length + 2 }, (_, i) => toolName.substr(i, query.length - 1)));
     }
-
-    // Call the levenshteinDistance algorithm with transpositions on the query and each tool name substring
-    for (const substring of substrings) {
-        const distance = levenshteinDistance(query, substring, true);
-        // Check if the substring matches our required threshold for a match
-        if (distance <= matchThreshold) {
-            return true;
-        }
-    }
-    return false;
+    return substrings.concat(toolName).some(substring => levenshteinDistance(query, substring, true) <= matchThreshold);
 }
 
 function isToolObject(tool) {
