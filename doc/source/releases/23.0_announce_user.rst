@@ -45,6 +45,14 @@ Power User Features
 
 Are you a long time Galaxy user looking to up-skill into a real power user? Check out these new features to take your skills to the next level.
 
+Conditional Workflow Steps
+--------------------------
+
+You can now dynamically decide if steps of your workflow should be skipped. Simply select a tool or subworkflow step that you want to conditionally skip and switch the "Conditionally skip step?" toggle. A new boolean input named "when" appears. You can now connect a boolean parameter to this input, and if the value of the boolean parameter is `true` the step will run, otherwise it will be skipped. Outputs from conditional steps are marked as optional and can only be connected to optional inputs. If you want to build an "or" switch you can connect the two branches of a conditional to the "Pick parameter value" expression tool. Boolean parameters can be specified by a user or computed within your workflow. For more details check out the `Galaxy Training Network tutorial on workflow parameters <https://training.galaxyproject.org/training-material/topics/galaxy-interface/tutorials/workflow-parameters/tutorial.html>`__.
+
+.. figure:: images/23.0-conditional-workflow.png
+   :alt: Screenshot of a workflow with 2 conditional steps. Step 1 is a data input, Step 2 is a text parameter with 2 possible pre-specified values, bowtie2 and bwa-mem2. Step 3 and Step 4 use "Map parameter value" expression tool to generate a boolean value based on the user selection in Step 2. Step 3 is connected to the conditional `when` parameter in Step 5 (Bowtie2), Step 4 is connected to the conditional `when` parameter in Step 6. The outputs of Bowtie2 and bwa-mem2 are connected to the "Pick parameter value" tool, which selects the first non-null dataset. The output of the "Pick parameter value" tool is a normal dataset output and is connected to "Samtools view".
+
 Faster Upload
 -------------
 
