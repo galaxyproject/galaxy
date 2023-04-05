@@ -27,6 +27,7 @@ const props = withDefaults(defineProps<PieChartProps>(), {
 
 const emit = defineEmits<{
     (e: "show-tooltip", dataPoint: DataValuePoint, mouseX: number, mouseY: number): void;
+    (e: "move-tooltip", mouseX: number, mouseY: number): void;
     (e: "hide-tooltip"): void;
 }>();
 
@@ -75,6 +76,9 @@ function drawChart() {
         .attr("fill", entryColor)
         .on("mouseenter", (event, d) => {
             emit("show-tooltip", d.data, event.pageX, event.pageY);
+        })
+        .on("mousemove", (event, d) => {
+            emit("move-tooltip", event.pageX, event.pageY);
         })
         .on("mouseleave", () => {
             emit("hide-tooltip");
