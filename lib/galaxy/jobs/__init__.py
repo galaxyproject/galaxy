@@ -1058,6 +1058,7 @@ class MinimalJobWrapper(HasResourceParameters):
             job = self.get_job()
             work_request = WorkRequestContext(self.app, user=job.user)
             user_context = ProvidesUserFileSourcesUserContext(work_request)
+            tool_source = self.tool and self.tool.tool_source.to_string()
             self._job_io = JobIO(
                 sa_session=self.sa_session,
                 job=job,
@@ -1079,9 +1080,9 @@ class MinimalJobWrapper(HasResourceParameters):
                 check_job_script_integrity=self.app.config.check_job_script_integrity,
                 check_job_script_integrity_count=self.app.config.check_job_script_integrity_count,
                 check_job_script_integrity_sleep=self.app.config.check_job_script_integrity_sleep,
-                tool_source=self.tool.tool_source.to_string(),
-                tool_source_class=type(self.tool.tool_source).__name__,
-                tool_dir=self.tool.tool_dir,
+                tool_source=tool_source,
+                tool_source_class=type(self.tool.tool_source).__name__ if self.tool else None,
+                tool_dir=self.tool and self.tool.tool_dir,
                 is_task=self.is_task,
             )
         return self._job_io
@@ -1412,13 +1413,16 @@ class MinimalJobWrapper(HasResourceParameters):
                 # a better message
                 etype, evalue, tb = sys.exc_info()
 
-            if self.outputs_to_working_directory and not self.__link_file_check() and working_directory_exists:
-                for dataset_path in self.job_io.get_output_fnames():
-                    try:
-                        shutil.move(dataset_path.false_path, dataset_path.real_path)
-                        log.debug("fail(): Moved %s to %s", dataset_path.false_path, dataset_path.real_path)
-                    except OSError as e:
-                        log.error("fail(): Missing output file in working directory: %s", unicodify(e))
+            try:
+                if self.outputs_to_working_directory and not self.__link_file_check() and working_directory_exists:
+                    for dataset_path in self.job_io.get_output_fnames():
+                        try:
+                            shutil.move(dataset_path.false_path, dataset_path.real_path)
+                            log.debug("fail(): Moved %s to %s", dataset_path.false_path, dataset_path.real_path)
+                        except OSError as e:
+                            log.error("fail(): Missing output file in working directory: %s", unicodify(e))
+            except Exception as e:
+                log.exception(str(e))
             for dataset_assoc in job.output_datasets + job.output_library_datasets:
                 dataset = dataset_assoc.dataset
                 self.sa_session.refresh(dataset)
@@ -1563,12 +1567,12 @@ class MinimalJobWrapper(HasResourceParameters):
 
     @property
     def home_target(self):
-        home_target = self.tool.home_target
+        home_target = self.tool and self.tool.home_target
         return home_target
 
     @property
     def tmp_target(self):
-        return self.tool.tmp_target
+        return self.tool and self.tool.tmp_target
 
     def get_destination_configuration(self, key, default=None):
         """Get a destination parameter that can be defaulted back
