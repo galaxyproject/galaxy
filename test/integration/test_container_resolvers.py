@@ -4,6 +4,7 @@ import re
 from tempfile import mkdtemp
 from typing import (
     Any,
+    ClassVar,
     Dict,
     List,
     Optional,
@@ -107,6 +108,7 @@ class DockerContainerResolverTestCase(IntegrationTestCase):
     container_type: str = "docker"
     dataset_populator: DatasetPopulator
     framework_tool_and_types = True
+    conda_tmp_prefix: ClassVar[str]
     jobs_directory: str
     allow_conda_fallback: bool = False
 
@@ -227,7 +229,7 @@ class SingularityContainerResolverTestCase(DockerContainerResolverTestCase):
         _assert_container_in_cache_singularity(cache_directory, cached, container_name, namespace, hash_func)
 
 
-class ResolverTestProtocol(Protocol):
+class ContainerResolverTestProtocol(Protocol):
     """
     Helper class defining methods and properties needed to
     use ContainerResolverTestCases
@@ -344,7 +346,7 @@ class ContainerResolverTestCases:
     but for listing and building containers the AdminUI does not set a container type.
     """
 
-    def test_tool_run(self: ResolverTestProtocol, history_id: str) -> None:
+    def test_tool_run(self: ContainerResolverTestProtocol, history_id: str) -> None:
         """
         test running a tool
 
@@ -381,8 +383,8 @@ class ContainerResolverTestCases:
             for o in self.assumptions["run"]["output"]:
                 assert o in output
 
-    def _check_status(self: ResolverTestProtocol, status: Dict[str, Any], assumptions: Dict[str, Any]) -> None:
-        """see ResolverTestProtocol._check_status"""
+    def _check_status(self: ContainerResolverTestProtocol, status: Dict[str, Any], assumptions: Dict[str, Any]) -> None:
+        """see ContainerResolverTestProtocol._check_status"""
         if "unresolved" in assumptions:
             assert status["model_class"] == "NullDependency"
             assert status["dependency_type"] is None
@@ -403,7 +405,7 @@ class ContainerResolverTestCases:
                 resolver_type=assumptions["resolver_type"],
             )
 
-    def test_api_container_resolvers_toolbox(self: ResolverTestProtocol) -> None:
+    def test_api_container_resolvers_toolbox(self: ContainerResolverTestProtocol) -> None:
         """
         test container resolvers via GET container_resolvers/toolbox
 
@@ -439,7 +441,7 @@ class ContainerResolverTestCases:
         status = response[0]["status"]
         self._check_status(status, self.assumptions["list"][1])
 
-    def test_api_container_resolvers_toolbox_install(self: ResolverTestProtocol) -> None:
+    def test_api_container_resolvers_toolbox_install(self: ContainerResolverTestProtocol) -> None:
         """
         test container resolvers via POST container_resolvers/toolbox/install
 
