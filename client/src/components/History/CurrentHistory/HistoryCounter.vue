@@ -55,7 +55,7 @@ onMounted(() => {
 });
 
 function onDashboard() {
-    router.push("/storage");
+    router.push({ name: "HistoryOverview", params: { historyId: props.history.id } });
 }
 
 function setFilter(filter: string) {
