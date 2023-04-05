@@ -1,4 +1,5 @@
 """This module describes the :class:`ExplicitContainerResolver` ContainerResolver plugin."""
+import copy
 import logging
 import os
 from typing import cast
@@ -79,11 +80,10 @@ class CachedExplicitSingularityContainerResolver(CliContainerResolver):
         hence the container_description hack here.
         """
         for container_description in tool_info.container_descriptions:  # type: ContainerDescription
+            container_description = copy.copy(container_description)
             if container_description.type == "docker":
-                desc_dict = container_description.to_dict()
-                desc_dict["type"] = self.container_type
-                desc_dict["identifier"] = f"docker://{container_description.identifier}"
-                container_description = container_description.from_dict(desc_dict)
+                container_description.type = self.container_type
+                container_description.identifier = f"docker://{container_description.identifier}"
             if not self._container_type_enabled(container_description, enabled_container_types):
                 return None
             if not self.cli_available:
