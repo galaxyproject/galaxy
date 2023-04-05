@@ -36,8 +36,8 @@ const legend = ref(null);
 const chartTooltip = ref<HTMLBaseElement | null>(null);
 const tooltipDataPoint = ref<DataValuePoint | null>(null);
 
+const total = computed(() => props.data.reduce((total, dataPoint) => total + dataPoint.value, 0));
 const showTooltip = computed(() => props.enableTooltips && tooltipDataPoint.value !== null);
-
 const hasData = computed(
     () => props.data.length > 0 && props.data.reduce((total, dataPoint) => total + dataPoint.value, 0) > 0
 );
@@ -64,7 +64,7 @@ function drawChart() {
         .append("g")
         .attr("transform", `translate(${width / 2},${height / 2})`);
 
-    const pie = d3.pie<DataValuePoint>().value((d) => d.value);
+    const pie = d3.pie<DataValuePoint>().value(applyThresholdToValue);
     const arc = d3.arc().innerRadius(0).outerRadius(radius);
 
     const arcs = svg.selectAll("arc").data(pie(data)).enter().append("g").attr("class", "arc");
@@ -150,6 +150,12 @@ function setupTooltipEvents(arcs: d3.Selection<SVGGElement, d3.PieArcDatum<DataV
             tooltipDataPoint.value = null;
             emit("hide-tooltip");
         });
+}
+
+function applyThresholdToValue(d: DataValuePoint): number {
+    // This is required to avoid a bug in d3 where it will not render the chart if the percentage of a slice is too small
+    const percentage = (d.value / total.value) * 100;
+    return percentage < 0.1 ? 0.1 : percentage;
 }
 </script>
 
