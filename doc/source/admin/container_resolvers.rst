@@ -12,7 +12,7 @@ Mulled containers are described by a hash that is unique for a set of
 packages and versions (for mulled v2), e.g. 
 ``mulled-v2-0d814cbcd5aa81b280ecadbee9e4aba8d9ab33f7:0fb38379c04f2a8a345a2c8f74b190ea9a51b6f3-0``
 (mulled-v2-PACKAGEHASH:VERSIONHASH-BUILDNUMBER). For mulled containers
-for single packages simply the package name and version are used instead of the hashes,
+of single packages simply the package name and version are used instead of the hashes,
 e.g. ``ucsc-liftover:357--h446ed27_4``.
 
 The bioconda and the Galaxy project provide infrastructure to create mulled
@@ -36,7 +36,7 @@ container (in the execution environment), given the requirements specified in
 this tool. Galaxy implements various container resolvers that are suitable for
 different needs. 
 
-Galaxy tries to execute jobs using containers if they are send
+Galaxy tries to execute jobs using containers if they are sent
 to execution environments (previously called destinations) with either 
 `docker_enabled <https://github.com/galaxyproject/galaxy/blob/0742d6e27702c60d1b8fe358ae03a267e3f252c3/lib/galaxy/config/sample/job_conf.sample.yml#L419>`_ or
 `singularity_enabled <https://github.com/galaxyproject/galaxy/blob/0742d6e27702c60d1b8fe358ae03a267e3f252c3/lib/galaxy/config/sample/job_conf.sample.yml#L556>`_
@@ -53,7 +53,7 @@ could be obtained, the tool is by default executed using
 :doc:`standard dependency resolvers <dependency_resolvers>`, e.g. ``conda``.
 Alternatively, if the execution environment specifies
 `require_container <https://github.com/galaxyproject/galaxy/blob/0742d6e27702c60d1b8fe358ae03a267e3f252c3/lib/galaxy/config/sample/job_conf.sample.yml#L528>`_
-the job fails in this case (TODO to be tested? or is it already).
+the job fails in this case.
 
 Besides determining a container description some container resolvers
 also cache/build containers.
@@ -180,31 +180,65 @@ directory.
    For distributed compute systems built in techniques of docker may be useful:
    https://docs.docker.com/registry/recipes/mirror/.
 
-Function of the ``resolve`` function of the main resolver types:
-----------------------------------------------------------------
+.. _function_of_the_resolve_function_of_the_main_resolver_types:
+
+Function and use of the ``resolve`` function of the main resolver types:
+------------------------------------------------------------------------
 
 The resolve function is called when 
 
-1. listing the  the container tab in the dependency admin UI
-2. triggering a build from the admin UI
+1. listing the the container tab in the dependency admin UI (using ``api/container_resolvers/toolbox``)
+2. triggering a build from the admin UI (using ``api/container_resolvers/toolbox/install``)
 3. when a job is prepared 
 
 If the ``resolve`` function implements the caching of images then this only
 happens if its ``install`` parameter is set to ``True``. This is the case
-in case 
+in case 2 and case 3 (but see https://github.com/galaxyproject/tools-iuc/pull/5221#discussion_r1152025883).
 
+.. note::
+
+   It's important to understand that 1 and 2 rely on the global
+   container resolver config and do not set a resolver type!
+
+   This becomes relevant (e.g.) for setups specifying either:
+
+   a.  container resolver config(s) only per compute environment (i.e. no global
+       container resolver config) or
+   b.  different global and compute environment container resolver config(s)
+
+   In case a) the default container config will be used which contains docker
+   and singularity container resolvers (see `container_resolvers.yml.sample <https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/config/sample/container_resolvers.yml.sample>`_).
+   If both container backends (i.e. the ``docker`` and ``singularity`` executables)
+   are available then only the docker container resolvers will be used.
+
+   In case b) using the Admin UI for building/caching containers might
+   be impossible, but one needs to use the API directly which allows
+   to specify the container type and the resolver(s) that should be used.
 
 1. Explicit resolvers
 """""""""""""""""""""
 
 The uncached explicit resolvers (``explicit`` and ``explicit_singularity``) only
 compute a container description using an URI that suites the ``docker`` or
-``singularity``, resp.
+``singularity``, respectively.
+
+.. note::
+
+   Note that ``explicit`` will still cache the docker container on tool run, since
+   the job script contains ``docker pull ...``
 
 The cached explicit resolver, i.e. ``cached_explicit_singularity`` (no docker
-analog available), will download the image to the ``cache_directory`` and
+analog available), downloads the image to the ``cache_directory`` if needed and
 return a container description that points to the image file in the
 ``cache_directory``.
+
+.. note::
+
+   The ``cached_explicit_singularity`` will automatically cache the container
+   on first tool run (and when the build/installation is triggered via the Admin
+   UI or the API). When listing the container the container resolver will always
+   yield the path (even if non existent, i.e. before the 1st tool run or the
+   caching was triggered).
 
 2. Mulled resolvers
 """""""""""""""""""
@@ -216,7 +250,7 @@ For the cached mulled resolvers (``cached_mulled`` and ``cached_mulled_singulari
 the ``resolve`` function only queries if the required image is already cached
 and returns a container description pointing to the cached image. For docker this is
 done by executing ``docker images`` and for ``singularity`` the content of the
-cache directory is queried.
+cache directory (``cache_directory``) is queried.
 
 .. note::
 
@@ -225,14 +259,15 @@ cache directory is queried.
 
 The "uncached" mulled resolvers (``mulled`` and ``mulled_singularity``) by
 default just return a container description containing the URI of the container
-and download the image to the cache if ``install=True``. The caching is done by
-a call to ``docker pull`` and ``singularity pull``, resp. Note that, by default
-the URI is returned in any case, i.e. even if the image just has been downloaded
-or if the image is already in the cache. Only if the resolvers are initialized
-with ``auto_install=True`` the ``resolve`` function returns a container
-description pointing to the image. Note that this makes a difference only for
-singularity (since for docker the URI is identical to the name of the cached
-image).
+and download the image to the cache if ``install=True`` (see also
+:ref:`function_of_the_resolve_function_of_the_main_resolver_types`). The caching
+is done by a call to ``docker pull`` and ``singularity pull``, respectively.
+Note that, by default the URI is returned in any case, i.e. even if the image
+just has been downloaded or if the image is already in the cache. Only if the
+resolvers are initialized with ``auto_install=True`` the ``resolve`` function
+returns a container description pointing to the cached image. Note that this
+makes a difference only for singularity (since for docker the URI is identical
+to the name of the cached image).
 
 .. note::
 
@@ -276,7 +311,6 @@ building.
     repository, e.g. by adding more tool repositories to the
     `planemo monitor <https://github.com/galaxyproject/planemo-monitor>`_
 
-
 Parameters:
 -----------
 
@@ -287,7 +321,7 @@ Parameters:
   is no `"local"` namespace at quay.io, but Galaxy uses it to refer
   to locally built images (that's why it is the default for the building
   resolvers).
-- ``hash_func``: ``"v1"`` or ``"v2"`` (default)
+- ``hash_func``: ``"v1"`` or ``"v2"`` (default: "v2"):
   Applies to all mulled container resolvers. Sets the version of the mulled
   hash that is used in the image name.
 - ``shell`` Defaults to ``/bin/bash`` and sets the shell to be used in the container.
@@ -296,7 +330,7 @@ Parameters:
   Applies to ``mulled``, ``mulled_singularity``, ``build_mulled``, and ``build_mulled_singularity``.
   For the non-building resolvers this controls if a contained description pointing to the
   cached image shall be returned (``auto_install==False``). For the building
-  for the building resolvers the parameter controls if the container should be built
+  resolvers the parameter controls if the container should be built
   also if the resolve function is called with ``install=False`` (e.g. when listing
   the container in the Admin UI and no other container resolver worked for a tool).
 
@@ -306,17 +340,17 @@ Parameters:
     many scenarios where the default is not desirable.
 
 
-- ``cache_directory``: defaults to 
-  ``"database/container_cache/singularity/[explicit|mulled]"``.
-  Applies to all singularity resolvers and sets the directory where to save images.
+- ``cache_directory``: applies to singularity container resolvers that allow to
+  cache images and sets the directory where to save images.
+  If not set containers are saved in ``"database/container_cache/singularity/[explicit|mulled]"``.
 - ``cache_directory_cacher_type``: ``"uncached"`` (default) or ``"dir_mtime"``.
   The singularity resolvers iterate over the contents of the cache directory. The contents
   of the directory can be accessed uncached (in which case the file listing is computed for each access)
   or cached (then the listing is computed only if the mtime of the cache dir changes and on first access).
-  (applies to all singularity resolvers, except explicit_singularity)
+  (applies to all singularity resolvers that can cache images, except explicit_singularity)
 
-Note on the built in caching of singularity and docker
-------------------------------------------------------
+Note on the built in caching capabilities of singularity and docker
+-------------------------------------------------------------------
 
 It is important to note that docker as well as singularity have their own builtin
 caching mechanism.
