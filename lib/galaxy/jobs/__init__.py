@@ -1047,7 +1047,7 @@ class MinimalJobWrapper(HasResourceParameters):
         )
 
     def tool_directory(self):
-        tool_dir = self.tool.tool_dir
+        tool_dir = self.tool and self.tool.tool_dir
         if tool_dir is not None:
             tool_dir = os.path.abspath(tool_dir)
         return tool_dir
