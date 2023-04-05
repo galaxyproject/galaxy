@@ -7,7 +7,6 @@ from typing import (
 from galaxy import model
 from galaxy.exceptions import ObjectNotFound
 from galaxy.managers.context import ProvidesAppContext
-from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
@@ -63,13 +62,13 @@ class GroupUsersManager:
     def _get_group(self, trans: ProvidesAppContext, group_id: int) -> model.Group:
         group = trans.sa_session.query(model.Group).get(group_id)
         if group is None:
-            raise ObjectNotFound(f"Group with id {DecodedDatabaseIdField.encode(group_id)} was not found.")
+            raise ObjectNotFound("Group with the id provided was not found.")
         return group
 
     def _get_user(self, trans: ProvidesAppContext, user_id: int) -> model.User:
         user = trans.sa_session.query(model.User).get(user_id)
         if user is None:
-            raise ObjectNotFound(f"User with id {DecodedDatabaseIdField.encode(user_id)} was not found.")
+            raise ObjectNotFound("User with the id provided was not found.")
         return user
 
     def _get_group_user(

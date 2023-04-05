@@ -152,6 +152,12 @@ class GalaxyFileResponse(FileResponse):
             await self.background()
 
 
+def add_sentry_middleware(app: FastAPI) -> None:
+    from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
+
+    app.add_middleware(SentryAsgiMiddleware)
+
+
 def get_error_response_for_request(request: Request, exc: MessageException) -> JSONResponse:
     error_dict = api_error_message(None, exception=exc)
     status_code = exc.status_code

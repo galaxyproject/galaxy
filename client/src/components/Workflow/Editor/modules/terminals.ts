@@ -359,9 +359,6 @@ class BaseInputTerminal extends Terminal {
                 });
             }
             const postJobActionKey = `ChangeDatatypeAction${connection.output.name}`;
-            if (outputStep.when) {
-                terminalSource = { ...terminalSource, optional: true };
-            }
             if (
                 "extensions" in terminalSource &&
                 outputStep.post_job_actions &&
@@ -626,7 +623,7 @@ class BaseOutputTerminal extends Terminal {
     constructor(attr: BaseOutputTerminalArgs) {
         super(attr);
         this.datatypes = attr.datatypes;
-        this.optional = attr.optional;
+        this.optional = attr.optional || Boolean(this.stepStore.getStep(this.stepId)?.when);
         this.terminalType = "output";
     }
     getConnectedTerminals(): InputTerminalsAndInvalid[] {
@@ -743,7 +740,15 @@ export class OutputCollectionTerminal extends BaseOutputTerminal {
                                 otherCollectionType.canMapOver(collectionType)
                         );
                         if (connectedCollectionType) {
-                            return connectedCollectionType;
+                            if (connectedCollectionType.collectionType === "any") {
+                                // if the input collection type is "any" this output's collection type
+                                // is exactly the same as the connected output
+                                return otherCollectionType;
+                            } else {
+                                // else we pick the matching input collection type
+                                // so that the map over logic applies correctly
+                                return connectedCollectionType;
+                            }
                         }
                     }
                 }
