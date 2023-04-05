@@ -1,5 +1,6 @@
-# Sample file for container resolvers. Resolvers that are used by default are uncommented.
-# (comments describe under which premises they are in the defaults)
+# Sample file for container resolvers. Resolvers that are may be used by default
+# are uncommented (comments describe under which premises they are in the
+# defaults).
 
 # Note that commented yaml does not have a space after the #
 # while additional explanations do.
@@ -7,17 +8,17 @@
 # Explicit container resolvers
 # ============================
 
-# get a container description (URI) for docker
+# get a container description (URI) for an explict docker container requirement
 - type: explicit
 
-# get a container description (URI) for singularity
+# get a container description (URI) for an explict singularity container requirement
 - type: explicit_singularity
 
 # get a cached container description (path) for singularity
 # pulls the container into a cache directory if not yet there
 #- type: cached_explicit_singularity
   # set the cache directory for storing images
-  #cache_directory: data/singularity/explicit
+  #cache_directory: database/container_cache/singularity/explicit
 
 # Mulled container resolvers
 # ==========================
@@ -48,8 +49,10 @@
   namespace: biocontainers
 - type: cached_mulled_singularity
   namespace: local
-  # TODO CHECK check note that the namespace is currently not used
-  # cache_directory: data/singularity/explicit
+  # NOTE that the default container config specifies the namespace, but it is
+  # currently not used in the code, i.e. the two resolvers are redundant
+  #
+  #cache_directory: database/container_cache/singularity/mulled
   #
   # the method for caching directory listings (not the method for image caching)
   # can be uncached, dir_mtime (the latter only determines the directory listing
@@ -63,7 +66,7 @@
 # mulled hash describes which packages and versions should be in the container
 #
 # if the corresponding CLI (docker) is available also the image
-# will also be pulled, i.e. the image will be in dockers image cache
+# will be pulled, i.e. the image will be in dockers image cache
 #
 # depending on the value of auto_install the container resolver will point
 # to the cached image or quay.io/NAMESPACE/MULLED_HASH
@@ -81,13 +84,13 @@
 # Nearly the same as mulled, but
 # - when pulling the image file will be stored in the configured cache dir
 # - if auto_install is True the result will point to the cached image file
-# and to quay.io/NAMESPACE/MULLED_HASH otherwise)
+# and to quay.io/NAMESPACE/MULLED_HASH otherwise
 - type: mulled_singularity
   namespace: biocontainers
   # In addition to the arguments of `mulled` there are cache_directory
   # and cache_directory_cacher_type. See the description at `cached_explict_mulled`
   # and note the minor different in the default for the directory
-  #cache_directory: data/singularity/mulled
+  #cache_directory: database/container_cache/singularity/mulled
   #cache_directory_cacher_type: uncached
 
 # Building container resolvers
@@ -96,7 +99,6 @@
 # The following uncommented container resolvers are included in the default
 # if ``docker`` is available
 
-
 - type: build_mulled
   #namespace: local
   #hash_func: v2
@@ -104,7 +106,7 @@
 - type: build_mulled_singularity
   #hash_func: v2
   #auto_install: true
-  #cache_directory: data/singularity/mulled
+  #cache_directory: database/container_cache/singularity/mulled
   #cache_directory_cacher_type: uncached
 
 

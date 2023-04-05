@@ -713,7 +713,7 @@ Example:
 ```
 
 Read more about configuring Galaxy to run Docker jobs
-[here](https://galaxyproject.org/admin/tools/docker/).
+[here](https://docs.galaxyproject.org/en/master/admin/container_resolvers.html).
 ]]></xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
