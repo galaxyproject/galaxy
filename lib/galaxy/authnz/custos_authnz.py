@@ -151,7 +151,7 @@ class CustosAuthnz(IdentityProvider):
                             f"&connect_external_provider={self.config['provider']}"
                             f"&connect_external_label={self.config['label']}")
                         return login_redirect_url, None
-                elif self.config["provider"] == "custos" or self.config["provider"] == "keycloak":
+                elif self.config["provider"] in KEYCLOAK_BACKENDS:
                     login_redirect_url = f"{login_redirect_url}login/start?confirm=true&provider_token={json.dumps(token)}&provider={self.config['provider']}"
                     return login_redirect_url, None
                 else:
