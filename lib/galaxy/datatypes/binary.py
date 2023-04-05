@@ -4304,6 +4304,7 @@ class HexrdEtaOmeNpz(Npz):
             return "Binary Numpy npz file (%s)" % (nice_size(dataset.get_size()))
 
 
+@build_sniff_from_prefix
 class FITS(Binary):
     """
     FITS (Flexible Image Transport System) file data format, widely used in astronomy
@@ -4312,4 +4313,17 @@ class FITS(Binary):
     """
 
     file_ext = "fits"
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """Determines whether the file is a CASTEP log
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('legacysurvey.fits')
+        >>> FITS().sniff(fname)
+        True
+        >>> fname = get_test_fname('Si.param')
+        >>> FITS().sniff(fname)
+        False
+        """
+
+        return file_prefix.string_io().readline().strip().startswith('SIMPLE  =')
 

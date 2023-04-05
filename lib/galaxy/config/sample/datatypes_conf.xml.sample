@@ -950,6 +950,8 @@
     <datatype extension="bil" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" display_in_upload="true" subclass="true" description="ENVI file with band interleave by line (BIL) format"/>
     <datatype extension="hdr" type="galaxy.datatypes.data:Text" mimetype="text/plain" display_in_upload="true" subclass="true" description="ENVI metadata header file"/>
     <datatype extension="shp" type="galaxy.datatypes.gis:Shapefile" mimetype="application/octet-stream" display_in_upload="true" description="geospatial vector data format for geographic information system"/>
+    <!-- Astronomy types https://fits.gsfc.nasa.gov/ https://fits.gsfc.nasa.gov/rfc4047.txt -->
+    <datatype extension="fits" type="galaxy.datatypes.binary:FITS" mimetype="application/fits" display_in_upload="true"/>
   </registration>
   <sniffers>
     <!--
@@ -1220,6 +1222,7 @@
     <sniffer type="galaxy.datatypes.binary:OxliStopTags"/>
     <sniffer type="galaxy.datatypes.binary:OxliSubset"/>
     <sniffer type="galaxy.datatypes.binary:OxliGraphLabels"/>
+    <sniffer type="galaxy.datatypes.binary:FITS" />
     <sniffer type="galaxy.datatypes.neo4j:Neo4jDBzip"/>
     <sniffer type="galaxy.datatypes.text:PithyaProperty"/>
     <sniffer type="galaxy.datatypes.text:PithyaModel"/>
