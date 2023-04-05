@@ -4302,3 +4302,14 @@ class HexrdEtaOmeNpz(Npz):
             return dataset.peek
         except Exception:
             return "Binary Numpy npz file (%s)" % (nice_size(dataset.get_size()))
+
+
+class FITS(Binary):
+    """
+    FITS (Flexible Image Transport System) file data format, widely used in astronomy
+    Represents sky images (in celestial coordinates) and tables 
+     https://fits.gsfc.nasa.gov/fits_primer.html
+    """
+
+    file_ext = "fits"
+
