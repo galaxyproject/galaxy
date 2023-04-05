@@ -597,6 +597,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             "exit_code_path": exit_code_path,
             "working_directory": job_wrapper.working_directory,
             "shell": job_wrapper.shell,
+            "galaxy_virtual_env": None,
         }
         job_file_contents = self.get_job_file(job_wrapper, **job_script_props)
         self.write_executable_script(job_file, job_file_contents, job_io=job_wrapper.job_io)

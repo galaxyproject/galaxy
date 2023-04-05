@@ -293,7 +293,7 @@ class CloudManager(sharable.SharableModelManager):
             incoming = params.__dict__
             history = trans.sa_session.query(trans.app.model.History).get(history_id)
             if not history:
-                raise ObjectNotFound(f"History with ID `{trans.app.security.encode_id(history_id)}` not found.")
+                raise ObjectNotFound("History with the ID provided was not found.")
             output = trans.app.toolbox.get_tool("upload1").handle_input(trans, incoming, history=history)
 
             job_errors = output.get("job_errors", [])
@@ -360,7 +360,7 @@ class CloudManager(sharable.SharableModelManager):
 
         history = trans.sa_session.query(trans.app.model.History).get(history_id)
         if not history:
-            raise ObjectNotFound(f"History with ID `{trans.app.security.encode_id(history_id)}` not found.")
+            raise ObjectNotFound("History with the provided ID not found.")
 
         sent = []
         failed = []

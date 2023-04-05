@@ -7,7 +7,6 @@ from typing import (
 from galaxy import model
 from galaxy.exceptions import ObjectNotFound
 from galaxy.managers.context import ProvidesAppContext
-from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
@@ -63,13 +62,13 @@ class GroupRolesManager:
     def _get_group(self, trans: ProvidesAppContext, group_id: int) -> model.Group:
         group = trans.sa_session.query(model.Group).get(group_id)
         if not group:
-            raise ObjectNotFound(f"Group with id {DecodedDatabaseIdField.encode(group_id)} was not found.")
+            raise ObjectNotFound("Group with the id provided was not found.")
         return group
 
     def _get_role(self, trans: ProvidesAppContext, role_id: int) -> model.Role:
         role = trans.sa_session.query(model.Role).get(role_id)
         if not role:
-            raise ObjectNotFound(f"Role with id {DecodedDatabaseIdField.encode(role_id)} was not found.")
+            raise ObjectNotFound("Role with the id provided was not found.")
         return role
 
     def _get_group_role(
