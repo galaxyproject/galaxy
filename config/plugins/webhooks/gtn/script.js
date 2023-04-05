@@ -136,7 +136,7 @@
                             target = e.target.parentElement;
                         }
 
-                        tool_id = $(target).data("tool");
+                        tool_id = target.dataset.tool;
 
                         if (tool_id === "upload1" || tool_id === "upload") {
                             document.getElementById("tool-panel-upload-button").click();
@@ -158,9 +158,8 @@
                             target = e.target.parentElement;
                         }
 
-                        trs_url = $(target).data("trs_url");
-
-                        Galaxy.router.push("/workflows/trs_import", { trs_url: encodeURIComponent(trs_url), run_form: true });
+                        trs_url = target.dataset.workflow;
+                        Galaxy.router.push({ path: `/workflows/trs_import?trs_url=${encodeURIComponent(trs_url)}&run_form=true` });
                         removeOverlay();
                     });
 
