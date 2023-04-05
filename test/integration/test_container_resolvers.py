@@ -825,14 +825,14 @@ class TestMulledSingularityContainersResolversNoAutoInstall(TestMulledSingularit
         "build": [
             {
                 "resolver_type": "mulled_singularity",
-                "identifier": f"/tmp/.*/{MulledTestCase.mulled_hash}",
+                "identifier": f"/tmp/.*/database/container_cache/singularity/mulled/{MulledTestCase.mulled_hash}",
                 "cached": True,
                 "cache_name": MulledTestCase.mulled_hash,
                 "cache_namespace": "biocontainers",
             },
             {
                 "resolver_type": "cached_mulled_singularity",
-                "identifier": f"/tmp/.*/{MulledTestCase.mulled_hash}",
+                "identifier": f"/tmp/.*/database/container_cache/singularity/mulled/{MulledTestCase.mulled_hash}",
                 "cached": True,
                 "cache_name": MulledTestCase.mulled_hash,
                 "cache_namespace": "biocontainers",
