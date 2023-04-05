@@ -42,6 +42,317 @@ To update an existing Galaxy repository run:
 
 See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details on source code locations.
 
+
+Configuration Changes
+=====================
+
+Added
+-----
+
+The following configuration options are new
+
+config/galaxy.yml.sample
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  gravity
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  mapping.tool_shed.mapping.bootstrap_admin_api_key
+-  mapping.tool_shed.mapping.sentry_traces_sample_rate
+
+
+Changed
+-------
+
+The following configuration options have been changed
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  mapping.galaxy.mapping.database_connection.desc has changed from
+
+   ::
+
+    By default, Galaxy uses a SQLite database at '<data_dir>/universe.sqlite'.  You
+    may use a SQLAlchemy connection string to specify an external database
+    instead.
+
+    Sample default 'sqlite:///<data_dir>/universe.sqlite?isolation_level=IMMEDIATE'
+
+   to
+
+   ::
+
+    By default, Galaxy uses a SQLite database at '<data_dir>/universe.sqlite'. You
+    may use a SQLAlchemy connection string to specify an external database instead.
+
+    Sample default 'sqlite:///<data_dir>/universe.sqlite?isolation_level=IMMEDIATE'
+
+    You may specify additional options that will be passed to the SQLAlchemy
+    database engine by using the prefix "database_engine_option_". For some of these
+    options, default values are provided (e.g. see database_engine_option_pool_size,
+    etc.).
+
+    The same applies to `install_database_connection`, for which you should use the
+    "install_database_engine_option_" prefix.
+
+    For more options, please check SQLAlchemy's documentation at
+    https://docs.sqlalchemy.org/en/14/core/engines.html?highlight=create_engine#sqlalchemy.create_engine
+
+
+-  mapping.galaxy.mapping.default_job_resubmission_condition.desc has changed from
+
+   ::
+
+    When jobs fail due to job runner problems, Galaxy can be configured to retry
+    these or reroute the jobs to new destinations. Very fine control of this is
+    available with resubmit declarations in job_conf.xml. For simple deployments
+    of Galaxy though, the following attribute can define resubmission conditions
+    for all job destinations. If any job destination defines even one
+    resubmission condition explicitly in job_conf.xml - the condition described
+    by this option will not apply to that destination. For instance, the condition:
+    'attempt < 3 and unknown_error and (time_running < 300 or time_since_queued < 300)'
+    would retry up to two times jobs that didn't fail due to detected memory or
+    walltime limits but did fail quickly (either while queueing or running). The
+    commented out default below results in no default job resubmission condition,
+    failing jobs are just failed outright.
+
+   to
+
+   ::
+
+    When jobs fail due to job runner problems, Galaxy can be configured to retry
+    these or reroute the jobs to new destinations. Very fine control of this is
+    available with resubmit declarations in the job config. For simple deployments
+    of Galaxy though, the following attribute can define resubmission conditions
+    for all job destinations. If any job destination defines even one
+    resubmission condition explicitly in the job config - the condition described
+    by this option will not apply to that destination. For instance, the condition:
+    'attempt < 3 and unknown_error and (time_running < 300 or time_since_queued < 300)'
+    would retry up to two times jobs that didn't fail due to detected memory or
+    walltime limits but did fail quickly (either while queueing or running). The
+    commented out default below results in no default job resubmission condition,
+    failing jobs are just failed outright.
+
+
+-  mapping.galaxy.mapping.display_galaxy_brand.desc has changed from
+
+   ::
+
+    Display the "Galaxy" text in the masthead.
+
+   to
+
+   ::
+
+    This option has been deprecated, use the `logo_src` instead to change the
+    default logo including the galaxy brand title.
+
+
+-  mapping.galaxy.mapping.galaxy_infrastructure_url.desc has changed from
+
+   ::
+
+    URL (with schema http/https) of the Galaxy instance as accessible
+    within your local network. This URL is used as a default by pulsar
+    file staging and Interactive Tool containers for communicating back with
+    Galaxy via the API.
+
+    If you plan to run Interactive Tools make sure the docker container
+    can reach this URL. For more details see `job_conf.xml.interactivetools`.
+
+   to
+
+   ::
+
+    URL (with schema http/https) of the Galaxy instance as accessible
+    within your local network. This URL is used as a default by pulsar
+    file staging and Interactive Tool containers for communicating back with
+    Galaxy via the API.
+
+    If you plan to run Interactive Tools make sure the docker container
+    can reach this URL.
+
+
+-  mapping.galaxy.mapping.involucro_path.desc has changed from
+
+   ::
+
+    involucro is a tool used to build Docker or Singularity containers for tools from Conda
+    dependencies referenced in tools as `requirement` s. The following path is
+    the location of involucro on the Galaxy host. This is ignored if the relevant
+    container resolver isn't enabled, and will install on demand unless
+    involucro_auto_init is set to false.
+
+    The value of this option will be resolved with respect to <tool_dependency_dir>.
+
+   to
+
+   ::
+
+    involucro is a tool used to build Docker or Singularity containers for tools from Conda
+    dependencies referenced in tools as `requirement` s. The following path is
+    the location of involucro on the Galaxy host. This is ignored if the relevant
+    container resolver isn't enabled, and will install on demand unless
+    involucro_auto_init is set to false.
+
+
+-  mapping.galaxy.mapping.job_config_file.default has changed from
+
+   ::
+
+    job_conf.xml
+
+   to
+
+   ::
+
+    job_conf.yml
+
+
+-  mapping.galaxy.mapping.job_config_file.desc has changed from
+
+   ::
+
+    To increase performance of job execution and the web interface, you can
+    separate Galaxy into multiple processes.  There are more than one way to do
+    this, and they are explained in detail in the documentation:
+
+    https://docs.galaxyproject.org/en/master/admin/scaling.html
+
+    By default, Galaxy manages and executes jobs from within a single process and
+    notifies itself of new jobs via in-memory queues.  Jobs are run locally on
+    the system on which Galaxy is started.  Advanced job running capabilities can
+    be configured through the job configuration file.
+
+   to
+
+   ::
+
+    To increase performance of job execution and the web interface, you can
+    separate Galaxy into multiple processes.  There are more than one way to do
+    this, and they are explained in detail in the documentation:
+
+    https://docs.galaxyproject.org/en/master/admin/scaling.html
+
+    By default, Galaxy manages and executes jobs from within a single process and
+    notifies itself of new jobs via in-memory queues.  Jobs are run locally on
+    the system on which Galaxy is started.  Advanced job running capabilities can
+    be configured through the job configuration file or the <job_config> option.
+
+
+-  mapping.galaxy.mapping.logo_src.default has changed from
+
+   ::
+
+    /static/favicon.png
+
+   to
+
+   ::
+
+    /static/favicon.svg
+
+
+-  mapping.galaxy.mapping.sanitize_allowlist_file.desc has changed from
+
+   ::
+
+    Datasets created by tools listed in this file are trusted and will not have
+    their HTML sanitized on display.  This can be manually edited or manipulated
+    through the Admin control panel -- see "Manage Allowlist"
+
+    The value of this option will be resolved with respect to <mutable_config_dir>.
+
+   to
+
+   ::
+
+    Datasets created by tools listed in this file are trusted and will not have
+    their HTML sanitized on display.  This can be manually edited or manipulated
+    through the Admin control panel -- see "Manage Allowlist"
+
+    The value of this option will be resolved with respect to <managed_config_dir>.
+
+
+-  mapping.galaxy.mapping.tool_dependency_dir.desc has changed from
+
+   ::
+
+    Various dependency resolver configuration parameters will have defaults set relative
+    to this path, such as the default conda prefix, default Galaxy packages path, legacy
+    tool shed dependencies path, and the dependency cache directory.
+
+    Set the string to null to explicitly disable tool dependency handling.
+    If this option is set to none or an invalid path, installing tools with dependencies
+    from the Tool Shed or in Conda will fail.
+
+    The value of this option will be resolved with respect to <data_dir>.
+
+   to
+
+   ::
+
+    Various dependency resolver configuration parameters will have defaults set relative
+    to this path, such as the default conda prefix, default Galaxy packages path, legacy
+    tool shed dependencies path, and the dependency cache directory.
+
+    Set the string to null to explicitly disable tool dependency handling.
+    If this option is set to none or an invalid path, installing tools with dependencies
+    from the Tool Shed or in Conda will fail.
+
+
+-  mapping.galaxy.mapping.tool_recommendation_model_path.default has changed from
+
+   ::
+
+    https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model.hdf5
+
+   to
+
+   ::
+
+    https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model_v_0.2.hdf5
+
+
+-  mapping.galaxy.mapping.topk_recommendations.default has changed from
+
+   ::
+
+    10
+
+   to
+
+   ::
+
+    20
+
+
+
+
+Removed
+-------
+
+The following configuration options have been completely removed
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  mapping.reports.mapping.debug
+-  mapping.reports.mapping.use_lint
+-  mapping.reports.mapping.use_profile
+
+
+New Configuration Files
+-----------------------
+
+The following files are new, or recently converted to yaml
+
+-  ``config/themes_conf.yml.sample``
+
+
 Deprecation Notice
 ===========================================================
 
