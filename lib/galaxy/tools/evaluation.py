@@ -359,6 +359,9 @@ class ToolEvaluator:
                 input_values[input.name] = InputValueWrapper(
                     input, value, param_dict, profile=self.tool and self.tool.profile
                 )
+            if input.name not in param_dict:
+                # also provide as unprefixed variant ... we should put this behind a profile version and deprecate this
+                param_dict[input.name] = input_values[input.name]
 
         # HACK: only wrap if check_values is not false, this deals with external
         #       tools where the inputs don't even get passed through. These

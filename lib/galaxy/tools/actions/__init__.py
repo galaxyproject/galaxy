@@ -109,7 +109,7 @@ class DefaultToolAction(ToolAction):
                 all_permissions[action] = set()
             all_permissions[action].add(role_id)
 
-        def visitor(input, value, prefix, parent=None, **kwargs):
+        def visitor(input, value, prefix, prefixed_name: str, parent=None, **kwargs):
             def process_dataset(data, formats=None):
                 if not data or isinstance(data, RuntimeValue):
                     return None
@@ -125,7 +125,7 @@ class DefaultToolAction(ToolAction):
                     else:
                         data = data.get_converted_dataset(trans, target_ext, target_context=parent, history=history)
 
-                input_name = prefix + input.name
+                input_name = prefixed_name
                 # Checked security of whole collection all at once if mapping over this input, else
                 # fetch dataset details for this input from the database.
                 if collection_info and collection_info.is_mapped_over(input_name):
@@ -159,50 +159,50 @@ class DefaultToolAction(ToolAction):
                         processed_dataset = process_dataset(v)
                         if i == 0:
                             # Allow copying metadata to output, first item will be source.
-                            input_datasets[prefix + input.name] = processed_dataset
-                        input_datasets[prefix + input.name + str(i + 1)] = processed_dataset
+                            input_datasets[prefixed_name] = processed_dataset
+                        input_datasets[prefixed_name + str(i + 1)] = processed_dataset
                         conversions = []
                         for conversion_name, conversion_extensions, conversion_datatypes in input.conversions:
-                            new_data = process_dataset(
-                                input_datasets[prefix + input.name + str(i + 1)], conversion_datatypes
-                            )
+                            new_data = process_dataset(input_datasets[prefixed_name + str(i + 1)], conversion_datatypes)
                             if not new_data or new_data.datatype.matches_any(conversion_datatypes):
-                                input_datasets[prefix + conversion_name + str(i + 1)] = new_data
+                                input_datasets[
+                                    prefixed_name[: -len(input.name)] + conversion_name + str(i + 1)
+                                ] = new_data
                                 conversions.append((conversion_name, new_data))
                             else:
                                 raise Exception(
-                                    f"A path for explicit datatype conversion has not been found: {input_datasets[prefix + input.name + str(i + 1)].extension} --/--> {conversion_extensions}"
+                                    f"A path for explicit datatype conversion has not been found: {input_datasets[prefixed_name + str(i + 1)].extension} --/--> {conversion_extensions}"
                                 )
                         if parent:
-                            parent[input.name][i] = input_datasets[prefix + input.name + str(i + 1)]
+                            parent[input.name][i] = input_datasets[prefixed_name + str(i + 1)]
                             for conversion_name, conversion_data in conversions:
                                 # allow explicit conversion to be stored in job_parameter table
                                 parent[conversion_name][
                                     i
                                 ] = conversion_data.id  # a more robust way to determine JSONable value is desired
                         else:
-                            param_values[input.name][i] = input_datasets[prefix + input.name + str(i + 1)]
+                            param_values[input.name][i] = input_datasets[prefixed_name + str(i + 1)]
                             for conversion_name, conversion_data in conversions:
                                 # allow explicit conversion to be stored in job_parameter table
                                 param_values[conversion_name][
                                     i
                                 ] = conversion_data.id  # a more robust way to determine JSONable value is desired
                 else:
-                    input_datasets[prefix + input.name] = process_dataset(value)
+                    input_datasets[prefixed_name] = process_dataset(value)
                     conversions = []
                     for conversion_name, conversion_extensions, conversion_datatypes in input.conversions:
-                        new_data = process_dataset(input_datasets[prefix + input.name], conversion_datatypes)
+                        new_data = process_dataset(input_datasets[prefixed_name], conversion_datatypes)
                         if not new_data or new_data.datatype.matches_any(conversion_datatypes):
                             input_datasets[prefix + conversion_name] = new_data
                             conversions.append((conversion_name, new_data))
                         else:
                             raise Exception(
-                                f"A path for explicit datatype conversion has not been found: {input_datasets[prefix + input.name].extension} --/--> {conversion_extensions}"
+                                f"A path for explicit datatype conversion has not been found: {input_datasets[prefixed_name].extension} --/--> {conversion_extensions}"
                             )
                     target_dict = parent
                     if not target_dict:
                         target_dict = param_values
-                    target_dict[input.name] = input_datasets[prefix + input.name]
+                    target_dict[input.name] = input_datasets[prefixed_name]
                     for conversion_name, conversion_data in conversions:
                         # allow explicit conversion to be stored in job_parameter table
                         target_dict[
@@ -247,7 +247,7 @@ class DefaultToolAction(ToolAction):
                         processed_dataset = process_dataset(v)
                         if processed_dataset is not v:
                             processed_dataset_dict[v] = processed_dataset
-                    input_datasets[prefix + input.name + str(i + 1)] = processed_dataset or v
+                    input_datasets[prefixed_name + str(i + 1)] = processed_dataset or v
                 if conversion_required:
                     collection_type_description = (
                         trans.app.dataset_collection_manager.collection_type_descriptions.for_collection_type(
@@ -306,7 +306,7 @@ class DefaultToolAction(ToolAction):
                             target_dict[input.name] = []
                         target_dict[input.name].extend(dataset_instances)
             elif isinstance(input, DataCollectionToolParameter):
-                append_to_key(input_dataset_collections, prefix + input.name, (value, False))
+                append_to_key(input_dataset_collections, prefixed_name, (value, False))
 
         tool.visit_inputs(param_values, visitor)
         return input_dataset_collections

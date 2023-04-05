@@ -347,7 +347,17 @@ class ToolOutputCollectionStructure:
     def collection_prototype(self, inputs, type_registry):
         # either must have specified structured_like or something worse
         if self.structured_like:
-            collection_prototype = inputs[self.structured_like].collection
+            if self.structured_like in inputs:
+                collection_prototype = inputs[self.structured_like].collection
+            else:
+                for key, value in inputs.items():
+                    if key.split("|")[-1] == self.structured_like:
+                        collection_prototype = value.collection
+                        break
+                else:
+                    raise ValueError(
+                        f'Output collection specified `structured_like="{self.structured_like}", but no such input was found.`'
+                    )
         else:
             collection_type = self.collection_type
             assert collection_type

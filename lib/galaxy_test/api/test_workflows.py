@@ -5224,9 +5224,7 @@ steps:
         $link: fasta_input
     outputs:
       out_file1:
-        # Wish it was qualified for conditionals but it doesn't seem to be. -John
-        # rename: "#{fastq_input.fastq_input1 | basename} suffix"
-        rename: "#{fastq_input1 | basename} suffix"
+        rename: "#{fastq_input.fastq_input1 | basename} suffix"
 """,
                 test_data="""
 fasta_input:
@@ -5267,9 +5265,7 @@ steps:
         $link: fasta_input
     outputs:
       out_file1:
-        # Wish it was qualified for conditionals but it doesn't seem to be. -John
-        # rename: "#{fastq_input.fastq_input1 | basename} suffix"
-        rename: "#{fastq_input1} suffix"
+        rename: "#{fastq_input.fastq_input1 | basename} suffix"
 """,
                 test_data="""
 fasta_input:
