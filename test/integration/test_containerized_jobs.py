@@ -59,6 +59,19 @@ class MulledJobTestCases:
         assert "0.7.15-r1140" in output
 
 
+class ContainerizedIntegrationTestCase(IntegrationTestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        skip_if_container_type_unavailable(cls)
+        super().setUpClass()
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config) -> None:
+        super().handle_galaxy_config_kwds(config)
+        config["job_config_file"] = DOCKERIZED_JOB_CONFIG_FILE
+        disable_dependency_resolution(config)
+
+
 def disable_dependency_resolution(config: Dict[str, Any]) -> None:
     # Disable tool dependency resolution.
     config["tool_dependency_dir"] = "none"

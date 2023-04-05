@@ -97,7 +97,7 @@ def _assert_container_in_cache_singularity(
     ), f"did not find container {container_name} in {cache_directory} which contains {imageid_list}. [{cache_dir_contents}]"
 
 
-class ContainerizedIntegrationTestCase(IntegrationTestCase):
+class DockerContainerResolverTestCase(IntegrationTestCase):
     """
     class for containerized (docker) tests
     provides methods for clearing and checking the container cache
@@ -190,9 +190,9 @@ class ContainerizedIntegrationTestCase(IntegrationTestCase):
         self._assert_container_in_cache(cached, container_name, namespace, hash_func, **kwargs)
 
 
-class SingularityIntegrationTestCase(ContainerizedIntegrationTestCase):
+class SingularityContainerResolverTestCase(DockerContainerResolverTestCase):
     """
-    analogous to ContainerizedIntegrationTestCase, just for singularity
+    analogous to DockerContainerResolverTestCase, just for singularity
     provides adapted methods for clearing and checking the container cache
     """
 
@@ -479,7 +479,7 @@ class MulledTestCase:
     mulled_hash = "mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0"
 
 
-class TestDefaultContainerResolvers(ContainerizedIntegrationTestCase, ContainerResolverTestCases, MulledTestCase):
+class TestDefaultContainerResolvers(DockerContainerResolverTestCase, ContainerResolverTestCases, MulledTestCase):
     """
     Test default container resolvers
 
@@ -534,7 +534,7 @@ class TestDefaultContainerResolvers(ContainerizedIntegrationTestCase, ContainerR
 
 
 class TestDefaultSingularityContainerResolvers(
-    SingularityIntegrationTestCase, ContainerResolverTestCases, MulledTestCase
+    SingularityContainerResolverTestCase, ContainerResolverTestCases, MulledTestCase
 ):
     """
     Test default resolvers on a instance with a singularity destination
@@ -604,7 +604,7 @@ class TestDefaultSingularityContainerResolvers(
         _assert_container_in_cache_docker(cached, container_name, namespace, hash_func)
 
 
-class TestMulledContainerResolvers(ContainerizedIntegrationTestCase, ContainerResolverTestCases, MulledTestCase):
+class TestMulledContainerResolvers(DockerContainerResolverTestCase, ContainerResolverTestCases, MulledTestCase):
     """
     test cached_mulled + mulled container resolvers in default config
 
@@ -677,7 +677,7 @@ class TestMulledContainerResolvers(ContainerizedIntegrationTestCase, ContainerRe
 
 
 class TestMulledSingularityContainerResolvers(
-    SingularityIntegrationTestCase, ContainerResolverTestCases, MulledTestCase
+    SingularityContainerResolverTestCase, ContainerResolverTestCases, MulledTestCase
 ):
     """
     test cached_mulled_singularity + mulled_singularity container resolvers in default config
@@ -839,7 +839,7 @@ class TestMulledSingularityContainersResolversNoAutoInstall(TestMulledSingularit
     }
 
 
-class TestCondaFallBack(ContainerizedIntegrationTestCase, ContainerResolverTestCases, MulledTestCase):
+class TestCondaFallBack(DockerContainerResolverTestCase, ContainerResolverTestCases, MulledTestCase):
     """
     test that Galaxy falls back to default dependency resolvers (i.e. conda) if no
     container can be resolved
@@ -885,9 +885,7 @@ class TestCondaFallBack(ContainerizedIntegrationTestCase, ContainerResolverTestC
         config["container_resolvers"] = cls.container_resolvers_config
 
 
-class TestCondaFallBackAndRequireContainer(
-    ContainerizedIntegrationTestCase, ContainerResolverTestCases, MulledTestCase
-):
+class TestCondaFallBackAndRequireContainer(DockerContainerResolverTestCase, ContainerResolverTestCases, MulledTestCase):
     """
     test that we can disable fallback to the default resolvers (conda)
     by setting the destination property `require_container`
@@ -947,7 +945,7 @@ class ExplicitSingularityTestCase:
     mulled_hash = "shub://GodloveD/lolcow-installer:latest"
 
 
-class TestExplicitContainerResolver(ContainerizedIntegrationTestCase, ContainerResolverTestCases, ExplicitTestCase):
+class TestExplicitContainerResolver(DockerContainerResolverTestCase, ContainerResolverTestCases, ExplicitTestCase):
     """
     test explict container resolver
 
@@ -1011,7 +1009,7 @@ class TestExplicitContainerResolver(ContainerizedIntegrationTestCase, ContainerR
 
 
 class TestExplicitSingularityContainerResolver(
-    SingularityIntegrationTestCase, ContainerResolverTestCases, ExplicitTestCase
+    SingularityContainerResolverTestCase, ContainerResolverTestCases, ExplicitTestCase
 ):
     """
     test explict_singularity container resolver
@@ -1077,7 +1075,7 @@ class TestExplicitSingularityContainerResolver(
 
 
 class TestCachedExplicitSingularityContainerResolver(
-    SingularityIntegrationTestCase, ContainerResolverTestCases, ExplicitTestCase
+    SingularityContainerResolverTestCase, ContainerResolverTestCases, ExplicitTestCase
 ):
     """
     test cached_explict_singularity container resolver
@@ -1140,7 +1138,7 @@ class TestCachedExplicitSingularityContainerResolver(
 
 
 class TestCachedExplicitSingularityContainerResolverWithSingularityRequirement(
-    SingularityIntegrationTestCase, ContainerResolverTestCases, ExplicitSingularityTestCase
+    SingularityContainerResolverTestCase, ContainerResolverTestCases, ExplicitSingularityTestCase
 ):
     """
     test cached_explict_singularity container resolver for a tool with singularity container requirement
