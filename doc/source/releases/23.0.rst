@@ -151,6 +151,15 @@ Enhancements
   `Pull Request 14629`_
 .. enhancement_tag_workflows
 
+* Improve performance for rendering and changing large workflows
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15776`_
+* Display dialog when saving workflow with invalid connections
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15817`_
+* Find correct collection type if collection_type_source points at input of "any" collection type
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15823`_
 * Mark disconnected required inputs in editor
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 15357`_
@@ -333,6 +342,21 @@ Enhancements
   `Pull Request 15256`_
 .. enhancement
 
+* Backport - Use Animation Frame in Workflow Editor
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 15751`_
+* Workflow Editor Minimap Performance
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 15754`_
+* Add option to disable the fetch_data celery task
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 15767`_
+* Dataset Counts Toggle
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 15810`_
+* Fix Invocation RO-Crate metadata
+  (thanks to `@pauldg <https://github.com/pauldg>`__).
+  `Pull Request 15841`_
 * Make options text clear for datasets list
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 15410`_
@@ -851,6 +875,18 @@ Enhancements
   `Pull Request 15346`_
 .. small_enhancement
 
+* Fix attribute error on base models
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 15731`_
+* Add 2 indexes to WorkflowRequest* tables on the workflow_invocation_id field
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 15733`_
+* Fix typo in docstring
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 15793`_
+* Remove some IDs from error messages
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 15882`_
 * Update default GALAXY_URL for webpack-dev-server
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 15391`_
@@ -1208,6 +1244,12 @@ Fixes
   `Pull Request 15332`_
 .. bug_tag_datatypes
 
+* Avoid passing headers argument twice in datatypes display - take 2
+  (thanks to `@wm75 <https://github.com/wm75>`__).
+  `Pull Request 15766`_
+* Account for charge and spin in den_fmt sniffer
+  (thanks to `@muon-spectroscopy-computational-project <https://github.com/muon-spectroscopy-computational-project>`__).
+  `Pull Request 15797`_
 * Do not pass dataset keyword parameter into datatype.display_data
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 15695`_
@@ -1248,6 +1290,15 @@ Fixes
   `Pull Request 15304`_
 .. bug_tag_workflows
 
+* Make dragImage transparent in workflow editor
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15593`_
+* Don't include output name in css classes for node outputs
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15782`_
+* Fix overly strict map over constraints
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15818`_
 * Fix saving workflow with conditional subworkflow step
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 15649`_
@@ -1313,6 +1364,12 @@ Fixes
   `Pull Request 15343`_
 .. bug_tag_ui
 
+* Fix plugin framework build compatibility with node 16
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 15756`_
+* Webpack dependency updates to address dependabot alert
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 15806`_
 * Data Libraries Sanitization
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 15706`_
@@ -1342,6 +1399,9 @@ Fixes
   `Pull Request 15103`_
 .. bug_tag_jobs
 
+* Add missing filter in job query
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15846`_
 * Fix visible handling for exisiting datasets on discovery
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 15525`_
@@ -1388,6 +1448,78 @@ Fixes
   `Pull Request 15322`_
 .. bug
 
+* Fix Short Term Storage cleanup when metadata is lost
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 15724`_
+* Validate history Related filter in backend
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 15741`_
+* Fix rule builder table display
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15743`_
+* Fix Worflow editor loading issues
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 15750`_
+* Fix GTN webhook
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 15755`_
+* Add missing history export link
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 15758`_
+* Remove code left over from debugging
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 15764`_
+* Cast ``url_for()`` output to ``str``
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 15775`_
+* fix premature return in user API
+  (thanks to `@martenson <https://github.com/martenson>`__).
+  `Pull Request 15780`_
+* Bump Gravity to 1.0.1
+  (thanks to `@natefoo <https://github.com/natefoo>`__).
+  `Pull Request 15787`_
+* Allow hyphenated tool-name to be searchable in `ToolSearch`
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 15788`_
+* Fix regression in distinguishing between select and text types
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 15792`_
+* Fix loading of job submission success page on route change
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 15801`_
+* Bump tuswsgi middleware
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15803`_
+* Show workflow errors in embedded markdown element
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 15807`_
+* Fix toggling output visibility
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15812`_
+* Fix User Preferences Manage External Identities element v-if
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 15824`_
+* Fix API for latest FastAPI (0.95)
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 15829`_
+* Fix tool recommendation in the workflow editor
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 15842`_
+* Update Gravity to 1.0.2
+  (thanks to `@natefoo <https://github.com/natefoo>`__).
+  `Pull Request 15862`_
+* Don't set datatype for optional datasets that were not provided
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15871`_
+* List tags in ``/api/dataset_collections/{hdca_id}/contents/{parent_id}``
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15883`_
+* Fix tool bar on top of pop-ups
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 15891`_
+* Fix short term storage archive export extension on download
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 15894`_
 * Sync ToolForm and WorkflowRun with history changes
   (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
   `Pull Request 15565`_

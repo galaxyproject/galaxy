@@ -104,6 +104,15 @@ New Datatypes
 ===========================================================
 
 .. datatypes
+* Avoid passing headers argument twice in datatypes display - take 2
+  (thanks to `@wm75 <https://github.com/wm75>`__).
+  `Pull Request 15766`_
+* Account for charge and spin in den_fmt sniffer
+  (thanks to `@muon-spectroscopy-computational-project <https://github.com/muon-spectroscopy-computational-project>`__).
+  `Pull Request 15797`_
+* Fix den fmt test
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 15820`_
 * Do not pass dataset keyword parameter into datatype.display_data
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 15695`_
