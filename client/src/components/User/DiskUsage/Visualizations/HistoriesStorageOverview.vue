@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { BLink } from "bootstrap-vue";
 import localize from "@/utils/localization";
 import type { DataValuePoint } from "./Charts";
 import { ref, onMounted } from "vue";
 import PieChart from "./Charts/PieChart.vue";
-import { bytesToString } from "@/utils/utils";
+import { bytesLabelFormatter } from "./Charts/utils";
 import { getAllHistoriesSizeSummary, type ItemSizeSummary } from "./service";
 import RecoverableItemSizeTooltip from "./RecoverableItemSizeTooltip.vue";
 
@@ -54,10 +53,6 @@ function buildActiveVsDeletedTotalSizeData(historiesSizeSummary: ItemSizeSummary
     ];
 }
 
-function bytesLabelFormatter(dataPoint?: DataValuePoint | null): string {
-    return dataPoint ? `${dataPoint.label}: ${bytesToString(dataPoint.value)}` : "No data";
-}
-
 function isRecoverableDataPoint(dataPoint?: DataValuePoint): boolean {
     if (dataPoint) {
         const historiesSizeSummary = historiesSizeSummaryMap.get(dataPoint.id || "");
@@ -68,18 +63,18 @@ function isRecoverableDataPoint(dataPoint?: DataValuePoint): boolean {
 </script>
 <template>
     <div>
-        <b-link to="StorageDashboard">{{ localize("Back to Dashboard") }}</b-link>
+        <router-link :to="{ name: 'StorageDashboard' }">{{ localize("Back to Dashboard") }}</router-link>
         <h2 class="text-center my-3">
             <b>Histories Storage Overview</b>
         </h2>
-        <p class="text-center mx-5">
-            Here you can find various graphs displaying the storage size taken by all your histories. This includes
-            deleted histories, as they still take storage space until their contents are permanently deleted. You can
-            always recover the space by permanently deleting those from the <i>Discarded Items</i> section of the
-            <b-link to="management">
-                <b>Storage Manager</b>
-            </b-link>
-            page.
+        <p class="text-center mx-3">
+            Here you can find various graphs displaying the storage size taken by <b>all your histories</b>.
+        </p>
+        <p class="text-center mx-3">
+            These graphs include <b>deleted histories</b>. Even if you delete histories, they still take up storage
+            space until you permanently delete them. However, you can recover the storage space by permanently deleting
+            them from the <i>Discarded Items</i> section of the
+            <router-link :to="{ name: 'StorageManager' }"><b>Storage Manager</b></router-link> page.
         </p>
         <PieChart
             v-if="topTenHistoriesBySizeData"
