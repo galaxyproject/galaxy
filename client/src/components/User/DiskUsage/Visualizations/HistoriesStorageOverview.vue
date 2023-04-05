@@ -2,25 +2,16 @@
 import { BLink } from "bootstrap-vue";
 import localize from "@/utils/localization";
 import type { DataValuePoint } from "./Charts";
-import { ref, computed, onMounted } from "vue";
+import { ref, onMounted } from "vue";
 import PieChart from "./Charts/PieChart.vue";
 import { bytesToString } from "@/utils/utils";
 import { getAllHistoriesSizeSummary, type ItemSizeSummary } from "./service";
+import RecoverableItemSizeTooltip from "./RecoverableItemSizeTooltip.vue";
 
 const historiesSizeSummaryMap = new Map<string, ItemSizeSummary>();
 
 const topTenHistoriesBySizeData = ref<DataValuePoint[] | null>(null);
 const activeVsDeletedTotalSizeData = ref<DataValuePoint[] | null>(null);
-
-const chartTooltip = ref<HTMLBaseElement | null>(null);
-const currentlyHoveredDataPoint = ref<DataValuePoint | null>(null);
-const currentlyHoveredDataPointIsRecoverable = computed(() => {
-    if (currentlyHoveredDataPoint.value) {
-        const historiesSizeSummary = historiesSizeSummaryMap.get(currentlyHoveredDataPoint.value?.id || "");
-        return historiesSizeSummary?.deleted || currentlyHoveredDataPoint.value.id === "deleted";
-    }
-    return false;
-});
 
 onMounted(async () => {
     const allHistoriesSizeSummary = await getAllHistoriesSizeSummary();
@@ -63,27 +54,16 @@ function buildActiveVsDeletedTotalSizeData(historiesSizeSummary: ItemSizeSummary
     ];
 }
 
-function bytesLabelFormatter(dataPoint: DataValuePoint): string {
-    return `${dataPoint.label}: ${bytesToString(dataPoint.value)}`;
+function bytesLabelFormatter(dataPoint?: DataValuePoint | null): string {
+    return dataPoint ? `${dataPoint.label}: ${bytesToString(dataPoint.value)}` : "No data";
 }
 
-function onShowTooltip(dataPoint: DataValuePoint, mouseX: number, mouseY: number): void {
-    currentlyHoveredDataPoint.value = dataPoint;
-    setTooltipPosition(mouseX, mouseY);
-}
-function onMoveTooltip(mouseX: number, mouseY: number): void {
-    setTooltipPosition(mouseX, mouseY);
-}
-
-function onHideTooltip(): void {
-    currentlyHoveredDataPoint.value = null;
-}
-
-function setTooltipPosition(mouseX: number, mouseY: number): void {
-    if (chartTooltip.value) {
-        chartTooltip.value.style.left = `${mouseX}px`;
-        chartTooltip.value.style.top = `${mouseY}px`;
+function isRecoverableDataPoint(dataPoint?: DataValuePoint): boolean {
+    if (dataPoint) {
+        const historiesSizeSummary = historiesSizeSummaryMap.get(dataPoint.id || "");
+        return historiesSizeSummary?.deleted || dataPoint.id === "deleted";
     }
+    return false;
 }
 </script>
 <template>
@@ -106,40 +86,20 @@ function setTooltipPosition(mouseX: number, mouseY: number): void {
             title="Top 10 Histories by Size"
             description="These are the 10 histories that take the most space on your storage."
             :data="topTenHistoriesBySizeData"
-            :label-formatter="bytesLabelFormatter"
-            :tooltip-formatter="bytesLabelFormatter"
-            @show-tooltip="onShowTooltip"
-            @move-tooltip="onMoveTooltip"
-            @hide-tooltip="onHideTooltip" />
+            :label-formatter="bytesLabelFormatter">
+            <template v-slot:tooltip="{ data }">
+                <RecoverableItemSizeTooltip :data="data" :is-recoverable="isRecoverableDataPoint(data)" />
+            </template>
+        </PieChart>
         <PieChart
             v-if="activeVsDeletedTotalSizeData"
             title="Active vs Deleted Total Size"
             description="This graph shows the total size of your histories, separated by whether they are active or deleted."
             :data="activeVsDeletedTotalSizeData"
-            :label-formatter="bytesLabelFormatter"
-            :tooltip-formatter="bytesLabelFormatter"
-            @show-tooltip="onShowTooltip"
-            @move-tooltip="onMoveTooltip"
-            @hide-tooltip="onHideTooltip" />
-
-        <div v-show="currentlyHoveredDataPoint" ref="chartTooltip" class="chartTooltip">
-            <div class="h-md mx-2">{{ currentlyHoveredDataPoint?.label ?? "No data" }}</div>
-            <b class="h-md m-2">{{ bytesToString(currentlyHoveredDataPoint?.value ?? 0) }}</b>
-            <div v-if="currentlyHoveredDataPointIsRecoverable" class="text-muted mx-2">Recoverable storage space</div>
-        </div>
+            :label-formatter="bytesLabelFormatter">
+            <template v-slot:tooltip="{ data }">
+                <RecoverableItemSizeTooltip :data="data" :is-recoverable="isRecoverableDataPoint(data)" />
+            </template>
+        </PieChart>
     </div>
 </template>
-
-<style scoped>
-.chartTooltip {
-    position: absolute;
-    background-color: #fff;
-    border: 1px solid #000;
-    border-radius: 5px;
-    padding: 5px;
-    box-shadow: 0 0 5px 0 rgba(0, 0, 0, 0.5);
-    margin: 0 0 0 20px;
-    z-index: 100;
-    text-align: center;
-}
-</style>

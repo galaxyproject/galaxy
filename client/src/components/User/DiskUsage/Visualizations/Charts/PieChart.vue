@@ -5,7 +5,7 @@ import * as d3 from "d3";
 
 import type { DataValuePoint } from ".";
 
-type DataValueFormatter = (dataPoint: DataValuePoint) => string;
+type DataValueFormatter = (dataPoint?: DataValuePoint | null) => string;
 
 interface PieChartProps {
     title: string;
@@ -13,26 +13,30 @@ interface PieChartProps {
     description?: string;
     width?: number;
     height?: number;
+    enableTooltips?: boolean;
     labelFormatter?: DataValueFormatter;
-    tooltipFormatter?: DataValueFormatter;
 }
 
 const props = withDefaults(defineProps<PieChartProps>(), {
     description: undefined,
     width: 400,
     height: 400,
-    labelFormatter: (dataPoint: DataValuePoint) => `${dataPoint.label}: ${dataPoint.value}`,
-    tooltipFormatter: (dataPoint: DataValuePoint) => `${dataPoint.label}: ${dataPoint.value}`,
+    enableTooltips: true,
+    labelFormatter: (dataPoint?: DataValuePoint | null) =>
+        dataPoint ? `${dataPoint.label}: ${dataPoint.value}` : "No data",
 });
 
 const emit = defineEmits<{
     (e: "show-tooltip", dataPoint: DataValuePoint, mouseX: number, mouseY: number): void;
-    (e: "move-tooltip", mouseX: number, mouseY: number): void;
     (e: "hide-tooltip"): void;
 }>();
 
 const pieChart = ref(null);
 const legend = ref(null);
+const chartTooltip = ref<HTMLBaseElement | null>(null);
+const tooltipDataPoint = ref<DataValuePoint | null>(null);
+
+const showTooltip = computed(() => props.enableTooltips && tooltipDataPoint.value !== null);
 
 const hasData = computed(
     () => props.data.length > 0 && props.data.reduce((total, dataPoint) => total + dataPoint.value, 0) > 0
@@ -44,10 +48,6 @@ onMounted(() => {
 });
 
 const color = d3.scaleOrdinal(d3.schemeCategory10);
-
-function entryColor(d: DataValuePoint): string {
-    return color(`${d.index}`);
-}
 
 function drawChart() {
     const data = props.data;
@@ -73,16 +73,9 @@ function drawChart() {
         // @ts-ignore
         .attr("d", arc)
         // @ts-ignore
-        .attr("fill", entryColor)
-        .on("mouseenter", (event, d) => {
-            emit("show-tooltip", d.data, event.pageX, event.pageY);
-        })
-        .on("mousemove", (event, d) => {
-            emit("move-tooltip", event.pageX, event.pageY);
-        })
-        .on("mouseleave", () => {
-            emit("hide-tooltip");
-        });
+        .attr("fill", entryColor);
+
+    setupTooltipEvents(arcs);
 }
 
 function createLegend() {
@@ -130,6 +123,34 @@ function createLegend() {
         .attr("font-size", "14px")
         .text((d) => props.labelFormatter(d));
 }
+
+function entryColor(d: DataValuePoint): string {
+    return color(`${d.index}`);
+}
+
+function setTooltipPosition(mouseX: number, mouseY: number): void {
+    if (chartTooltip.value) {
+        chartTooltip.value.style.left = `${mouseX}px`;
+        chartTooltip.value.style.top = `${mouseY}px`;
+    }
+}
+
+function setupTooltipEvents(arcs: d3.Selection<SVGGElement, d3.PieArcDatum<DataValuePoint>, SVGGElement, unknown>) {
+    if (!props.enableTooltips) {
+        return;
+    }
+    arcs.on("mouseenter", (event, d) => {
+        tooltipDataPoint.value = d.data;
+        emit("show-tooltip", d.data, event.pageX, event.pageY);
+    })
+        .on("mousemove", (event, d) => {
+            setTooltipPosition(event.pageX, event.pageY);
+        })
+        .on("mouseleave", () => {
+            tooltipDataPoint.value = null;
+            emit("hide-tooltip");
+        });
+}
 </script>
 
 <template>
@@ -149,6 +170,11 @@ function createLegend() {
         <div v-else class="text-center">
             <p class="text-muted">No data to display. Populate some histories with datasets and come back.</p>
         </div>
+        <div v-show="showTooltip" ref="chartTooltip" class="chartTooltip">
+            <slot name="tooltip" :data="tooltipDataPoint">
+                <div>{{ labelFormatter(tooltipDataPoint) }}</div>
+            </slot>
+        </div>
     </b-card>
 </template>
 
@@ -163,5 +189,16 @@ function createLegend() {
 
 .legend {
     float: left;
+}
+
+.chartTooltip {
+    position: fixed;
+    background-color: #fff;
+    border: 1px solid #000;
+    border-radius: 5px;
+    padding: 5px;
+    margin: 0 0 0 20px;
+    z-index: 100;
+    text-align: center;
 }
 </style>
