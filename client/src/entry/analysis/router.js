@@ -81,7 +81,7 @@ function redirectAnon() {
 
 // produces the client router
 export function getRouter(Galaxy) {
-    return new VueRouter({
+    const router = new VueRouter({
         base: getAppRoot(),
         mode: "history",
         routes: [
@@ -496,4 +496,19 @@ export function getRouter(Galaxy) {
             },
         ],
     });
+
+    router.beforeEach(async (to, from, next) => {
+        // Check parent hierarchy to see if any routes require admin
+        if (to.matched.some((record) => record.meta.requiresAdmin === true)) {
+            next({
+                path: "/login",
+                // save the location we were at to come back later
+                query: { redirect: to.fullPath },
+            });
+        } else {
+            next();
+        }
+    });
+
+    return router;
 }
