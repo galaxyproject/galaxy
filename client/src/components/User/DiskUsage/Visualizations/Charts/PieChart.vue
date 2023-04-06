@@ -14,6 +14,7 @@ interface PieChartProps {
     width?: number;
     height?: number;
     enableTooltips?: boolean;
+    enableSelection?: boolean;
     labelFormatter?: DataValueFormatter;
 }
 
@@ -22,6 +23,7 @@ const props = withDefaults(defineProps<PieChartProps>(), {
     width: 400,
     height: 400,
     enableTooltips: true,
+    enableSelection: false,
     labelFormatter: (dataPoint?: DataValuePoint | null) =>
         dataPoint ? `${dataPoint.label}: ${dataPoint.value}` : "No data",
 });
@@ -29,12 +31,16 @@ const props = withDefaults(defineProps<PieChartProps>(), {
 const emit = defineEmits<{
     (e: "show-tooltip", dataPoint: DataValuePoint, mouseX: number, mouseY: number): void;
     (e: "hide-tooltip"): void;
+    (e: "selection-changed", dataPoint?: DataValuePoint): void;
 }>();
 
 const pieChart = ref(null);
 const legend = ref(null);
 const chartTooltip = ref<HTMLBaseElement | null>(null);
 const tooltipDataPoint = ref<DataValuePoint | null>(null);
+const selectedDataPoint = ref<DataValuePoint | undefined>(undefined);
+const chartArcs = ref<d3.Selection<SVGGElement, d3.PieArcDatum<DataValuePoint>, SVGGElement, unknown> | null>(null);
+const legendEntries = ref<d3.Selection<SVGGElement | d3.BaseType, DataValuePoint, SVGGElement, unknown> | null>(null);
 
 const total = computed(() => props.data.reduce((total, dataPoint) => total + dataPoint.value, 0));
 const showTooltip = computed(() => props.enableTooltips && tooltipDataPoint.value !== null);
@@ -43,8 +49,9 @@ const hasData = computed(
 );
 
 onMounted(() => {
-    drawChart();
-    createLegend();
+    chartArcs.value = drawChart();
+    legendEntries.value = createLegend();
+    setupEvents();
 });
 
 const color = d3.scaleOrdinal(d3.schemeCategory10);
@@ -75,7 +82,7 @@ function drawChart() {
         // @ts-ignore
         .attr("fill", entryColor);
 
-    setupTooltipEvents(arcs);
+    return arcs;
 }
 
 function createLegend() {
@@ -122,6 +129,84 @@ function createLegend() {
         .attr("fill", "black")
         .attr("font-size", "14px")
         .text((d) => props.labelFormatter(d));
+
+    return entries;
+}
+
+function setupEvents() {
+    if (props.enableTooltips) {
+        setupTooltipEvents();
+    }
+
+    if (props.enableSelection) {
+        setupSelectionEvents();
+    }
+}
+
+function setupTooltipEvents() {
+    chartArcs.value
+        ?.on("mouseenter", (event, d) => {
+            tooltipDataPoint.value = d.data;
+            emit("show-tooltip", d.data, event.pageX, event.pageY);
+        })
+        .on("mousemove", (event) => {
+            // Correct the page coordinates to compensate for scrolling offset
+            const correctedX = event.pageX - window.pageXOffset;
+            const correctedY = event.pageY - window.pageYOffset;
+            setTooltipPosition(correctedX, correctedY);
+        })
+        .on("mouseleave", () => {
+            tooltipDataPoint.value = null;
+            emit("hide-tooltip");
+        });
+}
+
+function setupSelectionEvents() {
+    chartArcs.value?.on("click", (event, d) => {
+        event.stopPropagation();
+        toggleSelection(d.data);
+    });
+    legendEntries.value?.on("click", (event, d) => {
+        event.stopPropagation();
+        toggleSelection(d);
+    });
+
+    // Cancel selection on click anywhere else
+    d3.select("body").on("click", () => {
+        if (selectedDataPoint.value) {
+            toggleSelection(selectedDataPoint.value);
+        }
+    });
+}
+
+function toggleSelection(dataPoint: DataValuePoint): void {
+    if (selectedDataPoint.value === dataPoint) {
+        selectedDataPoint.value = undefined;
+    } else {
+        selectedDataPoint.value = dataPoint;
+    }
+    highlightSelected();
+    emit("selection-changed", selectedDataPoint.value);
+}
+
+function highlightSelected(): void {
+    if (!chartArcs.value) {
+        return;
+    }
+
+    chartArcs.value
+        .selectAll<d3.BaseType, d3.PieArcDatum<DataValuePoint>>("path")
+        .transition()
+        .duration(200)
+        .attr("opacity", (d) =>
+            selectedDataPoint.value === undefined || d.data === selectedDataPoint.value ? 1.0 : 0.5
+        );
+
+    legendEntries.value
+        ?.selectAll<d3.BaseType, DataValuePoint>("*")
+        .transition()
+        .duration(200)
+        .attr("opacity", (d) => (selectedDataPoint.value === undefined || d === selectedDataPoint.value ? 1.0 : 0.5));
 }
 
 function entryColor(d: DataValuePoint): string {
@@ -133,23 +218,6 @@ function setTooltipPosition(mouseX: number, mouseY: number): void {
         chartTooltip.value.style.left = `${mouseX}px`;
         chartTooltip.value.style.top = `${mouseY}px`;
     }
-}
-
-function setupTooltipEvents(arcs: d3.Selection<SVGGElement, d3.PieArcDatum<DataValuePoint>, SVGGElement, unknown>) {
-    if (!props.enableTooltips) {
-        return;
-    }
-    arcs.on("mouseenter", (event, d) => {
-        tooltipDataPoint.value = d.data;
-        emit("show-tooltip", d.data, event.pageX, event.pageY);
-    })
-        .on("mousemove", (event, d) => {
-            setTooltipPosition(event.pageX, event.pageY);
-        })
-        .on("mouseleave", () => {
-            tooltipDataPoint.value = null;
-            emit("hide-tooltip");
-        });
 }
 
 function applyThresholdToValue(d: DataValuePoint): number {
@@ -191,6 +259,11 @@ function applyThresholdToValue(d: DataValuePoint): number {
 }
 .pieChart {
     float: right;
+}
+
+.arc {
+    cursor: pointer;
+    opacity: 1;
 }
 
 .legend {
