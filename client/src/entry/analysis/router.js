@@ -19,6 +19,7 @@ import StorageDashboardRoutes from "entry/analysis/routes/storageDashboardRoutes
 // child components
 import Citations from "components/Citation/Citations";
 import AboutGalaxy from "components/AboutGalaxy.vue";
+import ClientError from "components/ClientError";
 import CollectionEditView from "components/Collections/common/CollectionEditView";
 import CustomBuilds from "components/User/CustomBuilds";
 import DatasetAttributes from "components/DatasetInformation/DatasetAttributes";
@@ -81,7 +82,7 @@ function redirectAnon() {
 
 // produces the client router
 export function getRouter(Galaxy) {
-    return new VueRouter({
+    const router = new VueRouter({
         base: getAppRoot(),
         mode: "history",
         routes: [
@@ -120,6 +121,12 @@ export function getRouter(Galaxy) {
                 path: "/published/workflow",
                 component: WorkflowPublished,
                 props: (route) => ({ id: route.query.id }),
+            },
+            {
+                name: "error",
+                path: "/client-error/",
+                component: ClientError,
+                props: true,
             },
             /** Analysis routes */
             {
@@ -496,4 +503,26 @@ export function getRouter(Galaxy) {
             },
         ],
     });
+
+    router.beforeEach(async (to, from, next) => {
+        // TODO: merge anon redirect functionality here for more standard handling
+
+        // Check parent route hierarchy to see if we require admin access here.
+        // Access is required if *any* component in the hierarchy requires it.
+        if (to.matched.some((record) => record.meta.requiresAdmin === true)) {
+            const isAdmin = getGalaxyInstance()?.user?.isAdmin() || false;
+            if (!isAdmin) {
+                const error = new Error(`Administrator Access Required for '${to.path}'.`);
+                error.name = "AdminRequired";
+                next(error);
+            }
+        }
+        next();
+    });
+
+    router.onError((error) => {
+        router.push({ name: "error", params: { error: error } });
+    });
+
+    return router;
 }
