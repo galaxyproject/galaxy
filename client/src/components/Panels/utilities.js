@@ -154,10 +154,11 @@ export function searchToolsByKeys(tools, keys, query, usesDl = false, usesDLAgai
             }
         }
     }
-    // no results with string.match(): maybe user misspelled, so try usesDl = true
-    if (!usesDl && returnedTools.length == 0) {
+    // no results with string.match():
+    // try DL with name key first, no results: try all other keys
+    if (!usesDl && !usesDLAgain && returnedTools.length == 0) {
         return searchToolsByKeys(tools, keys, query, true);
-    } else if (!usesDLAgain && returnedTools.length == 0) {
+    } else if (usesDl && !usesDLAgain && returnedTools.length == 0) {
         return searchToolsByKeys(tools, keys, query, false, true);
     }
     // sorting results by indexed order of keys

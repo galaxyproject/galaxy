@@ -5,6 +5,7 @@
             :class="!showAdvanced && 'mb-3'"
             :query="query"
             :delay="100"
+            :loading="queryPending"
             :show-advanced="showAdvanced"
             :enable-advanced="enableAdvanced"
             :placeholder="showAdvanced ? 'any name' : placeholder"
@@ -97,7 +98,7 @@
 <script>
 import { getGalaxyInstance } from "app";
 import DelayedInput from "components/Common/DelayedInput";
-import { flattenTools, searchToolsByKeys } from "../utilities.js";
+import { flattenTools } from "../utilities.js";
 
 export default {
     name: "ToolSearch",
@@ -121,6 +122,10 @@ export default {
             type: String,
             default: null,
         },
+        queryPending: {
+            type: Boolean,
+            default: false,
+        },
         showAdvanced: {
             type: Boolean,
             default: false,
@@ -136,6 +141,19 @@ export default {
             minQueryLength: 3,
             filterSettings: {},
             showHelp: false,
+            searchWorker: null,
+        };
+    },
+    beforeDestroy() {
+        this.searchWorker.terminate();
+    },
+    mounted() {
+        this.searchWorker = new Worker(new URL("../toolSearch.worker.js", import.meta.url));
+        this.searchWorker.onmessage = (event) => {
+            const { type, payload, query } = event.data;
+            if (type === "searchToolsByKeysResult" && query === this.query) {
+                this.$emit("onResults", payload);
+            }
         };
     },
     computed: {
@@ -165,7 +183,15 @@ export default {
                 } else {
                     // keys with sorting order
                     const keys = { exact: 3, name: 2, description: 1, combined: 0 };
-                    this.$emit("onResults", searchToolsByKeys(this.toolsList, keys, q));
+                    const workerMessage = {
+                        type: "searchToolsByKeys",
+                        payload: {
+                            tools: this.toolsList,
+                            keys: keys,
+                            query: q,
+                        },
+                    };
+                    this.searchWorker.postMessage(workerMessage);
                 }
             } else {
                 this.$emit("onResults", null);
