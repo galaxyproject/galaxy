@@ -56,8 +56,9 @@ export function usePopperjs(
     watch(
         () => [isMounted.value, updatedFlag.value],
         () => {
-            if (!isMounted.value) return;
-
+            if (!isMounted.value) {
+                return;
+            }
             if ((unref(reference) as any)?.$el) {
                 referenceRef.value = (unref(reference) as any).$el;
             } else {
@@ -77,9 +78,12 @@ export function usePopperjs(
         () => [referenceRef.value, popperRef.value],
         () => {
             destroy();
-            if (!referenceRef.value) return;
-            if (!popperRef.value) return;
-
+            if (!referenceRef.value) {
+                return;
+            }
+            if (!popperRef.value) {
+                return;
+            }
             concrete();
         }
     );
@@ -103,7 +107,9 @@ export function usePopperjs(
     watch(
         () => [instance.value, unref(options?.trigger), unref(options?.forceShow)],
         () => {
-            if (!instance.value) return;
+            if (!instance.value) {
+                return;
+            }
 
             if (unref(options?.forceShow)) {
                 visible.value = true;
@@ -118,9 +124,12 @@ export function usePopperjs(
     watch(
         () => unref(options?.forceShow),
         () => {
-            if (unref(options?.forceShow)) return;
-            if (unref(options?.trigger) === "manual") return;
-
+            if (unref(options?.forceShow)) {
+                return;
+            }
+            if (unref(options?.trigger) === "manual") {
+                return;
+            }
             visible.value = false;
         }
     );
@@ -205,16 +214,21 @@ export function usePopperjs(
         off(popperRef.value!, "blur", doClose);
     };
     const doCloseForDocument = (e: Event) => {
-        if (referenceRef.value?.contains(e.target as Element)) return;
-        if (popperRef.value?.contains(e.target as Element)) return;
+        if (referenceRef.value?.contains(e.target as Element)) {
+            return;
+        }
+        if (popperRef.value?.contains(e.target as Element)) {
+            return;
+        }
         doClose();
     };
 
     watch(
         () => [instance.value, visible.value],
         () => {
-            if (!instance.value) return;
-
+            if (!instance.value) {
+                return;
+            }
             if (visible.value || unref(options?.forceShow)) {
                 popperRef.value?.classList.remove("vue-use-popperjs-none");
                 options?.onShow?.();

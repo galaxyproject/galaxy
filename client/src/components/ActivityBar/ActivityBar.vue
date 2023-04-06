@@ -1,17 +1,14 @@
 <script setup>
 import { getGalaxyInstance } from "app";
 import { useUserStore } from "@/stores/userStore";
-import { WindowManager } from "@/layout/window-manager";
-import { useRoute, useRouter } from "vue-router/composables";
-import { computed, ref } from "vue";
+import { useRouter } from "vue-router/composables";
+import { computed } from "vue";
 import UploadItem from "./Items/UploadItem.vue";
 import WorkflowItem from "./Items/WorkflowItem.vue";
 import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
 import ActivityItem from "./ActivityItem";
 
-const route = useRoute();
 const router = useRouter();
-const showCenter = ref(false);
 const userStore = useUserStore();
 
 const workflows = computed(() => {

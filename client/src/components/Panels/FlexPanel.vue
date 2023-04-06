@@ -23,8 +23,8 @@ function toggle() {
             <div v-else class="flex-fill" />
             <div class="flex-panel-footer d-flex px-2 p-1" :class="{ 'flex-panel-border': !show }" @click="toggle">
                 <div class="flex-fill" />
-                <icon v-if="show" class="align-self-end" icon="chevron-right" />
-                <icon v-else icon="chevron-left" />
+                <font-awesome-icon v-if="show" class="align-self-end" icon="chevron-right" />
+                <font-awesome-icon v-else icon="chevron-left" />
             </div>
         </div>
     </div>

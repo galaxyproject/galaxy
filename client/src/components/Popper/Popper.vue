@@ -3,7 +3,7 @@
         <component :is="referenceIs" v-bind="referenceProps" ref="reference">
             <slot name="reference" />
         </component>
-        <component class="popper-element mt-1" v-show="visible" :is="popperIs" v-bind="popperProps" ref="popper">
+        <component :is="popperIs" v-show="visible" v-bind="popperProps" ref="popper" class="popper-element mt-1">
             <div class="popper-arrow" data-popper-arrow />
             <slot />
         </component>
@@ -11,10 +11,9 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, toRef, computed, watch } from "vue";
+import { defineComponent, ref, toRef, watch } from "vue";
 import type { UnwrapRef, PropType } from "vue";
 import { usePopperjs } from "./usePopper";
-let popperUid = 0;
 
 export default defineComponent({
     components: {},

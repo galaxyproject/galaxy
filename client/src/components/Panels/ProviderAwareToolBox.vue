@@ -19,7 +19,6 @@
 import ToolBox from "./ToolBox";
 import ConfigProvider from "components/providers/ConfigProvider";
 import ToolPanelViewProvider from "components/providers/ToolPanelViewProvider";
-import _l from "utils/localization";
 import { mapActions } from "vuex";
 
 export default {

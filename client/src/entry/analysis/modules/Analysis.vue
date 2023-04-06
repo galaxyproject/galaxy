@@ -1,19 +1,15 @@
 <script setup>
-import { getGalaxyInstance } from "app";
 import CenterFrame from "./CenterFrame.vue";
-import { useUserStore } from "@/stores/userStore";
 import HistoryIndex from "@/components/History/Index.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import DragAndDropModal from "@/components/Upload/DragAndDropModal.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
-import { WindowManager } from "@/layout/window-manager";
 import { useRoute, useRouter } from "vue-router/composables";
 import { computed, ref, onMounted, onUnmounted } from "vue";
 
 const route = useRoute();
 const router = useRouter();
 const showCenter = ref(false);
-const userStore = useUserStore();
 
 // computed
 const showPanels = computed(() => {
@@ -33,14 +29,6 @@ function onLoad() {
     showCenter.value = true;
 }
 
-function sidebarIsActive(menuKey) {
-    return userStore.toggledSideBar === menuKey;
-}
-
-function onToggleSidebar(toggle) {
-    userStore.toggleSideBar(toggle);
-}
-
 // life cycle
 onMounted(() => {
     // Using a custom event here which, in contrast to watching $route,
@@ -58,8 +46,8 @@ onUnmounted(() => {
             <CenterFrame v-show="showCenter" id="galaxy_main" @load="onLoad" />
             <router-view v-show="!showCenter" :key="$route.fullPath" class="h-100" />
         </div>
-        <FlexPanel side="right">
-            <HistoryIndex v-if="showPanels" />
+        <FlexPanel v-if="showPanels" side="right">
+            <HistoryIndex />
         </FlexPanel>
         <DragAndDropModal />
     </div>

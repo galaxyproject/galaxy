@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref } from "vue";
 import Popper from "components/Popper/Popper.vue";
 
 interface Option {
@@ -18,7 +17,7 @@ export interface Props {
     options?: Option[];
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
     icon: "question",
     isActive: false,
     tooltip: null,
@@ -32,39 +31,37 @@ const emit = defineEmits<{
 <template>
     <div>
         <Popper reference-is="span" popper-is="span" placement="right">
-            <template #reference>
+            <template v-slot:reference>
                 <b-nav-item
                     :id="id"
                     class="position-relative mb-1"
                     :class="{ 'nav-item-active': isActive }"
                     :aria-label="title | l"
                     @click="emit('click')">
-                    <template>
-                        <span v-if="!!progressStatus" class="progress">
-                            <div
-                                class="progress-bar notransition"
-                                :class="{
-                                    'bg-danger': progressStatus === 'danger',
-                                    'bg-success': progressStatus === 'success',
-                                }"
-                                :style="{
-                                    width: `${Math.round(progressPercentage)}%`,
-                                }" />
-                        </span>
-                        <span class="position-relative">
-                            <div class="nav-icon">
-                                <Icon :icon="icon" />
-                            </div>
-                            <div class="nav-title">{{ title }}</div>
-                        </span>
-                    </template>
+                    <span v-if="!!progressStatus" class="progress">
+                        <div
+                            class="progress-bar notransition"
+                            :class="{
+                                'bg-danger': progressStatus === 'danger',
+                                'bg-success': progressStatus === 'success',
+                            }"
+                            :style="{
+                                width: `${Math.round(progressPercentage)}%`,
+                            }" />
+                    </span>
+                    <span class="position-relative">
+                        <div class="nav-icon">
+                            <Icon :icon="icon" />
+                        </div>
+                        <div class="nav-title">{{ title }}</div>
+                    </span>
                 </b-nav-item>
             </template>
             <div class="px-2 py-1">
                 <small v-if="tooltip">{{ tooltip | l }}</small>
                 <small v-else>No tooltip available for this item</small>
                 <div v-if="options" class="nav-options p-1">
-                    <router-link v-for="option in options" :to="option.value">
+                    <router-link v-for="(option, index) in options" :key="index" :to="option.value">
                         <b-button size="sm" variant="outline-primary" class="w-100 my-1 text-break text-light">
                             {{ option.name }}
                         </b-button>
