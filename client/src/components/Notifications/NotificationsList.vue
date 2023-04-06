@@ -1,0 +1,234 @@
+<script setup lang="ts">
+import { storeToRefs } from "pinia";
+import Vue, { computed, ref } from "vue";
+import BootstrapVue from "bootstrap-vue";
+import type { components } from "@/schema";
+import UtcDate from "@/components/UtcDate.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import AsyncButton from "@/components/Common/AsyncButton.vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { useNotificationsStore } from "@/stores/notificationsStore";
+import { faCircle, faInbox, faRetweet } from "@fortawesome/free-solid-svg-icons";
+
+Vue.use(BootstrapVue);
+
+// @ts-ignore
+library.add(faCircle, faInbox, faRetweet);
+
+type UserNotificationResponse = components["schemas"]["UserNotificationResponse"];
+
+const notificationsStore = useNotificationsStore();
+const { notifications, loadingNotifications } = storeToRefs(notificationsStore);
+
+const showUnread = ref(false);
+const showFavorites = ref(false);
+const selectedNotificationIds = ref<string[]>([]);
+
+const haveSelected = computed(() => selectedNotificationIds.value.length > 0);
+const filteredNotifications = computed(() => {
+    return notifications.value.filter(filterNotifications);
+});
+const allSelected = computed(
+    () => haveSelected.value && selectedNotificationIds.value.length === notifications.value.length
+);
+
+function filterNotifications(notification: UserNotificationResponse) {
+    if (showUnread.value && showFavorites.value) {
+        return !notification.seen_time && notification.favorite;
+    } else if (showUnread.value) {
+        return !notification.seen_time;
+    } else if (showFavorites.value) {
+        return notification.favorite;
+    } else {
+        return true;
+    }
+}
+
+function getNotificationVariant(item: UserNotificationResponse) {
+    switch (item.variant) {
+        case "urgent":
+            return "danger";
+        default:
+            return item.variant;
+    }
+}
+function getNotificationIcon(item: UserNotificationResponse) {
+    switch (item.category) {
+        case "new_shared_item":
+            return ["fas", "fa-retweet"];
+        default:
+            return ["fas", "fa-inbox"];
+    }
+}
+
+async function updateNotification(item: UserNotificationResponse, changes: any) {
+    await notificationsStore.updateBatchNotification({ notification_ids: [item.id], changes });
+}
+
+async function updateNotifications(changes: any) {
+    await notificationsStore.updateBatchNotification({ notification_ids: selectedNotificationIds.value, changes });
+    selectedNotificationIds.value = [];
+}
+
+function selectOrDeselectNotification(items: UserNotificationResponse[]) {
+    const ids = items.map((item) => item.id);
+    const selectedIds = selectedNotificationIds.value;
+    const newSelectedIds = selectedIds.filter((id) => !ids.includes(id));
+    if (newSelectedIds.length === selectedIds.length) {
+        selectedNotificationIds.value = [...selectedIds, ...ids];
+    } else {
+        selectedNotificationIds.value = newSelectedIds;
+    }
+}
+</script>
+
+<template>
+    <div aria-labelledby="notifications-list">
+        <h1 id="notifications-title" class="h-lg">Notifications</h1>
+        <BAlert v-if="loadingNotifications" show>
+            <LoadingSpan message="Loading notifications" />
+        </BAlert>
+
+        <BAlert v-else-if="notifications.length === 0" show variant="info"> No notifications to show. </BAlert>
+
+        <div v-else class="mx-1">
+            <BCard class="mb-2">
+                <BRow class="align-items-center" no-gutters>
+                    <BCol cols="1">
+                        <BCheckbox
+                            :checked="allSelected"
+                            :indeterminate="
+                                selectedNotificationIds.length > 0 &&
+                                selectedNotificationIds.length < notifications.length
+                            "
+                            @change="selectOrDeselectNotification(notifications)">
+                            {{ haveSelected ? `${selectedNotificationIds.length} selected` : "Select all" }}
+                        </BCheckbox>
+                    </BCol>
+                    <BCol v-if="haveSelected">
+                        <BButton size="sm" variant="outline-primary" @click="updateNotifications({ seen: true })">
+                            <FontAwesomeIcon icon="check" />
+                            Mark as read
+                        </BButton>
+                        <BButton size="sm" variant="outline-primary" @click="updateNotifications({ deleted: true })">
+                            <FontAwesomeIcon icon="trash" />
+                            Delete
+                        </BButton>
+                    </BCol>
+                    <BCol>
+                        <BRow align-h="end" align-v="center">
+                            <span class="mx-2"> Filters: </span>
+                            <BButtonGroup>
+                                <BButton
+                                    size="sm"
+                                    :pressed="showUnread"
+                                    variant="outline-primary"
+                                    @click="showUnread = !showUnread">
+                                    <FontAwesomeIcon icon="check" />
+                                    Unread
+                                </BButton>
+                                <BButton
+                                    size="sm"
+                                    :pressed="showFavorites"
+                                    variant="outline-primary"
+                                    @click="showFavorites = !showFavorites">
+                                    <FontAwesomeIcon icon="star" />
+                                    Favorites
+                                </BButton>
+                            </BButtonGroup>
+                        </BRow>
+                    </BCol>
+                </BRow>
+            </BCard>
+
+            <BAlert v-show="filteredNotifications.length === 0" show variant="info">
+                No matching notifications with current filters.
+            </BAlert>
+
+            <TransitionGroup key="hhs" name="notifications-list" tag="div">
+                <BCard
+                    v-for="item in filteredNotifications"
+                    v-show="filteredNotifications.length > 0"
+                    :key="item.id"
+                    class="my-2"
+                    :class="!item.seen_time ? 'border-dark' : ''">
+                    <BRow class="align-items-center" no-gutters>
+                        <BCol cols="auto">
+                            <BButtonGroup>
+                                <FontAwesomeIcon
+                                    v-if="!item.seen_time"
+                                    size="sm"
+                                    class="unread-status position-absolute align-self-center mr-1"
+                                    icon="circle" />
+                                <BCheckbox
+                                    :checked="selectedNotificationIds.includes(item.id)"
+                                    @change="selectOrDeselectNotification([item])" />
+                            </BButtonGroup>
+                        </BCol>
+                        <BCol cols="2">
+                            <FontAwesomeIcon
+                                :class="`text-${getNotificationVariant(item)}`"
+                                :icon="getNotificationIcon(item)" />
+                            {{ item.content.subject }}
+                        </BCol>
+                        <BCol cols="6">
+                            {{ item.content.message }}
+                        </BCol>
+                        <BCol cols="2">
+                            <UtcDate :date="item.create_time" mode="elapsed" />
+                        </BCol>
+                        <BCol>
+                            <BRow align-h="end">
+                                <BInputGroup>
+                                    <AsyncButton
+                                        v-if="!item.seen_time"
+                                        icon="check"
+                                        :action="() => updateNotification(item, { seen: true })" />
+                                    <AsyncButton
+                                        v-if="item.favorite"
+                                        icon="star"
+                                        :action="() => updateNotification(item, { favorite: false })" />
+                                    <AsyncButton
+                                        v-else
+                                        icon="fa-regular fa-star"
+                                        :action="() => updateNotification(item, { favorite: true })" />
+                                    <AsyncButton
+                                        icon="trash"
+                                        :action="() => updateNotification(item, { deleted: true })" />
+                                </BInputGroup>
+                            </BRow>
+                        </BCol>
+                    </BRow>
+                </BCard>
+            </TransitionGroup>
+        </div>
+    </div>
+</template>
+
+<style lang="scss" scoped>
+@import "scss/theme/blue.scss";
+
+.unread-status {
+    left: -1rem;
+    color: $brand-primary;
+}
+
+.notifications-list-enter-active {
+    transition: all 0.5s ease;
+}
+
+.notifications-list-leave-active {
+    transition: all 0.3s ease;
+}
+
+.notifications-list-enter {
+    opacity: 0;
+    transform: translateY(-2rem);
+}
+
+.notifications-list-leave-to {
+    opacity: 0;
+    transform: translateX(2rem);
+}
+</style>
