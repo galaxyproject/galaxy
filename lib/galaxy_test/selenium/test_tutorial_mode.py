@@ -1,5 +1,4 @@
-import json
-import time
+from unittest import SkipTest
 
 import pytest
 
@@ -31,4 +30,4 @@ class TestTutorialMode(SeleniumTestCase):
         data = response.json()
         webhooks = [x["id"] for x in data]
         if "gtn" not in webhooks:
-            raise unittest.SkipTest('Skipping test, webhook "GTN Tutorial Mode" doesn\'t appear to be configured.')
+            raise SkipTest('Skipping test, webhook "GTN Tutorial Mode" doesn\'t appear to be configured.')
