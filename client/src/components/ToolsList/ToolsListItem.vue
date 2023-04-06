@@ -63,24 +63,22 @@ library.add(faWrench, faExternalLinkAlt, faCheck, faTimes, faAngleDown, faAngleU
                 <span itemprop="description">{{ props.description }}</span>
                 <span>(Galaxy Version {{ props.version }})</span>
             </div>
-            <div>
-                <b-button-group>
-                    <ToolFavoriteButton :id="props.id" />
+            <div class="d-flex align-items-start">
+                <ToolFavoriteButton :id="props.id" />
 
-                    <b-button
-                        v-if="props.local"
-                        class="text-nowrap"
-                        variant="primary"
-                        size="sm"
-                        @click="() => emit('open')">
-                        <FontAwesomeIcon icon="fa-wrench" fixed-width />
-                        Open
-                    </b-button>
-                    <b-button v-else class="text-nowrap" variant="primary" size="sm" :href="props.link">
-                        <FontAwesomeIcon icon="fa-external-link-alt" fixed-width />
-                        Open
-                    </b-button>
-                </b-button-group>
+                <b-button
+                    v-if="props.local"
+                    class="text-nowrap"
+                    variant="primary"
+                    size="sm"
+                    @click="() => emit('open')">
+                    <FontAwesomeIcon icon="fa-wrench" fixed-width />
+                    Open
+                </b-button>
+                <b-button v-else class="text-nowrap" variant="primary" size="sm" :href="props.link">
+                    <FontAwesomeIcon icon="fa-external-link-alt" fixed-width />
+                    Open
+                </b-button>
             </div>
         </div>
 
