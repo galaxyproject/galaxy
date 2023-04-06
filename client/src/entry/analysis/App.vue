@@ -60,6 +60,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { setToastComponentRef } from "composables/toast";
 import { setConfirmDialogComponentRef } from "composables/confirmDialog";
 import { setGlobalUploadModal } from "composables/globalUploadModal";
+import { useNotificationsStore } from "@/stores/notificationsStore";
 
 export default {
     components: {
@@ -75,6 +76,9 @@ export default {
         const { currentHistory } = storeToRefs(useHistoryStore());
 
         userStore.loadUser();
+
+        const notificationsStore = useNotificationsStore();
+        notificationsStore.startPollingNotifications();
 
         const toastRef = ref(null);
         setToastComponentRef(toastRef);
