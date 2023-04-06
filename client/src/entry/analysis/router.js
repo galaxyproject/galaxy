@@ -35,7 +35,7 @@ import HistoryView from "components/History/HistoryView";
 import HistoryPublished from "components/History/HistoryPublished";
 import HistoryPublishedList from "components/History/HistoryPublishedList";
 import HistoryMultipleView from "components/History/Multiple/MultipleView";
-import NotificationsList from "components/Notification/NotificationList.vue";
+import NotificationsList from "components/Notifications/NotificationsList.vue";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools";
 import InvocationReport from "components/Workflow/InvocationReport";
 import JobDetails from "components/JobInformation/JobDetails";
