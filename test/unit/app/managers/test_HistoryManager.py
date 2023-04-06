@@ -813,6 +813,15 @@ class TestHistoryFilters(BaseTestCase):
         )
         assert shining_examples == [history3]
 
+        case_insensitive_examples = self.history_manager.list(
+            filters=self.filter_parser.parse_filters(
+                [
+                    ("annotation", "contains", "all"),
+                ]
+            )
+        )
+        assert case_insensitive_examples == [history1, history3]
+
     def test_fn_filter_currying(self):
         self.filter_parser.fn_filter_parsers = {"name_len": {"op": {"lt": lambda i, v: len(i.name) < v}, "val": int}}
         self.log("should be 2 filters now")

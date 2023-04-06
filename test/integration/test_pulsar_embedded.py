@@ -31,6 +31,7 @@ test_tools = integration_util.integration_tool_runner(
         "vcf_bgzip_test",
         "environment_variables",
         "multi_output_assign_primary_ext_dbkey",
+        "job_properties",
         "strict_shell",
         "tool_provided_metadata_9",
     ]

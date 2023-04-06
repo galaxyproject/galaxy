@@ -2618,6 +2618,15 @@ class TaskWrapper(JobWrapper):
     ):
         log.error(f"TaskWrapper Failure {message}")
         self.status = "error"
+        super().fail(
+            message,
+            exception=exception,
+            tool_stdout=tool_stdout,
+            tool_stderr=tool_stderr,
+            exit_code=exit_code,
+            job_stdout=job_stdout,
+            job_stderr=job_stderr,
+        )
         # How do we want to handle task failure?  Fail the job and let it clean up?
 
     def change_state(self, state, info=False, flush=True, job=None):

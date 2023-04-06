@@ -619,15 +619,16 @@ class PulsarJobRunner(AsynchronousJobRunner):
         assert isinstance(
             job_state, AsynchronousJobState
         ), f"job_state type is '{type(job_state)}', expected AsynchronousJobState"
-        stderr = stdout = ""
         job_wrapper = job_state.job_wrapper
         try:
             client = self.get_client_from_state(job_state)
             run_results = client.full_status()
             remote_metadata_directory = run_results.get("metadata_directory", None)
-            stdout = run_results.get("stdout", "")
-            stderr = run_results.get("stderr", "")
-            exit_code = run_results.get("returncode", None)
+            tool_stdout = run_results.get("stdout", "")
+            tool_stderr = run_results.get("stderr", "")
+            job_stdout = run_results.get("job_stdout")
+            job_stderr = run_results.get("job_stderr")
+            exit_code = run_results.get("returncode")
             pulsar_outputs = PulsarOutputs.from_status_response(run_results)
             state = job_wrapper.get_state()
             # Use Pulsar client code to transfer/copy files back
@@ -668,9 +669,11 @@ class PulsarJobRunner(AsynchronousJobRunner):
             ):
                 job_metrics_directory = job_wrapper.working_directory
             job_wrapper.finish(
-                stdout,
-                stderr,
+                tool_stdout,
+                tool_stderr,
                 exit_code,
+                job_stdout=job_stdout,
+                job_stderr=job_stderr,
                 remote_metadata_directory=remote_metadata_directory,
                 job_metrics_directory=job_metrics_directory,
             )
