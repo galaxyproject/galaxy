@@ -97,7 +97,7 @@ class GroupsController(BaseAPIController):
         decoded_id = trans.security.decode_id(encoded_id)
         group = self.group_manager.get(trans, decoded_id)
         if group is None:
-            raise ObjectNotFound(f"Unable to locate group record for id {str(encoded_id)}.")
+            raise ObjectNotFound("Unable to locate group record with the given id.")
         return self._populate(trans, group)
 
     def _populate(self, trans, group):

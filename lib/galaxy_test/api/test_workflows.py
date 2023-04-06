@@ -2751,8 +2751,7 @@ steps:
       advanced:
         conflict:
           __current_case__: 0
-          duplicate_options: suffix_conflict
-          suffix_pattern: _#
+          duplicate_options: keep_first
       inputs:
       - __index__: 0
         input:
@@ -2816,26 +2815,28 @@ input collection 2:
             crate = self.workflow_populator.get_ro_crate(invocation_id, include_files=True)
             workflow = crate.mainEntity
             root = crate.root_dataset
-            assert len(root["mentions"]) == 3
+            assert len(root["mentions"]) == 4
             actions = [_ for _ in crate.contextual_entities if "CreateAction" in _.type]
             assert len(actions) == 1
             wf_action = actions[0]
             wf_objects = wf_action["object"]
-            assert len(workflow["input"]) == 7
-            assert len(workflow["output"]) == 2
+            assert len(workflow["input"]) == 3
+            assert len(workflow["output"]) == 3
             collections = [_ for _ in crate.contextual_entities if "Collection" in _.type]
             assert len(collections) == 3
             collection = collections[0]
-            assert collection["additionalType"] == "list"
+            assert (
+                collection["additionalType"]
+                == "https://training.galaxyproject.org/training-material/faqs/galaxy/collections_build_list.html"
+            )
             assert collection.type == "Collection"
             assert len(collection["hasPart"]) == 2
-            for dataset in collection["hasPart"]:
-                assert dataset in wf_objects
+            assert collection in wf_objects
 
             coll_dataset = collection["hasPart"][0].id
             assert coll_dataset in [_.id for _ in collections[2]["hasPart"]]
             property_values = [_ for _ in crate.contextual_entities if "PropertyValue" in _.type]
-            assert len(property_values) == 2
+            assert len(property_values) == 1
             for pv in property_values:
                 assert pv in wf_objects
                 assert pv["exampleOfWork"] in workflow["input"]

@@ -21,6 +21,7 @@ from sqlalchemy.orm.scoping import scoped_session
 from galaxy import model
 from galaxy.model import store
 from galaxy.model.metadata import MetadataTempFile
+from galaxy.model.orm.now import now
 from galaxy.model.unittest_utils import GalaxyDataTestApp
 from galaxy.model.unittest_utils.store_fixtures import (
     deferred_hda_model_store_dict,
@@ -396,7 +397,7 @@ def validate_main_entity(ro_crate: ROCrate):
     assert workflow["name"] == "Test Workflow"
     assert "SoftwareSourceCode" in workflow.type
     assert "ComputationalWorkflow" in workflow.type
-    assert len(workflow["input"]) == 2
+    assert len(workflow["input"]) == 1
     assert len(workflow["output"]) == 1
 
 
@@ -409,7 +410,7 @@ def validate_create_action(ro_crate: ROCrate):
     assert wf_action["instrument"] is workflow
     wf_objects = wf_action["object"]
     wf_results = wf_action["result"]
-    assert len(wf_objects) == 2
+    assert len(wf_objects) == 1
     assert len(wf_results) == 1
     for entity in wf_results:
         if entity.id.endswith(".txt"):
@@ -424,7 +425,6 @@ def validate_other_entities(ro_crate: ROCrate):
     inputs = workflow["input"]
     outputs = workflow["output"]
     assert inputs[0]["additionalType"] == "File"
-    assert inputs[1]["additionalType"] == "None"
     assert outputs[0]["additionalType"] == "File"
 
     for entity in inputs + outputs:
@@ -456,18 +456,21 @@ def validate_invocation_collection_crate_directory(crate_directory):
     actions = [_ for _ in ro_crate.contextual_entities if "CreateAction" in _.type]
     assert len(actions) == 1
     wf_action = actions[0]
-    wf_objects = wf_action["object"]
-    assert len(workflow["input"]) == 3
+    assert wf_action in root["mentions"]
+    assert len(workflow["input"]) == 2
     assert len(workflow["output"]) == 1
-    assert len(root["mentions"]) == 3
+    assert len(root["mentions"]) == 4
     collections = [_ for _ in ro_crate.contextual_entities if "Collection" in _.type]
     assert len(collections) == 3
     collection = collections[0]
     assert collection.type == "Collection"
-    assert collection["additionalType"] == "list"
+    assert (
+        collection["additionalType"]
+        == "https://training.galaxyproject.org/training-material/faqs/galaxy/collections_build_list.html"
+    )
     assert len(collection["hasPart"]) == 2
     for dataset in collection["hasPart"]:
-        assert dataset in wf_objects
+        assert dataset in root["hasPart"]
 
 
 def test_export_history_to_ro_crate(tmp_path):
@@ -483,6 +486,15 @@ def test_export_history_to_ro_crate(tmp_path):
 def test_export_invocation_to_ro_crate(tmp_path):
     app = _mock_app()
     workflow_invocation = _setup_invocation(app)
+    crate_directory = tmp_path / "crate"
+    with store.ROCrateModelExportStore(crate_directory, app=app) as export_store:
+        export_store.export_workflow_invocation(workflow_invocation)
+    validate_invocation_crate_directory(crate_directory)
+
+
+def test_export_simple_invocation_to_ro_crate(tmp_path):
+    app = _mock_app()
+    workflow_invocation = _setup_simple_invocation(app)
     crate_directory = tmp_path / "crate"
     with store.ROCrateModelExportStore(crate_directory, app=app) as export_store:
         export_store.export_workflow_invocation(workflow_invocation)
@@ -842,7 +854,6 @@ def _setup_invocation(app):
     workflow_step_1 = model.WorkflowStep()
     workflow_step_1.order_index = 0
     workflow_step_1.type = "data_input"
-    workflow_step_1.tool_inputs = {}
     sa_session.add(workflow_step_1)
     workflow_1 = _workflow_from_steps(u, [workflow_step_1])
     workflow_1.license = "MIT"
@@ -853,16 +864,14 @@ def _setup_invocation(app):
     invocation_step.workflow_step = workflow_step_1
     invocation_step.job = j
     sa_session.add(invocation_step)
-    input_assoc = model.WorkflowRequestToInputDatasetAssociation()
-    input_assoc.workflow_invocation = workflow_invocation
-    input_assoc.workflow_step = workflow_step_1
-    input_assoc.dataset = d1
-    invocation_step.input_datasets = [input_assoc]
     output_assoc = model.WorkflowInvocationStepOutputDatasetAssociation()
     output_assoc.dataset = d2
     invocation_step.output_datasets = [output_assoc]
     workflow_invocation.steps = [invocation_step]
     workflow_invocation.user = u
+    workflow_invocation.add_input(d1, step=workflow_step_1)
+    wf_output = model.WorkflowOutput(workflow_step_1, label="output_label")
+    workflow_invocation.add_output(wf_output, workflow_step_1, d2)
     sa_session.add(workflow_invocation)
     sa_session.flush()
     return workflow_invocation
@@ -930,27 +939,42 @@ def _setup_collection_invocation(app):
     workflow_1.name = "Test Workflow"
     sa_session.add(workflow_1)
     workflow_invocation = _invocation_for_workflow(u, workflow_1)
-    invocation_step = model.WorkflowInvocationStep()
-    invocation_step.workflow_step = workflow_step_1
-    invocation_step.job = j
-    sa_session.add(invocation_step)
-    input_assoc = model.WorkflowRequestToInputDatasetCollectionAssociation()
-    input_assoc.workflow_invocation = workflow_invocation
-    input_assoc.workflow_step = workflow_step_1
-    input_assoc.dataset_collection = hc1
-    input_assoc1 = model.WorkflowRequestToInputDatasetCollectionAssociation()
-    input_assoc1.workflow_invocation = workflow_invocation
-    input_assoc1.workflow_step = workflow_step_1
-    input_assoc1.dataset_collection = hc2
-    invocation_step.input_dataset_collections = [input_assoc, input_assoc1]
-    output_assoc = model.WorkflowInvocationStepOutputDatasetCollectionAssociation()
-    output_assoc.dataset_collection = hc3
-    invocation_step.output_dataset_collections = [output_assoc]
-    workflow_invocation.steps = [invocation_step]
     workflow_invocation.user = u
+    workflow_invocation.add_input(hc1, step=workflow_step_1)
+    workflow_invocation.add_input(hc2, step=workflow_step_1)
+    wf_output = model.WorkflowOutput(workflow_step_1, label="output_label")
+    workflow_invocation.add_output(wf_output, workflow_step_1, hc3)
+
     sa_session.add(workflow_invocation)
     sa_session.flush()
     return workflow_invocation
+
+
+def _setup_simple_invocation(app):
+    sa_session = app.model.context
+
+    u, h, d1, d2, j = _setup_simple_cat_job(app)
+    j.parameters = [model.JobParameter(name="index_path", value='"/old/path/human"')]
+
+    workflow_step_1 = model.WorkflowStep()
+    workflow_step_1.order_index = 0
+    workflow_step_1.type = "data_input"
+    workflow_step_1.tool_inputs = {}
+    sa_session.add(workflow_step_1)
+    workflow = _workflow_from_steps(u, [workflow_step_1])
+    workflow.license = "MIT"
+    workflow.name = "Test Workflow"
+    workflow.create_time = now()
+    workflow.update_time = now()
+    sa_session.add(workflow)
+    invocation = _invocation_for_workflow(u, workflow)
+    invocation.create_time = now()
+    invocation.update_time = now()
+
+    invocation.add_input(d1, step=workflow_step_1)
+    wf_output = model.WorkflowOutput(workflow_step_1, label="output_label")
+    invocation.add_output(wf_output, workflow_step_1, d2)
+    return invocation
 
 
 def _import_export_history(app, h, dest_export=None, export_files=None, import_options=None, include_hidden=False):

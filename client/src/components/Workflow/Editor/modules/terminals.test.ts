@@ -380,6 +380,18 @@ describe("canAccept", () => {
         dataInTwo.disconnect(dataOut);
         expect(dataIn.mapOver).toEqual(NULL_COLLECTION_TYPE_DESCRIPTION);
     });
+    it("maintains step map over state when disconnecting output", () => {
+        const listListOut = terminals["list:list input"]?.["output"] as OutputCollectionTerminal;
+        const filterFailedInput = terminals["filter_failed"]?.["input"] as InputCollectionTerminal;
+        const filterFailedOutput = terminals["filter_failed"]?.["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["simple data"]?.["input"] as InputTerminal;
+        filterFailedInput.connect(listListOut);
+        dataIn.connect(filterFailedOutput);
+        expect(filterFailedInput.isMappedOver()).toBe(true);
+        expect(stepStore.stepMapOver[filterFailedOutput.stepId]?.isCollection).toBe(true);
+        dataIn.disconnect(filterFailedOutput);
+        expect(stepStore.stepMapOver[filterFailedOutput.stepId]?.isCollection).toBe(true);
+    });
     it("rejects connecting incompatible connection types", () => {
         const pairedOut = terminals["paired input"]!["output"] as OutputCollectionTerminal;
         const collectionIn = terminals["list collection input"]!["input1"] as InputCollectionTerminal;

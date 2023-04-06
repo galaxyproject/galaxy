@@ -104,7 +104,7 @@ class GroupsManager:
     def _get_group(self, sa_session: galaxy_scoped_session, group_id: int) -> model.Group:
         group = sa_session.query(model.Group).get(group_id)
         if group is None:
-            raise ObjectNotFound(f"Group with id {DecodedDatabaseIdField.encode(group_id)} was not found.")
+            raise ObjectNotFound("Group with the provided id was not found.")
         return group
 
     def _get_users_by_encoded_ids(
