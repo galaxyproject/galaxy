@@ -29,7 +29,7 @@ test_tools = integration_util.integration_tool_runner(
         "version_command_tool_dir",
         "simple_constructs",
         "metadata_bam",
-        # "job_properties",  # https://github.com/galaxyproject/galaxy/issues/11813
+        "job_properties",
         "from_work_dir_glob",
     ]
 )
