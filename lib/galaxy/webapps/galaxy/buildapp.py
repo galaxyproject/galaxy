@@ -201,6 +201,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/admin/reset_metadata")
     webapp.add_client_route("/admin/roles")
     webapp.add_client_route("/admin/forms")
+    webapp.add_client_route("/admin/notifications")
     webapp.add_client_route("/admin/groups")
     webapp.add_client_route("/admin/repositories")
     webapp.add_client_route("/admin/sanitize_allow")
