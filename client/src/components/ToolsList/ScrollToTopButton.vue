@@ -30,8 +30,8 @@ export default {
 
 <style lang="scss" scoped>
 .back-to-top {
-    bottom: 0.5rem;
-    left: 0.5rem;
+    bottom: 0.25rem;
+    right: 0.25rem;
     position: absolute;
     opacity: 0;
     transition: opacity 0.4s;
