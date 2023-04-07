@@ -1,6 +1,6 @@
 <template>
     <CurrentUser v-slot="{ user }">
-        <UserHistories v-if="user" v-slot="{ handlers }" :user="user">
+        <UserHistories v-if="user" v-slot="{ currentHistory, handlers }" :user="user">
             <div v-if="history" class="d-flex flex-column h-100">
                 <b-alert v-if="history.purged" variant="info" show>This history has been purged.</b-alert>
                 <div v-else class="flex-row flex-grow-0">
@@ -9,6 +9,7 @@
                         size="sm"
                         variant="outline-info"
                         title="Switch to this history"
+                        :disabled="currentHistory.id == history.id"
                         @click="handlers.setCurrentHistory(history)">
                         Switch to this history
                     </b-button>
