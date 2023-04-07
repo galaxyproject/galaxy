@@ -171,6 +171,33 @@ class TestImportExportHistoryViaTasksIntegration(
         for record in export_records:
             assert record["up_to_date"] is False
 
+    def test_export_history_with_discarded_dataset_to_rocrate(self):
+        history_name = f"for_export_discarded_{uuid4()}"
+        history_id = self.dataset_populator.new_history(history_name)
+        model_store_format = "rocrate.zip"
+        target_uri = f"gxfiles://posix_test/history.{model_store_format}"
+
+        # Include discarded dataset
+        as_list = self.dataset_populator.create_contents_from_store(
+            history_id,
+            store_dict=one_hda_model_store_dict(
+                include_source=False,
+            ),
+        )
+        assert len(as_list) == 1
+        new_hda = as_list[0]
+        assert new_hda["model_class"] == "HistoryDatasetAssociation"
+        assert new_hda["state"] == "discarded"
+        assert not new_hda["deleted"]
+
+        # Export to a remote file source
+        self.dataset_populator.export_history_to_uri_async(history_id, target_uri, model_store_format)
+        export_records = self.dataset_populator.get_history_export_tasks(history_id)
+        assert len(export_records) == 1
+        last_record = export_records[0]
+        self._wait_for_export_task_on_record(last_record)
+        assert last_record["ready"] is True
+
     def _wait_for_export_task_on_record(self, record):
         if record["preparing"]:
             assert record["task_uuid"]
