@@ -37,7 +37,7 @@ function setPercentage(val: number): void {
 
 <template>
     <ActivityItem
-        id="tool-panel-upload-button"
+        id="activity-upload"
         title="Upload"
         tooltip="Download from URL or upload files from disk"
         icon="upload"

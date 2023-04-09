@@ -134,7 +134,6 @@ body {
 // ==== Panel layout styles ====
 
 #left,
-#center,
 #right {
     @extend .position-absolute;
     @extend .h-100;
@@ -156,7 +155,9 @@ body {
         left: 0;
     }
 }
-#center {
+.center-style  {
+    @extend .position-absolute;
+    @extend .h-100;
     left: $panel-width;
     right: $panel-width;
     .center-container {
