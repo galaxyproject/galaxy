@@ -7,8 +7,8 @@ export type MaybeRef<T> = T | Ref<T>;
 export type Trigger = "hover" | "focus" | "click-to-open" | "click-to-toggle" | "manual";
 
 export type EventOptions = {
-    onShow: Function;
-    onHide: Function;
+    onShow: () => void;
+    onHide: () => void;
 };
 
 function on(element: Element, event: string, handler: EventListenerOrEventListenerObject) {
