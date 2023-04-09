@@ -396,13 +396,19 @@ def set_metadata_portable(
                     files_path = os.path.abspath(
                         os.path.join(tool_job_working_directory, "working", extra_files_dir_name)
                     )
-                    if not os.path.exists(files_path):
+                    if os.path.exists(files_path):
+                        dataset.dataset.external_extra_files_path = files_path
+                    else:
+                        # could be pulsar, stores extra files in outputs directory
                         pulsar_extra_files_path = os.path.join(
                             tool_job_working_directory, "outputs", extra_files_dir_name
                         )
                         if os.path.exists(pulsar_extra_files_path):
-                            files_path = pulsar_extra_files_path
-                    dataset.dataset.external_extra_files_path = files_path
+                            dataset.dataset.external_extra_files_path = pulsar_extra_files_path
+                        elif dataset_filename_override and not object_store:
+                            # pulsar, no remote metadata and no extended metadata
+                            dataset.dataset.external_extra_files_path = os.path.join(os.path.dirname(dataset_filename_override), extra_files_dir_name)
+
             file_dict = tool_provided_metadata.get_dataset_meta(output_name, dataset.dataset.id, dataset.dataset.uuid)
             if "ext" in file_dict:
                 dataset.extension = file_dict["ext"]
