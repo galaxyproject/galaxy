@@ -7,7 +7,7 @@
                 </div>
             </div>
         </div>
-        <div id="right">
+        <div id="right" class="right-style">
             <div class="m-3">
                 <div v-if="modelTitle">
                     <h1 class="h-sm">About this {{ modelTitle }}</h1>
