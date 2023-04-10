@@ -5,16 +5,7 @@ Revises: 3100452fa030
 Create Date: 2023-01-16 11:53:59.783836
 
 """
-from typing import Generator
-
-from alembic import (
-    context,
-    op,
-)
-from alembic_utils.pg_view import PGView
-from sqlalchemy import text as sql_text
-from sqlalchemy.engine.url import make_url
-from sqlalchemy.sql.elements import TextClause
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "c39f1de47a04"
@@ -22,7 +13,8 @@ down_revision = "3100452fa030"
 branch_labels = None
 depends_on = None
 
-PREVIOUS_AGGREGATE_QUERY = """
+view_name = "collection_job_state_summary_view"
+previous_aggregate_query = """
 SELECT
     hdca_id,
     SUM(CASE WHEN state = 'new' THEN 1 ELSE 0 END) AS new,
@@ -57,8 +49,7 @@ FROM (
 ) jobstates
 GROUP BY jobstates.hdca_id
 """
-
-NEW_AGGREGATE_QUERY = """
+new_aggregate_query = """
 SELECT
     hdca_id,
     SUM(CASE WHEN state = 'new' THEN 1 ELSE 0 END) AS new,
@@ -96,38 +87,15 @@ GROUP BY jobstates.hdca_id
 """
 
 
-class SqlitePGView(PGView):
-    def to_sql_statement_create_or_replace(self) -> Generator[TextClause, None, None]:
-        """Generates a SQL "create or replace view" statement"""
-
-        yield sql_text(f"""DROP VIEW IF EXISTS {self.literal_schema}."{self.signature}";""")
-        yield sql_text(f"""CREATE VIEW {self.literal_schema}."{self.signature}" AS {self.definition};""")
-
-
-def get_view_instance(definition: str):
-    try:
-        url = make_url(context.config.get_main_option("sqlalchemy.url"))
-        dialect = url.get_dialect().name
-    except Exception:
-        # If someone's doing offline migrations they're probably using PostgreSQL
-        dialect = "postgresql"
-    if dialect == "postgresql":
-        ViewClass = PGView
-        schema = "public"
-    elif dialect == "sqlite":
-        ViewClass = SqlitePGView
-        schema = "main"
-    else:
-        raise Exception(f"Don't know how to generate view for dialect '{dialect}'")
-    return ViewClass(schema=schema, signature="collection_job_state_summary_view", definition=definition)
-
-
 def upgrade():
-    view = get_view_instance(NEW_AGGREGATE_QUERY)
-    # op.replace_entity comes from alembic_utils plugin
-    op.replace_entity(view)  # type: ignore[attr-defined]
+    op.execute("BEGIN")
+    op.execute(f"DROP VIEW IF EXISTS {view_name}")
+    op.execute(f"CREATE VIEW {view_name} AS {new_aggregate_query}")
+    op.execute("END")
 
 
 def downgrade():
-    view = get_view_instance(PREVIOUS_AGGREGATE_QUERY)
-    op.replace_entity(view)  # type: ignore[attr-defined]
+    op.execute("BEGIN")
+    op.execute(f"DROP VIEW IF EXISTS {view_name}")
+    op.execute(f"CREATE VIEW {view_name} AS {previous_aggregate_query}")
+    op.execute("END")
