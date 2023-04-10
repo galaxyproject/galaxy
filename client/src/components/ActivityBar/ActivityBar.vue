@@ -1,14 +1,12 @@
 <script setup>
 import { getGalaxyInstance } from "app";
 import { useUserStore } from "@/stores/userStore";
-import { useRouter } from "vue-router/composables";
 import { computed } from "vue";
 import UploadItem from "./Items/UploadItem.vue";
 import WorkflowItem from "./Items/WorkflowItem.vue";
 import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
 import ActivityItem from "./ActivityItem";
 
-const router = useRouter();
 const userStore = useUserStore();
 
 const workflows = computed(() => {
@@ -22,10 +20,6 @@ function sidebarIsActive(menuKey) {
 
 function onToggleSidebar(toggle) {
     userStore.toggleSideBar(toggle);
-}
-
-function showVisualizationList() {
-    router.push("/visualizations");
 }
 </script>
 <template>
@@ -46,14 +40,15 @@ function showVisualizationList() {
                     icon="chart-bar"
                     title="Visualize"
                     tooltip="Visualize datasets"
-                    @click="showVisualizationList" />
+                    to="/visualizations" />
             </b-nav>
             <b-nav vertical class="flex-nowrap p-1">
                 <ActivityItem
                     id="activity-settings"
                     icon="cog"
                     title="Configure"
-                    tooltip="Configure the Activity Bar" />
+                    tooltip="Edit preferences"
+                    to="/user" />
             </b-nav>
         </div>
         <div v-show="sidebarIsActive('search')" key="search">

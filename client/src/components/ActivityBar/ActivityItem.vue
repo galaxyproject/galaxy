@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { useRouter } from "vue-router/composables";
 import Popper from "components/Popper/Popper.vue";
+
+const router = useRouter();
 
 interface Option {
     name: string;
@@ -15,9 +18,10 @@ export interface Props {
     progressPercentage?: number;
     progressStatus?: string;
     options?: Option[];
+    to?: string;
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
     icon: "question",
     isActive: false,
     tooltip: null,
@@ -26,6 +30,13 @@ withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
     (e: "click"): void;
 }>();
+
+function onClick(): void {
+    if (props.to !== undefined) {
+        router.push(props.to);
+    }
+    emit("click");
+}
 </script>
 
 <template>
@@ -37,7 +48,7 @@ const emit = defineEmits<{
                     class="position-relative mb-1"
                     :class="{ 'nav-item-active': isActive }"
                     :aria-label="title | l"
-                    @click="emit('click')">
+                    @click="onClick">
                     <span v-if="!!progressStatus" class="progress">
                         <div
                             class="progress-bar notransition"
