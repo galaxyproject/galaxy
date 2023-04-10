@@ -18,10 +18,8 @@ from typing import (
 # https://stackoverflow.com/questions/56832881/check-if-a-field-is-typing-optional
 # Python >= 3.8
 try:
-    from typing import (
-        get_args,  # type: ignore[attr-defined]
-        get_origin,  # type: ignore[attr-defined]
-    )
+    from typing import get_args  # type: ignore[attr-defined]
+    from typing import get_origin  # type: ignore[attr-defined]
 # Compatibility
 except ImportError:
 

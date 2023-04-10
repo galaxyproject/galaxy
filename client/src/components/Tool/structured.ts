@@ -30,7 +30,7 @@ export function structuredInputs(formInputs: object, toolInputs: Array<ToolParam
     const validationResult = validateParameters(structuredInputs, toolInputs);
     if (validationResult.length !== 0) {
         console.log(`Failed structured input validation with... '${validationResult}'`);
-        throw "Failed parameter validation";
+        throw Error("Failed parameter validation");
     }
     return structuredInputs;
 }
@@ -196,7 +196,7 @@ function simpleCwlTypeChecker(parameterModel: ToolParameterModel) {
     } else if (isCwlFloat(parameterModel)) {
         checkType = isFloat;
     } else {
-        throw "Unknown simple CWL type encountered.";
+        throw Error("Unknown simple CWL type encountered.");
     }
     return checkType;
 }
