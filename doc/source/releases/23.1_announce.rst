@@ -2,11 +2,11 @@
 :orphan:
 
 ===========================================================
-Early 2023 Galaxy Release (v 23.0)
+Mid 2023 Galaxy Release (v 23.1)
 ===========================================================
 
 
 Schedule
 ===========================================================
- * Planned Freeze Date: 2022-12-05
- * Planned Release Date: 2023-01-16
+ * Planned Freeze Date: 2023-05-15
+ * Planned Release Date: 2023-06-30
