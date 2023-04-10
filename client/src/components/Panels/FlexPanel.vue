@@ -1,8 +1,9 @@
 <script setup>
-import { ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faChevronLeft, faChevronRight, faGripLinesVertical } from "@fortawesome/free-solid-svg-icons";
+import { useDraggable } from "@vueuse/core";
 
 library.add({
     faChevronLeft,
@@ -10,8 +11,24 @@ library.add({
     faGripLinesVertical,
 });
 
+const draggable = ref();
+const rangeWidth = [200, 300, 600];
+const panelWidth = ref(rangeWidth[1]);
 const show = ref(true);
-const dragging = ref(false);
+
+const { position, isDragging } = useDraggable(draggable, {
+    preventDefault: true,
+    exact: true,
+});
+
+watch(position, () => {
+    const newWidth = window.innerWidth - position.value.x;
+    panelWidth.value = Math.max(rangeWidth[0], Math.min(rangeWidth[2], newWidth));
+});
+
+const style = computed(() => {
+    return show.value ? { width: `${panelWidth.value}px` } : null;
+});
 
 function toggle() {
     show.value = !show.value;
@@ -20,14 +37,21 @@ function toggle() {
 
 <template>
     <div class="d-flex">
-        <div class="d-flex flex-column" :class="{ 'flex-panel-column': show }">
+        <div class="d-flex flex-column" :style="style">
             <slot v-if="show" />
             <div v-else class="flex-fill" />
-            <div class="flex-panel-footer d-flex px-2 p-1" :class="{ 'flex-panel-border': !show }" @click="toggle">
-                <font-awesome-icon v-if="show" icon="grip-lines-vertical" class="flex-panel-grab" />
+            <div class="flex-panel-footer d-flex px-2 p-1" :class="{ 'flex-panel-border': !show }">
+                <font-awesome-icon
+                    v-if="show"
+                    ref="draggable"
+                    icon="grip-lines-vertical"
+                    :class="{
+                        'cursor-grab': !isDragging,
+                        'cursor-grabbing': isDragging,
+                    }" />
                 <div class="flex-fill" />
-                <font-awesome-icon v-if="show" icon="chevron-right" />
-                <font-awesome-icon v-else icon="chevron-left" />
+                <font-awesome-icon v-if="show" class="cursor-pointer" icon="chevron-right" @click="toggle" />
+                <font-awesome-icon v-else class="cursor-pointer" icon="chevron-left" @click="toggle" />
             </div>
         </div>
     </div>
@@ -35,15 +59,14 @@ function toggle() {
 
 <style>
 @import "theme/blue.scss";
-.flex-panel-grab {
+.cursor-grab {
     cursor: grab;
 }
-.flex-panel-column {
-    width: 18rem;
+.cursor-grabbing {
+    cursor: grabbing;
 }
 .flex-panel-footer {
     background: $panel-footer-bg-color;
-    cursor: pointer;
 }
 .flex-panel-border {
     border: $border-default;
