@@ -41,17 +41,22 @@ function toggle() {
             <slot v-if="show" />
             <div v-else class="flex-fill" />
             <div class="flex-panel-footer d-flex px-2 p-1" :class="{ 'flex-panel-border': !show }">
-                <font-awesome-icon
-                    v-if="show"
-                    ref="draggable"
-                    icon="grip-lines-vertical"
-                    :class="{
-                        'cursor-grab': !isDragging,
-                        'cursor-grabbing': isDragging,
-                    }" />
+                <div v-if="show">
+                    <font-awesome-icon icon="grip-lines-vertical" />
+                    <div
+                        ref="draggable"
+                        class="interaction-area"
+                        :class="{
+                            'cursor-grab': !isDragging,
+                            'cursor-grabbing': isDragging,
+                        }" />
+                </div>
                 <div class="flex-fill" />
-                <font-awesome-icon v-if="show" class="cursor-pointer" icon="chevron-right" @click="toggle" />
-                <font-awesome-icon v-else class="cursor-pointer" icon="chevron-left" @click="toggle" />
+                <div>
+                    <font-awesome-icon v-if="show" class="cursor-pointer increase-area" icon="chevron-right" />
+                    <font-awesome-icon v-else class="cursor-pointer increase-area" icon="chevron-left" />
+                    <div class="interaction-area" @click="toggle" />
+                </div>
             </div>
         </div>
     </div>
@@ -59,6 +64,11 @@ function toggle() {
 
 <style>
 @import "theme/blue.scss";
+.interaction-area {
+    margin: -1.5rem;
+    padding: 1.5rem;
+    position: absolute;
+}
 .cursor-grab {
     cursor: grab;
 }
