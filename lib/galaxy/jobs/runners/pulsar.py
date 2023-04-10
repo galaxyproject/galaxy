@@ -657,6 +657,11 @@ class PulsarJobRunner(AsynchronousJobRunner):
             log.exception("failure finishing job %d", job_wrapper.job_id)
             return
         if not PulsarJobRunner.__remote_metadata(client):
+            # we need an actual exit code file in the job working directory to detect job errors in the metadata script
+            with open(
+                os.path.join(job_wrapper.working_directory, f"galaxy_{job_wrapper.job_id}.ec"), "w"
+            ) as exit_code_file:
+                exit_code_file.write(str(exit_code))
             self._handle_metadata_externally(job_wrapper, resolve_requirements=True)
         # Finish the job
         try:
@@ -1175,6 +1180,8 @@ class PulsarComputeEnvironment(ComputeEnvironment):
             return self._shared_home_dir
         elif target == "job_home":
             return "$_GALAXY_JOB_HOME_DIR"
+        elif target == "pwd":
+            os.path.join(self.working_directory(), "working")
         else:
             raise Exception(f"Unknown target type [{target}]")
 

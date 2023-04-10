@@ -34,5 +34,7 @@ test_tools = integration_util.integration_tool_runner(
         "job_properties",
         "strict_shell",
         "tool_provided_metadata_9",
+        "simple_constructs_y",
+        "composite_output",
     ]
 )
