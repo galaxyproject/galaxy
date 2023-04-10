@@ -283,7 +283,7 @@ def set_metadata_portable(
         import_model_store = None
 
     tool_script_file = tool_job_working_directory / "tool_script.sh"
-    job = None
+    job: Optional[Job] = None
     if import_model_store and export_store:
         job = next(iter(import_model_store.sa_session.objects[Job].values()))
 
@@ -328,18 +328,18 @@ def set_metadata_portable(
             final_job_state = Job.states.ERROR
             job_messages.append(str(e))
         if job:
-            job.job_messages = job_messages
+            job.set_streams(tool_stdout=tool_stdout, tool_stderr=tool_stderr, job_messages=job_messages)
             job.state = final_job_state
-        if os.path.exists(tool_script_file):
-            with open(tool_script_file) as command_fh:
-                command_line_lines = []
-                for i, line in enumerate(command_fh):
-                    if i == 0 and line.endswith("COMMAND_VERSION 2>&1;"):
-                        # Don't record version command as part of command line
-                        continue
-                    command_line_lines.append(line)
-                job.command_line = "".join(command_line_lines).strip()
-                export_store.export_job(job, include_job_data=False)
+            if os.path.exists(tool_script_file):
+                with open(tool_script_file) as command_fh:
+                    command_line_lines = []
+                    for i, line in enumerate(command_fh):
+                        if i == 0 and line.endswith("COMMAND_VERSION 2>&1;"):
+                            # Don't record version command as part of command line
+                            continue
+                        command_line_lines.append(line)
+                    job.command_line = "".join(command_line_lines).strip()
+                    export_store.export_job(job, include_job_data=False)
 
     unnamed_id_to_path = {}
     unnamed_is_deferred = {}
