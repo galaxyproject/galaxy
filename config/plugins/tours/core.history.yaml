@@ -35,7 +35,7 @@ steps:
         - "#btn-close"
 
     - title: "History"
-      element: "#right"
+      element: "#current-history-panel"
       intro: "This is your history! All analysis steps will be recorded and can be redone at any time."
 
     - title: "Dataset information"
