@@ -2,14 +2,16 @@
 import { ref } from "vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faChevronLeft, faChevronRight } from "@fortawesome/free-solid-svg-icons";
+import { faChevronLeft, faChevronRight, faGripLinesVertical } from "@fortawesome/free-solid-svg-icons";
 
 library.add({
     faChevronLeft,
     faChevronRight,
+    faGripLinesVertical,
 });
 
 const show = ref(true);
+const dragging = ref(false);
 
 function toggle() {
     show.value = !show.value;
@@ -22,8 +24,9 @@ function toggle() {
             <slot v-if="show" />
             <div v-else class="flex-fill" />
             <div class="flex-panel-footer d-flex px-2 p-1" :class="{ 'flex-panel-border': !show }" @click="toggle">
+                <font-awesome-icon v-if="show" icon="grip-lines-vertical" class="flex-panel-grab" />
                 <div class="flex-fill" />
-                <font-awesome-icon v-if="show" class="align-self-end" icon="chevron-right" />
+                <font-awesome-icon v-if="show" icon="chevron-right" />
                 <font-awesome-icon v-else icon="chevron-left" />
             </div>
         </div>
@@ -32,6 +35,9 @@ function toggle() {
 
 <style>
 @import "theme/blue.scss";
+.flex-panel-grab {
+    cursor: grab;
+}
 .flex-panel-column {
     width: 18rem;
 }
