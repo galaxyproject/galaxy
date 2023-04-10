@@ -29,6 +29,13 @@ _:  # global stuff
       infolarge: '.infomessagelarge'
       require_login: 'a.require-login-link'
 
+activity:
+  selectors:
+    workflow: '#activity-workflow > a'
+    workflow_bookmark:
+      type: xpath
+      selector: '//a[contains(text(), ${name})]'
+
 masthead:
 
   selectors:

@@ -877,16 +877,9 @@ steps:
         self.components.workflow_editor.canvas_body.wait_for_visible()
         self.wait_for_selector_absent_or_hidden(self.modal_body_selector())
         self.components.masthead.workflow.wait_for_and_click()
-
-        self.components.tool_panel.search.wait_for_and_send_keys(new_workflow_name)
-        self.sleep_for(self.wait_types.UX_RENDER)
         self.components.workflows.bookmark_link.wait_for_and_click()
-        self.components.masthead.workflow.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_TRANSITION)
-
-        # search for bookmark in tools menu
-        self.components.tool_panel.search.wait_for_and_send_keys(new_workflow_name)
-        assert_workflow_bookmarked_status(True)
+        self.hover_over(self.components.activity.workflow.wait_for_visible())
+        self.components.activity.workflow_bookmark(name=new_workflow_name).wait_for_visible()
 
     def tab_to(self, accessible_name, direction="forward"):
         for _ in range(100):
