@@ -18,6 +18,7 @@ from typing import (
 )
 
 from fastapi import (
+    Body,
     Depends,
     Query,
 )
@@ -58,11 +59,14 @@ from galaxy.webapps.galaxy.api import (
 )
 from galaxy.webapps.galaxy.api.common import query_parameter_as_list
 from galaxy.webapps.galaxy.services.jobs import (
+    JobCreateResponse,
     JobIndexPayload,
     JobIndexViewEnum,
+    JobRequest,
     JobsService,
 )
 from galaxy.work.context import WorkRequestContext
+from .tools import validate_not_protected
 
 log = logging.getLogger(__name__)
 
@@ -140,6 +144,12 @@ InvocationIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
     description="Limit listing of jobs to those that match the specified workflow invocation ID. If none, jobs from any workflow invocation (or from no workflows) may be returned.",
 )
 
+ToolRequestIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
+    default=None,
+    title="Tool Request ID",
+    description="Limit listing of jobs to those that were created from the supplied tool request ID. If none, jobs from any tool request (or from no workflows) may be returned.",
+)
+
 SortByQueryParam: JobIndexSortByEnum = Query(
     default=JobIndexSortByEnum.update_time,
     title="Sort By",
@@ -172,6 +182,13 @@ SearchQueryParam: Optional[str] = search_query_param(
 class FastAPIJobs:
     service: JobsService = depends(JobsService)
 
+    @router.post("/api/jobs")
+    def create(
+        self, trans: ProvidesHistoryContext = DependsOnTrans, job_request: JobRequest = Body(...)
+    ) -> JobCreateResponse:
+        validate_not_protected(job_request.tool_id)
+        return self.service.create(trans, job_request)
+
     @router.get("/api/jobs/{id}")
     def show(
         self,
@@ -203,6 +220,7 @@ class FastAPIJobs:
         history_id: Optional[DecodedDatabaseIdField] = HistoryIdQueryParam,
         workflow_id: Optional[DecodedDatabaseIdField] = WorkflowIdQueryParam,
         invocation_id: Optional[DecodedDatabaseIdField] = InvocationIdQueryParam,
+        tool_request_id: Optional[DecodedDatabaseIdField] = ToolRequestIdQueryParam,
         order_by: JobIndexSortByEnum = SortByQueryParam,
         search: Optional[str] = SearchQueryParam,
         limit: int = LimitQueryParam,
@@ -220,6 +238,7 @@ class FastAPIJobs:
             history_id=history_id,
             workflow_id=workflow_id,
             invocation_id=invocation_id,
+            tool_request_id=tool_request_id,
             order_by=order_by,
             search=search,
             limit=limit,
@@ -289,7 +308,24 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         :returns:   list of dictionaries containing output dataset associations
         """
         job = self.__get_job(trans, id)
-        return self.__dictify_associations(trans, job.output_datasets, job.output_library_datasets)
+        rval = self.__dictify_associations(
+            trans,
+            job.output_datasets,
+            job.output_library_datasets,
+        )
+        for job_output_collection_association in job.output_dataset_collection_instances:
+            rval.append(
+                {
+                    "name": job_output_collection_association.name,
+                    "dataset_collection_instance": {
+                        "src": "hdca",
+                        "id": trans.security.encode_id(
+                            job_output_collection_association.dataset_collection_instance.id
+                        ),
+                    },
+                }
+            )
+        return rval
 
     @expose_api
     def delete(self, trans: ProvidesUserContext, id, **kwd):
@@ -450,11 +486,6 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
             # Following checks dataset accessible
             dataset_instance = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=dataset_id)
             return dataset_instance.creating_job
-
-    @expose_api
-    def create(self, trans: ProvidesUserContext, payload, **kwd):
-        """See the create method in tools.py in order to submit a job."""
-        raise exceptions.NotImplemented("Please POST to /api/tools instead.")
 
     @expose_api
     def search(self, trans: ProvidesHistoryContext, payload: dict, **kwd):

@@ -1,0 +1,21 @@
+<tool id="gx_color" name="gx_color" version="1.0.0">
+    <command>
+        echo "$parameter"  > $out_file1;
+    </command>
+    <inputs>
+        <param name="parameter" type="color" value="#aabbcc" />
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="parameter" value="#aaaaaa" />
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="#aaaaaa" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

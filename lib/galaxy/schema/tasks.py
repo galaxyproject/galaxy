@@ -121,3 +121,15 @@ class ComputeDatasetHashTaskRequest(BaseModel):
 
 class PurgeDatasetsTaskRequest(BaseModel):
     dataset_ids: List[int]
+
+
+class ToolSource(BaseModel):
+    raw_tool_source: str
+    tool_dir: str
+
+
+class QueueJobs(BaseModel):
+    tool_source: ToolSource
+    tool_request_id: int  # links to request ("incoming") and history
+    user: RequestUser  # TODO: test anonymous users through this submission path
+    use_cached_jobs: bool

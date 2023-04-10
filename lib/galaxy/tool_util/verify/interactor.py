@@ -40,6 +40,10 @@ from typing_extensions import (
 )
 
 from galaxy import util
+from galaxy.tool_util.parameters import (
+    input_models_from_json,
+    ToolParameterBundle,
+)
 from galaxy.tool_util.parser.interface import (
     AssertionList,
     TestCollectionDef,
@@ -223,6 +227,15 @@ class GalaxyInteractorApi:
         assert response.status_code == 200, f"Non 200 response from tool tests available API. [{response.content}]"
         return response.json()
 
+    def get_tool_inputs(self, tool_id: str, tool_version: Optional[str] = None) -> ToolParameterBundle:
+        url = f"tools/{tool_id}/inputs"
+        params = {"tool_version": tool_version} if tool_version else None
+        response = self._get(url, data=params)
+        assert response.status_code == 200, f"Non 200 response from tool inputs API. [{response.content}]"
+        raw_inputs_array = response.json()
+        tool_parameter_bundle = input_models_from_json(raw_inputs_array)
+        return tool_parameter_bundle
+
     def get_tool_tests_model(self, tool_id: str, tool_version: Optional[str] = None) -> "ToolTestCaseList":
         url = f"tools/{tool_id}/test_data"
         params = {"tool_version": tool_version} if tool_version else None
@@ -389,9 +402,22 @@ class GalaxyInteractorApi:
     def wait_for_job(self, job_id, history_id=None, maxseconds=DEFAULT_TOOL_TEST_WAIT):
         self.wait_for(lambda: self.__job_ready(job_id, history_id), maxseconds=maxseconds)
 
+    def wait_on_tool_request(self, tool_request_id: str):
+        def state():
+            state_response = self._get(f"tool_requests/{tool_request_id}/state")
+            state_response.raise_for_status()
+            return state_response.json()
+
+        def is_ready():
+            is_complete = state() in ["submitted", "failed"]
+            return True if is_complete else None
+
+        self.wait_for(is_ready, "waiting for tool request to submit")
+        return state() == "submitted"
+
     def wait_for(self, func, what="tool test run", **kwd):
         walltime_exceeded = int(kwd.get("maxseconds", DEFAULT_TOOL_TEST_WAIT))
-        wait_on(func, what, walltime_exceeded)
+        return wait_on(func, what, walltime_exceeded)
 
     def get_job_stdio(self, job_id):
         job_stdio = self.__get_job_stdio(job_id).json()
@@ -570,8 +596,9 @@ class GalaxyInteractorApi:
             else:
                 file_content = self.test_data_download(tool_id, fname, is_output=False, tool_version=tool_version)
                 files = {"files_0|file_data": file_content}
+        # upload1 will always be the legacy API...
         submit_response_object = self.__submit_tool(
-            history_id, "upload1", tool_input, extra_data={"type": "upload_dataset"}, files=files
+            history_id, "upload1", tool_input, extra_data={"type": "upload_dataset"}, files=files, use_legacy_api=True
         )
         submit_response = ensure_tool_run_response_okay(submit_response_object, f"upload dataset {name}")
         assert (
@@ -589,38 +616,45 @@ class GalaxyInteractorApi:
         assert len(jobs) > 0, f"Invalid response from server [{submit_response}], expecting a job."
         return lambda: self.wait_for_job(jobs[0]["id"], history_id, maxseconds=maxseconds)
 
-    def run_tool(self, testdef, history_id, resource_parameters=None) -> RunToolResponse:
+    def run_tool(self, testdef, history_id, resource_parameters=None, use_legacy_api=True) -> RunToolResponse:
         # We need to handle the case where we've uploaded a valid compressed file since the upload
         # tool will have uncompressed it on the fly.
         resource_parameters = resource_parameters or {}
-        inputs_tree = testdef.inputs.copy()
-        for key, value in inputs_tree.items():
-            values = [value] if not isinstance(value, list) else value
-            new_values = []
-            for value in values:
-                if isinstance(value, TestCollectionDef):
-                    hdca_id = self._create_collection(history_id, value)
-                    new_values = [dict(src="hdca", id=hdca_id)]
-                elif value in self.uploads:
-                    new_values.append(self.uploads[value])
-                else:
-                    new_values.append(value)
-            inputs_tree[key] = new_values
+        if use_legacy_api:
+            inputs_tree = testdef.inputs.copy()
+            for key, value in inputs_tree.items():
+                values = [value] if not isinstance(value, list) else value
+                new_values = []
+                for value in values:
+                    if isinstance(value, TestCollectionDef):
+                        hdca_id = self._create_collection(history_id, value)
+                        new_values = [dict(src="hdca", id=hdca_id)]
+                    elif value in self.uploads:
+                        new_values.append(self.uploads[value])
+                    else:
+                        new_values.append(value)
+                inputs_tree[key] = new_values
 
-        if resource_parameters:
-            inputs_tree["__job_resource|__job_resource__select"] = "yes"
-            for key, value in resource_parameters.items():
-                inputs_tree[f"__job_resource|{key}"] = value
+            if resource_parameters:
+                inputs_tree["__job_resource|__job_resource__select"] = "yes"
+                for key, value in resource_parameters.items():
+                    inputs_tree[f"__job_resource|{key}"] = value
 
-        # HACK: Flatten single-value lists. Required when using expand_grouping
-        for key, value in inputs_tree.items():
-            if isinstance(value, list) and len(value) == 1:
-                inputs_tree[key] = value[0]
+            # HACK: Flatten single-value lists. Required when using expand_grouping
+            for key, value in inputs_tree.items():
+                if isinstance(value, list) and len(value) == 1:
+                    inputs_tree[key] = value[0]
+        else:
+            pass
 
         submit_response = None
         for _ in range(DEFAULT_TOOL_TEST_WAIT):
             submit_response = self.__submit_tool(
-                history_id, tool_id=testdef.tool_id, tool_input=inputs_tree, tool_version=testdef.tool_version
+                history_id,
+                tool_id=testdef.tool_id,
+                tool_input=inputs_tree,
+                tool_version=testdef.tool_version,
+                use_legacy_api=use_legacy_api,
             )
             if _are_tool_inputs_not_ready(submit_response):
                 print("Tool inputs not ready yet")
@@ -629,12 +663,30 @@ class GalaxyInteractorApi:
             else:
                 break
         submit_response_object = ensure_tool_run_response_okay(submit_response, "execute tool", inputs_tree)
+        if not use_legacy_api:
+            tool_request_id = submit_response_object["tool_request_id"]
+            self.wait_on_tool_request(tool_request_id)
+            jobs = self.jobs_for_tool_request(tool_request_id)
+            outputs = OutputsDict()
+            output_collections = {}
+            assert len(jobs) == 1
+            job_id = jobs[0]["id"]
+            job_outputs = self.job_outputs(job_id)
+            for job_output in job_outputs:
+                if "dataset" in job_output:
+                    outputs[job_output["name"]] = job_output["dataset"]
+                else:
+                    output_collections[job_output["name"]] = job_output["dataset_collection_instance"]
+        else:
+            outputs = self.__dictify_outputs(submit_response_object)
+            output_collections = self.__dictify_output_collections(submit_response_object)
+            jobs = submit_response_object["jobs"]
         try:
             return RunToolResponse(
                 inputs=inputs_tree,
-                outputs=self.__dictify_outputs(submit_response_object),
-                output_collections=self.__dictify_output_collections(submit_response_object),
-                jobs=submit_response_object["jobs"],
+                outputs=outputs,
+                output_collections=output_collections,
+                jobs=jobs,
             )
         except KeyError:
             message = (
@@ -772,13 +824,23 @@ class GalaxyInteractorApi:
         contents = "\n".join(f"{prefix}{line.strip()}" for line in io.StringIO(blob).readlines() if line.rstrip("\n\r"))
         return contents or f"{prefix}*{empty_message}*"
 
-    def _dataset_provenance(self, history_id, id):
+    def _dataset_provenance(self, history_id: str, id: str):
         provenance = self._get(f"histories/{history_id}/contents/{id}/provenance").json()
         return provenance
 
-    def _dataset_info(self, history_id, id):
+    def _dataset_info(self, history_id: str, id: str):
         dataset_json = self._get(f"histories/{history_id}/contents/{id}").json()
         return dataset_json
+
+    def jobs_for_tool_request(self, tool_request_id: str) -> List[Dict[str, Any]]:
+        job_list_response = self._get("jobs", data={"tool_request_id": tool_request_id})
+        job_list_response.raise_for_status()
+        return job_list_response.json()
+
+    def job_outputs(self, job_id: str) -> List[Dict[str, Any]]:
+        outputs = self._get(f"jobs/{job_id}/outputs")
+        outputs.raise_for_status()
+        return outputs.json()
 
     def __contents(self, history_id):
         history_contents_response = self._get(f"histories/{history_id}/contents")
@@ -796,12 +858,26 @@ class GalaxyInteractorApi:
             )
         return None
 
-    def __submit_tool(self, history_id, tool_id, tool_input, extra_data=None, files=None, tool_version=None):
+    def __submit_tool(
+        self, history_id, tool_id, tool_input, extra_data=None, files=None, tool_version=None, use_legacy_api=True
+    ):
         extra_data = extra_data or {}
-        data = dict(
-            history_id=history_id, tool_id=tool_id, inputs=dumps(tool_input), tool_version=tool_version, **extra_data
-        )
-        return self._post("tools", files=files, data=data)
+        if use_legacy_api:
+            data = dict(
+                history_id=history_id,
+                tool_id=tool_id,
+                inputs=dumps(tool_input),
+                tool_version=tool_version,
+                **extra_data,
+            )
+            return self._post("tools", files=files, data=data)
+        else:
+            assert files is None
+            data = dict(
+                history_id=history_id, tool_id=tool_id, inputs=tool_input, tool_version=tool_version, **extra_data
+            )
+            submit_tool_request_response = self._post("jobs", data=data, json=True)
+            return submit_tool_request_response
 
     def ensure_user_with_email(self, email, password=None):
         admin_key = self.master_api_key
@@ -1270,6 +1346,7 @@ def verify_tool(
     register_job_data: Optional[JobDataCallbackT] = None,
     test_index: int = 0,
     tool_version: Optional[str] = None,
+    use_legacy_api: bool = True,
     quiet: bool = False,
     test_history: Optional[str] = None,
     no_history_cleanup: bool = False,
@@ -1320,6 +1397,9 @@ def verify_tool(
         return
 
     tool_test_dict.setdefault("maxseconds", maxseconds)
+    if not use_legacy_api:
+        structured_inputs = galaxy_interactor.get_tool_inputs(tool_id, tool_version=tool_version)
+        assert structured_inputs
     testdef = ToolTestDescription(cast(ToolTestDict, tool_test_dict))
     _handle_def_errors(testdef)
 
@@ -1355,7 +1435,9 @@ def verify_tool(
             input_staging_exception = e
             raise
         try:
-            tool_response = galaxy_interactor.run_tool(testdef, test_history, resource_parameters=resource_parameters)
+            tool_response = galaxy_interactor.run_tool(
+                testdef, test_history, resource_parameters=resource_parameters, use_legacy_api=use_legacy_api
+            )
             data_list, jobs, tool_inputs = tool_response.outputs, tool_response.jobs, tool_response.inputs
             data_collection_list = tool_response.output_collections
         except RunToolException as e:

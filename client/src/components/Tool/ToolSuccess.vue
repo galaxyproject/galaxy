@@ -22,6 +22,7 @@ onMounted(() => {
 });
 
 const jobDef = computed(() => responseVal.value.jobDef);
+const usedToolRequest = computed(() => responseVal.value.usedToolRequest);
 const jobResponse = computed(() => responseVal.value.jobResponse);
 const toolName = computed(() => responseVal.value.toolName);
 
@@ -35,7 +36,7 @@ const showRecommendation: boolean = [true, "true"].includes(configEnableRecommen
         <div v-if="jobResponse.produces_entry_points">
             <ToolEntryPoints v-for="job in jobResponse.jobs" :key="job.id" :job-id="job.id" />
         </div>
-        <ToolSuccessMessage :job-def="jobDef" :job-response="jobResponse" :tool-name="toolName" />
+        <ToolSuccessMessage :job-def="jobDef" :job-response="jobResponse" :tool-name="toolName" :used-tool-request="usedToolRequest" />
         <Webhook type="tool" :tool-id="jobDef.tool_id" />
         <ToolRecommendation v-if="showRecommendation" :tool-id="jobDef.tool_id" />
     </section>

@@ -23,6 +23,7 @@ interface ResponseVal {
     jobDef: JobDef;
     jobResponse: JobResponse;
     toolName: string;
+    usedToolRequest: boolean;
 }
 
 export const useJobStore = defineStore("jobStore", {

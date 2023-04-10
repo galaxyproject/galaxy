@@ -34,7 +34,10 @@ from galaxy.job_metrics import (
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import HDAManager
+from galaxy.managers.histories import HistoryManager
 from galaxy.managers.lddas import LDDAManager
+from galaxy.managers.users import UserManager
+from galaxy.model import ToolRequest
 from galaxy.model.index_filter_util import (
     raw_text_column_filter,
     text_column_filter,
@@ -44,8 +47,13 @@ from galaxy.schema.schema import (
     JobIndexQueryPayload,
     JobIndexSortByEnum,
 )
+from galaxy.schema.tasks import QueueJobs
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.structured_app import StructuredApp
+from galaxy.structured_app import (
+    MinimalManagerApp,
+    StructuredApp,
+)
+from galaxy.tools import Tool
 from galaxy.util import (
     defaultdict,
     ExecutionTimer,
@@ -56,6 +64,7 @@ from galaxy.util.search import (
     parse_filters_structured,
     RawTextTerm,
 )
+from galaxy.work.context import WorkRequestContext
 
 log = logging.getLogger(__name__)
 
@@ -129,6 +138,7 @@ class JobManager:
         history_id = payload.history_id
         workflow_id = payload.workflow_id
         invocation_id = payload.invocation_id
+        tool_request_id = payload.tool_request_id
         if history_id is not None:
             query = query.filter(model.Job.history_id == history_id)
         if workflow_id or invocation_id:
@@ -155,6 +165,8 @@ class JobManager:
                 == wfi_step.c.implicit_collection_jobs_id,
             )
             query = query1.union(query2)
+        elif tool_request_id is not None:
+            query = query.filter(model.Job.tool_request_id == tool_request_id)
 
         search = payload.search
         if search:
@@ -1015,3 +1027,42 @@ def summarize_job_outputs(job: model.Job, tool, params, security):
                 }
             )
     return outputs
+
+
+class JobSubmitter:
+    def __init__(
+        self,
+        history_manager: HistoryManager,
+        user_manager: UserManager,
+        app: MinimalManagerApp,
+    ):
+        self.history_manager = history_manager
+        self.user_manager = user_manager
+        self.app = app
+
+    def queue_jobs(self, tool: Tool, request: QueueJobs) -> None:
+        user = self.user_manager.by_id(request.user.user_id)
+        sa_session = self.app.model.context
+        tool_request = sa_session.query(ToolRequest).get(request.tool_request_id)
+        try:
+            target_history = tool_request.history
+            use_cached_jobs = request.use_cached_jobs
+            trans = WorkRequestContext(
+                self.app,
+                user,
+                history=target_history,
+            )
+            tool.handle_input_2(
+                trans,
+                tool_request,
+                history=target_history,
+                use_cached_job=use_cached_jobs,
+            )
+            tool_request.state = ToolRequest.states.SUBMITTED
+            sa_session.add(tool_request)
+            sa_session.flush()
+        except Exception as e:
+            tool_request.state = ToolRequest.states.FAILED
+            tool_request.state_message = str(e)
+            sa_session.add(tool_request)
+            sa_session.flush()
