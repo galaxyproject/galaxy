@@ -8,18 +8,19 @@
 Highlights
 ===========================================================
 
-Feature1
---------
+This release includes significant user interface changes enhancing accessibility
+and usability.  This includes a new tool search, modernized multi-history view,
+new tag displays, theme support, and better drag and drop handling across the
+application.  There are also brand new 'Datatypes' and 'About This Galaxy'
+interfaces.  Interactive Tools are more seamlessly integrated into the user
+interface and Galaxy also comes with a new MGnify Notebook IT. The workflow
+editor has been completely overhauled with significant improvements to usability
+and extensibility, including new conditional workflow step functionality.
 
-Feature description.
-
-Feature2
---------
-
-Feature description.
-
-
-Also check out the `23.0 user release notes <23.0_announce_user.html>`__. Are you an admin? Check out `some admin relevant PRs <https://github.com/galaxyproject/galaxy/pulls?q=label%3Ahighlight%2Fadmin+milestone%3A23.0+is%3Aclosed++is%3Apr+>`__.
+Check out the `23.0 user release notes <23.0_announce_user.html>`__ for all the
+details. Are you an admin? See the Administration Notes below, and check out
+`some admin relevant PRs
+<https://github.com/galaxyproject/galaxy/pulls?q=label%3Ahighlight%2Fadmin+milestone%3A23.0+is%3Aclosed++is%3Apr+>`__.
 
 Get Galaxy
 ==========
