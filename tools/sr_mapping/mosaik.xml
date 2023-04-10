@@ -49,7 +49,7 @@
         </param>
       </when>
       <when value="history">
-        <param format="fasta" name="historyReference" type="data" metadata_name="dbkey" label="Select a reference from history"/>
+        <param format="fasta" name="historyReference" type="data" label="Select a reference from history"/>
       </when>
     </conditional>
     <param format="fastq" name="reads" type="data" label="FASTQ reads file" />

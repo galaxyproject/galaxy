@@ -87,7 +87,7 @@ python '$__tool_directory__/interval_maf_to_merged_fasta.py' --dbkey=$dbkey --sp
       <param name="maf_file" value="5.maf"/>
       <param name="species" value="canFam1,hg17,mm5,panTro1,rn3"/>
       <param name="overwrite_with_gaps" value="True"/>
-      <output name="out_file1" file="interval_maf_to_merged_fasta_user_out.dat" />
+      <output name="out_file1" file="interval_maf_to_merged_fasta_user_out.dat" sort="true" />
     </test>
   </tests>
   <help>

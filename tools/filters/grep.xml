@@ -53,7 +53,7 @@
       <param name="keep_header" value="true"/>
       <output name="out_file1">
         <assert_contents>
-          <has_text text="CCDS989.1_cds_0_0_chr1_147962193_r"/>
+          <has_text text="CCDS989.1_cds_0_0_chr1_147962193_r"/><!--this is the 1st (ie header) line-->
           <not_has_text text="CCDS993.1_cds_0_0_chr1_148078401_r"/>
         </assert_contents>
       </output>
@@ -73,10 +73,11 @@
       <param name="input" value="1.bed"/>
       <param name="invert" value=""/>
       <param name="pattern" value="&lt;&gt;\&quot;[A]{1}"/>
-      <param name="keep_header" value="true"/>
+      <param name="keep_header" value="false"/>
       <output name="out_file1">
         <assert_contents>
-          <not_has_text text="CCDS989.1_cds_0_0_chr1_147962193_r"/>
+          <not_has_text text="CCDS989.1_cds_0_0_chr1_147962193_r"/><!--this is the 1st (ie header) line-->
+          <has_n_lines n="0"/><!--nonsense pattern .. so only header left-->
         </assert_contents>
       </output>
     </test>

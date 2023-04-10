@@ -1,7 +1,7 @@
 <tool id="ChangeCase" name="Change Case" version="1.0.0">
   <description> of selected columns</description>
   <stdio>
-    <exit_code range="1:" err_level="fatal" />
+    <exit_code range="1:" level="fatal" />
   </stdio>
   <command>
 perl '$__tool_directory__/changeCase.pl' '$input' '$cols' $delimiter $casing '$out_file1'

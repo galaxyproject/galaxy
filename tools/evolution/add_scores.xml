@@ -20,11 +20,11 @@
   <tests>
     <test>
       <param name="input1" value="add_scores_input1.interval" ftype="interval" dbkey="hg18" />
-      <output name="output" file="add_scores_output1.interval" />
+      <output name="out_file1" file="add_scores_output1.interval" />
     </test>
     <test>
       <param name="input1" value="add_scores_input2.bed" ftype="interval" dbkey="hg18" />
-      <output name="output" file="add_scores_output2.interval" />
+      <output name="out_file1" file="add_scores_output2.interval" />
     </test>
   </tests>
 

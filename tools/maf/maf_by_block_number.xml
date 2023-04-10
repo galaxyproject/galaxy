@@ -3,9 +3,11 @@
   <macros>
       <import>macros.xml</import>
   </macros>
-  <command>python '$__tool_directory__/maf_by_block_number.py' '$input1' '$input2' '$out_file1' $block_col $species</command>
+  <command><![CDATA[
+    echo $input1.ext && python '$__tool_directory__/maf_by_block_number.py' '$input1' '$input2' '$out_file1' $block_col $species
+  ]]></command>
   <inputs>
-    <param format="txt" name="input1" type="data" label="Block Numbers"/>
+    <param format="tabular,txt" name="input1" type="data" label="Block Numbers"/>
     <param format="maf" name="input2" label="MAF File" type="data"/>
     <param name="block_col" type="data_column" label="Column containing Block number" data_ref="input1" accept_default="True" />
     <param name="species" type="select" display="checkboxes" multiple="true" label="Choose species" help="Select species to be included in the final alignment">
@@ -19,8 +21,8 @@
   </outputs>
   <tests>
     <test>
-      <param name="input1" value="maf_by_block_numbers.dat"/>
-      <param name="input2" value="3.maf"/>
+      <param name="input1" value="maf_by_block_numbers.dat" ftype="tabular"/>
+      <param name="input2" value="3.maf" ftype="maf"/>
       <param name="block_col" value="1"/>
       <param name="species" value="hg17,panTro1,mm5,rn3,canFam1"/>
       <output name="out_file1" file="maf_by_block_number_out.dat" />
