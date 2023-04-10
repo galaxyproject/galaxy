@@ -201,6 +201,9 @@ Enhancements
   `Pull Request 15275`_
 .. enhancement_tag_ui
 
+* Client build performance tweak backport
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 15911`_
 * Allow configuring webpack devserver port
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 15379`_
@@ -342,6 +345,9 @@ Enhancements
   `Pull Request 15256`_
 .. enhancement
 
+* Fix history annotation filtering: make it case insensitive
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 15897`_
 * Backport - Use Animation Frame in Workflow Editor
   (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
   `Pull Request 15751`_
@@ -1399,6 +1405,15 @@ Fixes
   `Pull Request 15103`_
 .. bug_tag_jobs
 
+* Fix tool stdio on pulsar and implement job stdio
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15907`_
+* Fail linked job if task fails
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15909`_
+* Fix pulsar error when when home_target is pwd
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15914`_
 * Add missing filter in job query
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 15846`_
@@ -1448,6 +1463,15 @@ Fixes
   `Pull Request 15322`_
 .. bug
 
+* Admin interface navguard
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 15906`_
+* Allow messagebox rich contents
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 15912`_
+* Fix history RO-crate export with discarded datasets
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 15916`_
 * Fix Short Term Storage cleanup when metadata is lost
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 15724`_
