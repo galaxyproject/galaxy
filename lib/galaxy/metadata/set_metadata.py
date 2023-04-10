@@ -407,7 +407,9 @@ def set_metadata_portable(
                             dataset.dataset.external_extra_files_path = pulsar_extra_files_path
                         elif dataset_filename_override and not object_store:
                             # pulsar, no remote metadata and no extended metadata
-                            dataset.dataset.external_extra_files_path = os.path.join(os.path.dirname(dataset_filename_override), extra_files_dir_name)
+                            dataset.dataset.external_extra_files_path = os.path.join(
+                                os.path.dirname(dataset_filename_override), extra_files_dir_name
+                            )
 
             file_dict = tool_provided_metadata.get_dataset_meta(output_name, dataset.dataset.id, dataset.dataset.uuid)
             if "ext" in file_dict:
