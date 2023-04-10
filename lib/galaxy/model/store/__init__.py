@@ -2420,6 +2420,15 @@ class WriteCrates:
         for dataset, _ in self.included_datasets.values():
             if dataset.dataset.id in self.dataset_id_to_path:
                 file_name, _ = self.dataset_id_to_path[dataset.dataset.id]
+                if file_name is None:
+                    # The dataset was discarded or no longer exists. No file to export.
+                    # TODO: should this be registered in the crate as a special case?
+                    log.warning(
+                        "RO-Crate export: skipping dataset [%s] with state [%s] because file does not exist.",
+                        dataset.id,
+                        dataset.state,
+                    )
+                    continue
                 name = dataset.name
                 encoding_format = dataset.datatype.get_mime()
                 properties = {

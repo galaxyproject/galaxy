@@ -7,6 +7,7 @@
                 variant="link"
                 size="sm"
                 class="rounded-0 text-decoration-none"
+                :disabled="!showControls"
                 @click="onDashboard">
                 <icon icon="database" />
                 <span>{{ historySize | niceFileSize }}</span>
@@ -49,6 +50,7 @@
                         variant="link"
                         size="sm"
                         class="rounded-0 text-decoration-none"
+                        :pressed="filterText == 'deleted:true'"
                         @click="setFilter('deleted:true')">
                         <icon icon="trash" />
                         <span>{{ numItemsDeleted }}</span>
@@ -60,6 +62,7 @@
                         variant="link"
                         size="sm"
                         class="rounded-0 text-decoration-none"
+                        :pressed="filterText == 'visible:false'"
                         @click="setFilter('visible:false')">
                         <icon icon="eye-slash" />
                         <span>{{ numItemsHidden }}</span>
@@ -118,6 +121,7 @@ export default {
         isWatching: { type: Boolean, default: false },
         lastChecked: { type: Date, default: null },
         filterText: { type: String, default: "" },
+        showControls: { type: Boolean, default: false },
     },
     data() {
         return {

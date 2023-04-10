@@ -39,10 +39,10 @@
                         @update:history="$emit('updateHistory', $event)" />
                     <HistoryMessages :history="history" />
                     <HistoryCounter
-                        v-if="showControls"
                         :history="history"
                         :is-watching="isWatching"
                         :last-checked="lastChecked"
+                        :show-controls="showControls"
                         :filter-text.sync="filterText"
                         @reloadContents="reloadContents" />
                     <HistoryOperations

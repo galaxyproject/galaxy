@@ -64,7 +64,7 @@ log = get_logger(__name__)
     "user_over_quota",
     "user_over_total_walltime",
 )
-DEFAULT_JOB_PUT_FAILURE_MESSAGE = "Unable to run job due to a misconfiguration of the Galaxy job running system.  Please contact a site administrator."
+DEFAULT_JOB_RUNNER_FAILURE_MESSAGE = "Unable to run job due to a misconfiguration of the Galaxy job running system.  Please contact a site administrator."
 
 
 class JobHandlerI:
@@ -710,8 +710,8 @@ class JobHandlerQueue(BaseJobHandlerQueue):
             job_state = e.job_state or JOB_WAIT
             return job_state, None
         except Exception as e:
-            failure_message = getattr(e, "failure_message", DEFAULT_JOB_PUT_FAILURE_MESSAGE)
-            if failure_message == DEFAULT_JOB_PUT_FAILURE_MESSAGE:
+            failure_message = getattr(e, "failure_message", DEFAULT_JOB_RUNNER_FAILURE_MESSAGE)
+            if failure_message == DEFAULT_JOB_RUNNER_FAILURE_MESSAGE:
                 log.exception("Failed to generate job destination")
             else:
                 log.debug(f"Intentionally failing job with message ({failure_message})")
@@ -1186,13 +1186,6 @@ class DefaultJobDispatcher:
         for runner in self.job_runners.values():
             runner.start()
 
-    def __get_runner_name(self, job_wrapper):
-        if job_wrapper.can_split():
-            runner_name = "tasks"
-        else:
-            runner_name = job_wrapper.job_destination.runner
-        return runner_name
-
     def url_to_destination(self, url):
         """This is used by the runner mapper (a.k.a. dynamic runner) and
         recovery methods to have runners convert URLs to destinations.
@@ -1210,18 +1203,25 @@ class DefaultJobDispatcher:
             )
             return JobDestination(runner=runner_name)
 
-    def put(self, job_wrapper):
-        runner_name = self.__get_runner_name(job_wrapper)
+    def get_job_runner(self, job_wrapper, get_task_runner=False):
+        runner_name = job_wrapper.job_destination.runner
         try:
-            if isinstance(job_wrapper, TaskWrapper):
-                # DBTODO Refactor
-                log.debug(f"({job_wrapper.job_id}) Dispatching task {job_wrapper.task_id} to {runner_name} runner")
-            else:
-                log.debug(f"({job_wrapper.job_id}) Dispatching to {runner_name} runner")
-            self.job_runners[runner_name].put(job_wrapper)
+            runner = self.job_runners[runner_name]
         except KeyError:
-            log.error(f"put(): ({job_wrapper.job_id}) Invalid job runner: {runner_name}")
-            job_wrapper.fail(DEFAULT_JOB_PUT_FAILURE_MESSAGE)
+            log.error(f"({job_wrapper.job_id}) Invalid job runner: {runner_name}")
+            job_wrapper.fail(DEFAULT_JOB_RUNNER_FAILURE_MESSAGE)
+        if get_task_runner and job_wrapper.can_split() and runner.runner_name != "PulsarJobRunner":
+            return self.job_runners["tasks"]
+        return runner
+
+    def put(self, job_wrapper):
+        runner = self.get_job_runner(job_wrapper, get_task_runner=True)
+        if isinstance(job_wrapper, TaskWrapper):
+            # DBTODO Refactor
+            log.debug(f"({job_wrapper.job_id}) Dispatching task {job_wrapper.task_id} to task runner")
+        else:
+            log.debug(f"({job_wrapper.job_id}) Dispatching to {job_wrapper.job_destination.runner} runner")
+        runner.put(job_wrapper)
 
     def stop(self, job, job_wrapper):
         """
@@ -1252,11 +1252,9 @@ class DefaultJobDispatcher:
     def recover(self, job, job_wrapper):
         runner_name = (job.job_runner_name.split(":", 1))[0]
         log.debug("recovering job %d in %s runner" % (job.id, runner_name))
+        runner = self.get_job_runner(job_wrapper)
         try:
-            self.job_runners[runner_name].recover(job, job_wrapper)
-        except KeyError:
-            log.error(f"recover(): ({job_wrapper.job_id}) Invalid job runner: {runner_name}")
-            job_wrapper.fail(DEFAULT_JOB_PUT_FAILURE_MESSAGE)
+            runner.recover(job, job_wrapper)
         except ObjectNotFound:
             msg = "Could not recover job working directory after Galaxy restart"
             log.exception(f"recover(): ({job_wrapper.job_id}) {msg}")
