@@ -18,10 +18,6 @@ Feature2
 
 Feature description.
 
-Feature3
---------
-
-Feature description.
 
 Also check out the `23.0 user release notes <23.0_announce_user.html>`__. Are you an admin? Check out `some admin relevant PRs <https://github.com/galaxyproject/galaxy/pulls?q=label%3Ahighlight%2Fadmin+milestone%3A23.0+is%3Aclosed++is%3Apr+>`__.
 
@@ -42,6 +38,19 @@ To update an existing Galaxy repository run:
 
 See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details on source code locations.
 
+Administration Notes
+====================
+
+Dependencies for various built-in converter tools have been changed from pysam
+to samtools. Please make sure you install these dependencies through the admin
+panel or manually.  See more details `on the PR here
+<https://github.com/galaxyproject/galaxy/pull/13411>`__.
+
+Configuration default values are no longer read from the sample files -- they
+now come directly from the config schema.  If you are relying on local changes
+to sample files, be aware that you will need to adjust your confiugration.  See
+more details on configuration changes `on the PR here
+<https://github.com/galaxyproject/galaxy/pull/14755>`__.
 
 Configuration Changes
 =====================
