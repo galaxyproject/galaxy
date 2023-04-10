@@ -49,7 +49,7 @@ panel or manually.  See more details `on the PR here
 
 Configuration default values are no longer read from the sample files -- they
 now come directly from the config schema.  If you are relying on local changes
-to sample files, be aware that you will need to adjust your confiugration.  See
+to sample files, be aware that you will need to adjust your configuration.  See
 more details on configuration changes `on the PR here
 <https://github.com/galaxyproject/galaxy/pull/14755>`__.
 
