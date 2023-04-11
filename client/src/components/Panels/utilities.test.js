@@ -108,7 +108,7 @@ describe("test helpers in tool searching utilities", () => {
             },
         ];
         searches.forEach((search) => {
-            const results = searchToolsByKeys(normalizeTools(search.list), search.keys, search.q);
+            const { results } = searchToolsByKeys(normalizeTools(search.list), search.keys, search.q);
             expect(results).toEqual(search.expectedResults);
         });
     });
@@ -116,9 +116,15 @@ describe("test helpers in tool searching utilities", () => {
     it("test tool fuzzy search", async () => {
         const expectedResults = ["__FILTER_FAILED_DATASETS__", "__FILTER_EMPTY_DATASETS__"];
         const keys = { description: 1, name: 2, combined: 0 };
-        const queries = ["Fillter", " filtr", "FILYER", "Fitler", "datases from a collection", "from a colleection"];
+        const filterQueries = ["Fillter", "FILYER", " Fitler", " filtr"];
+        filterQueries.forEach((q) => {
+            const { results, closestTerm } = searchToolsByKeys(normalizeTools(toolsList), keys, q);
+            expect(results).toEqual(expectedResults);
+            expect(closestTerm).toEqual("filter");
+        });
+        const queries = ["datases from a collection", "from a colleection"];
         queries.forEach((q) => {
-            const results = searchToolsByKeys(normalizeTools(toolsList), keys, q);
+            const { results } = searchToolsByKeys(normalizeTools(toolsList), keys, q);
             expect(results).toEqual(expectedResults);
         });
     });

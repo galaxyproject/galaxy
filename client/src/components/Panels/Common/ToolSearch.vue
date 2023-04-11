@@ -147,15 +147,6 @@ export default {
     beforeDestroy() {
         this.searchWorker.terminate();
     },
-    mounted() {
-        this.searchWorker = new Worker(new URL("../toolSearch.worker.js", import.meta.url));
-        this.searchWorker.onmessage = (event) => {
-            const { type, payload, query } = event.data;
-            if (type === "searchToolsByKeysResult" && query === this.query) {
-                this.$emit("onResults", payload);
-            }
-        };
-    },
     computed: {
         favoritesResults() {
             const Galaxy = getGalaxyInstance();
@@ -173,13 +164,26 @@ export default {
             return flattenTools(this.toolbox);
         },
     },
+    mounted() {
+        this.searchWorker = new Worker(new URL("../toolSearch.worker.js", import.meta.url));
+        this.searchWorker.onmessage = (event) => {
+            const { type, payload, query, closestTerm } = event.data;
+            if (type === "searchToolsByKeysResult" && query === this.query) {
+                this.$emit("onResults", payload, closestTerm);
+            } else if (type === "clearFilterResult") {
+                this.$emit("onResults", null);
+            } else if (type === "favoriteToolsResult") {
+                this.$emit("onResults", this.favoritesResults);
+            }
+        };
+    },
     methods: {
         checkQuery(q) {
             this.filterSettings["name"] = q;
             this.$emit("onQuery", q);
             if (q && q.length >= this.minQueryLength) {
                 if (this.favorites.includes(q)) {
-                    this.$emit("onResults", this.favoritesResults);
+                    this.searchWorker.postMessage({ type: "favoriteTools" });
                 } else {
                     // keys with sorting order
                     const keys = { exact: 3, name: 2, description: 1, combined: 0 };
@@ -194,7 +198,7 @@ export default {
                     this.searchWorker.postMessage(workerMessage);
                 }
             } else {
-                this.$emit("onResults", null);
+                this.searchWorker.postMessage({ type: "clearFilter" });
             }
         },
         onSearch() {

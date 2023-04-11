@@ -26,13 +26,16 @@ export function createWorkflowQuery(filterSettings) {
     return query;
 }
 
-// - Takes filterSettings = {"name": "Tool Name", "section": "Collection", ...}
-// - Takes panelView (if not 'default', does ontology search at backend)
-// - Takes toolbox (to find ontology id if given ontology name)
-// - Returns parsed Whoosh query
-// e.g. fn call: createWhooshQuery(filterSettings, 'ontology:edam_topics', toolbox)
-// can return:
-//     query = "(name:(skew) name_exact:(skew) description:(skew)) AND (edam_topics:(topic_0797) AND )"
+/**
+ *
+ * @param {Object} filterSettings e.g.: {"name": "Tool Name", "section": "Collection", ...}
+ * @param {String} panelView (if not `default`, does ontology search at backend)
+ * @param {Array} toolbox (to find ontology id if given ontology name)
+ * @returns parsed Whoosh `query`
+ * @example
+ *      createWhooshQuery(filterSettings, 'ontology:edam_topics', toolbox)
+ *      return query = "(name:(skew) name_exact:(skew) description:(skew)) AND (edam_topics:(topic_0797) AND )"
+ */
 export function createWhooshQuery(filterSettings, panelView, toolbox) {
     let query = "(";
     // add description+name_exact fields = name, to do a combined OrGroup at backend
@@ -116,13 +119,47 @@ export function hasResults(results) {
     return Array.isArray(results) && results.length > 0;
 }
 
-// Given toolbox, keys to sort/search results by and a search query,
-// Does a direct string.match() comparison to find results,
-// If that produces nothing, runs levenshtein distance alg to allow misspells
-// Returns tool ids sorted by order of keys that are being searched
-export function searchToolsByKeys(tools, keys, query, usesDl = false, usesDLAgain = false) {
-    const returnedTools = [];
-    const minimumQueryLength = 5;
+export function normalizeTools(tools) {
+    tools = hideToolsSection(tools);
+    tools = flattenTools(tools);
+    return tools;
+}
+
+export function hideToolsSection(tools) {
+    return tools.filter((section) => !TOOLS_RESULTS_SECTIONS_HIDE.includes(section.name));
+}
+
+export function removeDisabledTools(tools) {
+    return tools.filter((section) => {
+        if (section.model_class === "ToolSectionLabel") {
+            return true;
+        } else if (!section.elems && section.disabled) {
+            return false;
+        } else if (section.elems) {
+            section.elems = section.elems.filter((el) => !el.disabled);
+            if (!section.elems.length) {
+                return false;
+            }
+        }
+        return true;
+    });
+}
+
+/**
+ * Given toolbox, keys to sort/search results by and a search query,
+ * Does a direct string.match() comparison to find results,
+ * If that produces nothing, runs DL distance alg to allow misspells
+ *
+ * @param {Array} tools - toolbox
+ * @param {Object} keys - keys to sort and search results by
+ * @param {String} query - a search query
+ * @param {Boolean} usesDL - Optional: used for recursive call with DL if no string.match()
+ * @returns tool ids sorted by order of keys that are being searched (+ closest matching term if DL)
+ */
+export function searchToolsByKeys(tools, keys, query, usesDL = false) {
+    let returnedTools = [];
+    let closestTerm = null;
+    const minimumQueryLength = 5; // for DL
     for (const tool of tools) {
         for (const key of Object.keys(keys)) {
             if (tool[key] || key === "combined") {
@@ -133,36 +170,42 @@ export function searchToolsByKeys(tools, keys, query, usesDl = false, usesDLAgai
                 } else {
                     actualValue = tool[key].trim().toLowerCase();
                 }
+                const actualValueWords = actualValue.split(" ");
                 STRING_REPLACEMENTS.forEach((rep) => {
                     queryValue = queryValue.replaceAll(rep, "");
                     actualValue = actualValue.replaceAll(rep, "");
                 });
                 // do we care for exact matches && is it an exact match ?
                 const order = keys.exact && actualValue === queryValue ? keys.exact : keys[key];
-                if (!usesDl && actualValue.match(queryValue)) {
+                if (!usesDL && actualValue.match(queryValue)) {
                     returnedTools.push({ id: tool.id, order });
                     break;
-                } else if (queryValue.length >= minimumQueryLength) {
-                    if (usesDl && key == "name" && dLDistance(queryValue, actualValue)) {
-                        returnedTools.push({ id: tool.id, order });
-                        break;
-                    } else if (usesDLAgain && key != "name" && dLDistance(queryValue, actualValue)) {
-                        returnedTools.push({ id: tool.id, order });
+                } else if (usesDL) {
+                    let substring = null;
+                    if ((key == "name" || key == "description") && queryValue.length >= minimumQueryLength) {
+                        substring = closestSubstring(queryValue, actualValue);
+                    }
+                    // there is a closestSubstring: matching tool found
+                    if (substring) {
+                        // get the closest matching term for substring
+                        const foundTerm = matchingTerm(actualValueWords, substring);
+                        if (foundTerm && (!closestTerm || (closestTerm && foundTerm.length < closestTerm.length))) {
+                            closestTerm = foundTerm;
+                        }
+                        returnedTools.push({ id: tool.id, order, closestTerm });
                         break;
                     }
                 }
             }
         }
     }
-    // no results with string.match():
-    // try DL with name key first, no results: try all other keys
-    if (!usesDl && !usesDLAgain && returnedTools.length == 0) {
+    // no results with string.match(): recursive call with usesDL
+    if (!usesDL && returnedTools.length == 0) {
         return searchToolsByKeys(tools, keys, query, true);
-    } else if (usesDl && !usesDLAgain && returnedTools.length == 0) {
-        return searchToolsByKeys(tools, keys, query, false, true);
     }
     // sorting results by indexed order of keys
-    return orderBy(returnedTools, ["order"], ["desc"]).map((tool) => tool.id);
+    returnedTools = orderBy(returnedTools, ["order"], ["desc"]).map((tool) => tool.id);
+    return { results: returnedTools, closestTerm: closestTerm };
 }
 
 export function flattenTools(tools) {
@@ -172,32 +215,38 @@ export function flattenTools(tools) {
     });
     return normalizedTools;
 
-function dLDistance(query, toolName) {
-    // Max distance a query and tool name substring can be apart
+/**
+ *
+ * @param {String} query
+ * @param {String} actualStr
+ * @returns substring with smallest DL distance, or null
+ */
+function closestSubstring(query, actualStr) {
+    // Max distance a query and substring can be apart
     const maxDistance = 1;
-    // Create an array of all toolName substrings that are query length, query length -1, and query length + 1
-    const substrings = Array.from({ length: toolName.length - query.length + 1 }, (_, i) =>
-        toolName.substr(i, query.length)
+    // Create an array of all actualStr substrings that are query length, query length -1, and query length + 1
+    const substrings = Array.from({ length: actualStr.length - query.length + 1 }, (_, i) =>
+        actualStr.substr(i, query.length)
     );
     if (query.length > 1) {
         substrings.push(
-            ...Array.from({ length: toolName.length - query.length + 2 }, (_, i) =>
-                toolName.substr(i, query.length - 1)
+            ...Array.from({ length: actualStr.length - query.length + 2 }, (_, i) =>
+                actualStr.substr(i, query.length - 1)
             )
         );
     }
-    if (toolName.length > query.length) {
+    if (actualStr.length > query.length) {
         substrings.push(
-            ...Array.from({ length: toolName.length - query.length }, (_, i) => toolName.substr(i, query.length + 1))
+            ...Array.from({ length: actualStr.length - query.length }, (_, i) => actualStr.substr(i, query.length + 1))
         );
     }
-    // check to see if any substings have a levenshtein distance less than the max distance and return True or False
+    // check to see if any substrings have a levenshtein distance less than the max distance
     for (const substring of substrings) {
         if (levenshteinDistance(query, substring, true) <= maxDistance) {
-            return true;
+            return substring;
         }
     }
-    return false;
+    return null;
 }
 
 function isToolObject(tool) {
@@ -208,6 +257,16 @@ function isToolObject(tool) {
         return true;
     }
     return false;
+
+// given array and a substring, get the closest matching term for substring
+function matchingTerm(termArray, substring) {
+    for (const i in termArray) {
+        const term = termArray[i];
+        if (term.match(substring)) {
+            return term;
+        }
+    }
+    return null;
 }
 
 function flattenToolsSection(section) {
