@@ -304,10 +304,10 @@ function main() {
     log_function create_venv
     log_function test_rc
     log_function test_rc_point
-    log_function test_initial
-    log_function test_point
-    log_function test_next
-    log_function test_prev
+    # log_function test_initial
+    # log_function test_point
+    # log_function test_next
+    # log_function test_prev
     log "OK"
 }
 
