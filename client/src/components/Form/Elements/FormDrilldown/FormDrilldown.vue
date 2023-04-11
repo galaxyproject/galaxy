@@ -61,19 +61,12 @@ function selectAll(selected: boolean) {
     const newValue: string[] = [];
     if (selected) {
         props.options.forEach((option) => {
-            selectRecursively(option, newValue);
+            if (option.value) {
+                newValue.push(option.value);
+            }
         });
     }
     emit("input", newValue.length === 0 ? null : newValue);
-}
-
-function selectRecursively(option: Option, currentValue: string[]) {
-    currentValue.push(option.value);
-    if (option.options.length > 0) {
-        option.options.forEach((option) => {
-            selectRecursively(option, currentValue);
-        });
-    }
 }
 </script>
 
