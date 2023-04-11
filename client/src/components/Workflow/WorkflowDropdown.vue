@@ -16,19 +16,8 @@
                 <font-awesome-icon class="workflow-external-link" icon="link" />
             </span>
         </b-link>
-        <p v-if="description" class="workflow-dropdown-description">
-            <span v-if="description.summary">
-                <span v-if="!detailsShowing">
-                    {{ description.value }}
-                    <a class="wf-show-more" href="javascript:void(0)" @click.stop="$emit('toggleDetails')">
-                        ... Show More
-                    </a>
-                </span>
-                <a v-else href="javascript:void(0)" @click.stop="$emit('toggleDetails')">Show Less ...</a>
-            </span>
-            <span v-else>
-                {{ description.value }}
-            </span>
+        <p v-if="workflow.description" class="workflow-dropdown-description">
+            <TextSummary :description="workflow.description" :show-details.sync="showDetails" />
         </p>
         <div class="dropdown-menu" aria-labelledby="workflow-dropdown">
             <a
@@ -93,6 +82,7 @@
 <script>
 import { Services } from "./services";
 import { withPrefix } from "utils/redirect";
+import TextSummary from "components/Common/TextSummary";
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -102,6 +92,7 @@ library.add(faCaretDown);
 
 export default {
     components: {
+        TextSummary,
         FontAwesomeIcon,
     },
     props: {
@@ -109,15 +100,13 @@ export default {
         detailsShowing: { type: Boolean, default: false },
     },
     computed: {
-        description() {
-            const n = 150;
-            const desc = this.workflow.description;
-            if (!desc) {
-                return null;
-            } else if (desc.length > n) {
-                return { value: desc.slice(0, n - 50), summary: true };
-            }
-            return { value: desc, summary: false };
+        showDetails: {
+            get() {
+                return this.detailsShowing;
+            },
+            set() {
+                this.$emit("toggleDetails");
+            },
         },
         urlEdit() {
             return `/workflows/edit?id=${this.workflow.id}`;

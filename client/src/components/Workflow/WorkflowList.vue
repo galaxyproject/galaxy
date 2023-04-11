@@ -39,7 +39,7 @@
                     @onSuccess="onSuccess"
                     @onError="onError"
                     @onRestore="onRestore"
-                    @toggleDetails="swapRowDetails(row)" />
+                    @toggleDetails="row.toggleDetails" />
             </template>
             <template v-slot:cell(tags)="row">
                 <Tags
@@ -286,9 +286,6 @@ export default {
         },
         onRestore: function (id) {
             this.refresh();
-        },
-        swapRowDetails(row) {
-            row.toggleDetails();
         },
     },
 };

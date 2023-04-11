@@ -110,20 +110,20 @@ describe("WorkflowList.vue", () => {
             );
             expect(row.find(".fa-globe").exists()).toBe(true);
 
-            // test Show More button for longer annotations
-            const annotationHead = sampleLongAnnotation.substr(0, 100);
+            // test expand summary button for longer annotations
+            const annotationHead = sampleLongAnnotation.substr(0, 75);
             const annotationTail = sampleLongAnnotation.substr(sampleLongAnnotation.length - 50);
             expect(columns.at(0).text()).toContain(annotationHead);
             expect(columns.at(0).text()).not.toContain(annotationTail);
-            expect(columns.at(0).text()).toContain("Show More");
-            // click Show More: full annotation should be visible in a b-card
-            await columns.at(0).find("a.wf-show-more").trigger("click");
-            expect(columns.at(0).text()).not.toContain("Show More");
+            expect(columns.at(0).find("a > .fa-chevron-down").exists()).toBe(true);
+            // click Down Arrow: full annotation should be visible in a b-card
+            await columns.at(0).find("a.text-summary-expand").trigger("click");
+            expect(columns.at(0).find("a > .fa-chevron-down").exists()).toBe(false);
             rows = wrapper.findAll("tbody > tr").wrappers;
             expect(rows.length).toBe(3);
             const descriptionCard = rows[2].find("td");
             expect(descriptionCard.text()).toContain(annotationTail);
-            expect(columns.at(0).text()).toContain("Show Less");
+            expect(columns.at(0).find("a > .fa-chevron-up").exists()).toBe(true);
         });
 
         it("starts with an empty filter", async () => {
