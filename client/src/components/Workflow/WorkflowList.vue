@@ -90,7 +90,7 @@ import _l from "utils/localization";
 import { Services } from "./services";
 import { getAppRoot } from "onload/loadConfig";
 import { storedWorkflowsProvider } from "components/providers/StoredWorkflowsProvider";
-import Tags from "components/Common/Tags";
+import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import WorkflowDropdown from "./WorkflowDropdown";
 import UtcDate from "components/UtcDate";
 import { getGalaxyInstance } from "app";
@@ -161,7 +161,7 @@ const PUBLISHED_FIELDS = [NAME_FIELD, TAGS_FIELD, UPDATED_FIELD, OWNER_FIELD];
 export default {
     components: {
         UtcDate,
-        Tags,
+        StatelessTags,
         WorkflowDropdown,
         WorkflowBookmark,
         WorkflowIndexActions,
@@ -266,9 +266,10 @@ export default {
                 .catch((error) => {
                     this.onError(error);
                 });
+            this.$emit("input", workflow.tags);
         },
         onTagClick: function (tag) {
-            this.appendTagFilter("tag", tag.text);
+            this.appendTagFilter("tag", tag);
         },
         onAdd: function (workflow) {
             if (this.currentPage == 1) {
