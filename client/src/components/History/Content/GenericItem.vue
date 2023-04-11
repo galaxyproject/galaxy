@@ -12,6 +12,7 @@
                 @update:expand-dataset="expandDataset = $event"
                 @view-collection="viewCollection = !viewCollection"
                 @delete="onDelete(item)"
+                @toggleHighlights="onHighlight(item)"
                 @undelete="onUndelete(item)"
                 @unhide="onUnhide(item)" />
             <div v-if="viewCollection">
@@ -69,6 +70,9 @@ export default {
         },
         onUnhide(item) {
             updateContentFields(item, { visible: true });
+        },
+        onHighlight(item) {
+            this.$emit("toggleHighlights", item);
         },
     },
 };

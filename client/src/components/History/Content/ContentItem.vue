@@ -92,7 +92,7 @@
                 v-if="expandDataset"
                 :dataset="item"
                 :writable="writable"
-                :show-highlight="isHistoryItem && filterable"
+                :show-highlight="isHistoryItem"
                 :item-urls="itemUrls"
                 @edit="onEdit"
                 @toggleHighlights="toggleHighlights" />
