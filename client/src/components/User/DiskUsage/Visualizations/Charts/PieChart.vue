@@ -239,6 +239,11 @@ function applyThresholdToValue(d: DataValuePoint): number {
             <div class="chartArea">
                 <div ref="pieChart" class="pieChart"></div>
                 <div ref="legend" class="legend"></div>
+                <div v-if="selectedDataPoint" class="selectionInfo">
+                    <slot name="selection" :data="selectedDataPoint">
+                        Selected: <b>{{ selectedDataPoint.label }}</b>
+                    </slot>
+                </div>
             </div>
         </div>
         <div v-else class="text-center">
@@ -279,5 +284,20 @@ function applyThresholdToValue(d: DataValuePoint): number {
     margin: 0 0 0 20px;
     z-index: 100;
     text-align: center;
+}
+
+.selectionInfo {
+    background-color: #fff;
+    border: 1px solid #000;
+    border-radius: 5px;
+    padding: 5px;
+    margin: 80px 0 0 20px;
+    z-index: 100;
+    text-align: center;
+    display: block;
+    float: left;
+    position: absolute;
+    top: 0;
+    left: 0;
 }
 </style>

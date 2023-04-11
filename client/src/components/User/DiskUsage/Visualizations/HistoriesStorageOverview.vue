@@ -6,6 +6,7 @@ import PieChart from "./Charts/PieChart.vue";
 import { bytesLabelFormatter } from "./Charts/utils";
 import { getAllHistoriesSizeSummary, type ItemSizeSummary } from "./service";
 import RecoverableItemSizeTooltip from "./RecoverableItemSizeTooltip.vue";
+import SelectedHistoryActions from "./SelectedHistoryActions.vue";
 
 const historiesSizeSummaryMap = new Map<string, ItemSizeSummary>();
 
@@ -81,9 +82,13 @@ function isRecoverableDataPoint(dataPoint?: DataValuePoint): boolean {
             title="Top 10 Histories by Size"
             description="These are the 10 histories that take the most space on your storage."
             :data="topTenHistoriesBySizeData"
+            :enable-selection="true"
             :label-formatter="bytesLabelFormatter">
             <template v-slot:tooltip="{ data }">
                 <RecoverableItemSizeTooltip :data="data" :is-recoverable="isRecoverableDataPoint(data)" />
+            </template>
+            <template v-slot:selection="{ data }">
+                <SelectedHistoryActions :data="data" :is-recoverable="isRecoverableDataPoint(data)" />
             </template>
         </PieChart>
         <PieChart
