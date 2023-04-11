@@ -27,8 +27,10 @@ def add_column(table_name: str, column: sa.Column) -> None:
         log.info("Generation of `alter` statements is disabled in offline mode.")
         return
     if _is_sqlite():
+        op.execute("PRAGMA legacy_alter_table=1;")
         with op.batch_alter_table(table_name) as batch_op:
             batch_op.add_column(column)
+        op.execute("PRAGMA legacy_alter_table=0;")
     else:
         op.add_column(table_name, column)
 
@@ -38,8 +40,10 @@ def drop_column(table_name, column_name):
         log.info("Generation of `alter` statements is disabled in offline mode.")
         return
     if _is_sqlite():
+        op.execute("PRAGMA legacy_alter_table=1;")
         with op.batch_alter_table(table_name) as batch_op:
             batch_op.drop_column(column_name)
+        op.execute("PRAGMA legacy_alter_table=0;")
     else:
         op.drop_column(table_name, column_name)
 
