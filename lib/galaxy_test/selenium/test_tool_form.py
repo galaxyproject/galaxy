@@ -94,8 +94,6 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         self.home()
         self.tool_open("drill_down")
 
-
-
     @staticmethod
     def click_menu_item(menu, text):
         for element in menu.find_elements(By.CSS_SELECTOR, "a"):
