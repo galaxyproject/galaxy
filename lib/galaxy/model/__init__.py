@@ -3512,7 +3512,7 @@ class DefaultQuotaAssociation(Base, Dictifiable, RepresentById):
     id = Column(Integer, primary_key=True)
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, default=now, onupdate=now)
-    type = Column(String(32), index=True)
+    type = Column(String(32))
     quota_id = Column(Integer, ForeignKey("quota.id"), index=True)
     quota = relationship("Quota", back_populates="default")
 
