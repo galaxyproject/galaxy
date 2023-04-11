@@ -16,7 +16,18 @@
                 <font-awesome-icon class="workflow-external-link" icon="link" />
             </span>
         </b-link>
-        <p v-if="workflow.description" class="workflow-dropdown-description">{{ workflow.description }}</p>
+        <p v-if="description" class="workflow-dropdown-description">
+            <span v-if="description.summary">
+                <span v-if="!detailsShowing">
+                    {{ description.value }}
+                    <a href="javascript:void(0)" @click.stop="$emit('toggleDetails')">... Show More</a>
+                </span>
+                <a v-else href="javascript:void(0)" @click.stop="$emit('toggleDetails')">Show Less ...</a>
+            </span>
+            <span v-else>
+                {{ description.value }}
+            </span>
+        </p>
         <div class="dropdown-menu" aria-labelledby="workflow-dropdown">
             <a
                 v-if="!readOnly && !isDeleted"
@@ -91,8 +102,21 @@ export default {
     components: {
         FontAwesomeIcon,
     },
-    props: ["workflow"],
+    props: {
+        workflow: { type: Object, required: true },
+        detailsShowing: { type: Boolean, default: false },
+    },
     computed: {
+        description() {
+            const n = 150;
+            const desc = this.workflow.description;
+            if (!desc) {
+                return null;
+            } else if (desc.length > n) {
+                return { value: desc.slice(0, n - 50), summary: true };
+            }
+            return { value: desc, summary: false };
+        },
         urlEdit() {
             return `/workflows/edit?id=${this.workflow.id}`;
         },
