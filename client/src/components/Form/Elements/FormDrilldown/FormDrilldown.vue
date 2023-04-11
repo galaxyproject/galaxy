@@ -12,7 +12,7 @@ export interface FormDrilldownProps {
 
 const props = withDefaults(defineProps<FormDrilldownProps>(), {
     value: null,
-    multiple: false,
+    multiple: true,
 });
 
 const emit = defineEmits<{
@@ -52,8 +52,7 @@ function handleClick(value: string) {
         } else {
             emit("input", newValue);
         }
-    }
-    if (!props.multiple) {
+    } else if (!props.multiple) {
         emit("input", value);
     }
 }
@@ -80,7 +79,12 @@ function selectRecursively(option: Option, currentValue: string[]) {
 
 <template>
     <div v-if="hasOptions">
-        <b-form-checkbox v-if="props.multiple" class="d-inline" :selected="false" @change="selectAll" />
+        <b-form-checkbox
+            v-if="props.multiple"
+            class="d-inline select-all-checkbox"
+            :selected="false"
+            @change="selectAll" />
+        Select/Deselect All
         <form-drilldown-list
             :multiple="props.multiple"
             :current-value="currentValue"

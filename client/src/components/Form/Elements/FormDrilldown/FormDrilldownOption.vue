@@ -34,7 +34,7 @@ function toggleChildren() {
             <icon v-if="showChildren" fixed-width icon="minus-square" />
             <icon v-else fixed-width icon="plus-square" />
         </span>
-        <b-form-checkbox v-if="multiple" class="d-inline" :checked="isChecked" @change="handleClick(option.value)" />
+        <b-form-checkbox v-if="multiple" class="d-inline drilldown-option" :checked="isChecked" @change="handleClick(option.value)" />
         <b-form-radio
             v-else
             class="d-inline"
