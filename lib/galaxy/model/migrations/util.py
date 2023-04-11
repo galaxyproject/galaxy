@@ -1,4 +1,5 @@
 import logging
+from contextlib import contextmanager
 from typing import (
     Any,
     List,
@@ -27,10 +28,8 @@ def add_column(table_name: str, column: sa.Column) -> None:
         log.info("Generation of `alter` statements is disabled in offline mode.")
         return
     if _is_sqlite():
-        op.execute("PRAGMA legacy_alter_table=1;")
-        with op.batch_alter_table(table_name) as batch_op:
+        with legacy_alter_table(), op.batch_alter_table(table_name) as batch_op:
             batch_op.add_column(column)
-        op.execute("PRAGMA legacy_alter_table=0;")
     else:
         op.add_column(table_name, column)
 
@@ -40,10 +39,8 @@ def drop_column(table_name, column_name):
         log.info("Generation of `alter` statements is disabled in offline mode.")
         return
     if _is_sqlite():
-        op.execute("PRAGMA legacy_alter_table=1;")
-        with op.batch_alter_table(table_name) as batch_op:
+        with legacy_alter_table(), op.batch_alter_table(table_name) as batch_op:
             batch_op.drop_column(column_name)
-        op.execute("PRAGMA legacy_alter_table=0;")
     else:
         op.drop_column(table_name, column_name)
 
@@ -75,3 +72,18 @@ def drop_unique_constraint(index_name: str, table_name: str):
 def _is_sqlite() -> bool:
     bind = op.get_context().bind
     return bool(bind and bind.engine.name == "sqlite")
+
+
+@contextmanager
+def legacy_alter_table():
+    """
+    Wrapper required for add/drop column statements.
+    Prevents error when column belongs to a table referenced in a view. Relevant to sqlite only.
+    Ref: https://github.com/sqlalchemy/alembic/issues/1207
+    Ref: https://sqlite.org/pragma.html#pragma_legacy_alter_table
+    """
+    try:
+        op.execute("PRAGMA legacy_alter_table=1;")
+        yield
+    finally:
+        op.execute("PRAGMA legacy_alter_table=0;")
