@@ -13,6 +13,7 @@ from sqlalchemy import (
 from galaxy.model.migrations.util import (
     add_column,
     drop_column,
+    drop_index,
 )
 
 # revision identifiers, used by Alembic.
@@ -28,8 +29,9 @@ column_name = "deleted"
 
 
 def upgrade():
-    add_column(table_name, Column(column_name, Boolean(), default=False))
+    add_column(table_name, Column(column_name, Boolean(), default=False, index=True))
 
 
 def downgrade():
+    drop_index("ix_api_keys_deleted", table_name)
     drop_column(table_name, column_name)
