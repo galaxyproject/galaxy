@@ -20,7 +20,9 @@
             <span v-if="description.summary">
                 <span v-if="!detailsShowing">
                     {{ description.value }}
-                    <a href="javascript:void(0)" @click.stop="$emit('toggleDetails')">... Show More</a>
+                    <a class="wf-show-more" href="javascript:void(0)" @click.stop="$emit('toggleDetails')">
+                        ... Show More
+                    </a>
                 </span>
                 <a v-else href="javascript:void(0)" @click.stop="$emit('toggleDetails')">Show Less ...</a>
             </span>
