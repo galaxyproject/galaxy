@@ -374,7 +374,7 @@ class TestDowngradeCommand:
         assert "a" in heads
 
     def test_repair_arg_available_to_dev_script_only(self, config, command):
-        completed = run_command(f"{command} downgrade --repair")
+        completed = run_command(f"{command} downgrade base --repair")
         if command == DEV_CMD:
             assert completed.returncode == 0
         else:
