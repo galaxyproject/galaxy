@@ -248,6 +248,10 @@ export default {
             const { getWatchingVisibility } = storeToRefs(useHistoryItemsStore());
             return getWatchingVisibility.value;
         },
+        /** @returns {String} */
+        storeFilterText() {
+            return this.currentFilterText();
+        }
     },
     watch: {
         queryKey() {
@@ -263,6 +267,11 @@ export default {
         filter(newVal) {
             this.filterText = newVal;
         },
+        storeFilterText(newVal, oldVal) {
+            if (newVal !== oldVal) {
+                this.filterText = newVal;
+            }
+        },
         offset() {
             this.loadHistoryItems();
         },
@@ -274,7 +283,7 @@ export default {
         await this.loadHistoryItems();
     },
     methods: {
-        ...mapActions(useHistoryStore, ["loadHistoryById"]),
+        ...mapActions(useHistoryStore, ["loadHistoryById", "currentFilterText"]),
         ...mapActions(useHistoryItemsStore, ["fetchHistoryItems"]),
         getHighlight(item) {
             if (this.filterText.includes("related:" + item.hid)) {

@@ -28,6 +28,7 @@ import { DatasetCollectionProvider, DatasetProvider } from "components/providers
 import { deleteContent, updateContentFields } from "components/History/model/queries";
 import ContentItem from "./ContentItem";
 import GenericElement from "./GenericElement";
+import { mapActions } from "pinia";
 
 export default {
     components: {
@@ -59,6 +60,7 @@ export default {
         },
     },
     methods: {
+        ...mapActions(useHistoryStore, ["applyFilterText"]),
         onDelete(item) {
             deleteContent(item);
         },
@@ -72,7 +74,9 @@ export default {
             updateContentFields(item, { visible: true });
         },
         onHighlight(item) {
-            this.$emit("toggleHighlights", item);
+            const { history_id } = item;
+            const filterText = `related:${item.hid}`;
+            this.applyFilterText(history_id, filterText);
         },
     },
 };

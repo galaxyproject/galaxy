@@ -115,7 +115,7 @@ export default {
         this.load();
     },
     methods: {
-        ...mapActions(useHistoryStore, ["loadHistories", "setCurrentHistory"]),
+        ...mapActions(useHistoryStore, ["loadHistories", "setCurrentHistory", "applyFilterText"]),
         load(concat = false) {
             this.loading = true;
             getDatasets({
@@ -153,7 +153,7 @@ export default {
         async onShowDataset(item) {
             const historyId = item.history_id;
             try {
-                await this.setCurrentHistory(historyId);
+                await this.applyFilterText(historyId, `hid:${item.hid}`);
             } catch (error) {
                 this.onError(error);
             }
