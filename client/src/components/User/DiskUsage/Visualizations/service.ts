@@ -16,22 +16,25 @@ interface PurgeableItemSizeSummary extends ItemSizeSummary {
     purged: boolean;
 }
 
-const historySizeSummaryFields = "id,name,size,deleted";
+const itemSizeSummaryFields = "id,name,size,deleted";
 
 export async function getAllHistoriesSizeSummary() {
-    const activeHistoriesResponse = await getHistories({ keys: historySizeSummaryFields, deleted: false });
-    const activeHistories = activeHistoriesResponse.data as ItemSizeSummary[];
-    const deletedHistoriesResponse = await getHistories({ keys: historySizeSummaryFields, deleted: true });
-    const deletedHistories = deletedHistoriesResponse.data as ItemSizeSummary[];
-    return [...activeHistories, ...deletedHistories];
+    const allHistoriesTakingStorageResponse = await getHistories({
+        keys: itemSizeSummaryFields,
+        q: ["deleted", "purged"],
+        qv: ["None", "false"],
+    });
+    return allHistoriesTakingStorageResponse.data as ItemSizeSummary[];
 }
 
-export async function getHistoryContentsSizeSummary(historyId: string, limit = 1000) {
+export async function getHistoryContentsSizeSummary(historyId: string, limit = 5000) {
     const response = await getDatasets({
         history_id: historyId,
-        keys: historySizeSummaryFields,
+        keys: itemSizeSummaryFields,
         limit,
         order: "size-dsc",
+        q: ["purged"],
+        qv: ["false"],
     });
     console.log(response.data);
     return response.data as unknown as ItemSizeSummary[];
