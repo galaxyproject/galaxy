@@ -58,6 +58,7 @@ import { setToastComponentRef } from "composables/toast";
 import { setConfirmDialogComponentRef } from "composables/confirmDialog";
 import { setGlobalUploadModal } from "composables/globalUploadModal";
 import { useCurrentTheme } from "@/composables/user";
+import { useUserStore } from "@/stores/userStore";
 
 export default {
     components: {
@@ -79,7 +80,9 @@ export default {
 
         const { currentTheme } = useCurrentTheme();
 
-        return { toastRef, confirmDialogRef, uploadModal, currentTheme };
+        const userStore = useUserStore();
+
+        return { toastRef, confirmDialogRef, uploadModal, userStore, currentTheme };
     },
     data() {
         return {
@@ -91,7 +94,7 @@ export default {
     },
     computed: {
         tabs() {
-            return fetchMenu(this.config);
+            return fetchMenu(this.config, this.userStore);
         },
         showMasthead() {
             const masthead = this.$route.query.hide_masthead;

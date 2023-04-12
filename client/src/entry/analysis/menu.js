@@ -2,7 +2,7 @@ import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import { userLogout } from "utils/logout";
 
-export function fetchMenu(options = {}) {
+export function fetchMenu(options = {}, userStore) {
     const Galaxy = getGalaxyInstance();
     const menu = [];
     //
@@ -246,6 +246,14 @@ export function fetchMenu(options = {}) {
                 url: "/interactivetool_entry_points/list",
             });
         }
+
+        // beta switch for activity bar
+        userTab.menu.push({
+            title: _l("Show/Hide Activity Bar"),
+            onclick: () => {
+                userStore.toggleActivityBar();
+            },
+        });
     }
     menu.push(userTab);
     return menu;

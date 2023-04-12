@@ -8,11 +8,13 @@ import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import CenterFrame from "./CenterFrame.vue";
 import { useRoute, useRouter } from "vue-router/composables";
 import { computed, ref, onMounted, onUnmounted } from "vue";
+import { useUserStore } from "@/stores/userStore";
 
 const route = useRoute();
 const router = useRouter();
+const userStore = useUserStore();
+
 const showCenter = ref(false);
-const showActivityBar = ref(false);
 
 // computed
 const showPanels = computed(() => {
@@ -21,6 +23,10 @@ const showPanels = computed(() => {
         return panels.toLowerCase() != "true";
     }
     return true;
+});
+
+const showActivityBar = computed(() => {
+    return userStore.toggledActivityBar;
 });
 
 // methods
