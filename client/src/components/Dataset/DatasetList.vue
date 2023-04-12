@@ -19,7 +19,10 @@
                     <DatasetHistory :item="row.item" />
                 </template>
                 <template v-slot:cell(tags)="row">
-                    <Tags :index="row.index" :tags="row.item.tags" @input="onTags" />
+                    <StatelessTags
+                        :value="row.item.tags"
+                        :disabled="row.item.deleted"
+                        @input="(tags) => onTags(tags, row.index)" />
                 </template>
                 <template v-slot:cell(update_time)="data">
                     <UtcDate :date="data.value" mode="elapsed" />
@@ -43,7 +46,7 @@ import DatasetName from "./DatasetName";
 import DatasetHistory from "./DatasetHistory";
 import DelayedInput from "components/Common/DelayedInput";
 import UtcDate from "components/UtcDate";
-import Tags from "components/Common/Tags";
+import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import LoadingSpan from "components/LoadingSpan";
 
 export default {
@@ -53,7 +56,7 @@ export default {
         LoadingSpan,
         DelayedInput,
         UtcDate,
-        Tags,
+        StatelessTags,
     },
     data() {
         return {
