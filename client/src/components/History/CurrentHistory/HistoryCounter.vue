@@ -1,21 +1,34 @@
-<script setup>
+<script setup lang="ts">
 import prettyBytes from "pretty-bytes";
 import { formatDistanceToNowStrict } from "date-fns";
 import { toRef, ref, computed, onMounted } from "vue";
 import { useDetailedHistory } from "./usesDetailedHistory.js";
-import { useCurrentUser } from "composables/user";
-import { useConfig } from "composables/config";
-import PreferredStorePopover from "./PreferredStorePopover";
-import SelectPreferredStore from "./SelectPreferredStore";
+import { useCurrentUser } from "@/composables/user";
+import { useConfig } from "@/composables/config";
+import PreferredStorePopover from "./PreferredStorePopover.vue";
+import SelectPreferredStore from "./SelectPreferredStore.vue";
 
 import { useRouter } from "vue-router/composables";
 
-const props = defineProps({
-    history: { type: Object, required: true },
-    isWatching: { type: Boolean, default: false },
-    lastChecked: { type: Date, default: null },
-    filterText: { type: String, default: "" },
-    showControls: { type: Boolean, default: false },
+type HistoryBase = {
+    id: string,
+    preferred_object_store_id: string,
+};
+
+interface HistoryCounterProps{
+    history: HistoryBase,
+    isWatching?: boolean,
+    lastChecked: Date,
+    filterText?: string,
+    showControls?: boolean,
+}
+
+const props = withDefaults(defineProps<HistoryCounterProps>(), {
+    mode: "date",
+    isWatching: false,
+    lastChecked: () => new Date(),
+    filterText: "",
+    showControls: true,
 });
 
 const { config } = useConfig();
@@ -27,7 +40,7 @@ const reloadButtonCls = ref("fa fa-sync");
 const reloadButtonTitle = ref("");
 const reloadButtonVariant = ref("link");
 const showPreferredObjectStoreModal = ref(false);
-const historyPreferredObjectStoreId = ref(history.preferred_object_store_id);
+const historyPreferredObjectStoreId = ref(props.history.preferred_object_store_id);
 
 const niceHistorySize = computed(() => prettyBytes(historySize.value));
 
@@ -43,7 +56,7 @@ function onDashboard() {
     router.push("/storage");
 }
 
-function setFilter(newFilterText) {
+function setFilter(newFilterText: string) {
     emit("update:filter-text", newFilterText);
 }
 
@@ -87,7 +100,7 @@ async function reloadContents() {
     }, 1000);
 }
 
-function onUpdatePreferredObjectStoreId(preferredObjectStoreId) {
+function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
     showPreferredObjectStoreModal.value = false;
     // ideally this would be pushed back to the history object somehow
     // and tracked there... but for now this is only component using
