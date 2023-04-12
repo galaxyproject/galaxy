@@ -179,7 +179,8 @@ class CustosAuthnz(IdentityProvider):
                     "%20to%20your%20Galaxy%20account.")
             else:
                 redirect_url = (
-                    f"/?notification=Your%20{label}%20identity%20has%20been%20linked"
+                    f"{login_redirect_url}user/external_ids"
+                    f"?notification=Your%20{label}%20identity%20has%20been%20linked"
                     "%20to%20your%20Galaxy%20account.")
         else:
             custos_authnz_token.access_token = access_token
