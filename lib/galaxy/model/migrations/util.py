@@ -11,6 +11,7 @@ from alembic import (
     context,
     op,
 )
+from sqlalchemy.exc import OperationalError
 
 log = logging.getLogger(__name__)
 
@@ -87,3 +88,24 @@ def legacy_alter_table():
         yield
     finally:
         op.execute("PRAGMA legacy_alter_table=0;")
+
+
+@contextmanager
+def transaction():
+    """
+    Wraps multiple statements in upgrade/downgrade revision script functions in
+    a database transaction, ensuring transactional control.
+
+    Used for SQLite only. Although SQLite supports transactional DDL, pysqlite does not.
+    Ref: https://bugs.python.org/issue10740
+    """
+    if not _is_sqlite():
+        yield  # For postgresql, alembic ensures transactional context.
+    else:
+        try:
+            op.execute("BEGIN")
+            yield
+            op.execute("END")
+        except OperationalError:
+            op.execute("ROLLBACK")
+            raise
