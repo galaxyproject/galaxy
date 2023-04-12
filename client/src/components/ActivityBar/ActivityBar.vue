@@ -3,9 +3,9 @@ import { getGalaxyInstance } from "app";
 import { useUserStore } from "@/stores/userStore";
 import { computed } from "vue";
 import UploadItem from "./Items/UploadItem.vue";
-import WorkflowItem from "./Items/WorkflowItem.vue";
 import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
 import ActivityItem from "./ActivityItem";
+import FlexPanel from "@/components/Panels/FlexPanel.vue";
 
 const userStore = useUserStore();
 
@@ -34,7 +34,12 @@ function onToggleSidebar(toggle) {
                     tooltip="Search and run tools"
                     :is-active="sidebarIsActive('search')"
                     @click="onToggleSidebar('search')" />
-                <workflow-item :workflows="workflows" />
+                <ActivityItem
+                    id="activity-workflow"
+                    title="Workflow"
+                    icon="sitemap"
+                    tooltip="Chain tools into workflows"
+                    to="/workflows/list" />
                 <ActivityItem
                     id="activity-visualization"
                     icon="chart-bar"
@@ -46,23 +51,19 @@ function onToggleSidebar(toggle) {
                 <ActivityItem
                     id="activity-settings"
                     icon="cog"
-                    title="Configure"
+                    title="Settings"
                     tooltip="Edit preferences"
                     to="/user" />
             </b-nav>
         </div>
-        <div v-show="sidebarIsActive('search')" key="search">
-            <ToolBox class="left-column" />
-        </div>
+        <FlexPanel v-if="sidebarIsActive('search')" key="search" side="left">
+            <ToolBox />
+        </FlexPanel>
     </div>
 </template>
 
 <style scoped lang="scss">
 @import "theme/blue.scss";
-
-.left-column {
-    width: 15rem;
-}
 
 .activity-bar {
     background: $panel-bg-color;
