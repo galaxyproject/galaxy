@@ -1,18 +1,10 @@
 <script setup>
-import { getGalaxyInstance } from "app";
 import { useUserStore } from "@/stores/userStore";
-import { computed } from "vue";
 import UploadItem from "./Items/UploadItem.vue";
 import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
 import ActivityItem from "./ActivityItem";
-import FlexPanel from "@/components/Panels/FlexPanel.vue";
 
 const userStore = useUserStore();
-
-const workflows = computed(() => {
-    const Galaxy = getGalaxyInstance();
-    return Galaxy.config.stored_workflow_menu_entries;
-});
 
 function sidebarIsActive(menuKey) {
     return userStore.toggledSideBar === menuKey;
@@ -56,14 +48,18 @@ function onToggleSidebar(toggle) {
                     to="/user" />
             </b-nav>
         </div>
-        <FlexPanel v-if="sidebarIsActive('search')" key="search" side="left">
+        <div v-if="sidebarIsActive('search')" key="search" class="left-column">
             <ToolBox />
-        </FlexPanel>
+        </div>
     </div>
 </template>
 
 <style scoped lang="scss">
 @import "theme/blue.scss";
+
+.left-column {
+    width: 15rem;
+}
 
 .activity-bar {
     background: $panel-bg-color;

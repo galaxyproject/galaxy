@@ -16,13 +16,6 @@ const rangeWidth = [200, 300, 600];
 const panelWidth = ref(rangeWidth[1]);
 const show = ref(true);
 
-const props = defineProps({
-    side: {
-        type: String,
-        default: "right",
-    },
-});
-
 const { position, isDragging } = useDraggable(draggable, {
     preventDefault: true,
     exact: true,
@@ -47,10 +40,7 @@ function toggle() {
         <div class="d-flex flex-column" :style="style">
             <slot v-if="show" />
             <div v-else class="flex-fill" />
-            <div
-                v-if="side === 'right'"
-                class="flex-panel-footer d-flex px-2 p-1"
-                :class="{ 'flex-panel-border': !show }">
+            <div class="flex-panel-footer d-flex px-2 p-1" :class="{ 'flex-panel-border': !show }">
                 <div v-if="show">
                     <font-awesome-icon icon="grip-lines-vertical" />
                     <div
@@ -66,24 +56,6 @@ function toggle() {
                     <font-awesome-icon v-if="show" class="cursor-pointer increase-area" icon="chevron-right" />
                     <font-awesome-icon v-else class="cursor-pointer increase-area" icon="chevron-left" />
                     <div class="interaction-area" @click="toggle" />
-                </div>
-            </div>
-            <div v-else class="flex-panel-footer d-flex px-2 p-1" :class="{ 'flex-panel-border': !show }">
-                <div>
-                    <font-awesome-icon v-if="show" class="cursor-pointer increase-area" icon="chevron-left" />
-                    <font-awesome-icon v-else class="cursor-pointer increase-area" icon="chevron-right" />
-                    <div class="interaction-area" @click="toggle" />
-                </div>
-                <div class="flex-fill" />
-                <div v-if="show">
-                    <font-awesome-icon icon="grip-lines-vertical" />
-                    <div
-                        ref="draggable"
-                        class="interaction-area"
-                        :class="{
-                            'cursor-grab': !isDragging,
-                            'cursor-grabbing': isDragging,
-                        }" />
                 </div>
             </div>
         </div>
