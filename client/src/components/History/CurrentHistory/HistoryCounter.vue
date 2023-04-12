@@ -1,3 +1,95 @@
+<script setup>
+import prettyBytes from "pretty-bytes";
+import { formatDistanceToNowStrict } from "date-fns";
+import { toRef, ref, computed, onMounted } from "vue";
+import { useDetailedHistory } from "./usesDetailedHistory.js";
+import { useCurrentUser } from "composables/user";
+import { useConfig } from "composables/config";
+import PreferredStorePopover from "./PreferredStorePopover";
+import SelectPreferredStore from "./SelectPreferredStore";
+
+import { useRouter } from "vue-router/composables";
+
+const props = defineProps({
+    history: { type: Object, required: true },
+    isWatching: { type: Boolean, default: false },
+    lastChecked: { type: Date, default: null },
+    filterText: { type: String, default: "" },
+    showControls: { type: Boolean, default: false },
+});
+
+const { config } = useConfig();
+const router = useRouter();
+const { currentUser } = useCurrentUser();
+const { historySize, numItemsActive, numItemsDeleted, numItemsHidden } = useDetailedHistory(toRef(props, "history"));
+
+const reloadButtonCls = ref("fa fa-sync");
+const reloadButtonTitle = ref("");
+const reloadButtonVariant = ref("link");
+const showPreferredObjectStoreModal = ref(false);
+const historyPreferredObjectStoreId = ref(history.preferred_object_store_id);
+
+const niceHistorySize = computed(() => prettyBytes(historySize.value));
+
+onMounted(() => {
+    updateTime();
+    // update every second
+    setInterval(updateTime, 1000);
+});
+
+function onDashboard() {
+    router.push("/storage");
+}
+
+function setFilter(newFilterText) {
+    this.$emit("update:filter-text", newFilterText);
+}
+
+function toggleDeleted() {
+    if (props.filterText === "deleted:true") {
+        setFilter("");
+    } else {
+        setFilter("deleted:true");
+    }
+}
+
+function toggleHidden() {
+    if (props.filterText === "visible:false") {
+        setFilter("");
+    } else {
+        setFilter("visible:false");
+    }
+}
+
+function updateTime() {
+    const diffToNow = formatDistanceToNowStrict(props.lastChecked, { addSuffix: true, includeSeconds: true });
+    const diffToNowSec = Date.now() - props.lastChecked;
+    // if history isn't being watched or hasn't been watched/polled for over 2 minutes
+    if (!props.isWatching || diffToNowSec > 120000) {
+        reloadButtonTitle.value = "Last refreshed " + diffToNow + ". Consider reloading the page.";
+        reloadButtonVariant.value = "danger";
+    } else {
+        reloadButtonTitle.value = "Last refreshed " + diffToNow;
+        reloadButtonVariant.value = "link";
+    }
+}
+
+async function reloadContents() {
+    this.$emit("reloadContents");
+    reloadButtonCls.value = "fa fa-sync fa-spin";
+    setTimeout(() => {
+        this.reloadButtonCls = "fa fa-sync";
+    }, 1000);
+}
+function onUpdatePreferredObjectStoreId(preferredObjectStoreId) {
+    this.showPreferredObjectStoreModal = false;
+    // ideally this would be pushed back to the history object somehow
+    // and tracked there... but for now this is only component using
+    // this information.
+    this.historyPreferredObjectStoreId = preferredObjectStoreId;
+}
+</script>
+
 <template>
     <div class="history-size my-1 d-flex justify-content-between">
         <b-button
@@ -87,103 +179,3 @@
         </b-button-group>
     </div>
 </template>
-
-<script>
-import prettyBytes from "pretty-bytes";
-import { formatDistanceToNowStrict } from "date-fns";
-import { toRef } from "vue";
-import { useDetailedHistory } from "./usesDetailedHistory.js";
-import { useCurrentUser } from "composables/user";
-import { useConfig } from "composables/config";
-import PreferredStorePopover from "./PreferredStorePopover";
-import SelectPreferredStore from "./SelectPreferredStore";
-
-export default {
-    components: {
-        PreferredStorePopover,
-        SelectPreferredStore,
-    },
-    props: {
-        history: { type: Object, required: true },
-        isWatching: { type: Boolean, default: false },
-        lastChecked: { type: Date, default: null },
-        filterText: { type: String, default: "" },
-        showControls: { type: Boolean, default: false },
-    },
-    setup(props) {
-        const { currentUser } = useCurrentUser();
-        const { historySize, numItemsActive, numItemsDeleted, numItemsHidden } = useDetailedHistory(
-            toRef(props, "history")
-        );
-        const { config } = useConfig();
-        return { config, currentUser, historySize, numItemsActive, numItemsDeleted, numItemsHidden };
-    },
-    data() {
-        return {
-            reloadButtonCls: "fa fa-sync",
-            reloadButtonTitle: "",
-            reloadButtonVariant: "link",
-            showPreferredObjectStoreModal: false,
-            historyPreferredObjectStoreId: this.history.preferred_object_store_id,
-        };
-    },
-    computed: {
-        niceHistorySize() {
-            return prettyBytes(this.historySize);
-        },
-    },
-    mounted() {
-        this.updateTime();
-        // update every second
-        setInterval(this.updateTime.bind(this), 1000);
-    },
-    methods: {
-        onDashboard() {
-            this.$router.push("/storage");
-        },
-        setFilter(newFilterText) {
-            this.$emit("update:filter-text", newFilterText);
-        },
-        toggleDeleted() {
-            if (this.filterText === "deleted:true") {
-                this.setFilter("");
-            } else {
-                this.setFilter("deleted:true");
-            }
-        },
-        toggleHidden() {
-            if (this.filterText === "visible:false") {
-                this.setFilter("");
-            } else {
-                this.setFilter("visible:false");
-            }
-        },
-        updateTime() {
-            const diffToNow = formatDistanceToNowStrict(this.lastChecked, { addSuffix: true, includeSeconds: true });
-            const diffToNowSec = Date.now() - this.lastChecked;
-            // if history isn't being watched or hasn't been watched/polled for over 2 minutes
-            if (!this.isWatching || diffToNowSec > 120000) {
-                this.reloadButtonTitle = "Last refreshed " + diffToNow + ". Consider reloading the page.";
-                this.reloadButtonVariant = "danger";
-            } else {
-                this.reloadButtonTitle = "Last refreshed " + diffToNow;
-                this.reloadButtonVariant = "link";
-            }
-        },
-        async reloadContents() {
-            this.$emit("reloadContents");
-            this.reloadButtonCls = "fa fa-sync fa-spin";
-            setTimeout(() => {
-                this.reloadButtonCls = "fa fa-sync";
-            }, 1000);
-        },
-        onUpdatePreferredObjectStoreId(preferredObjectStoreId) {
-            this.showPreferredObjectStoreModal = false;
-            // ideally this would be pushed back to the history object somehow
-            // and tracked there... but for now this is only component using
-            // this information.
-            this.historyPreferredObjectStoreId = preferredObjectStoreId;
-        },
-    },
-};
-</script>
