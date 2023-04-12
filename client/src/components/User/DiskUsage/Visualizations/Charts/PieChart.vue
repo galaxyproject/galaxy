@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { BCard } from "bootstrap-vue";
-import { onMounted, ref, computed } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import * as d3 from "d3";
 
 import type { DataValuePoint } from ".";
@@ -49,10 +49,27 @@ const hasData = computed(
 );
 
 onMounted(() => {
+    renderPieChart();
+});
+
+watch(
+    () => props.data,
+    () => {
+        clearChart();
+        renderPieChart();
+    }
+);
+
+function renderPieChart() {
     chartArcs.value = drawChart();
     legendEntries.value = createLegend();
     setupEvents();
-});
+}
+
+function clearChart() {
+    d3.select(pieChart.value).selectAll("*").remove();
+    d3.select(legend.value).selectAll("*").remove();
+}
 
 const color = d3.scaleOrdinal(d3.schemeCategory10);
 
