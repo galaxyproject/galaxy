@@ -12,25 +12,21 @@
             <span>{{ niceHistorySize }}</span>
         </b-button>
         <b-button-group v-if="currentUser">
-            <ConfigProvider v-slot="{ config }">
-                <b-button
-                    v-if="config && config.object_store_allows_id_selection"
-                    :id="`history-storage-${history.id}`"
-                    variant="link"
-                    size="sm"
-                    class="rounded-0 text-decoration-none"
-                    @click="showPreferredObjectStoreModal = true">
-                    <icon icon="hdd" />
-                </b-button>
-            </ConfigProvider>
-            <ConfigProvider v-slot="{ config }">
-                <PreferredStorePopover
-                    v-if="config && config.object_store_allows_id_selection"
-                    :history-id="history.id"
-                    :history-preferred-object-store-id="historyPreferredObjectStoreId"
-                    :user="currentUser">
-                </PreferredStorePopover>
-            </ConfigProvider>
+            <b-button
+                v-if="config && config.object_store_allows_id_selection"
+                :id="`history-storage-${history.id}`"
+                variant="link"
+                size="sm"
+                class="rounded-0 text-decoration-none"
+                @click="showPreferredObjectStoreModal = true">
+                <icon icon="hdd" />
+            </b-button>
+            <PreferredStorePopover
+                v-if="config && config.object_store_allows_id_selection"
+                :history-id="history.id"
+                :history-preferred-object-store-id="historyPreferredObjectStoreId"
+                :user="currentUser">
+            </PreferredStorePopover>
             <b-button-group>
                 <b-button
                     v-b-tooltip.hover
@@ -98,13 +94,12 @@ import { formatDistanceToNowStrict } from "date-fns";
 import { toRef } from "vue";
 import { useDetailedHistory } from "./usesDetailedHistory.js";
 import { useCurrentUser } from "composables/user";
-import ConfigProvider from "components/providers/ConfigProvider";
+import { useConfig } from "composables/config";
 import PreferredStorePopover from "./PreferredStorePopover";
 import SelectPreferredStore from "./SelectPreferredStore";
 
 export default {
     components: {
-        ConfigProvider,
         PreferredStorePopover,
         SelectPreferredStore,
     },
@@ -120,7 +115,8 @@ export default {
         const { historySize, numItemsActive, numItemsDeleted, numItemsHidden } = useDetailedHistory(
             toRef(props, "history")
         );
-        return { currentUser, historySize, numItemsActive, numItemsDeleted, numItemsHidden };
+        const { config } = useConfig();
+        return { config, currentUser, historySize, numItemsActive, numItemsDeleted, numItemsHidden };
     },
     data() {
         return {
