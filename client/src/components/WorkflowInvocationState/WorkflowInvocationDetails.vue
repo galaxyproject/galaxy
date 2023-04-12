@@ -11,13 +11,7 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits(["toggleHighlights"]);
-
 const { workflow } = useWorkflowInstance(props.invocation.workflow_id);
-
-function onHighlight(item) {
-    emit("toggleHighlights", item);
-}
 
 function dataInputStepLabel(key, input) {
     const invocationStep = props.invocation.steps[key];
@@ -56,7 +50,7 @@ function dataInputStepLabel(key, input) {
             <b-tab v-if="Object.keys(invocation.output_collections).length" title="Output Collections">
                 <div v-for="(output, key) in invocation.output_collections" :key="output.id">
                     <b>{{ key }}:</b>
-                    <generic-history-item :item-id="output.id" :item-src="output.src" @toggle-highlights="onHighlight"  />
+                    <generic-history-item :item-id="output.id" :item-src="output.src" />
                 </div>
             </b-tab>
             <b-tab v-if="workflow" title="Steps">
