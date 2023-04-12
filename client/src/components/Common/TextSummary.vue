@@ -13,6 +13,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    maxLength: {
+        type: Number,
+        default: 150,
+    },
 });
 
 const emit = defineEmits<{
@@ -33,13 +37,13 @@ library.add(faChevronUp, faChevronDown);
 const collapsedEnableIcon = "fas fa-chevron-down";
 const collapsedDisableIcon = "fas fa-chevron-up";
 
-// max length (can be a prop, maybe?)
-const n = 150;
 // summarized length
-const x = Math.round(n - n / 2);
+const x = Math.round(props.maxLength - props.maxLength / 2);
 
-const summary = computed(() => props.description.length > n);
-const text = computed(() => (props.description.length > n ? props.description.slice(0, x) : props.description));
+const summary = computed(() => props.description.length > props.maxLength);
+const text = computed(() =>
+    props.description.length > props.maxLength ? props.description.slice(0, x) : props.description
+);
 </script>
 
 <template>
