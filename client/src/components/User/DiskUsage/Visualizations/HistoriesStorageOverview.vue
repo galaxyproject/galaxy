@@ -4,9 +4,16 @@ import type { DataValuePoint } from "./Charts";
 import { ref, onMounted } from "vue";
 import PieChart from "./Charts/PieChart.vue";
 import { bytesLabelFormatter } from "./Charts/utils";
-import { getAllHistoriesSizeSummary, type ItemSizeSummary } from "./service";
+import { getAllHistoriesSizeSummary, type ItemSizeSummary, undeleteHistory, purgeHistory } from "./service";
 import RecoverableItemSizeTooltip from "./RecoverableItemSizeTooltip.vue";
 import SelectedHistoryActions from "./SelectedHistoryActions.vue";
+import { useRouter } from "vue-router/composables";
+import { useToast } from "@/composables/toast";
+import { useConfirmDialog } from "@/composables/confirmDialog";
+
+const router = useRouter();
+const { success: successToast, error: errorToast } = useToast();
+const { confirm } = useConfirmDialog();
 
 const historiesSizeSummaryMap = new Map<string, ItemSizeSummary>();
 
@@ -17,9 +24,13 @@ onMounted(async () => {
     const allHistoriesSizeSummary = await getAllHistoriesSizeSummary();
     allHistoriesSizeSummary.forEach((history) => historiesSizeSummaryMap.set(history.id, history));
 
+    buildGraphsData(allHistoriesSizeSummary);
+});
+
+function buildGraphsData(allHistoriesSizeSummary: ItemSizeSummary[]) {
     topTenHistoriesBySizeData.value = buildTopTenHistoriesBySizeData(allHistoriesSizeSummary);
     activeVsDeletedTotalSizeData.value = buildActiveVsDeletedTotalSizeData(allHistoriesSizeSummary);
-});
+}
 
 function buildTopTenHistoriesBySizeData(historiesSizeSummary: ItemSizeSummary[]): DataValuePoint[] {
     const topTenHistoriesBySize = historiesSizeSummary.sort((a, b) => b.size - a.size).slice(0, 10);
@@ -61,6 +72,51 @@ function isRecoverableDataPoint(dataPoint?: DataValuePoint): boolean {
     }
     return false;
 }
+
+function onViewHistory(historyId: string) {
+    router.push({ name: "HistoryOverview", params: { historyId } });
+}
+
+async function onUndeleteHistory(historyId: string) {
+    try {
+        const result = await undeleteHistory(historyId);
+        const history = historiesSizeSummaryMap.get(historyId);
+        if (history && !result.deleted) {
+            history.deleted = result.deleted;
+            historiesSizeSummaryMap.set(historyId, history);
+            successToast(localize("History undeleted successfully."));
+            buildGraphsData(Array.from(historiesSizeSummaryMap.values()));
+        }
+    } catch (error) {
+        errorToast(`${error}`, localize("An error occurred while undeleting the history."));
+    }
+}
+
+async function onPermanentlyDeleteHistory(historyId: string) {
+    const confirmed = await confirm(
+        localize("Are you sure you want to permanently delete this history? This action cannot be undone."),
+        {
+            title: localize("Permanently delete history?"),
+            okVariant: "danger",
+            okTitle: localize("Permanently delete"),
+            cancelTitle: localize("Cancel"),
+        }
+    );
+    if (!confirmed) {
+        return;
+    }
+    try {
+        const result = await purgeHistory(historyId);
+        const history = historiesSizeSummaryMap.get(historyId);
+        if (history && result.purged) {
+            historiesSizeSummaryMap.delete(historyId);
+            successToast(localize("History permanently deleted successfully."));
+            buildGraphsData(Array.from(historiesSizeSummaryMap.values()));
+        }
+    } catch (error) {
+        errorToast(`${error}`, localize("An error occurred while permanently deleting the history."));
+    }
+}
 </script>
 <template>
     <div>
@@ -88,7 +144,12 @@ function isRecoverableDataPoint(dataPoint?: DataValuePoint): boolean {
                 <RecoverableItemSizeTooltip :data="data" :is-recoverable="isRecoverableDataPoint(data)" />
             </template>
             <template v-slot:selection="{ data }">
-                <SelectedHistoryActions :data="data" :is-recoverable="isRecoverableDataPoint(data)" />
+                <SelectedHistoryActions
+                    :data="data"
+                    :is-recoverable="isRecoverableDataPoint(data)"
+                    @view-history="onViewHistory"
+                    @undelete-history="onUndeleteHistory"
+                    @permanently-delete-history="onPermanentlyDeleteHistory" />
             </template>
         </PieChart>
         <PieChart
