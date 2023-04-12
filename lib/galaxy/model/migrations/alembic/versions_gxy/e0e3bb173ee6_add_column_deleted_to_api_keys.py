@@ -14,6 +14,7 @@ from galaxy.model.migrations.util import (
     add_column,
     drop_column,
     drop_index,
+    transaction,
 )
 
 # revision identifiers, used by Alembic.
@@ -33,5 +34,6 @@ def upgrade():
 
 
 def downgrade():
-    drop_index("ix_api_keys_deleted", table_name)
-    drop_column(table_name, column_name)
+    with transaction():
+        drop_index("ix_api_keys_deleted", table_name)
+        drop_column(table_name, column_name)

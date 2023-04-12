@@ -7,6 +7,8 @@ Create Date: 2023-01-16 11:53:59.783836
 """
 from alembic import op
 
+from galaxy.model.migrations.util import transaction
+
 # revision identifiers, used by Alembic.
 revision = "c39f1de47a04"
 down_revision = "3100452fa030"
@@ -88,14 +90,12 @@ GROUP BY jobstates.hdca_id
 
 
 def upgrade():
-    op.execute("BEGIN")
-    op.execute(f"DROP VIEW IF EXISTS {view_name}")
-    op.execute(f"CREATE VIEW {view_name} AS {new_aggregate_query}")
-    op.execute("END")
+    with transaction():
+        op.execute(f"DROP VIEW IF EXISTS {view_name}")
+        op.execute(f"CREATE VIEW {view_name} AS {new_aggregate_query}")
 
 
 def downgrade():
-    op.execute("BEGIN")
-    op.execute(f"DROP VIEW IF EXISTS {view_name}")
-    op.execute(f"CREATE VIEW {view_name} AS {previous_aggregate_query}")
-    op.execute("END")
+    with transaction():
+        op.execute(f"DROP VIEW IF EXISTS {view_name}")
+        op.execute(f"CREATE VIEW {view_name} AS {previous_aggregate_query}")

@@ -13,6 +13,7 @@ from sqlalchemy import (
 from galaxy.model.migrations.util import (
     add_column,
     drop_column,
+    transaction,
 )
 
 # revision identifiers, used by Alembic.
@@ -23,10 +24,12 @@ depends_on = None
 
 
 def upgrade():
-    add_column("history_dataset_association", Column("metadata_deferred", Boolean(), default=False))
-    add_column("library_dataset_dataset_association", Column("metadata_deferred", Boolean(), default=False))
+    with transaction():
+        add_column("history_dataset_association", Column("metadata_deferred", Boolean(), default=False))
+        add_column("library_dataset_dataset_association", Column("metadata_deferred", Boolean(), default=False))
 
 
 def downgrade():
-    drop_column("history_dataset_association", "metadata_deferred")
-    drop_column("library_dataset_dataset_association", "metadata_deferred")
+    with transaction():
+        drop_column("history_dataset_association", "metadata_deferred")
+        drop_column("library_dataset_dataset_association", "metadata_deferred")
