@@ -81,12 +81,3 @@ function onPermanentlyDeleteHistory() {
         </div>
     </div>
 </template>
-
-<style scoped>
-.selected-history-info {
-    text-align: left;
-    margin-top: 1rem;
-    margin-bottom: 1rem;
-    max-width: 400px;
-}
-</style>

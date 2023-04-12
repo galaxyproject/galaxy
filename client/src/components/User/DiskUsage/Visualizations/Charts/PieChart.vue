@@ -96,8 +96,7 @@ function drawChart() {
     arcs.append("path")
         // @ts-ignore
         .attr("d", arc)
-        // @ts-ignore
-        .attr("fill", entryColor);
+        .attr("fill", (d) => entryColor(d.data));
 
     return arcs;
 }
@@ -122,7 +121,7 @@ function createLegend() {
         .selectAll("g")
         .data(data)
         .join("g")
-        .attr("transform", (d) => `translate(0, ${topMargin + d.index * entrySpacing})`);
+        .attr("transform", (d, i) => `translate(0,${topMargin + i * entrySpacing})`);
 
     entries
         .append("circle")
@@ -218,7 +217,7 @@ function highlightSelected(): void {
 }
 
 function entryColor(d: DataValuePoint): string {
-    return color(`${d.index}`);
+    return color(`${d.id}`);
 }
 
 function setTooltipPosition(mouseX: number, mouseY: number): void {
@@ -244,10 +243,10 @@ function applyThresholdToValue(d: DataValuePoint): number {
         </template>
         <div v-if="hasData">
             <p class="text-center">{{ description }}</p>
-            <div class="chartArea">
-                <div ref="pieChart" class="pieChart"></div>
+            <div class="chart-area">
+                <div ref="pieChart" class="pie-chart"></div>
                 <div ref="legend" class="legend"></div>
-                <div v-if="selectedDataPoint" class="selectionInfo">
+                <div v-if="selectedDataPoint" class="selection-info">
                     <slot name="selection" :data="selectedDataPoint">
                         Selected: <b>{{ selectedDataPoint.label }}</b>
                     </slot>
@@ -257,7 +256,7 @@ function applyThresholdToValue(d: DataValuePoint): number {
         <div v-else class="text-center">
             <p class="text-muted">No data to display. Populate some histories with datasets and come back.</p>
         </div>
-        <div v-show="showTooltip" ref="chartTooltip" class="chartTooltip">
+        <div v-show="showTooltip" ref="chartTooltip" class="chart-tooltip">
             <slot name="tooltip" :data="tooltipDataPoint">
                 <div>{{ labelFormatter(tooltipDataPoint) }}</div>
             </slot>
@@ -266,24 +265,23 @@ function applyThresholdToValue(d: DataValuePoint): number {
 </template>
 
 <style lang="css" scoped>
-.chartArea {
+.chart-area {
     display: flex;
     justify-content: center;
 }
-.pieChart {
+.pie-chart {
     float: right;
 }
 
-.arc {
+.pie-chart .arc {
     cursor: pointer;
-    opacity: 1;
 }
 
 .legend {
     float: left;
 }
 
-.chartTooltip {
+.chart-tooltip {
     position: fixed;
     background-color: #fff;
     border: 1px solid #000;
@@ -292,20 +290,23 @@ function applyThresholdToValue(d: DataValuePoint): number {
     margin: 0 0 0 20px;
     z-index: 100;
     text-align: center;
+    pointer-events: none;
 }
 
-.selectionInfo {
+.selection-info {
     background-color: #fff;
     border: 1px solid #000;
     border-radius: 5px;
     padding: 5px;
-    margin: 80px 0 0 20px;
     z-index: 100;
-    text-align: center;
     display: block;
-    float: left;
+    float: right;
     position: absolute;
-    top: 0;
-    left: 0;
+    bottom: 0;
+    right: 0;
+    margin-bottom: 2rem;
+    margin-right: 2rem;
+    text-align: left;
+    max-width: 300px;
 }
 </style>

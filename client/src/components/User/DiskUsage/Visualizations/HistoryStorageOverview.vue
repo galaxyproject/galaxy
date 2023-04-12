@@ -24,13 +24,11 @@ onMounted(async () => {
 
     topTenDatasetsBySizeData.value = buildTopTenDatasetsBySizeData(allDatasetsInHistorySizeSummary);
     activeVsDeletedTotalSizeData.value = buildActiveVsDeletedTotalSizeData(allDatasetsInHistorySizeSummary);
-    console.log(activeVsDeletedTotalSizeData.value);
 });
 
 function buildTopTenDatasetsBySizeData(datasetsSizeSummary: ItemSizeSummary[]): DataValuePoint[] {
     const topTenDatasetsBySize = datasetsSizeSummary.sort((a, b) => b.size - a.size).slice(0, 10);
-    return topTenDatasetsBySize.map((dataset, index) => ({
-        index,
+    return topTenDatasetsBySize.map((dataset) => ({
         id: dataset.id,
         label: dataset.name,
         value: dataset.size,
@@ -46,13 +44,11 @@ function buildActiveVsDeletedTotalSizeData(datasetsSizeSummary: ItemSizeSummary[
         .reduce((total, dataset) => total + dataset.size, 0);
     return [
         {
-            index: 0,
             id: "active",
             label: "Active",
             value: activeDatasetsSize,
         },
         {
-            index: 1,
             id: "deleted",
             label: "Deleted",
             value: deletedDatasetsSize,
@@ -76,13 +72,18 @@ function isRecoverableDataPoint(dataPoint?: DataValuePoint): boolean {
         </h2>
         <p class="text-center">
             Here you will find some Graphs displaying the storage taken by datasets in your history:
-            <b>{{ props.historyId }}</b>
+            <b>{{ props.historyId }}</b
+            >. You can use these graphs to identify the datasets that take the most space in your history. You can also
+            go to the
+            <router-link :to="{ name: 'HistoriesOverview' }"><b>Histories Storage Overview</b></router-link> page to see
+            the storage taken by <b>all your histories</b>.
         </p>
         <p class="text-center mx-3">
-            These graphs include <b>deleted datasets</b>. Even if you delete datasets, they still take up storage space
-            until you permanently delete them. However, you can recover the storage space by permanently deleting them
-            from the <i>Discarded Items</i> section of the
-            <router-link :to="{ name: 'StorageManager' }"><b>Storage Manager</b></router-link> page.
+            Note: these graphs include <b>deleted datasets</b>. Remember that, even if you delete datasets, they still
+            take up storage space. However, you can free up the storage space by permanently deleting them from the
+            <i>Discarded Items</i> section of the
+            <router-link :to="{ name: 'StorageManager' }"><b>Storage Manager</b></router-link> page or by selecting them
+            individually in the graph and clicking the <b>Permanently Delete</b> button.
         </p>
 
         <PieChart

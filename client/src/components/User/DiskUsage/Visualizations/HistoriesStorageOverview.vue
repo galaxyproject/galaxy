@@ -34,8 +34,7 @@ function buildGraphsData(allHistoriesSizeSummary: ItemSizeSummary[]) {
 
 function buildTopTenHistoriesBySizeData(historiesSizeSummary: ItemSizeSummary[]): DataValuePoint[] {
     const topTenHistoriesBySize = historiesSizeSummary.sort((a, b) => b.size - a.size).slice(0, 10);
-    return topTenHistoriesBySize.map((history, index) => ({
-        index,
+    return topTenHistoriesBySize.map((history) => ({
         id: history.id,
         label: history.name,
         value: history.size,
@@ -51,13 +50,11 @@ function buildActiveVsDeletedTotalSizeData(historiesSizeSummary: ItemSizeSummary
         .reduce((total, history) => total + history.size, 0);
     return [
         {
-            index: 0,
             id: "active",
             label: "Active",
             value: activeHistoriesSize,
         },
         {
-            index: 1,
             id: "deleted",
             label: "Deleted",
             value: deletedHistoriesSize,
@@ -128,10 +125,11 @@ async function onPermanentlyDeleteHistory(historyId: string) {
             Here you can find various graphs displaying the storage size taken by <b>all your histories</b>.
         </p>
         <p class="text-center mx-3">
-            These graphs include <b>deleted histories</b>. Even if you delete histories, they still take up storage
-            space until you permanently delete them. However, you can recover the storage space by permanently deleting
-            them from the <i>Discarded Items</i> section of the
-            <router-link :to="{ name: 'StorageManager' }"><b>Storage Manager</b></router-link> page.
+            Note: these graphs include <b>deleted histories</b>. Remember that, even if you delete histories, they still
+            take up storage space. However, you can free up the storage space by permanently deleting them from the
+            <i>Discarded Items</i> section of the
+            <router-link :to="{ name: 'StorageManager' }"><b>Storage Manager</b></router-link> page or by selecting them
+            individually in the graph and clicking the <b>Permanently Delete</b> button.
         </p>
         <PieChart
             v-if="topTenHistoriesBySizeData"
