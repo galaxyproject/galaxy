@@ -9,7 +9,7 @@
             :disabled="!showControls"
             @click="onDashboard">
             <icon icon="database" />
-            <span>{{ historySize | niceFileSize }}</span>
+            <span>{{ niceHistorySize }}</span>
         </b-button>
         <b-button-group v-if="currentUser">
             <ConfigProvider v-slot="{ config }">
@@ -108,11 +108,6 @@ export default {
         PreferredStorePopover,
         SelectPreferredStore,
     },
-    filters: {
-        niceFileSize(rawSize = 0) {
-            return prettyBytes(rawSize);
-        },
-    },
     props: {
         history: { type: Object, required: true },
         isWatching: { type: Boolean, default: false },
@@ -135,6 +130,11 @@ export default {
             showPreferredObjectStoreModal: false,
             historyPreferredObjectStoreId: this.history.preferred_object_store_id,
         };
+    },
+    computed: {
+        niceHistorySize() {
+            return prettyBytes(this.historySize);
+        },
     },
     mounted() {
         this.updateTime();
