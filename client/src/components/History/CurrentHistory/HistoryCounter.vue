@@ -81,7 +81,7 @@ function toggleHidden() {
 
 function updateTime() {
     const diffToNow = formatDistanceToNowStrict(props.lastChecked, { addSuffix: true, includeSeconds: true });
-    const diffToNowSec = Date.now() - props.lastChecked;
+    const diffToNowSec = Date.now().valueOf() - props.lastChecked.valueOf();
     // if history isn't being watched or hasn't been watched/polled for over 2 minutes
     if (!props.isWatching || diffToNowSec > 120000) {
         reloadButtonTitle.value = "Last refreshed " + diffToNow + ". Consider reloading the page.";
