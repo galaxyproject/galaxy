@@ -104,34 +104,25 @@ function drawChart() {
 
 function createLegend() {
     const data = props.data;
-    const titlePadding = 20;
+    const topMargin = 10;
     const entrySpacing = 18;
     const entryRadius = 5;
     const labelOffset = 4;
     const baselineOffset = 4;
 
-    const height = titlePadding + data.length * entrySpacing + 50;
+    const height = topMargin + data.length * entrySpacing + 50;
     const container = d3
         .select(legend.value)
         .append("svg")
         .attr("height", height)
         .append("g")
-        .attr("transform", `translate(0,${titlePadding})`);
-
-    container
-        .append("text")
-        .attr("x", 0)
-        .attr("y", 0)
-        .attr("fill", "black")
-        .attr("font-weight", "bold")
-        .attr("font-size", "16px")
-        .text("Legend");
+        .attr("transform", `translate(0,${topMargin})`);
 
     const entries = container
         .selectAll("g")
         .data(data)
         .join("g")
-        .attr("transform", (d) => `translate(0, ${titlePadding + d.index * entrySpacing})`);
+        .attr("transform", (d) => `translate(0, ${topMargin + d.index * entrySpacing})`);
 
     entries
         .append("circle")
