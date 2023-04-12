@@ -31,6 +31,8 @@ const historyPreferredObjectStoreId = ref(history.preferred_object_store_id);
 
 const niceHistorySize = computed(() => prettyBytes(historySize.value));
 
+const emit = defineEmits(["update:filter-text", "reloadContents"]);
+
 onMounted(() => {
     updateTime();
     // update every second
@@ -42,7 +44,7 @@ function onDashboard() {
 }
 
 function setFilter(newFilterText) {
-    this.$emit("update:filter-text", newFilterText);
+    emit("update:filter-text", newFilterText);
 }
 
 function toggleDeleted() {
@@ -75,18 +77,19 @@ function updateTime() {
 }
 
 async function reloadContents() {
-    this.$emit("reloadContents");
+    emit("reloadContents");
     reloadButtonCls.value = "fa fa-sync fa-spin";
     setTimeout(() => {
-        this.reloadButtonCls = "fa fa-sync";
+        reloadButtonCls.value = "fa fa-sync";
     }, 1000);
 }
+
 function onUpdatePreferredObjectStoreId(preferredObjectStoreId) {
-    this.showPreferredObjectStoreModal = false;
+    showPreferredObjectStoreModal.value = false;
     // ideally this would be pushed back to the history object somehow
     // and tracked there... but for now this is only component using
     // this information.
-    this.historyPreferredObjectStoreId = preferredObjectStoreId;
+    historyPreferredObjectStoreId.value = preferredObjectStoreId;
 }
 </script>
 
