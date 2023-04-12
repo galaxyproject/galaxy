@@ -877,7 +877,6 @@ steps:
         self.components.workflow_editor.canvas_body.wait_for_visible()
         self.wait_for_selector_absent_or_hidden(self.modal_body_selector())
         self.components.masthead.workflow.wait_for_and_click()
-        self.components.workflows.bookmark_link.wait_for_and_click()
 
         self.components.tool_panel.search.wait_for_and_send_keys(new_workflow_name)
         self.sleep_for(self.wait_types.UX_RENDER)
