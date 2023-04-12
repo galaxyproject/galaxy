@@ -174,6 +174,7 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "datasets/:datasetId/details",
+                        name: "DatasetDetails",
                         component: DatasetDetails,
                         props: true,
                     },

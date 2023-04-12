@@ -7,12 +7,13 @@ import { faChartPie, faUndo, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 
-interface SelectedHistoryActionsProps {
+interface SelectedItemActionsProps {
     data: DataValuePoint;
     isRecoverable: boolean;
+    itemType: string;
 }
 
-const props = defineProps<SelectedHistoryActionsProps>();
+const props = defineProps<SelectedItemActionsProps>();
 
 //@ts-ignore bad library types
 library.add(faChartPie, faUndo, faTrash);
@@ -21,33 +22,34 @@ const label = computed(() => props.data?.label ?? "No data");
 const prettySize = computed(() => bytesToString(props.data?.value ?? 0));
 
 const emit = defineEmits<{
-    (e: "undelete-history", historyId: string): void;
-    (e: "view-history", historyId: string): void;
-    (e: "permanently-delete-history", historyId: string): void;
+    (e: "view-item", itemId: string): void;
+    (e: "undelete-item", itemId: string): void;
+    (e: "permanently-delete-item", itemId: string): void;
 }>();
 
-function onUndeleteHistory() {
-    emit("undelete-history", props.data.id);
+function onUndeleteItem() {
+    emit("undelete-item", props.data.id);
 }
 
-function onViewHistory() {
-    emit("view-history", props.data.id);
+function onViewItem() {
+    emit("view-item", props.data.id);
 }
 
-function onPermanentlyDeleteHistory() {
-    emit("permanently-delete-history", props.data.id);
+function onPermanentlyDeleteItem() {
+    emit("permanently-delete-item", props.data.id);
 }
 </script>
 <template>
-    <div class="selected-history-info">
+    <div class="selected-item-info">
         <div class="h-md mx-2">
             <b>{{ label }}</b>
         </div>
         <div class="text-muted mx-2">
-            Total storage space <b>{{ prettySize }}</b
+            Total storage space taken: <b>{{ prettySize }}</b
             >.
             <span v-if="isRecoverable">
-                This history was deleted. You can undelete it or permanently delete it to free up its storage space.
+                This {{ itemType }} was deleted. You can undelete it or permanently delete it to free up its storage
+                space.
             </span>
         </div>
 
@@ -56,8 +58,8 @@ function onPermanentlyDeleteHistory() {
                 variant="outline-primary"
                 size="sm"
                 class="mx-2"
-                title="Visualize this history storage usage"
-                @click="onViewHistory">
+                :title="`Visualize the storage usage of this ${itemType}`"
+                @click="onViewItem">
                 <font-awesome-icon icon="chart-pie" />
             </b-button>
             <b-button
@@ -65,8 +67,8 @@ function onPermanentlyDeleteHistory() {
                 variant="outline-primary"
                 size="sm"
                 class="mx-2"
-                title="Undelete this history"
-                @click="onUndeleteHistory">
+                :title="`Undelete this ${itemType}`"
+                @click="onUndeleteItem">
                 <font-awesome-icon icon="undo" />
             </b-button>
             <b-button
@@ -74,8 +76,8 @@ function onPermanentlyDeleteHistory() {
                 variant="outline-danger"
                 size="sm"
                 class="mx-2"
-                title="Permanently delete this history and its contents"
-                @click="onPermanentlyDeleteHistory">
+                :title="`Permanently delete this ${itemType}`"
+                @click="onPermanentlyDeleteItem">
                 <font-awesome-icon icon="trash" />
             </b-button>
         </div>

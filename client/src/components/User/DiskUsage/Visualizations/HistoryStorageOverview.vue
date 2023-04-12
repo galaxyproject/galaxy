@@ -4,8 +4,16 @@ import type { DataValuePoint } from "./Charts";
 import { ref, onMounted } from "vue";
 import PieChart from "./Charts/PieChart.vue";
 import { bytesLabelFormatter } from "./Charts/utils";
-import { getHistoryContentsSizeSummary, type ItemSizeSummary } from "./service";
+import { getHistoryContentsSizeSummary, type ItemSizeSummary, undeleteDataset, purgeDataset } from "./service";
 import RecoverableItemSizeTooltip from "./RecoverableItemSizeTooltip.vue";
+import SelectedItemActions from "./SelectedItemActions.vue";
+import { useRouter } from "vue-router/composables";
+import { useToast } from "@/composables/toast";
+import { useConfirmDialog } from "@/composables/confirmDialog";
+
+const router = useRouter();
+const { success: successToast, error: errorToast } = useToast();
+const { confirm } = useConfirmDialog();
 
 const props = defineProps({
     historyId: {
@@ -22,9 +30,13 @@ onMounted(async () => {
     const allDatasetsInHistorySizeSummary = await getHistoryContentsSizeSummary(props.historyId);
     allDatasetsInHistorySizeSummary.forEach((dataset) => datasetsSizeSummaryMap.set(dataset.id, dataset));
 
+    buildGraphsData(allDatasetsInHistorySizeSummary);
+});
+
+function buildGraphsData(allDatasetsInHistorySizeSummary: ItemSizeSummary[]) {
     topTenDatasetsBySizeData.value = buildTopTenDatasetsBySizeData(allDatasetsInHistorySizeSummary);
     activeVsDeletedTotalSizeData.value = buildActiveVsDeletedTotalSizeData(allDatasetsInHistorySizeSummary);
-});
+}
 
 function buildTopTenDatasetsBySizeData(datasetsSizeSummary: ItemSizeSummary[]): DataValuePoint[] {
     const topTenDatasetsBySize = datasetsSizeSummary.sort((a, b) => b.size - a.size).slice(0, 10);
@@ -63,6 +75,57 @@ function isRecoverableDataPoint(dataPoint?: DataValuePoint): boolean {
     }
     return false;
 }
+
+async function onViewDataset(datasetId: string) {
+    router.push({
+        name: "DatasetDetails",
+        params: {
+            historyId: props.historyId,
+            datasetId: datasetId,
+        },
+    });
+}
+
+async function onUndeleteDataset(datasetId: string) {
+    try {
+        const result = await undeleteDataset(props.historyId, datasetId);
+        const dataset = datasetsSizeSummaryMap.get(datasetId);
+        if (dataset && !result.deleted) {
+            dataset.deleted = result.deleted;
+            datasetsSizeSummaryMap.set(datasetId, dataset);
+            successToast(localize("Dataset undeleted successfully."));
+            buildGraphsData(Array.from(datasetsSizeSummaryMap.values()));
+        }
+    } catch (error) {
+        errorToast(`${error}`, localize("An error occurred while undeleting the dataset."));
+    }
+}
+
+async function onPermanentlyDeleteDataset(datasetId: string) {
+    const confirmed = await confirm(
+        localize("Are you sure you want to permanently delete this dataset? This action cannot be undone."),
+        {
+            title: localize("Permanently delete dataset?"),
+            okVariant: "danger",
+            okTitle: localize("Permanently delete"),
+            cancelTitle: localize("Cancel"),
+        }
+    );
+    if (!confirmed) {
+        return;
+    }
+    try {
+        const result = await purgeDataset(props.historyId, datasetId);
+        const dataset = datasetsSizeSummaryMap.get(datasetId);
+        if (dataset && result) {
+            datasetsSizeSummaryMap.delete(datasetId);
+            successToast(localize("Dataset permanently deleted successfully."));
+            buildGraphsData(Array.from(datasetsSizeSummaryMap.values()));
+        }
+    } catch (error) {
+        errorToast(`${error}`, localize("An error occurred while permanently deleting the dataset."));
+    }
+}
 </script>
 <template>
     <div>
@@ -90,10 +153,20 @@ function isRecoverableDataPoint(dataPoint?: DataValuePoint): boolean {
             v-if="topTenDatasetsBySizeData"
             title="Top 10 Datasets by Size"
             description="These are the 10 datasets that take the most space in this history."
+            :enable-selection="true"
             :data="topTenDatasetsBySizeData"
             :label-formatter="bytesLabelFormatter">
             <template v-slot:tooltip="{ data }">
                 <RecoverableItemSizeTooltip :data="data" :is-recoverable="isRecoverableDataPoint(data)" />
+            </template>
+            <template v-slot:selection="{ data }">
+                <SelectedItemActions
+                    :data="data"
+                    :item-type="localize('dataset')"
+                    :is-recoverable="isRecoverableDataPoint(data)"
+                    @view-item="onViewDataset"
+                    @undelete-item="onUndeleteDataset"
+                    @permanently-delete-item="onPermanentlyDeleteDataset" />
             </template>
         </PieChart>
 

@@ -6,7 +6,7 @@ import PieChart from "./Charts/PieChart.vue";
 import { bytesLabelFormatter } from "./Charts/utils";
 import { getAllHistoriesSizeSummary, type ItemSizeSummary, undeleteHistory, purgeHistory } from "./service";
 import RecoverableItemSizeTooltip from "./RecoverableItemSizeTooltip.vue";
-import SelectedHistoryActions from "./SelectedHistoryActions.vue";
+import SelectedItemActions from "./SelectedItemActions.vue";
 import { useRouter } from "vue-router/composables";
 import { useToast } from "@/composables/toast";
 import { useConfirmDialog } from "@/composables/confirmDialog";
@@ -142,12 +142,13 @@ async function onPermanentlyDeleteHistory(historyId: string) {
                 <RecoverableItemSizeTooltip :data="data" :is-recoverable="isRecoverableDataPoint(data)" />
             </template>
             <template v-slot:selection="{ data }">
-                <SelectedHistoryActions
+                <SelectedItemActions
                     :data="data"
+                    :item-type="localize('history')"
                     :is-recoverable="isRecoverableDataPoint(data)"
-                    @view-history="onViewHistory"
-                    @undelete-history="onUndeleteHistory"
-                    @permanently-delete-history="onPermanentlyDeleteHistory" />
+                    @view-item="onViewHistory"
+                    @undelete-item="onUndeleteHistory"
+                    @permanently-delete-item="onPermanentlyDeleteHistory" />
             </template>
         </PieChart>
         <PieChart
