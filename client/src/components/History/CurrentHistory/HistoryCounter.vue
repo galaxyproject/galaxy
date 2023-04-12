@@ -102,10 +102,6 @@ import PreferredStorePopover from "./PreferredStorePopover";
 import SelectPreferredStore from "./SelectPreferredStore";
 
 export default {
-    setup() {
-        const { currentUser } = useCurrentUser();
-        return { currentUser };
-    },
     components: {
         ConfigProvider,
         PreferredStorePopover,
@@ -123,6 +119,10 @@ export default {
         lastChecked: { type: Date, default: null },
         filterText: { type: String, default: "" },
         showControls: { type: Boolean, default: false },
+    },
+    setup() {
+        const { currentUser } = useCurrentUser();
+        return { currentUser };
     },
     data() {
         return {
