@@ -95,7 +95,8 @@
 <script>
 import prettyBytes from "pretty-bytes";
 import { formatDistanceToNowStrict } from "date-fns";
-import { usesDetailedHistoryMixin } from "./usesDetailedHistoryMixin.js";
+import { toRef } from "vue";
+import { useDetailedHistory } from "./usesDetailedHistory.js";
 import { useCurrentUser } from "composables/user";
 import ConfigProvider from "components/providers/ConfigProvider";
 import PreferredStorePopover from "./PreferredStorePopover";
@@ -112,7 +113,6 @@ export default {
             return prettyBytes(rawSize);
         },
     },
-    mixins: [usesDetailedHistoryMixin],
     props: {
         history: { type: Object, required: true },
         isWatching: { type: Boolean, default: false },
@@ -120,9 +120,12 @@ export default {
         filterText: { type: String, default: "" },
         showControls: { type: Boolean, default: false },
     },
-    setup() {
+    setup(props) {
         const { currentUser } = useCurrentUser();
-        return { currentUser };
+        const { historySize, numItemsActive, numItemsDeleted, numItemsHidden } = useDetailedHistory(
+            toRef(props, "history")
+        );
+        return { currentUser, historySize, numItemsActive, numItemsDeleted, numItemsHidden };
     },
     data() {
         return {
