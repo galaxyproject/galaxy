@@ -47,6 +47,8 @@ function setFilter(newFilterText) {
     emit("update:filter-text", newFilterText);
 }
 
+// TODO: bad merge forward, these are no longer utilized?
+// eslint-disable-next-line no-unused-vars
 function toggleDeleted() {
     if (props.filterText === "deleted:true") {
         setFilter("");
@@ -55,6 +57,7 @@ function toggleDeleted() {
     }
 }
 
+// eslint-disable-next-line no-unused-vars
 function toggleHidden() {
     if (props.filterText === "visible:false") {
         setFilter("");
