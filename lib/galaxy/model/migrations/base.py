@@ -192,6 +192,7 @@ class BaseDbScript(abc.ABC):
         command.revision(self.alembic_config, message=args.message, rev_id=args.rev_id, head=head)
 
     def upgrade(self, args: Namespace) -> None:
+        self._process_repair_arg(args)
         if args.revision:
             revision = self._parse_revision(args.revision)
             self._upgrade_to_revision(revision, args.sql)
@@ -199,6 +200,7 @@ class BaseDbScript(abc.ABC):
             self._upgrade_to_head(args.sql)
 
     def downgrade(self, args: Namespace) -> None:
+        self._process_repair_arg(args)
         revision = self._parse_revision(args.revision)
         command.downgrade(self.alembic_config, revision, args.sql)
 
@@ -244,6 +246,10 @@ class BaseDbScript(abc.ABC):
     def _revision_tags(self):
         # Subclasses that have revision tags should overwrite this method.
         return {}
+
+    def _process_repair_arg(self, args: Namespace) -> None:
+        if "repair" in args and args.repair:
+            self.alembic_config.set_main_option("repair", "1")
 
 
 class BaseCommand(abc.ABC):
