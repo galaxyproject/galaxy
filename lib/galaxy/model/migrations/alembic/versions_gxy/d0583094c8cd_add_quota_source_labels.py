@@ -15,13 +15,13 @@ from sqlalchemy import (
 
 from galaxy.model.migrations.util import (
     add_column,
-    add_unique_constraint,
     create_index,
     create_table,
+    create_unique_constraint,
     drop_column,
+    drop_constraint,
     drop_index,
     drop_table,
-    drop_unique_constraint,
     transaction,
 )
 
@@ -43,7 +43,7 @@ def upgrade():
             # user had an index on disk_usage - does that make any sense? -John
             Column("disk_usage", Numeric(15, 0)),
         )
-        add_unique_constraint(
+        create_unique_constraint(
             "uqsu_unique_label_per_user", "user_quota_source_usage", ["user_id", "quota_source_label"]
         )
         drop_index("ix_default_quota_association_type", "default_quota_association")
@@ -54,6 +54,6 @@ def downgrade():
     with transaction():
         drop_index("ix_quota_quota_source_label", "quota")
         create_index("ix_default_quota_association_type", "default_quota_association", ["type"], unique=True)
-        drop_unique_constraint("uqsu_unique_label_per_user", "user_quota_source_usage")
+        drop_constraint("uqsu_unique_label_per_user", "user_quota_source_usage")
         drop_table("user_quota_source_usage")
         drop_column("quota", "quota_source_label")
