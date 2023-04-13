@@ -11,16 +11,16 @@ import SelectPreferredStore from "./SelectPreferredStore.vue";
 import { useRouter } from "vue-router/composables";
 
 type HistoryBase = {
-    id: string,
-    preferred_object_store_id: string,
+    id: string;
+    preferred_object_store_id: string;
 };
 
-interface HistoryCounterProps{
-    history: HistoryBase,
-    isWatching?: boolean,
-    lastChecked: Date,
-    filterText?: string,
-    showControls?: boolean,
+interface HistoryCounterProps {
+    history: HistoryBase;
+    isWatching?: boolean;
+    lastChecked: Date;
+    filterText?: string;
+    showControls?: boolean;
 }
 
 const props = withDefaults(defineProps<HistoryCounterProps>(), {
