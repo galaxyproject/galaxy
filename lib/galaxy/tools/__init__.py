@@ -1572,8 +1572,8 @@ class Tool(Dictifiable):
                     group_c.test_param.refresh_on_change = True
                     for attr in value_from[1].split("."):
                         temp_value_from = getattr(temp_value_from, attr)
-                    group_c.value_from = temp_value_from  # type: ignore[assignment]
-                    # ^^ due to https://github.com/python/mypy/issues/2427
+                    assert callable(temp_value_from)
+                    group_c.value_from = temp_value_from
                     for case_value, case_inputs in group_c.value_from(context, group_c, self).items():
                         case = ConditionalWhen()
                         case.value = case_value

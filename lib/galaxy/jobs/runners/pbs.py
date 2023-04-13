@@ -104,7 +104,7 @@ class PBSJobRunner(AsynchronousJobRunner):
 
         # Set the default server during startup
         self.__default_pbs_server = None
-        self.default_pbs_server  # this is a method with a property decorator, so this causes the default server to be set
+        self.default_pbs_server  # noqa: B018 this is a method with a property decorator, so this causes the default server to be set
 
         # Proceed with general initialization
         super().__init__(app, nworkers)

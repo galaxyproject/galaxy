@@ -502,9 +502,8 @@ def workflow_run_config_to_request(
         workflow_invocation.step_states.append(step_state)
 
         if step.type == "subworkflow":
-            step.workflow_outputs
-            assert step.subworkflow
-            subworkflow: Workflow = step.subworkflow
+            subworkflow = step.subworkflow
+            assert subworkflow
             effective_outputs: Optional[List[EffectiveOutput]] = None
             if run_config.preferred_intermediate_object_store_id or run_config.preferred_outputs_object_store_id:
                 step_outputs = step.workflow_outputs

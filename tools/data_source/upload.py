@@ -123,9 +123,7 @@ def add_file(dataset, registry, output_path: str) -> Dict[str, str]:
     # auto_decompress is a request flag that can be swapped off to prevent Galaxy from automatically
     # decompressing archive files before sniffing.
     auto_decompress = dataset.get("auto_decompress", True)
-    try:
-        dataset.file_type
-    except AttributeError:
+    if not hasattr(dataset, "file_type"):
         raise UploadProblemException("Unable to process uploaded file, missing file_type parameter.")
 
     if dataset.type == "url":

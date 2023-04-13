@@ -320,8 +320,8 @@ def _ensure_relations_attached_and_expunge(deferred_hda: HistoryDatasetAssociati
     # make sure everything needed is in session (sources, hashes, and metadata)...
     # point here is exercise deferred_hda.history throws a detached error.
     [s.hashes for s in deferred_hda.dataset.sources]
-    deferred_hda.dataset.hashes
-    deferred_hda._metadata
+    deferred_hda.dataset.hashes  # noqa: B018
+    deferred_hda._metadata  # noqa: B018
     sa_session = fixture_context.sa_session
     sa_session.expunge_all()
 
