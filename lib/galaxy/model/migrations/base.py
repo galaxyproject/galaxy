@@ -160,7 +160,12 @@ class BaseParserBuilder(abc.ABC):
         parser.add_argument(
             "--repair",
             action="store_true",
-            help="TODOTODOTODOTODOTODOTODOTODOTODOTODOTODOTODOTODOTODOTODOTODO",
+            help="""Skip revisions that conflict with the current state of the database (examples of
+            conflict: creating an object that exists or dropping an object that does not exist).
+            Note: implicitly created objects (such as those created by Alembic as part of ALTER
+            statement workaround) that may have been left over will still raise an error. Such
+            objects must be removed manually.
+            """,
         )
         return parser
 
