@@ -5,8 +5,6 @@ import * as d3 from "d3";
 
 import type { DataValuePoint } from ".";
 
-type DataValueFormatter = (dataPoint?: DataValuePoint | null) => string;
-
 interface PieChartProps {
     title: string;
     data: DataValuePoint[];
@@ -15,7 +13,7 @@ interface PieChartProps {
     height?: number;
     enableTooltips?: boolean;
     enableSelection?: boolean;
-    labelFormatter?: DataValueFormatter;
+    labelFormatter?: (dataPoint?: DataValuePoint | null) => string;
 }
 
 const props = withDefaults(defineProps<PieChartProps>(), {
@@ -53,7 +51,7 @@ onMounted(() => {
 });
 
 watch(
-    () => props.data,
+    () => [props.data, props.labelFormatter, props.enableTooltips, props.enableSelection, props.width, props.height],
     () => {
         clearChart();
         renderPieChart();
@@ -121,6 +119,7 @@ function createLegend() {
         .selectAll("g")
         .data(data)
         .join("g")
+        .attr("class", "legend-item")
         .attr("transform", (d, i) => `translate(0,${topMargin + i * entrySpacing})`);
 
     entries
@@ -242,7 +241,7 @@ function applyThresholdToValue(d: DataValuePoint): number {
             </h3>
         </template>
         <div v-if="hasData">
-            <p class="text-center">{{ description }}</p>
+            <p class="chart-description">{{ description }}</p>
             <div class="chart-area">
                 <div ref="pieChart" class="pie-chart"></div>
                 <div ref="legend" class="legend"></div>
@@ -265,10 +264,16 @@ function applyThresholdToValue(d: DataValuePoint): number {
 </template>
 
 <style lang="css" scoped>
+.chart-description {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
 .chart-area {
     display: flex;
     justify-content: center;
 }
+
 .pie-chart {
     float: right;
 }
