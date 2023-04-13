@@ -7,8 +7,9 @@
                         <span v-html="messageText" />
                     </b-alert>
                     <b-alert :show="!!connectExternalProvider" variant="info">
-                        There already exists a user with the email <i>{{ connectExternalEmail }}</i>. In order to associate this
-                        account with <i>{{ connectExternalLabel }}</i>, you must first login to your existing account.
+                        There already exists a user with the email <i>{{ connectExternalEmail }}</i> . In order to
+                        associate this account with <i>{{ connectExternalLabel }}</i>
+                        , you must first login to your existing account.
                     </b-alert>
                     <b-form id="login" @submit.prevent="submitLogin()">
                         <b-card no-body>
@@ -48,7 +49,7 @@
                                 </div>
                                 <div v-if="enableOidc">
                                     <!-- OIDC login-->
-                                    <external-login :login_page="true" :exclude_idps="[connectExternalProvider]"/>
+                                    <external-login :login_page="true" :exclude_idps="[connectExternalProvider]" />
                                 </div>
                             </b-card-body>
                             <b-card-footer>
@@ -65,8 +66,8 @@
                                         </a>
                                     </span>
                                     <span v-else>
-                                        Registration for this Galaxy instance is disabled. Please contact an administrator
-                                        for assistance.
+                                        Registration for this Galaxy instance is disabled. Please contact an
+                                        administrator for assistance.
                                     </span>
                                 </span>
                                 <span v-else>

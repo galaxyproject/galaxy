@@ -44,7 +44,7 @@ class CustosAuthnz(IdentityProvider):
         self.config = {"provider": provider}
         self.config["verify_ssl"] = oidc_config["VERIFY_SSL"]
         self.config["url"] = oidc_backend_config["url"]
-        self.config['label'] = oidc_backend_config.get('label', provider.capitalize())
+        self.config["label"] = oidc_backend_config.get("label", provider.capitalize())
         self.config["client_id"] = oidc_backend_config["client_id"]
         self.config["client_secret"] = oidc_backend_config["client_secret"]
         self.config["redirect_uri"] = oidc_backend_config["redirect_uri"]
@@ -147,9 +147,10 @@ class CustosAuthnz(IdentityProvider):
                         log.info(message)
                         login_redirect_url = (
                             f"{login_redirect_url}login/start"
-                            f"?connect_external_email={email}"
-                            f"&connect_external_provider={self.config['provider']}"
-                            f"&connect_external_label={self.config['label']}")
+                            f"?connect_external_provider={self.config['provider']}"
+                            f"&connect_external_email={email}"
+                            f"&connect_external_label={self.config['label']}"
+                        )
                         return login_redirect_url, None
                 elif self.config["provider"] in KEYCLOAK_BACKENDS:
                     login_redirect_url = f"{login_redirect_url}login/start?confirm=true&provider_token={json.dumps(token)}&provider={self.config['provider']}"
@@ -170,18 +171,20 @@ class CustosAuthnz(IdentityProvider):
                 expiration_time=expiration_time,
                 refresh_expiration_time=refresh_expiration_time,
             )
-            label = self.config['label']
+            label = self.config["label"]
             if existing_user and existing_user != user:
                 redirect_url = (
                     f"{login_redirect_url}user/external_ids"
                     f"?email_exists={email}"
                     f"&notification=Your%20{label}%20identity%20has%20been%20linked"
-                    "%20to%20your%20Galaxy%20account.")
+                    "%20to%20your%20Galaxy%20account."
+                )
             else:
                 redirect_url = (
                     f"{login_redirect_url}user/external_ids"
                     f"?notification=Your%20{label}%20identity%20has%20been%20linked"
-                    "%20to%20your%20Galaxy%20account.")
+                    "%20to%20your%20Galaxy%20account."
+                )
         else:
             custos_authnz_token.access_token = access_token
             custos_authnz_token.id_token = id_token

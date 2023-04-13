@@ -5,7 +5,9 @@
             >, to your preferred external provider.
         </b-alert>
         <b-alert :show="!!existingEmail" variant="warning">
-            Note: We found a Galaxy account matching the email of this identity, <i>{{ existingEmail }}</i>. The active account <i>{{ userEmail }}</i> has been linked to this external identity. If you wish to link this identity to a different account, you will need to disconnect it from this account first.
+            Note: We found a Galaxy account matching the email of this identity, <i>{{ existingEmail }}</i
+            >. The active account <i>{{ userEmail }}</i> has been linked to this external identity. If you wish to link
+            this identity to a different account, you will need to disconnect it from this account first.
         </b-alert>
         <header>
             <b-alert

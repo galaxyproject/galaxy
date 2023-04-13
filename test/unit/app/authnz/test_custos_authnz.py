@@ -384,7 +384,8 @@ class TestCustosAuthnz(TestCase):
             state_token="xxx", authz_code=self.test_code, trans=self.trans, login_redirect_url="http://localhost:8000/"
         )
         assert user is None
-        assert "http://localhost:8000/login/start?confirm=true&custos_token=" in login_redirect_url
+        assert "http://localhost:8000/login/start?confirm=true&provider_token=" in login_redirect_url
+        assert "&provider=custos" in login_redirect_url
         assert self._fetch_token_called
 
     def test_create_user(self):

@@ -96,7 +96,7 @@ export default {
         submit() {
             const urlParams = new URLSearchParams(window.location.search);
             const token = urlParams.get("provider_token");
-            const provider = urlParams.get("provider");
+            const provider = urlParams.get("provider") || "custos";
             axios
                 .post(withPrefix(`/authnz/${provider}/create_user?token=${token}`))
                 .then((response) => {
