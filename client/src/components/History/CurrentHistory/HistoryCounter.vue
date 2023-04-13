@@ -27,7 +27,7 @@ const props = withDefaults(
         isWatching: false,
         lastChecked: () => new Date(),
         filterText: "",
-        showControls: true,
+        showControls: false,
     }
 );
 
