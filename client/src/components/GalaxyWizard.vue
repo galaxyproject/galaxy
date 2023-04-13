@@ -3,18 +3,39 @@ import axios from "axios";
 import { ref } from "vue";
 import Heading from "./Common/Heading.vue";
 
-const query = ref("");
+const props = defineProps({
+    view: {
+        type: String,
+        default: "wizard",
+    },
+    query: {
+        type: String,
+        default: "",
+    },
+    context: {
+        type: String,
+        default: "",
+    },
+});
+
+const query = ref(props.query);
 const queryResponse = ref("");
 
 const busy = ref(false);
+
+if (props.context == "tool_error") {
+    submitQuery();
+}
 
 // on submit, query the server and put response in display box
 function submitQuery() {
     busy.value = true;
     queryResponse.value = "";
+    const context = props.context || "username";
     axios
         .post("/api/chat", {
             query: query.value,
+            context: context,
         })
         .then(function (response) {
             console.log(response);
@@ -31,13 +52,14 @@ function submitQuery() {
 <template>
     <div>
         <!-- input text, full width top of page -->
-        <Heading inline h2>Ask the wizard</Heading>
+        <Heading v-if="props.view == 'wizard'" inline h2>Ask the wizard</Heading>
         <div class="mt-2">
             <b-input
                 id="wizardinput"
                 v-model="query"
                 style="width: 100%"
                 placeholder="What's the difference in fasta and fastq files?"
+                :disabled="props.query !== ''"
                 @keyup.enter="submitQuery" />
         </div>
         <!-- spinner when busy -->

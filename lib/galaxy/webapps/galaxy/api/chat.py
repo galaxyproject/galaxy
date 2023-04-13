@@ -9,6 +9,11 @@ except ImportError:
     openai = None
 
 from galaxy.config import GalaxyAppConfiguration
+from galaxy.managers.context import ProvidesUserContext
+from galaxy.webapps.galaxy.api import (
+    depends,
+    DependsOnTrans,
+)
 from galaxy.exceptions import ConfigurationError
 from galaxy.schema.schema import ChatPayload
 from . import (
@@ -31,7 +36,7 @@ class ChatAPI:
     config: GalaxyAppConfiguration = depends(GalaxyAppConfiguration)
 
     @router.post("/api/chat")
-    def query(self, query: ChatPayload) -> str:
+    def query(self, query: ChatPayload, trans: ProvidesUserContext = DependsOnTrans) -> str:
         """We're off to ask the wizard"""
 
         if openai is None or self.config.openai_api_key is None:
@@ -39,12 +44,28 @@ class ChatAPI:
         else:
             openai.api_key = self.config.openai_api_key
 
+        messages=[
+            {"role": "system", "content": PROMPT},
+            {"role": "user", "content": query.query},
+        ]
+
+        if query.context == "username":
+            user = trans.user
+            if user is not None:
+                log.debug(f"CHATGPTuser: {user.username}")
+                msg = f"You will address the user as {user.username}"
+            else:
+                msg = f"You will address the user as Anonymous User"
+            messages.append({"role": "system", "content": msg})
+        elif query.context == "tool_error":
+            msg = "The user will provide you a Galaxy tool error, and you will try to debug and explain what happened"
+            messages.append({"role": "system", "content": msg})
+        
+        log.debug(f"CHATGPTmessages: {messages}")
+
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": PROMPT},
-                {"role": "user", "content": query.query},
-            ],
+            messages=messages,
             temperature=0,
         )
 

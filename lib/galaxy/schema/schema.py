@@ -3713,6 +3713,11 @@ class ChatPayload(Model):
         title="Message",
         description="The message to be sent to the chat.",
     )
+    context: Optional[str] = Field(
+        default="",
+        title="Context",
+        description="A context identifier to be used by the chat.",
+    )
 
 
 class CreatePagePayload(PageSummaryBase):
