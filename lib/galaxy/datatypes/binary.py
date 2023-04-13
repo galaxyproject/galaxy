@@ -170,7 +170,7 @@ class Cel(Binary):
     """
 
     # cel 3 is a text format
-    is_binary = "maybe"  # type: ignore[assignment]  # https://github.com/python/mypy/issues/8796
+    is_binary = "maybe"
     file_ext = "cel"
     edam_format = "format_1638"
     edam_data = "data_3110"
@@ -243,7 +243,7 @@ class MashSketch(Binary):
 
     file_ext = "msh"
     # example data is actually text, maybe text would be a better base
-    is_binary = "maybe"  # type: ignore[assignment]  # https://github.com/python/mypy/issues/8796
+    is_binary = "maybe"
 
 
 class CompressedArchive(Binary):
@@ -254,7 +254,7 @@ class CompressedArchive(Binary):
 
     file_ext = "compressed_archive"
     compressed = True
-    is_binary = "maybe"  # type: ignore[assignment]  # https://github.com/python/mypy/issues/8796
+    is_binary = "maybe"
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:

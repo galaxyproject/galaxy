@@ -541,8 +541,8 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self.job_manager = self._register_singleton(JobManager)
 
         self.task_manager = self._register_abstract_singleton(
-            AsyncTasksManager, CeleryAsyncTasksManager  # type: ignore[type-abstract]
-        )  # Ignored because of https://github.com/python/mypy/issues/4717
+            AsyncTasksManager, CeleryAsyncTasksManager  # type: ignore[type-abstract]  # https://github.com/python/mypy/issues/4717
+        )
 
         # ConfiguredFileSources
         self.file_sources = self._register_singleton(
