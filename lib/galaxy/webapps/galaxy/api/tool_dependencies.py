@@ -201,9 +201,7 @@ class ToolDependenciesAPIController(BaseGalaxyAPIController):
         API should be used to summarize this information instead in most cases.
 
         Note that for container resolution by default resolvers are skipped that require online access
-        or may build/cache a container, i.e.
-        - `build_mulled` and `build_mulled_singularity`
-        - and unless `install=True` only resolvers whose name starts with `"cached"`, `"explicit"`,
+        or may build/cache a container, i.e. only resolvers whose name starts with `"cached"`,`"explicit"`,
           or `"fallback"` are used
 
         :type   index:    int
