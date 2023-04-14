@@ -54,12 +54,11 @@ import Toast from "components/Toast";
 import ConfirmDialog from "components/ConfirmDialog";
 import UploadModal from "components/Upload/UploadModal.vue";
 import { ref } from "vue";
+import { storeToRefs } from "pinia";
 import { useUserStore } from "@/stores/userStore";
 import { setToastComponentRef } from "composables/toast";
 import { setConfirmDialogComponentRef } from "composables/confirmDialog";
 import { setGlobalUploadModal } from "composables/globalUploadModal";
-import { useCurrentTheme } from "@/composables/user";
-import { useUserStore } from "@/stores/userStore";
 
 export default {
     components: {
@@ -71,6 +70,8 @@ export default {
     },
     setup() {
         const userStore = useUserStore();
+        const { currentTheme } = storeToRefs(userStore);
+
         userStore.loadUser();
 
         const toastRef = ref(null);
@@ -82,11 +83,7 @@ export default {
         const uploadModal = ref(null);
         setGlobalUploadModal(uploadModal);
 
-        const { currentTheme } = useCurrentTheme();
-
-        const userStore = useUserStore();
-
-        return { toastRef, confirmDialogRef, uploadModal, userStore, currentTheme };
+        return { toastRef, confirmDialogRef, uploadModal, currentTheme };
     },
     data() {
         return {
@@ -98,7 +95,7 @@ export default {
     },
     computed: {
         tabs() {
-            return fetchMenu(this.config, this.userStore);
+            return fetchMenu(this.config);
         },
         showMasthead() {
             const masthead = this.$route.query.hide_masthead;
