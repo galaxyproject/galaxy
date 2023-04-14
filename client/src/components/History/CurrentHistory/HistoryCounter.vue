@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import { storeToRefs } from "pinia";
 import prettyBytes from "pretty-bytes";
+import { useUserStore } from "@/stores/userStore";
 import { formatDistanceToNowStrict } from "date-fns";
 import { toRef, ref, computed, onMounted } from "vue";
 import { useDetailedHistory } from "./usesDetailedHistory.js";
-import { useCurrentUser } from "@/composables/user";
 import { useConfig } from "@/composables/config";
 import PreferredStorePopover from "./PreferredStorePopover.vue";
 import SelectPreferredStore from "./SelectPreferredStore.vue";
@@ -31,9 +32,9 @@ const props = withDefaults(
     }
 );
 
-const { config } = useConfig();
 const router = useRouter();
-const { currentUser } = useCurrentUser();
+const { config } = useConfig();
+const { currentUser } = storeToRefs(useUserStore());
 const { historySize, numItemsActive, numItemsDeleted, numItemsHidden } = useDetailedHistory(toRef(props, "history"));
 
 const reloadButtonCls = ref("fa fa-sync");
