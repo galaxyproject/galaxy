@@ -1,5 +1,5 @@
 <template>
-    <current-user>
+    <div>
         <div v-if="!hasQuota" class="quota-text d-flex align-items-center">
             <b-link v-b-tooltip.hover.left to="/storage" class="ml-auto" :title="title">
                 {{ usingString + " " + totalUsageString }}
@@ -13,19 +13,17 @@
                 <span>{{ usingString + " " + usage.toFixed(0) }}%</span>
             </b-link>
         </div>
-    </current-user>
+    </div>
 </template>
 
 <script>
+import { mapState } from "pinia";
 import { bytesToString } from "utils/utils";
-import CurrentUser from "components/providers/CurrentUser";
+import { useUserStore } from "@/stores/userStore";
 import { mapGetters } from "vuex";
 
 export default {
     name: "QuotaMeter",
-    components: {
-        CurrentUser,
-    },
     data() {
         return {
             usingString: this.l("Using"),
@@ -33,7 +31,7 @@ export default {
     },
     computed: {
         ...mapGetters("config", ["config"]),
-        ...mapGetters("user", ["currentUser"]),
+        ...mapState(useUserStore, ["currentUser", "isAnonymous"]),
         hasQuota() {
             const quotasEnabled = this.config?.enable_quotas ?? false;
             const quotaLimited = this.currentUser?.quota !== "unlimited" ?? false;
@@ -53,7 +51,7 @@ export default {
         },
         title() {
             let details = "";
-            if (this.currentUser.isAnonymous) {
+            if (this.isAnonymous) {
                 details = this.l("Log in for details.");
             } else {
                 details = this.l("Click for details.");
