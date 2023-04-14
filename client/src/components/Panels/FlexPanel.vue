@@ -4,6 +4,9 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faChevronLeft, faChevronRight, faGripLinesVertical } from "@fortawesome/free-solid-svg-icons";
 import { useDraggable } from "@vueuse/core";
+import { LastQueue } from "utils/promise-queue";
+
+const lastQueue = new LastQueue(10);
 
 library.add({
     faChevronLeft,
@@ -34,17 +37,19 @@ const { position, isDragging } = useDraggable(draggable, {
 });
 
 watch(position, () => {
-    const rectRoot = root.value.getBoundingClientRect();
-    const rectDraggable = draggable.value.getBoundingClientRect();
-    let newWidth = null;
-    if (props.side === "right") {
-        const offset = rectRoot.x - rectDraggable.x;
-        newWidth = rectRoot.right - position.value.x - offset;
-    } else {
-        const offset = rectRoot.right - rectDraggable.x;
-        newWidth = position.value.x - rectRoot.left + offset;
-    }
-    panelWidth.value = Math.max(rangeWidth[0], Math.min(rangeWidth[2], newWidth));
+    lastQueue.enqueue(() => {
+        const rectRoot = root.value.getBoundingClientRect();
+        const rectDraggable = draggable.value.getBoundingClientRect();
+        let newWidth = null;
+        if (props.side === "right") {
+            const offset = rectRoot.x - rectDraggable.x;
+            newWidth = rectRoot.right - position.value.x - offset;
+        } else {
+            const offset = rectRoot.right - rectDraggable.x;
+            newWidth = position.value.x - rectRoot.left + offset;
+        }
+        panelWidth.value = Math.max(rangeWidth[0], Math.min(rangeWidth[2], newWidth));
+    });
 });
 
 const style = computed(() => {
