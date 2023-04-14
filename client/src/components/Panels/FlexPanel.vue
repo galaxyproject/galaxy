@@ -106,27 +106,35 @@ function toggle() {
                 </div>
             </div>
         </div>
+        <div v-if="isDragging" class="interaction-overlay" />
     </div>
 </template>
 
 <style>
 @import "theme/blue.scss";
-.interaction-area {
-    margin: -1.5rem;
-    padding: 1.5rem;
-    position: absolute;
-}
 .cursor-grab {
     cursor: grab;
 }
 .cursor-grabbing {
     cursor: grabbing;
 }
-.flex-panel-footer {
-    background: $panel-footer-bg-color;
-}
 .flex-panel-border {
     border: $border-default;
     border-top-left-radius: $border-radius-base;
+}
+.flex-panel-footer {
+    background: $panel-footer-bg-color;
+}
+.interaction-area {
+    margin: -1.5rem;
+    padding: 1.5rem;
+    position: absolute;
+    z-index: 1;
+}
+.interaction-overlay {
+    position: fixed;
+    left: 0;
+    width: 100%;
+    height: 100%;
 }
 </style>
