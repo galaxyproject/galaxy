@@ -2,6 +2,7 @@
 import { useUserStore } from "@/stores/userStore";
 import UploadItem from "./Items/UploadItem.vue";
 import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
+import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import ActivityItem from "./ActivityItem";
 
 const userStore = useUserStore();
@@ -48,18 +49,14 @@ function onToggleSidebar(toggle) {
                     to="/user" />
             </b-nav>
         </div>
-        <div v-if="sidebarIsActive('search')" key="search" class="left-column">
+        <FlexPanel v-if="sidebarIsActive('search')" key="search" side="left" :collapsible="false">
             <ToolBox />
-        </div>
+        </FlexPanel>
     </div>
 </template>
 
 <style scoped lang="scss">
 @import "theme/blue.scss";
-
-.left-column {
-    width: 15rem;
-}
 
 .activity-bar {
     background: $panel-bg-color;

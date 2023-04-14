@@ -11,7 +11,19 @@ library.add({
     faGripLinesVertical,
 });
 
+const props = defineProps({
+    collapsible: {
+        type: Boolean,
+        default: true,
+    },
+    side: {
+        type: String,
+        default: "right",
+    },
+});
+
 const draggable = ref();
+const root = ref();
 const rangeWidth = [200, 300, 600];
 const panelWidth = ref(rangeWidth[1]);
 const show = ref(true);
@@ -22,7 +34,16 @@ const { position, isDragging } = useDraggable(draggable, {
 });
 
 watch(position, () => {
-    const newWidth = window.innerWidth - position.value.x;
+    const rectRoot = root.value.getBoundingClientRect();
+    const rectDraggable = draggable.value.getBoundingClientRect();
+    let newWidth = null;
+    if (props.side === "right") {
+        const offset = rectRoot.x - rectDraggable.x;
+        newWidth = rectRoot.right - position.value.x - offset;
+    } else {
+        const offset = rectRoot.right - rectDraggable.x;
+        newWidth = position.value.x - rectRoot.left + offset;
+    }
     panelWidth.value = Math.max(rangeWidth[0], Math.min(rangeWidth[2], newWidth));
 });
 
@@ -36,11 +57,14 @@ function toggle() {
 </script>
 
 <template>
-    <div class="d-flex">
+    <div ref="root" class="d-flex">
         <div class="d-flex flex-column" :style="style">
             <slot v-if="show" />
             <div v-else class="flex-fill" />
-            <div class="flex-panel-footer d-flex px-2 p-1" :class="{ 'flex-panel-border': !show }">
+            <div
+                v-if="side === 'right'"
+                class="flex-panel-footer d-flex px-2 p-1"
+                :class="{ 'flex-panel-border': !show }">
                 <div v-if="show">
                     <font-awesome-icon icon="grip-lines-vertical" />
                     <div
@@ -52,10 +76,28 @@ function toggle() {
                         }" />
                 </div>
                 <div class="flex-fill" />
-                <div>
+                <div v-if="collapsible">
                     <font-awesome-icon v-if="show" class="cursor-pointer increase-area" icon="chevron-right" />
                     <font-awesome-icon v-else class="cursor-pointer increase-area" icon="chevron-left" />
                     <div class="interaction-area" @click="toggle" />
+                </div>
+            </div>
+            <div v-else class="flex-panel-footer d-flex px-2 p-1" :class="{ 'flex-panel-border': !show }">
+                <div v-if="collapsible">
+                    <font-awesome-icon v-if="show" class="cursor-pointer increase-area" icon="chevron-left" />
+                    <font-awesome-icon v-else class="cursor-pointer increase-area" icon="chevron-right" />
+                    <div class="interaction-area" @click="toggle" />
+                </div>
+                <div class="flex-fill" />
+                <div v-if="show">
+                    <font-awesome-icon icon="grip-lines-vertical" />
+                    <div
+                        ref="draggable"
+                        class="interaction-area"
+                        :class="{
+                            'cursor-grab': !isDragging,
+                            'cursor-grabbing': isDragging,
+                        }" />
                 </div>
             </div>
         </div>
