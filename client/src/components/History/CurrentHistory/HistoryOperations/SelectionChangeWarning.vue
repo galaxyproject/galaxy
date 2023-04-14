@@ -15,7 +15,8 @@
 </template>
 
 <script>
-import { mapGetters, mapActions } from "vuex";
+import { mapState, mapActions } from "pinia";
+import { useUserFlagsStore } from "@/stores/userFlagsStore";
 import { BAlert, BLink, BProgress } from "bootstrap-vue";
 export default {
     components: {
@@ -33,7 +34,7 @@ export default {
         };
     },
     computed: {
-        ...mapGetters("userFlags", ["getShowSelectionQueryBreakWarning"]),
+        ...mapState(useUserFlagsStore, ["getShowSelectionQueryBreakWarning"]),
     },
     watch: {
         querySelectionBreak() {
@@ -41,7 +42,7 @@ export default {
         },
     },
     methods: {
-        ...mapActions("userFlags", ["ignoreSelectionQueryBreakWarning"]),
+        ...mapActions(useUserFlagsStore, ["ignoreSelectionQueryBreakWarning"]),
         onDismissed() {
             this.dismissCountDown = 0;
         },
