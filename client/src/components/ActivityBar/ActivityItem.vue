@@ -24,6 +24,10 @@ export interface Props {
 const props = withDefaults(defineProps<Props>(), {
     icon: "question",
     isActive: false,
+    options: null,
+    progressPercentage: 0,
+    progressStatus: null,
+    to: null,
     tooltip: null,
 });
 
@@ -32,7 +36,7 @@ const emit = defineEmits<{
 }>();
 
 function onClick(): void {
-    if (props.to !== undefined) {
+    if (props.to) {
         router.push(props.to);
     }
     emit("click");
@@ -49,7 +53,7 @@ function onClick(): void {
                     :class="{ 'nav-item-active': isActive }"
                     :aria-label="title | l"
                     @click="onClick">
-                    <span v-if="!!progressStatus" class="progress">
+                    <span v-if="progressStatus" class="progress">
                         <div
                             class="progress-bar notransition"
                             :class="{
