@@ -14,7 +14,7 @@ steps:
       content: "This short tour will guide you through Galaxy's user interface. You can leave the tour at any time by pressing escape."
 
     # 'element' is the JQuery Selector (http://api.jquery.com/category/selectors/) of the element you want to describe.
-    # We could highlight the Upload button using `#activity-upload > a` or, alternatively specify a `component` using the navigation interface.
+    # We could highlight the Upload button using `#activity-upload` or, alternatively specify a `component` using the navigation interface.
     - title: "Upload your data"
       component: upload.start
       intro: "Galaxy supports many ways to get in your data. Use this button to upload your data."
