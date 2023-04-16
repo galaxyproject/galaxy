@@ -2,6 +2,7 @@
 import axios from "axios";
 import { ref } from "vue";
 import Heading from "./Common/Heading.vue";
+import LoadingSpan from "./LoadingSpan.vue";
 
 const props = defineProps({
     view: {
@@ -22,10 +23,6 @@ const query = ref(props.query);
 const queryResponse = ref("");
 
 const busy = ref(false);
-
-if (props.context == "tool_error") {
-    submitQuery();
-}
 
 // on submit, query the server and put response in display box
 function submitQuery() {
@@ -53,17 +50,27 @@ function submitQuery() {
     <div>
         <!-- input text, full width top of page -->
         <Heading v-if="props.view == 'wizard'" inline h2>Ask the wizard</Heading>
-        <div class="mt-2">
+        <div :class="props.view == 'wizard' && 'mt-2'">
             <b-input
+                v-if="props.query == ''"
                 id="wizardinput"
                 v-model="query"
                 style="width: 100%"
                 placeholder="What's the difference in fasta and fastq files?"
-                :disabled="props.query !== ''"
                 @keyup.enter="submitQuery" />
+            <b-button
+                v-else-if="!queryResponse"
+                variant="info"
+                :disabled="busy"
+                @click="submitQuery">
+                <span v-if="!busy">
+                    Let our Help Wizard Figure it out!
+                </span>
+                <LoadingSpan v-else message="Thinking..." />
+            </b-button>
         </div>
         <!-- spinner when busy -->
-        <div class="mt-4">
+        <div :class="props.view == 'wizard' && 'mt-4'">
             <div v-if="busy">
                 <b-skeleton animation="wave" width="85%"></b-skeleton>
                 <b-skeleton animation="wave" width="55%"></b-skeleton>
