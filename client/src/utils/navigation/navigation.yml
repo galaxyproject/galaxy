@@ -951,7 +951,7 @@ upload:
     paste_content: '#upload-row-${n} .upload-text-content'
     settings: '.upload-settings-table'
     setting_deferred: '.upload-deferred'
-    start: '.upload-button'
+    start: '#activity-upload'
     start_uploading: '.upload-start'
     close: '.upload-close'
     rule_source_content: 'textarea.upload-rule-source-content'

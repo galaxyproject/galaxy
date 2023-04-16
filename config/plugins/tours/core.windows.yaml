@@ -12,7 +12,7 @@ requirements:
 steps:
     - content: "This short tour will walk you through <b>Galaxy's Window Manager</b> feature"
 
-    - element: "#tool-panel-upload-button"
+    - component: upload.start
       intro: "First, we will upload some tabular data into our new history."
       postclick: true
 
@@ -75,7 +75,7 @@ steps:
       intro: "Clicking this button will enable Galaxy's Window Manager mode."
       postclick: true
 
-    - element: "#right"
+    - element: "#current-history-panel"
       intro: "This is your history. It contains our two tables being uploaded."
 
     - component: history_panel.item(hid=1,state=ok).display_button

@@ -80,6 +80,7 @@
                         </template>
                         <template v-slot:header-buttons>
                             <ButtonSpinner
+                                id="execute"
                                 title="Run Tool"
                                 class="btn-sm"
                                 :wait="showExecuting"
@@ -88,7 +89,6 @@
                         </template>
                         <template v-slot:buttons>
                             <ButtonSpinner
-                                id="execute"
                                 title="Run Tool"
                                 class="mt-3 mb-3"
                                 :wait="showExecuting"

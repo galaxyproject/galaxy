@@ -1,5 +1,9 @@
 <template>
-    <div :id="side" class="unified-panel-outer-wrap" :style="styles">
+    <div
+        :id="side"
+        class="unified-panel-outer-wrap"
+        :class="{ 'left-style': side === 'left', 'right-style': side === 'right' }"
+        :style="styles">
         <slot name="panel">
             <component :is="currentPanel" v-bind="currentPanelProperties" />
         </slot>

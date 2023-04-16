@@ -9,7 +9,7 @@ steps:
     - content: "This short tour will guide you through <b>Galaxy's History</b> and datasets."
 
     - title: "Upload data"
-      element: ".upload-button"
+      component: upload.start
       intro: |
             At first we upload some data into your Galaxy history.<br>
             Use this button to upload your data.
@@ -35,7 +35,7 @@ steps:
         - "#btn-close"
 
     - title: "History"
-      element: "#right"
+      element: "#current-history-panel"
       intro: "This is your history! All analysis steps will be recorded and can be redone at any time."
 
     - title: "Dataset information"

@@ -58,7 +58,7 @@
                         @onInsertWorkflowSteps="onInsertWorkflowSteps" />
                 </template>
             </SidePanel>
-            <div id="center" class="workflow-center">
+            <div id="center" class="center-style workflow-center">
                 <div class="unified-panel-header" unselectable="on">
                     <div class="unified-panel-header-inner">
                         <span class="sr-only">Workflow Editor</span>
