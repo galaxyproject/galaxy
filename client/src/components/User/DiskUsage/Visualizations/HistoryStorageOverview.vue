@@ -7,6 +7,7 @@ import { bytesLabelFormatter } from "./Charts/utils";
 import { getHistoryContentsSizeSummary, type ItemSizeSummary, undeleteDataset, purgeDataset } from "./service";
 import RecoverableItemSizeTooltip from "./RecoverableItemSizeTooltip.vue";
 import SelectedItemActions from "./SelectedItemActions.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 import { useRouter } from "vue-router/composables";
 import { useToast } from "@/composables/toast";
 import { useConfirmDialog } from "@/composables/confirmDialog";
@@ -25,12 +26,15 @@ const props = defineProps({
 const datasetsSizeSummaryMap = new Map<string, ItemSizeSummary>();
 const topTenDatasetsBySizeData = ref<DataValuePoint[] | null>(null);
 const activeVsDeletedTotalSizeData = ref<DataValuePoint[] | null>(null);
+const isLoading = ref(true);
 
 onMounted(async () => {
+    isLoading.value = true;
     const allDatasetsInHistorySizeSummary = await getHistoryContentsSizeSummary(props.historyId);
     allDatasetsInHistorySizeSummary.forEach((dataset) => datasetsSizeSummaryMap.set(dataset.id, dataset));
 
     buildGraphsData(allDatasetsInHistorySizeSummary);
+    isLoading.value = false;
 });
 
 function buildGraphsData(allDatasetsInHistorySizeSummary: ItemSizeSummary[]) {
@@ -149,36 +153,41 @@ async function onPermanentlyDeleteDataset(datasetId: string) {
             individually in the graph and clicking the <b>Permanently Delete</b> button.
         </p>
 
-        <PieChart
-            v-if="topTenDatasetsBySizeData"
-            title="Top 10 Datasets by Size"
-            description="These are the 10 datasets that take the most space in this history."
-            :enable-selection="true"
-            :data="topTenDatasetsBySizeData"
-            :label-formatter="bytesLabelFormatter">
-            <template v-slot:tooltip="{ data }">
-                <RecoverableItemSizeTooltip :data="data" :is-recoverable="isRecoverableDataPoint(data)" />
-            </template>
-            <template v-slot:selection="{ data }">
-                <SelectedItemActions
-                    :data="data"
-                    :item-type="localize('dataset')"
-                    :is-recoverable="isRecoverableDataPoint(data)"
-                    @view-item="onViewDataset"
-                    @undelete-item="onUndeleteDataset"
-                    @permanently-delete-item="onPermanentlyDeleteDataset" />
-            </template>
-        </PieChart>
+        <div v-if="isLoading" class="text-center">
+            <LoadingSpan class="mt-5" :message="localize('Loading your storage data. This may take a while...')" />
+        </div>
+        <div v-else>
+            <PieChart
+                v-if="topTenDatasetsBySizeData"
+                title="Top 10 Datasets by Size"
+                description="These are the 10 datasets that take the most space in this history."
+                :enable-selection="true"
+                :data="topTenDatasetsBySizeData"
+                :label-formatter="bytesLabelFormatter">
+                <template v-slot:tooltip="{ data }">
+                    <RecoverableItemSizeTooltip :data="data" :is-recoverable="isRecoverableDataPoint(data)" />
+                </template>
+                <template v-slot:selection="{ data }">
+                    <SelectedItemActions
+                        :data="data"
+                        :item-type="localize('dataset')"
+                        :is-recoverable="isRecoverableDataPoint(data)"
+                        @view-item="onViewDataset"
+                        @undelete-item="onUndeleteDataset"
+                        @permanently-delete-item="onPermanentlyDeleteDataset" />
+                </template>
+            </PieChart>
 
-        <PieChart
-            v-if="activeVsDeletedTotalSizeData"
-            title="Active vs Deleted Total Size"
-            description="This graph shows the total size of your datasets in this history, separated by whether they are active or deleted."
-            :data="activeVsDeletedTotalSizeData"
-            :label-formatter="bytesLabelFormatter">
-            <template v-slot:tooltip="{ data }">
-                <RecoverableItemSizeTooltip :data="data" :is-recoverable="isRecoverableDataPoint(data)" />
-            </template>
-        </PieChart>
+            <PieChart
+                v-if="activeVsDeletedTotalSizeData"
+                title="Active vs Deleted Total Size"
+                description="This graph shows the total size of your datasets in this history, separated by whether they are active or deleted."
+                :data="activeVsDeletedTotalSizeData"
+                :label-formatter="bytesLabelFormatter">
+                <template v-slot:tooltip="{ data }">
+                    <RecoverableItemSizeTooltip :data="data" :is-recoverable="isRecoverableDataPoint(data)" />
+                </template>
+            </PieChart>
+        </div>
     </div>
 </template>

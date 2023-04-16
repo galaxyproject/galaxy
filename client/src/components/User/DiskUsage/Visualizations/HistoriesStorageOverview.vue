@@ -7,6 +7,7 @@ import { bytesLabelFormatter } from "./Charts/utils";
 import { getAllHistoriesSizeSummary, type ItemSizeSummary, undeleteHistory, purgeHistory } from "./service";
 import RecoverableItemSizeTooltip from "./RecoverableItemSizeTooltip.vue";
 import SelectedItemActions from "./SelectedItemActions.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 import { useRouter } from "vue-router/composables";
 import { useToast } from "@/composables/toast";
 import { useConfirmDialog } from "@/composables/confirmDialog";
@@ -16,15 +17,17 @@ const { success: successToast, error: errorToast } = useToast();
 const { confirm } = useConfirmDialog();
 
 const historiesSizeSummaryMap = new Map<string, ItemSizeSummary>();
-
 const topTenHistoriesBySizeData = ref<DataValuePoint[] | null>(null);
 const activeVsDeletedTotalSizeData = ref<DataValuePoint[] | null>(null);
+const isLoading = ref(true);
 
 onMounted(async () => {
+    isLoading.value = true;
     const allHistoriesSizeSummary = await getAllHistoriesSizeSummary();
     allHistoriesSizeSummary.forEach((history) => historiesSizeSummaryMap.set(history.id, history));
 
     buildGraphsData(allHistoriesSizeSummary);
+    isLoading.value = false;
 });
 
 function buildGraphsData(allHistoriesSizeSummary: ItemSizeSummary[]) {
@@ -131,35 +134,41 @@ async function onPermanentlyDeleteHistory(historyId: string) {
             <router-link :to="{ name: 'StorageManager' }"><b>Storage Manager</b></router-link> page or by selecting them
             individually in the graph and clicking the <b>Permanently Delete</b> button.
         </p>
-        <PieChart
-            v-if="topTenHistoriesBySizeData"
-            title="Top 10 Histories by Size"
-            description="These are the 10 histories that take the most space on your storage."
-            :data="topTenHistoriesBySizeData"
-            :enable-selection="true"
-            :label-formatter="bytesLabelFormatter">
-            <template v-slot:tooltip="{ data }">
-                <RecoverableItemSizeTooltip :data="data" :is-recoverable="isRecoverableDataPoint(data)" />
-            </template>
-            <template v-slot:selection="{ data }">
-                <SelectedItemActions
-                    :data="data"
-                    :item-type="localize('history')"
-                    :is-recoverable="isRecoverableDataPoint(data)"
-                    @view-item="onViewHistory"
-                    @undelete-item="onUndeleteHistory"
-                    @permanently-delete-item="onPermanentlyDeleteHistory" />
-            </template>
-        </PieChart>
-        <PieChart
-            v-if="activeVsDeletedTotalSizeData"
-            title="Active vs Deleted Total Size"
-            description="This graph shows the total size of your histories, separated by whether they are active or deleted."
-            :data="activeVsDeletedTotalSizeData"
-            :label-formatter="bytesLabelFormatter">
-            <template v-slot:tooltip="{ data }">
-                <RecoverableItemSizeTooltip :data="data" :is-recoverable="isRecoverableDataPoint(data)" />
-            </template>
-        </PieChart>
+
+        <div v-if="isLoading" class="text-center">
+            <LoadingSpan class="mt-5" :message="localize('Loading your storage data. This may take a while...')" />
+        </div>
+        <div v-else>
+            <PieChart
+                v-if="topTenHistoriesBySizeData"
+                title="Top 10 Histories by Size"
+                description="These are the 10 histories that take the most space on your storage."
+                :data="topTenHistoriesBySizeData"
+                :enable-selection="true"
+                :label-formatter="bytesLabelFormatter">
+                <template v-slot:tooltip="{ data }">
+                    <RecoverableItemSizeTooltip :data="data" :is-recoverable="isRecoverableDataPoint(data)" />
+                </template>
+                <template v-slot:selection="{ data }">
+                    <SelectedItemActions
+                        :data="data"
+                        :item-type="localize('history')"
+                        :is-recoverable="isRecoverableDataPoint(data)"
+                        @view-item="onViewHistory"
+                        @undelete-item="onUndeleteHistory"
+                        @permanently-delete-item="onPermanentlyDeleteHistory" />
+                </template>
+            </PieChart>
+            <PieChart
+                v-if="activeVsDeletedTotalSizeData"
+                title="Active vs Deleted Total Size"
+                description="This graph shows the total size of your histories, separated by whether they are active or deleted."
+                :data="activeVsDeletedTotalSizeData"
+                :label-formatter="bytesLabelFormatter">
+                <template v-slot:tooltip="{ data }">
+                    <RecoverableItemSizeTooltip :data="data" :is-recoverable="isRecoverableDataPoint(data)" />
+                </template>
+            </PieChart>
+        </div>
     </div>
 </template>
