@@ -141,8 +141,12 @@ async function onPermanentlyDeleteHistory(historyId: string) {
         <div v-else>
             <PieChart
                 v-if="topTenHistoriesBySizeData"
-                title="Top 10 Histories by Size"
-                description="These are the 10 histories that take the most space on your storage."
+                :title="localize('Top 10 Histories by Size')"
+                :description="
+                    localize(
+                        'These are the 10 histories that take the most space on your storage. Click on a slice to see more information about the history.'
+                    )
+                "
                 :data="topTenHistoriesBySizeData"
                 :enable-selection="true"
                 :label-formatter="bytesLabelFormatter">
@@ -152,7 +156,7 @@ async function onPermanentlyDeleteHistory(historyId: string) {
                 <template v-slot:selection="{ data }">
                     <SelectedItemActions
                         :data="data"
-                        :item-type="localize('history')"
+                        item-type="history"
                         :is-recoverable="isRecoverableDataPoint(data)"
                         @view-item="onViewHistory"
                         @undelete-item="onUndeleteHistory"
@@ -161,8 +165,12 @@ async function onPermanentlyDeleteHistory(historyId: string) {
             </PieChart>
             <PieChart
                 v-if="activeVsDeletedTotalSizeData"
-                title="Active vs Deleted Total Size"
-                description="This graph shows the total size of your histories, separated by whether they are active or deleted."
+                :title="localize('Active vs Deleted Total Size')"
+                :description="
+                    localize(
+                        'This graph shows the total size of your histories, split between active and deleted histories.'
+                    )
+                "
                 :data="activeVsDeletedTotalSizeData"
                 :label-formatter="bytesLabelFormatter">
                 <template v-slot:tooltip="{ data }">

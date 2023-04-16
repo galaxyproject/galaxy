@@ -137,7 +137,7 @@ async function onPermanentlyDeleteDataset(datasetId: string) {
         <h2 class="text-center my-3">
             <b>History Storage Overview</b>
         </h2>
-        <p class="text-center">
+        <p class="text-center mx-3">
             Here you will find some Graphs displaying the storage taken by datasets in your history:
             <b>{{ props.historyId }}</b
             >. You can use these graphs to identify the datasets that take the most space in your history. You can also
@@ -159,8 +159,12 @@ async function onPermanentlyDeleteDataset(datasetId: string) {
         <div v-else>
             <PieChart
                 v-if="topTenDatasetsBySizeData"
-                title="Top 10 Datasets by Size"
-                description="These are the 10 datasets that take the most space in this history."
+                :title="localize('Top 10 Datasets by Size')"
+                :description="
+                    localize(
+                        'These are the 10 datasets that take the most space in this history. Click on a slice to see more information about the dataset.'
+                    )
+                "
                 :enable-selection="true"
                 :data="topTenDatasetsBySizeData"
                 :label-formatter="bytesLabelFormatter">
@@ -170,7 +174,7 @@ async function onPermanentlyDeleteDataset(datasetId: string) {
                 <template v-slot:selection="{ data }">
                     <SelectedItemActions
                         :data="data"
-                        :item-type="localize('dataset')"
+                        item-type="dataset"
                         :is-recoverable="isRecoverableDataPoint(data)"
                         @view-item="onViewDataset"
                         @undelete-item="onUndeleteDataset"
@@ -180,8 +184,12 @@ async function onPermanentlyDeleteDataset(datasetId: string) {
 
             <PieChart
                 v-if="activeVsDeletedTotalSizeData"
-                title="Active vs Deleted Total Size"
-                description="This graph shows the total size of your datasets in this history, separated by whether they are active or deleted."
+                :title="localize('Active vs Deleted Total Size')"
+                :description="
+                    localize(
+                        'This graph shows the total size of your datasets in this history, split between active and deleted datasets.'
+                    )
+                "
                 :data="activeVsDeletedTotalSizeData"
                 :label-formatter="bytesLabelFormatter">
                 <template v-slot:tooltip="{ data }">
