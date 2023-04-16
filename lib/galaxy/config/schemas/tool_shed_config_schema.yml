@@ -566,6 +566,13 @@ mapping:
           will have that percentage chance of being sent to Sentry. A value higher than 0
           is required to analyze performance.
 
+      sentry_ca_certs:
+        type: str
+        required: False
+        desc: |
+          Use this option to provide the path to location of the CA (Certificate Authority)
+          certificate file if the sentry server uses a self-signed certificate.
+
       session_duration:
         type: int
         default: 0
