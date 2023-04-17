@@ -1,5 +1,5 @@
 <template>
-    <div id="columns" class="workflow-client">
+    <div v-if="isCanvas" id="columns" class="workflow-client">
         <StateUpgradeModal :state-messages="stateMessages" />
         <StateUpgradeModal
             :state-messages="insertedStateMessages"
@@ -26,25 +26,6 @@
                 <b-form-textarea v-model="saveAsAnnotation" />
             </b-form-group>
         </b-modal>
-        <MarkdownEditor
-            v-if="!isCanvas"
-            :markdown-text="markdownText"
-            :markdown-config="markdownConfig"
-            :title="'Workflow Report: ' + name"
-            :steps="steps"
-            @onUpdate="onReportUpdate">
-            <template v-slot:buttons>
-                <b-button
-                    id="workflow-canvas-button"
-                    v-b-tooltip.hover.bottom
-                    title="Return to Workflow"
-                    variant="link"
-                    role="button"
-                    @click="onEdit">
-                    <span class="fa fa-times" />
-                </b-button>
-            </template>
-        </MarkdownEditor>
         <div v-show="isCanvas">
             <SidePanel id="left" side="left">
                 <template v-slot:panel>
@@ -162,6 +143,25 @@
             </SidePanel>
         </div>
     </div>
+    <MarkdownEditor
+        v-else
+        :markdown-text="markdownText"
+        :markdown-config="markdownConfig"
+        :title="'Workflow Report: ' + name"
+        :steps="steps"
+        @onUpdate="onReportUpdate">
+        <template v-slot:buttons>
+            <b-button
+                id="workflow-canvas-button"
+                v-b-tooltip.hover.bottom
+                title="Return to Workflow"
+                variant="link"
+                role="button"
+                @click="onEdit">
+                <span class="fa fa-times" />
+            </b-button>
+        </template>
+    </MarkdownEditor>
 </template>
 
 <script>
