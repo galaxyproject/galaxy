@@ -16,7 +16,7 @@
             :registration-warning-message="config.registration_warning_message"
             :server-mail-configured="config.server_mail_configured"
             :session-csrf-token="sessionCsrfToken"
-            :show-welcome-with-login="!config.show_welcome_with_login"
+            :show-welcome-with-login="config.show_welcome_with_login"
             :terms-url="config.terms_url"
             :welcome-url="config.welcome_url" />
     </div>
