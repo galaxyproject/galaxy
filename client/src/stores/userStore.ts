@@ -45,6 +45,10 @@ export const useUserStore = defineStore(
             }
         });
 
+        function setCurrentUser(user: User) {
+            currentUser.value = user;
+        }
+
         function loadUser() {
             if (!loadPromise) {
                 loadPromise = getCurrentUser()
@@ -114,6 +118,7 @@ export const useUserStore = defineStore(
             currentTheme,
             currentFavorites,
             loadUser,
+            setCurrentUser,
             setCurrentTheme,
             addFavoriteTool,
             removeFavoriteTool,
