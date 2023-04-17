@@ -16,7 +16,7 @@ import {
 const state = {
     // selected history
     currentHistoryId: null,
-    // histories for current user
+    // histories for current user, can also have other user histories loaded for HistoryView
     histories: {},
     historiesLoading: false,
 };
@@ -98,7 +98,7 @@ let isLoadingHistories = false;
 const actions = {
     async copyHistory({ dispatch }, { history, name, copyAll }) {
         const newHistory = await cloneHistory(history, name, copyAll);
-        return dispatch("selectHistory", newHistory);
+        return dispatch("setCurrentHistory", newHistory.id);
     },
     async createNewHistory({ dispatch }) {
         // create history, then select it as current at the same time
