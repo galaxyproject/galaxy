@@ -732,9 +732,6 @@ export default {
 };
 </script>
 <style scoped>
-.workflow-markdown-editor {
-    right: 0px !important;
-}
 .reset-wheel {
     position: absolute;
     left: 1rem;

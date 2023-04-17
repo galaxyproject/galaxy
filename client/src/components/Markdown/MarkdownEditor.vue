@@ -5,7 +5,7 @@
                 <MarkdownToolBox :steps="steps" @onInsert="onInsert" />
             </template>
         </SidePanel>
-        <div id="center" class="workflow-markdown-editor">
+        <div id="center">
             <div class="markdown-editor h-100">
                 <div class="unified-panel-header" unselectable="on">
                     <div class="unified-panel-header-inner">
