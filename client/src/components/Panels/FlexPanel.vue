@@ -42,10 +42,10 @@ watch(position, () => {
         const rectDraggable = draggable.value.getBoundingClientRect();
         let newWidth = null;
         if (props.side === "right") {
-            const offset = rectRoot.x - rectDraggable.x;
+            const offset = rectRoot.left - rectDraggable.left;
             newWidth = rectRoot.right - position.value.x - offset;
         } else {
-            const offset = rectRoot.right - rectDraggable.x;
+            const offset = rectRoot.right - rectDraggable.left;
             newWidth = position.value.x - rectRoot.left + offset;
         }
         panelWidth.value = Math.max(rangeWidth[0], Math.min(rangeWidth[2], newWidth));
