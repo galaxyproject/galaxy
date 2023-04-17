@@ -1336,7 +1336,7 @@ class NavigatesGalaxy(HasDriver):
 
     def workflow_index_click_tag_display(self, workflow_index=0):
         workflow_row_element = self.workflow_index_table_row(workflow_index)
-        tag_display = workflow_row_element.find_element(By.CSS_SELECTOR, ".tags-display")
+        tag_display = workflow_row_element.find_element(By.CSS_SELECTOR, ".stateless-tags")
         tag_display.click()
 
     def workflow_index_add_tag(self, tag: str, workflow_index: int = 0):
@@ -1354,7 +1354,7 @@ class NavigatesGalaxy(HasDriver):
     @retry_during_transitions
     def workflow_index_tag_elements(self, workflow_index=0):
         workflow_row_element = self.workflow_index_table_row(workflow_index)
-        tag_display = workflow_row_element.find_element(By.CSS_SELECTOR, ".tags-display")
+        tag_display = workflow_row_element.find_element(By.CSS_SELECTOR, ".stateless-tags")
         tag_spans = tag_display.find_elements(By.CSS_SELECTOR, ".tag-name")
         return tag_spans
 
@@ -1382,7 +1382,7 @@ class NavigatesGalaxy(HasDriver):
     def tagging_add(self, tags, auto_closes=True, parent_selector=""):
         for i, tag in enumerate(tags):
             if auto_closes or i == 0:
-                tag_area = f"{parent_selector}.tags-input input[type='text']"
+                tag_area = f"{parent_selector}.multiselect input[type='text']"
                 tag_area = self.wait_for_selector_clickable(tag_area)
                 tag_area.click()
 
