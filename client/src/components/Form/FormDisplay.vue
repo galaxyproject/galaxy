@@ -195,7 +195,7 @@ export default {
                     if (element) {
                         const centerPanel = document.querySelector("#center");
                         if (centerPanel) {
-                            centerPanel.scrollTo(0, this.getOffsetTop(element));
+                            centerPanel.scrollTo(0, this.getOffsetTop(element) - 50);
                         }
                     }
                 }
