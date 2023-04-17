@@ -26,122 +26,120 @@
                 <b-form-textarea v-model="saveAsAnnotation" />
             </b-form-group>
         </b-modal>
-        <div v-show="isCanvas">
-            <SidePanel id="left" side="left">
-                <template v-slot:panel>
-                    <ProviderAwareToolBoxWorkflow
-                        :module-sections="moduleSections"
-                        :data-managers="dataManagers"
-                        :workflows="workflows"
-                        @onInsertTool="onInsertTool"
-                        @onInsertModule="onInsertModule"
-                        @onInsertWorkflow="onInsertWorkflow"
-                        @onInsertWorkflowSteps="onInsertWorkflowSteps" />
-                </template>
-            </SidePanel>
-            <div id="center" class="center-style workflow-center">
-                <div class="unified-panel-header" unselectable="on">
-                    <div class="unified-panel-header-inner">
-                        <span class="sr-only">Workflow Editor</span>
-                        {{ name }}
+        <SidePanel id="left" side="left">
+            <template v-slot:panel>
+                <ProviderAwareToolBoxWorkflow
+                    :module-sections="moduleSections"
+                    :data-managers="dataManagers"
+                    :workflows="workflows"
+                    @onInsertTool="onInsertTool"
+                    @onInsertModule="onInsertModule"
+                    @onInsertWorkflow="onInsertWorkflow"
+                    @onInsertWorkflowSteps="onInsertWorkflowSteps" />
+            </template>
+        </SidePanel>
+        <div id="center" class="center-style workflow-center">
+            <div class="unified-panel-header" unselectable="on">
+                <div class="unified-panel-header-inner">
+                    <span class="sr-only">Workflow Editor</span>
+                    {{ name }}
+                </div>
+            </div>
+            <workflow-graph
+                v-if="!datatypesMapperLoading"
+                :steps="steps"
+                :datatypes-mapper="datatypesMapper"
+                :highlight-id="highlightId"
+                :scroll-to-id="scrollToId"
+                @scrollTo="scrollToId = null"
+                @transform="(value) => (transform = value)"
+                @graph-offset="(value) => (graphOffset = value)"
+                @onUpdate="onUpdate"
+                @onClone="onClone"
+                @onCreate="onInsertTool"
+                @onChange="onChange"
+                @onConnect="onConnect"
+                @onRemove="onRemove"
+                @onUpdateStep="onUpdateStep"
+                @onUpdateStepPosition="onUpdateStepPosition">
+            </workflow-graph>
+        </div>
+        <SidePanel id="right" side="right">
+            <template v-slot:panel>
+                <div class="unified-panel workflow-panel">
+                    <div class="unified-panel-header" unselectable="on">
+                        <div class="unified-panel-header-inner">
+                            <WorkflowOptions
+                                :has-changes="hasChanges"
+                                :has-invalid-connections="hasInvalidConnections"
+                                @onSave="onSave"
+                                @onSaveAs="onSaveAs"
+                                @onRun="onRun"
+                                @onDownload="onDownload"
+                                @onReport="onReport"
+                                @onLayout="onLayout"
+                                @onEdit="onEdit"
+                                @onAttributes="onAttributes"
+                                @onLint="onLint"
+                                @onUpgrade="onUpgrade" />
+                        </div>
+                    </div>
+                    <div ref="right-panel" class="unified-panel-body workflow-right p-2">
+                        <div>
+                            <FormTool
+                                v-if="hasActiveNodeTool"
+                                :key="activeStep.id"
+                                :step="activeStep"
+                                :datatypes="datatypes"
+                                @onChangePostJobActions="onChangePostJobActions"
+                                @onAnnotation="onAnnotation"
+                                @onLabel="onLabel"
+                                @onUpdateStep="onUpdateStep"
+                                @onSetData="onSetData" />
+                            <FormDefault
+                                v-else-if="hasActiveNodeDefault"
+                                :step="activeStep"
+                                :datatypes="datatypes"
+                                @onAnnotation="onAnnotation"
+                                @onLabel="onLabel"
+                                @onEditSubworkflow="onEditSubworkflow"
+                                @onAttemptRefactor="onAttemptRefactor"
+                                @onUpdateStep="onUpdateStep"
+                                @onSetData="onSetData" />
+                            <WorkflowAttributes
+                                v-else-if="showAttributes"
+                                :id="id"
+                                :tags="tags"
+                                :parameters="parameters"
+                                :annotation-current.sync="annotation"
+                                :annotation="annotation"
+                                :name-current.sync="name"
+                                :name="name"
+                                :version="version"
+                                :versions="versions"
+                                :license="license"
+                                :creator="creator"
+                                @onVersion="onVersion"
+                                @onLicense="onLicense"
+                                @onCreator="onCreator" />
+                            <WorkflowLint
+                                v-else-if="showLint"
+                                :untyped-parameters="parameters"
+                                :annotation="annotation"
+                                :creator="creator"
+                                :license="license"
+                                :steps="steps"
+                                :datatypes-mapper="datatypesMapper"
+                                @onAttributes="onAttributes"
+                                @onHighlight="onHighlight"
+                                @onUnhighlight="onUnhighlight"
+                                @onRefactor="onAttemptRefactor"
+                                @onScrollTo="onScrollTo" />
+                        </div>
                     </div>
                 </div>
-                <workflow-graph
-                    v-if="!datatypesMapperLoading"
-                    :steps="steps"
-                    :datatypes-mapper="datatypesMapper"
-                    :highlight-id="highlightId"
-                    :scroll-to-id="scrollToId"
-                    @scrollTo="scrollToId = null"
-                    @transform="(value) => (transform = value)"
-                    @graph-offset="(value) => (graphOffset = value)"
-                    @onUpdate="onUpdate"
-                    @onClone="onClone"
-                    @onCreate="onInsertTool"
-                    @onChange="onChange"
-                    @onConnect="onConnect"
-                    @onRemove="onRemove"
-                    @onUpdateStep="onUpdateStep"
-                    @onUpdateStepPosition="onUpdateStepPosition">
-                </workflow-graph>
-            </div>
-            <SidePanel id="right" side="right">
-                <template v-slot:panel>
-                    <div class="unified-panel workflow-panel">
-                        <div class="unified-panel-header" unselectable="on">
-                            <div class="unified-panel-header-inner">
-                                <WorkflowOptions
-                                    :has-changes="hasChanges"
-                                    :has-invalid-connections="hasInvalidConnections"
-                                    @onSave="onSave"
-                                    @onSaveAs="onSaveAs"
-                                    @onRun="onRun"
-                                    @onDownload="onDownload"
-                                    @onReport="onReport"
-                                    @onLayout="onLayout"
-                                    @onEdit="onEdit"
-                                    @onAttributes="onAttributes"
-                                    @onLint="onLint"
-                                    @onUpgrade="onUpgrade" />
-                            </div>
-                        </div>
-                        <div ref="right-panel" class="unified-panel-body workflow-right p-2">
-                            <div>
-                                <FormTool
-                                    v-if="hasActiveNodeTool"
-                                    :key="activeStep.id"
-                                    :step="activeStep"
-                                    :datatypes="datatypes"
-                                    @onChangePostJobActions="onChangePostJobActions"
-                                    @onAnnotation="onAnnotation"
-                                    @onLabel="onLabel"
-                                    @onUpdateStep="onUpdateStep"
-                                    @onSetData="onSetData" />
-                                <FormDefault
-                                    v-else-if="hasActiveNodeDefault"
-                                    :step="activeStep"
-                                    :datatypes="datatypes"
-                                    @onAnnotation="onAnnotation"
-                                    @onLabel="onLabel"
-                                    @onEditSubworkflow="onEditSubworkflow"
-                                    @onAttemptRefactor="onAttemptRefactor"
-                                    @onUpdateStep="onUpdateStep"
-                                    @onSetData="onSetData" />
-                                <WorkflowAttributes
-                                    v-else-if="showAttributes"
-                                    :id="id"
-                                    :tags="tags"
-                                    :parameters="parameters"
-                                    :annotation-current.sync="annotation"
-                                    :annotation="annotation"
-                                    :name-current.sync="name"
-                                    :name="name"
-                                    :version="version"
-                                    :versions="versions"
-                                    :license="license"
-                                    :creator="creator"
-                                    @onVersion="onVersion"
-                                    @onLicense="onLicense"
-                                    @onCreator="onCreator" />
-                                <WorkflowLint
-                                    v-else-if="showLint"
-                                    :untyped-parameters="parameters"
-                                    :annotation="annotation"
-                                    :creator="creator"
-                                    :license="license"
-                                    :steps="steps"
-                                    :datatypes-mapper="datatypesMapper"
-                                    @onAttributes="onAttributes"
-                                    @onHighlight="onHighlight"
-                                    @onUnhighlight="onUnhighlight"
-                                    @onRefactor="onAttemptRefactor"
-                                    @onScrollTo="onScrollTo" />
-                            </div>
-                        </div>
-                    </div>
-                </template>
-            </SidePanel>
-        </div>
+            </template>
+        </SidePanel>
     </div>
     <MarkdownEditor
         v-else
