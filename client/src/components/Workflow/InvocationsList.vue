@@ -140,10 +140,10 @@ export default {
         title() {
             let title = `Workflow Invocations`;
             if (this.storedWorkflowName) {
-                title += ` for ${this.storedWorkflowName}`;
+                title += ` for workflow "${this.storedWorkflowName}"`;
             }
             if (this.historyName) {
-                title += ` for ${this.historyName}`;
+                title += ` for history "${this.historyName}"`;
             }
             return title;
         },
