@@ -24,6 +24,7 @@
             <a
                 v-if="!readOnly && !isDeleted"
                 class="dropdown-item"
+                href="#"
                 @keypress="$router.push(urlEdit)"
                 @click.prevent="$router.push(urlEdit)">
                 <span class="fa fa-edit fa-fw mr-1" />
@@ -36,6 +37,7 @@
             <a
                 v-if="!readOnly && !isDeleted"
                 class="dropdown-item"
+                href="#"
                 @keypress="$router.push(urlInvocations)"
                 @click.prevent="$router.push(urlInvocations)">
                 <span class="fa fa-list fa-fw mr-1" />
@@ -52,6 +54,7 @@
             <a
                 v-if="!readOnly && !isDeleted"
                 class="dropdown-item"
+                href="#"
                 @keypress="$router.push(urlShare)"
                 @click.prevent="$router.push(urlShare)">
                 <span class="fa fa-share-alt fa-fw mr-1" />
