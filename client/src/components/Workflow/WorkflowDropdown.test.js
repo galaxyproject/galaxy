@@ -1,5 +1,5 @@
 import WorkflowDropdown from "./WorkflowDropdown";
-import { shallowMount } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
@@ -20,7 +20,7 @@ describe("WorkflowDropdown.vue", () => {
             root: "/root/",
             workflow: workflow,
         };
-        wrapper = shallowMount(WorkflowDropdown, {
+        wrapper = mount(WorkflowDropdown, {
             propsData,
             localVue,
         });
