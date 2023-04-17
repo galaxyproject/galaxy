@@ -62,11 +62,11 @@ function toggle() {
 </script>
 
 <template>
-    <div v-if="show" ref="root" class="d-flex">
+    <div v-if="show" :id="side" ref="root" class="d-flex">
         <div class="d-flex flex-column" :style="style">
             <slot />
             <div v-if="side === 'right'" class="flex-panel-footer d-flex px-2 py-1">
-                <div>
+                <div id="right-drag">
                     <font-awesome-icon icon="grip-lines-vertical" />
                     <div
                         ref="draggable"
@@ -77,18 +77,18 @@ function toggle() {
                         }" />
                 </div>
                 <div class="flex-fill" />
-                <div v-if="collapsible" class="cursor-pointer">
+                <div v-if="collapsible" id="right-collapse" class="cursor-pointer">
                     <font-awesome-icon icon="chevron-right" />
                     <div class="interaction-area" @click="toggle" />
                 </div>
             </div>
             <div v-else class="flex-panel-footer d-flex px-2 py-1">
-                <div v-if="collapsible" class="cursor-pointer">
+                <div v-if="collapsible" id="left-collapse" class="cursor-pointer">
                     <font-awesome-icon icon="chevron-left" />
                     <div class="interaction-area" @click="toggle" />
                 </div>
                 <div class="flex-fill" />
-                <div>
+                <div id="left-drag">
                     <font-awesome-icon icon="grip-lines-vertical" />
                     <div
                         ref="draggable"
@@ -103,11 +103,11 @@ function toggle() {
         <div v-if="isDragging" class="interaction-overlay" />
     </div>
     <div v-else>
-        <div v-if="side === 'right'" class="flex-panel-expand-right cursor-pointer px-2 py-1">
+        <div v-if="side === 'right'" id="right-expand" class="flex-panel-right-expand cursor-pointer px-2 py-1">
             <font-awesome-icon icon="chevron-left" />
             <div class="interaction-area" @click="toggle" />
         </div>
-        <div v-else class="flex-panel-expand-left cursor-pointer px-2 py-1">
+        <div v-else id="left-expand" class="flex-panel-left-expand cursor-pointer px-2 py-1">
             <font-awesome-icon icon="chevron-right" />
             <div class="interaction-area" @click="toggle" />
         </div>
@@ -129,18 +129,18 @@ function toggle() {
     position: absolute;
     z-index: 1;
 }
-.flex-panel-expand-left {
+.flex-panel-footer {
+    background: $panel-footer-bg-color;
+}
+.flex-panel-left-expand {
     @extend .flex-panel-expand;
     border-top-right-radius: $border-radius-base;
     left: 0;
 }
-.flex-panel-expand-right {
+.flex-panel-right-expand {
     @extend .flex-panel-expand;
     border-top-left-radius: $border-radius-base;
     right: 0;
-}
-.flex-panel-footer {
-    background: $panel-footer-bg-color;
 }
 .interaction-area {
     margin: -1.5rem;
