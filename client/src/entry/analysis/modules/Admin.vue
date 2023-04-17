@@ -1,6 +1,22 @@
+<script setup>
+import { computed } from "vue";
+import { getGalaxyInstance } from "app";
+import AdminPanel from "@/components/admin/AdminPanel.vue";
+import SidePanel from "@/components/Panels/SidePanel.vue";
+
+const panelProperties = computed(() => {
+    const config = getGalaxyInstance().config;
+    return {
+        enableQuotas: config.enable_quotas,
+        isToolshedInstalled: config.tool_shed_urls && config.tool_shed_urls.length > 0,
+        versionMajor: config.version_major,
+    };
+});
+</script>
+
 <template>
     <div id="columns">
-        <SidePanel side="left" :current-panel="getAdminPanel()" :current-panel-properties="panelProperties" />
+        <SidePanel side="left" :current-panel="AdminPanel" :current-panel-properties="panelProperties" />
         <div id="center" class="center-style">
             <div class="center-container">
                 <div class="center-panel" style="display: block">
@@ -10,29 +26,3 @@
         </div>
     </div>
 </template>
-<script>
-import { getGalaxyInstance } from "app";
-import AdminPanel from "components/admin/AdminPanel";
-import SidePanel from "components/Panels/SidePanel";
-
-export default {
-    components: {
-        SidePanel,
-    },
-    computed: {
-        panelProperties() {
-            const config = getGalaxyInstance().config;
-            return {
-                enableQuotas: config.enable_quotas,
-                isToolshedInstalled: config.tool_shed_urls && config.tool_shed_urls.length > 0,
-                versionMajor: config.version_major,
-            };
-        },
-    },
-    methods: {
-        getAdminPanel() {
-            return AdminPanel;
-        },
-    },
-};
-</script>
