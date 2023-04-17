@@ -50,6 +50,13 @@
                     @click="buildCollectionFromRules">
                     <span v-localize>Build Collection from Rules</span>
                 </b-dropdown-item>
+                <b-dropdown-divider v-if="!showBuildOptions && selectionMatchesQuery" />
+                <b-dropdown-item
+                    v-if="!showBuildOptions && selectionMatchesQuery"
+                    data-description="build list all"
+                    @click="buildDatasetListAll">
+                    <span v-localize>Build Dataset List</span>
+                </b-dropdown-item>
                 <b-dropdown-divider />
                 <b-dropdown-item v-b-modal:change-dbkey-of-selected-content data-description="change database build">
                     <span v-localize>Change Database/Build</span>
@@ -158,6 +165,8 @@ import SingleItemSelector from "components/SingleItemSelector";
 import { StatelessTags } from "components/Tags";
 import ConfigProvider from "components/providers/ConfigProvider";
 import { HistoryFilters } from "components/History/HistoryFilters";
+import { getAppRoot } from "onload/loadConfig";
+import axios from "axios";
 
 export default {
     components: {
@@ -303,6 +312,28 @@ export default {
         // collection creation, fires up a modal
         async buildDatasetList() {
             await this.buildNewCollection("list");
+        },
+        async buildDatasetListAll() {
+            let allContents = [];
+            const uri = `${getAppRoot()}api/histories/${this.history.id}/contents/datasets`;
+
+            await axios
+                .get(uri)
+                .then((response) => {
+                    allContents = response.data;
+                })
+                .catch((error) => {
+                    console.error(error);
+                });
+
+            const modalResult = await buildCollectionModal("list", allContents, this.history.id);
+            await createDatasetCollection(this.history, modalResult);
+
+            // have to hide the source items if that was requested
+            if (modalResult.hide_source_items) {
+                this.$emit("hide-selection", this.contentSelection);
+                this.$emit("reset-selection");
+            }
         },
         async buildDatasetPair() {
             await this.buildNewCollection("paired");
