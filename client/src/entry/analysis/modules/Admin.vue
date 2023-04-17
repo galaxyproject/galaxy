@@ -1,15 +1,16 @@
 <script setup>
 import { computed } from "vue";
-import { getGalaxyInstance } from "app";
+import { useConfig } from "@/composables/config";
 import AdminPanel from "@/components/admin/AdminPanel.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 
+const { config } = useConfig();
+
 const panelProperties = computed(() => {
-    const config = getGalaxyInstance().config;
     return {
-        enableQuotas: config.enable_quotas,
-        isToolshedInstalled: config.tool_shed_urls && config.tool_shed_urls.length > 0,
-        versionMajor: config.version_major,
+        enableQuotas: config.value.enable_quotas,
+        isToolshedInstalled: config.value.tool_shed_urls && config.value.tool_shed_urls.length > 0,
+        versionMajor: config.value.version_major,
     };
 });
 </script>
