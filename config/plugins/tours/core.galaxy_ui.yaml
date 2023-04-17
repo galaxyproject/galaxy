@@ -118,7 +118,7 @@ steps:
       intro: "By clicking the reload button, you can re-run your tool again (e.g. with different parameters or on another dataset)."
 
     - title: "Panel collapse"
-      element: "#left > div.unified-panel-footer > div.panel-collapse.left"
+      element: "#left-collapse"
       intro: "To extend the view for your main Galaxy page in the middle, you can collapse the tool panel on the left hand side. Clicking the panel arrow on the right hand side, collapses the history."
       postclick: true
 
