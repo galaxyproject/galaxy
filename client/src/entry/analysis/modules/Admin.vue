@@ -2,7 +2,7 @@
 import { computed } from "vue";
 import { getGalaxyInstance } from "app";
 import AdminPanel from "@/components/admin/AdminPanel.vue";
-import SidePanel from "@/components/Panels/SidePanel.vue";
+import FlexPanel from "@/components/Panels/FlexPanel.vue";
 
 const panelProperties = computed(() => {
     const config = getGalaxyInstance().config;
@@ -15,14 +15,12 @@ const panelProperties = computed(() => {
 </script>
 
 <template>
-    <div id="columns">
-        <SidePanel side="left" :current-panel="AdminPanel" :current-panel-properties="panelProperties" />
-        <div id="center" class="center-style">
-            <div class="center-container">
-                <div class="center-panel" style="display: block">
-                    <router-view :key="$route.fullPath" />
-                </div>
-            </div>
+    <div id="columns" class="d-flex">
+        <FlexPanel side="left">
+            <AdminPanel v-bind="panelProperties" />
+        </FlexPanel>
+        <div id="center" class="overflow-auto p-3 w-100">
+            <router-view :key="$route.fullPath" />
         </div>
     </div>
 </template>
