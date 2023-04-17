@@ -131,58 +131,6 @@ body {
     display: none;
 }
 
-// ==== Panel layout styles ====
-
-.left-style,
-.right-style {
-    @extend .position-absolute;
-    @extend .h-100;
-}
-.left-style {
-    @extend .unified-panel;
-    left: 0px;
-    width: $panel-width;
-    overflow: unset !important;
-}
-.right-style {
-    @extend .unified-panel;
-    right: 0px;
-    width: $panel-width;
-    overflow: unset !important;
-}
-.right-style > .unified-panel-footer {
-    .drag {
-        left: 0;
-    }
-}
-.center-style {
-    @extend .position-absolute;
-    @extend .h-100;
-    left: $panel-width;
-    right: $panel-width;
-    .center-container {
-        @extend .position-absolute;
-        @extend .w-100;
-        @extend .h-100;
-        .center-panel {
-            @extend .position-absolute;
-            @extend .w-100;
-            @extend .h-100;
-            @extend .overflow-auto;
-            display: none;
-            padding: $margin-h $margin-v;
-            background: $white;
-        }
-    }
-    // Replaces unnecessary if/then logic in base_panels.mako
-    &:first-child {
-        left: 0;
-    }
-    &:last-child {
-        right: 0;
-    }
-}
-
 // ==== Unified panel styles ====
 .unified-panel {
     display: flex;
