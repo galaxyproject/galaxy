@@ -65,6 +65,7 @@ class TestCustosAuthnz(TestCase):
                 "client_secret": "test-client-secret",
                 "redirect_uri": "https://test-redirect-uri",
                 "realm": "test-realm",
+                "label": "test-identity-provider",
             },
         )
         self.setupMocks()
@@ -190,8 +191,12 @@ class TestCustosAuthnz(TestCase):
                 self.provider = provider
                 if username:
                     # This is only called with a specific username to check if it
-                    # already exists in the database.  Say no, for testing.
-                    return QueryResult()
+                    # already exists in the database.  For testing, return none except for one username.
+                    if email == 'existing@example.com':
+                        user = User(email=email, username='test-user')
+                        return QueryResult([user])
+                    else:
+                        return QueryResult()
                 if self.custos_authnz_token:
                     return QueryResult([self.custos_authnz_token])
                 else:
@@ -245,6 +250,7 @@ class TestCustosAuthnz(TestCase):
         assert self.custos_authnz.config["authorization_endpoint"] == "https://test-auth-endpoint"
         assert self.custos_authnz.config["token_endpoint"] == "https://test-token-endpoint"
         assert self.custos_authnz.config["userinfo_endpoint"] == "https://test-userinfo-endpoint"
+        assert self.custos_authnz.config["label"] == "test-identity-provider"
 
     def test_authenticate_set_state_cookie(self):
         """Verify that authenticate() sets a state cookie."""
@@ -536,6 +542,34 @@ class TestCustosAuthnz(TestCase):
         assert refresh_expiration_timedelta.total_seconds() < 1
         assert old_refresh_expiration_time != session_custos_authnz_token.refresh_expiration_time
         assert self.trans.sa_session.flush_called
+
+    def test_galaxy_account_link_when_account_matching_oidc_email_exists(self):
+        self.trans.set_cookie(value=self.test_state, name=custos_authnz.STATE_COOKIE_NAME)
+        self.trans.set_cookie(value=self.test_nonce, name=custos_authnz.NONCE_COOKIE_NAME)
+        # set callback email to existing@example.com
+        self.test_email = 'existing@example.com'
+
+        assert (
+            self.trans.sa_session.query(User)
+            .filter_by(email=self.test_email)
+            .one_or_none()
+            is not None
+        )
+
+        login_redirect_url, user = self.custos_authnz.callback(
+            state_token="xxx", authz_code=self.test_code, trans=self.trans, login_redirect_url="http://localhost:8000/"
+        )
+        # assert login_redirect_url is appropriate for linking dialog
+        for url_substr in (
+            "login/start",
+            "connect_external_provider=custos",
+            f"connect_external_email={self.test_email}",
+            f"connect_external_label={self.test_label}",
+        ):
+            assert url_substr in login_redirect_url
+
+    def test_show_alert_when_connecting_with_idp_matching_different_account_email(self):
+        pass
 
     def test_disconnect(self):
         custos_authnz_token = CustosAuthnzToken(
