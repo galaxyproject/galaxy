@@ -119,11 +119,21 @@ steps:
 
     - title: "Panel collapse"
       element: "#left-collapse"
-      intro: "To extend the view for your main Galaxy page in the middle, you can collapse the tool panel on the left hand side. Clicking the panel arrow on the right hand side, collapses the history."
+      intro: "To extend the view for your main Galaxy page in the middle, you can collapse the tool panel on the left hand side."
       postclick: true
 
     - title: "Panel expand"
       element: "#left-expand"
+      intro: "Click on the expansion icon to restore the panel."
+      postclick: true
+
+    - title: "Panel collapse"
+      element: "#right-collapse"
+      intro: "Clicking the panel arrow on the right hand side, collapses the history."
+      postclick: true
+
+    - title: "Panel expand"
+      element: "#right-expand"
       intro: "Click on the expansion icon to restore the panel."
       postclick: true
 
