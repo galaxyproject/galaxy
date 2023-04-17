@@ -1,6 +1,6 @@
 <template>
     <div id="columns" class="d-flex">
-        <FlexPanel id="left" side="left">
+        <FlexPanel side="left">
             <MarkdownToolBox :steps="steps" @onInsert="onInsert" />
         </FlexPanel>
         <div id="center" class="overflow-auto w-100">

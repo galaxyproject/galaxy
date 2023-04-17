@@ -26,7 +26,7 @@
                 <b-form-textarea v-model="saveAsAnnotation" />
             </b-form-group>
         </b-modal>
-        <FlexPanel id="left" side="left">
+        <FlexPanel side="left">
             <ProviderAwareToolBoxWorkflow
                 :module-sections="moduleSections"
                 :data-managers="dataManagers"
@@ -62,7 +62,7 @@
                 @onUpdateStepPosition="onUpdateStepPosition">
             </workflow-graph>
         </div>
-        <FlexPanel id="right" side="right">
+        <FlexPanel side="right">
             <div class="unified-panel workflow-panel">
                 <div class="unified-panel-header" unselectable="on">
                     <div class="unified-panel-header-inner">
