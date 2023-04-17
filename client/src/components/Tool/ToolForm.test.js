@@ -3,15 +3,14 @@ import axios from "axios";
 import { mount } from "@vue/test-utils";
 import { getLocalVue, mockModule } from "tests/jest/helpers";
 import ToolForm from "./ToolForm";
-import MockCurrentUser from "../providers/MockCurrentUser";
 import MockConfigProvider from "../providers/MockConfigProvider";
 import MockCurrentHistory from "components/providers/MockCurrentHistory";
 import Vue from "vue";
 import Vuex from "vuex";
 import { createPinia } from "pinia";
-import { userStore } from "store/userStore";
 import { historyStore } from "store/historyStore";
 import { configStore } from "store/configStore";
+import { useUserStore } from "stores/userStore";
 
 const localVue = getLocalVue();
 const pinia = createPinia();
@@ -19,6 +18,7 @@ const pinia = createPinia();
 describe("ToolForm", () => {
     let wrapper;
     let axiosMock;
+    let userStore;
 
     beforeEach(() => {
         axiosMock = new MockAdapter(axios);
@@ -38,7 +38,6 @@ describe("ToolForm", () => {
 
         const store = new Vuex.Store({
             modules: {
-                user: mockModule(userStore),
                 config: mockModule(configStore),
                 history: mockModule(historyStore, { currentHistoryId: "fakehistory", histories: { fakehistory: {} } }),
             },
@@ -51,7 +50,6 @@ describe("ToolForm", () => {
             },
             localVue,
             stubs: {
-                CurrentUser: MockCurrentUser({ id: "fakeuser" }),
                 UserHistories: MockCurrentHistory({ id: "fakehistory" }),
                 ConfigProvider: MockConfigProvider({ id: "fakeconfig" }),
                 FormDisplay: true,
@@ -60,6 +58,8 @@ describe("ToolForm", () => {
             provide: { store },
             pinia,
         });
+        userStore = useUserStore();
+        userStore.currentUser = { id: "fakeUser" };
     });
 
     afterEach(() => {
