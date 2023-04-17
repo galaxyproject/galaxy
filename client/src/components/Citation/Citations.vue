@@ -16,9 +16,19 @@
                 </b-nav>
             </template>
             <div v-if="source === 'histories'" class="infomessage">
-                When writing up your analysis, remember to include all references that should be cited in order to
-                completely describe your work. Also, please remember to
-                <a href="https://galaxyproject.org/citing-galaxy">cite Galaxy</a>.
+                <ConfigProvider v-slot="{ config }">
+                    <div v-if="config.citations_export_message_australia">
+                        Please cite <b>Galaxy Australia</b> (below) in any publication resulting for analysis you performed on this service.<br><br>
+                        When acknowledging Galaxy Australia in any publication or presentation, we recommend the following acknowledgement statement:<br><br>
+                        “This work was conducted on Galaxy Australia, supported by the Australian BioCommons which is enabled by NCRIS via Bioplatforms Australia funding, the University of Melbourne, QCIF, AARNet, ARDC and the Queensland Government”.<br><br>
+                        You are also welcome to use our logo. A variety of logo formats are available for <a href="https://galaxyproject.org/images/galaxy-logos/">download</a>, and the accompanying usage guidelines are <a href="https://galaxyproject.org/citing-galaxy">here</a>.
+                    </div>
+                    <div v-else>
+                        When writing up your analysis, remember to include all references that should be cited in order to
+                        completely describe your work. Also, please remember to
+                        <a href="https://galaxyproject.org/citing-galaxy">cite Galaxy</a>.
+                    </div>
+                </ConfigProvider>
             </div>
             <div class="citations-formatted">
                 <Citation
@@ -55,6 +65,7 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { getCitations } from "./services";
 import Citation from "./Citation";
+import ConfigProvider from "components/providers/ConfigProvider";
 
 Vue.use(BootstrapVue);
 
@@ -67,6 +78,7 @@ const outputFormats = Object.freeze({
 export default {
     components: {
         Citation,
+        ConfigProvider
     },
     props: {
         source: {
@@ -105,7 +117,7 @@ export default {
             .catch((e) => {
                 console.error(e);
             });
-    },
+    }
 };
 </script>
 <style>

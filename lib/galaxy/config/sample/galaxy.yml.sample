@@ -1,21 +1,21 @@
 # Galaxy is configured by default to be usable in a single-user development
 # environment.  To tune the application for a multi-user production
 # environment, see the documentation at:
-#
+# 
 #  https://docs.galaxyproject.org/en/master/admin/production.html
-#
+# 
 # Throughout this sample configuration file, except where stated otherwise,
 # uncommented values override the default if left unset, whereas commented
 # values are set to the default value.  Relative paths are relative to the root
 # Galaxy directory.
-#
+# 
 # Examples of many of these options are explained in more detail in the Galaxy
 # Community Hub.
-#
+# 
 #   https://galaxyproject.org/admin/config
-#
+# 
 # Config hackers are encouraged to check there before asking for help.
-#
+# 
 # Configuration for Gravity process manager.
 # ``uwsgi:`` section will be ignored if Galaxy is started via Gravity commands (e.g ``./run.sh``, ``galaxy`` or ``galaxyctl``).
 gravity:
@@ -2729,3 +2729,8 @@ galaxy:
   # URL to API describing tutorials containing specific tools. When CORS
   # is used, make sure to add this host.
   #tool_training_recommendations_api_url: https://training.galaxyproject.org/training-material/api/top-tools.json
+
+  # Optional bool to display a different message on the export citations
+  # tool page, used by Galaxy Australia
+  #citations_export_message_australia: false
+

@@ -3735,3 +3735,11 @@ mapping:
         desc: |
           URL to API describing tutorials containing specific tools.
           When CORS is used, make sure to add this host.
+
+      citations_export_message_australia:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Optional bool to display a different message on the export citations tool
+          page, used by Galaxy Australia

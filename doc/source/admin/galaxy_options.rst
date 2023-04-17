@@ -5126,3 +5126,17 @@
     CORS is used, make sure to add this host.
 :Default: ``https://training.galaxyproject.org/training-material/api/top-tools.json``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``citations_export_message_australia``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Optional bool to display a different message on the export
+    citations tool page, used by Galaxy Australia
+:Default: ``false``
+:Type: bool
+
+
+
