@@ -462,6 +462,7 @@ export function getRouter(Galaxy) {
                         props: (route) => ({
                             importMessage: route.query["message"],
                             importStatus: route.query["status"],
+                            query: route.query["query"],
                         }),
                     },
                     {

@@ -186,6 +186,9 @@ export default {
             // Render the published workflows version of this grid.
             type: Boolean,
             default: false,
+        query: {
+            type: String,
+            required: false,
         },
     },
     data() {
@@ -224,6 +227,9 @@ export default {
     created() {
         this.root = getAppRoot();
         this.services = new Services();
+        if (this.query) {
+            this.filter = this.query;
+        }
     },
     methods: {
         decorateData(item) {

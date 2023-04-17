@@ -1,10 +1,25 @@
 /**
- * Utilities file for Tool Search (panel/client search + advanced/backend search)
+ * Utilities file for Panel Searches (panel/client search + advanced/backend search)
  */
 import { orderBy } from "lodash";
 
 const TOOLS_RESULTS_SORT_LABEL = "apiSort";
 const TOOLS_RESULTS_SECTIONS_HIDE = ["Expression Tools"];
+
+// Converts filterSettings { key: value } to query = "key:value"
+export function createWorkflowQuery(filterSettings) {
+    let query = "";
+    query = Object.entries(filterSettings)
+        .filter(([filter, value]) => value)
+        .map(([filter, value]) => {
+            return `${filter}:${value}`;
+        })
+        .join(" ");
+    if (Object.keys(filterSettings).length == 1 && filterSettings.name) {
+        return filterSettings.name;
+    }
+    return query;
+}
 
 // - Takes filterSettings = {"name": "Tool Name", "section": "Collection", ...}
 // - Takes panelView (if not 'default', does ontology search at backend)

@@ -3,6 +3,7 @@ import { useUserStore } from "@/stores/userStore";
 import UploadItem from "./Items/UploadItem.vue";
 import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
+import WorkflowBox from "@/components/Panels/WorkflowBox.vue";
 import ActivityItem from "./ActivityItem";
 
 const userStore = useUserStore();
@@ -25,14 +26,15 @@ function onToggleSidebar(toggle) {
                     icon="wrench"
                     title="Tools"
                     tooltip="Search and run tools"
-                    :is-active="sidebarIsActive('search')"
-                    @click="onToggleSidebar('search')" />
+                    :is-active="sidebarIsActive('tools')"
+                    @click="onToggleSidebar('tools')" />
                 <ActivityItem
                     id="activity-workflow"
                     title="Workflow"
                     icon="sitemap"
                     tooltip="Chain tools into workflows"
-                    to="/workflows/list" />
+                    :is-active="sidebarIsActive('workflows')"
+                    @click="onToggleSidebar('workflows')" />
                 <ActivityItem
                     id="activity-visualization"
                     icon="chart-bar"
@@ -49,8 +51,11 @@ function onToggleSidebar(toggle) {
                     to="/user" />
             </b-nav>
         </div>
-        <FlexPanel v-if="sidebarIsActive('search')" key="search" side="left" :collapsible="false">
+        <FlexPanel v-if="sidebarIsActive('tools')" key="tools" side="left" :collapsible="false">
             <ToolBox />
+        </FlexPanel>
+        <FlexPanel v-else-if="sidebarIsActive('workflows')" key="workflows" side="left" :collapsible="false">
+            <WorkflowBox />
         </FlexPanel>
     </div>
 </template>
