@@ -69,7 +69,7 @@ function toggle() {
             <div
                 v-if="side === 'right'"
                 class="flex-panel-footer d-flex px-2 p-1"
-                :class="{ 'flex-panel-border': !show }">
+                :class="{ 'flex-panel-border-right': !show }">
                 <div v-if="show">
                     <font-awesome-icon icon="grip-lines-vertical" />
                     <div
@@ -87,7 +87,7 @@ function toggle() {
                     <div class="interaction-area" @click="toggle" />
                 </div>
             </div>
-            <div v-else class="flex-panel-footer d-flex px-2 p-1" :class="{ 'flex-panel-border': !show }">
+            <div v-else class="flex-panel-footer d-flex px-2 p-1" :class="{ 'flex-panel-border-left': !show }">
                 <div v-if="collapsible">
                     <font-awesome-icon v-if="show" class="cursor-pointer increase-area" icon="chevron-left" />
                     <font-awesome-icon v-else class="cursor-pointer increase-area" icon="chevron-right" />
@@ -118,7 +118,11 @@ function toggle() {
 .cursor-grabbing {
     cursor: grabbing;
 }
-.flex-panel-border {
+.flex-panel-border-left {
+    border: $border-default;
+    border-top-right-radius: $border-radius-base;
+}
+.flex-panel-border-right {
     border: $border-default;
     border-top-left-radius: $border-radius-base;
 }
