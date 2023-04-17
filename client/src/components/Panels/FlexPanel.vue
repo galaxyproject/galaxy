@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faChevronLeft, faChevronRight, faGripLinesVertical } from "@fortawesome/free-solid-svg-icons";
 import { useDraggable } from "@vueuse/core";
 import { LastQueue } from "utils/promise-queue";
+import { determineWidth } from "./utilities";
 
 const lastQueue = new LastQueue(10);
 
@@ -36,22 +37,6 @@ const { position, isDragging } = useDraggable(draggable, {
     exact: true,
 });
 
-watch(position, () => {
-    lastQueue.enqueue(() => {
-        const rectRoot = root.value.getBoundingClientRect();
-        const rectDraggable = draggable.value.getBoundingClientRect();
-        let newWidth = null;
-        if (props.side === "right") {
-            const offset = rectRoot.left - rectDraggable.left;
-            newWidth = rectRoot.right - position.value.x - offset;
-        } else {
-            const offset = rectRoot.right - rectDraggable.left;
-            newWidth = position.value.x - rectRoot.left + offset;
-        }
-        panelWidth.value = Math.max(rangeWidth[0], Math.min(rangeWidth[2], newWidth));
-    });
-});
-
 const style = computed(() => {
     return show.value ? { width: `${panelWidth.value}px` } : null;
 });
@@ -59,6 +44,22 @@ const style = computed(() => {
 function toggle() {
     show.value = !show.value;
 }
+
+/** Watch position changes and adjust width accordingly */
+watch(position, () => {
+    lastQueue.enqueue(() => {
+        const rectRoot = root.value.getBoundingClientRect();
+        const rectDraggable = draggable.value.getBoundingClientRect();
+        panelWidth.value = determineWidth(
+            rectRoot,
+            rectDraggable,
+            rangeWidth[0],
+            rangeWidth[2],
+            props.side,
+            position.value.x
+        );
+    });
+});
 </script>
 
 <template>
