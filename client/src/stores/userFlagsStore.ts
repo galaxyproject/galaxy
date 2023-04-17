@@ -1,15 +1,21 @@
 import { ref } from "vue";
 import { defineStore } from "pinia";
 
-export const useUserFlagsStore = defineStore("userFlagsStore", () => {
-    const showSelectionQueryBreakWarning = ref(true);
+export const useUserFlagsStore = defineStore(
+    "userFlagsStore",
+    () => {
+        const showSelectionQueryBreakWarning = ref(true);
 
-    function ignoreSelectionQueryBreakWarning() {
-        showSelectionQueryBreakWarning.value = false;
+        function ignoreSelectionQueryBreakWarning() {
+            showSelectionQueryBreakWarning.value = false;
+        }
+
+        return {
+            showSelectionQueryBreakWarning,
+            ignoreSelectionQueryBreakWarning,
+        };
+    },
+    {
+        persist: true,
     }
-
-    return {
-        showSelectionQueryBreakWarning,
-        ignoreSelectionQueryBreakWarning,
-    };
-});
+);
