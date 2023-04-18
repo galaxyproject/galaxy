@@ -6,6 +6,7 @@ import { faArchive } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { RouterLink } from "vue-router";
+import HistoryExportSelector from "./HistoryExportSelector.vue";
 import { getHistoryById } from "@/store/historyStore/model/queries";
 import type { HistoryDetailedModel } from "@/components/History/model";
 
@@ -72,7 +73,9 @@ async function archiveHistory() {
                         button below. The history will be moved to the archive, but its contents will remain on disk.
                     </p>
                 </b-tab>
-                <b-tab v-if="hasWritableFileSources" id="free-storage-tab" title="Free storage space"> TODO </b-tab>
+                <b-tab v-if="hasWritableFileSources" id="free-storage-tab" title="Free storage space">
+                    <HistoryExportSelector :history="history" />
+                </b-tab>
             </b-tabs>
         </b-card>
 
