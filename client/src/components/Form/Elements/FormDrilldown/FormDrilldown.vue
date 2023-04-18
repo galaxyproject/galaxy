@@ -90,8 +90,6 @@ function handleClick(value: string): void {
 // Handle click on select all checkbox to either select or unselect all values
 function onSelectAll(selected: boolean): void {
     emit("input", selected ? allValues.value : null);
-    selectAll.value = selected;
-    selectAllIndeterminate.value = false;
 }
 </script>
 
