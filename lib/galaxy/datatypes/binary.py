@@ -4308,22 +4308,18 @@ class HexrdEtaOmeNpz(Npz):
 class FITS(Binary):
     """
     FITS (Flexible Image Transport System) file data format, widely used in astronomy
-    Represents sky images (in celestial coordinates) and tables 
-     https://fits.gsfc.nasa.gov/fits_primer.html
+    Represents sky images (in celestial coordinates) and tables
+    https://fits.gsfc.nasa.gov/fits_primer.html
     """
 
     file_ext = "fits"
 
     def sniff_prefix(self, file_prefix: FilePrefix):
-        """Determines whether the file is a CASTEP log
+        """Determines whether the file is a FITS file
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('legacysurvey.fits')
+        >>> fname = get_test_fname('test.fits')
         >>> FITS().sniff(fname)
         True
-        >>> fname = get_test_fname('Si.param')
-        >>> FITS().sniff(fname)
-        False
         """
 
         return file_prefix.string_io().readline().strip().startswith('SIMPLE  =')
-

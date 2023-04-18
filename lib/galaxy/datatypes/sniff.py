@@ -530,6 +530,9 @@ def guess_ext(fname_or_file_prefix: Union[str, "FilePrefix"], sniff_order, is_bi
     >>> fname = get_test_fname('too_many_comments_gff3.tabular')
     >>> guess_ext(fname, sniff_order)  # It's a VCF but is sniffed as tabular because of the limit on the number of header lines we read
     'tabular'
+    >>> fname = get_test_fname('test.fits')
+    >>> guess_ext(fname, sniff_order)
+    'fits'
     """
     file_prefix = _get_file_prefix(fname_or_file_prefix, auto_decompress=auto_decompress)
     file_ext = run_sniffers_raw(file_prefix, sniff_order)
