@@ -38,14 +38,17 @@ function toggleChildren() {
             v-if="multiple"
             class="d-inline drilldown-option"
             :checked="isChecked"
-            @change="handleClick(option.value)" />
+            @change="handleClick(option.value)">
+            {{ option.name }}
+        </b-form-checkbox>
         <b-form-radio
             v-else
             class="d-inline"
             :selected="isChecked"
             name="selectedOption"
-            @change="handleClick(option.value)" />
-        {{ option.name }}
+            @change="handleClick(option.value)">
+            {{ option.name }}
+        </b-form-radio>
         <form-drilldown-list
             v-if="hasOptions"
             v-show="showChildren"
