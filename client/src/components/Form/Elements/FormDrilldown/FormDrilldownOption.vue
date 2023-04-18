@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, type ComputedRef } from "vue";
 import FormDrilldownList from "./FormDrilldownList.vue";
-import type { Option } from "./types.js";
+import type { Option } from "./utilities";
 
 export interface Props {
     currentValue: string[];
@@ -14,16 +14,26 @@ const props = defineProps<Props>();
 
 const showChildren = ref(false);
 
-const hasOptions = computed(() => {
+const hasOptions: ComputedRef<boolean> = computed(() => {
     return props.option.options.length > 0;
 });
 
-const isChecked = computed(() => {
+// indicates if the value has been selected or not (required for checkbox display)
+const isChecked: ComputedRef<boolean> = computed(() => {
     const optionValue = props.option.value;
-    return props.currentValue.indexOf(optionValue) !== -1;
+    return props.currentValue.includes(optionValue);
 });
 
-function toggleChildren() {
+// provides a single value, which is either null or a non-empty string (required for radio display)
+const singleValue = computed({
+    get(): string | null {
+        const value: string[] = props.currentValue;
+        return value.length > 0 ? value[0] || null : null;
+    },
+    set() {},
+});
+
+function toggleChildren(): void {
     showChildren.value = !showChildren.value;
 }
 </script>
@@ -36,16 +46,16 @@ function toggleChildren() {
         </span>
         <b-form-checkbox
             v-if="multiple"
-            class="d-inline drilldown-option"
+            class="drilldown-option d-inline"
             :checked="isChecked"
             @change="handleClick(option.value)">
             {{ option.name }}
         </b-form-checkbox>
         <b-form-radio
             v-else
-            class="d-inline"
-            :selected="isChecked"
-            name="selectedOption"
+            v-model="singleValue"
+            class="drilldown-option d-inline"
+            :value="option.value"
             @change="handleClick(option.value)">
             {{ option.name }}
         </b-form-radio>

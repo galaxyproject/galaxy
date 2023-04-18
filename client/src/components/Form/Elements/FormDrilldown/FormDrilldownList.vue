@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import FormDrilldownOption from "./FormDrilldownOption.vue";
-import type { Option } from "./types.js";
+import type { Option } from "./utilities";
 
 export interface Props {
     currentValue: string[];

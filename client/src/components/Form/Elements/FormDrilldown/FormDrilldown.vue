@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, ref, watch, type ComputedRef } from "vue";
+import { computed, type ComputedRef } from "vue";
 import FormDrilldownList from "./FormDrilldownList.vue";
-import type { Option } from "./types.js";
+import { getAllValues, type Option, type Value } from "./utilities";
 
 export interface FormDrilldownProps {
     id: string;
-    value?: string | string[];
+    value?: Value;
     options: Array<Option>;
     multiple: boolean;
 }
@@ -16,11 +16,8 @@ const props = withDefaults(defineProps<FormDrilldownProps>(), {
 });
 
 const emit = defineEmits<{
-    (e: "input", value: string | string[] | null): void;
+    (e: "input", value: Value): void;
 }>();
-
-const selectAllIndeterminate = ref(false);
-const selectAll = ref(false);
 
 const hasOptions = computed(() => {
     return props.options.length > 0;
@@ -28,43 +25,35 @@ const hasOptions = computed(() => {
 
 // Determine all available values
 const allValues: ComputedRef<string[]> = computed(() => {
-    let options = null;
-    const values: string[] = [];
-    const stack: Array<Array<Option>> = [props.options];
-    while ((options = stack.pop())) {
-        options.forEach((option) => {
-            if (option.value) {
-                values.push(option.value);
-            }
-            if (option.options.length > 0) {
-                stack.push(option.options);
-            }
-        });
-    }
-    return values;
+    return getAllValues(props.options);
 });
 
-// Determine current value and set select all state
-const currentValue = computed({
-    get: (): string[] => {
-        if (props.value === null || props.value === "") {
-            return [];
-        } else if (Array.isArray(props.value)) {
-            return props.value;
-        } else {
-            return [props.value];
-        }
-    },
-    set: (newValue: string[]): void => {
-        emit("input", newValue);
-    },
+// Determine current value
+const currentValue: ComputedRef<string[]> = computed(() => {
+    if (props.value === null || props.value === "") {
+        return [];
+    } else if (Array.isArray(props.value)) {
+        return props.value;
+    } else {
+        return [props.value];
+    }
+});
+
+// Determine if select all is checked
+const selectAllChecked: ComputedRef<boolean> = computed(() => {
+    return allValues.value.length === currentValue.value.length;
+});
+
+// Determine if select all state undetermined
+const selectAllIndeterminate: ComputedRef<boolean> = computed(() => {
+    return ![0, allValues.value.length].includes(currentValue.value.length);
 });
 
 // Handle click on individual check/radio element
 function handleClick(value: string): void {
     if (props.multiple) {
-        const newValue = currentValue.value.slice();
-        const index = newValue.indexOf(value);
+        const newValue: string[] = currentValue.value.slice();
+        const index: number = newValue.indexOf(value);
         if (index !== -1) {
             newValue.splice(index, 1);
         } else {
@@ -84,24 +73,14 @@ function handleClick(value: string): void {
 function onSelectAll(selected: boolean): void {
     emit("input", selected ? allValues.value : null);
 }
-
-// Watch value and adjust select all state accordingly
-watch(
-    () => props.value,
-    () => {
-        const length = currentValue.value.length;
-        selectAll.value = allValues.value.length === length;
-        selectAllIndeterminate.value = ![0, allValues.value.length].includes(length);
-    }
-);
 </script>
 
 <template>
     <div v-if="hasOptions">
         <b-form-checkbox
             v-if="props.multiple"
-            v-model="selectAll"
             v-localize
+            :checked="selectAllChecked"
             :indeterminate="selectAllIndeterminate"
             class="d-inline select-all-checkbox"
             @change="onSelectAll">
