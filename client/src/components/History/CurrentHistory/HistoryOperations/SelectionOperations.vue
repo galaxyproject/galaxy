@@ -315,7 +315,10 @@ export default {
         },
         async buildDatasetListAll() {
             let allContents = [];
+            //TODO: set visible/deleted/purged to true/false/false as defaults, but user may override in search
+            //use the user's search filters then append defaults in case they are not set
             const filterQuery = `v=dev&q=visible&qv=true&q=deleted&qv=false&q=purged&qv=false`;
+            const filters = HistoryFilters.getQueryDict(this.filterText);
             const uri = `${getAppRoot()}api/histories/${this.history.id}/contents/datasets?${filterQuery}`;
 
             await axios
