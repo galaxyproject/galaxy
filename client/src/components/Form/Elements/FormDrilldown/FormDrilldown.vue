@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref, type ComputedRef } from "vue";
 import FormDrilldownList from "./FormDrilldownList.vue";
 import type { Option } from "./types.js";
 
@@ -16,28 +16,58 @@ const props = withDefaults(defineProps<FormDrilldownProps>(), {
 });
 
 const emit = defineEmits<{
-    (e: "input", value: string[] | null | string): void;
+    (e: "input", value: string | string[] | null): void;
 }>();
+
+const selectAllIndeterminate = ref(false);
+const selectAll = ref(false);
 
 const hasOptions = computed(() => {
     return props.options.length > 0;
 });
 
+// Determine all available values
+const allValues: ComputedRef<string[]> = computed(() => {
+    let options = null;
+    const values: string[] = [];
+    const stack: Array<Array<Option>> = [props.options];
+    while ((options = stack.pop())) {
+        options.forEach((option) => {
+            if (option.value) {
+                values.push(option.value);
+            }
+            if (option.options.length > 0) {
+                stack.push(option.options);
+            }
+        });
+    }
+    return values;
+});
+
+// Determine current value and set select all state
 const currentValue = computed({
     get: (): string[] => {
-        if (props.value === null || props.value === "") {
-            return [];
-        } else if (Array.isArray(props.value)) {
-            return props.value;
-        } else {
-            return [props.value];
+        // determine current value
+        let value: string[] = [];
+        if (props.value !== null && props.value !== "") {
+            if (Array.isArray(props.value)) {
+                value = props.value;
+            } else {
+                value = [props.value];
+            }
         }
+        // set select all state
+        selectAll.value = allValues.value.length === value.length;
+        selectAllIndeterminate.value = ![0, allValues.value.length].includes(value.length);
+        // return current value
+        return value;
     },
     set: (newValue: string[]): void => {
         emit("input", newValue);
     },
 });
 
+// Handle click on individual check/radio element
 function handleClick(value: string): void {
     if (props.multiple) {
         const newValue = currentValue.value.slice();
@@ -57,23 +87,11 @@ function handleClick(value: string): void {
     }
 }
 
-function selectAll(selected: boolean): void {
-    const newValue: string[] = [];
-    if (selected) {
-        let options = null;
-        const stack: Array<Array<Option>> = [props.options];
-        while ((options = stack.pop())) {
-            options.forEach((option) => {
-                if (option.value) {
-                    newValue.push(option.value);
-                }
-                if (option.options.length > 0) {
-                    stack.push(option.options);
-                }
-            });
-        }
-    }
-    emit("input", newValue.length === 0 ? null : newValue);
+// Handle click on select all checkbox to either select or unselect all values
+function onSelectAll(selected: boolean): void {
+    emit("input", selected ? allValues.value : null);
+    selectAll.value = selected;
+    selectAllIndeterminate.value = false;
 }
 </script>
 
@@ -81,9 +99,10 @@ function selectAll(selected: boolean): void {
     <div v-if="hasOptions">
         <b-form-checkbox
             v-if="props.multiple"
+            v-model="selectAll"
+            :indeterminate="selectAllIndeterminate"
             class="d-inline select-all-checkbox"
-            :selected="false"
-            @change="selectAll" />
+            @change="onSelectAll" />
         Select/Deselect All
         <form-drilldown-list
             :multiple="props.multiple"
