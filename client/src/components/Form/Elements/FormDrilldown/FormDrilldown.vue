@@ -52,7 +52,7 @@ function handleClick(value: string) {
         } else {
             emit("input", newValue);
         }
-    } else if (!props.multiple) {
+    } else {
         emit("input", value);
     }
 }
