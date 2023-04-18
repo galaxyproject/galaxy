@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, type ComputedRef } from "vue";
+import { computed, ref, watch, type ComputedRef } from "vue";
 import FormDrilldownList from "./FormDrilldownList.vue";
 import type { Option } from "./types.js";
 
@@ -47,20 +47,13 @@ const allValues: ComputedRef<string[]> = computed(() => {
 // Determine current value and set select all state
 const currentValue = computed({
     get: (): string[] => {
-        // determine current value
-        let value: string[] = [];
-        if (props.value !== null && props.value !== "") {
-            if (Array.isArray(props.value)) {
-                value = props.value;
-            } else {
-                value = [props.value];
-            }
+        if (props.value === null || props.value === "") {
+            return [];
+        } else if (Array.isArray(props.value)) {
+            return props.value;
+        } else {
+            return [props.value];
         }
-        // set select all state
-        selectAll.value = allValues.value.length === value.length;
-        selectAllIndeterminate.value = ![0, allValues.value.length].includes(value.length);
-        // return current value
-        return value;
     },
     set: (newValue: string[]): void => {
         emit("input", newValue);
@@ -91,6 +84,16 @@ function handleClick(value: string): void {
 function onSelectAll(selected: boolean): void {
     emit("input", selected ? allValues.value : null);
 }
+
+// Watch value and adjust select all state accordingly
+watch(
+    () => props.value,
+    () => {
+        const length = currentValue.value.length;
+        selectAll.value = allValues.value.length === length;
+        selectAllIndeterminate.value = ![0, allValues.value.length].includes(length);
+    }
+);
 </script>
 
 <template>
@@ -101,7 +104,7 @@ function onSelectAll(selected: boolean): void {
             :indeterminate="selectAllIndeterminate"
             class="d-inline select-all-checkbox"
             @change="onSelectAll" />
-        Select/Deselect All
+        Select/Unselect All
         <form-drilldown-list
             :multiple="props.multiple"
             :current-value="currentValue"
