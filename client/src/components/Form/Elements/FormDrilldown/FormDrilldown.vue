@@ -101,10 +101,10 @@ watch(
         <b-form-checkbox
             v-if="props.multiple"
             v-model="selectAll"
+            v-localize
             :indeterminate="selectAllIndeterminate"
             class="d-inline select-all-checkbox"
-            @change="onSelectAll"
-            v-localize>
+            @change="onSelectAll">
             Select/Unselect All
         </b-form-checkbox>
         <form-drilldown-list
