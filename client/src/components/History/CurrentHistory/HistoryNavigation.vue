@@ -12,7 +12,7 @@
                     data-description="create new history"
                     size="sm"
                     variant="link"
-                    :disabled="currentUser.isAnonymous"
+                    :disabled="isAnonymous"
                     :title="userTitle('Create new history')"
                     @click="$emit('createNewHistory')">
                     <Icon fixed-width icon="plus" />
@@ -24,7 +24,7 @@
                     data-description="switch to another history"
                     size="sm"
                     variant="link"
-                    :disabled="currentUser.isAnonymous"
+                    :disabled="isAnonymous"
                     :title="userTitle('Switch to history')">
                     <Icon fixed-width icon="exchange-alt" />
                 </b-button>
@@ -50,7 +50,7 @@
 
                     <b-dropdown-item
                         data-description="switch to multi history view"
-                        :disabled="currentUser.isAnonymous"
+                        :disabled="isAnonymous"
                         :title="userTitle('Open History Multiview')"
                         @click="$router.push('/histories/view_multiple')">
                         <Icon fixed-width class="mr-1" icon="columns" />
@@ -70,7 +70,7 @@
 
                     <b-dropdown-item
                         v-b-modal:copy-current-history-modal
-                        :disabled="currentUser.isAnonymous"
+                        :disabled="isAnonymous"
                         :title="userTitle('Copy History to a New History')">
                         <Icon fixed-width icon="copy" class="mr-1" />
                         <span v-localize>Copy this History</span>
@@ -97,7 +97,7 @@
                     </b-dropdown-item>
 
                     <b-dropdown-item
-                        :disabled="currentUser.isAnonymous"
+                        :disabled="isAnonymous"
                         :title="userTitle('Convert History to Workflow')"
                         @click="iframeRedirect('/workflow/build_from_current_history')">
                         <Icon fixed-width icon="file-export" class="mr-1" />
@@ -107,7 +107,7 @@
                     <b-dropdown-divider></b-dropdown-divider>
 
                     <b-dropdown-item
-                        :disabled="currentUser.isAnonymous"
+                        :disabled="isAnonymous"
                         :title="userTitle('Share or Publish this History')"
                         data-description="share or publish"
                         @click="$router.push(`/histories/sharing?id=${history.id}`)">
@@ -116,7 +116,7 @@
                     </b-dropdown-item>
 
                     <b-dropdown-item
-                        :disabled="currentUser.isAnonymous"
+                        :disabled="isAnonymous"
                         :title="userTitle('Set who can View or Edit this History')"
                         @click="$router.push(`/histories/permissions?id=${history.id}`)">
                         <Icon fixed-width icon="user-lock" class="mr-1" />
@@ -125,7 +125,7 @@
 
                     <b-dropdown-item
                         v-b-modal:history-privacy-modal
-                        :disabled="currentUser.isAnonymous"
+                        :disabled="isAnonymous"
                         :title="userTitle('Make this History Private')">
                         <Icon fixed-width icon="lock" class="mr-1" />
                         <span v-localize>Make Private</span>
@@ -169,10 +169,11 @@
 </template>
 
 <script>
+import { mapState } from "pinia";
+import { useUserStore } from "@/stores/userStore";
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import CopyModal from "components/History/Modals/CopyModal";
 import SelectorModal from "components/History/Modals/SelectorModal";
-import { mapGetters } from "vuex";
 
 export default {
     components: {
@@ -187,11 +188,11 @@ export default {
         historiesLoading: { type: Boolean, default: false },
     },
     computed: {
-        ...mapGetters("user", ["currentUser"]),
+        ...mapState(useUserStore, ["isAnonymous"]),
     },
     methods: {
         userTitle(title) {
-            if (this.currentUser.isAnonymous) {
+            if (this.isAnonymous) {
                 return this.l("Log in to") + " " + this.l(title);
             } else {
                 return this.l(title);

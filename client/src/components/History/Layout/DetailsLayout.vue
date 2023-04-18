@@ -1,7 +1,7 @@
 <template>
     <section class="m-3 details" data-description="edit details">
         <b-button
-            :disabled="currentUser.isAnonymous || !writeable"
+            :disabled="isAnonymous || !writeable"
             class="edit-button ml-1 float-right"
             data-description="editor toggle"
             size="sm"
@@ -67,7 +67,8 @@
 </template>
 
 <script>
-import { mapGetters } from "vuex";
+import { mapState } from "pinia";
+import { useUserStore } from "@/stores/userStore";
 import short from "components/directives/v-short";
 import StatelessTags from "components/TagsMultiselect/StatelessTags";
 
@@ -93,9 +94,9 @@ export default {
         };
     },
     computed: {
-        ...mapGetters("user", ["currentUser"]),
+        ...mapState(useUserStore, ["isAnonymous"]),
         editButtonTitle() {
-            if (this.currentUser?.isAnonymous) {
+            if (this.isAnonymous) {
                 return this.l("Log in to Rename History");
             } else {
                 if (this.writeable) {
