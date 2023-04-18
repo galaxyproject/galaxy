@@ -315,7 +315,8 @@ export default {
         },
         async buildDatasetListAll() {
             let allContents = [];
-            const uri = `${getAppRoot()}api/histories/${this.history.id}/contents/datasets`;
+            const filterQuery = `v=dev&q=visible&qv=true&q=deleted&qv=false&q=purged&qv=false`;
+            const uri = `${getAppRoot()}api/histories/${this.history.id}/contents/datasets?${filterQuery}`;
 
             await axios
                 .get(uri)
@@ -331,7 +332,7 @@ export default {
 
             // have to hide the source items if that was requested
             if (modalResult.hide_source_items) {
-                this.$emit("hide-selection", this.contentSelection);
+                this.$emit("hide-selection", allContents);
                 this.$emit("reset-selection");
             }
         },
