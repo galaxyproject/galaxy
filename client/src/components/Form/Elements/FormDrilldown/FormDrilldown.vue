@@ -38,7 +38,7 @@ const currentValue = computed({
     },
 });
 
-function handleClick(value: string) {
+function handleClick(value: string): void {
     if (props.multiple) {
         const newValue = currentValue.value.slice();
         const index = newValue.indexOf(value);
@@ -57,14 +57,21 @@ function handleClick(value: string) {
     }
 }
 
-function selectAll(selected: boolean) {
+function selectAll(selected: boolean): void {
     const newValue: string[] = [];
     if (selected) {
-        props.options.forEach((option) => {
-            if (option.value) {
-                newValue.push(option.value);
-            }
-        });
+        let options = null;
+        const stack: Array<Array<Option>> = [props.options];
+        while ((options = stack.pop())) {
+            options.forEach((option) => {
+                if (option.value) {
+                    newValue.push(option.value);
+                }
+                if (option.options.length > 0) {
+                    stack.push(option.options);
+                }
+            });
+        }
     }
     emit("input", newValue.length === 0 ? null : newValue);
 }
