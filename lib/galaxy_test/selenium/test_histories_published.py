@@ -41,7 +41,7 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
         for row in present_histories:
             his = row.find_elements(By.TAG_NAME, "td")[0]
             if self.history3_name in his.text:
-                row.find_elements(By.TAG_NAME, "td")[3].find_elements(By.CLASS_NAME, "tag-name")[0].click()
+                row.find_elements(By.TAG_NAME, "td")[3].find_elements(By.TAG_NAME, "span")[0].click()
                 break
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_histories_present([self.history3_name, self.history1_name])
