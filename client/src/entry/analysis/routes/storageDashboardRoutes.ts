@@ -6,6 +6,7 @@ export default [
     {
         path: "/storage",
         component: Base,
+        meta: { requiresRegisteredUser: true },
         children: [
             {
                 path: "",
