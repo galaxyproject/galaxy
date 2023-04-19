@@ -14,18 +14,12 @@ const props = defineProps<Props>();
 
 <template>
     <div>
-        <ul v-for="(option, index) in props.options" :key="option.name" class="ui-drilldown m-0">
+        <div v-for="(option, index) in props.options" :key="option.name" class="ui-drilldown">
             <form-drilldown-option
                 :multiple="props.multiple"
                 :current-value="currentValue"
                 :option="option"
                 :handle-click="handleClick" />
-        </ul>
+        </div>
     </div>
 </template>
-
-<style>
-.ui-drilldown {
-    list-style-type: none;
-}
-</style>

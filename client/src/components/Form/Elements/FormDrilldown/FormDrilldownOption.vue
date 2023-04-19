@@ -52,7 +52,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <li>
+    <div>
         <span v-if="hasOptions" @click="toggleChildren">
             <icon v-if="showChildren" fixed-width icon="minus-square" />
             <icon v-else fixed-width icon="plus-square" />
@@ -75,9 +75,10 @@ onMounted(() => {
         <form-drilldown-list
             v-if="hasOptions"
             v-show="showChildren"
+            class="pl-5"
             :current-value="currentValue"
             :multiple="multiple"
             :options="option.options"
             :handle-click="handleClick" />
-    </li>
+    </div>
 </template>
