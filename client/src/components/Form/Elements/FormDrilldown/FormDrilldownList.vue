@@ -14,7 +14,7 @@ const props = defineProps<Props>();
 
 <template>
     <div>
-        <div v-for="(option, index) in props.options" :key="option.name" class="ui-drilldown">
+        <div v-for="option in props.options" :key="option.name" class="ui-drilldown">
             <form-drilldown-option
                 :multiple="props.multiple"
                 :current-value="currentValue"

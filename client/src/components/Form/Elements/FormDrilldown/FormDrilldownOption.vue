@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, type ComputedRef } from "vue";
-import FormDrilldownList from "./FormDrilldownList.vue";
+import { BFormCheckbox, BFormRadio } from "bootstrap-vue";
 import { getAllValues, type Option } from "./utilities";
+import FormDrilldownList from "./FormDrilldownList.vue";
 
 export interface Props {
     currentValue: string[];
@@ -18,19 +19,15 @@ const hasOptions: ComputedRef<boolean> = computed(() => {
     return props.option.options.length > 0;
 });
 
-// indicates if the value has been selected or not (required for checkbox display)
+// indicates if the value has been selected or not
 const isChecked: ComputedRef<boolean> = computed(() => {
     const optionValue = props.option.value;
     return props.currentValue.includes(optionValue);
 });
 
-// provides a single value, which is either null or a non-empty string (required for radio display)
-const singleValue = computed({
-    get(): string | null {
-        const value: string[] = props.currentValue;
-        return value.length > 0 ? value[0] || null : null;
-    },
-    set() {},
+// determine required input element type
+const isComponent = computed(() => {
+    return props.multiple ? BFormCheckbox : BFormRadio;
 });
 
 function toggleChildren(): void {
@@ -57,21 +54,14 @@ onMounted(() => {
             <icon v-if="showChildren" fixed-width icon="minus-square" />
             <icon v-else fixed-width icon="plus-square" />
         </span>
-        <b-form-checkbox
-            v-if="multiple"
+        <component
+            :is="isComponent"
             class="drilldown-option d-inline"
+            value="true"
             :checked="isChecked"
             @change="handleClick(option.value)">
             {{ option.name }}
-        </b-form-checkbox>
-        <b-form-radio
-            v-else
-            v-model="singleValue"
-            class="drilldown-option d-inline"
-            :value="option.value"
-            @change="handleClick(option.value)">
-            {{ option.name }}
-        </b-form-radio>
+        </component>
         <form-drilldown-list
             v-if="hasOptions"
             v-show="showChildren"
