@@ -165,8 +165,7 @@ import SingleItemSelector from "components/SingleItemSelector";
 import { StatelessTags } from "components/Tags";
 import ConfigProvider from "components/providers/ConfigProvider";
 import { HistoryFilters } from "components/History/HistoryFilters";
-import { getAppRoot } from "onload/loadConfig";
-import axios from "axios";
+import { getHistoryContent } from "components/History/model/queries";
 
 export default {
     components: {
@@ -315,20 +314,9 @@ export default {
         },
         async buildDatasetListAll() {
             let allContents = [];
-            //TODO: set visible/deleted/purged to true/false/false as defaults, but user may override in search
-            //use the user's search filters then append defaults in case they are not set
-            const filterQuery = `v=dev&q=visible&qv=true&q=deleted&qv=false&q=purged&qv=false`;
             const filters = HistoryFilters.getQueryDict(this.filterText);
-            const uri = `${getAppRoot()}api/histories/${this.history.id}/contents/datasets?${filterQuery}`;
 
-            await axios
-                .get(uri)
-                .then((response) => {
-                    allContents = response.data;
-                })
-                .catch((error) => {
-                    console.error(error);
-                });
+            allContents = await getHistoryContent(this.history.id, filters, "dataset");
 
             const modalResult = await buildCollectionModal("list", allContents, this.history.id);
             await createDatasetCollection(this.history, modalResult);
