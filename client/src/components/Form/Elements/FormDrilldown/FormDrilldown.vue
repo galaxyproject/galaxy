@@ -78,7 +78,7 @@ function onSelectAll(selected: boolean): void {
 <template>
     <div v-if="hasOptions">
         <b-form-checkbox
-            v-if="props.multiple"
+            v-if="multiple"
             v-localize
             :checked="selectAllChecked"
             :indeterminate="selectAllIndeterminate"
@@ -87,7 +87,7 @@ function onSelectAll(selected: boolean): void {
             Select/Unselect All
         </b-form-checkbox>
         <form-drilldown-list
-            :multiple="props.multiple"
+            :multiple="multiple"
             :current-value="currentValue"
             :options="options"
             :handle-click="handleClick" />

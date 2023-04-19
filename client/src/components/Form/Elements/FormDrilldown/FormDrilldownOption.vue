@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, ref, type ComputedRef } from "vue";
+import { computed, onMounted, ref, type ComputedRef } from "vue";
 import FormDrilldownList from "./FormDrilldownList.vue";
-import type { Option } from "./utilities";
+import { getAllValues, type Option } from "./utilities";
 
 export interface Props {
     currentValue: string[];
@@ -36,6 +36,19 @@ const singleValue = computed({
 function toggleChildren(): void {
     showChildren.value = !showChildren.value;
 }
+
+function toggleInitialization(): void {
+    const childValues = getAllValues(props.option.options);
+    for (const childValue of childValues) {
+        if (props.currentValue.includes(childValue)) {
+            showChildren.value = true;
+            break;
+        }
+    }
+}
+onMounted(() => {
+    toggleInitialization();
+});
 </script>
 
 <template>
@@ -63,7 +76,7 @@ function toggleChildren(): void {
             v-if="hasOptions"
             v-show="showChildren"
             :current-value="currentValue"
-            :multiple="props.multiple"
+            :multiple="multiple"
             :options="option.options"
             :handle-click="handleClick" />
     </li>
