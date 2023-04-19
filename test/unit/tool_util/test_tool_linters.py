@@ -981,7 +981,7 @@ def test_general_whitespace_in_versions_and_names(lint_ctx):
 def test_general_requirement_without_version(lint_ctx):
     tool_source = get_xml_tool_source(GENERAL_REQUIREMENT_WO_VERSION)
     run_lint(lint_ctx, general.lint_general, XmlToolSource(tool_source))
-    assert "Tool version [1.0.1blah] is not compliant with PEP 440." in lint_ctx.warn_messages
+    assert "Tool version [1.0.1blah] is not compliant with PEP 440." in lint_ctx.error_messages
     assert "Requirement bwa defines no version" in lint_ctx.warn_messages
     assert "Requirement without name found" in lint_ctx.error_messages
     assert "Tool specifies profile version [20.09]." in lint_ctx.valid_messages
@@ -989,8 +989,8 @@ def test_general_requirement_without_version(lint_ctx):
     assert "Tool defines a name [BWA Mapper]." in lint_ctx.valid_messages
     assert not lint_ctx.info_messages
     assert len(lint_ctx.valid_messages) == 3
-    assert len(lint_ctx.warn_messages) == 2
-    assert len(lint_ctx.error_messages) == 1
+    assert len(lint_ctx.warn_messages) == 1
+    assert len(lint_ctx.error_messages) == 2
 
 
 def test_general_valid(lint_ctx):

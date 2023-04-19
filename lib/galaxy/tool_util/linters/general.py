@@ -38,7 +38,7 @@ def lint_general(tool_source, lint_ctx):
     if not version:
         lint_ctx.error(ERROR_VERSION_MSG, node=tool_node)
     elif isinstance(parsed_version, packaging.version.LegacyVersion):
-        lint_ctx.warn(WARN_VERSION_MSG % version, node=tool_node)
+        lint_ctx.error(WARN_VERSION_MSG % version, node=tool_node)
     elif version != version.strip():
         lint_ctx.warn(WARN_WHITESPACE_PRESUFFIX % ("Tool version", version), node=tool_node)
     else:
