@@ -2,24 +2,22 @@
 import FormDrilldownOption from "./FormDrilldownOption.vue";
 import type { Option } from "./utilities";
 
-export interface Props {
+defineProps<{
     currentValue: string[];
-    options: Array<Option>;
     handleClick: Function;
     multiple: boolean;
-}
-
-const props = defineProps<Props>();
+    options: Array<Option>;
+}>();
 </script>
 
 <template>
     <div>
-        <div v-for="option in props.options" :key="option.name" class="ui-drilldown">
+        <div v-for="option in options" :key="option.name" class="ui-drilldown">
             <form-drilldown-option
-                :multiple="props.multiple"
                 :current-value="currentValue"
-                :option="option"
-                :handle-click="handleClick" />
+                :handle-click="handleClick"
+                :multiple="multiple"
+                :option="option" />
         </div>
     </div>
 </template>
