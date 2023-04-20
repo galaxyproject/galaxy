@@ -25,22 +25,27 @@
                         </b-form-checkbox>
                     </b-form-group>
 
-                    <b-button v-if="cilogon_enabled" :disabled="selected === null" @click="submitCILogon('cilogon')"
-                        >Sign in with Institutional Credentials*</b-button
-                    >
+                    <b-button
+                        v-if="cilogon_enabled"
+                        :disabled="loading || selected === null"
+                        @click="submitCILogon('cilogon')">
+                        <LoadingSpan v-if="loading" message="Signing In" />
+                        <span v-else>Sign in with Institutional Credentials*</span>
+                    </b-button>
                     <!--convert to v-else-if to allow only one or the other. if both enabled, put the one that should be default first-->
                     <b-button
                         v-if="Object.prototype.hasOwnProperty.call(oidc_idps, 'custos')"
-                        :disabled="selected === null"
-                        @click="submitCILogon('custos')"
-                        >Sign in with Custos*</b-button
-                    >
+                        :disabled="loading || selected === null"
+                        @click="submitCILogon('custos')">
+                        <LoadingSpan v-if="loading" message="Signing In" />
+                        <span v-else>Sign in with Custos*</span>
+                    </b-button>
                 </div>
 
                 <div v-else>
-                    <b-button v-if="cilogon_enabled" @click="toggleCILogon('cilogon')"
-                        >Sign in with Institutional Credentials*</b-button
-                    >
+                    <b-button v-if="cilogon_enabled" @click="toggleCILogon('cilogon')">
+                        Sign in with Institutional Credentials*
+                    </b-button>
 
                     <b-button v-if="custos_enabled" @click="toggleCILogon('custos')">Sign in with Custos*</b-button>
 
@@ -55,10 +60,10 @@
 
                         <b-button
                             v-if="toggle_cilogon"
-                            :disabled="selected === null"
-                            @click="submitCILogon(cilogonOrCustos)"
-                            >Login*</b-button
-                        >
+                            :disabled="loading || selected === null"
+                            @click="submitCILogon(cilogonOrCustos)">
+                            Login*
+                        </b-button>
                     </b-form-group>
                 </div>
 
@@ -95,6 +100,7 @@ import axios from "axios";
 import Vue from "vue";
 import Multiselect from "vue-multiselect";
 import BootstrapVue from "bootstrap-vue";
+import LoadingSpan from "components/LoadingSpan";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 
@@ -103,6 +109,7 @@ Vue.use(BootstrapVue);
 export default {
     components: {
         Multiselect,
+        LoadingSpan,
     },
     props: {
         login_page: {
@@ -117,6 +124,7 @@ export default {
     data() {
         const galaxy = getGalaxyInstance();
         return {
+            loading: false,
             messageText: null,
             messageVariant: null,
             enable_oidc: galaxy.config.enable_oidc,
@@ -167,9 +175,11 @@ export default {
         },
         submitOIDCLogin(idp) {
             const rootUrl = getAppRoot();
+            this.loading = true;
             axios
                 .post(`${rootUrl}authnz/${idp}/login`)
                 .then((response) => {
+                    this.loading = false;
                     if (response.data.redirect_uri) {
                         window.location = response.data.redirect_uri;
                     }
@@ -178,6 +188,7 @@ export default {
                     this.messageVariant = "danger";
                     const message = error.response.data && error.response.data.err_msg;
                     this.messageText = message || "Login failed for an unknown reason.";
+                    this.loading = false;
                 });
         },
         submitCILogon(idp) {
@@ -185,9 +196,11 @@ export default {
             if (this.login_page) {
                 this.setIdpPreference();
             }
+            this.loading = true;
             axios
                 .post(`${rootUrl}authnz/${idp}/login/?idphint=${this.selected.EntityID}`)
                 .then((response) => {
+                    this.loading = false;
                     localStorage.setItem("galaxy-provider", idp);
                     if (response.data.redirect_uri) {
                         window.location = response.data.redirect_uri;
@@ -198,13 +211,7 @@ export default {
                     const message = error.response.data && error.response.data.err_msg;
 
                     this.messageText = message || "Login failed for an unknown reason.";
-                })
-                .finally(() => {
-                    var urlParams = new URLSearchParams(window.location.search);
-
-                    if (urlParams.has("message") && urlParams.get("message") == "Duplicate Email") {
-                        this.$refs.duplicateEmail.show();
-                    }
+                    this.loading = false;
                 });
         },
         getCILogonIdps() {

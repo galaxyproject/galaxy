@@ -211,7 +211,6 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/admin/api_keys")
     webapp.add_client_route("/datatypes")
     webapp.add_client_route("/login/start")
-    webapp.add_client_route("/login/confirm")
     webapp.add_client_route("/tools/list")
     webapp.add_client_route("/tools/json")
     webapp.add_client_route("/tours")

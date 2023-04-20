@@ -7,9 +7,9 @@
                         <span v-html="messageText" />
                     </b-alert>
                     <b-alert :show="!!connectExternalProvider" variant="info">
-                        There already exists a user with the email <i>{{ connectExternalEmail }}</i> . In order to
-                        associate this account with <i>{{ connectExternalLabel }}</i>
-                        , you must first login to your existing account.
+                        There already exists a user with the email <i>{{ connectExternalEmail }}</i
+                        >. In order to associate this account with <i>{{ connectExternalLabel }}</i
+                        >, you must first login to your existing account.
                     </b-alert>
                     <b-form id="login" @submit.prevent="submitLogin()">
                         <b-card no-body>
@@ -72,9 +72,9 @@
                                 </span>
                                 <span v-else>
                                     Do not wish to connect to an external provider?
-                                    <a href="javascript:void(0)" role="button" @click.prevent="returnToLogin"
-                                        >Return to login here.</a
-                                    >
+                                    <a href="javascript:void(0)" role="button" @click.prevent="returnToLogin">
+                                        Return to login here.
+                                    </a>
                                 </span>
                             </b-card-footer>
                         </b-card>
@@ -145,6 +145,7 @@ export default {
         },
     },
     data() {
+        const urlParams = new URLSearchParams(window.location.search);
         return {
             login: null,
             password: null,
@@ -154,25 +155,13 @@ export default {
             headerWelcome: _l("Welcome to Galaxy, please log in"),
             labelNameAddress: _l("Public Name or Email Address"),
             labelPassword: _l("Password"),
+            confirmURL: urlParams.has("confirm") && urlParams.get("confirm") == "true",
+            connectExternalEmail: urlParams.get("connect_external_email"),
+            connectExternalProvider: urlParams.get("connect_external_provider"),
+            connectExternalLabel: urlParams.get("connect_external_label"),
         };
     },
     computed: {
-        confirmURL() {
-            var urlParams = new URLSearchParams(window.location.search);
-            return urlParams.has("confirm") && urlParams.get("confirm") == "true";
-        },
-        connectExternalEmail() {
-            var urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get("connect_external_email");
-        },
-        connectExternalProvider() {
-            var urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get("connect_external_provider");
-        },
-        connectExternalLabel() {
-            var urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get("connect_external_label");
-        },
         welcomeUrlWithRoot() {
             return withPrefix(this.welcomeUrl);
         },
@@ -202,17 +191,17 @@ export default {
                     }
                     if (data.expired_user) {
                         window.location = withPrefix(`/root/login?expired_user=${data.expired_user}`);
-                    } else if (data.redirect) {
-                        window.location = encodeURI(data.redirect);
                     } else if (this.connectExternalProvider) {
                         window.location = withPrefix("/user/external_ids?connect_external=true");
+                    } else if (data.redirect) {
+                        window.location = encodeURI(data.redirect);
                     } else {
                         window.location = withPrefix("/");
                     }
                 })
                 .catch((error) => {
                     this.messageVariant = "danger";
-                    const message = error.response.data && error.response.data.err_msg;
+                    const message = error.response && error.response.data && error.response.data.err_msg;
                     if (this.connectExternalProvider && message && message.toLowerCase().includes("invalid")) {
                         this.messageText =
                             message + " Try logging in to the existing account through an external provider below.";
