@@ -144,9 +144,6 @@ export default {
             searchWorker: null,
         };
     },
-    beforeDestroy() {
-        this.searchWorker.terminate();
-    },
     computed: {
         favoritesResults() {
             const Galaxy = getGalaxyInstance();
@@ -163,6 +160,9 @@ export default {
         toolsList() {
             return flattenTools(this.toolbox);
         },
+    },
+    beforeDestroy() {
+        this.searchWorker.terminate();
     },
     mounted() {
         this.searchWorker = new Worker(new URL("../toolSearch.worker.js", import.meta.url));
