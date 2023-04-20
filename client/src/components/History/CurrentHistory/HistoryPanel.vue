@@ -138,7 +138,7 @@
 <script>
 import Vue from "vue";
 import { Toast } from "composables/toast";
-import { mapActions as vuexMapActions } from "vuex";
+import { useHistoryStore } from "stores/historyStore";
 import { mapActions, mapState, storeToRefs } from "pinia";
 import { useHistoryItemsStore } from "stores/history/historyItemsStore";
 import LoadingSpan from "components/LoadingSpan";
@@ -274,7 +274,7 @@ export default {
         await this.loadHistoryItems();
     },
     methods: {
-        ...vuexMapActions("history", ["loadHistoryById"]),
+        ...mapActions(useHistoryStore, ["loadHistoryById"]),
         ...mapActions(useHistoryItemsStore, ["fetchHistoryItems"]),
         getHighlight(item) {
             if (this.filterText.includes("related:" + item.hid)) {
