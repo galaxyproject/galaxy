@@ -2915,6 +2915,18 @@
 :Type: float
 
 
+~~~~~~~~~~~~~~~~~~~
+``sentry_ca_certs``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Use this option to provide the path to location of the CA
+    (Certificate Authority) certificate file if the sentry server uses
+    a self-signed certificate.
+:Default: ``None``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~
 ``statsd_host``
 ~~~~~~~~~~~~~~~

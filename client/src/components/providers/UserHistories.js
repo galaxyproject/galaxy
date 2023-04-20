@@ -28,7 +28,9 @@ export default {
             return null;
         },
         historyModels() {
-            return this.histories.map((h) => Object.assign({}, h));
+            return this.histories
+                .map((h) => Object.assign({}, h))
+                .filter((h) => !h.user_id || h.user_id === this.user.id);
         },
     },
     methods: {

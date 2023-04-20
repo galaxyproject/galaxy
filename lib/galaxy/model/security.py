@@ -1536,7 +1536,6 @@ class GalaxyRBACAgent(RBACAgent):
             return True, ""
         action = self.permitted_actions.DATASET_ACCESS
 
-        raise
         lddas = (
             self.sa_session.query(self.model.LibraryDatasetDatasetAssociation)
             .join("library_dataset")
