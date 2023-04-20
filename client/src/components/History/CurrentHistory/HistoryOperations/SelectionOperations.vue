@@ -50,9 +50,9 @@
                     @click="buildCollectionFromRules">
                     <span v-localize>Build Collection from Rules</span>
                 </b-dropdown-item>
-                <b-dropdown-divider v-if="!showBuildOptions && selectionMatchesQuery" />
+                <b-dropdown-divider v-if="showBuildOptionForAll" />
                 <b-dropdown-item
-                    v-if="!showBuildOptions && selectionMatchesQuery"
+                    v-if="showBuildOptionForAll"
                     data-description="build list all"
                     @click="buildDatasetListAll">
                     <span v-localize>Build Dataset List</span>
@@ -202,6 +202,10 @@ export default {
         /** @returns {Boolean} */
         showBuildOptions() {
             return !this.isQuerySelection && !this.showHidden && !this.showDeleted;
+        },
+        /** @returns {Boolean} */
+        showBuildOptionForAll() {
+            return !this.showBuildOptions && this.selectionMatchesQuery
         },
         /** @returns {Number} */
         numSelected() {
