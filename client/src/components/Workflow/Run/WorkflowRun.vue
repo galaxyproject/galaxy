@@ -47,7 +47,7 @@
 <script>
 import { useHistoryItemsStore } from "stores/history/historyItemsStore";
 import { mapState } from "pinia";
-import { mapGetters } from "vuex";
+import { useHistoryStore } from "@/stores/historyStore";
 import { getRunData } from "./services";
 import LoadingSpan from "components/LoadingSpan";
 import WorkflowRunSuccess from "./WorkflowRunSuccess";
@@ -95,8 +95,8 @@ export default {
         };
     },
     computed: {
+        ...mapState(useHistoryStore, ["currentHistoryId"]),
         ...mapState(useHistoryItemsStore, ["getLastUpdateTime"]),
-        ...mapGetters("history", ["currentHistoryId"]),
         historyStatusKey() {
             return `${this.currentHistoryId}_${this.getLastUpdateTime}`;
         },
