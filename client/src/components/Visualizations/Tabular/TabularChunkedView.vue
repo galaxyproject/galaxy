@@ -181,8 +181,14 @@ onMounted(() => {
             </b-thead>
             <b-tbody>
                 <b-tr v-for="(row, index) in tabularData.rows" :key="index">
-                    <b-td v-for="(element, elementIndex) in row" :key="elementIndex" :class="columnStyle[elementIndex]">
+                    <b-td
+                        v-for="(element, elementIndex) in row.slice(0, -1)"
+                        :key="elementIndex"
+                        :class="columnStyle[elementIndex]">
                         {{ element }}
+                    </b-td>
+                    <b-td :class="columnStyle[row.length - 1]" :colspan="1 + columns.length - row.length">
+                        {{ row.slice(-1)[0] }}
                     </b-td>
                 </b-tr>
             </b-tbody>
