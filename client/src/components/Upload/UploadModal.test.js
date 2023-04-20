@@ -5,10 +5,10 @@ import UploadModal from "./UploadModal";
 import UploadModalContent from "./UploadModalContent";
 import { mount } from "@vue/test-utils";
 import { getLocalVue, mockModule } from "tests/jest/helpers";
-import { historyStore } from "store/historyStore";
 import { configStore } from "store/configStore";
 import Vuex from "vuex";
 import { useUserStore } from "stores/userStore";
+import { useHistoryStore } from "stores/historyStore";
 
 jest.mock("app");
 
@@ -21,7 +21,6 @@ const propsData = {
 const createStore = () => {
     return new Vuex.Store({
         modules: {
-            history: mockModule(historyStore, { currentHistoryId: "fakehistory", histories: { fakehistory: {} } }),
             config: mockModule(configStore, { config: {} }),
         },
     });
@@ -31,6 +30,7 @@ describe("UploadModal.vue", () => {
     let wrapper;
     let axiosMock;
     let userStore;
+    let historyStore;
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
@@ -79,6 +79,9 @@ describe("UploadModal.vue", () => {
 
         userStore = useUserStore();
         userStore.currentUser = { id: "fakeUser" };
+        historyStore = useHistoryStore();
+        historyStore.setHistories([{ id: "fakeHistory" }]);
+        historyStore.setCurrentHistoryId("fakeHistory");
 
         await wrapper.vm.open();
     });
