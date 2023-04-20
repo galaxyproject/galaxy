@@ -15,10 +15,7 @@ import os
 import pwd
 import random
 import string
-from collections import (
-    defaultdict,
-    namedtuple,
-)
+from collections import defaultdict
 from collections.abc import Callable
 from datetime import timedelta
 from enum import Enum
