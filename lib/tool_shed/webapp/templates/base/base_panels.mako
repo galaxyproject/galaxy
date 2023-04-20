@@ -171,7 +171,7 @@
 
             ${self.overlay(visible=self.overlay_visible)}
 
-            <div id="columns">
+            <div id="columns" class="d-flex">
                 %if self.has_left_panel:
                     <div id="left">
                         ${self.left_panel()}
