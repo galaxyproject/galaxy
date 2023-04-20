@@ -4,6 +4,7 @@ import { computed, ref, onMounted } from "vue";
 import { withPrefix } from "@/utils/redirect";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowTree from "./WorkflowTree.vue";
+import { isEmpty } from "@/utils/utils";
 
 interface WorkflowDisplayProps {
     workflowId: string;
@@ -69,7 +70,7 @@ onMounted(async () => {
                     type="button"
                     class="py-0 px-1"
                     data-description="workflow import">
-                    <span class="fa fa-file-import" />
+                    <span class="fa fa-upload" />
                 </b-button>
             </span>
             <span>
@@ -80,7 +81,7 @@ onMounted(async () => {
         <b-card-body>
             <LoadingSpan v-if="loading" message="Loading Workflow" />
             <div v-else :class="!expanded && 'content-height'">
-                <b-alert v-if="errorContent !== null" variant="danger" show>
+                <b-alert v-if="!isEmpty(errorContent)" variant="danger" show>
                     <b>Please fix the following error(s):</b>
                     <ul v-if="typeof errorContent === 'object'" class="my-2">
                         <li v-for="(errorValue, errorKey) in errorContent" :key="errorKey">

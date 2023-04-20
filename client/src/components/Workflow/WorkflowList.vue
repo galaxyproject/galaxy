@@ -189,7 +189,7 @@ export default {
         return {
             tableId: "workflow-table",
             fields: fields,
-            titleSearch: _l("Search Workflows"),
+            titleSearch: _l("search workflows"),
             workflowItemsModel: [],
             helpHtml: helpHtml,
             perPage: this.rowsPerPage(this.defaultPerPage || 50),
