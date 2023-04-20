@@ -4314,12 +4314,37 @@ class FITS(Binary):
 
     file_ext = "fits"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
-        """Determines whether the file is a FITS file
+    def __init__(self, **kwd):
+        super().__init__(**kwd)
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        Determines whether the file is a FITS file
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('test.fits')
-        >>> FITS().sniff(fname)
+        >>> FITS().sniff_prefix(FilePrefix(fname))
         True
+        >>> fname = FilePrefix(get_test_fname('interval.interval'))
+        >>> FITS().sniff_prefix(fname)
+        False
         """
 
-        return file_prefix.string_io().readline().strip().startswith('SIMPLE  =')
+        try:
+            return file_prefix.string_io().readline().strip().startswith('SIMPLE  =')
+        except Exception as e:
+            log.warning("%s, sniff FITS file Exception: %s", self, e)
+            return False
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        if not dataset.dataset.purged:
+            dataset.peek = "FITS file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def display_peek(self, dataset: DatasetProtocol) -> str:
+        try:
+            return dataset.peek
+        except Exception:
+            return f"Binary FITS file size ({nice_size(dataset.get_size())})"
