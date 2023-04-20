@@ -2,8 +2,8 @@
 import localize from "@/utils/localization";
 import type { DataValuePoint } from "./Charts";
 import { ref, onMounted } from "vue";
-import PieChart from "./Charts/PieChart.vue";
-import { bytesLabelFormatter } from "./Charts/utils";
+import BarChart from "./Charts/BarChart.vue";
+import { bytesLabelFormatter, bytesValueFormatter } from "./Charts/utils";
 import { getHistoryContentsSizeSummary, type ItemSizeSummary, undeleteDataset, purgeDataset } from "./service";
 import RecoverableItemSizeTooltip from "./RecoverableItemSizeTooltip.vue";
 import SelectedItemActions from "./SelectedItemActions.vue";
@@ -157,17 +157,18 @@ async function onPermanentlyDeleteDataset(datasetId: string) {
             <LoadingSpan class="mt-5" :message="localize('Loading your storage data. This may take a while...')" />
         </div>
         <div v-else>
-            <PieChart
+            <BarChart
                 v-if="topTenDatasetsBySizeData"
                 :title="localize('Top 10 Datasets by Size')"
                 :description="
                     localize(
-                        'These are the 10 datasets that take the most space in this history. Click on a slice to see more information about the dataset.'
+                        'These are the 10 datasets that take the most space in this history. Click on a bar to see more information about the dataset.'
                     )
                 "
                 :enable-selection="true"
                 :data="topTenDatasetsBySizeData"
-                :label-formatter="bytesLabelFormatter">
+                :label-formatter="bytesLabelFormatter"
+                :value-formatter="bytesValueFormatter">
                 <template v-slot:tooltip="{ data }">
                     <RecoverableItemSizeTooltip :data="data" :is-recoverable="isRecoverableDataPoint(data)" />
                 </template>
@@ -180,9 +181,9 @@ async function onPermanentlyDeleteDataset(datasetId: string) {
                         @undelete-item="onUndeleteDataset"
                         @permanently-delete-item="onPermanentlyDeleteDataset" />
                 </template>
-            </PieChart>
+            </BarChart>
 
-            <PieChart
+            <BarChart
                 v-if="activeVsDeletedTotalSizeData"
                 :title="localize('Active vs Deleted Total Size')"
                 :description="
@@ -191,11 +192,12 @@ async function onPermanentlyDeleteDataset(datasetId: string) {
                     )
                 "
                 :data="activeVsDeletedTotalSizeData"
-                :label-formatter="bytesLabelFormatter">
+                :label-formatter="bytesLabelFormatter"
+                :value-formatter="bytesValueFormatter">
                 <template v-slot:tooltip="{ data }">
                     <RecoverableItemSizeTooltip :data="data" :is-recoverable="isRecoverableDataPoint(data)" />
                 </template>
-            </PieChart>
+            </BarChart>
         </div>
     </div>
 </template>

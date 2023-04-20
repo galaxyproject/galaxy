@@ -5,7 +5,7 @@ import * as d3 from "d3";
 
 import type { DataValuePoint } from ".";
 
-interface PieChartProps {
+interface BarChartProps {
     title: string;
     data: DataValuePoint[];
     description?: string;
@@ -14,16 +14,18 @@ interface PieChartProps {
     enableTooltips?: boolean;
     enableSelection?: boolean;
     labelFormatter?: (dataPoint?: DataValuePoint | null) => string;
+    valueFormatter?: (value: number) => string;
 }
 
-const props = withDefaults(defineProps<PieChartProps>(), {
+const props = withDefaults(defineProps<BarChartProps>(), {
     description: undefined,
-    width: 400,
+    width: 600,
     height: 400,
     enableTooltips: true,
     enableSelection: false,
     labelFormatter: (dataPoint?: DataValuePoint | null) =>
         dataPoint ? `${dataPoint.label}: ${dataPoint.value}` : "No data",
+    valueFormatter: (value: number) => `${value}`,
 });
 
 const emit = defineEmits<{
@@ -32,71 +34,114 @@ const emit = defineEmits<{
     (e: "selection-changed", dataPoint?: DataValuePoint): void;
 }>();
 
-const pieChart = ref(null);
+const barChart = ref(null);
 const legend = ref(null);
 const chartTooltip = ref<HTMLBaseElement | null>(null);
 const tooltipDataPoint = ref<DataValuePoint | null>(null);
 const selectedDataPoint = ref<DataValuePoint | undefined>(undefined);
-const chartArcs = ref<d3.Selection<SVGGElement, d3.PieArcDatum<DataValuePoint>, SVGGElement, unknown> | null>(null);
+const chartBars = ref<d3.Selection<SVGRectElement, DataValuePoint, SVGGElement, unknown> | null>(null);
 const legendEntries = ref<d3.Selection<SVGGElement | d3.BaseType, DataValuePoint, SVGGElement, unknown> | null>(null);
 
-const total = computed(() => props.data.reduce((total, dataPoint) => total + dataPoint.value, 0));
 const showTooltip = computed(() => props.enableTooltips && tooltipDataPoint.value !== null);
 const hasData = computed(
     () => props.data.length > 0 && props.data.reduce((total, dataPoint) => total + dataPoint.value, 0) > 0
 );
 
 onMounted(() => {
-    renderPieChart();
+    renderBarChart();
 });
 
 watch(
-    () => [props.data, props.labelFormatter, props.enableTooltips, props.enableSelection, props.width, props.height],
+    () => [
+        props.data,
+        props.width,
+        props.height,
+        props.enableTooltips,
+        props.enableSelection,
+        props.labelFormatter,
+        props.valueFormatter,
+    ],
     () => {
         clearChart();
-        renderPieChart();
+        renderBarChart();
     }
 );
 
-function renderPieChart() {
-    chartArcs.value = drawChart();
+function renderBarChart() {
+    chartBars.value = drawChart();
     legendEntries.value = createLegend();
     setupEvents();
 }
 
 function clearChart() {
-    d3.select(pieChart.value).selectAll("*").remove();
+    d3.select(barChart.value).selectAll("*").remove();
     d3.select(legend.value).selectAll("*").remove();
 }
 
 const color = d3.scaleOrdinal(d3.schemeCategory10);
 
 function drawChart() {
+    const yAxisWidth = 50;
+    const xAxisHeight = 5;
     const data = props.data;
-    const width = props.width;
-    const height = props.height;
+    const chartWidth = props.width - yAxisWidth;
+    const chartHeight = props.height;
+    const chartXStart = yAxisWidth;
 
-    const radius = height / 2.2;
+    const svg = d3.select(barChart.value).append("svg").attr("width", props.width).attr("height", props.height);
 
-    const svg = d3
-        .select(pieChart.value)
-        .append("svg")
-        .attr("width", width)
-        .attr("height", height)
-        .append("g")
-        .attr("transform", `translate(${width / 2},${height / 2})`);
+    const g = svg.append("g").attr("transform", `translate(${chartXStart}, 0)`);
 
-    const pie = d3.pie<DataValuePoint>().value(applyThresholdToValue);
-    const arc = d3.arc().innerRadius(0).outerRadius(radius);
+    const xScale = d3
+        .scaleBand()
+        .range([0, chartWidth - chartXStart])
+        .domain(
+            data.map(function (d) {
+                return d.id;
+            })
+        )
+        .padding(0.1);
 
-    const arcs = svg.selectAll("arc").data(pie(data)).enter().append("g").attr("class", "arc");
+    const xAxis = d3
+        .axisBottom(xScale)
+        .tickSize(0)
+        .tickFormat(() => "");
 
-    arcs.append("path")
-        // @ts-ignore
-        .attr("d", arc)
-        .attr("fill", (d) => entryColor(d.data));
+    const yScale = d3
+        .scaleLinear()
+        .range([chartHeight - xAxisHeight, 0])
+        .domain([0, d3.max(data, (d) => d.value) || 0]);
 
-    return arcs;
+    const yAxis = d3
+        .axisLeft<number>(yScale)
+        .scale(yScale)
+        .tickFormat(function (d) {
+            return props.valueFormatter(d);
+        })
+        .ticks(5);
+
+    g.append("g")
+        .attr("class", "axis")
+        .attr("transform", "translate(0," + (chartHeight - xAxisHeight) + ")")
+        .call(xAxis);
+
+    g.append("g").attr("class", "axis").call(yAxis);
+
+    g.selectAll(".tick text").attr("class", "bar-tick-text");
+
+    const bars = g
+        .selectAll(".bar")
+        .data(data)
+        .enter()
+        .append("rect")
+        .attr("class", "bar")
+        .attr("x", (d) => xScale(d.id) || 0)
+        .attr("y", (d) => yScale(d.value) - xAxisHeight)
+        .attr("width", xScale.bandwidth())
+        .attr("height", (d) => chartHeight - yScale(d.value))
+        .attr("fill", (d) => entryColor(d));
+
+    return bars;
 }
 
 function createLegend() {
@@ -107,7 +152,7 @@ function createLegend() {
     const labelOffset = 4;
     const baselineOffset = 4;
 
-    const height = topMargin + data.length * entrySpacing + 50;
+    const height = topMargin + data.length * entrySpacing;
     const container = d3
         .select(legend.value)
         .append("svg")
@@ -133,7 +178,6 @@ function createLegend() {
         .attr("x", 2 * entryRadius + labelOffset)
         .attr("y", baselineOffset)
         .attr("fill", "black")
-        .attr("font-size", "14px")
         .text((d) => props.labelFormatter(d));
 
     return entries;
@@ -150,10 +194,10 @@ function setupEvents() {
 }
 
 function setupTooltipEvents() {
-    chartArcs.value
+    chartBars.value
         ?.on("mouseenter", (event, d) => {
-            tooltipDataPoint.value = d.data;
-            emit("show-tooltip", d.data, event.pageX, event.pageY);
+            tooltipDataPoint.value = d;
+            emit("show-tooltip", d, event.pageX, event.pageY);
         })
         .on("mousemove", (event) => {
             // Correct the page coordinates to compensate for scrolling offset
@@ -168,9 +212,9 @@ function setupTooltipEvents() {
 }
 
 function setupSelectionEvents() {
-    chartArcs.value?.on("click", (event, d) => {
+    chartBars.value?.on("click", (event, d) => {
         event.stopPropagation();
-        toggleSelection(d.data);
+        toggleSelection(d);
     });
     legendEntries.value?.on("click", (event, d) => {
         event.stopPropagation();
@@ -196,17 +240,14 @@ function toggleSelection(dataPoint: DataValuePoint): void {
 }
 
 function highlightSelected(): void {
-    if (!chartArcs.value) {
+    if (!chartBars.value) {
         return;
     }
 
-    chartArcs.value
-        .selectAll<d3.BaseType, d3.PieArcDatum<DataValuePoint>>("path")
+    chartBars.value
         .transition()
         .duration(200)
-        .attr("opacity", (d) =>
-            selectedDataPoint.value === undefined || d.data === selectedDataPoint.value ? 1.0 : 0.5
-        );
+        .attr("opacity", (d) => (selectedDataPoint.value === undefined || d === selectedDataPoint.value ? 1.0 : 0.5));
 
     legendEntries.value
         ?.selectAll<d3.BaseType, DataValuePoint>("*")
@@ -225,12 +266,6 @@ function setTooltipPosition(mouseX: number, mouseY: number): void {
         chartTooltip.value.style.top = `${mouseY}px`;
     }
 }
-
-function applyThresholdToValue(d: DataValuePoint): number {
-    // This is required to avoid a bug in d3 where it will not render the chart if the percentage of a slice is too small
-    const percentage = (d.value / total.value) * 100;
-    return percentage < 0.1 ? 0.1 : percentage;
-}
 </script>
 
 <template>
@@ -243,7 +278,7 @@ function applyThresholdToValue(d: DataValuePoint): number {
         <div v-if="hasData">
             <p class="chart-description">{{ description }}</p>
             <div class="chart-area">
-                <div ref="pieChart" class="pie-chart"></div>
+                <div ref="barChart" class="bar-chart"></div>
                 <div ref="legend" class="legend"></div>
                 <div v-if="selectedDataPoint" class="selection-info">
                     <slot name="selection" :data="selectedDataPoint">
@@ -253,7 +288,7 @@ function applyThresholdToValue(d: DataValuePoint): number {
             </div>
         </div>
         <div v-else class="text-center">
-            <p class="text-muted">No data to display. Populate some histories with datasets and come back.</p>
+            <p class="text-muted">No data to display. Populate some data and come back.</p>
         </div>
         <div v-show="showTooltip" ref="chartTooltip" class="chart-tooltip">
             <slot name="tooltip" :data="tooltipDataPoint">
@@ -274,12 +309,20 @@ function applyThresholdToValue(d: DataValuePoint): number {
     justify-content: center;
 }
 
-.pie-chart {
+.bar-chart {
     float: right;
 }
 
-.pie-chart .arc {
+.bar {
     cursor: pointer;
+}
+
+.bar-tick-text {
+    font-size: 14px;
+}
+
+.legend-item {
+    font-size: 14px;
 }
 
 .legend {

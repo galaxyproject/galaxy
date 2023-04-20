@@ -4,7 +4,7 @@ import { bytesToString } from "@/utils/utils";
 import localize from "@/utils/localization";
 import type { DataValuePoint } from "./Charts";
 import { computed } from "vue";
-import { faChartPie, faUndo, faTrash, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import { faChartBar, faUndo, faTrash, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 
@@ -19,11 +19,11 @@ interface SelectedItemActionsProps {
 const props = defineProps<SelectedItemActionsProps>();
 
 //@ts-ignore bad library types
-library.add(faChartPie, faUndo, faTrash, faInfoCircle);
+library.add(faChartBar, faUndo, faTrash, faInfoCircle);
 
 const label = computed(() => props.data?.label ?? "No data");
 const prettySize = computed(() => bytesToString(props.data?.value ?? 0));
-const viewDetailsIcon = computed(() => (props.itemType === "history" ? "chart-pie" : "info-circle"));
+const viewDetailsIcon = computed(() => (props.itemType === "history" ? "chart-bar" : "info-circle"));
 
 const emit = defineEmits<{
     (e: "view-item", itemId: string): void;
