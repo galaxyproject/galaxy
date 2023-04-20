@@ -88,7 +88,8 @@ function processChunk(chunk: TabularChunk) {
         parsedChunk = chunk.ck_data.trim().split("\n");
         parsedChunk = parsedChunk.map((line) => {
             try {
-                return parse(line, { delimiter: delimiter.value })[0];
+                const parsedLine = parse(line, { delimiter: delimiter.value })[0];
+                return parsedLine || [line];
             } catch (error) {
                 // Failing lines get passed through intact for row-level
                 // rendering/parsing.
