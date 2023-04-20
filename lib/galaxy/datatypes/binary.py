@@ -4332,7 +4332,6 @@ class FITS(Binary):
         try:
             return file_prefix.string_io().readline().strip().startswith('SIMPLE  =')
         except Exception as e:
-            log.warning("%s, sniff FITS file Exception: %s", self, e)
             return False
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
