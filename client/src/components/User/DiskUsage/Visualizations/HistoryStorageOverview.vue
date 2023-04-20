@@ -27,23 +27,29 @@ const datasetsSizeSummaryMap = new Map<string, ItemSizeSummary>();
 const topTenDatasetsBySizeData = ref<DataValuePoint[] | null>(null);
 const activeVsDeletedTotalSizeData = ref<DataValuePoint[] | null>(null);
 const isLoading = ref(true);
+const numberOfDatasetsToDisplayOptions = [10, 20, 50];
+const numberOfDatasetsToDisplay = ref(numberOfDatasetsToDisplayOptions[0]);
 
 onMounted(async () => {
     isLoading.value = true;
-    const allDatasetsInHistorySizeSummary = await getHistoryContentsSizeSummary(props.historyId);
+    const limit = Math.max(...numberOfDatasetsToDisplayOptions);
+    const allDatasetsInHistorySizeSummary = await getHistoryContentsSizeSummary(props.historyId, limit);
     allDatasetsInHistorySizeSummary.forEach((dataset) => datasetsSizeSummaryMap.set(dataset.id, dataset));
 
-    buildGraphsData(allDatasetsInHistorySizeSummary);
+    buildGraphsData();
     isLoading.value = false;
 });
 
-function buildGraphsData(allDatasetsInHistorySizeSummary: ItemSizeSummary[]) {
+function buildGraphsData() {
+    const allDatasetsInHistorySizeSummary = Array.from(datasetsSizeSummaryMap.values());
     topTenDatasetsBySizeData.value = buildTopTenDatasetsBySizeData(allDatasetsInHistorySizeSummary);
     activeVsDeletedTotalSizeData.value = buildActiveVsDeletedTotalSizeData(allDatasetsInHistorySizeSummary);
 }
 
 function buildTopTenDatasetsBySizeData(datasetsSizeSummary: ItemSizeSummary[]): DataValuePoint[] {
-    const topTenDatasetsBySize = datasetsSizeSummary.sort((a, b) => b.size - a.size).slice(0, 10);
+    const topTenDatasetsBySize = datasetsSizeSummary
+        .sort((a, b) => b.size - a.size)
+        .slice(0, numberOfDatasetsToDisplay.value);
     return topTenDatasetsBySize.map((dataset) => ({
         id: dataset.id,
         label: dataset.name,
@@ -98,7 +104,7 @@ async function onUndeleteDataset(datasetId: string) {
             dataset.deleted = result.deleted;
             datasetsSizeSummaryMap.set(datasetId, dataset);
             successToast(localize("Dataset undeleted successfully."));
-            buildGraphsData(Array.from(datasetsSizeSummaryMap.values()));
+            buildGraphsData();
         }
     } catch (error) {
         errorToast(`${error}`, localize("An error occurred while undeleting the dataset."));
@@ -124,7 +130,7 @@ async function onPermanentlyDeleteDataset(datasetId: string) {
         if (dataset && result) {
             datasetsSizeSummaryMap.delete(datasetId);
             successToast(localize("Dataset permanently deleted successfully."));
-            buildGraphsData(Array.from(datasetsSizeSummaryMap.values()));
+            buildGraphsData();
         }
     } catch (error) {
         errorToast(`${error}`, localize("An error occurred while permanently deleting the dataset."));
@@ -132,12 +138,12 @@ async function onPermanentlyDeleteDataset(datasetId: string) {
 }
 </script>
 <template>
-    <div>
+    <div class="mx-3">
         <router-link :to="{ name: 'StorageDashboard' }">{{ localize("Back to Dashboard") }}</router-link>
         <h2 class="text-center my-3">
             <b>History Storage Overview</b>
         </h2>
-        <p class="text-center mx-3">
+        <p class="text-center">
             Here you will find some Graphs displaying the storage taken by datasets in your history:
             <b>{{ props.historyId }}</b
             >. You can use these graphs to identify the datasets that take the most space in your history. You can also
@@ -145,7 +151,7 @@ async function onPermanentlyDeleteDataset(datasetId: string) {
             <router-link :to="{ name: 'HistoriesOverview' }"><b>Histories Storage Overview</b></router-link> page to see
             the storage taken by <b>all your histories</b>.
         </p>
-        <p class="text-center mx-3">
+        <p class="text-center">
             Note: these graphs include <b>deleted datasets</b>. Remember that, even if you delete datasets, they still
             take up storage space. However, you can free up the storage space by permanently deleting them from the
             <i>Discarded Items</i> section of the
@@ -159,7 +165,6 @@ async function onPermanentlyDeleteDataset(datasetId: string) {
         <div v-else>
             <BarChart
                 v-if="topTenDatasetsBySizeData"
-                :title="localize('Top 10 Datasets by Size')"
                 :description="
                     localize(
                         'These are the 10 datasets that take the most space in this history. Click on a bar to see more information about the dataset.'
@@ -169,6 +174,18 @@ async function onPermanentlyDeleteDataset(datasetId: string) {
                 :data="topTenDatasetsBySizeData"
                 :label-formatter="bytesLabelFormatter"
                 :value-formatter="bytesValueFormatter">
+                <template v-slot:title>
+                    <b>{{ localize(`Top ${numberOfDatasetsToDisplay} Datasets by Size`) }}</b>
+                    <b-form-select
+                        v-model="numberOfDatasetsToDisplay"
+                        :options="numberOfDatasetsToDisplayOptions"
+                        :disabled="isLoading"
+                        title="Number of histories to show"
+                        class="float-right w-auto"
+                        size="sm"
+                        @change="buildGraphsData()">
+                    </b-form-select>
+                </template>
                 <template v-slot:tooltip="{ data }">
                     <RecoverableItemSizeTooltip :data="data" :is-recoverable="isRecoverableDataPoint(data)" />
                 </template>

@@ -6,8 +6,8 @@ import * as d3 from "d3";
 import type { DataValuePoint } from ".";
 
 interface BarChartProps {
-    title: string;
     data: DataValuePoint[];
+    title?: string;
     description?: string;
     width?: number;
     height?: number;
@@ -18,6 +18,7 @@ interface BarChartProps {
 }
 
 const props = withDefaults(defineProps<BarChartProps>(), {
+    title: "Bar Chart",
     description: undefined,
     width: 600,
     height: 400,
@@ -272,7 +273,9 @@ function setTooltipPosition(mouseX: number, mouseY: number): void {
     <b-card class="mb-3 mx-3">
         <template v-slot:header>
             <h3 class="text-center my-1">
-                <b>{{ title }}</b>
+                <slot name="title">
+                    <b>{{ title }}</b>
+                </slot>
             </h3>
         </template>
         <div v-if="hasData">
@@ -327,6 +330,9 @@ function setTooltipPosition(mouseX: number, mouseY: number): void {
 
 .legend {
     float: left;
+    height: 400px;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 .chart-tooltip {

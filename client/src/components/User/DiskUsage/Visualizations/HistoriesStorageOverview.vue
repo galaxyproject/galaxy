@@ -20,23 +20,28 @@ const historiesSizeSummaryMap = new Map<string, ItemSizeSummary>();
 const topTenHistoriesBySizeData = ref<DataValuePoint[] | null>(null);
 const activeVsDeletedTotalSizeData = ref<DataValuePoint[] | null>(null);
 const isLoading = ref(true);
+const numberOfHistoriesToDisplayOptions = [10, 20, 50];
+const numberOfHistoriesToDisplay = ref(numberOfHistoriesToDisplayOptions[0]);
 
 onMounted(async () => {
     isLoading.value = true;
     const allHistoriesSizeSummary = await getAllHistoriesSizeSummary();
     allHistoriesSizeSummary.forEach((history) => historiesSizeSummaryMap.set(history.id, history));
 
-    buildGraphsData(allHistoriesSizeSummary);
+    buildGraphsData();
     isLoading.value = false;
 });
 
-function buildGraphsData(allHistoriesSizeSummary: ItemSizeSummary[]) {
-    topTenHistoriesBySizeData.value = buildTopTenHistoriesBySizeData(allHistoriesSizeSummary);
+function buildGraphsData() {
+    const allHistoriesSizeSummary = Array.from(historiesSizeSummaryMap.values());
+    topTenHistoriesBySizeData.value = buildTopHistoriesBySizeData(allHistoriesSizeSummary);
     activeVsDeletedTotalSizeData.value = buildActiveVsDeletedTotalSizeData(allHistoriesSizeSummary);
 }
 
-function buildTopTenHistoriesBySizeData(historiesSizeSummary: ItemSizeSummary[]): DataValuePoint[] {
-    const topTenHistoriesBySize = historiesSizeSummary.sort((a, b) => b.size - a.size).slice(0, 10);
+function buildTopHistoriesBySizeData(historiesSizeSummary: ItemSizeSummary[]): DataValuePoint[] {
+    const topTenHistoriesBySize = historiesSizeSummary
+        .sort((a, b) => b.size - a.size)
+        .slice(0, numberOfHistoriesToDisplay.value);
     return topTenHistoriesBySize.map((history) => ({
         id: history.id,
         label: history.name,
@@ -85,7 +90,7 @@ async function onUndeleteHistory(historyId: string) {
             history.deleted = result.deleted;
             historiesSizeSummaryMap.set(historyId, history);
             successToast(localize("History undeleted successfully."));
-            buildGraphsData(Array.from(historiesSizeSummaryMap.values()));
+            buildGraphsData();
         }
     } catch (error) {
         errorToast(`${error}`, localize("An error occurred while undeleting the history."));
@@ -111,7 +116,7 @@ async function onPermanentlyDeleteHistory(historyId: string) {
         if (history && result.purged) {
             historiesSizeSummaryMap.delete(historyId);
             successToast(localize("History permanently deleted successfully."));
-            buildGraphsData(Array.from(historiesSizeSummaryMap.values()));
+            buildGraphsData();
         }
     } catch (error) {
         errorToast(`${error}`, localize("An error occurred while permanently deleting the history."));
@@ -119,15 +124,15 @@ async function onPermanentlyDeleteHistory(historyId: string) {
 }
 </script>
 <template>
-    <div>
+    <div class="mx-3">
         <router-link :to="{ name: 'StorageDashboard' }">{{ localize("Back to Dashboard") }}</router-link>
         <h2 class="text-center my-3">
             <b>Histories Storage Overview</b>
         </h2>
-        <p class="text-center mx-3">
+        <p class="text-center">
             Here you can find various graphs displaying the storage size taken by <b>all your histories</b>.
         </p>
-        <p class="text-center mx-3">
+        <p class="text-center">
             Note: these graphs include <b>deleted histories</b>. Remember that, even if you delete histories, they still
             take up storage space. However, you can free up the storage space by permanently deleting them from the
             <i>Discarded Items</i> section of the
@@ -141,16 +146,27 @@ async function onPermanentlyDeleteHistory(historyId: string) {
         <div v-else>
             <BarChart
                 v-if="topTenHistoriesBySizeData"
-                :title="localize('Top 10 Histories by Size')"
                 :description="
                     localize(
-                        'These are the 10 histories that take the most space on your storage. Click on a bar to see more information about the history.'
+                        `These are the ${numberOfHistoriesToDisplay} histories that take the most space on your storage. Click on a bar to see more information about the history.`
                     )
                 "
                 :data="topTenHistoriesBySizeData"
                 :enable-selection="true"
                 :label-formatter="bytesLabelFormatter"
                 :value-formatter="bytesValueFormatter">
+                <template v-slot:title>
+                    <b>{{ localize(`Top ${numberOfHistoriesToDisplay} Histories by Size`) }}</b>
+                    <b-form-select
+                        v-model="numberOfHistoriesToDisplay"
+                        :options="numberOfHistoriesToDisplayOptions"
+                        :disabled="isLoading"
+                        title="Number of histories to show"
+                        class="float-right w-auto"
+                        size="sm"
+                        @change="buildGraphsData()">
+                    </b-form-select>
+                </template>
                 <template v-slot:tooltip="{ data }">
                     <RecoverableItemSizeTooltip :data="data" :is-recoverable="isRecoverableDataPoint(data)" />
                 </template>
