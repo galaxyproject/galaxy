@@ -27,7 +27,7 @@
                 <Icon fixed-width icon="edit" class="mr-1" />
                 <span v-localize>Edit</span>
             </a>
-            <a v-if="!isDeleted" class="dropdown-item" href="#" @click.prevent="onCopy">
+            <a v-if="!isDeleted && !isAnonymous" class="dropdown-item" href="#" @click.prevent="onCopy">
                 <Icon fixed-width icon="copy" class="mr-1" />
                 <span v-localize>Copy</span>
             </a>
@@ -84,6 +84,7 @@
 import { Services } from "./services";
 import { withPrefix } from "utils/redirect";
 import TextSummary from "components/Common/TextSummary";
+import { getGalaxyInstance } from "@/app";
 
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown, faSignature } from "@fortawesome/free-solid-svg-icons";
@@ -138,6 +139,9 @@ export default {
         },
         isDeleted() {
             return this.workflow.deleted;
+        },
+        isAnonymous() {
+            return getGalaxyInstance().user?.isAnonymous();
         },
         sourceUrl() {
             if (this.workflow.source_metadata?.url) {
