@@ -13,17 +13,23 @@
             </DebouncedInput>
             <b-input-group-append>
                 <b-button
+                    v-b-tooltip.hover
+                    aria-haspopup="true"
                     size="sm"
                     :pressed="showAdvanced"
                     :variant="showAdvanced ? 'info' : 'secondary'"
                     data-description="show advanced filter toggle"
+                    title="Show Advanced Filter"
                     aria-label="Show advanced filter"
                     @click="onToggle">
                     <icon v-if="showAdvanced" icon="angle-double-up" />
                     <icon v-else icon="angle-double-down" />
                 </b-button>
                 <b-button
+                    v-b-tooltip.hover
+                    aria-haspopup="true"
                     size="sm"
+                    title="Clear Filters (esc)"
                     aria-label="Clear filters"
                     data-description="clear filters"
                     @click="updateFilter('')">

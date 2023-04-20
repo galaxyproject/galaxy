@@ -13,6 +13,8 @@
         <b-input-group-append>
             <b-button
                 v-if="enableAdvanced"
+                v-b-tooltip.hover
+                aria-haspopup="true"
                 size="sm"
                 :pressed="showAdvanced"
                 :variant="showAdvanced ? 'info' : 'secondary'"
@@ -23,6 +25,8 @@
                 <icon v-else icon="angle-double-down" />
             </b-button>
             <b-button
+                v-b-tooltip.hover
+                aria-haspopup="true"
                 class="search-clear"
                 size="sm"
                 :title="titleClear | l"
@@ -67,8 +71,8 @@ export default {
             queryInput: null,
             queryTimer: null,
             queryCurrent: null,
-            titleClear: "clear search (esc)",
-            titleAdvanced: "toggle advanced search",
+            titleClear: "Clear Search (esc)",
+            titleAdvanced: "Toggle Advanced Search",
         };
     },
     watch: {

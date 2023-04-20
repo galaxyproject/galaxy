@@ -16,6 +16,8 @@
         </div>
         <div class="unified-panel-controls">
             <tool-search
+                v-b-tooltip.hover
+                aria-haspopup="true"
                 :current-panel-view="currentPanelView"
                 placeholder="search tools"
                 :toolbox="workflowTools"

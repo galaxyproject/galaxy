@@ -16,10 +16,20 @@
             </DebouncedInput>
             <b-input-group-append>
                 <b-button
+                    v-b-tooltip.hover
+                    aria-haspopup="true"
                     title="Advanced Filtering Help"
                     :size="size"
                     @click="onHelp">
                     <icon icon="question" />
+                </b-button>
+                <b-button
+                    v-b-tooltip.hover
+                    aria-haspopup="true"
+                    title="Clear Filters (esc)"
+                    :size="size"
+                    @click="onReset">
+                    <icon icon="times" />
                 </b-button>
             </b-input-group-append>
         </b-input-group>
