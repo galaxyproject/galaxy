@@ -166,8 +166,8 @@ export default {
     },
     mounted() {
         this.searchWorker = new Worker(new URL("../toolSearch.worker.js", import.meta.url));
-        this.searchWorker.onmessage = (event) => {
-            const { type, payload, query, closestTerm } = event.data;
+        this.searchWorker.onmessage = ({ data }) => {
+            const { type, payload, query, closestTerm } = data;
             if (type === "searchToolsByKeysResult" && query === this.query) {
                 this.$emit("onResults", payload, closestTerm);
             } else if (type === "clearFilterResult") {

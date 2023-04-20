@@ -1,7 +1,7 @@
 /**
  * Utilities file for Panel Searches (panel/client search + advanced/backend search)
  */
-import { orderBy } from "lodash";
+import { orderBy, escapeRegExp } from "lodash";
 import levenshteinDistance from "utils/levenshtein";
 
 const TOOLS_RESULTS_SORT_LABEL = "apiSort";
@@ -159,11 +159,11 @@ export function removeDisabledTools(tools) {
 export function searchToolsByKeys(tools, keys, query, usesDL = false) {
     let returnedTools = [];
     let closestTerm = null;
+    const queryValue = sanitizeString(query.trim().toLowerCase(), STRING_REPLACEMENTS);
     const minimumQueryLength = 5; // for DL
     for (const tool of tools) {
         for (const key of Object.keys(keys)) {
             if (tool[key] || key === "combined") {
-                let queryValue = query.trim().toLowerCase();
                 let actualValue = "";
                 if (key === "combined") {
                     actualValue = (tool.name + tool.description).trim().toLowerCase();
@@ -171,10 +171,7 @@ export function searchToolsByKeys(tools, keys, query, usesDL = false) {
                     actualValue = tool[key].trim().toLowerCase();
                 }
                 const actualValueWords = actualValue.split(" ");
-                STRING_REPLACEMENTS.forEach((rep) => {
-                    queryValue = queryValue.replaceAll(rep, "");
-                    actualValue = actualValue.replaceAll(rep, "");
-                });
+                actualValue = sanitizeString(actualValue, STRING_REPLACEMENTS);
                 // do we care for exact matches && is it an exact match ?
                 const order = keys.exact && actualValue === queryValue ? keys.exact : keys[key];
                 if (!usesDL && actualValue.match(queryValue)) {
@@ -267,6 +264,22 @@ function matchingTerm(termArray, substring) {
         }
     }
     return null;
+}
+
+/**
+ *
+ * @param {String} value - to be sanitized
+ * @param {Array} targets - Optional: characters to replace
+ * @param {String} substitute - Optional: replacement character
+ * @returns sanitized string
+ */
+function sanitizeString(value, targets = [], substitute = "") {
+    let sanitized = value;
+    targets.forEach((rep) => {
+        sanitized = sanitized.replaceAll(rep, substitute);
+    });
+    sanitized = escapeRegExp(sanitized);
+    return sanitized;
 }
 
 function flattenToolsSection(section) {
