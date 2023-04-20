@@ -551,7 +551,7 @@ class TestCustosAuthnz(TestCase):
         """
         self.trans.set_cookie(value=self.test_state, name=custos_authnz.STATE_COOKIE_NAME)
         self.trans.set_cookie(value=self.test_nonce, name=custos_authnz.NONCE_COOKIE_NAME)
-        self.test_email = 'existing@example.com'
+        self.test_email = "existing@example.com"
         self.trans.user = None
 
         # query() monkeypatched to return user with this email
