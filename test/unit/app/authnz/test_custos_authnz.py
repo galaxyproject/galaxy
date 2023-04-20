@@ -474,6 +474,7 @@ class TestCustosAuthnz(TestCase):
         login_redirect_url, user = self.custos_authnz.callback(
             state_token="xxx", authz_code=self.test_code, trans=self.trans, login_redirect_url="http://localhost:8000/"
         )
+        assert "email_exists" not in login_redirect_url
         assert self._fetch_token_called
         assert self._get_userinfo_called
         assert 1 == len(self.trans.sa_session.items), "Session has new CustosAuthnzToken"
@@ -574,7 +575,7 @@ class TestCustosAuthnz(TestCase):
         """The email of the IDP being connected matches a different Galaxy account."""
         self.trans.set_cookie(value=self.test_state, name=custos_authnz.STATE_COOKIE_NAME)
         self.trans.set_cookie(value=self.test_nonce, name=custos_authnz.NONCE_COOKIE_NAME)
-        self.trans.user = User(email="existing2@example.com", username="test-user-2")
+        self.trans.user = User()
         self.test_email = "existing@example.com"
 
         existing_user = self.trans.sa_session.query(User).filter_by(email=self.test_email).one_or_none()
