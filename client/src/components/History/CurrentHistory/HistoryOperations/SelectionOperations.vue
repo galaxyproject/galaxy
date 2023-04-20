@@ -205,7 +205,7 @@ export default {
         },
         /** @returns {Boolean} */
         showBuildOptionForAll() {
-            return !this.showBuildOptions && this.selectionMatchesQuery
+            return !this.showBuildOptions && this.selectionMatchesQuery;
         },
         /** @returns {Number} */
         numSelected() {
