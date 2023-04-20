@@ -52,9 +52,11 @@
 
 <script>
 import Vue from "vue";
+import { mapState } from "pinia";
 import BootstrapVue from "bootstrap-vue";
 import axios from "axios";
 import { prependPath } from "utils/redirect";
+import { useHistoryStore } from "@/stores/historyStore";
 import { errorMessageAsString } from "utils/simple-error";
 import DatabaseEditTab from "./DatabaseEditTab";
 import SuitableConvertersTab from "./SuitableConvertersTab";
@@ -101,14 +103,12 @@ export default {
         };
     },
     computed: {
+        ...mapState(useHistoryStore, ["currentHistoryId"]),
         databaseKeyFromElements: function () {
             return this.attributesData.dbkey;
         },
         datatypeFromElements: function () {
             return this.attributesData.extension;
-        },
-        historyId: function () {
-            return this.$store.getters["history/currentHistoryId"];
         },
     },
     created() {
@@ -149,7 +149,7 @@ export default {
             axios.post(url, data).catch(this.handleError);
         },
         clickedDatatypeChange: function (selectedDatatype) {
-            const url = prependPath(`/api/histories/${this.historyId}/contents/bulk`);
+            const url = prependPath(`/api/histories/${this.currentHistoryId}/contents/bulk`);
             const data = {
                 operation: "change_datatype",
                 items: [
