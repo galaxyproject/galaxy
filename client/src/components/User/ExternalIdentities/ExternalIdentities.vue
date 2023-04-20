@@ -147,6 +147,8 @@ export default {
     },
     created() {
         this.loadIdentities();
+    },
+    mounted() {
         const params = new URLSearchParams(window.location.search);
         const notificationMessage = sanitize(params.get("notification"));
         Toast.success(notificationMessage);
