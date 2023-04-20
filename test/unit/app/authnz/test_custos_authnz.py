@@ -196,8 +196,8 @@ class TestCustosAuthnz(TestCase):
                     # This is only called with a specific username to check if it
                     # already exists in the database.  For testing, return none except for one username.
                     return QueryResult()
-                if email == 'existing@example.com':
-                    user = User(email=email, username='test-user')
+                if email == "existing@example.com":
+                    user = User(email=email, username="test-user")
                     return QueryResult([user])
                 if self.custos_authnz_token:
                     return QueryResult([self.custos_authnz_token])
@@ -572,7 +572,27 @@ class TestCustosAuthnz(TestCase):
 
     def test_show_alert_when_connecting_with_idp_matching_different_account_email(self):
         """The email of the IDP being connected matches a different Galaxy account."""
-        pass
+        self.trans.set_cookie(value=self.test_state, name=custos_authnz.STATE_COOKIE_NAME)
+        self.trans.set_cookie(value=self.test_nonce, name=custos_authnz.NONCE_COOKIE_NAME)
+        self.trans.user = User(email="existing2@example.com", username="test-user-2")
+        self.test_email = "existing@example.com"
+
+        existing_user = self.trans.sa_session.query(User).filter_by(email=self.test_email).one_or_none()
+        assert existing_user is not None
+
+        login_redirect_url, user = self.custos_authnz.callback(
+            state_token="xxx", authz_code=self.test_code, trans=self.trans, login_redirect_url="http://localhost:8000/"
+        )
+        # assert login_redirect_url is appropriate for linking dialog
+        for url_substr in (
+            "user/external_ids",
+            f"email_exists={self.test_email}",
+            (
+                "notification=Your%20test-identity-provider%20identity"
+                "%20has%20been%20linked%20to%20your%20Galaxy%20account."
+            ),
+        ):
+            assert url_substr in login_redirect_url
 
     def test_disconnect(self):
         custos_authnz_token = CustosAuthnzToken(
