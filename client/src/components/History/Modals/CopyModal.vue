@@ -45,9 +45,9 @@
 </template>
 
 <script>
-import { mapState } from "pinia";
-import { mapActions } from "vuex";
+import { mapActions, mapState } from "pinia";
 import { useUserStore } from "@/stores/userStore";
+import { useHistoryStore } from "@/stores/historyStore";
 
 export default {
     props: {
@@ -90,8 +90,7 @@ export default {
         },
     },
     methods: {
-        ...mapActions("history", ["copyHistory"]),
-
+        ...mapActions(useHistoryStore, ["copyHistory"]),
         async copy(close) {
             this.loading = true;
             const { history, name, copyAll } = this;
