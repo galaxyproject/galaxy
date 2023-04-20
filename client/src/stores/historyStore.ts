@@ -120,8 +120,8 @@ export const useHistoryStore = defineStore(
         }
 
         async function copyHistory(history: HistorySummary, name: string, copyAll: boolean) {
-            const newHistory = await cloneHistory(history, name, copyAll);
-            selectHistory(newHistory as HistorySummary);
+            const newHistory = (await cloneHistory(history, name, copyAll)) as HistorySummary;
+            return setCurrentHistory(newHistory.id);
         }
 
         async function createNewHistory() {

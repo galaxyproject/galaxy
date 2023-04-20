@@ -94,7 +94,7 @@ export default {
         async copy(close) {
             this.loading = true;
             const { history, name, copyAll } = this;
-            await this.copyHistory({ history, name, copyAll });
+            await this.copyHistory(history, name, copyAll);
             this.loading = false;
             close();
         },
