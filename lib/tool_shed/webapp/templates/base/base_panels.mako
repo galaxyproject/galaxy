@@ -174,10 +174,6 @@
                 %if self.has_left_panel:
                     <div id="left">
                         ${self.left_panel()}
-                        <div class="unified-panel-footer">
-                            <div id="left-panel-collapse" class="panel-collapse left"></div>
-                            <div id="left-panel-drag" class="drag"></div>
-                        </div>
                     </div>
                 %endif
                 <div id="center" class="inbound">

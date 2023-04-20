@@ -33,7 +33,7 @@
     <div class="unified-panel-header" unselectable="on">
         <div class='unified-panel-header-inner'>Administration</div>
     </div>
-    <div class="unified-panel-body">
+    <div style="padding: 0.5rem;">
         <div class="toolMenu">
             <div class="toolSectionList">
                 <div class="toolSectionTitle">

@@ -30,7 +30,7 @@
     <div class="unified-panel-header" unselectable="on">
         <div class='unified-panel-header-inner'>${trans.app.shed_counter.unique_valid_tools | h} valid tools on ${util.unicodify( trans.app.shed_counter.generation_time ) | h}</div>
     </div>
-    <div class="unified-panel-body">
+    <div style="padding: 0.5rem;">
         <div class="toolMenu">
             <div class="toolSectionList">
                 %if user_id or repository_id:
