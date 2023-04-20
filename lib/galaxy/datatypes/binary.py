@@ -627,8 +627,8 @@ class BamNative(CompressedArchive, _BamOrSam):
                         n_tabs = bamline.count('\t')
                         if n_tabs > 11:
                             bamline, *extra_tags = bamline.rsplit('\t', maxsplit=n_tabs - 11)
-                            bamline = f"{bamline} {' '.join(extra_tags)
-                        ck_lines.append(f"{bamline} {' '.join(extra_tags)}")
+                            bamline = f"{bamline} {' '.join(extra_tags)}"
+                        ck_lines.append(bamline)
                     else:
                         # Nothing to enumerate; we've either offset to the end
                         # of the bamfile, or there is no data. (possible with
