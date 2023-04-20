@@ -10616,4 +10616,4 @@ def receive_init(target, args, kwargs):
             return  # Once is enough.
 
 
-JobStateSummary = namedtuple("JobStateSummary", enum_values(Job.states) + ["all_jobs"])  # type: ignore[misc]  # Ref https://github.com/python/mypy/issues/848#issuecomment-255237167
+JobStateSummary = NamedTuple("JobStateSummary", [(value, int) for value in enum_values(Job.states)] + [("all_jobs", int)])  # type: ignore[misc]  # Ref https://github.com/python/mypy/issues/848#issuecomment-255237167
