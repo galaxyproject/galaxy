@@ -6,7 +6,6 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowTree from "./WorkflowTree.vue";
 import { isEmpty } from "@/utils/utils";
 
-
 interface WorkflowDisplayProps {
     workflowId: string;
     embedded?: boolean;

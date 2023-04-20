@@ -11,10 +11,18 @@
         <p v-if="workflow.description" class="workflow-dropdown-description">
             <TextSummary :description="workflow.description" :show-details.sync="showDetails" />
         </p>
-        <span v-if="sourceType.includes('trs')" v-b-tooltip.hover aria-haspopup="true" :title="getWorkflowTooltip(sourceType, workflow)">
+        <span
+            v-if="sourceType.includes('trs')"
+            v-b-tooltip.hover
+            aria-haspopup="true"
+            :title="getWorkflowTooltip(sourceType, workflow)">
             <Icon fixed-width icon="check" class="mr-1 workflow-trs-icon" />
         </span>
-        <span v-if="sourceType == 'url'" v-b-tooltip.hover aria-haspopup="true" :title="getWorkflowTooltip(sourceType, workflow)">
+        <span
+            v-if="sourceType == 'url'"
+            v-b-tooltip.hover
+            aria-haspopup="true"
+            :title="getWorkflowTooltip(sourceType, workflow)">
             <Icon fixed-width icon="link" class="mr-1 workflow-external-link" />
         </span>
         <div class="dropdown-menu" aria-labelledby="workflow-dropdown">
