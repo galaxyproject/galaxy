@@ -12,7 +12,7 @@
                 <WorkflowIndexActions :root="root" class="float-right"></WorkflowIndexActions>
             </b-col>
         </b-row>
-        <b-table v-model="workflowItemsModel" no-sort-reset :fields="fields" :items="provider" v-bind="indexTableAttrs">
+        <b-table v-model="workflowItemsModel" no-sort-reset :fields="fields" v-bind="indexTableAttrs">
             <template v-slot:empty>
                 <loading-span v-if="loading" message="Loading workflows" />
                 <b-alert v-else id="no-workflows" variant="info" show>

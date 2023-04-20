@@ -16,7 +16,6 @@
             </DebouncedInput>
             <b-input-group-append>
                 <b-button
-                    data-description="show deleted filter toggle"
                     title="Advanced Filtering Help"
                     :size="size"
                     @click="onHelp">
