@@ -84,7 +84,7 @@ describe("InvocationsList.vue", () => {
         });
 
         it("title should be shown", async () => {
-            expect(wrapper.find("#invocations-title").text()).toBe("Workflow Invocations for My Workflow");
+            expect(wrapper.find("#invocations-title").text()).toBe('Workflow Invocations for workflow "My Workflow"');
         });
 
         it("no invocations message should be shown when not loading", async () => {
@@ -115,7 +115,7 @@ describe("InvocationsList.vue", () => {
         });
 
         it("title should be shown", async () => {
-            expect(wrapper.find("#invocations-title").text()).toBe("Workflow Invocations for My History");
+            expect(wrapper.find("#invocations-title").text()).toBe('Workflow Invocations for history "My History"');
         });
 
         it("no invocations message should be shown when not loading", async () => {
