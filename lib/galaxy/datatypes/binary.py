@@ -607,30 +607,34 @@ class BamNative(CompressedArchive, _BamOrSam):
             try:
                 with pysam.AlignmentFile(dataset.file_name, "rb", check_sq=False) as bamfile:
                     ck_size = 300  # 300 lines
-                    ck_data = ""
-                    header_line_count = 0
                     if offset == 0:
-                        ck_data = bamfile.text.replace("\t", " ")  # type: ignore[attr-defined]
-                        header_line_count = bamfile.text.count("\n")  # type: ignore[attr-defined]
+                        offset = bamfile.tell()
+                        ck_lines = bamfile.text.strip().replace("\t", " ").splitlines()  # type: ignore[attr-defined]
                     else:
                         bamfile.seek(offset)
-                    for line_number, alignment in enumerate(bamfile):
+                        ck_lines = []
+                    for line_number, alignment in enumerate(bamfile, len(ck_lines)):
                         # return only Header lines if 'header_line_count' exceeds 'ck_size'
                         # FIXME: Can be problematic if bam has million lines of header
-                        offset = bamfile.tell()
-                        if (line_number + header_line_count) > ck_size:
+                        if line_number > ck_size:
                             break
-                        else:
-                            bamline = alignment.tostring(bamfile)
-                            # Galaxy display each tag as separate column because 'tostring()' funcition put tabs in between each tag of tags column.
-                            # Below code will remove spaces between each tag.
-                            bamline_modified = ("\t").join(bamline.split()[:11] + [(" ").join(bamline.split()[11:])])
-                            ck_data = f"{ck_data}\n{bamline_modified}"
+
+                        offset = bamfile.tell()
+                        bamline = alignment.tostring(bamfile)
+                        # With multiple tags, Galaxy would display each as a separate column
+                        # because the 'tostring()' function uses tabs also between tags.
+                        # Below code will turn these extra tabs into spaces.
+                        n_tabs = bamline.count('\t')
+                        if n_tabs > 11:
+                            bamline, *extra_tags = bamline.rsplit('\t', maxsplit=n_tabs - 11)
+                            bamline = f"{bamline} {' '.join(extra_tags)
+                        ck_lines.append(f"{bamline} {' '.join(extra_tags)}")
                     else:
                         # Nothing to enumerate; we've either offset to the end
                         # of the bamfile, or there is no data. (possible with
                         # header-only bams)
                         offset = -1
+                    ck_data = "\n".join(ck_lines)
             except Exception as e:
                 offset = -1
                 ck_data = f"Could not display BAM file, error was:\n{e}"
