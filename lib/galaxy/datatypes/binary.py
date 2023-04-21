@@ -4304,7 +4304,6 @@ class HexrdEtaOmeNpz(Npz):
             return "Binary Numpy npz file (%s)" % (nice_size(dataset.get_size()))
 
 
-@build_sniff_from_prefix
 class FITS(Binary):
     """
     FITS (Flexible Image Transport System) file data format, widely used in astronomy
@@ -4316,23 +4315,27 @@ class FITS(Binary):
 
     def __init__(self, **kwd):
         super().__init__(**kwd)
+        self._magic = b"SIMPLE  ="
 
-    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+    def sniff(self, filename: str) -> bool:
         """
         Determines whether the file is a FITS file
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('test.fits')
-        >>> FITS().sniff_prefix(FilePrefix(fname))
+        >>> FITS().sniff(fname)
         True
         >>> fname = FilePrefix(get_test_fname('interval.interval'))
-        >>> FITS().sniff_prefix(fname)
+        >>> FITS().sniff(fname)
         False
         """
 
         try:
-            return file_prefix.string_io().readline().strip().startswith('SIMPLE  =')
-        except Exception as e:
-            log.warning("%s, sniff FITS file Exception: %s", self, e)
+            #The first 9 bytes of any FITS file are always "SIMPLE  ="
+            header = open(filename, "rb").read(9)
+            if header == self._magic:
+                return True
+            return False
+        except Exception:
             return False
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
