@@ -1,6 +1,10 @@
 """The module describes the ``slack`` error plugin plugin."""
 import logging
 import uuid
+from typing import (
+    Any,
+    Dict,
+)
 
 import requests
 
@@ -38,7 +42,7 @@ class SlackPlugin(BaseGitPlugin):
         error_report_id = str(uuid.uuid4())[0:13]
         title = self._generate_error_title(job)
 
-        blocks = {
+        blocks: Dict[str, Any] = {
             "blocks": [
                 {
                     "type": "section",
