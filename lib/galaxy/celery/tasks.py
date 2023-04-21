@@ -530,17 +530,12 @@ def cleanup_jwds(sa_session: galaxy_scoped_session, object_store: BaseObjectStor
 
     def delete_jwd(jwd_path):
         try:
-            # Validate that the path is a JWD
-            # It is a JWD if the following conditions are true:
-            # 1. Check if tool_script.sh exists
-            # 2. Check if directories 'inputs', and 'outputs' exist
-            if (
-                os.path.exists(jwd_path)
-                and os.path.exists(f"{jwd_path}/tool_script.sh")
-                and os.path.exists(f"{jwd_path}/inputs")
-                and os.path.exists(f"{jwd_path}/outputs")
-            ):
-                shutil.rmtree(jwd_path)
+            # Get job working directory from object store
+            path = object_store.get_filename(job, base_dir="job_work", dir_only=True, obj_dir=True)
+            shutil.rmtree(jwd_path)
+        except ObjectNotFound:
+            # job working directory already deleted
+            pass
         except OSError as e:
             log.error(f"Error deleting job working directory: {jwd_path} : {e.strerror}")
 
