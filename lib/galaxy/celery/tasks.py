@@ -516,17 +516,11 @@ def cleanup_jwds(sa_session: galaxy_scoped_session, object_store: BaseObjectStor
     """Cleanup job working directories for failed jobs that are older than X days"""
 
     def get_failed_jobs():
-        failed_jobs = {}
-        jobs = sa_session.query(model.Job).filter(
+        return sa_session.query(model.Job.id).filter(
             model.Job.state == "error",
             model.Job.update_time > datetime.datetime.now() - datetime.timedelta(days=days),
             model.Job.object_store_id is not None,
         )
-
-        for job in jobs:
-            failed_jobs[job.id] = object_store.get_filename(job, base_dir="job_work", dir_only=True, obj_dir=True)
-
-        return failed_jobs
 
     def delete_jwd(jwd_path):
         try:
