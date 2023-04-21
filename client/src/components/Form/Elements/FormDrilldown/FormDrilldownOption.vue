@@ -4,14 +4,12 @@ import { BFormCheckbox, BFormRadio } from "bootstrap-vue";
 import { getAllValues, type Option } from "./utilities";
 import FormDrilldownList from "./FormDrilldownList.vue";
 
-export interface Props {
+const props = defineProps<{
     currentValue: string[];
     option: Option;
     handleClick: Function;
     multiple: boolean;
-}
-
-const props = defineProps<Props>();
+}>();
 
 const showChildren = ref(false);
 

@@ -3,17 +3,18 @@ import { computed, type ComputedRef } from "vue";
 import FormDrilldownList from "./FormDrilldownList.vue";
 import { getAllValues, type Option, type Value } from "./utilities";
 
-export interface FormDrilldownProps {
-    id: string;
-    value?: Value;
-    options: Array<Option>;
-    multiple: boolean;
-}
-
-const props = withDefaults(defineProps<FormDrilldownProps>(), {
-    value: null,
-    multiple: true,
-});
+const props = withDefaults(
+    defineProps<{
+        id: string;
+        value?: Value;
+        options: Array<Option>;
+        multiple: boolean;
+    }>(),
+    {
+        value: null,
+        multiple: true,
+    }
+);
 
 const emit = defineEmits<{
     (e: "input", value: Value): void;
