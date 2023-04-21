@@ -6,7 +6,7 @@ import { faArchive } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { RouterLink } from "vue-router";
-import HistoryExportSelector from "./HistoryExportSelector.vue";
+import HistoryArchiveExportSelector from "@/components/History/Archiving/HistoryArchiveExportSelector.vue";
 import { getHistoryById } from "@/store/historyStore/model/queries";
 import type { HistoryDetailedModel } from "@/components/History/model";
 
@@ -24,12 +24,11 @@ library.add(faArchive);
 const history = ref<HistoryDetailedModel | null>(null);
 const isArchiving = ref(false);
 
-const currentTab = ref(0);
+const historyName = computed(() => history.value?.name ?? props.historyId);
 
-const isFreeStorageTabActive = computed(() => currentTab.value === 1);
-const isArchiveDisabled = computed(
-    () => isArchiving.value || (isFreeStorageTabActive.value && !hasWritableFileSources.value)
-);
+const goToArchivedHistoriesLink = computed(() => {
+    return "TODO";
+});
 
 onMounted(async () => {
     //TODO: replace with store
@@ -51,40 +50,38 @@ async function archiveHistory() {
 <template>
     <div class="history-archive-wizard">
         <font-awesome-icon icon="archive" size="2x" class="text-primary float-left mr-2" />
-        <h1 class="h-lg">Archive history {{ props.historyId }}</h1>
+        <h1 class="h-lg">
+            Archive <b>{{ historyName }}</b>
+        </h1>
 
         <b-alert show variant="info">
             Archiving a history will remove it from your <i>active histories</i>. You can still access it from the
-            <RouterLink to="TODO">Archived Histories</RouterLink> section.
+            <router-link :to="goToArchivedHistoriesLink">Archived Histories</router-link> section.
         </b-alert>
 
-        <p>
-            When archiving a history, you can choose to keep the history contents on disk or to free up disk space by
-            permanently deleting the history contents.
-            <b>No worries, you can always recover your archived history later</b>.
-        </p>
-
+        <h2 class="h-md">How do you want to archive this history?</h2>
         <b-card v-if="history" no-body class="mt-3">
-            <b-tabs v-model="currentTab" pills card>
+            <b-tabs pills card vertical lazy>
                 <b-tab id="keep-storage-tab" title="Keep storage space" active>
                     <p>
-                        If you just want to move the history to the
-                        <RouterLink to="TODO">Archived Histories</RouterLink> section, you can do so by clicking the
-                        button below. The history will be moved to the archive, but its contents will remain on disk.
+                        If you want to remove the history from your <i>active histories</i> but keep it around for
+                        reference, you can move it to the
+                        <router-link :to="goToArchivedHistoriesLink">Archived Histories</router-link> section, by
+                        clicking the button below.
                     </p>
+                    <p>
+                        You can undo this action at any time, and the history will be moved back to your
+                        <i>active histories</i>.
+                    </p>
+
+                    <b-button class="archive-history-btn mt-3" variant="primary" @click="archiveHistory">
+                        Archive history
+                    </b-button>
                 </b-tab>
                 <b-tab v-if="hasWritableFileSources" id="free-storage-tab" title="Free storage space">
-                    <HistoryExportSelector :history="history" />
+                    <history-archive-export-selector :history="history" />
                 </b-tab>
             </b-tabs>
         </b-card>
-
-        <b-button
-            class="archive-history-btn mt-3"
-            :disabled="isArchiveDisabled"
-            variant="primary"
-            @click="archiveHistory">
-            Archive history
-        </b-button>
     </div>
 </template>
