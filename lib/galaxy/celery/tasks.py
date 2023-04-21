@@ -551,6 +551,6 @@ def cleanup_jwds(sa_session: galaxy_scoped_session, object_store: BaseObjectStor
     if not failed_jobs:
         log.info("No failed jobs found within the last %s days", days)
 
-    for job_id, job_working_directory in failed_jobs.items():
-        delete_jwd(job_working_directory)
-        log.info("Deleted job working directory for job %s", job_id)
+    for job in failed_jobs.items():
+        delete_jwd(job)
+        log.info("Deleted job working directory for job %s", job.id)
