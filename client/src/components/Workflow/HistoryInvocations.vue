@@ -1,20 +1,20 @@
 <template>
-    <CurrentUser v-slot="{ user }">
+    <div>
         <InvocationsList
-            v-if="user.id && historyName"
-            :user-id="user.id"
+            v-if="currentUser.id && historyName"
+            :user-id="currentUser.id"
             :history-id="historyId"
             :history-name="historyName" />
-    </CurrentUser>
+    </div>
 </template>
 <script>
 import InvocationsList from "components/Workflow/InvocationsList";
-import CurrentUser from "components/providers/CurrentUser";
 import { mapGetters } from "vuex";
+import { mapState } from "pinia";
+import { useUserStore } from "@/stores/userStore";
 
 export default {
     components: {
-        CurrentUser,
         InvocationsList,
     },
     props: {
@@ -24,6 +24,7 @@ export default {
         },
     },
     computed: {
+        ...mapState(useUserStore, ["currentUser"]),
         ...mapGetters("history", ["getHistoryNameById"]),
         historyName() {
             return this.getHistoryNameById(this.historyId);
