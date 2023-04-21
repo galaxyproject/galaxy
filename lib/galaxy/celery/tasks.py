@@ -24,6 +24,7 @@ from galaxy.celery import (
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry as DatatypesRegistry
+from galaxy.exceptions import ObjectNotFound
 from galaxy.jobs import MinimalJobWrapper
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.datasets import (
