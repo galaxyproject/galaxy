@@ -5,8 +5,11 @@ import MockAdapter from "axios-mock-adapter";
 import { getLocalVue } from "tests/jest/helpers";
 import flushPromises from "flush-promises";
 import { parseISO, formatDistanceToNow } from "date-fns";
+import { PiniaVuePlugin } from "pinia";
+import { createTestingPinia } from "@pinia/testing";
 
 const localVue = getLocalVue();
+localVue.use(PiniaVuePlugin);
 
 jest.mock("app");
 
@@ -49,6 +52,7 @@ describe("WorkflowList.vue", () => {
             wrapper = mount(Workflows, {
                 propsData,
                 localVue,
+                pinia: createTestingPinia(),
             });
         });
 
@@ -66,6 +70,7 @@ describe("WorkflowList.vue", () => {
             wrapper = mount(Workflows, {
                 propsData,
                 localVue,
+                pinia: createTestingPinia(),
             });
             flushPromises();
         });
@@ -86,6 +91,7 @@ describe("WorkflowList.vue", () => {
             wrapper = mount(Workflows, {
                 propsData,
                 localVue,
+                pinia: createTestingPinia(),
             });
             flushPromises();
         });
@@ -219,6 +225,7 @@ describe("WorkflowList.vue", () => {
             wrapper = mount(Workflows, {
                 propsData,
                 localVue,
+                pinia: createTestingPinia(),
             });
             flushPromises();
         });

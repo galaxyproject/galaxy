@@ -92,13 +92,16 @@
 import { Services } from "./services";
 import { withPrefix } from "utils/redirect";
 import TextSummary from "components/Common/TextSummary";
-import { getGalaxyInstance } from "@/app";
+import { mapState } from "pinia";
+import { useUserStore } from "@/stores/userStore";
 
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCaretDown, faSignature } from "@fortawesome/free-solid-svg-icons";
+import { faCaretDown, faSignature, faTimes, faEdit } from "@fortawesome/free-solid-svg-icons";
 
 library.add(faCaretDown);
 library.add(faSignature);
+library.add(faTimes);
+library.add(faEdit);
 
 export default {
     components: {
@@ -109,6 +112,7 @@ export default {
         detailsShowing: { type: Boolean, default: false },
     },
     computed: {
+        ...mapState(useUserStore, ["isAnonymous"]),
         showDetails: {
             get() {
                 return this.detailsShowing;
@@ -147,9 +151,6 @@ export default {
         },
         isDeleted() {
             return this.workflow.deleted;
-        },
-        isAnonymous() {
-            return getGalaxyInstance().user?.isAnonymous();
         },
         sourceUrl() {
             if (this.workflow.source_metadata?.url) {

@@ -5,8 +5,12 @@ import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { ROOT_COMPONENT } from "utils/navigation";
+import { PiniaVuePlugin, createPinia } from "pinia";
+import { createTestingPinia } from "@pinia/testing";
+import { useUserStore } from "stores/userStore";
 
 const localVue = getLocalVue(true);
+localVue.use(PiniaVuePlugin);
 
 const TEST_WORKFLOW_NAME = "my workflow";
 const TEST_WORKFLOW_DESCRIPTION = "my cool workflow description";
@@ -23,7 +27,23 @@ describe("WorkflowDropdown.vue", () => {
         wrapper = mount(WorkflowDropdown, {
             propsData,
             localVue,
+            pinia: createTestingPinia(),
         });
+    }
+
+    function initWrapperForWorkflowWithUser(workflow) {
+        const pinia = createPinia();
+        propsData = {
+            root: "/root/",
+            workflow: workflow,
+        };
+        wrapper = mount(WorkflowDropdown, {
+            propsData,
+            localVue,
+            pinia: pinia,
+        });
+        const userStore = useUserStore();
+        userStore.currentUser = { email: "my@email", id: 1 };
     }
 
     function workflowOptions() {
@@ -72,7 +92,7 @@ describe("WorkflowDropdown.vue", () => {
         });
     });
 
-    describe("for workflows shared with user", () => {
+    describe("for shared workflows", () => {
         beforeEach(async () => {
             const workflow = {
                 name: TEST_WORKFLOW_NAME,
@@ -83,7 +103,25 @@ describe("WorkflowDropdown.vue", () => {
             initWrapperForWorkflow(workflow);
         });
 
-        it("should provide a limited number of options", () => {
+        it("should provide a specific options to anon users", () => {
+            expect(workflowOptions().length).toBe(2);
+            expect(workflowOptions().at(0).text()).toBeLocalizationOf("Download");
+            expect(workflowOptions().at(1).text()).toBeLocalizationOf("View");
+        });
+    });
+
+    describe("for shared workflows", () => {
+        beforeEach(async () => {
+            const workflow = {
+                name: TEST_WORKFLOW_NAME,
+                id: "workflowid123",
+                description: TEST_WORKFLOW_DESCRIPTION,
+                shared: true,
+            };
+            initWrapperForWorkflowWithUser(workflow);
+        });
+
+        it("should provide a specific options to logged in users", () => {
             expect(workflowOptions().length).toBe(3);
             expect(workflowOptions().at(0).text()).toBeLocalizationOf("Copy");
             expect(workflowOptions().at(1).text()).toBeLocalizationOf("Download");

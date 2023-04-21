@@ -28,7 +28,8 @@
 <script>
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
-import { getGalaxyInstance } from "@/app";
+import { mapState } from "pinia";
+import { useUserStore } from "@/stores/userStore";
 
 import { faPlus, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -40,9 +41,7 @@ export default {
         FontAwesomeIcon,
     },
     computed: {
-        isAnonymous() {
-            return getGalaxyInstance().user?.isAnonymous();
-        },
+        ...mapState(useUserStore, ["isAnonymous"]),
         createTitle() {
             return this.isAnonymous ? "Please log in or register to use this feature" : "Create a new workflow";
         },
