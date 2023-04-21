@@ -624,9 +624,9 @@ class BamNative(CompressedArchive, _BamOrSam):
                         # With multiple tags, Galaxy would display each as a separate column
                         # because the 'tostring()' function uses tabs also between tags.
                         # Below code will turn these extra tabs into spaces.
-                        n_tabs = bamline.count('\t')
+                        n_tabs = bamline.count("\t")
                         if n_tabs > 11:
-                            bamline, *extra_tags = bamline.rsplit('\t', maxsplit=n_tabs - 11)
+                            bamline, *extra_tags = bamline.rsplit("\t", maxsplit=n_tabs - 11)
                             bamline = f"{bamline} {' '.join(extra_tags)}"
                         ck_lines.append(bamline)
                     else:
