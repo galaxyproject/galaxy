@@ -1,7 +1,7 @@
 <template>
     <div>
         <InvocationsList
-            v-if="currentUser.id && historyName"
+            v-if="currentUser && historyName"
             :user-id="currentUser.id"
             :history-id="historyId"
             :history-name="historyName" />
