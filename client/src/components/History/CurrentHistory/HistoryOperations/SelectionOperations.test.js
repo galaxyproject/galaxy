@@ -150,6 +150,14 @@ describe("History Selection Operations", () => {
                 expect(wrapper.find(buildPairOption).exists()).toBe(false);
                 expect(wrapper.find(buildListOfPairsOption).exists()).toBe(false);
             });
+
+            it("should display list building option when all are selected", async () => {
+                const buildListOption = '[data-description="build list all"]';
+                await wrapper.setProps({ selectionSize: 105 });
+                await wrapper.setProps({ totalItemsInQuery: 105 });
+                await wrapper.setProps({ isQuerySelection: true });
+                expect(wrapper.find(buildListOption).exists()).toBe(true);
+            });
         });
 
         describe("Operation Run", () => {
