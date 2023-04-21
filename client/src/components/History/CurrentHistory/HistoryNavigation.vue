@@ -105,7 +105,7 @@
                     </b-dropdown-item>
 
                     <b-dropdown-item
-                        :disabled="currentUser.isAnonymous"
+                        :disabled="isAnonymous"
                         :title="userTitle('Display Workflow Invocations')"
                         @click="$router.push(`/histories/${history.id}/invocations`)">
                         <Icon fixed-width icon="sitemap" class="fa-rotate-270 mr-1" />
