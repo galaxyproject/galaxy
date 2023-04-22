@@ -1,7 +1,7 @@
 <template>
     <b-card nobody class="content-height">
         <div :class="name" :job_id="args.job_id">
-            <pre><code class="text-normalwrap">{{ jobContent }}</code></pre>
+            <pre><code class="word-wrap-normal">{{ jobContent }}</code></pre>
         </div>
     </b-card>
 </template>

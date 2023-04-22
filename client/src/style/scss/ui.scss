@@ -40,6 +40,16 @@
     overflow: auto !important;
 }
 
+// utility class to set word wrap to normal
+.word-wrap-normal {
+    word-wrap: normal;
+}
+
+// utility class to set white space wrapping to normal
+.white-space-normal {
+    white-space: normal;
+}
+
 // default margins
 $ui-margin-vertical: $margin-v * 0.25;
 $ui-margin-vertical-large: $margin-v * 0.5;

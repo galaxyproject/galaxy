@@ -27,8 +27,8 @@
                     <small>Created by {{ markdownConfig.username }}</small>
                 </span>
             </div>
-            <b-badge variant="info" class="w-100 rounded mb-3">
-                <div class="float-left m-1">Published with Galaxy {{ version }} on {{ time }}</div>
+            <b-badge variant="info" class="w-100 rounded mb-3 white-space-normal">
+                <div class="float-left m-1 text-break">Published with Galaxy {{ version }} on {{ time }}</div>
                 <div class="float-right m-1">Identifier {{ markdownConfig.id }}</div>
             </b-badge>
             <div>
