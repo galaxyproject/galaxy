@@ -17,17 +17,7 @@
             </template>
             <div v-if="source === 'histories'" class="infomessage">
                 <ConfigProvider v-slot="{ config }">
-                    <div v-if="config.citations_export_message_australia">
-                        Please cite <b>Galaxy Australia</b> (below) in any publication resulting for analysis you performed on this service.<br><br>
-                        When acknowledging Galaxy Australia in any publication or presentation, we recommend the following acknowledgement statement:<br><br>
-                        “This work was conducted on Galaxy Australia, supported by the Australian BioCommons which is enabled by NCRIS via Bioplatforms Australia funding, the University of Melbourne, QCIF, AARNet, ARDC and the Queensland Government”.<br><br>
-                        You are also welcome to use our logo. A variety of logo formats are available for <a href="https://galaxyproject.org/images/galaxy-logos/">download</a>, and the accompanying usage guidelines are <a href="https://galaxyproject.org/citing-galaxy">here</a>.
-                    </div>
-                    <div v-else>
-                        When writing up your analysis, remember to include all references that should be cited in order to
-                        completely describe your work. Also, please remember to
-                        <a href="https://galaxyproject.org/citing-galaxy">cite Galaxy</a>.
-                    </div>
+                    <div v-html="config.citations_export_message_html"></div>
                 </ConfigProvider>
             </div>
             <div class="citations-formatted">

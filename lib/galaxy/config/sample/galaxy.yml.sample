@@ -2730,7 +2730,6 @@ galaxy:
   # is used, make sure to add this host.
   #tool_training_recommendations_api_url: https://training.galaxyproject.org/training-material/api/top-tools.json
 
-  # Optional bool to display a different message on the export citations
-  # tool page, used by Galaxy Australia
-  #citations_export_message_australia: false
+  # Message to display on the export citations tool page
+  #citations_export_message_html: When writing up your analysis, remember to include all references that should be cited in order to completely describe your work. Also, please remember to <a href="https://galaxyproject.org/citing-galaxy">cite Galaxy</a>.
 
