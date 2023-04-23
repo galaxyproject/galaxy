@@ -4330,7 +4330,7 @@ class FITS(Binary):
         """
 
         try:
-            #The first 9 bytes of any FITS file are always "SIMPLE  ="
+            # The first 9 bytes of any FITS file are always "SIMPLE  ="
             header = open(filename, "rb").read(9)
             if header == self._magic:
                 return True
