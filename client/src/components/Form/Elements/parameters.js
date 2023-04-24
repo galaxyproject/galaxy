@@ -14,8 +14,6 @@ import DataPicker from "mvc/ui/ui-data-picker";
 export default Backbone.View.extend({
     /** Available parameter types */
     types: {
-        text: "_fieldText",
-        password: "_fieldText",
         select: "_fieldSelect",
         data_column: "_fieldSelect",
         genomebuild: "_fieldSelect",
