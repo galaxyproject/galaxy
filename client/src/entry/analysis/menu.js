@@ -161,16 +161,17 @@ export function fetchMenu(options = {}) {
     menu.push(helpTab);
 
     // Subdomain tab
-    if (Galaxy.config.subdomains) {
+    if (Galaxy.config.galaxy_subdomains) {
         const subdomainsTab = {
             id: "subdomain",
             title: _l("Domain"),
             cls: "",
             url: "javascript:void(0)",
             tooltip: _l("Switch between community domain sites"),
-            menu: Galaxy.config.subdomains.map((s) => ({
+            menu: Galaxy.config.galaxy_subdomains.map((s) => ({
                 title: s.title,
                 url: s.url,
+                target: "_blank",
             })),
         }
         menu.push(subdomainsTab);

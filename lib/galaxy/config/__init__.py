@@ -722,7 +722,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     galaxy_infrastructure_url: str
     themes: Dict[str, Dict[str, str]]
     themes_by_host: Dict[str, Dict[str, Dict[str, str]]]
-    subdomains: List[Dict[str, str]]
+    galaxy_subdomains: List[Dict[str, str]]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -1196,7 +1196,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         # Load subdomains configuration
         if self._path_exists(self.subdomains_config_file):
             with open(self.subdomains_config_file) as f:
-                self.subdomains = yaml.safe_load(f)
+                self.galaxy_subdomains = yaml.safe_load(f)['subdomains']
+        else:
+            self.galaxy_subdomains = []
 
     def _configure_dataset_storage(self):
         # The default for `file_path` has changed in 20.05; we may need to fall back to the old default

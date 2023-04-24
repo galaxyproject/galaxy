@@ -203,7 +203,7 @@ class ConfigSerializer(base.ModelSerializer):
             "user_library_import_dir_available": lambda item, key, **context: bool(item.get("user_library_import_dir")),
             "welcome_directory": _use_config,
             "themes": _use_config,
-            "subdomains": _use_config,
+            "galaxy_subdomains": _use_config,
         }
 
 
