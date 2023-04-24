@@ -9,10 +9,11 @@ import CenterFrame from "./CenterFrame.vue";
 import { useRoute, useRouter } from "vue-router/composables";
 import { computed, ref, onMounted, onUnmounted } from "vue";
 import { useUserStore } from "@/stores/userStore";
+import { storeToRefs } from "pinia";
 
 const route = useRoute();
 const router = useRouter();
-const userStore = useUserStore();
+const { toggledActivityBar } = storeToRefs(useUserStore());
 
 const showCenter = ref(false);
 
@@ -23,10 +24,6 @@ const showPanels = computed(() => {
         return panels.toLowerCase() != "true";
     }
     return true;
-});
-
-const showActivityBar = computed(() => {
-    return userStore.toggledActivityBar;
 });
 
 // methods
@@ -49,7 +46,7 @@ onUnmounted(() => {
 });
 </script>
 <template>
-    <div v-if="showActivityBar" id="columns" class="d-flex">
+    <div v-if="toggledActivityBar" id="columns" class="d-flex">
         <ActivityBar v-if="showPanels" />
         <div id="center" class="overflow-auto p-3 w-100">
             <CenterFrame v-show="showCenter" id="galaxy_main" @load="onLoad" />

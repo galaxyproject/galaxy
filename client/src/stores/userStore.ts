@@ -117,6 +117,8 @@ export const useUserStore = defineStore(
             isAnonymous,
             currentTheme,
             currentFavorites,
+            toggledActivityBar,
+            toggledSideBar,
             loadUser,
             setCurrentUser,
             setCurrentTheme,
