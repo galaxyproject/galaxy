@@ -48,7 +48,7 @@ onMounted(() => {
 
 <template>
     <div>
-        <b-button variant="link" v-if="hasOptions" @click="toggleChildren" class="btn p-0">
+        <b-button v-if="hasOptions" variant="link" class="btn p-0" @click="toggleChildren">
             <i v-if="showChildren" class="fa fa-minus-square" />
             <i v-else class="fa fa-plus-square" />
         </b-button>

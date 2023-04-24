@@ -7,7 +7,7 @@ export interface Option {
 export type Value = string[] | string | null;
 
 /**
- * Returns an array of values from the list of (potentially nested) options provided.
+ * Returns an array of values from nested drill down options provided
  * @param headOptions Array of options to get values from
  * @returns values: string[]
  */
