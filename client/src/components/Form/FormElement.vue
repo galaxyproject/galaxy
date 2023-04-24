@@ -242,7 +242,8 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
             <FormText
                 v-else-if="
                     ['text', 'password'].includes(props.type) ||
-                    (attrs.is_workflow && ['data_column', 'drill_down', 'genomebuild', 'group_tag', 'select'].includes(props.type))
+                    (attrs.is_workflow &&
+                        ['data_column', 'drill_down', 'genomebuild', 'group_tag', 'select'].includes(props.type))
                 "
                 :id="id"
                 v-model="currentValue"
