@@ -125,6 +125,10 @@ export class ExportRecordModel {
         return this.isStsDownload && Boolean(this.duration);
     }
 
+    get isPermanent() {
+        return !this.canExpire;
+    }
+
     get expirationDate() {
         if (this._expirationDate === undefined) {
             this._expirationDate = this.duration ? new Date(this.date.getTime() + this.duration * 1000) : null;

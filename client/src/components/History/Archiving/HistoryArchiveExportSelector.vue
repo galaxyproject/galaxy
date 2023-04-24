@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { BAlert, BCard, BButton, BCardText } from "bootstrap-vue";
 import { exportToFileSource, getExportRecords } from "@/components/History/Export/services";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -7,6 +7,14 @@ import ExportToFileSourceForm from "components/Common/ExportForm.vue";
 import { DEFAULT_EXPORT_PARAMS } from "@/composables/shortTermStorage";
 import type { ExportRecordModel } from "@/components/Common/models/exportRecordModel";
 import type { HistoryDetailedModel } from "@/components/History/model";
+import { useTaskMonitor } from "@/composables/taskMonitor";
+
+const {
+    isRunning: isExportTaskRunning,
+    waitForTask,
+    requestHasFailed: taskMonitorRequestFailed,
+    hasFailed: taskHasFailed,
+} = useTaskMonitor();
 
 interface HistoryExportSelectorProps {
     history: HistoryDetailedModel;
@@ -16,20 +24,25 @@ const props = defineProps<HistoryExportSelectorProps>();
 
 const existingExports = ref<ExportRecordModel[]>([]);
 const isLoading = ref(true);
-const isExporting = ref(false);
+const isExportingRecord = ref(false);
 const isExportDialogOpen = ref(false);
 const isDeleteContentsConfirmed = ref(false);
+const exportErrorMessage = ref<string | null>(null);
+
+const mostUpToDateExport = computed(() => {
+    return existingExports.value.find(
+        (exportRecord) => exportRecord.isPermanent && (exportRecord.isUpToDate || exportRecord.isPreparing)
+    );
+});
 
 const canCreateExportRecord = computed(() => {
-    return !isLoading.value && !isExporting.value && !mostUpToDateExport.value;
+    return !isLoading.value && !isExportTaskRunning.value && !mostUpToDateExport.value;
 });
 
 const canArchiveHistory = computed(() => {
-    return !isLoading.value && !isExporting.value && mostUpToDateExport.value && isDeleteContentsConfirmed.value;
-});
-
-const mostUpToDateExport = computed(() => {
-    return existingExports.value.find((exportRecord) => !exportRecord.canExpire && exportRecord.isUpToDate);
+    return (
+        !isLoading.value && !isExportTaskRunning.value && mostUpToDateExport.value && isDeleteContentsConfirmed.value
+    );
 });
 
 const mostUpToDateExportIsReady = computed(() => {
@@ -42,11 +55,32 @@ onMounted(async () => {
     isLoading.value = false;
 });
 
+watch(isExportTaskRunning, (newValue, oldValue) => {
+    isExportingRecord.value = newValue;
+    const hasFinished = oldValue && !newValue;
+    if (hasFinished) {
+        updateExports();
+    }
+});
+
 async function updateExports() {
-    existingExports.value = await getExportRecords(props.history.id);
+    exportErrorMessage.value = null;
+    try {
+        existingExports.value = await getExportRecords(props.history.id);
+    } catch (e) {
+        exportErrorMessage.value = "The request to get your history exports records failed. Please check back later.";
+    }
     if (mostUpToDateExport.value) {
-        console.log("Most up-to-date export record:", mostUpToDateExport.value);
-        isExporting.value = mostUpToDateExport.value.isPreparing;
+        const shouldWaitForTask = mostUpToDateExport.value?.isPreparing;
+        if (shouldWaitForTask) {
+            waitForTask(mostUpToDateExport.value.taskUUID);
+        }
+        if (taskMonitorRequestFailed.value) {
+            exportErrorMessage.value = "The request to get the export progress failed. Please check back later.";
+        }
+        if (taskHasFailed.value) {
+            exportErrorMessage.value = "The history export request failed. Please try again later.";
+        }
     }
 }
 
@@ -55,18 +89,22 @@ async function onCreateExportRecord() {
 }
 
 async function doExportToFileSource(exportDirectory: string, fileName: string) {
-    isExporting.value = true;
+    isExportingRecord.value = true;
     isExportDialogOpen.value = false;
 
-    // Prepend history ID to filename to avoid name collisions if multiple
-    // histories are exported to the same directory with the same name
+    // Avoid name collisions if multiple different histories are exported to the
+    // same destination with the same name
     const prefixedFileName = `${props.history.id}_${fileName}`;
 
-    await exportToFileSource(props.history.id, exportDirectory, prefixedFileName, DEFAULT_EXPORT_PARAMS);
+    try {
+        await exportToFileSource(props.history.id, exportDirectory, prefixedFileName, DEFAULT_EXPORT_PARAMS);
+    } catch (error) {
+        exportErrorMessage.value = "The history export request failed. Please try again later.";
+    }
     updateExports();
 }
 
-async function archiveHistory() {
+async function deleteAndArchiveHistory() {
     console.log("TODO: archive history");
 }
 </script>
@@ -83,6 +121,12 @@ async function archiveHistory() {
         </p>
         <b-alert v-if="isLoading" show variant="info">
             <loading-span message="Retrieving export records..." />
+        </b-alert>
+        <b-alert v-else-if="exportErrorMessage" show variant="danger">
+            <p>
+                <b>Something went wrong</b>
+            </p>
+            <p>{{ exportErrorMessage }}</p>
         </b-alert>
         <div v-else-if="mostUpToDateExport && mostUpToDateExportIsReady">
             <b-alert show variant="success">
@@ -102,7 +146,7 @@ async function archiveHistory() {
             </b-alert>
         </div>
         <div v-else>
-            <b-alert v-if="isExporting" show variant="info">
+            <b-alert v-if="isExportingRecord" show variant="info">
                 <loading-span message="Generating export record. This may take a while..." />
             </b-alert>
             <b-alert v-else show variant="info">
@@ -138,8 +182,8 @@ async function archiveHistory() {
             class="archive-history-btn mt-3"
             :disabled="!canArchiveHistory"
             variant="primary"
-            @click="archiveHistory">
-            Archive history
+            @click="deleteAndArchiveHistory">
+            Delete and Archive history
         </b-button>
 
         <b-modal v-model="isExportDialogOpen" title="Export history" size="lg" hide-footer>
