@@ -115,7 +115,7 @@ export default {
         this.load();
     },
     methods: {
-        ...mapActions(useHistoryStore, ["loadHistories", "setCurrentHistory", "applyFilterText"]),
+        ...mapActions(useHistoryStore, ["loadHistories", "applyFilterText"]),
         load(concat = false) {
             this.loading = true;
             getDatasets({
