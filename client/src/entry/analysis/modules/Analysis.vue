@@ -1,8 +1,8 @@
-<script setup>
+<script setup lang="ts">
 import HistoryIndex from "@/components/History/Index.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
-import ToolBox from "@/components/Panels/ProviderAwareToolBox";
-import SidePanel from "@/components/Panels/SidePanel";
+import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
+import SidePanel from "@/components/Panels/SidePanel.vue";
 import DragAndDropModal from "@/components/Upload/DragAndDropModal.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import CenterFrame from "./CenterFrame.vue";
@@ -19,14 +19,14 @@ const showCenter = ref(false);
 // computed
 const showPanels = computed(() => {
     const panels = route.query.hide_panels;
-    if (panels !== undefined) {
+    if (panels !== undefined && panels !== null && typeof panels === "string") {
         return panels.toLowerCase() != "true";
     }
     return true;
 });
 
 const showActivityBar = computed(() => {
-    return userStore.toggledActivityBar;
+    return userStore.showActivityBar;
 });
 
 // methods
