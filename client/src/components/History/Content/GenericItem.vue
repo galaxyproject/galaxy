@@ -4,6 +4,7 @@
         <div v-else>
             <ContentItem
                 :id="item.hid"
+                add-highlight-btn
                 is-history-item
                 :item="item"
                 :name="item.name"
