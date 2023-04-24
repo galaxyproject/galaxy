@@ -6,7 +6,6 @@ import _ from "underscore";
 import Backbone from "backbone";
 import Select from "mvc/ui/ui-select-default";
 import Options from "mvc/ui/ui-options";
-import Drilldown from "mvc/ui/ui-drilldown";
 import Buttons from "mvc/ui/ui-buttons";
 import Modal from "mvc/ui/ui-modal";
 import Switch from "mvc/ui/ui-switch";
@@ -279,7 +278,7 @@ export const ButtonLink = Buttons.ButtonLink;
 export const Checkbox = Options.Checkbox;
 export const RadioButton = Options.RadioButton;
 export const Radio = Options.Radio;
-export { Select, Drilldown };
+export { Select };
 
 export default {
     Button: Buttons.Button,
@@ -297,5 +296,4 @@ export default {
     Select: Select,
     NullableText: NullableText,
     TextSelect: TextSelect,
-    Drilldown: Drilldown,
 };
