@@ -28,7 +28,9 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
         getHistoryItems: (state) => {
             return (historyId, filterText) => {
                 const itemArray = state.items[historyId] || [];
-                const filters = HistoryFilters.getFilters(filterText).filter((filter) => !filter.includes("related"));
+                const filters = HistoryFilters.getFilters(filterText).filter(
+                    (filter) => !filter[0].includes("related")
+                );
                 const relatedHid = HistoryFilters.getFilterValue(filterText, "related");
                 const filtered = itemArray.filter((item) => {
                     if (!item) {
