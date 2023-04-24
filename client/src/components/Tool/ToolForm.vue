@@ -103,10 +103,10 @@
 <script>
 import { getGalaxyInstance } from "app";
 import { useUserStore } from "@/stores/userStore";
+import { useHistoryStore } from "@/stores/historyStore";
 import { useHistoryItemsStore } from "stores/history/historyItemsStore";
 import { useJobStore } from "stores/jobStore";
 import { mapState, mapActions } from "pinia";
-import { mapGetters } from "vuex";
 import { getToolFormData, updateToolFormData, submitJob } from "./services";
 import { allowCachedJobs } from "./utilities";
 import { refreshContentsWrapper } from "utils/data";
@@ -185,8 +185,8 @@ export default {
     },
     computed: {
         ...mapState(useUserStore, ["currentUser"]),
+        ...mapState(useHistoryStore, ["currentHistoryId"]),
         ...mapState(useHistoryItemsStore, ["getLastUpdateTime"]),
-        ...mapGetters("history", ["currentHistoryId"]),
         toolName() {
             return this.formConfig.name;
         },

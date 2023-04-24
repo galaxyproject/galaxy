@@ -35,7 +35,8 @@
     </div>
 </template>
 <script>
-import store from "store";
+import { mapActions } from "pinia";
+import { useHistoryStore } from "@/stores/historyStore";
 import { getGalaxyInstance } from "app";
 import { copyDataset, getDatasets, updateTags } from "./services";
 import DatasetName from "./DatasetName";
@@ -44,7 +45,6 @@ import DelayedInput from "components/Common/DelayedInput";
 import UtcDate from "components/UtcDate";
 import Tags from "components/Common/Tags";
 import LoadingSpan from "components/LoadingSpan";
-import { mapActions } from "vuex";
 
 export default {
     components: {
@@ -115,7 +115,7 @@ export default {
         this.load();
     },
     methods: {
-        ...mapActions("history", ["loadHistories"]),
+        ...mapActions(useHistoryStore, ["loadHistories", "setCurrentHistory"]),
         load(concat = false) {
             this.loading = true;
             getDatasets({
@@ -153,7 +153,7 @@ export default {
         async onShowDataset(item) {
             const historyId = item.history_id;
             try {
-                await store.dispatch("history/setCurrentHistory", historyId);
+                await this.setCurrentHistory(historyId);
             } catch (error) {
                 this.onError(error);
             }

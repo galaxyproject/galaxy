@@ -15,7 +15,7 @@ import { tagStore } from "./tagStore";
 import { jobMetricsStore } from "./jobMetricsStore";
 import { jobDestinationParametersStore } from "./jobDestinationParametersStore";
 import { invocationStore } from "./invocationStore";
-import { collectionElementsStore, datasetStore, historyStore } from "./historyStore";
+import { collectionElementsStore, datasetStore } from "./historyStore";
 import { configStore } from "./configStore";
 import { toolStore } from "./toolStore";
 import { datasetPathDestinationStore } from "./datasetPathDestinationStore";
@@ -61,7 +61,6 @@ export function createStore() {
             invocations: invocationStore,
             jobMetrics: jobMetricsStore,
             gridSearch: gridSearchStore,
-            history: historyStore,
             panels: panelStore,
             tags: tagStore,
             tools: toolStore,

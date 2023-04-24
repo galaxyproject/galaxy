@@ -56,6 +56,7 @@ import UploadModal from "components/Upload/UploadModal.vue";
 import { ref } from "vue";
 import { storeToRefs } from "pinia";
 import { useUserStore } from "@/stores/userStore";
+import { useHistoryStore } from "@/stores/historyStore";
 import { setToastComponentRef } from "composables/toast";
 import { setConfirmDialogComponentRef } from "composables/confirmDialog";
 import { setGlobalUploadModal } from "composables/globalUploadModal";
@@ -71,6 +72,7 @@ export default {
     setup() {
         const userStore = useUserStore();
         const { currentTheme } = storeToRefs(userStore);
+        const { currentHistory } = storeToRefs(useHistoryStore());
 
         userStore.loadUser();
 
@@ -83,7 +85,7 @@ export default {
         const uploadModal = ref(null);
         setGlobalUploadModal(uploadModal);
 
-        return { toastRef, confirmDialogRef, uploadModal, currentTheme };
+        return { toastRef, confirmDialogRef, uploadModal, currentTheme, currentHistory };
     },
     data() {
         return {
@@ -122,12 +124,15 @@ export default {
             console.debug("App - Confirmation before route change: ", this.confirmation);
             this.$router.confirmation = this.confirmation;
         },
+        currentHistory() {
+            this.Galaxy.currHistoryPanel.syncCurrentHistoryModel(this.currentHistory);
+        },
     },
     mounted() {
-        const Galaxy = getGalaxyInstance();
-        Galaxy.currHistoryPanel = new HistoryPanelProxy();
-        Galaxy.modal = new Modal.View();
-        Galaxy.frame = this.windowManager;
+        this.Galaxy = getGalaxyInstance();
+        this.Galaxy.currHistoryPanel = new HistoryPanelProxy();
+        this.Galaxy.modal = new Modal.View();
+        this.Galaxy.frame = this.windowManager;
     },
     created() {
         window.onbeforeunload = () => {

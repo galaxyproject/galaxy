@@ -1,6 +1,6 @@
-import store from "@/store";
 import { computed, ref } from "vue";
 import { defineStore } from "pinia";
+import { useHistoryStore } from "@/stores/historyStore";
 import {
     addFavoriteToolQuery,
     removeFavoriteToolQuery,
@@ -53,6 +53,7 @@ export const useUserStore = defineStore(
             if (!loadPromise) {
                 loadPromise = getCurrentUser()
                     .then((user) => {
+                        const historyStore = useHistoryStore();
                         currentUser.value = { ...user, isAnonymous: !user.email };
                         currentPreferences.value = user?.preferences ?? null;
                         // TODO: This is a hack to get around the fact that the API returns a string
@@ -61,8 +62,8 @@ export const useUserStore = defineStore(
                                 user?.preferences?.favorites ?? { tools: [] }
                             );
                         }
-                        store.dispatch("history/loadCurrentHistory");
-                        store.dispatch("history/loadHistories");
+                        historyStore.loadCurrentHistory();
+                        historyStore.loadHistories();
                     })
                     .catch((e) => {
                         console.error("Failed to load user", e);

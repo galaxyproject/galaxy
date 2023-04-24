@@ -40,9 +40,9 @@
 </template>
 
 <script>
-import { mapGetters } from "vuex";
-import { mapState } from "pinia";
+import { mapActions, mapState } from "pinia";
 import { useUserStore } from "@/stores/userStore";
+import { useHistoryStore } from "@/stores/historyStore";
 import UserHistories from "components/providers/UserHistories";
 import CollectionPanel from "./CurrentCollection/CollectionPanel";
 import HistoryPanel from "./CurrentHistory/HistoryPanel";
@@ -68,15 +68,16 @@ export default {
     },
     computed: {
         ...mapState(useUserStore, ["currentUser"]),
-        ...mapGetters({ getHistoryById: "history/getHistoryById" }),
+        ...mapState(useHistoryStore, ["getHistoryById"]),
         history() {
             return this.getHistoryById(this.id);
         },
     },
     created() {
-        this.$store.dispatch("history/loadHistoryById", this.id);
+        this.loadHistoryById(this.id);
     },
     methods: {
+        ...mapActions(useHistoryStore, ["loadHistoryById"]),
         onViewCollection(collection) {
             this.selectedCollections = [...this.selectedCollections, collection];
         },

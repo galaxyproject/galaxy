@@ -1,9 +1,9 @@
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
 import { watchHistoryOnce } from "./watchHistory";
+import { useHistoryStore } from "stores/historyStore";
 import { collectionElementsStore } from "store/historyStore/collectionElementsStore";
 import { datasetStore } from "store/historyStore/datasetStore";
-import { historyStore } from "store/historyStore/historyStore";
 import { useHistoryItemsStore } from "stores/history/historyItemsStore";
 import { createPinia, mapState } from "pinia";
 import { mount, createLocalVue } from "@vue/test-utils";
@@ -14,10 +14,8 @@ const pinia = createPinia();
 const testApp = {
     template: `<div/>`,
     computed: {
+        ...mapState(useHistoryStore, ["currentHistoryId"]),
         ...mapState(useHistoryItemsStore, ["getHistoryItems"]),
-        currentHistoryId() {
-            return this.$store.getters["history/currentHistoryId"];
-        },
     },
 };
 
@@ -60,12 +58,15 @@ describe("watchHistory", () => {
                 modules: {
                     collectionElements: collectionElementsStore,
                     dataset: datasetStore,
-                    history: historyStore,
                 },
             }),
             localVue,
             pinia,
         });
+
+        const historyStore = useHistoryStore();
+        historyStore.setHistories([{ id: "history-id" }]);
+        historyStore.setCurrentHistoryId("history-id");
     });
 
     afterEach(() => {

@@ -12,14 +12,15 @@
  *     data in Vuex, we will need a place to subscribe and unsubscribe from sockets/observables
  */
 
-import { mapActions, mapGetters } from "vuex";
+import { mapActions, mapState } from "pinia";
+import { useHistoryStore } from "@/stores/historyStore";
 
 export default {
     props: {
         user: { type: Object, required: true },
     },
     computed: {
-        ...mapGetters("history", ["currentHistoryId", "currentHistory", "histories", "historiesLoading"]),
+        ...mapState(useHistoryStore, ["currentHistoryId", "currentHistory", "histories", "historiesLoading"]),
 
         currentHistoryModel() {
             if (this.currentHistory !== null) {
@@ -34,7 +35,7 @@ export default {
         },
     },
     methods: {
-        ...mapActions("history", [
+        ...mapActions(useHistoryStore, [
             "loadHistoryById",
             "createNewHistory",
             "updateHistory",
@@ -87,12 +88,12 @@ export default {
                 updateHistory: this.updateHistory,
 
                 // delete history then clear currentHistoryId
-                deleteHistory: (history) => this.deleteHistory({ history }),
-                deleteCurrentHistory: () => this.deleteHistory({ history: this.currentHistory }),
+                deleteHistory: (history) => this.deleteHistory(history.id),
+                deleteCurrentHistory: () => this.deleteHistory(this.currentHistory.id),
 
                 // purge history then clear currentHistoryId
-                purgeHistory: (history) => this.deleteHistory({ history, purge: true }),
-                purgeCurrentHistory: () => this.deleteHistory({ history: this.currentHistory, purge: true }),
+                purgeHistory: (history) => this.deleteHistory(history.id, true),
+                purgeCurrentHistory: () => this.deleteHistory(this.currentHistory.id, true),
 
                 secureHistory: this.secureHistory,
             },

@@ -37,7 +37,8 @@
 </template>
 
 <script>
-import { mapGetters } from "vuex";
+import { mapState } from "pinia";
+import { useHistoryStore } from "@/stores/historyStore";
 import HistoryPanel from "components/History/CurrentHistory/HistoryPanel";
 import CollectionPanel from "components/History/CurrentCollection/CollectionPanel";
 
@@ -74,7 +75,7 @@ export default {
         };
     },
     computed: {
-        ...mapGetters({ getHistoryById: "history/getHistoryById" }),
+        ...mapState(useHistoryStore, ["getHistoryById"]),
         sameToCurrent() {
             return this.currentHistory.id === this.source.id;
         },
