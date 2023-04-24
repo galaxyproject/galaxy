@@ -87,7 +87,7 @@ BADGE_SPECIFICATION = [
     {"type": "less_stable", "conflicts": ["more_stable"]},
 ]
 KNOWN_BADGE_TYPES = [s["type"] for s in BADGE_SPECIFICATION]
-BADGE_SPECIFCATION_BY_TYPE = {s["type"]: s for s in BADGE_SPECIFICATION}
+BADGE_SPECIFICATION_BY_TYPE = {s["type"]: s for s in BADGE_SPECIFICATION}
 
 
 class BadgeDict(TypedDict):
@@ -558,7 +558,7 @@ class ConcreteObjectStore(BaseObjectStore):
                 raise Exception(
                     f"Conflicting badge to [{badge_type}] defined on the object store [{conflicting_badge_type}]."
                 )
-            conflicts = BADGE_SPECIFCATION_BY_TYPE[badge_type]["conflicts"]
+            conflicts = BADGE_SPECIFICATION_BY_TYPE[badge_type]["conflicts"]
             for conflict in conflicts:
                 badge_conflicts[conflict] = badge_type
         self.badges = badges
