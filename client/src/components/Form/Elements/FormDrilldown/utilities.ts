@@ -6,6 +6,11 @@ export interface Option {
 
 export type Value = string[] | string | null;
 
+/**
+ * Returns an array of values from the list of (potentially nested) options provided.
+ * @param headOptions Array of options to get values from
+ * @returns values: string[]
+ */
 export function getAllValues(headOptions: Array<Option>): string[] {
     let options = null;
     const values: string[] = [];
