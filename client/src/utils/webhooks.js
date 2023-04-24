@@ -37,9 +37,8 @@ const WebhookView = Backbone.View.extend({
     },
 
     render: function (model) {
-        const webhook = model.toJSON();
-        this.$el.html(`<div id="${webhook.id}"></div>`);
-        Utils.appendScriptStyle(webhook);
+        this.$el.html(`<div id="${model.id}"></div>`);
+        Utils.appendScriptStyle(model);
         return this;
     },
 });
@@ -70,7 +69,7 @@ function filterType(data, type) {
 }
 
 function weightedRandomPick(data) {
-    const weights = data.pluck("weight");
+    const weights = data.map((d) => d.weight);
     const sum = weights.reduce((a, b) => a + b);
 
     const normalizedWeightsMap = new Map();
