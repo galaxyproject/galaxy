@@ -29,6 +29,7 @@ import { deleteContent, updateContentFields } from "components/History/model/que
 import ContentItem from "./ContentItem";
 import GenericElement from "./GenericElement";
 import { mapActions } from "pinia";
+import { useHistoryStore } from "@/stores/historyStore";
 
 export default {
     components: {
