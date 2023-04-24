@@ -43,7 +43,10 @@ from galaxy.model import (
 )
 from galaxy.schema import APIKeyModel
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.schema import UserBeaconSetting
+from galaxy.schema.schema import (
+    AsyncTaskResultSummary,
+    UserBeaconSetting,
+)
 from galaxy.security.validate_user_input import (
     validate_email,
     validate_password,
@@ -90,6 +93,17 @@ QuotaSourceLabelPathParam: str = Path(
     description="The label corresponding to the quota source to fetch usage information about.",
 )
 
+RecalculateDiskUsageSummary = "Triggers a recalculation of the current user disk usage."
+RecalculateDiskUsageResponseDescriptions = {
+    200: {
+        "model": AsyncTaskResultSummary,
+        "description": "The asynchronous task summary to track the task state.",
+    },
+    204: {
+        "description": "The background task was submitted but there is no status tracking ID available.",
+    },
+}
+
 
 @router.cbv
 class FastAPIUsers:
@@ -97,16 +111,26 @@ class FastAPIUsers:
     user_serializer: users.UserSerializer = depends(users.UserSerializer)
 
     @router.put(
+        "/api/users/current/recalculate_disk_usage",
+        summary=RecalculateDiskUsageSummary,
+        responses=RecalculateDiskUsageResponseDescriptions,
+    )
+    @router.put(
         "/api/users/recalculate_disk_usage",
-        summary="Triggers a recalculation of the current user disk usage.",
-        status_code=status.HTTP_204_NO_CONTENT,
+        summary=RecalculateDiskUsageSummary,
+        responses=RecalculateDiskUsageResponseDescriptions,
+        deprecated=True,
     )
     def recalculate_disk_usage(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
     ):
-        self.service.recalculate_disk_usage(trans)
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
+        """This route will be removed in a future version.
+
+        Please use `/api/users/current/recalculate_disk_usage` instead.
+        """
+        result = self.service.recalculate_disk_usage(trans)
+        return Response(status_code=status.HTTP_204_NO_CONTENT) if result is None else result
 
     @router.get(
         "/api/users/{user_id}/api_key",
@@ -419,7 +443,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             if trans.user == user_to_update:
                 self.user_manager.delete(user_to_update)
             else:
-                raise exceptions.InsufficientPermissionsException("You may only delete your own account.", id=id)
+                raise exceptions.InsufficientPermissionsException("You may only delete your own account.")
         return self.user_serializer.serialize_to_view(user_to_update, view="detailed")
 
     @web.require_admin
@@ -1145,7 +1169,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
     def _get_user(self, trans, id):
         user = self.get_user(trans, id)
         if not user:
-            raise exceptions.RequestParameterInvalidException(f"Invalid user ({id}).")
+            raise exceptions.RequestParameterInvalidException("Invalid user id specified.")
         if user != trans.user and not trans.user_is_admin:
             raise exceptions.InsufficientPermissionsException("Access denied.")
         return user
@@ -1163,7 +1187,7 @@ def get_user_full(trans: ProvidesUserContext, user_id: Union[FlexibleUserIdType,
             else:
                 user = trans.user
         else:
-            return managers_base.get_object(
+            user = managers_base.get_object(
                 trans,
                 user_id,
                 "User",
@@ -1172,11 +1196,9 @@ def get_user_full(trans: ProvidesUserContext, user_id: Union[FlexibleUserIdType,
         # check that the user is requesting themselves (and they aren't del'd) unless admin
         if not trans.user_is_admin:
             if trans.user != user or user.deleted:
-                raise exceptions.InsufficientPermissionsException(
-                    "You are not allowed to perform action on that user", id=user_id
-                )
+                raise exceptions.RequestParameterInvalidException("Invalid user id specified")
         return user
     except exceptions.MessageException:
         raise
     except Exception:
-        raise exceptions.RequestParameterInvalidException("Invalid user id specified", id=user_id)
+        raise exceptions.RequestParameterInvalidException("Invalid user id specified")

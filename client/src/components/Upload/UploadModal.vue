@@ -3,13 +3,13 @@ import UploadModalContent from "./UploadModalContent";
 
 import { ref, watch } from "vue";
 import { getAppRoot } from "onload";
-
-import { useCurrentUser } from "composables/user";
+import { storeToRefs } from "pinia";
+import { useUserStore } from "@/stores/userStore";
 import { useUserHistories } from "composables/userHistories";
 import { useConfig } from "composables/config";
-import { wait } from "@/utils/wait";
+import { wait } from "@/utils/utils";
 
-const { currentUser } = useCurrentUser();
+const { currentUser } = storeToRefs(useUserStore());
 const { currentHistoryId } = useUserHistories(currentUser);
 
 const { config, isLoaded } = useConfig();
@@ -105,7 +105,7 @@ defineExpose({
             v-if="currentHistoryId"
             ref="content"
             :key="showModal"
-            :current-user-id="currentUser.id"
+            :current-user-id="currentUser?.id"
             :current-history-id="currentHistoryId"
             v-bind="options"
             @dismiss="dismiss" />

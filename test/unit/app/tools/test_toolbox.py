@@ -384,14 +384,14 @@ class TestToolBox(BaseToolBoxTestCase):
         self._add_config("""<toolbox><tool file="tool.xml" /></toolbox>""")
 
         self.assert_integerated_tool_panel(exists=False)
-        self.toolbox
+        self.toolbox  # noqa: B018
         self.assert_integerated_tool_panel(exists=True)
 
     def test_groups_tools_in_section(self):
         self._init_tool()
         self._setup_two_versions_in_config(section=True)
         self._setup_two_versions()
-        self.toolbox
+        self.toolbox  # noqa: B018
         self.__verify_two_test_tools()
 
         # Assert only newer version of the tool loaded into the panel.
@@ -602,7 +602,7 @@ class TestToolBox(BaseToolBoxTestCase):
     def __setup_shed_tool_conf(self):
         self._add_config("""<toolbox tool_path="."></toolbox>""")
 
-        self.toolbox  # create toolbox
+        self.toolbox  # noqa: B018 create toolbox
         assert not self.reindexed
 
         os.remove(self.integrated_tool_panel_path)

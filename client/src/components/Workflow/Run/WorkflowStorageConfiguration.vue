@@ -9,6 +9,7 @@
         </b-button>
         <WorkflowTargetPreferredObjectStorePopover
             target="workflow-storage-indicator-primary"
+            :title-suffix="suffixPrimary"
             :invocation-preferred-object-store-id="selectedObjectStoreId">
         </WorkflowTargetPreferredObjectStorePopover>
         <b-modal

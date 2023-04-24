@@ -58,7 +58,7 @@
                         @onInsertWorkflowSteps="onInsertWorkflowSteps" />
                 </template>
             </SidePanel>
-            <div id="center" class="workflow-center">
+            <div id="center" class="center-style workflow-center">
                 <div class="unified-panel-header" unselectable="on">
                     <div class="unified-panel-header-inner">
                         <span class="sr-only">Workflow Editor</span>
@@ -656,6 +656,7 @@ export default {
             getModule(stepData, id, this.stateStore.setLoadingState).then((response) => {
                 this.stepStore.updateStep({
                     ...stepData,
+                    id: id,
                     tool_state: response.tool_state,
                     inputs: response.inputs,
                     outputs: response.outputs,

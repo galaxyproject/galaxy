@@ -18,7 +18,8 @@
                 class="rounded-0 m-0 p-2"
                 :variant="config.message_box_class || 'info'">
                 <span class="fa fa-fw mr-1 fa-exclamation" />
-                <span>{{ config.message_box_content }}</span>
+                <!-- eslint-disable-next-line vue/no-v-html -->
+                <span v-html="config.message_box_content"></span>
             </Alert>
             <Alert
                 v-if="config.show_inactivity_warning && config.inactivity_box_content"
@@ -53,10 +54,11 @@ import Toast from "components/Toast";
 import ConfirmDialog from "components/ConfirmDialog";
 import UploadModal from "components/Upload/UploadModal.vue";
 import { ref } from "vue";
+import { storeToRefs } from "pinia";
+import { useUserStore } from "@/stores/userStore";
 import { setToastComponentRef } from "composables/toast";
 import { setConfirmDialogComponentRef } from "composables/confirmDialog";
 import { setGlobalUploadModal } from "composables/globalUploadModal";
-import { useCurrentTheme } from "@/composables/user";
 
 export default {
     components: {
@@ -67,6 +69,11 @@ export default {
         UploadModal,
     },
     setup() {
+        const userStore = useUserStore();
+        const { currentTheme } = storeToRefs(userStore);
+
+        userStore.loadUser();
+
         const toastRef = ref(null);
         setToastComponentRef(toastRef);
 
@@ -75,8 +82,6 @@ export default {
 
         const uploadModal = ref(null);
         setGlobalUploadModal(uploadModal);
-
-        const { currentTheme } = useCurrentTheme();
 
         return { toastRef, confirmDialogRef, uploadModal, currentTheme };
     },

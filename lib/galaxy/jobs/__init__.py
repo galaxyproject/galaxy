@@ -1257,7 +1257,7 @@ class MinimalJobWrapper(HasResourceParameters):
             self.app.interactivetool_manager.create_interactivetool(job, self.tool, self.interactivetools)
 
         # Ensure galaxy_lib_dir is set in case there are any later chdirs
-        self.galaxy_lib_dir
+        self.galaxy_lib_dir  # noqa: B018
         if self.tool.requires_galaxy_python_environment or self.remote_command_line:
             # These tools (upload, metadata, data_source) may need access to the datatypes registry.
             self.app.datatypes_registry.to_xml_file(os.path.join(self.working_directory, "registry.xml"))
@@ -1387,7 +1387,7 @@ class MinimalJobWrapper(HasResourceParameters):
         # self.get_destination_configuration() below accesses self.job_destination and will just cause
         # JobMappingException to be raised again.
         try:
-            self.job_destination
+            self.job_destination  # noqa: B018
         except JobMappingException as exc:
             log.debug(
                 "(%s) fail(): Job destination raised JobMappingException('%s'), caching fake '__fail__' "
@@ -2602,7 +2602,7 @@ class TaskWrapper(JobWrapper):
             self.extra_filenames.extend(extra_filenames)
 
         # Ensure galaxy_lib_dir is set in case there are any later chdirs
-        self.galaxy_lib_dir
+        self.galaxy_lib_dir  # noqa: B018
 
         # We need command_line persisted to the db in order for Galaxy to re-queue the job
         # if the server was stopped and restarted before the job finished
@@ -2618,6 +2618,15 @@ class TaskWrapper(JobWrapper):
     ):
         log.error(f"TaskWrapper Failure {message}")
         self.status = "error"
+        super().fail(
+            message,
+            exception=exception,
+            tool_stdout=tool_stdout,
+            tool_stderr=tool_stderr,
+            exit_code=exit_code,
+            job_stdout=job_stdout,
+            job_stderr=job_stderr,
+        )
         # How do we want to handle task failure?  Fail the job and let it clean up?
 
     def change_state(self, state, info=False, flush=True, job=None):

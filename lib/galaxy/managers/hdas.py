@@ -12,8 +12,18 @@ from typing import (
     Dict,
     List,
     Optional,
+    Set,
 )
 
+from sqlalchemy import (
+    and_,
+    asc,
+    desc,
+    false,
+    func,
+    select,
+    true,
+)
 from sqlalchemy.orm.session import object_session
 
 from galaxy import (
@@ -33,8 +43,16 @@ from galaxy.managers import (
 from galaxy.model.deferred import materializer_factory
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.schema.schema import DatasetSourceType
+from galaxy.schema.storage_cleaner import (
+    CleanableItemsSummary,
+    StorageItemCleanupError,
+    StorageItemsCleanupResult,
+    StoredItem,
+    StoredItemOrderBy,
+)
 from galaxy.schema.tasks import (
     MaterializeDatasetInstanceTaskRequest,
+    PurgeDatasetsTaskRequest,
     RequestUser,
 )
 from galaxy.structured_app import (
@@ -218,6 +236,8 @@ class HDAManager(
         quota_source_info = hda.dataset.quota_source_info
         if quota_amount_reduction and quota_source_info.use:
             user.adjust_total_disk_usage(-quota_amount_reduction, quota_source_info.label)
+            # TODO: don't flush above if we're going to re-flush here
+            object_session(user).flush()
 
     # .... states
     def error_if_uploading(self, hda):
@@ -313,6 +333,117 @@ class HDAManager(
             trans.sa_session.refresh(hda.dataset)
             if error:
                 raise exceptions.RequestParameterInvalidException(error)
+
+
+class HDAStorageCleanerManager(base.StorageCleanerManager):
+    def __init__(self, hda_manager: HDAManager, dataset_manager: datasets.DatasetManager):
+        self.hda_manager = hda_manager
+        self.dataset_manager = dataset_manager
+        self.sort_map = {
+            StoredItemOrderBy.NAME_ASC: asc(model.HistoryDatasetAssociation.name),
+            StoredItemOrderBy.NAME_DSC: desc(model.HistoryDatasetAssociation.name),
+            StoredItemOrderBy.SIZE_ASC: asc(model.Dataset.total_size),
+            StoredItemOrderBy.SIZE_DSC: desc(model.Dataset.total_size),
+            StoredItemOrderBy.UPDATE_TIME_ASC: asc(model.HistoryDatasetAssociation.update_time),
+            StoredItemOrderBy.UPDATE_TIME_DSC: desc(model.HistoryDatasetAssociation.update_time),
+        }
+
+    def get_discarded_summary(self, user: model.User) -> CleanableItemsSummary:
+        stmt = (
+            select([func.sum(model.Dataset.total_size), func.count(model.HistoryDatasetAssociation.id)])
+            .select_from(model.HistoryDatasetAssociation)
+            .join(model.Dataset, model.HistoryDatasetAssociation.table.c.dataset_id == model.Dataset.id)
+            .join(model.History, model.HistoryDatasetAssociation.table.c.history_id == model.History.id)
+            .where(
+                and_(
+                    model.HistoryDatasetAssociation.deleted == true(),
+                    model.HistoryDatasetAssociation.purged == false(),
+                    model.History.user_id == user.id,
+                )
+            )
+        )
+        result = self.hda_manager.session().execute(stmt).fetchone()
+        total_size = 0 if result[0] is None else result[0]
+        return CleanableItemsSummary(total_size=total_size, total_items=result[1])
+
+    def get_discarded(
+        self,
+        user: model.User,
+        offset: Optional[int],
+        limit: Optional[int],
+        order: Optional[StoredItemOrderBy],
+    ) -> List[StoredItem]:
+        stmt = (
+            select(
+                [
+                    model.HistoryDatasetAssociation.id,
+                    model.HistoryDatasetAssociation.name,
+                    model.HistoryDatasetAssociation.update_time,
+                    model.Dataset.total_size,
+                ]
+            )
+            .select_from(model.HistoryDatasetAssociation)
+            .join(model.Dataset, model.HistoryDatasetAssociation.table.c.dataset_id == model.Dataset.id)
+            .join(model.History, model.HistoryDatasetAssociation.table.c.history_id == model.History.id)
+            .where(
+                and_(
+                    model.HistoryDatasetAssociation.deleted == true(),
+                    model.HistoryDatasetAssociation.purged == false(),
+                    model.History.user_id == user.id,
+                )
+            )
+        )
+        if offset:
+            stmt = stmt.offset(offset)
+        if limit:
+            stmt = stmt.limit(limit)
+        if order:
+            stmt = stmt.order_by(self.sort_map[order])
+        result = self.hda_manager.session().execute(stmt)
+        discarded = [
+            StoredItem(id=row.id, name=row.name, type="dataset", size=row.total_size or 0, update_time=row.update_time)
+            for row in result
+        ]
+        return discarded
+
+    def cleanup_items(self, user: model.User, item_ids: Set[int]) -> StorageItemsCleanupResult:
+        success_item_count = 0
+        total_free_bytes = 0
+        errors: List[StorageItemCleanupError] = []
+        dataset_ids_to_remove: Set[int] = set()
+
+        with self.hda_manager.session().begin():
+            for hda_id in item_ids:
+                try:
+                    hda: model.HistoryDatasetAssociation = self.hda_manager.get_owned(hda_id, user)
+                    hda.deleted = True
+                    quota_amount = int(hda.quota_amount(user))
+                    hda.purge_usage_from_quota(user, hda.dataset.quota_source_info)
+                    hda.purged = True
+                    dataset_ids_to_remove.add(hda.dataset.id)
+                    success_item_count += 1
+                    total_free_bytes += quota_amount
+                except BaseException as e:
+                    errors.append(StorageItemCleanupError(item_id=hda_id, error=str(e)))
+
+        self._request_full_delete_all(dataset_ids_to_remove)
+
+        return StorageItemsCleanupResult(
+            total_item_count=len(item_ids),
+            success_item_count=success_item_count,
+            total_free_bytes=total_free_bytes,
+            errors=errors,
+        )
+
+    def _request_full_delete_all(self, dataset_ids_to_remove: Set[int]):
+        use_tasks = self.dataset_manager.app.config.enable_celery_tasks
+        request = PurgeDatasetsTaskRequest(dataset_ids=list(dataset_ids_to_remove))
+        if use_tasks:
+            from galaxy.celery.tasks import purge_datasets
+
+            purge_datasets.delay(request=request)
+        else:
+            self.dataset_manager.purge_datasets(request)
 
 
 class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerializer,

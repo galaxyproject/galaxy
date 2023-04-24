@@ -27,6 +27,7 @@ from typing import (
     List,
     NamedTuple,
     Optional,
+    overload,
     Set,
     Tuple,
     Type,
@@ -102,6 +103,7 @@ from sqlalchemy.orm import (
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.sql import exists
 from typing_extensions import (
+    Literal,
     Protocol,
     TypedDict,
 )
@@ -975,7 +977,11 @@ ON CONFLICT
                 binds.append(bindparam(key, expanding=expand_binding))
             statement = statement.bindparams(*binds)
             sa_session.execute(statement, args)
-            sa_session.flush()
+            # expire user.disk_usage so sqlalchemy knows to ignore
+            # the existing value - we're setting it in raw SQL for
+            # performance reasons and bypassing object properties.
+            sa_session.expire(self, ["disk_usage"])
+        sa_session.flush()
 
     @staticmethod
     def user_template_environment(user):
@@ -3915,16 +3921,24 @@ class Dataset(Base, StorableObject, Serializable):
     def _extra_files_rel_path(self):
         return self._extra_files_path or self.extra_files_path_name
 
-    def _calculate_size(self):
+    def _calculate_size(self) -> int:
         if self.external_filename:
             try:
                 return os.path.getsize(self.external_filename)
             except OSError:
                 return 0
-        else:
-            return self.object_store.size(self)
+        assert self.object_store
+        return self.object_store.size(self)
 
-    def get_size(self, nice_size=False, calculate_size=True):
+    @overload
+    def get_size(self, nice_size: Literal[False], calculate_size: bool = True) -> int:
+        ...
+
+    @overload
+    def get_size(self, nice_size: Literal[True], calculate_size: bool = True) -> str:
+        ...
+
+    def get_size(self, nice_size: bool = False, calculate_size: bool = True) -> Union[int, str]:
         """Returns the size of the data on disk"""
         if self.file_size:
             if nice_size:
@@ -5235,8 +5249,6 @@ class Library(Base, Dictifiable, HasName, Serializable):
         We prepend an F to folders.
         """
         rval = super().to_dict(view=view, value_mapper=value_mapper)
-        if "root_folder_id" in rval:
-            rval["root_folder_id"] = f"F{str(rval['root_folder_id'])}"
         return rval
 
     def get_active_folders(self, folder, folders=None):
@@ -8581,7 +8593,7 @@ class WorkflowRequestInputParameter(Base, Dictifiable, Serializable):
 
     id = Column(Integer, primary_key=True)
     workflow_invocation_id = Column(
-        Integer, ForeignKey("workflow_invocation.id", onupdate="CASCADE", ondelete="CASCADE")
+        Integer, ForeignKey("workflow_invocation.id", onupdate="CASCADE", ondelete="CASCADE"), index=True
     )
     name = Column(Unicode(255))
     value = Column(TEXT)
@@ -8611,7 +8623,7 @@ class WorkflowRequestStepState(Base, Dictifiable, Serializable):
 
     id = Column(Integer, primary_key=True)
     workflow_invocation_id = Column(
-        Integer, ForeignKey("workflow_invocation.id", onupdate="CASCADE", ondelete="CASCADE")
+        Integer, ForeignKey("workflow_invocation.id", onupdate="CASCADE", ondelete="CASCADE"), index=True
     )
     workflow_step_id = Column(Integer, ForeignKey("workflow_step.id"))
     value = Column(MutableJSONType)

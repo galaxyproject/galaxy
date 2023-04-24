@@ -34,7 +34,7 @@
 </template>
 
 <script>
-import DefaultOperations from "./Operations";
+import DefaultOperations from "./DefaultOperations";
 
 export default {
     components: {

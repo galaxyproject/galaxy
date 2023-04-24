@@ -51,7 +51,10 @@
                             'rules-container-horizontal': initialElements && horizontal,
                             'rules-container-full': initialElements == null,
                         }">
-                        <rule-component rule-type="sort" :display-rule-type.sync="displayRuleType" :builder="this">
+                        <rule-component
+                            rule-type="sort"
+                            :display-rule-type.sync="displayRuleType"
+                            @saveRule="handleRuleSave">
                             <column-selector :target.sync="addSortingTarget" :col-headers="activeRuleColHeaders" />
                             <label v-b-tooltip.hover :title="titleNumericSort">
                                 <input v-model="addSortingNumeric" type="checkbox" />
@@ -61,7 +64,7 @@
                         <rule-component
                             rule-type="add_column_basename"
                             :display-rule-type.sync="displayRuleType"
-                            :builder="this">
+                            @saveRule="handleRuleSave">
                             <column-selector
                                 :target.sync="addColumnBasenameTarget"
                                 :col-headers="activeRuleColHeaders" />
@@ -69,7 +72,7 @@
                         <rule-component
                             rule-type="add_column_rownum"
                             :display-rule-type.sync="displayRuleType"
-                            :builder="this">
+                            @saveRule="handleRuleSave">
                             <label>
                                 {{ l("Starting from") }}
                                 <input v-model="addColumnRownumStart" type="number" min="0" />
@@ -78,7 +81,7 @@
                         <rule-component
                             rule-type="add_column_metadata"
                             :display-rule-type.sync="displayRuleType"
-                            :builder="this">
+                            @saveRule="handleRuleSave">
                             <label>
                                 {{ l("For") }}
                                 <select v-model="addColumnMetadataValue">
@@ -90,7 +93,7 @@
                         <rule-component
                             rule-type="add_column_group_tag_value"
                             :display-rule-type.sync="displayRuleType"
-                            :builder="this">
+                            @saveRule="handleRuleSave">
                             <label>
                                 {{ l("Value") }}
                                 <input v-model="addColumnGroupTagValueValue" type="text" />
@@ -103,7 +106,7 @@
                         <rule-component
                             rule-type="add_column_regex"
                             :display-rule-type.sync="displayRuleType"
-                            :builder="this">
+                            @saveRule="handleRuleSave">
                             <column-selector :target.sync="addColumnRegexTarget" :col-headers="activeRuleColHeaders" />
                             <label>
                                 <input v-model="addColumnRegexType" type="radio" value="global" />Create column matching
@@ -133,7 +136,7 @@
                         <rule-component
                             rule-type="add_column_concatenate"
                             :display-rule-type.sync="displayRuleType"
-                            :builder="this">
+                            @saveRule="handleRuleSave">
                             <column-selector
                                 :target.sync="addColumnConcatenateTarget0"
                                 :col-headers="activeRuleColHeaders" />
@@ -144,7 +147,7 @@
                         <rule-component
                             rule-type="add_column_substr"
                             :display-rule-type.sync="displayRuleType"
-                            :builder="this">
+                            @saveRule="handleRuleSave">
                             <column-selector :target.sync="addColumnSubstrTarget" :col-headers="activeRuleColHeaders" />
                             <label>
                                 <select v-model="addColumnSubstrType">
@@ -162,7 +165,7 @@
                         <rule-component
                             rule-type="add_column_value"
                             :display-rule-type.sync="displayRuleType"
-                            :builder="this">
+                            @saveRule="handleRuleSave">
                             <label>
                                 {{ l("Value") }}
                                 <input v-model="addColumnValue" type="text" />
@@ -171,7 +174,7 @@
                         <rule-component
                             rule-type="remove_columns"
                             :display-rule-type.sync="displayRuleType"
-                            :builder="this">
+                            @saveRule="handleRuleSave">
                             <column-selector
                                 :target.sync="removeColumnTargets"
                                 :col-headers="activeRuleColHeaders"
@@ -180,7 +183,7 @@
                         <rule-component
                             rule-type="split_columns"
                             :display-rule-type.sync="displayRuleType"
-                            :builder="this">
+                            @saveRule="handleRuleSave">
                             <column-selector
                                 :target.sync="splitColumnsTargets0"
                                 label="Odd Row Column(s)"
@@ -195,7 +198,7 @@
                         <rule-component
                             rule-type="swap_columns"
                             :display-rule-type.sync="displayRuleType"
-                            :builder="this">
+                            @saveRule="handleRuleSave">
                             <column-selector
                                 :target.sync="swapColumnsTarget0"
                                 label="Swap Column"
@@ -208,7 +211,7 @@
                         <rule-component
                             rule-type="add_filter_regex"
                             :display-rule-type.sync="displayRuleType"
-                            :builder="this">
+                            @saveRule="handleRuleSave">
                             <column-selector :target.sync="addFilterRegexTarget" :col-headers="activeRuleColHeaders" />
                             <regular-expression-input :target.sync="addFilterRegexExpression" />
                             <label v-b-tooltip.hover :title="titleInvertFilterRegex">
@@ -219,7 +222,7 @@
                         <rule-component
                             rule-type="add_filter_matches"
                             :display-rule-type.sync="displayRuleType"
-                            :builder="this">
+                            @saveRule="handleRuleSave">
                             <column-selector
                                 :target.sync="addFilterMatchesTarget"
                                 :col-headers="activeRuleColHeaders" />
@@ -232,7 +235,7 @@
                         <rule-component
                             rule-type="add_filter_compare"
                             :display-rule-type.sync="displayRuleType"
-                            :builder="this">
+                            @saveRule="handleRuleSave">
                             <column-selector
                                 :target.sync="addFilterCompareTarget"
                                 :col-headers="activeRuleColHeaders" />
@@ -250,7 +253,7 @@
                         <rule-component
                             rule-type="add_filter_count"
                             :display-rule-type.sync="displayRuleType"
-                            :builder="this">
+                            @saveRule="handleRuleSave">
                             <label>
                                 Filter which rows?
                                 <select v-model="addFilterCountWhich">
@@ -270,7 +273,7 @@
                         <rule-component
                             rule-type="add_filter_empty"
                             :display-rule-type.sync="displayRuleType"
-                            :builder="this">
+                            @saveRule="handleRuleSave">
                             <column-selector :target.sync="addFilterEmptyTarget" :col-headers="activeRuleColHeaders" />
                             <label v-b-tooltip.hover :title="titleInvertFilterEmpty">
                                 <input v-model="addFilterEmptyInvert" type="checkbox" />
@@ -384,10 +387,10 @@
                                         <span class="caret"></span>
                                     </button>
                                     <div class="dropdown-menu" role="menu">
-                                        <rule-target-component :builder="this" rule-type="sort" />
-                                        <rule-target-component :builder="this" rule-type="remove_columns" />
-                                        <rule-target-component :builder="this" rule-type="split_columns" />
-                                        <rule-target-component :builder="this" rule-type="swap_columns" />
+                                        <rule-target-component rule-type="sort" @addNewRule="addNewRule" />
+                                        <rule-target-component rule-type="remove_columns" @addNewRule="addNewRule" />
+                                        <rule-target-component rule-type="split_columns" @addNewRule="addNewRule" />
+                                        <rule-target-component rule-type="swap_columns" @addNewRule="addNewRule" />
                                         <a
                                             href="javascript:void(0)"
                                             class="dropdown-item rule-link rule-link-mapping"
@@ -408,11 +411,15 @@
                                         <span class="caret"></span>
                                     </button>
                                     <div class="dropdown-menu" role="menu">
-                                        <rule-target-component :builder="this" rule-type="add_filter_regex" />
-                                        <rule-target-component :builder="this" rule-type="add_filter_matches" />
-                                        <rule-target-component :builder="this" rule-type="add_filter_compare" />
-                                        <rule-target-component :builder="this" rule-type="add_filter_empty" />
-                                        <rule-target-component :builder="this" rule-type="add_filter_count" />
+                                        <rule-target-component rule-type="add_filter_regex" @addNewRule="addNewRule" />
+                                        <rule-target-component
+                                            rule-type="add_filter_matches"
+                                            @addNewRule="addNewRule" />
+                                        <rule-target-component
+                                            rule-type="add_filter_compare"
+                                            @addNewRule="addNewRule" />
+                                        <rule-target-component rule-type="add_filter_empty" @addNewRule="addNewRule" />
+                                        <rule-target-component rule-type="add_filter_count" @addNewRule="addNewRule" />
                                     </div>
                                 </div>
                                 <div class="dropup">
@@ -427,20 +434,24 @@
                                         <span class="caret"></span>
                                     </button>
                                     <div class="dropdown-menu" role="menu">
-                                        <rule-target-component :builder="this" rule-type="add_column_basename" />
+                                        <rule-target-component
+                                            rule-type="add_column_basename"
+                                            @addNewRule="addNewRule" />
                                         <rule-target-component
                                             v-if="metadataOptions"
-                                            :builder="this"
-                                            rule-type="add_column_metadata" />
+                                            rule-type="add_column_metadata"
+                                            @addNewRule="addNewRule" />
                                         <rule-target-component
                                             v-if="hasTagsMetadata"
-                                            :builder="this"
-                                            rule-type="add_column_group_tag_value" />
-                                        <rule-target-component :builder="this" rule-type="add_column_regex" />
-                                        <rule-target-component :builder="this" rule-type="add_column_concatenate" />
-                                        <rule-target-component :builder="this" rule-type="add_column_rownum" />
-                                        <rule-target-component :builder="this" rule-type="add_column_value" />
-                                        <rule-target-component :builder="this" rule-type="add_column_substr" />
+                                            rule-type="add_column_group_tag_value"
+                                            @addNewRule="addNewRule" />
+                                        <rule-target-component rule-type="add_column_regex" @addNewRule="addNewRule" />
+                                        <rule-target-component
+                                            rule-type="add_column_concatenate"
+                                            @addNewRule="addNewRule" />
+                                        <rule-target-component rule-type="add_column_rownum" @addNewRule="addNewRule" />
+                                        <rule-target-component rule-type="add_column_value" @addNewRule="addNewRule" />
+                                        <rule-target-component rule-type="add_column_substr" @addNewRule="addNewRule" />
                                     </div>
                                 </div>
                             </div>
@@ -1200,6 +1211,13 @@ export default {
                     console.log("Error in RuleCollectionBuilder, unable to load genomes", err);
                 });
         }
+    },
+    mounted() {
+        // something bizarre is up with the rendering of hands-on-table, needs a click to render.
+        // Vue.nextTick() didn't work here.
+        setTimeout(() => {
+            this.$refs.hotTable.$el.click();
+        }, 200);
     },
     methods: {
         restoreRules(event) {

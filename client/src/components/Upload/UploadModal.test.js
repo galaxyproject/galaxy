@@ -1,13 +1,14 @@
+import { createPinia } from "pinia";
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
 import UploadModal from "./UploadModal";
 import UploadModalContent from "./UploadModalContent";
 import { mount } from "@vue/test-utils";
 import { getLocalVue, mockModule } from "tests/jest/helpers";
-import { userStore } from "store/userStore";
 import { historyStore } from "store/historyStore";
 import { configStore } from "store/configStore";
 import Vuex from "vuex";
+import { useUserStore } from "stores/userStore";
 
 jest.mock("app");
 
@@ -20,7 +21,6 @@ const propsData = {
 const createStore = () => {
     return new Vuex.Store({
         modules: {
-            user: mockModule(userStore, { currentUser: { id: "fakeuser" } }),
             history: mockModule(historyStore, { currentHistoryId: "fakehistory", histories: { fakehistory: {} } }),
             config: mockModule(configStore, { config: {} }),
         },
@@ -30,6 +30,7 @@ const createStore = () => {
 describe("UploadModal.vue", () => {
     let wrapper;
     let axiosMock;
+    let userStore;
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
@@ -57,6 +58,7 @@ describe("UploadModal.vue", () => {
         axiosMock.onGet(`/api/datatypes?extension_only=False`).reply(200, datatypesResponse);
 
         const localVue = getLocalVue();
+        const pinia = createPinia();
         const store = createStore();
 
         wrapper = await mount(UploadModal, {
@@ -72,7 +74,11 @@ describe("UploadModal.vue", () => {
                 Default: true,
                 RulesInput: true,
             },
+            pinia,
         });
+
+        userStore = useUserStore();
+        userStore.currentUser = { id: "fakeUser" };
 
         await wrapper.vm.open();
     });

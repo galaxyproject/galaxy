@@ -162,7 +162,7 @@ define({
     // state: queued
     "This job is waiting to run": "您的任务正在等待运行",
     // state: upload
-    "This dataset is currently uploading": "领的数据集正在上传中",
+    "This dataset is currently uploading": "您的数据集正在上传中",
     // state: setting_metadata
     "Metadata is being auto-detected": "元数据正在被自动检测中",
     // state: running

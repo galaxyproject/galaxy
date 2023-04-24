@@ -1,4 +1,6 @@
 <script setup>
+import { storeToRefs } from "pinia";
+import { useUserStore } from "@/stores/userStore";
 import FormMessage from "components/Form/FormMessage";
 import ToolFavoriteButton from "components/Tool/Buttons/ToolFavoriteButton.vue";
 import ToolVersionsButton from "components/Tool/Buttons/ToolVersionsButton.vue";
@@ -11,7 +13,6 @@ import ToolTargetPreferredObjectStorePopover from "./ToolTargetPreferredObjectSt
 import { getAppRoot } from "onload/loadConfig";
 
 import { computed, ref, watch } from "vue";
-import { useCurrentUser } from "composables/user";
 
 const props = defineProps({
     id: {
@@ -77,8 +78,8 @@ function onSetError(e) {
     errorText.value = e;
 }
 
-const { currentUser: user } = useCurrentUser(false, true);
-const hasUser = computed(() => !user.value.isAnonymous);
+const { currentUser, isAnonymous } = storeToRefs(useUserStore());
+const hasUser = computed(() => !isAnonymous.value);
 const versions = computed(() => props.options.versions);
 const showVersions = computed(() => props.options.versions?.length > 1);
 
@@ -128,14 +129,14 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
                             role="button"
                             variant="link"
                             size="sm"
-                            class="float-right"
+                            class="float-right tool-storage"
                             @click="onShowObjectStoreSelect">
                             <span class="fa fa-hdd" />
                         </b-button>
                         <ToolTargetPreferredObjectStorePopover
                             v-if="allowObjectStoreSelection"
                             :tool-preferred-object-store-id="toolPreferredObjectStoreId"
-                            :user="user">
+                            :user="currentUser">
                         </ToolTargetPreferredObjectStorePopover>
                         <b-modal
                             v-model="showPreferredObjectStoreModal"

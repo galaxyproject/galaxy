@@ -385,9 +385,8 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
     def _get_size_in_s3(self, rel_path):
         try:
             key = self._bucket.get_key(rel_path)
-            if key:
-                return key.size
-        except S3ResponseError:
+            return key.size
+        except (S3ResponseError, AttributeError):
             log.exception("Could not get size of key '%s' from S3", rel_path)
             return -1
 

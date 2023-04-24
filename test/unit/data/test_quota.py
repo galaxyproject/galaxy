@@ -111,6 +111,37 @@ class TestCalculateUsage(BaseModelTestCase):
 
         assert u.calculate_disk_usage_default_source(object_store) == 10
 
+    def test_calculate_usage_readjusts_incorrect_quota(self):
+        u = self.u
+
+        self._add_dataset(10)
+
+        object_store = MockObjectStore()
+        assert u.calculate_disk_usage_default_source(object_store) == 10
+        assert u.disk_usage is None
+        u.calculate_and_set_disk_usage(object_store)
+        assert u.calculate_disk_usage_default_source(object_store) == 10
+
+        self._refresh_user_and_assert_disk_usage_is(10)
+
+        # lets break this to simulate the actual bugs we observe in Galaxy.
+        u.disk_usage = -10
+        self.persist(u)
+        self._refresh_user_and_assert_disk_usage_is(-10)
+
+        # recalculate and verify it is fixed
+        u.calculate_and_set_disk_usage(object_store)
+        self._refresh_user_and_assert_disk_usage_is(10)
+
+        # break it again
+        u.disk_usage = 1000
+        self.persist(u)
+        self._refresh_user_and_assert_disk_usage_is(1000)
+
+        # recalculate and verify it is fixed
+        u.calculate_and_set_disk_usage(object_store)
+        self._refresh_user_and_assert_disk_usage_is(10)
+
     def test_calculate_usage_disabled_quota(self):
         u = self.u
 
@@ -166,7 +197,7 @@ class TestCalculateUsage(BaseModelTestCase):
         model = self.model
         u = self.u
 
-        self._add_dataset(10)
+        d = self._add_dataset(10)
         self._add_dataset(15, "alt_source_store")
 
         quota_source_map = QuotaSourceMap()
@@ -196,6 +227,17 @@ class TestCalculateUsage(BaseModelTestCase):
 
         assert usages[1].quota_source_label == "new_alt_source"
         assert usages[1].total_disk_usage == 15
+
+        d.dataset.deleted = True
+        d.purge_usage_from_quota(u, quota_source_map.info)
+        self.model.session.add(d)
+        self.model.session.flush()
+        model.context.refresh(u)
+
+        usages = u.dictify_usage()
+        assert len(usages) == 2
+        assert usages[0].quota_source_label is None
+        assert usages[0].total_disk_usage == 0
 
     def test_dictify_usage_unused_quota_labels(self):
         model = self.model
@@ -241,6 +283,11 @@ class TestCalculateUsage(BaseModelTestCase):
 
         assert usages[1].quota_source_label == "alt_source"
         assert usages[1].total_disk_usage == 15
+
+    def _refresh_user_and_assert_disk_usage_is(self, usage):
+        u = self.u
+        self.model.context.refresh(u)
+        assert u.disk_usage == usage
 
 
 class TestQuota(BaseModelTestCase):

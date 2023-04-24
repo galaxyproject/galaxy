@@ -56,6 +56,12 @@ from galaxy import (
 from galaxy.model import tool_shed_install
 from galaxy.schema import ValueFilterQueryParams
 from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.storage_cleaner import (
+    CleanableItemsSummary,
+    StorageItemsCleanupResult,
+    StoredItem,
+    StoredItemOrderBy,
+)
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import (
     BasicSharedApp,
@@ -305,7 +311,7 @@ class ModelManager(Generic[U]):
         """
         Returns a tuple of columns for the default order when getting multiple models.
         """
-        return (self.model_class.table.c.create_time,)
+        return (self.model_class.__table__.c.create_time,)
 
     def _apply_orm_limit_offset(self, query: Query, limit: Optional[int], offset: Optional[int]) -> Query:
         """
@@ -356,7 +362,7 @@ class ModelManager(Generic[U]):
         """
         Gets a model by primary id.
         """
-        id_filter = self.model_class.table.c.id == id
+        id_filter = self.model_class.__table__.c.id == id
         return self.one(filters=id_filter)
 
     # .... multirow queries
@@ -449,7 +455,7 @@ class ModelManager(Generic[U]):
         """
         if not ids:
             return []
-        ids_filter = parsed_filter("orm", self.model_class.table.c.id.in_(ids))
+        ids_filter = parsed_filter("orm", self.model_class.__table__.c.id.in_(ids))
         found = self.list(filters=self._munge_filters(ids_filter, filters), **kwargs)
         # TODO: this does not order by the original 'ids' array
 
@@ -1159,7 +1165,7 @@ class ModelFilterParser(HasAModelManager):
         # note: column_map[ 'column' ] takes precedence
         if "column" in column_map:
             attr = column_map["column"]
-        column = self.model_class.table.columns.get(attr)
+        column = self.model_class.__table__.columns.get(attr)
         if column is None:
             # could be a property (hybrid_property, etc.) - assume we can make a filter from it
             column = getattr(self.model_class, attr)
@@ -1297,4 +1303,33 @@ class SortableManager:
     def parse_order_by(self, order_by_string, default=None):
         """Return an ORM compatible order_by clause using the given string (i.e.: 'name-dsc,create_time').
         This must be implemented by the manager."""
+        raise NotImplementedError
+
+
+class StorageCleanerManager(Protocol):
+    """
+    Interface for monitoring storage usage and managing deletion/purging of objects that consume user's storage space.
+    """
+
+    sort_map: Dict[StoredItemOrderBy, Any]
+
+    def get_discarded_summary(self, user: model.User) -> CleanableItemsSummary:
+        """Returns information with the total storage space taken by discarded items for the given user.
+
+        Discarded items are those that are deleted but not purged yet.
+        """
+        raise NotImplementedError
+
+    def get_discarded(
+        self,
+        user: model.User,
+        offset: Optional[int],
+        limit: Optional[int],
+        order: Optional[StoredItemOrderBy],
+    ) -> List[StoredItem]:
+        """Returns a paginated list of items deleted by the given user that are not yet purged."""
+        raise NotImplementedError
+
+    def cleanup_items(self, user: model.User, item_ids: Set[int]) -> StorageItemsCleanupResult:
+        """Purges the given list of items by ID. The items must be owned by the user."""
         raise NotImplementedError

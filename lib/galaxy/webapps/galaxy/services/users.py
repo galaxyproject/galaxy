@@ -7,7 +7,10 @@ from galaxy.managers.users import UserManager
 from galaxy.queue_worker import send_local_control_task
 from galaxy.schema import APIKeyModel
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.webapps.galaxy.services.base import ServiceBase
+from galaxy.webapps.galaxy.services.base import (
+    async_task_summary,
+    ServiceBase,
+)
 
 
 class UsersService(ServiceBase):
@@ -31,13 +34,18 @@ class UsersService(ServiceBase):
         if trans.app.config.enable_celery_tasks:
             from galaxy.celery.tasks import recalculate_user_disk_usage
 
-            recalculate_user_disk_usage.delay(user_id=trans.user.id)
+            result = recalculate_user_disk_usage.delay(user_id=trans.user.id)
+            return async_task_summary(result)
         else:
             send_local_control_task(
                 trans.app,
                 "recalculate_user_disk_usage",
-                kwargs={"user_id": trans.user.id},
+                kwargs={
+                    "object_store": trans.app.object_store,
+                    "user_id": trans.user.id,
+                },
             )
+            return None
 
     def get_api_key(self, trans: ProvidesUserContext, user_id: int) -> Optional[APIKeyModel]:
         """Returns the current API key or None if the user doesn't have any valid API key."""

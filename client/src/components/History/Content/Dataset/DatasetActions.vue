@@ -54,7 +54,7 @@
                 </b-button>
                 <b-button
                     v-if="showHighlight"
-                    class="px-1"
+                    class="highlight-btn px-1"
                     title="Show Inputs for this item"
                     size="sm"
                     variant="link"

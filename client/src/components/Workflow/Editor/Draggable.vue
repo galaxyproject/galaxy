@@ -28,6 +28,7 @@ const props = defineProps({
 
 const emit = defineEmits(["mousedown", "mouseup", "move", "dragstart", "start", "stop"]);
 
+let dragImg: HTMLImageElement | undefined;
 const draggable = ref();
 const size = reactive(useAnimationFrameSize(draggable));
 const transform: Ref<ZoomTransform> | undefined = inject("transform");
@@ -40,8 +41,16 @@ const onStart = (position: Position, event: DragEvent) => {
     emit("start");
     emit("mousedown", event);
     if (event.type == "dragstart") {
+        dragImg = document.createElement("img");
+        dragImg.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+        document.body.appendChild(dragImg);
         // I guess better than copy ?
         event.dataTransfer!.effectAllowed = "link";
+        try {
+            event.dataTransfer!.setDragImage(dragImg, 0, 0);
+        } catch (e) {
+            console.error(e);
+        }
         if (props.dragData) {
             event.dataTransfer!.setData("text/plain", JSON.stringify(props.dragData));
         }
@@ -66,6 +75,9 @@ const onMove = (position: Position, event: DragEvent) => {
 };
 
 const onEnd = (position: Position, event: DragEvent) => {
+    if (dragImg) {
+        document.body.removeChild(dragImg);
+    }
     emit("stop");
     emit("mouseup");
 };

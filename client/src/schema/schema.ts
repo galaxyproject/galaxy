@@ -73,7 +73,7 @@ export interface paths {
          * @description Download the content of a history dataset collection as a `zip` archive
          * while maintaining approximate collection structure.
          */
-        get: operations["download_dataset_collection_api_dataset_collections__id__download_get"];
+        get: operations["dataset_collections__download"];
     };
     "/api/dataset_collections/{id}/prepare_download": {
         /**
@@ -163,7 +163,7 @@ export interface paths {
     };
     "/api/datasets/{history_content_id}/metadata_file": {
         /** Returns the metadata file associated with this history item. */
-        get: operations["get_metadata_file_api_datasets__history_content_id__metadata_file_get"];
+        get: operations["datasets__get_metadata_file"];
     };
     "/api/datatypes": {
         /**
@@ -436,7 +436,7 @@ export interface paths {
          *
          * **Note**: Anonymous users are allowed to get their current history contents.
          */
-        get: operations["history_contents_api_histories__history_id__contents_get"];
+        get: operations["history_contents__index"];
         /**
          * Batch update specific properties of a set items contained in the given History.
          * @description Batch update specific properties of a set items contained in the given History.
@@ -450,7 +450,7 @@ export interface paths {
          * @deprecated
          * @description Create a new `HDA` or `HDCA` in the given History.
          */
-        post: operations["create_api_histories__history_id__contents_post"];
+        post: operations["history_contents__create"];
     };
     "/api/histories/{history_id}/contents/archive": {
         /**
@@ -459,7 +459,7 @@ export interface paths {
          *
          * **Note**: this is a volatile endpoint and settings and behavior may change.
          */
-        get: operations["archive_api_histories__history_id__contents_archive_get"];
+        get: operations["history_contents__archive"];
     };
     "/api/histories/{history_id}/contents/archive/{filename}.{format}": {
         /**
@@ -468,7 +468,7 @@ export interface paths {
          *
          * **Note**: this is a volatile endpoint and settings and behavior may change.
          */
-        get: operations["archive_api_histories__history_id__contents_archive__filename___format__get"];
+        get: operations["history_contents__archive_named"];
     };
     "/api/histories/{history_id}/contents/bulk": {
         /**
@@ -485,7 +485,7 @@ export interface paths {
          * @description Download the content of a history dataset collection as a `zip` archive
          * while maintaining approximate collection structure.
          */
-        get: operations["download_dataset_collection_api_histories__history_id__contents_dataset_collections__id__download_get"];
+        get: operations["history_contents__download_collection"];
     };
     "/api/histories/{history_id}/contents/datasets/{id}/materialize": {
         /** Materialize a deferred dataset into real, usable dataset. */
@@ -516,7 +516,7 @@ export interface paths {
     };
     "/api/histories/{history_id}/contents/{history_content_id}/metadata_file": {
         /** Returns the metadata file associated with this history item. */
-        get: operations["get_metadata_file_api_histories__history_id__contents__history_content_id__metadata_file_get"];
+        get: operations["history_contents__get_metadata_file"];
     };
     "/api/histories/{history_id}/contents/{id}": {
         /**
@@ -526,20 +526,20 @@ export interface paths {
          *
          * **Note**: Anonymous users are allowed to get their current history contents.
          */
-        get: operations["history_content_api_histories__history_id__contents__id__get"];
+        get: operations["history_contents__show_legacy"];
         /**
-         * Updates the values for the history content item with the given ``ID``. ``/api/histories/{history_id}/contents/{type}s/{id}`` should be used instead.
+         * Updates the values for the history content item with the given ``ID`` and query specified type. ``/api/histories/{history_id}/contents/{type}s/{id}`` should be used instead.
          * @deprecated
          * @description Updates the values for the history content item with the given ``ID``.
          */
-        put: operations["update_api_histories__history_id__contents__id__put"];
+        put: operations["history_contents__update_legacy"];
         /**
          * Delete the history dataset with the given ``ID``.
-         * @description Delete the history content with the given ``ID`` and specified type (defaults to dataset).
+         * @description Delete the history content with the given ``ID`` and query specified type (defaults to dataset).
          *
          * **Note**: Currently does not stop any active jobs for which this dataset is an output.
          */
-        delete: operations["delete_api_histories__history_id__contents__id__delete"];
+        delete: operations["history_contents__delete_legacy"];
     };
     "/api/histories/{history_id}/contents/{id}/validate": {
         /**
@@ -551,19 +551,19 @@ export interface paths {
     "/api/histories/{history_id}/contents/{type}s": {
         /**
          * Returns the contents of the given history filtered by type.
-         * @description Return a list of `HDA`/`HDCA` data for the history with the given ``ID``.
+         * @description Return a list of either `HDA`/`HDCA` data for the history with the given ``ID``.
          *
          * - The contents can be filtered and queried using the appropriate parameters.
          * - The amount of information returned for each item can be customized.
          *
          * **Note**: Anonymous users are allowed to get their current history contents.
          */
-        get: operations["index_api_histories__history_id__contents__type_s_get"];
+        get: operations["history_contents__index_typed"];
         /**
          * Create a new `HDA` or `HDCA` in the given History.
          * @description Create a new `HDA` or `HDCA` in the given History.
          */
-        post: operations["create_api_histories__history_id__contents__type_s_post"];
+        post: operations["history_contents__create_typed"];
     };
     "/api/histories/{history_id}/contents/{type}s/{id}": {
         /**
@@ -572,19 +572,19 @@ export interface paths {
          *
          * **Note**: Anonymous users are allowed to get their current history contents.
          */
-        get: operations["history_content_typed_api_histories__history_id__contents__type_s__id__get"];
+        get: operations["history_contents__show"];
         /**
-         * Updates the values for the history content item with the given ``ID``.
+         * Updates the values for the history content item with the given ``ID`` and path specified type.
          * @description Updates the values for the history content item with the given ``ID``.
          */
-        put: operations["update_api_histories__history_id__contents__type_s__id__put"];
+        put: operations["history_contents__update_typed"];
         /**
-         * Delete the history content with the given ``ID`` and specified type.
-         * @description Delete the history content with the given ``ID`` and specified type (defaults to dataset).
+         * Delete the history content with the given ``ID`` and path specified type.
+         * @description Delete the history content with the given ``ID`` and path specified type.
          *
          * **Note**: Currently does not stop any active jobs for which this dataset is an output.
          */
-        delete: operations["delete_api_histories__history_id__contents__type_s__id__delete"];
+        delete: operations["history_contents__delete_typed"];
     };
     "/api/histories/{history_id}/contents/{type}s/{id}/jobs_summary": {
         /**
@@ -1070,6 +1070,36 @@ export interface paths {
         /** Determine if specified storage request ID is ready for download. */
         get: operations["is_ready_api_short_term_storage__storage_request_id__ready_get"];
     };
+    "/api/storage/datasets": {
+        /**
+         * Purges a set of datasets by ID from disk. The datasets must be owned by the user.
+         * @description **Warning**: This operation cannot be undone. All objects will be deleted permanently from the disk.
+         */
+        delete: operations["cleanup_datasets_api_storage_datasets_delete"];
+    };
+    "/api/storage/datasets/discarded": {
+        /** Returns discarded datasets owned by the given user. The results can be paginated. */
+        get: operations["discarded_datasets_api_storage_datasets_discarded_get"];
+    };
+    "/api/storage/datasets/discarded/summary": {
+        /** Returns information with the total storage space taken by discarded datasets owned by the given user. */
+        get: operations["discarded_datasets_summary_api_storage_datasets_discarded_summary_get"];
+    };
+    "/api/storage/histories": {
+        /**
+         * Purges a set of histories by ID. The histories must be owned by the user.
+         * @description **Warning**: This operation cannot be undone. All objects will be deleted permanently from the disk.
+         */
+        delete: operations["cleanup_histories_api_storage_histories_delete"];
+    };
+    "/api/storage/histories/discarded": {
+        /** Returns all discarded histories associated with the given user. */
+        get: operations["discarded_histories_api_storage_histories_discarded_get"];
+    };
+    "/api/storage/histories/discarded/summary": {
+        /** Returns information with the total storage space taken by discarded histories associated with the given user. */
+        get: operations["discarded_histories_summary_api_storage_histories_discarded_summary_get"];
+    };
     "/api/tags": {
         /**
          * Apply a new set of tags to an item.
@@ -1161,8 +1191,23 @@ export interface paths {
          */
         post: operations["update_tour_api_tours__tour_id__post"];
     };
+    "/api/users/current/recalculate_disk_usage": {
+        /**
+         * Triggers a recalculation of the current user disk usage.
+         * @description This route will be removed in a future version.
+         *
+         * Please use `/api/users/current/recalculate_disk_usage` instead.
+         */
+        put: operations["recalculate_disk_usage_api_users_current_recalculate_disk_usage_put"];
+    };
     "/api/users/recalculate_disk_usage": {
-        /** Triggers a recalculation of the current user disk usage. */
+        /**
+         * Triggers a recalculation of the current user disk usage.
+         * @deprecated
+         * @description This route will be removed in a future version.
+         *
+         * Please use `/api/users/current/recalculate_disk_usage` instead.
+         */
         put: operations["recalculate_disk_usage_api_users_recalculate_disk_usage_put"];
     };
     "/api/users/{user_id}/api_key": {
@@ -1527,7 +1572,7 @@ export interface components {
         BulkOperationItemError: {
             /** Error */
             error: string;
-            item: components["schemas"]["HistoryContentItem"];
+            item: components["schemas"]["EncodedHistoryContentItem"];
         };
         /**
          * ChangeDatatypeOperationParams
@@ -1587,6 +1632,30 @@ export interface components {
              * @example sha-256
              */
             type: string;
+        };
+        /**
+         * CleanableItemsSummary
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        CleanableItemsSummary: {
+            /**
+             * Total Items
+             * @description The total number of items that could be purged.
+             */
+            total_items: number;
+            /**
+             * Total Size
+             * @description The total size in bytes that can be recovered by purging all the items.
+             */
+            total_size: number;
+        };
+        /**
+         * CleanupStorageItemsRequest
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        CleanupStorageItemsRequest: {
+            /** Item Ids */
+            item_ids: string[];
         };
         /**
          * CollectionElementIdentifier
@@ -2252,7 +2321,7 @@ export interface components {
              * Collection Type
              * @description The type of the collection, can be `list`, `paired`, or define subcollections using `:` as separator like `list:paired` or `list:list`.
              */
-            collection_type?: string;
+            collection_type: string;
             /**
              * Contents URL
              * @description The relative URL to access the contents of this History.
@@ -2412,7 +2481,7 @@ export interface components {
              * Dataset
              * @description The encoded ID of the dataset and its source.
              */
-            dataset: components["schemas"]["DatasetSourceId"];
+            dataset: components["schemas"]["EncodedDatasetSourceId"];
             /**
              * Error Message
              * @description The error message returned while processing this dataset.
@@ -2846,6 +2915,40 @@ export interface components {
          * @enum {string}
          */
         ElementsFromType: "archive" | "bagit" | "bagit_archive" | "directory";
+        /**
+         * EncodedDatasetSourceId
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        EncodedDatasetSourceId: {
+            /**
+             * ID
+             * @description The encoded ID of this entity.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Source
+             * @description The source of this dataset, either `hda` or `ldda` depending of its origin.
+             */
+            src: components["schemas"]["DatasetSourceType"];
+        };
+        /**
+         * EncodedHistoryContentItem
+         * @description Identifies a dataset or collection contained in a History.
+         */
+        EncodedHistoryContentItem: {
+            /**
+             * Content Type
+             * @description The type of this item.
+             */
+            history_content_type: components["schemas"]["HistoryContentType"];
+            /**
+             * ID
+             * @description The encoded ID of this entity.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+        };
         /**
          * ExportHistoryArchivePayload
          * @description Base model definition with common configuration used by all derived models.
@@ -3323,15 +3426,15 @@ export interface components {
             model_class: "GroupQuotaAssociation";
         };
         /**
-         * GroupRoleListModel
+         * GroupRoleListResponse
          * @description Base model definition with common configuration used by all derived models.
          */
-        GroupRoleListModel: components["schemas"]["GroupRoleModel"][];
+        GroupRoleListResponse: components["schemas"]["GroupRoleResponse"][];
         /**
-         * GroupRoleModel
+         * GroupRoleResponse
          * @description Base model definition with common configuration used by all derived models.
          */
-        GroupRoleModel: {
+        GroupRoleResponse: {
             /**
              * ID
              * @description Encoded ID of the role
@@ -3351,15 +3454,15 @@ export interface components {
             url: string;
         };
         /**
-         * GroupUserListModel
+         * GroupUserListResponse
          * @description Base model definition with common configuration used by all derived models.
          */
-        GroupUserListModel: components["schemas"]["GroupUserModel"][];
+        GroupUserListResponse: components["schemas"]["GroupUserResponse"][];
         /**
-         * GroupUserModel
+         * GroupUserResponse
          * @description Base model definition with common configuration used by all derived models.
          */
-        GroupUserModel: {
+        GroupUserResponse: {
             /**
              * Email
              * @description Email of the user
@@ -3664,6 +3767,8 @@ export interface components {
              * @description The current state of this dataset.
              */
             state: components["schemas"]["galaxy__model__Dataset__states"];
+            /** Tags */
+            tags: string[];
         };
         /**
          * HDASummary
@@ -3775,7 +3880,7 @@ export interface components {
              * Collection Type
              * @description The type of the collection, can be `list`, `paired`, or define subcollections using `:` as separator like `list:paired` or `list:list`.
              */
-            collection_type?: string;
+            collection_type: string;
             /**
              * Contents URL
              * @description The relative URL to access the contents of this History.
@@ -3920,7 +4025,7 @@ export interface components {
              * Collection Type
              * @description The type of the collection, can be `list`, `paired`, or define subcollections using `:` as separator like `list:paired` or `list:list`.
              */
-            collection_type?: string;
+            collection_type: string;
             /**
              * Contents URL
              * @description The relative URL to access the contents of this History.
@@ -4961,7 +5066,7 @@ export interface components {
         LibraryAvailablePermissions: {
             /**
              * Page
-             * @description Current page .
+             * @description Current page.
              */
             page: number;
             /**
@@ -5473,12 +5578,12 @@ export interface components {
              *
              * @example 0123456789ABCDEF
              */
-            content?: string;
+            content: string;
             /**
              * Source
              * @description The source of the content. Can be other history element to be copied or library elements.
              */
-            source?: components["schemas"]["DatasetSourceType"];
+            source: components["schemas"]["DatasetSourceType"];
         };
         /**
          * MetadataFile
@@ -6269,15 +6374,15 @@ export interface components {
             user_ids?: string[];
         };
         /**
-         * RoleListModel
+         * RoleListResponse
          * @description Base model definition with common configuration used by all derived models.
          */
-        RoleListModel: components["schemas"]["RoleModel"][];
+        RoleListResponse: components["schemas"]["RoleModelResponse"][];
         /**
-         * RoleModel
+         * RoleModelResponse
          * @description Base model definition with common configuration used by all derived models.
          */
-        RoleModel: {
+        RoleModelResponse: {
             /**
              * Description
              * @description Description of the role
@@ -6660,6 +6765,33 @@ export interface components {
          */
         Src: "url" | "pasted" | "files" | "path" | "composite" | "ftp_import" | "server_dir";
         /**
+         * StorageItemCleanupError
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        StorageItemCleanupError: {
+            /** Error */
+            error: string;
+            /**
+             * Item Id
+             * @example 0123456789ABCDEF
+             */
+            item_id: string;
+        };
+        /**
+         * StorageItemsCleanupResult
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        StorageItemsCleanupResult: {
+            /** Errors */
+            errors: components["schemas"]["StorageItemCleanupError"][];
+            /** Success Item Count */
+            success_item_count: number;
+            /** Total Free Bytes */
+            total_free_bytes: number;
+            /** Total Item Count */
+            total_item_count: number;
+        };
+        /**
          * StoreExportPayload
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -6688,6 +6820,35 @@ export interface components {
              */
             model_store_format?: components["schemas"]["ModelStoreFormat"];
         };
+        /**
+         * StoredItem
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        StoredItem: {
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Size */
+            size: number;
+            /** Type */
+            type: "history" | "dataset";
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time and date this item was updated.
+             */
+            update_time: string;
+        };
+        /**
+         * StoredItemOrderBy
+         * @description Available options for sorting Stored Items results.
+         * @enum {string}
+         */
+        StoredItemOrderBy: "name-asc" | "name-dsc" | "size-asc" | "size-dsc" | "update_time-asc" | "update_time-dsc";
         /**
          * SuitableConverter
          * @description Base model definition with common configuration used by all derived models.
@@ -7814,17 +7975,13 @@ export interface operations {
             };
         };
     };
-    download_dataset_collection_api_dataset_collections__id__download_get: {
+    dataset_collections__download: {
         /**
          * Download the content of a dataset collection as a `zip` archive.
          * @description Download the content of a history dataset collection as a `zip` archive
          * while maintaining approximate collection structure.
          */
         parameters: {
-            /** @description The encoded database identifier of the History. */
-            query?: {
-                history_id?: string;
-            };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
                 "run-as"?: string;
@@ -8287,13 +8444,11 @@ export interface operations {
          * @description Streams the dataset for download or the contents preview to be displayed in a browser.
          */
         parameters: {
-            /** @description The encoded database identifier of the History. */
             /** @description Whether to get preview contents to be directly displayed on the web. If preview is False (default) the contents will be downloaded instead. */
-            /** @description TODO */
+            /** @description If non-null, get the specified filename from the extra files for this dataset. */
             /** @description The file extension when downloading the display data. Use the value `data` to let the server infer it from the data type. */
             /** @description The query parameter 'raw' should be considered experimental and may be dropped at some point in the future without warning. Generally, data should be processed by its datatype prior to display. */
             query?: {
-                history_id?: string;
                 preview?: boolean;
                 filename?: string;
                 to_ext?: string;
@@ -8325,13 +8480,11 @@ export interface operations {
          * @description Streams the dataset for download or the contents preview to be displayed in a browser.
          */
         parameters: {
-            /** @description The encoded database identifier of the History. */
             /** @description Whether to get preview contents to be directly displayed on the web. If preview is False (default) the contents will be downloaded instead. */
-            /** @description TODO */
+            /** @description If non-null, get the specified filename from the extra files for this dataset. */
             /** @description The file extension when downloading the display data. Use the value `data` to let the server infer it from the data type. */
             /** @description The query parameter 'raw' should be considered experimental and may be dropped at some point in the future without warning. Generally, data should be processed by its datatype prior to display. */
             query?: {
-                history_id?: string;
                 preview?: boolean;
                 filename?: string;
                 to_ext?: string;
@@ -8361,13 +8514,11 @@ export interface operations {
             };
         };
     };
-    get_metadata_file_api_datasets__history_content_id__metadata_file_get: {
+    datasets__get_metadata_file: {
         /** Returns the metadata file associated with this history item. */
         parameters: {
-            /** @description The encoded database identifier of the History. */
             /** @description The name of the metadata file to retrieve. */
             query: {
-                history_id?: string;
                 metadata_file: string;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -9101,7 +9252,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupRoleListModel"];
+                    "application/json": components["schemas"]["GroupRoleListResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9130,7 +9281,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupRoleModel"];
+                    "application/json": components["schemas"]["GroupRoleResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9159,7 +9310,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupRoleModel"];
+                    "application/json": components["schemas"]["GroupRoleResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9188,7 +9339,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupRoleModel"];
+                    "application/json": components["schemas"]["GroupRoleResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9220,7 +9371,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupUserModel"];
+                    "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9253,7 +9404,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupUserModel"];
+                    "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9286,7 +9437,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupUserModel"];
+                    "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9317,7 +9468,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupUserListModel"];
+                    "application/json": components["schemas"]["GroupUserListResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9349,7 +9500,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupUserModel"];
+                    "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9382,7 +9533,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupUserModel"];
+                    "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9415,7 +9566,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupUserModel"];
+                    "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9963,7 +10114,7 @@ export interface operations {
             };
         };
     };
-    history_contents_api_histories__history_id__contents_get: {
+    history_contents__index: {
         /**
          * Returns the contents of the given history.
          * @description Return a list of `HDA`/`HDCA` data for the history with the given ``ID``.
@@ -10100,7 +10251,7 @@ export interface operations {
             };
         };
     };
-    create_api_histories__history_id__contents_post: {
+    history_contents__create: {
         /**
          * Create a new `HDA` or `HDCA` in the given History.
          * @deprecated
@@ -10108,7 +10259,7 @@ export interface operations {
          */
         parameters: {
             /**
-             * @description The type of the history element to create.
+             * @description The type of the target history element.
              * @example dataset
              */
             /** @description View to be passed to the serializer */
@@ -10159,7 +10310,7 @@ export interface operations {
             };
         };
     };
-    archive_api_histories__history_id__contents_archive_get: {
+    history_contents__archive: {
         /**
          * Build and return a compressed archive of the selected history contents.
          * @description Build and return a compressed archive of the selected history contents.
@@ -10168,10 +10319,6 @@ export interface operations {
          */
         parameters: {
             /** @description The name that the Archive will have (defaults to history name). */
-            /**
-             * @deprecated
-             * @description Output format of the archive.
-             */
             /** @description Whether to return the archive and file paths only (as JSON) and not an actual archive file. */
             /**
              * @description Generally a property name to filter by followed by an (often optional) hyphen and operator string.
@@ -10189,7 +10336,6 @@ export interface operations {
              */
             query?: {
                 filename?: string;
-                format?: string;
                 dry_run?: boolean;
                 q?: string[];
                 qv?: string[];
@@ -10221,7 +10367,7 @@ export interface operations {
             };
         };
     };
-    archive_api_histories__history_id__contents_archive__filename___format__get: {
+    history_contents__archive_named: {
         /**
          * Build and return a compressed archive of the selected history contents.
          * @description Build and return a compressed archive of the selected history contents.
@@ -10257,6 +10403,11 @@ export interface operations {
                 "run-as"?: string;
             };
             /** @description The ID of the History. */
+            /** @description The name that the Archive will have (defaults to history name). */
+            /**
+             * @deprecated
+             * @description Output format of the archive.
+             */
             path: {
                 history_id: string;
                 filename: string;
@@ -10327,7 +10478,7 @@ export interface operations {
             };
         };
     };
-    download_dataset_collection_api_histories__history_id__contents_dataset_collections__id__download_get: {
+    history_contents__download_collection: {
         /**
          * Download the content of a dataset collection as a `zip` archive.
          * @description Download the content of a history dataset collection as a `zip` archive
@@ -10338,6 +10489,7 @@ export interface operations {
             header?: {
                 "run-as"?: string;
             };
+            /** @description The encoded database identifier of the History. */
             /** @description The ID of the `HDCA` contained in the history. */
             path: {
                 history_id: string;
@@ -10436,7 +10588,7 @@ export interface operations {
          */
         parameters: {
             /** @description Whether to get preview contents to be directly displayed on the web. If preview is False (default) the contents will be downloaded instead. */
-            /** @description TODO */
+            /** @description If non-null, get the specified filename from the extra files for this dataset. */
             /** @description The file extension when downloading the display data. Use the value `data` to let the server infer it from the data type. */
             /** @description The query parameter 'raw' should be considered experimental and may be dropped at some point in the future without warning. Generally, data should be processed by its datatype prior to display. */
             query?: {
@@ -10449,6 +10601,7 @@ export interface operations {
             header?: {
                 "run-as"?: string;
             };
+            /** @description The encoded database identifier of the History. */
             /** @description The encoded database identifier of the dataset. */
             path: {
                 history_id: string;
@@ -10473,7 +10626,7 @@ export interface operations {
          */
         parameters: {
             /** @description Whether to get preview contents to be directly displayed on the web. If preview is False (default) the contents will be downloaded instead. */
-            /** @description TODO */
+            /** @description If non-null, get the specified filename from the extra files for this dataset. */
             /** @description The file extension when downloading the display data. Use the value `data` to let the server infer it from the data type. */
             /** @description The query parameter 'raw' should be considered experimental and may be dropped at some point in the future without warning. Generally, data should be processed by its datatype prior to display. */
             query?: {
@@ -10486,6 +10639,7 @@ export interface operations {
             header?: {
                 "run-as"?: string;
             };
+            /** @description The encoded database identifier of the History. */
             /** @description The encoded database identifier of the dataset. */
             path: {
                 history_id: string;
@@ -10536,7 +10690,7 @@ export interface operations {
             };
         };
     };
-    get_metadata_file_api_histories__history_id__contents__history_content_id__metadata_file_get: {
+    history_contents__get_metadata_file: {
         /** Returns the metadata file associated with this history item. */
         parameters: {
             /** @description The name of the metadata file to retrieve. */
@@ -10547,6 +10701,7 @@ export interface operations {
             header?: {
                 "run-as"?: string;
             };
+            /** @description The encoded database identifier of the History. */
             /** @description The encoded database identifier of the dataset. */
             path: {
                 history_id: string;
@@ -10564,7 +10719,7 @@ export interface operations {
             };
         };
     };
-    history_content_api_histories__history_id__contents__id__get: {
+    history_contents__show_legacy: {
         /**
          * Return detailed information about an HDA within a history. ``/api/histories/{history_id}/contents/{type}s/{id}`` should be used instead.
          * @deprecated
@@ -10574,7 +10729,7 @@ export interface operations {
          */
         parameters: {
             /**
-             * @description The type of the history element to show.
+             * @description The type of the target history element.
              * @example dataset
              */
             /** @description This value can be used to broadly restrict the magnitude of the number of elements returned via the API for large collections. The number of actual elements returned may be "a bit" more than this number or "a lot" less - varying on the depth of nesting, balance of nesting at each level, and size of target collection. The consumer of this API should not expect a stable number or pre-calculable number of elements to be produced given this parameter - the only promise is that this API will not respond with an order of magnitude more elements estimated with this value. The UI uses this parameter to fetch a "balanced" concept of the "start" of large collections at every depth of the collection. */
@@ -10617,15 +10772,15 @@ export interface operations {
             };
         };
     };
-    update_api_histories__history_id__contents__id__put: {
+    history_contents__update_legacy: {
         /**
-         * Updates the values for the history content item with the given ``ID``. ``/api/histories/{history_id}/contents/{type}s/{id}`` should be used instead.
+         * Updates the values for the history content item with the given ``ID`` and query specified type. ``/api/histories/{history_id}/contents/{type}s/{id}`` should be used instead.
          * @deprecated
          * @description Updates the values for the history content item with the given ``ID``.
          */
         parameters: {
             /**
-             * @description The type of the history element to show.
+             * @description The type of the target history element.
              * @example dataset
              */
             /** @description View to be passed to the serializer */
@@ -10671,16 +10826,16 @@ export interface operations {
             };
         };
     };
-    delete_api_histories__history_id__contents__id__delete: {
+    history_contents__delete_legacy: {
         /**
          * Delete the history dataset with the given ``ID``.
-         * @description Delete the history content with the given ``ID`` and specified type (defaults to dataset).
+         * @description Delete the history content with the given ``ID`` and query specified type (defaults to dataset).
          *
          * **Note**: Currently does not stop any active jobs for which this dataset is an output.
          */
         parameters: {
             /**
-             * @description The type of the history element to show.
+             * @description The type of the target history element.
              * @example dataset
              */
             /**
@@ -10774,10 +10929,10 @@ export interface operations {
             };
         };
     };
-    index_api_histories__history_id__contents__type_s_get: {
+    history_contents__index_typed: {
         /**
          * Returns the contents of the given history filtered by type.
-         * @description Return a list of `HDA`/`HDCA` data for the history with the given ``ID``.
+         * @description Return a list of either `HDA`/`HDCA` data for the history with the given ``ID``.
          *
          * - The contents can be filtered and queried using the appropriate parameters.
          * - The amount of information returned for each item can be customized.
@@ -10847,9 +11002,13 @@ export interface operations {
                 "run-as"?: string;
             };
             /** @description The ID of the History. */
+            /**
+             * @description The type of the target history element.
+             * @example dataset
+             */
             path: {
                 history_id: string;
-                type: string;
+                type: components["schemas"]["HistoryContentType"];
             };
         };
         responses: {
@@ -10869,7 +11028,7 @@ export interface operations {
             };
         };
     };
-    create_api_histories__history_id__contents__type_s_post: {
+    history_contents__create_typed: {
         /**
          * Create a new `HDA` or `HDCA` in the given History.
          * @description Create a new `HDA` or `HDCA` in the given History.
@@ -10886,6 +11045,10 @@ export interface operations {
                 "run-as"?: string;
             };
             /** @description The ID of the History. */
+            /**
+             * @description The type of the target history element.
+             * @example dataset
+             */
             path: {
                 history_id: string;
                 type: components["schemas"]["HistoryContentType"];
@@ -10923,7 +11086,7 @@ export interface operations {
             };
         };
     };
-    history_content_typed_api_histories__history_id__contents__type_s__id__get: {
+    history_contents__show: {
         /**
          * Return detailed information about a specific HDA or HDCA with the given `ID` within a history.
          * @description Return detailed information about an `HDA` or `HDCA` within a history.
@@ -10945,6 +11108,10 @@ export interface operations {
             };
             /** @description The ID of the History. */
             /** @description The ID of the item (`HDA`/`HDCA`) contained in the history. */
+            /**
+             * @description The type of the target history element.
+             * @example dataset
+             */
             path: {
                 history_id: string;
                 id: string;
@@ -10971,9 +11138,9 @@ export interface operations {
             };
         };
     };
-    update_api_histories__history_id__contents__type_s__id__put: {
+    history_contents__update_typed: {
         /**
-         * Updates the values for the history content item with the given ``ID``.
+         * Updates the values for the history content item with the given ``ID`` and path specified type.
          * @description Updates the values for the history content item with the given ``ID``.
          */
         parameters: {
@@ -10989,6 +11156,10 @@ export interface operations {
             };
             /** @description The ID of the History. */
             /** @description The ID of the item (`HDA`/`HDCA`) contained in the history. */
+            /**
+             * @description The type of the target history element.
+             * @example dataset
+             */
             path: {
                 history_id: string;
                 id: string;
@@ -11020,10 +11191,10 @@ export interface operations {
             };
         };
     };
-    delete_api_histories__history_id__contents__type_s__id__delete: {
+    history_contents__delete_typed: {
         /**
-         * Delete the history content with the given ``ID`` and specified type.
-         * @description Delete the history content with the given ``ID`` and specified type (defaults to dataset).
+         * Delete the history content with the given ``ID`` and path specified type.
+         * @description Delete the history content with the given ``ID`` and path specified type.
          *
          * **Note**: Currently does not stop any active jobs for which this dataset is an output.
          */
@@ -11055,6 +11226,10 @@ export interface operations {
             };
             /** @description The ID of the History. */
             /** @description The ID of the item (`HDA`/`HDCA`) contained in the history. */
+            /**
+             * @description The type of the target history element.
+             * @example dataset
+             */
             path: {
                 history_id: string;
                 id: string;
@@ -11104,6 +11279,10 @@ export interface operations {
             };
             /** @description The ID of the History. */
             /** @description The ID of the item (`HDA`/`HDCA`) contained in the history. */
+            /**
+             * @description The type of the target history element.
+             * @example dataset
+             */
             path: {
                 history_id: string;
                 id: string;
@@ -11137,6 +11316,10 @@ export interface operations {
             };
             /** @description The ID of the History. */
             /** @description The ID of the item (`HDA`/`HDCA`) contained in the history. */
+            /**
+             * @description The type of the target history element.
+             * @example dataset
+             */
             path: {
                 history_id: string;
                 id: string;
@@ -11172,6 +11355,10 @@ export interface operations {
             };
             /** @description The ID of the History. */
             /** @description The ID of the item (`HDA`/`HDCA`) contained in the history. */
+            /**
+             * @description The type of the target history element.
+             * @example dataset
+             */
             path: {
                 history_id: string;
                 id: string;
@@ -13268,7 +13455,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["RoleListModel"];
+                    "application/json": components["schemas"]["RoleListResponse"];
                 };
             };
             /** @description Validation Error */
@@ -13296,7 +13483,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["RoleModel"];
+                    "application/json": components["schemas"]["RoleModelResponse"];
                 };
             };
             /** @description Validation Error */
@@ -13322,7 +13509,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["RoleModel"];
+                    "application/json": components["schemas"]["RoleModelResponse"];
                 };
             };
             /** @description Validation Error */
@@ -13365,6 +13552,176 @@ export interface operations {
             200: {
                 content: {
                     "application/json": boolean;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cleanup_datasets_api_storage_datasets_delete: {
+        /**
+         * Purges a set of datasets by ID from disk. The datasets must be owned by the user.
+         * @description **Warning**: This operation cannot be undone. All objects will be deleted permanently from the disk.
+         */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CleanupStorageItemsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["StorageItemsCleanupResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discarded_datasets_api_storage_datasets_discarded_get: {
+        /** Returns discarded datasets owned by the given user. The results can be paginated. */
+        parameters?: {
+            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
+            /** @description The maximum number of items to return. */
+            /** @description String containing one of the valid ordering attributes followed by '-asc' or '-dsc' for ascending and descending order respectively. */
+            query?: {
+                offset?: number;
+                limit?: number;
+                order?: components["schemas"]["StoredItemOrderBy"];
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["StoredItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discarded_datasets_summary_api_storage_datasets_discarded_summary_get: {
+        /** Returns information with the total storage space taken by discarded datasets owned by the given user. */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["CleanableItemsSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cleanup_histories_api_storage_histories_delete: {
+        /**
+         * Purges a set of histories by ID. The histories must be owned by the user.
+         * @description **Warning**: This operation cannot be undone. All objects will be deleted permanently from the disk.
+         */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CleanupStorageItemsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["StorageItemsCleanupResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discarded_histories_api_storage_histories_discarded_get: {
+        /** Returns all discarded histories associated with the given user. */
+        parameters?: {
+            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
+            /** @description The maximum number of items to return. */
+            /** @description String containing one of the valid ordering attributes followed by '-asc' or '-dsc' for ascending and descending order respectively. */
+            query?: {
+                offset?: number;
+                limit?: number;
+                order?: components["schemas"]["StoredItemOrderBy"];
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["StoredItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discarded_histories_summary_api_storage_histories_discarded_summary_get: {
+        /** Returns information with the total storage space taken by discarded histories associated with the given user. */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["CleanableItemsSummary"];
                 };
             };
             /** @description Validation Error */
@@ -13830,8 +14187,13 @@ export interface operations {
             };
         };
     };
-    recalculate_disk_usage_api_users_recalculate_disk_usage_put: {
-        /** Triggers a recalculation of the current user disk usage. */
+    recalculate_disk_usage_api_users_current_recalculate_disk_usage_put: {
+        /**
+         * Triggers a recalculation of the current user disk usage.
+         * @description This route will be removed in a future version.
+         *
+         * Please use `/api/users/current/recalculate_disk_usage` instead.
+         */
         parameters?: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -13839,7 +14201,44 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Successful Response */
+            /** @description The asynchronous task summary to track the task state. */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["AsyncTaskResultSummary"];
+                };
+            };
+            /** @description The background task was submitted but there is no status tracking ID available. */
+            204: never;
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    recalculate_disk_usage_api_users_recalculate_disk_usage_put: {
+        /**
+         * Triggers a recalculation of the current user disk usage.
+         * @deprecated
+         * @description This route will be removed in a future version.
+         *
+         * Please use `/api/users/current/recalculate_disk_usage` instead.
+         */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description The asynchronous task summary to track the task state. */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["AsyncTaskResultSummary"];
+                };
+            };
+            /** @description The background task was submitted but there is no status tracking ID available. */
             204: never;
             /** @description Validation Error */
             422: {

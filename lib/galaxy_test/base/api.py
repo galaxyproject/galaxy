@@ -34,10 +34,15 @@ CONFIG_PREFIXES = ["GALAXY_TEST_CONFIG_", "GALAXY_CONFIG_OVERRIDE_", "GALAXY_CON
 CELERY_BROKER = get_from_env("CELERY_BROKER", CONFIG_PREFIXES, "memory://")
 CELERY_BACKEND = get_from_env("CELERY_BACKEND", CONFIG_PREFIXES, "rpc://localhost")
 
+DEFAULT_CELERY_CONFIG = {
+    "broker_url": CELERY_BROKER,
+    "result_backend": CELERY_BACKEND,
+}
+
 
 @pytest.fixture(scope="session")
 def celery_config():
-    return {"broker_url": CELERY_BROKER, "result_backend": CELERY_BACKEND}
+    return DEFAULT_CELERY_CONFIG
 
 
 class UsesCeleryTasks:
@@ -45,8 +50,9 @@ class UsesCeleryTasks:
     def handle_galaxy_config_kwds(cls, config: Dict[str, Any]) -> None:
         config["enable_celery_tasks"] = True
         config["metadata_strategy"] = f'{config.get("metadata_strategy", "directory")}_celery'
-        config.update({"celery_conf": {"broker_url": CELERY_BROKER}})
-        config.update({"celery_conf": {"result_backend": CELERY_BACKEND}})
+        celery_conf: Dict[str, Any] = config.get("celery_conf", {})
+        celery_conf.update(DEFAULT_CELERY_CONFIG)
+        config["celery_conf"] = celery_conf
 
     @pytest.fixture(autouse=True, scope="session")
     def _request_celery_app(self, celery_session_app, celery_config):

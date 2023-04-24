@@ -159,10 +159,8 @@ def main():
             template_file = default_template
         else:
             parser.error(
-                "Default template (%s) or sample template (%s) not "
-                "found, please specify template as an option "
-                "(--template)." % default_template,
-                sample_template_file,
+                "Default template ({default_template}) or sample template ({sample_template_file}) not "
+                "found, please specify template as an option (--template)."
             )
     elif not os.path.exists(template_file):
         parser.error("Specified template file (%s) not found." % template_file)
@@ -204,13 +202,13 @@ def administrative_delete_datasets(
     # We really only need the id column here, but sqlalchemy barfs when
     # trying to select only 1 column
     hda_ids_query = sa.select(
-        (app.model.HistoryDatasetAssociation.table.c.id, app.model.HistoryDatasetAssociation.table.c.deleted),
+        (app.model.HistoryDatasetAssociation.__table__.c.id, app.model.HistoryDatasetAssociation.__table__.c.deleted),
         whereclause=and_(
-            app.model.Dataset.table.c.deleted == false(),
-            app.model.HistoryDatasetAssociation.table.c.update_time < cutoff_time,
-            app.model.HistoryDatasetAssociation.table.c.deleted == false(),
+            app.model.Dataset.__table__.c.deleted == false(),
+            app.model.HistoryDatasetAssociation.__table__.c.update_time < cutoff_time,
+            app.model.HistoryDatasetAssociation.__table__.c.deleted == false(),
         ),
-        from_obj=[sa.outerjoin(app.model.Dataset.table, app.model.HistoryDatasetAssociation.table)],
+        from_obj=[sa.outerjoin(app.model.Dataset.__table__, app.model.HistoryDatasetAssociation.__table__)],
     )
 
     # Add all datasets associated with Histories to our list
@@ -232,16 +230,21 @@ def administrative_delete_datasets(
     # Process each of the Dataset objects
     for hda_id in hda_ids:
         user_query = sa.select(
-            [app.model.HistoryDatasetAssociation.table, app.model.History.table, app.model.User.table],
-            whereclause=and_(app.model.HistoryDatasetAssociation.table.c.id == hda_id),
+            [app.model.HistoryDatasetAssociation.__table__, app.model.History.__table__, app.model.User.__table__],
+            whereclause=and_(app.model.HistoryDatasetAssociation.__table__.c.id == hda_id),
             from_obj=[
-                sa.join(app.model.User.table, app.model.History.table).join(app.model.HistoryDatasetAssociation.table)
+                sa.join(app.model.User.__table__, app.model.History.__table__).join(
+                    app.model.HistoryDatasetAssociation.__table__
+                )
             ],
             use_labels=True,
         )
         for result in app.sa_session.execute(user_query):
-            user_notifications[result[app.model.User.table.c.email]].append(
-                (result[app.model.HistoryDatasetAssociation.table.c.name], result[app.model.History.table.c.name])
+            user_notifications[result[app.model.User.__table__.c.email]].append(
+                (
+                    result[app.model.HistoryDatasetAssociation.__table__.c.name],
+                    result[app.model.History.__table__.c.name],
+                )
             )
             deleted_instance_count += 1
             if not info_only and not email_only:
@@ -282,7 +285,7 @@ def _get_tool_id_for_hda(app, hda_id):
     job = (
         app.sa_session.query(app.model.Job)
         .join(app.model.JobToOutputDatasetAssociation)
-        .filter(app.model.JobToOutputDatasetAssociation.table.c.dataset_id == hda_id)
+        .filter(app.model.JobToOutputDatasetAssociation.__table__.c.dataset_id == hda_id)
         .first()
     )
     if job is not None:

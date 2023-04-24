@@ -2,7 +2,7 @@ import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 import CleanupResultDialog from "./CleanupResultDialog.vue";
-import { CleanupResult } from "./model";
+import { CleanupResult, type CleanableItem } from "./model";
 
 const localVue = getLocalVue();
 
@@ -14,25 +14,41 @@ const ERRORS_TABLE = '[data-test-id="errors-table"]';
 
 const NO_RESULT_YET = undefined;
 const FAILED_RESULT = () => {
-    return new CleanupResult({
-        errorMessage: "The operation failed",
-        totalFreeBytes: 0,
-        totalItemCount: 0,
-        errors: [],
-    });
+    return new CleanupResult(
+        {
+            total_item_count: 0,
+            errors: [],
+            success_item_count: 0,
+            total_free_bytes: 0,
+        },
+        [],
+        "The operation failed"
+    );
 };
+const TEST_ITEMS: CleanableItem[] = [
+    { id: "1", name: "Dataset X", size: 512, type: "dataset", update_time: new Date().toISOString() },
+    { id: "2", name: "Dataset Y", size: 512, type: "dataset", update_time: new Date().toISOString() },
+    { id: "3", name: "Dataset Z", size: 512, type: "dataset", update_time: new Date().toISOString() },
+];
 const PARTIAL_SUCCESS_RESULT = () => {
-    return new CleanupResult({
-        totalItemCount: 3,
-        totalFreeBytes: 1,
-        errors: [
-            { name: "Dataset X", reason: "Failed because of X" },
-            { name: "Dataset Y", reason: "Failed because of Y" },
-        ],
-    });
+    return new CleanupResult(
+        {
+            total_item_count: 3,
+            success_item_count: 1,
+            total_free_bytes: 512,
+            errors: [
+                { item_id: "1", error: "Failed because of X" },
+                { item_id: "2", error: "Failed because of Y" },
+            ],
+        },
+        TEST_ITEMS
+    );
 };
 const SUCCESS_RESULT = () => {
-    return new CleanupResult({ totalItemCount: 2, totalFreeBytes: 2, errors: [] });
+    return new CleanupResult(
+        { total_item_count: 3, success_item_count: 3, total_free_bytes: 512 * 3, errors: [] },
+        TEST_ITEMS
+    );
 };
 async function mountCleanupResultDialogWith(result?: CleanupResult) {
     const wrapper = mount(CleanupResultDialog, { propsData: { result, show: true }, localVue });

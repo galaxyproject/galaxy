@@ -1,191 +1,189 @@
 <template>
-    <CurrentUser v-slot="{ user }">
-        <div>
-            <div class="form-inline d-flex align-items-center mb-2">
-                <b-button class="mr-1" title="go to first page" @click="gotoFirstPage">
-                    <font-awesome-icon icon="home" />
+    <div>
+        <div class="form-inline d-flex align-items-center mb-2">
+            <b-button class="mr-1" title="go to first page" @click="gotoFirstPage">
+                <font-awesome-icon icon="home" />
+            </b-button>
+            <b-button
+                v-if="currentUser.is_admin"
+                id="create-new-lib"
+                v-b-toggle.collapse-2
+                title="Create new folder"
+                class="mr-1">
+                <font-awesome-icon icon="plus" />
+                {{ titleLibrary }}
+            </b-button>
+            <SearchField :typing-delay="0" @updateSearch="searchValue($event)" />
+            <b-form-checkbox
+                v-if="currentUser.is_admin"
+                v-localize
+                class="mr-1"
+                @input="toggle_include_deleted($event)">
+                include deleted
+            </b-form-checkbox>
+            <b-form-checkbox v-localize class="mr-1" @input="toggle_exclude_restricted($event)">
+                exclude restricted
+            </b-form-checkbox>
+        </div>
+        <b-collapse id="collapse-2" v-model="isNewLibFormVisible">
+            <b-card>
+                <b-form @submit.prevent="newLibrary">
+                    <b-input-group class="mb-2 new-row">
+                        <b-form-input v-model="newLibraryForm.name" required :placeholder="titleName" />
+                        <b-form-input v-model="newLibraryForm.description" required :placeholder="titleDescription" />
+                        <b-form-input v-model="newLibraryForm.synopsis" :placeholder="titleSynopsis" />
+                        <template v-slot:append>
+                            <b-button id="save_new_library" type="submit" :title="titleSave">
+                                <font-awesome-icon :icon="['far', 'save']" />
+                                {{ titleSave }}
+                            </b-button>
+                        </template>
+                    </b-input-group>
+                </b-form>
+            </b-card>
+        </b-collapse>
+        <b-table
+            id="libraries_list"
+            ref="libraries_list"
+            no-sort-reset
+            striped
+            hover
+            :fields="fields"
+            :items="librariesList"
+            :per-page="perPage"
+            :current-page="currentPage"
+            show-empty
+            :filter="filter"
+            :filter-included-fields="filterOn"
+            @filtered="onFiltered">
+            <template v-slot:cell(name)="row">
+                <textarea
+                    v-if="row.item.editMode"
+                    v-model="row.item.name"
+                    aria-label="Library name"
+                    class="form-control input_library_name"
+                    rows="3" />
+
+                <div v-else-if="row.item.deleted && includeDeleted" class="deleted-item">{{ row.item.name }}</div>
+                <b-link v-else :to="{ path: `/libraries/folders/${row.item.root_folder_id}` }">
+                    {{ row.item.name }}
+                </b-link>
+            </template>
+            <template v-slot:cell(description)="{ item }">
+                <LibraryEditField
+                    :ref="`description-${item.id}`"
+                    :is-expanded="item.isExpanded"
+                    :is-edit-mode="item.editMode"
+                    :text="item.description"
+                    :changed-value.sync="item[newDescriptionProperty]"
+                    @toggleDescriptionExpand="toggleDescriptionExpand(item)" />
+            </template>
+            <template v-slot:cell(synopsis)="{ item }">
+                <LibraryEditField
+                    :ref="`synopsis-${item.id}`"
+                    :is-expanded="item.isExpanded"
+                    :is-edit-mode="item.editMode"
+                    :text="item.synopsis"
+                    :changed-value.sync="item[newSynopsisProperty]"
+                    @toggleDescriptionExpand="toggleDescriptionExpand(item)" />
+            </template>
+            <template v-slot:cell(is_unrestricted)="row">
+                <font-awesome-icon v-if="row.item.public && !row.item.deleted" title="Public library" icon="globe" />
+            </template>
+            <template v-slot:cell(buttons)="row">
+                <b-button
+                    v-if="row.item.deleted"
+                    size="sm"
+                    :title="'Undelete ' + row.item.name"
+                    @click="undelete(row.item)">
+                    <font-awesome-icon icon="unlock" />
+                    {{ titleUndelete }}
                 </b-button>
                 <b-button
-                    v-if="user.is_admin"
-                    id="create-new-lib"
-                    v-b-toggle.collapse-2
-                    title="Create new folder"
-                    class="mr-1">
-                    <font-awesome-icon icon="plus" />
-                    {{ titleLibrary }}
+                    v-if="row.item.can_user_modify && row.item.editMode"
+                    size="sm"
+                    class="lib-btn permission_folder_btn"
+                    :title="'Permissions of ' + row.item.name"
+                    @click="saveChanges(row.item)">
+                    <font-awesome-icon :icon="['far', 'save']" />
+                    {{ titleSave }}
                 </b-button>
-                <SearchField :typing-delay="0" @updateSearch="searchValue($event)" />
-                <b-form-checkbox v-if="user.is_admin" v-localize class="mr-1" @input="toggle_include_deleted($event)"
-                    >include deleted</b-form-checkbox
-                >
-                <b-form-checkbox v-localize class="mr-1" @input="toggle_exclude_restricted($event)"
-                    >exclude restricted</b-form-checkbox
-                >
-            </div>
-            <b-collapse id="collapse-2" v-model="isNewLibFormVisible">
-                <b-card>
-                    <b-form @submit.prevent="newLibrary">
-                        <b-input-group class="mb-2 new-row">
-                            <b-form-input v-model="newLibraryForm.name" required :placeholder="titleName" />
-                            <b-form-input
-                                v-model="newLibraryForm.description"
-                                required
-                                :placeholder="titleDescription" />
-                            <b-form-input v-model="newLibraryForm.synopsis" :placeholder="titleSynopsis" />
-                            <template v-slot:append>
-                                <b-button id="save_new_library" type="submit" :title="titleSave">
-                                    <font-awesome-icon :icon="['far', 'save']" />
-                                    {{ titleSave }}
-                                </b-button>
-                            </template>
-                        </b-input-group>
-                    </b-form>
-                </b-card>
-            </b-collapse>
-            <b-table
-                id="libraries_list"
-                ref="libraries_list"
-                no-sort-reset
-                striped
-                hover
-                :fields="fields"
-                :items="librariesList"
-                :per-page="perPage"
-                :current-page="currentPage"
-                show-empty
-                :filter="filter"
-                :filter-included-fields="filterOn"
-                @filtered="onFiltered">
-                <template v-slot:cell(name)="row">
-                    <textarea
-                        v-if="row.item.editMode"
-                        v-model="row.item.name"
-                        aria-label="Library name"
-                        class="form-control input_library_name"
-                        rows="3" />
+                <b-button
+                    v-if="row.item.can_user_modify && !row.item.deleted"
+                    size="sm"
+                    class="lib-btn edit_library_btn save_library_btn"
+                    :title="`Edit ${row.item.name}`"
+                    @click="toggleEditMode(row.item)">
+                    <div v-if="!row.item.editMode">
+                        <font-awesome-icon icon="pencil-alt" />
+                        {{ titleEdit }}
+                    </div>
+                    <div v-else>
+                        <font-awesome-icon :icon="['fas', 'times']" />
+                        {{ titleCancel }}
+                    </div>
+                </b-button>
+                <b-button
+                    v-if="currentUser.is_admin && !row.item.deleted"
+                    size="sm"
+                    class="lib-btn permission_library_btn"
+                    :title="'Permissions of ' + row.item.name"
+                    :to="{ path: `/libraries/${row.item.id}/permissions` }">
+                    <font-awesome-icon icon="users" />
+                    Manage
+                </b-button>
+                <b-button
+                    v-if="currentUser.is_admin && row.item.editMode && !row.item.deleted"
+                    size="sm"
+                    class="lib-btn delete-lib-btn"
+                    :title="`Delete ${row.item.name}`"
+                    @click="deleteLibrary(row.item)">
+                    <font-awesome-icon icon="trash" />
+                    {{ titleDelete }}
+                </b-button>
+            </template>
+        </b-table>
 
-                    <div v-else-if="row.item.deleted && includeDeleted" class="deleted-item">{{ row.item.name }}</div>
-                    <b-link v-else :to="{ path: `/libraries/folders/${row.item.root_folder_id}` }">{{
-                        row.item.name
-                    }}</b-link>
-                </template>
-                <template v-slot:cell(description)="{ item }">
-                    <LibraryEditField
-                        :ref="`description-${item.id}`"
-                        :is-expanded="item.isExpanded"
-                        :is-edit-mode="item.editMode"
-                        :text="item.description"
-                        :changed-value.sync="item[newDescriptionProperty]"
-                        @toggleDescriptionExpand="toggleDescriptionExpand(item)" />
-                </template>
-                <template v-slot:cell(synopsis)="{ item }">
-                    <LibraryEditField
-                        :ref="`synopsis-${item.id}`"
-                        :is-expanded="item.isExpanded"
-                        :is-edit-mode="item.editMode"
-                        :text="item.synopsis"
-                        :changed-value.sync="item[newSynopsisProperty]"
-                        @toggleDescriptionExpand="toggleDescriptionExpand(item)" />
-                </template>
-                <template v-slot:cell(is_unrestricted)="row">
-                    <font-awesome-icon
-                        v-if="row.item.public && !row.item.deleted"
-                        title="Public library"
-                        icon="globe" />
-                </template>
-                <template v-slot:cell(buttons)="row">
-                    <b-button
-                        v-if="row.item.deleted"
-                        size="sm"
-                        :title="'Undelete ' + row.item.name"
-                        @click="undelete(row.item)">
-                        <font-awesome-icon icon="unlock" />
-                        {{ titleUndelete }}
-                    </b-button>
-                    <b-button
-                        v-if="row.item.can_user_modify && row.item.editMode"
-                        size="sm"
-                        class="lib-btn permission_folder_btn"
-                        :title="'Permissions of ' + row.item.name"
-                        @click="saveChanges(row.item)">
-                        <font-awesome-icon :icon="['far', 'save']" />
-                        {{ titleSave }}
-                    </b-button>
-                    <b-button
-                        v-if="row.item.can_user_modify && !row.item.deleted"
-                        size="sm"
-                        class="lib-btn edit_library_btn save_library_btn"
-                        :title="`Edit ${row.item.name}`"
-                        @click="toggleEditMode(row.item)">
-                        <div v-if="!row.item.editMode">
-                            <font-awesome-icon icon="pencil-alt" />
-                            {{ titleEdit }}
-                        </div>
-                        <div v-else>
-                            <font-awesome-icon :icon="['fas', 'times']" />
-                            {{ titleCancel }}
-                        </div>
-                    </b-button>
-                    <b-button
-                        v-if="user.is_admin && !row.item.deleted"
-                        size="sm"
-                        class="lib-btn permission_library_btn"
-                        :title="'Permissions of ' + row.item.name"
-                        :to="{ path: `/libraries/${row.item.id}/permissions` }">
-                        <font-awesome-icon icon="users" />
-                        Manage
-                    </b-button>
-                    <b-button
-                        v-if="user.is_admin && row.item.editMode && !row.item.deleted"
-                        size="sm"
-                        class="lib-btn delete-lib-btn"
-                        :title="`Delete ${row.item.name}`"
-                        @click="deleteLibrary(row.item)">
-                        <font-awesome-icon icon="trash" />
-                        {{ titleDelete }}
-                    </b-button>
-                </template>
-            </b-table>
-
-            <b-container>
-                <b-row class="justify-content-md-center">
-                    <b-col md="auto">
-                        <b-pagination
-                            v-model="currentPage"
-                            :total-rows="rows"
-                            :per-page="perPage"
-                            aria-controls="libraries_list">
-                        </b-pagination>
-                    </b-col>
-                    <b-col cols="1.5">
-                        <table>
-                            <tr>
-                                <td class="m-0 p-0">
-                                    <b-form-input
-                                        id="paginationPerPage"
-                                        v-model="perPage"
-                                        class="pagination-input-field"
-                                        autocomplete="off"
-                                        type="number"
-                                        onkeyup="this.value|=0;if(this.value<1)this.value=1" />
-                                </td>
-                                <td class="text-muted ml-1 paginator-text">
-                                    <span class="pagination-total-pages-text"
-                                        >{{ titlePerPage }}, {{ rows }} {{ titleTotal }}</span
-                                    >
-                                </td>
-                            </tr>
-                        </table>
-                    </b-col>
-                </b-row>
-            </b-container>
-        </div>
-    </CurrentUser>
+        <b-container>
+            <b-row class="justify-content-md-center">
+                <b-col md="auto">
+                    <b-pagination
+                        v-model="currentPage"
+                        :total-rows="rows"
+                        :per-page="perPage"
+                        aria-controls="libraries_list">
+                    </b-pagination>
+                </b-col>
+                <b-col cols="1.5">
+                    <table>
+                        <tr>
+                            <td class="m-0 p-0">
+                                <b-form-input
+                                    id="paginationPerPage"
+                                    v-model="perPage"
+                                    class="pagination-input-field"
+                                    autocomplete="off"
+                                    type="number"
+                                    onkeyup="this.value|=0;if(this.value<1)this.value=1" />
+                            </td>
+                            <td class="text-muted ml-1 paginator-text">
+                                <span class="pagination-total-pages-text"
+                                    >{{ titlePerPage }}, {{ rows }} {{ titleTotal }}</span
+                                >
+                            </td>
+                        </tr>
+                    </table>
+                </b-col>
+            </b-row>
+        </b-container>
+    </div>
 </template>
 
 <script>
 import _l from "utils/localization";
 import Vue from "vue";
+import { mapState } from "pinia";
+import { useUserStore } from "@/stores/userStore";
 import { getAppRoot } from "onload/loadConfig";
 import BootstrapVue from "bootstrap-vue";
 import { Services } from "./services";
@@ -195,7 +193,6 @@ import { initLibrariesIcons } from "components/Libraries/icons";
 import { MAX_DESCRIPTION_LENGTH, DEFAULT_PER_PAGE, onError } from "components/Libraries/library-utils";
 import LibraryEditField from "components/Libraries/LibraryEditField";
 import SearchField from "components/Libraries/LibraryFolder/SearchField";
-import CurrentUser from "components/providers/CurrentUser";
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
@@ -208,7 +205,6 @@ export default {
         FontAwesomeIcon,
         LibraryEditField,
         SearchField,
-        CurrentUser,
     },
     data() {
         return {
@@ -244,6 +240,7 @@ export default {
         };
     },
     computed: {
+        ...mapState(useUserStore, ["currentUser"]),
         rows() {
             return this.librariesList.length;
         },

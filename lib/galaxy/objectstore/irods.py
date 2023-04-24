@@ -608,7 +608,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         else:
             raise ObjectNotFound(f"objectstore.empty, object does not exist: {obj}, kwargs: {kwargs}")
 
-    def _size(self, obj, **kwargs):
+    def _size(self, obj, **kwargs) -> int:
         ipt_timer = ExecutionTimer()
         rel_path = self._construct_path(obj, **kwargs)
         if self._in_cache(rel_path):

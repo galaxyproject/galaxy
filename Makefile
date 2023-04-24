@@ -193,6 +193,9 @@ lint-api-schema: build-api-schema
 	$(IN_VENV) codespell -I .ci/ignore-spelling.txt _schema.yaml
 	$(MAKE) remove-api-schema
 
+update-navigation-schema: client-node-deps
+	$(IN_VENV) cd client && node navigation_to_schema.mjs
+
 install-client: node-deps ## Install prebuilt client as defined in root package.json
 	yarn install && yarn run stage
 

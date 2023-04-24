@@ -146,7 +146,7 @@ class ToolCache:
     def assert_hashes_initialized(self):
         if not self._hashes_initialized:
             for tool_hash in self._hash_by_tool_paths.values():
-                tool_hash.hash
+                tool_hash.hash  # noqa: B018
             self._hashes_initialized = True
 
     def cleanup(self):
@@ -261,7 +261,7 @@ class ToolHash:
         self.modtime = modtime or os.path.getmtime(path)
         self._tool_hash = None
         if not lazy_hash:
-            self.hash
+            self.hash  # noqa: B018
 
     @property
     def hash(self):

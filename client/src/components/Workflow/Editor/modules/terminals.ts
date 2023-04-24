@@ -218,7 +218,7 @@ class BaseInputTerminal extends Terminal {
     }
     attachable(terminal: BaseOutputTerminal): ConnectionAcceptable {
         // TODO: provide through Mixin
-        throw "Subclass needs to implement this";
+        throw Error("Subclass needs to implement this");
     }
     _getOutputStepsMapOver() {
         const connections = this._getOutputConnections();
@@ -239,7 +239,12 @@ class BaseInputTerminal extends Terminal {
                 const terminalSource = step.outputs[0];
                 if (terminalSource) {
                     const terminal = terminalFactory(step.id, terminalSource, this.datatypesMapper);
+                    // drop mapping restrictions
                     terminal.resetMappingIfNeeded();
+                    // re-establish map over through inputs
+                    step.inputs.forEach((input) => {
+                        terminalFactory(step.id, input, this.datatypesMapper).getStepMapOver();
+                    });
                 }
             } else {
                 console.error(`Invalid step. Could not fine step with id ${stepId} in store.`);
@@ -359,9 +364,6 @@ class BaseInputTerminal extends Terminal {
                 });
             }
             const postJobActionKey = `ChangeDatatypeAction${connection.output.name}`;
-            if (outputStep.when) {
-                terminalSource = { ...terminalSource, optional: true };
-            }
             if (
                 "extensions" in terminalSource &&
                 outputStep.post_job_actions &&
@@ -560,7 +562,7 @@ export class InputCollectionTerminal extends BaseInputTerminal {
         return NULL_COLLECTION_TYPE_DESCRIPTION;
     }
     _effectiveCollectionTypes() {
-        return this.collectionTypes.map((t) => this.mapOver.append(t));
+        return this.collectionTypes.map((t) => this.localMapOver.append(t));
     }
     attachable(other: BaseOutputTerminal) {
         const otherCollectionType = this._otherCollectionType(other);
@@ -626,7 +628,7 @@ class BaseOutputTerminal extends Terminal {
     constructor(attr: BaseOutputTerminalArgs) {
         super(attr);
         this.datatypes = attr.datatypes;
-        this.optional = attr.optional;
+        this.optional = attr.optional || Boolean(this.stepStore.getStep(this.stepId)?.when);
         this.terminalType = "output";
     }
     getConnectedTerminals(): InputTerminalsAndInvalid[] {
@@ -743,7 +745,15 @@ export class OutputCollectionTerminal extends BaseOutputTerminal {
                                 otherCollectionType.canMapOver(collectionType)
                         );
                         if (connectedCollectionType) {
-                            return connectedCollectionType;
+                            if (connectedCollectionType.collectionType === "any") {
+                                // if the input collection type is "any" this output's collection type
+                                // is exactly the same as the connected output
+                                return otherCollectionType;
+                            } else {
+                                // else we pick the matching input collection type
+                                // so that the map over logic applies correctly
+                                return connectedCollectionType;
+                            }
                         }
                     }
                 }
@@ -947,5 +957,5 @@ export function terminalFactory<T extends TerminalSourceAndInvalid>(
     if (isInvalidOutputArg(terminalSource)) {
         return new InvalidOutputTerminal(terminalSource) as TerminalOf<T>;
     }
-    throw `Could not build terminal for ${terminalSource}`;
+    throw Error(`Could not build terminal for ${terminalSource}`);
 }

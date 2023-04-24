@@ -133,30 +133,31 @@ body {
 
 // ==== Panel layout styles ====
 
-#left,
-#center,
-#right {
+.left-style,
+.right-style {
     @extend .position-absolute;
     @extend .h-100;
 }
-#left {
+.left-style {
     @extend .unified-panel;
     left: 0px;
     width: $panel-width;
     overflow: unset !important;
 }
-#right {
+.right-style {
     @extend .unified-panel;
     right: 0px;
     width: $panel-width;
     overflow: unset !important;
 }
-#right > .unified-panel-footer {
+.right-style > .unified-panel-footer {
     .drag {
         left: 0;
     }
 }
-#center {
+.center-style {
+    @extend .position-absolute;
+    @extend .h-100;
     left: $panel-width;
     right: $panel-width;
     .center-container {

@@ -55,7 +55,7 @@
                         :query-filter="queryFilter"
                         @onClick="onOpen" />
                 </div>
-                <tool-section :category="{ text: workflowTitle }" />
+                <tool-section :category="{ text: 'Workflows' }" />
                 <div id="internal-workflows" class="toolSectionBody">
                     <div class="toolSectionBg" />
                     <div v-for="wf in workflows" :key="wf.id" class="toolTitle">
@@ -70,7 +70,7 @@
 <script>
 import ToolSection from "./Common/ToolSection";
 import ToolSearch from "./Common/ToolSearch";
-import { UploadButton } from "components/Upload";
+import UploadButton from "components/Upload/UploadButton";
 import { useGlobalUploadModal } from "composables/globalUploadModal";
 import FavoritesButton from "./Buttons/FavoritesButton";
 import PanelViewButton from "./Buttons/PanelViewButton";
@@ -97,14 +97,6 @@ export default {
         },
         currentPanelView: {
             type: String,
-        },
-        storedWorkflowMenuEntries: {
-            type: Array,
-            required: true,
-        },
-        workflowTitle: {
-            type: String,
-            default: _l("Workflows"),
         },
     },
     setup() {
@@ -145,20 +137,26 @@ export default {
             return !!(Galaxy.user && Galaxy.user.id);
         },
         workflows() {
-            return [
-                {
-                    title: _l("All workflows"),
-                    href: `${getAppRoot()}workflows/list`,
-                    id: "list",
-                },
-                ...this.storedWorkflowMenuEntries.map((menuEntry) => {
-                    return {
-                        id: menuEntry.id,
-                        title: menuEntry.name,
-                        href: `${getAppRoot()}workflows/run?id=${menuEntry.id}`,
-                    };
-                }),
-            ];
+            const Galaxy = getGalaxyInstance();
+            const storedWorkflowMenuEntries = Galaxy && Galaxy.config.stored_workflow_menu_entries;
+            if (storedWorkflowMenuEntries) {
+                return [
+                    {
+                        title: _l("All workflows"),
+                        href: `${getAppRoot()}workflows/list`,
+                        id: "list",
+                    },
+                    ...storedWorkflowMenuEntries.map((menuEntry) => {
+                        return {
+                            id: menuEntry.id,
+                            title: menuEntry.name,
+                            href: `${getAppRoot()}workflows/run?id=${menuEntry.id}`,
+                        };
+                    }),
+                ];
+            } else {
+                return [];
+            }
         },
         hasResults() {
             return this.results && this.results.length > 0;

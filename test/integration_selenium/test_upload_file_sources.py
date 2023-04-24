@@ -28,6 +28,13 @@ class TestPosixFileSourceSeleniumIntegration(PosixFileSourceSetup, SeleniumInteg
         self.sleep_for(self.wait_types.UX_RENDER)
         self.wait_for_history()
 
+    @selenium_test
+    def test_upload_from_posix_file_uri(self):
+        self.admin_login()
+        self.perform_upload_of_pasted_content(f"file://{self.root_dir}/a")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.wait_for_history()
+
     def setUp(self):
         super().setUp()
         self._write_file_fixtures()

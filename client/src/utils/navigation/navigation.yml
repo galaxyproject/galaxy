@@ -11,6 +11,7 @@ _:  # global stuff
   selectors:
     editable_text: '.editable-text'
     tooltip_balloon: '.tooltip'
+    tooltip_inner: .tooltip-inner
     left_panel_drag: '#left > .unified-panel-footer > .drag'
     left_panel_collapse: '#left > .unified-panel-footer > .panel-collapse'
     right_panel_drag: '#right > .unified-panel-footer > .drag'
@@ -86,6 +87,7 @@ preferences:
     delete_account_ok_btn: '.modal-footer .btn-primary'
     email_input: "input[id='email']"
     username_input: "input[id='username']"
+    preferred_storage: '.preferred-storage'
 
   object_store_selection:
     selectors:
@@ -127,7 +129,12 @@ dataset_details:
 
 object_store_details:
   selectors:
+    stored_by_name: '.display-os-by-name'
     badge_of_type: '.object-store-badge-wrapper [data-badge-type="${type}"]'
+    usage_details: '.quota-usage-bar'
+    usage_bytes: '.quota-usage'
+    usage_percent: '.quota-percent-text'
+    usage_progress: '.quota-usage-bar .progress'
 
 history_panel:
   menu:
@@ -200,10 +207,11 @@ history_panel:
       # Action buttons...
       download_button: '${_} .download-btn'
       info_button: '${_} .params-btn'
+      highlight_button: '${_} .highlight-btn'
       alltags: '${_} .stateless-tags .tag'
       metadata_file_download: '${_} [data-description="download ${metadata_name}"]'
 
-      dataset_operations_dropdown: '${_}  .dataset-actions'
+      dataset_operations: '${_} .dataset-actions'
 
   # re-usable history editor, scoped for use in different layout scenarios (multi, etc.)
   editor:
@@ -510,6 +518,7 @@ tool_form:
     repeat_insert: '[data-description="repeat insert"]'
     reference: '.formatted-reference'
     about: '.tool-footer'
+    storage_options: '.tool-storage'
 
   labels:
     generate_tour: 'Generate Tour'
@@ -607,8 +616,8 @@ workflow_editor:
       output_terminal: "${_} [output-name='${name}']"
       input_terminal: "${_} [input-name='${name}']"
       input_mapping_icon: "${_} [input-name='${name}'].multiple"
-      workflow_output_toggle: "${_} .callout-terminal.${name}"
-      workflow_output_toggle_active: "${_} .callout-terminal.${name} .mark-terminal-active"
+      workflow_output_toggle: "${_} [data-output-name='${name}'] .callout-terminal "
+      workflow_output_toggle_active: "${_} [data-output-name='${name}'] .mark-terminal-active"
   selectors:
     canvas_body: '#workflow-canvas'
     edit_annotation: '#workflow-annotation'
@@ -683,6 +692,7 @@ workflow_editor:
     connector_invalid_for: "#connection-${sink_id}-${source_id} .ribbon-inner-invalid"
     connector_destroy_callout: '.delete-terminal'
     save_button: '.editor-button-save'
+    save_workflow_confirmation_button: '#save-workflow-confirmation .btn-primary'
     state_modal_body: '.state-upgrade-modal'
     modal_button_continue: '.modal-footer .btn'
 
@@ -775,6 +785,13 @@ admin:
       repo_search: '#toolshed-repo-search'
       search_results: '#shed-search-results'
       upgrade_notification: '#repository-table .badge'
+
+  quota:
+    selectors:
+      add_new: '.quotas .manage-table-actions .action-button'
+      items: '.quotas tbody tr td'
+      add_form: "[url='/admin/create_quota']"
+      add_form_submit: "[url='/admin/create_quota'] #submit"
 
   index:
     selectors:
@@ -934,7 +951,7 @@ upload:
     paste_content: '#upload-row-${n} .upload-text-content'
     settings: '.upload-settings-table'
     setting_deferred: '.upload-deferred'
-    start: '.upload-button'
+    start: '#activity-upload'
     start_uploading: '.upload-start'
     close: '.upload-close'
     rule_source_content: 'textarea.upload-rule-source-content'

@@ -19,8 +19,7 @@ router = Router(tags=["short_term_storage"])
 
 @router.cbv
 class FastAPIShortTermStorage:
-    # typing here is not ideal, mypy is the issue xref https://github.com/python/mypy/issues/5374
-    short_term_storage_monitor: ShortTermStorageMonitor = depends(ShortTermStorageMonitor)  # type: ignore[type-abstract]
+    short_term_storage_monitor: ShortTermStorageMonitor = depends(ShortTermStorageMonitor)  # type: ignore[type-abstract]  # https://github.com/python/mypy/issues/4717
 
     @router.get(
         "/api/short_term_storage/{storage_request_id}/ready",

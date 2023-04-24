@@ -17,6 +17,7 @@ from galaxy.schema.fields import (
     LibraryFolderDatabaseIdField,
 )
 from galaxy.schema.schema import (
+    BasicRoleModel,
     CreateLibraryFolderPayload,
     LibraryAvailablePermissions,
     LibraryFolderCurrentPermissions,
@@ -84,8 +85,8 @@ class LibraryFoldersService(ServiceBase):
         trans,
         folder_id: LibraryFolderDatabaseIdField,
         scope: Optional[LibraryPermissionScope] = LibraryPermissionScope.current,
-        page: Optional[int] = 1,
-        page_limit: Optional[int] = 10,
+        page: int = 1,
+        page_limit: int = 10,
         query: Optional[str] = None,
     ) -> Union[LibraryFolderCurrentPermissions, LibraryAvailablePermissions]:
         """
@@ -119,7 +120,7 @@ class LibraryFoldersService(ServiceBase):
             return_roles = []
             for role in roles:
                 role_id = DecodedDatabaseIdField.encode(role.id)
-                return_roles.append(dict(id=role_id, name=role.name, type=role.type))
+                return_roles.append(BasicRoleModel(id=role_id, name=role.name, type=role.type))
             return LibraryAvailablePermissions.construct(
                 roles=return_roles, page=page, page_limit=page_limit, total=total_roles
             )

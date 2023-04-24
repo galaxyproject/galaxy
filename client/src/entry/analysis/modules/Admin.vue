@@ -1,7 +1,7 @@
 <template>
     <div id="columns">
         <SidePanel side="left" :current-panel="getAdminPanel()" :current-panel-properties="panelProperties" />
-        <div id="center">
+        <div id="center" class="center-style">
             <div class="center-container">
                 <div class="center-panel" style="display: block">
                     <router-view :key="$route.fullPath" />

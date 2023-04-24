@@ -630,23 +630,19 @@ programs or modules that the tool depends upon are included in this tag set.
 
 When a tool runs, Galaxy attempts to *resolve* these requirements (also called
 dependencies). ``requirement``s are meant to be abstract and resolvable by
-multiple different systems (e.g. [conda](https://conda.io/), the
-[Galaxy Tool Shed dependency management system](https://galaxyproject.org/toolshed/tool-features/#Automatic_third-party_tool_dependency_installation_and_compilation_with_installed_repositories),
-or [environment modules](http://modules.sourceforge.net/)).
+multiple different [dependency resolvers](../admin/dependency_resolvers) (e.g. [conda](https://conda.io/), the
+[Galaxy Tool Shed dependency management system](https://galaxyproject.org/toolshed/tool-features/),
+or [environment modules](https://modules.sourceforge.net/)).
 
-Read more about dependency resolvers in Galaxy on
-[docs.galaxyproject.org](https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html).
-The current best practice for tool dependencies is to target Conda, this is
-discussed in greater detail
-[here](https://docs.galaxyproject.org/en/master/admin/conda_faq.html).
+The current best practice for tool dependencies is to [target Conda](../admin/conda_faq).
 
 ### Examples
 
 This example shows a tool that requires the samtools 0.0.18 package.
 
 This package is available via the Tool Shed (see
-[Tool Shed dependency management](https://galaxyproject.org/toolshed/tool-features/#Automatic_third-party_tool_dependency_installation_and_compilation_with_installed_repositories)
-) as well as [Conda](https://docs.galaxyproject.org/en/master/admin/conda_faq.html)
+[Tool Shed dependency management](https://galaxyproject.org/toolshed/tool-features/)
+) as well as [Conda](../admin/conda_faq)
 and can be configured locally to adapt to any other package management system.
 
 ```xml
@@ -1063,7 +1059,7 @@ tool. Notice the way that the tool's inputs and outputs are defined.
 ```
 
 The following example, tests the execution of the MAF-to-FASTA converter
-([/tools/maf/maf_to_fasta.xml](https://github.com/galaxyproject/galaxy/blob/master/tools/maf/maf_to_fasta.xml)).
+([/tools/maf/maf_to_fasta.xml](https://github.com/galaxyproject/galaxy/blob/dev/tools/maf/maf_to_fasta.xml)).
 
 ```xml
 <tests>
@@ -1288,7 +1284,7 @@ tool.
 </test>
 ```
 
-The [tophat2](https://github.com/galaxyproject/tools-devteam/blob/master/tools/tophat2/tophat2_wrapper.xml)
+The [tophat2](https://github.com/galaxyproject/tools-devteam/blob/main/tools/tophat2/tophat2_wrapper.xml)
 tool demonstrates a real tool that benefits from more structured test cases
 using the ``conditional`` test directive. One such test case from that tool is
 shown below.
@@ -1964,7 +1960,7 @@ order within the collection verified.
 
 ### Examples
 
-The [genetrack](https://github.com/galaxyproject/tools-iuc/blob/master/tools/genetrack/genetrack.xml)
+The [genetrack](https://github.com/galaxyproject/tools-iuc/blob/main/tools/genetrack/genetrack.xml)
 tool demonstrates basic usage of an ``output_collection`` test expectation.
 
 ```xml
@@ -1982,7 +1978,7 @@ tool demonstrates basic usage of an ``output_collection`` test expectation.
 </test>
 ```
 
-The [CWPair2](https://github.com/galaxyproject/tools-iuc/blob/master/tools/cwpair2/cwpair2.xml)
+The [CWPair2](https://github.com/galaxyproject/tools-iuc/blob/main/tools/cwpair2/cwpair2.xml)
 tool demonstrates that ``element``s can specify a ``compare`` attribute just
 like [output](#tool-tests-test-output).
 
@@ -2348,6 +2344,11 @@ $attribute_list::5
     </xs:annotation>
     <xs:attributeGroup ref="AssertAttributeN"/>
     <xs:attributeGroup ref="AssertAttributeNegate"/>
+    <xs:attribute name="comment" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Comment character(s) used to skip comment lines (which should not be used for counting columns)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   <xs:complexType name="AssertHasArchiveMember">
     <xs:annotation>
@@ -2858,7 +2859,7 @@ tools will not need to specify any attributes on this tag itself.]]>
 This is a container for conditional parameters in the tool (must contain 'when'
 tag sets) - the command line (or portions thereof) are then wrapped in an if-else
 statement. A good example tool that demonstrates many conditional parameters is
-[biom_convert.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tools/biom_format/biom_convert.xml).
+[biom_convert.xml](https://github.com/galaxyproject/tools-iuc/blob/main/tools/biom_format/biom_convert.xml).
 
 ```xml
 <conditional name="input_type">
@@ -2909,7 +2910,7 @@ managed by the Galaxy admins (for instance via
 [data managers](https://galaxyproject.org/admin/tools/data-managers/)
 ) and
 history files. A good example tool that demonstrates this is
-the [Bowtie 2](https://github.com/galaxyproject/tools-iuc/blob/master/tools/bowtie2/bowtie2_wrapper.xml) wrapper.
+the [Bowtie 2](https://github.com/galaxyproject/tools-iuc/blob/main/tools/bowtie2/bowtie2_wrapper.xml) wrapper.
 
 ```xml
 <conditional name="reference_genome">
@@ -3004,7 +3005,7 @@ corresponding to this ``when`` block.</xs:documentation>
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 See
-[xy_plot.xml](https://github.com/galaxyproject/tools-devteam/blob/master/tools/xy_plot/xy_plot.xml)
+[xy_plot.xml](https://github.com/galaxyproject/tools-devteam/blob/main/tools/xy_plot/xy_plot.xml)
 for an example of how to use this tag set. This is a container for any tag sets
 that can be contained within the ``<inputs>`` tag set. When this is used, the
 tool will allow the user to add any number of additional sets of the contained
@@ -3180,7 +3181,7 @@ The following will not work:
     <param name="bar" type="data_column" data_ref="foo"/>
 ```
 
-Further examples can be found in the [test case](https://github.com/galaxyproject/galaxy/blob/master/test/functional/tools/section.xml) from [pull request #35](https://github.com/galaxyproject/galaxy/pull/35).
+Further examples can be found in the [test case](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/section.xml) from [pull request #35](https://github.com/galaxyproject/galaxy/pull/35).
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
@@ -3453,7 +3454,7 @@ the tool form widget is different. Currently valid parameter types are:
 ``file``,  ``ftpfile``,  ``data``,  ``data_collection``,  ``library_data``,
 ``drill_down``. The definition of supported parameter types as defined in the
 ``parameter_types`` dictionary in
-[/lib/galaxy/tools/parameters/basic.py](https://github.com/galaxyproject/galaxy/blob/master/lib/galaxy/tools/parameters/basic.py).
+[/lib/galaxy/tools/parameters/basic.py](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tools/parameters/basic.py).
 
 ]]></xs:documentation>
           </xs:annotation>
@@ -3773,11 +3774,11 @@ A few things to note about even this simple example:
   (in this case the standard output of the bedtools call is written to the path
   specified by ``'$output'``).
 
-The bed12ToBed6 tool can be found [here](https://github.com/galaxyproject/tools-iuc/blob/master/tools/bedtools/bed12ToBed6.xml).
+The bed12ToBed6 tool can be found [here](https://github.com/galaxyproject/tools-iuc/blob/main/tools/bedtools/bed12ToBed6.xml).
 
 A more sophisticated bedtools example demonstrates the use of loops, conditionals,
 and uses whitespace to make a complex command very readable can be found in
-[annotateBed](https://github.com/galaxyproject/tools-iuc/blob/master/tools/bedtools/annotateBed.xml)
+[annotateBed](https://github.com/galaxyproject/tools-iuc/blob/main/tools/bedtools/annotateBed.xml)
 tool.
 
 ```xml
@@ -3806,7 +3807,7 @@ $both
 ]]]]><![CDATA[></command>
 ```
 
-The following example (taken from [xpath](https://github.com/galaxyproject/tools-iuc/blob/master/tools/xpath/xpath.xml) tool)
+The following example (taken from [xpath](https://github.com/galaxyproject/tools-iuc/blob/main/tools/xpath/xpath.xml) tool)
 uses an interpreted executable. In this case a Perl script is shipped with the
 tool and the directory of the tool itself is referenced with ``$__tool_directory__``.
 
@@ -3894,7 +3895,7 @@ be escaped with a backslash (``\``) when appearing in ``command`` or ``configfil
 
 For internal converter tools using ``$__target_datatype__`` it is recommended to add a select
 input parameter with name ``__target_datatype__`` in order to make the tool testable, see
-for instance the [biom converter](https://github.com/galaxyproject/galaxy/blob/master/lib/galaxy/datatypes/converters/biom.xml).
+for instance the [biom converter](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/datatypes/converters/biom.xml).
 
 Name | Description
 ---- | -----------
@@ -3987,7 +3988,7 @@ of "type" specified for this expression block.
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 
-See [/tools/filters/sorter.xml](https://github.com/galaxyproject/galaxy/blob/master/tools/filters/sorter.xml)
+See [/tools/filters/sorter.xml](https://github.com/galaxyproject/galaxy/blob/dev/tools/filters/sorter.xml)
 for typical examples of how to use this tag set. This directive is used to described
 static lists of options and is contained
 within the [param](#tool-inputs-param) directive when the ``type`` attribute
@@ -4095,13 +4096,13 @@ dataset for the contained input of the type specified using the ``type`` tag.
   <xs:complexType name="ParamOptions">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-See [/tools/extract/liftOver_wrapper.xml](https://github.com/galaxyproject/galaxy/blob/master/tools/extract/liftOver_wrapper.xml)
+See [/tools/extract/liftOver_wrapper.xml](https://github.com/galaxyproject/galaxy/blob/dev/tools/extract/liftOver_wrapper.xml)
 for an example of how to use this tag set. This tag set is optionally contained
 within the ``<param>`` tag when the ``type`` attribute value is ``select`` or
 ``data`` and used to dynamically generated lists of options.
 
 For data parameters this tag can be used to restrict possible input datasets to datasets that match the ``dbkey`` of another data input by including a ``data_meta`` filter. See for
-instance here: [/tools/maf/interval2maf.xml](https://github.com/galaxyproject/galaxy/blob/master/tools/maf/interval2maf.xml)
+instance here: [/tools/maf/interval2maf.xml](https://github.com/galaxyproject/galaxy/blob/dev/tools/maf/interval2maf.xml)
 
 For select parameters this tag set dynamically creates a list of options whose
 values can be obtained from a predefined file stored locally or a dataset
@@ -4134,7 +4135,7 @@ Once a data table has been configured and populated, these can be easily
 leveraged via tools.
 
 This ``conditional`` block in the
-[bowtie2](https://github.com/galaxyproject/tools-devteam/blob/master/tools/bowtie2/bowtie2_wrapper.xml)
+[bowtie2](https://github.com/galaxyproject/tools-devteam/blob/main/tools/bowtie2/bowtie2_wrapper.xml)
 wrapper demonstrates using ``from_data_table`` options as an
 alternative to local reference data.
 
@@ -4165,7 +4166,7 @@ experience of a tool.
 ### ``from_dataset``
 
 The following example is taken from the Mothur tool
-[remove.lineage.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tools/mothur/remove.lineage.xml)
+[remove.lineage.xml](https://github.com/galaxyproject/tools-iuc/blob/main/tools/mothur/remove.lineage.xml)
 and demonstrates generating options from a dataset directly.
 
 ```xml
@@ -4235,7 +4236,7 @@ dataset is available, admins must add the database to the local file named
 "blastdb.loc". All such databases in that file are included in the options of
 the select list. For a local instance, the file (e.g. ``blastdb.loc`` or
 ``alignseq.loc``) must be stored in the configured
-[tool_data_path](https://github.com/galaxyproject/galaxy/tree/master/tool-data)
+[tool_data_path](https://github.com/galaxyproject/galaxy/tree/dev/tool-data)
 directory. In this example, the option names and values are taken from column 0
 of the file.
 
@@ -4255,7 +4256,7 @@ should be prefered.
 
 This variant of the ``options`` directive is discouraged because it exposes
 internal Galaxy structures. See the older
-[bowtie](https://github.com/galaxyproject/tools-devteam/blob/master/tools/bowtie_wrappers/bowtie_wrapper.xml)
+[bowtie](https://github.com/galaxyproject/tools-devteam/blob/main/tools/bowtie_wrappers/bowtie_wrapper.xml)
 wrappers for an example of these.
 
 ### Other Ways to Dynamically Generate Options
@@ -4355,9 +4356,9 @@ that has been selected as the value of the parameter named ``input1``.
 </options>
 ```
 
-The [gff_filter_by_feature_count](tools/filters/gff/gff_filter_by_feature_count.xml)
+The [gff_filter_by_feature_count](https://github.com/galaxyproject/galaxy/blob/dev/tools/filters/gff/gff_filter_by_feature_count.xml)
 tool makes use of this tag with files from a history, and the
-[star_fusion](https://github.com/galaxyproject/tools-iuc/blob/master/tools/star_fusion/star_fusion.xml)
+[star_fusion](https://github.com/galaxyproject/tools-iuc/blob/main/tools/star_fusion/star_fusion.xml)
 tool makes use of this to reference a data table.
 ]]></xs:documentation>
     </xs:annotation>
@@ -4383,7 +4384,7 @@ target file.</xs:documentation>
 This tag set is contained within the ``<param>`` tag set - it applies a
 validator to the containing parameter. Tool submission will fail if a
 single validator fails. See the
-[annotation_profiler](https://github.com/galaxyproject/tools-devteam/blob/master/tools/annotation_profiler/annotation_profiler.xml)
+[annotation_profiler](https://github.com/galaxyproject/tools-devteam/blob/main/tools/annotation_profiler/annotation_profiler.xml)
 tool for an example of how to use this tag set.
 
 Note that validators for parameters with ``optional="true"`` are not
@@ -4445,7 +4446,7 @@ Useful for parameters with dynamically defined options.
 
 The following demonstrates a simple validator ``unspecified_build`` ensuring
 that a dbkey is present on the selected dataset. This example is taken from the
-[extract_genomic_dna](https://github.com/galaxyproject/tools-iuc/blob/master/tools/extract_genomic_dna/extract_genomic_dna.xml#L42)
+[extract_genomic_dna](https://github.com/galaxyproject/tools-iuc/blob/main/tools/extract_genomic_dna/extract_genomic_dna.xml#L42)
 tool.
 
 ```xml
@@ -4455,7 +4456,7 @@ tool.
 ```
 
 Along the same line, the following example taken from
-[samtools_mpileup](https://github.com/galaxyproject/tools-devteam/blob/master/tool_collections/samtools/samtools_mpileup/samtools_mpileup.xml)
+[samtools_mpileup](https://github.com/galaxyproject/tools-devteam/blob/main/tool_collections/samtools/samtools_mpileup/samtools_mpileup.xml)
 ensures that a dbkey is present and that FASTA indices in the ``fasta_indexes``
 tool data table are present.
 
@@ -4814,7 +4815,7 @@ The ``static_value`` and ``regexp`` filters can be inverted by setting ``keep`` 
 ### Examples
 
 The following example from Mothur's
-[remove.groups.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tools/mothur/remove.groups.xml)
+[remove.groups.xml](https://github.com/galaxyproject/tools-iuc/blob/main/tools/mothur/remove.groups.xml)
 tool demonstrates filtering a select list based on the metadata of an input to
 to the tool.
 
@@ -4828,7 +4829,7 @@ to the tool.
 ```
 
 This more advanced example, taken from Mothur's
-[remove.lineage.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tools/mothur/remove.lineage.xml)
+[remove.lineage.xml](https://github.com/galaxyproject/tools-iuc/blob/main/tools/mothur/remove.lineage.xml)
 tool demonstrates using filters to sort a list and remove duplicate entries.
 
 ```xml
@@ -4852,7 +4853,7 @@ tool demonstrates using filters to sort a list and remove duplicate entries.
 ```
 
 This example taken from the
-[hisat2](https://github.com/galaxyproject/tools-iuc/blob/master/tools/hisat2/hisat2.xml)
+[hisat2](https://github.com/galaxyproject/tools-iuc/blob/main/tools/hisat2/hisat2.xml)
 tool demonstrates filtering values from a tool data table.
 
 ```xml
@@ -4865,7 +4866,7 @@ tool demonstrates filtering values from a tool data table.
 ```
 
 The
-[gemini_load.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tools/gemini/gemini_load.xml)
+[gemini_load.xml](https://github.com/galaxyproject/tools-iuc/blob/main/tools/gemini/gemini_load.xml)
 tool demonstrates adding values to an option list using ``filter``s.
 
 ```xml
@@ -4893,7 +4894,7 @@ While this fragment from [maf_to_interval.xml](https://github.com/galaxyproject/
 ```
 
 This example taken from
-[snpSift_dbnsfp.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tool_collections/snpsift/snpsift_dbnsfp/snpSift_dbnsfp.xml)
+[snpSift_dbnsfp.xml](https://github.com/galaxyproject/tools-iuc/blob/main/tool_collections/snpsift/snpsift_dbnsfp/snpSift_dbnsfp.xml)
 demonstrates splitting up strings into multiple values.
 
 ```xml
@@ -4912,7 +4913,7 @@ demonstrates splitting up strings into multiple values.
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
 Currently the filters in the ``filter_types`` dictionary in the module
-[/lib/galaxy/tools/parameters/dynamic_options.py](https://github.com/galaxyproject/galaxy/blob/master/lib/galaxy/tools/parameters/dynamic_options.py) are defined.
+[/lib/galaxy/tools/parameters/dynamic_options.py](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tools/parameters/dynamic_options.py) are defined.
 
 Deprecated filter types:
 
@@ -5417,9 +5418,9 @@ Describe datasets to dynamically collect after the job complete.
 There are many simple tools with examples of this element distributed with
 Galaxy, including:
 
-* [multi_output.xml](https://github.com/galaxyproject/galaxy/tree/master/test/functional/tools/multi_output.xml)
-* [multi_output_assign_primary.xml](https://github.com/galaxyproject/galaxy/tree/master/test/functional/tools/multi_output_assign_primary.xml)
-* [multi_output_configured.xml](https://github.com/galaxyproject/galaxy/tree/master/test/functional/tools/multi_output_configured.xml)
+* [multi_output.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/multi_output.xml)
+* [multi_output_assign_primary.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/multi_output_assign_primary.xml)
+* [multi_output_configured.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/multi_output_configured.xml)
 
 More information can be found on Planemo's documentation for
 [multiple output files](https://planemo.readthedocs.io/en/latest/writing_advanced.html#multiple-output-files).
@@ -5487,9 +5488,9 @@ expressions after the job is complete.
 There are many simple tools with examples of this element distributed with
 Galaxy, including:
 
-* [collection_split_on_column.xml](https://github.com/galaxyproject/galaxy/blob/master/test/functional/tools/collection_split_on_column.xml)
-* [collection_creates_dynamic_list_of_pairs.xml](https://github.com/galaxyproject/galaxy/blob/master/test/functional/tools/collection_creates_dynamic_list_of_pairs.xml)
-* [collection_creates_dynamic_nested.xml](https://github.com/galaxyproject/galaxy/blob/master/test/functional/tools/collection_creates_dynamic_nested.xml)
+* [collection_split_on_column.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/collection_split_on_column.xml)
+* [collection_creates_dynamic_list_of_pairs.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/collection_creates_dynamic_list_of_pairs.xml)
+* [collection_creates_dynamic_nested.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/collection_creates_dynamic_nested.xml)
 
 ]]></xs:documentation>
     </xs:annotation>
@@ -5554,7 +5555,7 @@ directives below the conditional are apply to the ``data`` output.
 
 The ``<actions>`` in the Bowtie 2 wrapper is used in lieu of the deprecated
 ``<code>`` tag to set the ``dbkey`` of the output dataset. In
-[bowtie2_wrapper.xml](https://github.com/galaxyproject/tools-devteam/blob/master/tools/bowtie2/bowtie2_wrapper.xml)
+[bowtie2_wrapper.xml](https://github.com/galaxyproject/tools-devteam/blob/main/tools/bowtie2/bowtie2_wrapper.xml)
 (see below), according to the first action block, if the
 ``reference_genome.source`` is ``indexed`` (not ``history``), then it will assign
 the ``dbkey`` of the output file to be the same as that of the reference file. It
@@ -5635,9 +5636,9 @@ For a static file that contains a fixed number of columns, it is straight forwar
 
 It may also be necessary to use column names based on a variable from another
 input file. This is implemented in the
-[htseq-count](https://github.com/galaxyproject/tools-iuc/blob/master/tools/htseq_count/htseq-count.xml)
+[htseq-count](https://github.com/galaxyproject/tools-iuc/blob/main/tools/htseq_count/htseq-count.xml)
 and
-[featureCounts](https://github.com/galaxyproject/tools-iuc/blob/master/tools/featurecounts/featurecounts.xml)
+[featureCounts](https://github.com/galaxyproject/tools-iuc/blob/main/tools/featurecounts/featurecounts.xml)
 wrappers:
 
 ```xml
@@ -6121,7 +6122,7 @@ define.</xs:documentation>
   <xs:complexType name="ConfigFiles">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[See
-[xy_plot.xml](https://github.com/galaxyproject/tools-devteam/blob/master/tools/xy_plot/xy_plot.xml)
+[xy_plot.xml](https://github.com/galaxyproject/tools-devteam/blob/main/tools/xy_plot/xy_plot.xml)
 for an example of how this tag set is used in a tool. This tag set is a
 container for ``<configfile>`` and ``<inputs>`` tag sets - which can be used
 to setup configuration files for use by tools.]]></xs:documentation>
@@ -6148,7 +6149,7 @@ the creation of a temporary file for file-based parameter transfer.
 
 *Example*
 
-The following is taken from the [xy_plot.xml](https://github.com/galaxyproject/tools-devteam/blob/master/tools/xy_plot/xy_plot.xml)
+The following is taken from the [xy_plot.xml](https://github.com/galaxyproject/tools-devteam/blob/main/tools/xy_plot/xy_plot.xml)
 tool config.
 
 ```xml
@@ -6726,7 +6727,7 @@ prepended with the warning ``Warning: Branch A was taken in execution``.
   <xs:complexType name="ChangeFormat">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[See
-[extract_genomic_dna.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tools/extract_genomic_dna/extract_genomic_dna.xml)
+[extract_genomic_dna.xml](https://github.com/galaxyproject/tools-iuc/blob/main/tools/extract_genomic_dna/extract_genomic_dna.xml)
 or the test tool
 [output_format.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/output_format.xml)
 for simple examples of how this tag set is used in a tool. This tag set is
@@ -6771,7 +6772,7 @@ in the ``<data>`` tag set with ``format="interval"``.
 ```
 
 See
-[extract_genomic_dna.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tools/extract_genomic_dna/extract_genomic_dna.xml)
+[extract_genomic_dna.xml](https://github.com/galaxyproject/tools-iuc/blob/main/tools/extract_genomic_dna/extract_genomic_dna.xml)
 or the test tool
 [output_format.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/output_format.xml)
 for more examples.

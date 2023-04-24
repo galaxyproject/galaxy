@@ -202,6 +202,7 @@ class SentryClientMixin:
                 release=f"{self.config.version_major}.{self.config.version_minor}",
                 integrations=[sentry_logging],
                 traces_sample_rate=self.config.sentry_traces_sample_rate,
+                ca_certs=self.config.sentry_ca_certs,
             )
 
 
@@ -541,8 +542,8 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self.job_manager = self._register_singleton(JobManager)
 
         self.task_manager = self._register_abstract_singleton(
-            AsyncTasksManager, CeleryAsyncTasksManager  # type: ignore[type-abstract]
-        )  # Ignored because of https://github.com/python/mypy/issues/4717
+            AsyncTasksManager, CeleryAsyncTasksManager  # type: ignore[type-abstract]  # https://github.com/python/mypy/issues/4717
+        )
 
         # ConfiguredFileSources
         self.file_sources = self._register_singleton(

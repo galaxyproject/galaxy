@@ -1072,16 +1072,16 @@ def on_text_for_names(input_names):
     input_names = unique_names
 
     # Build name for output datasets based on tool name and input names
-    if len(input_names) == 1:
+    if len(input_names) == 0:
+        on_text = ""
+    elif len(input_names) == 1:
         on_text = input_names[0]
     elif len(input_names) == 2:
-        on_text = "%s and %s" % tuple(input_names[0:2])
+        on_text = "{} and {}".format(*input_names)
     elif len(input_names) == 3:
-        on_text = "%s, %s, and %s" % tuple(input_names[0:3])
-    elif len(input_names) > 3:
-        on_text = "%s, %s, and others" % tuple(input_names[0:2])
+        on_text = "{}, {}, and {}".format(*input_names)
     else:
-        on_text = ""
+        on_text = "{}, {}, and others".format(*input_names[:2])
     return on_text
 
 

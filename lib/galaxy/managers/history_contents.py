@@ -531,24 +531,23 @@ class HistoryContentsFilters(
 
     def parse_query_filters_with_relations(self, query_filters: ValueFilterQueryParams, history_id):
         """Parse query filters but consider case where related filter is included."""
-        if query_filters.q and query_filters.qv and "related-eq" in query_filters.q:
-            qv_index = query_filters.q.index("related-eq")
+        has_related_q = [q for q in ("related-eq", "related") if query_filters.q and q in query_filters.q]
+        if query_filters.q and query_filters.qv and has_related_q:
+            qv_index = query_filters.q.index(has_related_q[0])
             qv_hid = query_filters.qv[qv_index]
 
-            # Make new q and qv excluding related filter
-            new_q = [x for i, x in enumerate(query_filters.q) if i != qv_index]
-            new_qv = [x for i, x in enumerate(query_filters.qv) if i != qv_index]
+            # Type check whether hid is int
+            if not qv_hid.isdigit():
+                raise glx_exceptions.RequestParameterInvalidException(
+                    "unparsable value for related filter",
+                    column="related",
+                    operation="eq",
+                    value=qv_hid,
+                    ValueError="invalid type in filter",
+                )
 
-            # Get list of related item hids from job_connections manager
-            job_connections_manager = JobConnectionsManager(self.app.model.session)
-            related = job_connections_manager.get_related_hids(history_id, qv_hid)
-
-            # Make new query_filters with updated list of related hids for given hid
-            new_q.append("related-eq")
-            new_qv.append(json.dumps(related))
-            query_filters_with_relations = ValueFilterQueryParams(
-                q=new_q,
-                qv=new_qv,
+            query_filters_with_relations = self.get_query_filters_with_relations(
+                query_filters=query_filters, related_q=has_related_q[0], history_id=history_id
             )
             return super().parse_query_filters(query_filters_with_relations)
         return super().parse_query_filters(query_filters)
@@ -607,6 +606,30 @@ class HistoryContentsFilters(
             return self.parsed_filter(filter_type="orm", filter=column_filter)
         return super()._parse_orm_filter(attr, op, val)
 
+    def get_query_filters_with_relations(self, query_filters: ValueFilterQueryParams, related_q: str, history_id):
+        """Return `query_filters_with_relations` changing `related:hid` to `related:[hid1, hid2, ...]`."""
+        if query_filters.q and query_filters.qv:
+            qv_index = query_filters.q.index(related_q)
+            qv_hid = query_filters.qv[qv_index]
+
+            # Make new q and qv excluding related filter
+            new_q = [x for i, x in enumerate(query_filters.q) if i != qv_index]
+            new_qv = [x for i, x in enumerate(query_filters.qv) if i != qv_index]
+
+            # Get list of related item hids from job_connections manager
+            job_connections_manager = JobConnectionsManager(self.app.model.session)
+            related = job_connections_manager.get_related_hids(history_id, int(qv_hid))
+
+            # Make new query_filters with updated list of related hids for given hid
+            new_q.append("related-eq")
+            new_qv.append(json.dumps(related))
+            query_filters_with_relations = ValueFilterQueryParams(
+                q=new_q,
+                qv=new_qv,
+            )
+            return query_filters_with_relations
+        return query_filters
+
     def decode_type_id(self, type_id):
         TYPE_ID_SEP = "-"
         split = type_id.split(TYPE_ID_SEP, 1)
@@ -628,8 +651,6 @@ class HistoryContentsFilters(
         self.orm_filter_parsers.update(
             {
                 "history_content_type": {"op": ("eq")},
-                # maybe remove related from here, as there's no corresponding field?
-                "related": {"op": ("eq")},
                 "type_id": {"op": ("eq", "in"), "val": self.parse_type_id_list},
                 "hid": {"op": ("eq", "ge", "le", "gt", "lt"), "val": int},
                 # TODO: needs a different val parser - but no way to add to the above

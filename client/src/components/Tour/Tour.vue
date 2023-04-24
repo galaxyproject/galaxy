@@ -1,9 +1,9 @@
 <template>
-    <CurrentUser v-slot="{ user }" class="d-flex flex-column">
-        <UserHistories v-if="user" v-slot="{ currentHistory, handlers, historiesLoading }" :user="user">
+    <div class="d-flex flex-column">
+        <UserHistories v-if="currentUser" v-slot="{ currentHistory, handlers, historiesLoading }" :user="currentUser">
             <div v-if="historiesLoading">computing tour requirements...</div>
             <b-modal
-                v-else-if="loginRequired(user)"
+                v-else-if="loginRequired(currentUser)"
                 id="tour-requirement-unment"
                 v-model="showRequirementDialog"
                 static
@@ -12,7 +12,7 @@
                 <b-alert show variant="danger"> You must log in to Galaxy to use this tour. </b-alert>
             </b-modal>
             <b-modal
-                v-else-if="adminRequired(user)"
+                v-else-if="adminRequired(currentUser)"
                 id="tour-requirement-unment"
                 v-model="showRequirementDialog"
                 static
@@ -42,12 +42,13 @@
                 @end="end"
                 @play="play" />
         </UserHistories>
-    </CurrentUser>
+    </div>
 </template>
 
 <script>
 import TourStep from "./TourStep";
-import CurrentUser from "components/providers/CurrentUser";
+import { mapState } from "pinia";
+import { useUserStore } from "@/stores/userStore";
 import UserHistories from "components/providers/UserHistories";
 
 // popup display duration when auto-playing the tour
@@ -56,7 +57,6 @@ const playDelay = 3000;
 export default {
     components: {
         TourStep,
-        CurrentUser,
         UserHistories,
     },
     props: {
@@ -77,6 +77,7 @@ export default {
         };
     },
     computed: {
+        ...mapState(useUserStore, ["currentUser"]),
         currentStep() {
             return this.steps[this.currentIndex];
         },

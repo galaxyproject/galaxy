@@ -1,17 +1,17 @@
 import axios from "axios";
-import { prependPath } from "utils/redirect";
-import { rethrowSimple } from "utils/simple-error";
+import { prependPath } from "@/utils/redirect";
+import { rethrowSimple } from "@/utils/simple-error";
 
 export async function getCurrentUser() {
     const url = prependPath("/api/users/current");
     const response = await axios.get(url);
     if (response.status != 200) {
-        throw new Error(response);
+        throw new Error("Failed to get current user");
     }
     return response.data;
 }
 
-export async function addFavoriteTool(userId, toolId) {
+export async function addFavoriteToolQuery(userId: string, toolId: string) {
     const url = prependPath(`/api/users/${userId}/favorites/tools`);
     try {
         const { data } = await axios.put(url, { object_id: toolId });
@@ -21,7 +21,7 @@ export async function addFavoriteTool(userId, toolId) {
     }
 }
 
-export async function removeFavoriteTool(userId, toolId) {
+export async function removeFavoriteToolQuery(userId: string, toolId: string) {
     const url = prependPath(`/api/users/${userId}/favorites/tools/${encodeURIComponent(toolId)}`);
     try {
         const { data } = await axios.delete(url);
@@ -31,7 +31,7 @@ export async function removeFavoriteTool(userId, toolId) {
     }
 }
 
-export async function setCurrentTheme(userId, theme) {
+export async function setCurrentThemeQuery(userId: string, theme: string) {
     const url = prependPath(`/api/users/${userId}/theme/${theme}`);
     try {
         const { data } = await axios.put(url, { theme: theme });

@@ -77,7 +77,7 @@
 </template>
 
 <script>
-import Utils from "utils/utils";
+import { bytesToString } from "utils/utils";
 import UtcDate from "components/UtcDate";
 import DecodedId from "../DecodedId";
 import { DatasetProvider } from "components/providers";
@@ -100,7 +100,7 @@ export default {
     },
     methods: {
         bytesToString(raw_size) {
-            return Utils.bytesToString(raw_size);
+            return bytesToString(raw_size, false);
         },
     },
 };

@@ -19,6 +19,20 @@ class TestFoldersApi(ApiTestCase):
     def test_create(self):
         folder = self._create_folder("Test Create Folder")
         self._assert_valid_folder(folder)
+        # assert that listing items in folder works.
+        # this is a regression test
+        response = self._get(f"libraries/{folder['parent_library_id']}/contents")
+        response.raise_for_status()
+
+    @requires_new_library
+    def test_list_library(self):
+        library, _ = self.library_populator.fetch_single_url_to_folder()
+        library = self._list_library(library["id"])
+        assert len(library) == 2
+        folders = [folder for folder in library if folder["type"] == "folder"]
+        assert len(folders) == 1
+        files = [file for file in library if file["type"] == "file"]
+        assert len(files) == 1
 
     @requires_new_library
     def test_create_without_name_raises_400(self):
@@ -116,6 +130,11 @@ class TestFoldersApi(ApiTestCase):
         }
         put_response = self._put(f"folders/{folder_id}", data=data, admin=True, json=True)
         self._assert_status_code_is(put_response, 403)
+
+    def _list_library(self, library_id):
+        response = self._get(f"libraries/{library_id}/contents")
+        response.raise_for_status()
+        return response.json()
 
     def _create_folder(self, name: str):
         root_folder_id = self.library["root_folder_id"]

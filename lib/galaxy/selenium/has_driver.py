@@ -11,7 +11,10 @@ from typing import (
     Union,
 )
 
-from selenium.common.exceptions import TimeoutException as SeleniumTimeoutException
+from selenium.common.exceptions import (
+    NoSuchElementException,
+    TimeoutException as SeleniumTimeoutException,
+)
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -76,8 +79,15 @@ class HasDriver:
     def find_elements(self, selector_template: Target) -> List[WebElement]:
         return self.driver.find_elements(*selector_template.element_locator)
 
-    def assert_absent(self, selector_template: Target):
-        assert len(self.find_elements(selector_template)) == 0
+    def assert_absent(self, selector_template: Target) -> None:
+        elements = self.find_elements(selector_template)
+        if len(elements) != 0:
+            description = selector_template.description
+            any_displayed = False
+            for element in elements:
+                any_displayed = any_displayed or element.is_displayed()
+            msg = f"Expected DOM elements [{elements}] to be empty for selector target {description} - any actually displayed? [{any_displayed}]"
+            raise AssertionError(msg)
 
     def element_absent(self, selector_template: Target) -> bool:
         return len(self.find_elements(selector_template)) == 0
@@ -239,7 +249,10 @@ class HasDriver:
 
     def fill(self, form: WebElement, info: dict):
         for key, value in info.items():
-            input_element = form.find_element(By.NAME, key)
+            try:
+                input_element = form.find_element(By.NAME, key)
+            except NoSuchElementException:
+                input_element = form.find_element(By.ID, key)
             input_element.send_keys(value)
 
     def click_submit(self, form: WebElement):

@@ -39,10 +39,10 @@
                         @update:history="$emit('updateHistory', $event)" />
                     <HistoryMessages :history="history" />
                     <HistoryCounter
-                        v-if="showControls"
                         :history="history"
                         :is-watching="isWatching"
                         :last-checked="lastChecked"
+                        :show-controls="showControls"
                         :filter-text.sync="filterText"
                         @reloadContents="reloadContents" />
                     <HistoryOperations
@@ -148,7 +148,7 @@ import ExpandedItems from "components/History/Content/ExpandedItems";
 import SelectedItems from "components/History/Content/SelectedItems";
 import ListingLayout from "components/History/Layout/ListingLayout";
 import HistoryCounter from "./HistoryCounter";
-import HistoryOperations from "./HistoryOperations/Index";
+import HistoryOperations from "./HistoryOperations/HistoryOperations";
 import HistoryDetails from "./HistoryDetails";
 import HistoryDropZone from "./HistoryDropZone";
 import HistoryEmpty from "./HistoryEmpty";

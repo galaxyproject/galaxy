@@ -7,34 +7,25 @@ import ObjectStoreBadges from "@/components/ObjectStore/ObjectStoreBadges.vue";
 import ProvidedQuotaSourceUsageBar from "@/components/User/DiskUsage/Quota/ProvidedQuotaSourceUsageBar.vue";
 import { getSelectableObjectStores } from "./services";
 
-const props = defineProps({
-    selectedObjectStoreId: {
-        type: String,
-        default: null,
-    },
-    defaultOptionTitle: {
-        // "Use Your User Preference Defaults"
-        type: String,
-        required: true,
-    },
-    defaultOptionDescription: {
-        // "Selecting this will cause the history to not set a default and to fallback to your user preference defined default."
-        type: String,
-        required: true,
-    },
-    forWhat: {
-        type: String,
-        required: true,
-    },
-    parentError: {
-        type: String,
-        default: null,
-    },
+interface SelectObjectStoreProps {
+    selectedObjectStoreId?: String | null;
+    defaultOptionTitle: String;
+    defaultOptionDescription: String;
+    forWhat: String;
+    parentError?: String | null;
+}
+
+const props = withDefaults(defineProps<SelectObjectStoreProps>(), {
+    selectedObjectStoreId: null,
+    parentError: null,
 });
 
 const loading = ref(true);
 const error = ref(props.parentError);
-const popoverPlacement = "left";
+const popoverProps = {
+    placement: "rightbottom",
+    boundary: "window", // don't warp the popover to squeeze it into this modal
+};
 const objectStores = ref<Array<object>>([]);
 
 const loadingObjectStoreInfoMessage = ref("Loading object store information");
@@ -77,7 +68,9 @@ function variant(objectStoreId: string) {
     }
 }
 
-const emit = defineEmits(["onSubmit"]);
+const emit = defineEmits<{
+    (e: "onSubmit", id: string | null): void;
+}>();
 
 async function handleSubmit(preferredObjectStoreId: string) {
     emit("onSubmit", preferredObjectStoreId);
@@ -123,7 +116,7 @@ async function handleSubmit(preferredObjectStoreId: string) {
                     </p>
                 </b-col>
             </b-row>
-            <b-popover target="no-preferred-object-store-button" triggers="hover" :placement="popoverPlacement">
+            <b-popover target="no-preferred-object-store-button" triggers="hover" v-bind="popoverProps">
                 <template v-slot:title
                     ><span v-localize>{{ defaultOptionTitle }}</span></template
                 >
@@ -134,7 +127,7 @@ async function handleSubmit(preferredObjectStoreId: string) {
                 :key="object_store.object_store_id"
                 :target="`preferred-object-store-button-${object_store.object_store_id}`"
                 triggers="hover"
-                :placement="popoverPlacement">
+                v-bind="popoverProps">
                 <template v-slot:title>{{ object_store.name }}</template>
                 <DescribeObjectStore :what="forWhat" :storage-info="object_store"> </DescribeObjectStore>
             </b-popover>

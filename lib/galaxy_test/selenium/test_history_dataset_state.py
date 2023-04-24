@@ -126,15 +126,13 @@ class TestHistoryDatasetState(SeleniumTestCase, UsesHistoryItemAssertions):
 
     def _assert_downloadable(self, hid, is_downloadable=True):
         item = self.history_panel_item_component(hid=hid)
-        item.dataset_operations_dropdown.wait_for_and_click()
+        item.dataset_operations.wait_for_visible()
         item.info_button.wait_for_visible()
         if is_downloadable:
             assert item.download_button.is_displayed
         else:
             item.download_button.assert_absent_or_hidden()
-
-        # close menu...
-        item.dataset_operations_dropdown.wait_for_and_click()
+        item.dataset_operations.wait_for_visible()
         self.sleep_for(self.wait_types.UX_RENDER)
 
     def _assert_buttons(self, hid, expected_buttons):

@@ -1941,18 +1941,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~
-``use_legacy_history``
-~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Server-wide default selection to use the legacy history during the
-    transition period, after which this option will disappear.  Users
-    will remain able to swap back and forth per their preference.
-:Default: ``false``
-:Type: bool
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``user_preferences_extra_conf_path``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2925,6 +2913,18 @@
     performance.
 :Default: ``0.0``
 :Type: float
+
+
+~~~~~~~~~~~~~~~~~~~
+``sentry_ca_certs``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Use this option to provide the path to location of the CA
+    (Certificate Authority) certificate file if the sentry server uses
+    a self-signed certificate.
+:Default: ``None``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~
@@ -4881,6 +4881,9 @@
     The `broker_url` option, if unset, defaults to the value of
     `amqp_internal_connection`. The `result_backend` option must be
     set if the `enable_celery_tasks` option is set.
+    The galaxy.fetch_data task can be disabled by setting its route to
+    "disabled": `galaxy.fetch_data: disabled`. (Other tasks cannot be
+    disabled on a per-task basis at this time.)
     For details, see Celery documentation at
     https://docs.celeryq.dev/en/stable/userguide/configuration.html.
 :Default: ``{'task_routes': {'galaxy.fetch_data': 'galaxy.external', 'galaxy.set_job_metadata': 'galaxy.external'}}``

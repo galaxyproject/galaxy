@@ -36,6 +36,7 @@ from galaxy.tool_util.deps.dependencies import (
 )
 from galaxy.tool_util.output_checker import DETECTED_JOB_STATE
 from galaxy.util import (
+    asbool,
     DATABASE_MAX_STRING_SIZE,
     ExecutionTimer,
     in_directory,
@@ -342,7 +343,7 @@ class BaseJobRunner:
         output_paths = {}
         for dataset_path in job_wrapper.job_io.get_output_fnames():
             path = dataset_path.real_path
-            if job_wrapper.get_destination_configuration("outputs_to_working_directory", False):
+            if asbool(job_wrapper.get_destination_configuration("outputs_to_working_directory", False)):
                 path = dataset_path.false_path
             output_paths[dataset_path.dataset_id] = path
 

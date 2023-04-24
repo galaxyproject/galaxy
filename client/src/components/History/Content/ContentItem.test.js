@@ -1,11 +1,14 @@
+import { PiniaVuePlugin } from "pinia";
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
+import { createTestingPinia } from "@pinia/testing";
 import ContentItem from "./ContentItem";
 import { updateContentFields } from "components/History/model/queries";
 
 jest.mock("components/History/model/queries");
 
 const localVue = getLocalVue();
+localVue.use(PiniaVuePlugin);
 
 // mock queries
 updateContentFields.mockImplementation(async () => {});
@@ -43,6 +46,7 @@ describe("ContentItem", () => {
                     getters: {},
                 },
             },
+            pinia: createTestingPinia(),
         });
     });
 

@@ -1,6 +1,6 @@
 <template>
     <div id="columns">
-        <div id="center">
+        <div id="center" class="center-style">
             <div class="center-container">
                 <div class="center-panel" style="display: block">
                     <ChangePassword

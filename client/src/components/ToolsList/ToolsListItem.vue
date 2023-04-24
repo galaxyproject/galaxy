@@ -46,7 +46,7 @@ library.add(faWrench, faExternalLinkAlt, faCheck, faTimes, faAngleDown, faAngleU
 </script>
 
 <template>
-    <div class="tool-list-item ui-portlet-section">
+    <div class="tool-list-item">
         <div class="top-bar bg-secondary px-2 py-1 rounded-right">
             <div class="py-1 d-flex flex-wrap flex-gapx-1">
                 <span>
@@ -63,39 +63,37 @@ library.add(faWrench, faExternalLinkAlt, faCheck, faTimes, faAngleDown, faAngleU
                 <span itemprop="description">{{ props.description }}</span>
                 <span>(Galaxy Version {{ props.version }})</span>
             </div>
-            <div>
-                <b-button-group>
-                    <ToolFavoriteButton :id="props.id" />
+            <div class="d-flex align-items-start">
+                <ToolFavoriteButton :id="props.id" />
 
-                    <b-button
-                        v-if="props.local"
-                        class="text-nowrap"
-                        variant="primary"
-                        size="sm"
-                        @click="() => emit('open')">
-                        <FontAwesomeIcon icon="fa-wrench" fixed-width />
-                        Open
-                    </b-button>
-                    <b-button v-else class="text-nowrap" variant="primary" size="sm" :href="props.link">
-                        <FontAwesomeIcon icon="fa-external-link-alt" fixed-width />
-                        Open
-                    </b-button>
-                </b-button-group>
+                <b-button
+                    v-if="props.local"
+                    class="text-nowrap"
+                    variant="primary"
+                    size="sm"
+                    @click="() => emit('open')">
+                    <FontAwesomeIcon icon="fa-wrench" fixed-width />
+                    Open
+                </b-button>
+                <b-button v-else class="text-nowrap" variant="primary" size="sm" :href="props.link">
+                    <FontAwesomeIcon icon="fa-external-link-alt" fixed-width />
+                    Open
+                </b-button>
             </div>
         </div>
 
-        <div class="portlet-content">
+        <div class="tool-list-item-content">
             <div class="d-flex flex-gapx-1 py-2">
-                <span v-if="props.section" class="info px-1 rounded">
+                <span v-if="props.section" class="tag info">
                     <b>Section:</b> <b-link :to="`/tools/list?section=${props.section}`">{{ section }}</b-link>
                 </span>
 
-                <span v-if="!props.local" class="info px-1 rounded">
+                <span v-if="!props.local" class="tag info">
                     <FontAwesomeIcon icon="fa-external-link-alt" fixed-width />
                     External
                 </span>
 
-                <span v-if="!props.workflowCompatible" class="warn px-1 rounded">
+                <span v-if="!props.workflowCompatible" class="tag warn">
                     <FontAwesomeIcon icon="fa-exclamation-triangle" />
                     Not Workflow compatible
                 </span>
@@ -123,16 +121,33 @@ library.add(faWrench, faExternalLinkAlt, faCheck, faTimes, faAngleDown, faAngleU
 @import "theme/blue.scss";
 
 .tool-list-item {
+    border-left: solid 3px $brand-secondary;
+    border-radius: 0.25rem;
+
+    .tool-list-item-content {
+        padding-left: 0.5rem;
+    }
+
+    .tag {
+        border-style: solid;
+        border-width: 0 2px 1px 0;
+        border-radius: 4px;
+        padding: 0 0.5rem;
+    }
+
     .info {
         background-color: scale-color($brand-info, $lightness: +75%);
+        border-color: scale-color($brand-info, $lightness: +55%);
     }
 
     .success {
         background-color: scale-color($brand-success, $lightness: +75%);
+        border-color: scale-color($brand-success, $lightness: +55%);
     }
 
     .warn {
         background-color: scale-color($brand-warning, $lightness: +75%);
+        border-color: scale-color($brand-warning, $lightness: +55%);
     }
 
     .top-bar {

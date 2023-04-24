@@ -179,7 +179,7 @@ def get_foreign_key(source_class, target_class):
             target_fk = fk
             break
     if not target_fk:
-        raise Exception("No foreign key found between objects: %s, %s" % source_class.table, target_class.table)
+        raise Exception(f"No foreign key found between objects: {source_class.table}, {target_class.table}")
     return target_fk
 
 

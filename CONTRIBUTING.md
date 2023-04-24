@@ -168,6 +168,20 @@ https://help.github.com/en/github/getting-started-with-github/git-and-github-lea
   [reStructured Text (RST)](https://docutils.sourceforge.io/rst.html) format and
   compatible with [Sphinx](https://www.sphinx-doc.org).
 
+## Documentation
+
+General documentation (e.g. admin, development, release notes) is found in the
+``doc/source/`` directory.
+The documentation source files need to be written in one of these markup
+languages:
+- [reStructuredText](https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html)
+  (with Sphinx extensions)
+- [Markdown](https://myst-parser.readthedocs.io/en/latest/syntax/typography.html)
+  (with MyST-Parser extensions).
+These source files are then built into HTML documentation with
+[Sphinx](https://www.sphinx-doc.org/) by running ``make docs`` and published on
+the [Galaxy Documentation website](https://docs.galaxyproject.org/).
+
 ## A Quick Note about Tools
 
 For the most part, Galaxy tools should be published to a [Tool

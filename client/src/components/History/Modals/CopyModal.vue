@@ -1,7 +1,7 @@
 <template>
     <b-modal v-bind="$attrs" :title="title" title-tag="h2" v-on="$listeners">
         <transition name="fade">
-            <b-alert v-localize :show="currentUser.isAnonymous" variant="warning">
+            <b-alert v-localize :show="isAnonymous" variant="warning">
                 As an anonymous user, unless you login or register, you will lose your current history after copying
                 this history. You can <a href="/user/login">log in here</a> or <a href="/user/create">register here</a>.
             </b-alert>
@@ -45,7 +45,9 @@
 </template>
 
 <script>
-import { mapActions, mapGetters } from "vuex";
+import { mapState } from "pinia";
+import { mapActions } from "vuex";
+import { useUserStore } from "@/stores/userStore";
 
 export default {
     props: {
@@ -59,8 +61,7 @@ export default {
         };
     },
     computed: {
-        ...mapGetters("user", ["currentUser"]),
-
+        ...mapState(useUserStore, ["isAnonymous"]),
         title() {
             return `Copying History: ${this.history.name}`;
         },

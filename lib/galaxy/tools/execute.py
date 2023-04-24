@@ -182,7 +182,7 @@ def execute(
     tool_id = tool.id
     for job2 in execution_tracker.successful_jobs:
         # Put the job in the queue if tracking in memory
-        if tool_id == "__DATA_FETCH__" and tool.app.config.enable_celery_tasks:
+        if tool_id == "__DATA_FETCH__" and tool.app.config.is_fetch_with_celery_enabled():
             job_id = job2.id
             from galaxy.celery.tasks import (
                 fetch_data,

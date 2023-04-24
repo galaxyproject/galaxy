@@ -32,7 +32,7 @@ import ObjectStoreRestrictionSpan from "./ObjectStoreRestrictionSpan";
 import QuotaUsageBar from "components/User/DiskUsage/Quota/QuotaUsageBar";
 import { QuotaSourceUsageProvider } from "components/User/DiskUsage/Quota/QuotaUsageProvider";
 import ObjectStoreBadges from "./ObjectStoreBadges";
-import adminConfigMixin from "./adminConfigMixin";
+import { adminMarkup } from "./adminConfig";
 
 export default {
     components: {
@@ -41,7 +41,6 @@ export default {
         QuotaSourceUsageProvider,
         QuotaUsageBar,
     },
-    mixins: [adminConfigMixin],
     props: {
         storageInfo: {
             type: Object,
@@ -57,7 +56,7 @@ export default {
             return this.storageInfo.quota?.source;
         },
         descriptionRendered() {
-            return this.adminMarkup(this.storageInfo.description);
+            return adminMarkup(this.storageInfo.description);
         },
         isPrivate() {
             return this.storageInfo.private;

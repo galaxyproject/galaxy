@@ -137,7 +137,7 @@ def scrape_ftp(ftp_contents, org_dir, org_num, refseq, ftp_url):
                     results = None
                     time.sleep(1)  # Throttle Connection
             if results is None:
-                "URL COMPLETELY FAILED TO LOAD:", url
+                print("URL COMPLETELY FAILED TO LOAD:", url)
                 return
 
             # do special processing for each file type:
@@ -246,7 +246,7 @@ def __main__():
         # get ftp contents
         ftp_contents = get_ftp_contents(ftp_url)
         if ftp_contents is None:
-            "FTP COMPLETELY FAILED TO LOAD", "org:", org_num, "ftp:", ftp_url
+            print("FTP COMPLETELY FAILED TO LOAD", "org:", org_num, "ftp:", ftp_url)
         else:
             for refseq in chroms:
                 scrape_ftp(ftp_contents, org_dir, org_num, refseq, ftp_url)
