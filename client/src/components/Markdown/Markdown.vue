@@ -22,13 +22,13 @@
                 </b-button>
                 <h1 class="float-right align-middle mr-1 mt-2 h-md">Galaxy {{ markdownConfig.model_class }}</h1>
                 <span class="float-left font-weight-light mb-3">
-                    <small>Title: {{ markdownConfig.title || markdownConfig.model_class }}</small>
+                    <small class="text-break">Title: {{ markdownConfig.title || markdownConfig.model_class }}</small>
                     <br />
                     <small>Created by {{ markdownConfig.username }}</small>
                 </span>
             </div>
-            <b-badge variant="info" class="w-100 rounded mb-3">
-                <div class="float-left m-1">Published with Galaxy {{ version }} on {{ time }}</div>
+            <b-badge variant="info" class="w-100 rounded mb-3 white-space-normal">
+                <div class="float-left m-1 text-break">Published with Galaxy {{ version }} on {{ time }}</div>
                 <div class="float-right m-1">Identifier {{ markdownConfig.id }}</div>
             </b-badge>
             <div>

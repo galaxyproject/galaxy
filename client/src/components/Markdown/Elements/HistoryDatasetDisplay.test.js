@@ -68,7 +68,7 @@ describe("History Text Dataset Display", () => {
     });
 
     it("should render text", () => {
-        const renderedText = wrapper.find(".text-normalwrap");
+        const renderedText = wrapper.find(".word-wrap-normal");
         expect(renderedText.exists()).toBe(true);
         expect(renderedText.text()).toBe(text.item_data);
     });

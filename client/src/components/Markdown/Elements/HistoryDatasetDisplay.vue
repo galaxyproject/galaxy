@@ -81,7 +81,7 @@
                                 </UrlDataProvider>
                             </div>
                             <pre v-else>
-                                    <code class="text-normalwrap">{{ itemContent.item_data }}</code>
+                                    <code class="word-wrap-normal">{{ itemContent.item_data }}</code>
                                 </pre>
                         </div>
                         <div v-else>No content found.</div>
