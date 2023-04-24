@@ -48,10 +48,10 @@ onMounted(() => {
 
 <template>
     <div>
-        <span v-if="hasOptions" @click="toggleChildren">
-            <icon v-if="showChildren" fixed-width icon="minus-square" />
-            <icon v-else fixed-width icon="plus-square" />
-        </span>
+        <b-button variant="link" v-if="hasOptions" @click="toggleChildren" class="btn p-0">
+            <i v-if="showChildren" class="fa fa-minus-square" />
+            <i v-else class="fa fa-plus-square" />
+        </b-button>
         <component
             :is="isComponent"
             class="drilldown-option d-inline"
