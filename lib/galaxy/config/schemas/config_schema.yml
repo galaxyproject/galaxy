@@ -3697,6 +3697,14 @@ mapping:
           Optional file containing one or more themes for galaxy. If several themes
           are defined, users can choose their preferred theme in the client.
 
+      subdomains_config_file:
+        type: str
+        default: subdomains_conf.yml
+        path_resolves_to: config_dir
+        required: false
+        desc: |
+          Optional file containing one or more subdomains for galaxy. Subdomains described in this config file will be displayed as links to users in the navbar, allowing them to switch easily between subdomain sites.
+
       enable_beacon_integration:
         type: bool
         default: false

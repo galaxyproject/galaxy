@@ -180,6 +180,9 @@ gravity:
     # Set to true to start gx-it-proxy
     # enable: false
 
+    # gx-it-proxy version
+    # version: '>=0.0.5'
+
     # Public-facing IP of the proxy
     # ip: localhost
 
@@ -2705,7 +2708,14 @@ galaxy:
   # <config_dir>.
   #themes_config_file: themes_conf.yml
 
+  # Optional file containing one or more subdomains for galaxy.
+  # Subdomains described in this config file will be displayed as links
+  # to users in the navbar, allowing them to switch easily between
+  # subdomain sites.
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
+  #subdomains_config_file: subdomains_conf.yml
+
   # Enables user preferences and api endpoint for the beacon
   # integration.
   #enable_beacon_integration: false
-

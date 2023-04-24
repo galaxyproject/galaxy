@@ -651,6 +651,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         "shed_data_manager_config_file",
         "shed_tool_config_file",
         "shed_tool_data_table_config",
+        "subdomains_config_file",
         "tool_destinations_config_file",
         "tool_sheds_config_file",
         "user_preferences_extra_conf_path",
@@ -720,6 +721,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     galaxy_infrastructure_url: str
     themes: Dict[str, Dict[str, str]]
     themes_by_host: Dict[str, Dict[str, Dict[str, str]]]
+    subdomains: List[Dict[str, str]]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -1189,6 +1191,11 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                 _load_theme(file_path, self.themes_by_host[host])
         else:
             _load_theme(self.themes_config_file, self.themes)
+
+        # Load subdomains configuration
+        if self._path_exists(self.subdomains_config_file):
+            with open(self.subdomains_config_file) as f:
+                self.subdomains = yaml.safe_load(f)
 
     def _configure_dataset_storage(self):
         # The default for `file_path` has changed in 20.05; we may need to fall back to the old default

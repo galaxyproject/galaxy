@@ -5078,6 +5078,21 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``subdomains_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Optional file containing one or more subdomains for galaxy.
+    Subdomains described in this config file will be displayed as
+    links to users in the navbar, allowing them to switch easily
+    between subdomain sites.
+    The value of this option will be resolved with respect to
+    <config_dir>.
+:Default: ``subdomains_conf.yml``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``enable_beacon_integration``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

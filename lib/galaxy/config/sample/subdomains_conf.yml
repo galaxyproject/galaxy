@@ -1,0 +1,8 @@
+# Each subdomain entry will be rendered as a link in the navbar
+# Ensure that you add an entry for your base site
+
+subdomains:
+  - title: Base
+    url: http://localhost:8080
+  - title: Genomics
+    url: https://genome.mygalaxy.org
