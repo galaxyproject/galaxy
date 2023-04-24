@@ -13,7 +13,7 @@ import { storeToRefs } from "pinia";
 
 const route = useRoute();
 const router = useRouter();
-const { toggledActivityBar } = storeToRefs(useUserStore());
+const { showActivityBar } = storeToRefs(useUserStore());
 
 const showCenter = ref(false);
 
@@ -46,7 +46,7 @@ onUnmounted(() => {
 });
 </script>
 <template>
-    <div v-if="toggledActivityBar" id="columns" class="d-flex">
+    <div v-if="showActivityBar" id="columns" class="d-flex">
         <ActivityBar v-if="showPanels" />
         <div id="center" class="overflow-auto p-3 w-100">
             <CenterFrame v-show="showCenter" id="galaxy_main" @load="onLoad" />

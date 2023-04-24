@@ -23,7 +23,7 @@ export const useUserStore = defineStore(
     "userStore",
     () => {
         const toggledSideBar = ref("search");
-        const toggledActivityBar = ref(false);
+        const showActivityBar = ref(false);
         const currentUser = ref<User | null>(null);
         const currentPreferences = ref<Preferences | null>(null);
 
@@ -105,7 +105,7 @@ export const useUserStore = defineStore(
         }
 
         function toggleActivityBar() {
-            toggledActivityBar.value = !toggledActivityBar.value;
+            showActivityBar.value = !showActivityBar.value;
         }
         function toggleSideBar(currentOpen: string) {
             toggledSideBar.value = toggledSideBar.value === currentOpen ? "" : currentOpen;
@@ -117,7 +117,7 @@ export const useUserStore = defineStore(
             isAnonymous,
             currentTheme,
             currentFavorites,
-            toggledActivityBar,
+            showActivityBar,
             toggledSideBar,
             loadUser,
             setCurrentUser,
@@ -130,7 +130,7 @@ export const useUserStore = defineStore(
     },
     {
         persist: {
-            paths: ["toggledActivityBar", "toggledSideBar"],
+            paths: ["showActivityBar", "toggledSideBar"],
         },
     }
 );
