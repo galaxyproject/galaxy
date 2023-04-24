@@ -46,7 +46,7 @@ IS_OS_X = sys.platform == "darwin"
 VERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@(.*)")
 UNVERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@_uv_")
 USE_PATH_EXEC_DEFAULT = False
-CONDA_PACKAGE_SPECS = ("conda>=22.9.0", "conda-libmamba-solver", "'pyopenssl>=22.1.0'")
+CONDA_PACKAGE_SPECS = ("conda>=22.9.0", "mamba", "'pyopenssl>=22.1.0'")
 CONDA_BUILD_SPECS = ("conda-build>=3.22.0",)
 USE_LOCAL_DEFAULT = False
 
@@ -104,7 +104,7 @@ class CondaContext(installable.InstallableContext):
     ) -> None:
         self.condarc_override = condarc_override
         if not conda_exec and use_path_exec:
-            conda_exec = which("conda")
+            conda_exec = which("mamba")
         if conda_exec and isinstance(conda_exec, str):
             conda_exec = os.path.normpath(conda_exec)
         self.debug = debug
