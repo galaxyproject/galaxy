@@ -21,7 +21,6 @@ export default Backbone.View.extend({
         genomebuild: "_fieldSelect",
         data: "_fieldData",
         data_collection: "_fieldData",
-        drill_down: "_fieldDrilldown",
         group_tag: "_fieldSelect",
         library_data: "_fieldLibrary",
         ftpfile: "_fieldFtp",
@@ -111,23 +110,6 @@ export default Backbone.View.extend({
             searchable: searchable,
             textable: input_def.textable,
             SelectClass: SelectClass,
-        });
-    },
-
-    /** Drill down options field */
-    _fieldDrilldown: function (input_def) {
-        // show text field e.g. in workflow editor
-        if (input_def.is_workflow) {
-            return this._fieldText(input_def);
-        }
-
-        // create drill down field
-        return new Ui.Drilldown.View({
-            id: input_def.id,
-            data: input_def.options,
-            display: input_def.display,
-            optional: input_def.optional,
-            onchange: input_def.onchange,
         });
     },
 
