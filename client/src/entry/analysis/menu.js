@@ -162,15 +162,17 @@ export function fetchMenu(options = {}) {
 
     // Subdomain tab
     if (Galaxy.config.galaxy_subdomains) {
+        const showSubdomains = Galaxy.config.galaxy_subdomains.filter(
+            (s) => !location.origin.includes(s.url)
+        );
         const subdomainsTab = {
             id: "subdomain",
             title: _l("Domain"),
             cls: "",
             url: "javascript:void(0)",
             tooltip: _l("Switch between community domain sites"),
-            menu: Galaxy.config.galaxy_subdomains.map((s) => ({
-                title: s.title,
-                url: s.url,
+            menu: showSubdomains.map((s) => ({
+                ...s,
                 target: "_blank",
             })),
         }
