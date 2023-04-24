@@ -1,9 +1,9 @@
 // Sync Galaxy store to legacy galaxy current user
-
+import { useUserStore } from "stores/userStore";
 import { pluck, switchMap } from "rxjs/operators";
 import { monitorBackboneModel } from "utils/observable";
 
-export function syncUserToGalaxy(galaxy$, store) {
+export function syncUserToGalaxy(galaxy$) {
     const result$ = galaxy$.pipe(
         // Galaxy.user
         pluck("user"),
@@ -12,7 +12,10 @@ export function syncUserToGalaxy(galaxy$, store) {
     );
 
     return result$.subscribe(
-        (user) => store.commit("user/setCurrentUser", user),
+        (user) => {
+            const userStore = useUserStore();
+            userStore?.setCurrentUser(user);
+        },
         (err) => console.log("syncUserToGalaxy error", err),
         () => console.log("syncUserToGalaxy complete")
     );

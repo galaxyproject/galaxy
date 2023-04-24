@@ -1670,6 +1670,11 @@ galaxy:
   # to Sentry. A value higher than 0 is required to analyze performance.
   #sentry_traces_sample_rate: 0.0
 
+  # Use this option to provide the path to location of the CA
+  # (Certificate Authority) certificate file if the sentry server uses a
+  # self-signed certificate.
+  #sentry_ca_certs: null
+
   # Log to statsd Statsd is an external statistics aggregator
   # (https://github.com/etsy/statsd) Enabling the following options will
   # cause galaxy to log request timing and other statistics to the

@@ -30,7 +30,7 @@ export const Toast = {
     },
 
     error(message: string, title = "Error") {
-        toastRef.value?.showToast(message, title, "error");
+        toastRef.value?.showToast(message, title, "danger");
     },
 };
 

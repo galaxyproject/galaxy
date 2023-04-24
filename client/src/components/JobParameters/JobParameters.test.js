@@ -1,12 +1,12 @@
 import Vuex from "vuex";
 import axios from "axios";
+import { createPinia } from "pinia";
 import MockAdapter from "axios-mock-adapter";
 import { mount, createLocalVue } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import JobParameters from "./JobParameters";
 import paramResponse from "./parameters-response.json";
 import raw from "components/providers/test/json/Dataset.json";
-import { userStore } from "store/userStore";
 import { configStore } from "store/configStore";
 
 const JOB_ID = "foo";
@@ -19,7 +19,7 @@ const DatasetProvider = {
     },
 };
 const localVue = createLocalVue();
-
+const pinia = createPinia();
 localVue.use(Vuex);
 
 describe("JobParameters/JobParameters.vue", () => {
@@ -41,12 +41,6 @@ describe("JobParameters/JobParameters.vue", () => {
                     getters: configStore.getters,
                     namespaced: true,
                 },
-                user: {
-                    state,
-                    actions,
-                    getters: userStore.getters,
-                    namespaced: true,
-                },
             },
         });
     });
@@ -66,6 +60,7 @@ describe("JobParameters/JobParameters.vue", () => {
             stubs: {
                 DatasetProvider: DatasetProvider,
             },
+            pinia,
         });
         await flushPromises();
 
@@ -103,6 +98,7 @@ describe("JobParameters/JobParameters.vue", () => {
                 stubs: {
                     DatasetProvider: DatasetProvider,
                 },
+                pinia,
             });
             await flushPromises();
             return wrapper.find("#single-param");

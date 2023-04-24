@@ -1,135 +1,135 @@
 <template>
-    <CurrentUser v-slot="{ user }">
-        <div v-if="dataset">
-            <div v-if="!isEditMode">
-                <LibraryBreadcrumb :current-id="dataset_id" :full_path="dataset.full_path" />
-                <!-- Toolbar -->
+    <div v-if="dataset">
+        <div v-if="!isEditMode">
+            <LibraryBreadcrumb :current-id="dataset_id" :full_path="dataset.full_path" />
+            <!-- Toolbar -->
+            <b-button
+                title="Download dataset"
+                class="mr-1 mb-2"
+                data-test-id="download-btn"
+                @click="download(datasetDownloadFormat, dataset_id)">
+                <font-awesome-icon icon="download" />
+                Download
+            </b-button>
+            <b-button
+                title="Import dataset into history"
+                class="mr-1 mb-2"
+                data-test-id="import-history-btn"
+                @click="importToHistory">
+                <font-awesome-icon icon="book" />
+                to History
+            </b-button>
+            <span v-if="dataset.can_user_modify">
                 <b-button
-                    title="Download dataset"
+                    title="Modify library item"
                     class="mr-1 mb-2"
-                    data-test-id="download-btn"
-                    @click="download(datasetDownloadFormat, dataset_id)">
-                    <font-awesome-icon icon="download" />
-                    Download
+                    data-test-id="modify-btn"
+                    @click="isEditMode = true">
+                    <font-awesome-icon icon="pencil-alt" />
+                    Modify
                 </b-button>
                 <b-button
-                    title="Import dataset into history"
+                    title="Attempt to detect the format of dataset"
                     class="mr-1 mb-2"
-                    data-test-id="import-history-btn"
-                    @click="importToHistory">
-                    <font-awesome-icon icon="book" />
-                    to History
+                    data-test-id="auto-detect-btn"
+                    @click="detectDatatype">
+                    <font-awesome-icon icon="redo" />
+                    Auto-detect datatype
                 </b-button>
-                <span v-if="dataset.can_user_modify">
-                    <b-button
-                        title="Modify library item"
-                        class="mr-1 mb-2"
-                        data-test-id="modify-btn"
-                        @click="isEditMode = true">
-                        <font-awesome-icon icon="pencil-alt" />
-                        Modify
-                    </b-button>
-                    <b-button
-                        title="Attempt to detect the format of dataset"
-                        class="mr-1 mb-2"
-                        data-test-id="auto-detect-btn"
-                        @click="detectDatatype">
-                        <font-awesome-icon icon="redo" />
-                        Auto-detect datatype
-                    </b-button>
-                </span>
-                <b-button
-                    v-if="user.is_admin"
-                    title="Manage permissions"
-                    class="mr-1 mb-2"
-                    :to="{
-                        name: 'LibraryFolderDatasetPermissions',
-                        params: { folder_id: folder_id, dataset_id: dataset_id },
-                    }"
-                    data-test-id="permissions-btn">
-                    <font-awesome-icon icon="users" />
-                    Permissions
-                </b-button>
-            </div>
-            <div v-if="dataset.is_unrestricted" data-test-id="unrestricted-msg">
-                This dataset is unrestricted so everybody with the link can access it.
-                <copy-to-clipboard
-                    message="A link to current dataset was copied to your clipboard"
-                    :text="currentRouteName"
-                    title="Copy link to this dataset " />
-            </div>
-            <!-- Table -->
-            <b-table
-                v-if="table_items"
-                :fields="fields"
-                :items="table_items"
-                class="dataset_table mt-2"
-                thead-class="d-none"
-                striped
-                small
-                data-test-id="dataset-table">
-                <template v-slot:cell(name)="row">
-                    <strong>{{ row.item.name }}</strong>
-                </template>
-                <template v-slot:cell(value)="row">
-                    <div v-if="isEditMode">
-                        <b-form-input
-                            v-if="row.item.name === fieldTitles.name"
-                            v-model="modifiedDataset.name"
-                            :value="row.item.value" />
-                        <DatatypesProvider
-                            v-else-if="row.item.name === fieldTitles.file_ext"
-                            v-slot="{ item: datatypes, loading: loadingDatatypes }">
-                            <SingleItemSelector
-                                collection-name="Data Types"
-                                :loading="loadingDatatypes"
-                                :items="datatypes"
-                                :current-item-id="dataset.file_ext"
-                                @update:selected-item="onSelectedDatatype" />
-                        </DatatypesProvider>
-                        <db-key-provider
-                            v-else-if="row.item.name === fieldTitles.genome_build"
-                            v-slot="{ item: dbkeys, loading: loadingDbKeys }">
-                            <SingleItemSelector
-                                collection-name="Database/Builds"
-                                :loading="loadingDbKeys"
-                                :items="dbkeys"
-                                :current-item-id="dataset.genome_build"
-                                @update:selected-item="onSelectedDbKey" />
-                        </db-key-provider>
-                        <b-form-input
-                            v-else-if="row.item.name === fieldTitles.message"
-                            v-model="modifiedDataset.message"
-                            :value="row.item.value" />
-                        <b-form-input
-                            v-else-if="row.item.name === fieldTitles.misc_info"
-                            v-model="modifiedDataset.misc_info"
-                            :value="row.item.value" />
-                        <div v-else>{{ row.item.value }}</div>
-                    </div>
-                    <div v-else>
-                        <div>{{ row.item.value }}</div>
-                    </div>
-                </template>
-            </b-table>
-            <!-- Edit Controls -->
-            <div v-if="isEditMode">
-                <b-button class="mr-1 mb-2" @click="isEditMode = false">
-                    <font-awesome-icon :icon="['fas', 'times']" />
-                    Cancel
-                </b-button>
-                <b-button class="mr-1 mb-2" @click="updateDataset">
-                    <font-awesome-icon :icon="['far', 'save']" />
-                    Save
-                </b-button>
-            </div>
-            <!-- Peek View -->
-            <div v-if="dataset.peek" data-test-id="peek-view" v-html="dataset.peek" />
+            </span>
+            <b-button
+                v-if="currentUser.is_admin"
+                title="Manage permissions"
+                class="mr-1 mb-2"
+                :to="{
+                    name: 'LibraryFolderDatasetPermissions',
+                    params: { folder_id: folder_id, dataset_id: dataset_id },
+                }"
+                data-test-id="permissions-btn">
+                <font-awesome-icon icon="users" />
+                Permissions
+            </b-button>
         </div>
-    </CurrentUser>
+        <div v-if="dataset.is_unrestricted" data-test-id="unrestricted-msg">
+            This dataset is unrestricted so everybody with the link can access it.
+            <copy-to-clipboard
+                message="A link to current dataset was copied to your clipboard"
+                :text="currentRouteName"
+                title="Copy link to this dataset " />
+        </div>
+        <!-- Table -->
+        <b-table
+            v-if="table_items"
+            :fields="fields"
+            :items="table_items"
+            class="dataset_table mt-2"
+            thead-class="d-none"
+            striped
+            small
+            data-test-id="dataset-table">
+            <template v-slot:cell(name)="row">
+                <strong>{{ row.item.name }}</strong>
+            </template>
+            <template v-slot:cell(value)="row">
+                <div v-if="isEditMode">
+                    <b-form-input
+                        v-if="row.item.name === fieldTitles.name"
+                        v-model="modifiedDataset.name"
+                        :value="row.item.value" />
+                    <DatatypesProvider
+                        v-else-if="row.item.name === fieldTitles.file_ext"
+                        v-slot="{ item: datatypes, loading: loadingDatatypes }">
+                        <SingleItemSelector
+                            collection-name="Data Types"
+                            :loading="loadingDatatypes"
+                            :items="datatypes"
+                            :current-item-id="dataset.file_ext"
+                            @update:selected-item="onSelectedDatatype" />
+                    </DatatypesProvider>
+                    <db-key-provider
+                        v-else-if="row.item.name === fieldTitles.genome_build"
+                        v-slot="{ item: dbkeys, loading: loadingDbKeys }">
+                        <SingleItemSelector
+                            collection-name="Database/Builds"
+                            :loading="loadingDbKeys"
+                            :items="dbkeys"
+                            :current-item-id="dataset.genome_build"
+                            @update:selected-item="onSelectedDbKey" />
+                    </db-key-provider>
+                    <b-form-input
+                        v-else-if="row.item.name === fieldTitles.message"
+                        v-model="modifiedDataset.message"
+                        :value="row.item.value" />
+                    <b-form-input
+                        v-else-if="row.item.name === fieldTitles.misc_info"
+                        v-model="modifiedDataset.misc_info"
+                        :value="row.item.value" />
+                    <div v-else>{{ row.item.value }}</div>
+                </div>
+                <div v-else>
+                    <div>{{ row.item.value }}</div>
+                </div>
+            </template>
+        </b-table>
+        <!-- Edit Controls -->
+        <div v-if="isEditMode">
+            <b-button class="mr-1 mb-2" @click="isEditMode = false">
+                <font-awesome-icon :icon="['fas', 'times']" />
+                Cancel
+            </b-button>
+            <b-button class="mr-1 mb-2" @click="updateDataset">
+                <font-awesome-icon :icon="['far', 'save']" />
+                Save
+            </b-button>
+        </div>
+        <!-- Peek View -->
+        <div v-if="dataset.peek" data-test-id="peek-view" v-html="dataset.peek" />
+    </div>
 </template>
 
 <script>
+import { mapState } from "pinia";
+import { useUserStore } from "@/stores/userStore";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faUsers, faRedo, faPencilAlt, faBook, faDownload, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { faSave } from "@fortawesome/free-regular-svg-icons";
@@ -144,7 +144,6 @@ import { fieldTitles } from "components/Libraries/LibraryFolder/LibraryFolderDat
 import { DbKeyProvider, DatatypesProvider } from "components/providers";
 import SingleItemSelector from "components/SingleItemSelector";
 import { buildFields } from "components/Libraries/library-utils";
-import CurrentUser from "components/providers/CurrentUser";
 
 library.add(faUsers, faRedo, faBook, faDownload, faPencilAlt, faTimes, faSave);
 
@@ -156,7 +155,6 @@ export default {
         DbKeyProvider,
         DatatypesProvider,
         SingleItemSelector,
-        CurrentUser,
     },
     props: {
         dataset_id: {
@@ -182,6 +180,7 @@ export default {
         };
     },
     computed: {
+        ...mapState(useUserStore, ["currentUser"]),
         datasetChanges() {
             const changes = {};
             for (var prop in this.dataset) {

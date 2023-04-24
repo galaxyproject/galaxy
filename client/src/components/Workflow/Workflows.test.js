@@ -10,6 +10,12 @@ const localVue = getLocalVue();
 
 jest.mock("app");
 
+const sampleLongAnnotation =
+    "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor\
+    incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis\
+    eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident,\
+    sunt in culpa qui officia deserunt mollit anim id est laborum.";
+
 const mockWorkflowsData = [
     {
         id: "5f1915bcf9f35612",
@@ -17,6 +23,7 @@ const mockWorkflowsData = [
         create_time: "2021-01-04T17:40:58.407793",
         name: "workflow name",
         tags: ["tagmoo", "tagcow"],
+        annotations: [sampleLongAnnotation],
         published: true,
         show_in_tool_panel: true,
         owner: "test",
@@ -88,7 +95,7 @@ describe("WorkflowList.vue", () => {
         });
 
         it("renders one row", async () => {
-            const rows = wrapper.findAll("tbody > tr").wrappers;
+            let rows = wrapper.findAll("tbody > tr").wrappers;
             expect(rows.length).toBe(1);
             const row = rows[0];
             const columns = row.findAll("td");
@@ -102,6 +109,21 @@ describe("WorkflowList.vue", () => {
                 formatDistanceToNow(parseISO(`${mockWorkflowsData[0].update_time}Z`), { addSuffix: true })
             );
             expect(row.find(".fa-globe").exists()).toBe(true);
+
+            // test expand summary button for longer annotations
+            const annotationHead = sampleLongAnnotation.substr(0, 75);
+            const annotationTail = sampleLongAnnotation.substr(sampleLongAnnotation.length - 50);
+            expect(columns.at(0).text()).toContain(annotationHead);
+            expect(columns.at(0).text()).not.toContain(annotationTail);
+            expect(columns.at(0).find("a > .fa-chevron-down").exists()).toBe(true);
+            // click Down Arrow: full annotation should be visible in a b-card
+            await columns.at(0).find("a.text-summary-expand").trigger("click");
+            expect(columns.at(0).find("a > .fa-chevron-down").exists()).toBe(false);
+            rows = wrapper.findAll("tbody > tr").wrappers;
+            expect(rows.length).toBe(3);
+            const descriptionCard = rows[2].find("td");
+            expect(descriptionCard.text()).toContain(annotationTail);
+            expect(columns.at(0).find("a > .fa-chevron-up").exists()).toBe(true);
         });
 
         it("starts with an empty filter", async () => {

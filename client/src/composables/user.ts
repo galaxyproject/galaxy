@@ -1,6 +1,6 @@
-import { computed, onMounted, inject, ref, unref } from "vue";
+import { computed, onMounted, ref, unref } from "vue";
 import type { Ref } from "vue";
-import type { Store } from "vuex";
+import { useUserStore } from "@/stores/userStore";
 
 // TODO: support computed for "noFetch"
 /**
@@ -11,28 +11,28 @@ import type { Store } from "vuex";
  */
 export function useCurrentUser(noFetch: boolean | Ref<boolean> = false, fetchOnce: boolean | Ref<boolean> = false) {
     // TODO: add store typing
-    const store = inject("store") as Store<unknown>;
-    const currentUser = computed(() => store.getters["user/currentUser"]);
-    const currentFavorites = computed(() => store.getters["user/currentFavorites"]);
+    const userStore = useUserStore();
+    const currentUser = computed(() => userStore.currentUser);
+    const currentFavorites = computed(() => userStore.currentFavorites);
     onMounted(() => {
         if (!unref(noFetch) && !(Object.keys(currentUser).length > 0) && unref(fetchOnce)) {
-            store.dispatch("user/loadUser");
+            userStore.loadUser();
         }
     });
     const addFavoriteTool = async (toolId: string) => {
-        await store.dispatch("user/addFavoriteTool", toolId);
+        await userStore.addFavoriteTool(toolId);
     };
     const removeFavoriteTool = async (toolId: string) => {
-        await store.dispatch("user/removeFavoriteTool", toolId);
+        await userStore.removeFavoriteTool(toolId);
     };
     return { currentUser, currentFavorites, addFavoriteTool, removeFavoriteTool };
 }
 
 export function useCurrentTheme() {
-    const store = inject("store") as Store<unknown>;
-    const currentTheme = computed(() => store.getters["user/currentTheme"]);
+    const userStore = useUserStore();
+    const currentTheme = computed(() => userStore.currentTheme);
     function setCurrentTheme(theme: string) {
-        store.dispatch("user/setCurrentTheme", theme);
+        userStore.setCurrentTheme(theme);
     }
     return {
         currentTheme,

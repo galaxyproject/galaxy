@@ -504,18 +504,41 @@ export function getRouter(Galaxy) {
         ],
     });
 
-    router.beforeEach(async (to, from, next) => {
-        // TODO: merge anon redirect functionality here for more standard handling
-
+    function checkAdminAccessRequired(to) {
         // Check parent route hierarchy to see if we require admin access here.
         // Access is required if *any* component in the hierarchy requires it.
         if (to.matched.some((record) => record.meta.requiresAdmin === true)) {
-            const isAdmin = getGalaxyInstance()?.user?.isAdmin() || false;
-            if (!isAdmin) {
-                const error = new Error(`Administrator Access Required for '${to.path}'.`);
-                error.name = "AdminRequired";
-                next(error);
-            }
+            const isAdmin = getGalaxyInstance()?.user?.isAdmin();
+            return !isAdmin;
+        }
+        return false;
+    }
+
+    function checkRegisteredUserAccessRequired(to) {
+        // Check parent route hierarchy to see if we require registered user access here.
+        // Access is required if *any* component in the hierarchy requires it.
+        if (to.matched.some((record) => record.meta.requiresRegisteredUser === true)) {
+            const isAnonymous = getGalaxyInstance()?.user?.isAnonymous();
+            return isAnonymous;
+        }
+        return false;
+    }
+
+    router.beforeEach(async (to, from, next) => {
+        // TODO: merge anon redirect functionality here for more standard handling
+
+        const isAdminAccessRequired = checkAdminAccessRequired(to);
+        if (isAdminAccessRequired) {
+            const error = new Error(`Admin access required for '${to.path}'.`);
+            error.name = "AdminRequired";
+            next(error);
+        }
+
+        const isRegisteredUserAccessRequired = checkRegisteredUserAccessRequired(to);
+        if (isRegisteredUserAccessRequired) {
+            const error = new Error(`Registered user access required for '${to.path}'.`);
+            error.name = "RegisteredUserRequired";
+            next(error);
         }
         next();
     });

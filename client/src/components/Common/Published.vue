@@ -6,7 +6,7 @@
         <FlexPanel side="right">
             <div v-if="modelTitle" class="m-3">
                 <h1 class="h-sm">About this {{ modelTitle }}</h1>
-                <h2 class="h-md">{{ item.title || item.name }}</h2>
+                <h2 class="h-md text-break">{{ item.title || item.name }}</h2>
                 <img :src="gravatarSource" alt="user avatar" />
                 <StatelessTags v-if="item.tags" class="tags mt-2" :value="item.tags" :disabled="true" />
                 <br />

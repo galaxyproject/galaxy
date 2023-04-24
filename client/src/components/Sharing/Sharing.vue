@@ -72,99 +72,93 @@
                 </b-button>
                 <b-collapse id="accordion-1" accordion="main-accordion" role="tabpanel">
                     <ConfigProvider v-slot="{ config }">
-                        <CurrentUser v-slot="{ user }">
-                            <div v-if="user && config && !permissionsChangeRequired(item)">
-                                <p v-if="item.users_shared_with.length === 0" class="share_with_title">
-                                    You have not shared this {{ modelClass }} with any users.
-                                </p>
-                                <p v-else class="share_with_title">
-                                    The following users will see this {{ modelClass }} in their {{ modelClass }} list
-                                    and will be able to view, import and run it.
-                                </p>
+                        <div v-if="currentUser && config && !permissionsChangeRequired(item)">
+                            <p v-if="item.users_shared_with.length === 0" class="share_with_title">
+                                You have not shared this {{ modelClass }} with any users.
+                            </p>
+                            <p v-else class="share_with_title">
+                                The following users will see this {{ modelClass }} in their {{ modelClass }} list and
+                                will be able to view, import and run it.
+                            </p>
 
-                                <b-alert
-                                    :show="dismissCountDown"
-                                    dismissible
-                                    class="success-alert"
-                                    variant="success"
-                                    @dismissed="dismissCountDown = 0"
-                                    @dismiss-count-down="dismissCountDown = $event">
-                                    Sharing preferences are saved!
-                                </b-alert>
+                            <b-alert
+                                :show="dismissCountDown"
+                                dismissible
+                                class="success-alert"
+                                variant="success"
+                                @dismissed="dismissCountDown = 0"
+                                @dismiss-count-down="dismissCountDown = $event">
+                                Sharing preferences are saved!
+                            </b-alert>
 
-                                <div class="share_with_view">
-                                    <multiselect
-                                        v-model="multiselectValues.sharingCandidates"
-                                        :options="multiselectValues.userOptions"
-                                        :clear-on-select="true"
-                                        :multiple="true"
-                                        :internal-search="false"
-                                        :max-height="config.expose_user_email || user.is_admin ? 300 : 0"
-                                        label="email"
-                                        track-by="email"
-                                        placeholder="Please specify user email"
-                                        @close="onMultiselectBlur(config.expose_user_email || user.is_admin)"
-                                        @search-change="
-                                            searchChanged($event, config.expose_user_email || user.is_admin)
+                            <div class="share_with_view">
+                                <multiselect
+                                    v-model="multiselectValues.sharingCandidates"
+                                    :options="multiselectValues.userOptions"
+                                    :clear-on-select="true"
+                                    :multiple="true"
+                                    :internal-search="false"
+                                    :max-height="config.expose_user_email || currentUser.is_admin ? 300 : 0"
+                                    label="email"
+                                    track-by="email"
+                                    placeholder="Please specify user email"
+                                    @close="onMultiselectBlur(config.expose_user_email || currentUser.is_admin)"
+                                    @search-change="
+                                        searchChanged($event, config.expose_user_email || currentUser.is_admin)
+                                    ">
+                                    <template v-if="!(config.expose_user_email || currentUser.is_admin)" slot="caret">
+                                        <div></div>
+                                    </template>
+                                    <template v-if="config.expose_user_email || currentUser.is_admin" slot="noResult">
+                                        <div v-if="threeCharactersEntered">
+                                            {{ elementsNotFoundWarning }}
+                                        </div>
+                                        <div v-else>{{ charactersThresholdWarning }}</div>
+                                    </template>
+                                    <template slot="tag" slot-scope="{ option, remove }">
+                                        <span class="multiselect__tag remove_sharing_with" :data-email="option.email">
+                                            <span>{{ option.email }}</span>
+                                            <i
+                                                aria-hidden="true"
+                                                tabindex="0"
+                                                class="multiselect__tag-icon"
+                                                @click="remove(option)"></i>
+                                        </span>
+                                    </template>
+                                    <template slot="noOptions">
+                                        <div v-if="threeCharactersEntered">
+                                            {{ charactersThresholdWarning }}
+                                        </div>
+                                        <div v-else>
+                                            {{ elementsNotFoundWarning }}
+                                        </div>
+                                    </template>
+                                </multiselect>
+                                <div class="share-with-card-buttons">
+                                    <!--submit/cancel buttons-->
+                                    <b-button
+                                        variant="outline-danger"
+                                        class="sharing_icon cancel-sharing-with"
+                                        @click="getSharing()">
+                                        Cancel
+                                    </b-button>
+                                    <b-button
+                                        v-b-tooltip.hover.bottom
+                                        variant="outline-primary"
+                                        :disabled="!(sharedWithUsersChanged || !!multiselectValues.currentUserSearch)"
+                                        :title="submitBtnTitle"
+                                        class="sharing_icon submit-sharing-with"
+                                        @click.stop="
+                                            setSharing(
+                                                actions.share_with,
+                                                multiselectValues.sharingCandidates.map(({ email }) => email)
+                                            )
                                         ">
-                                        <template v-if="!(config.expose_user_email || user.is_admin)" slot="caret">
-                                            <div></div>
-                                        </template>
-                                        <template v-if="config.expose_user_email || user.is_admin" slot="noResult">
-                                            <div v-if="threeCharactersEntered">
-                                                {{ elementsNotFoundWarning }}
-                                            </div>
-                                            <div v-else>{{ charactersThresholdWarning }}</div>
-                                        </template>
-                                        <template slot="tag" slot-scope="{ option, remove }">
-                                            <span
-                                                class="multiselect__tag remove_sharing_with"
-                                                :data-email="option.email">
-                                                <span>{{ option.email }}</span>
-                                                <i
-                                                    aria-hidden="true"
-                                                    tabindex="0"
-                                                    class="multiselect__tag-icon"
-                                                    @click="remove(option)"></i>
-                                            </span>
-                                        </template>
-                                        <template slot="noOptions">
-                                            <div v-if="threeCharactersEntered">
-                                                {{ charactersThresholdWarning }}
-                                            </div>
-                                            <div v-else>
-                                                {{ elementsNotFoundWarning }}
-                                            </div>
-                                        </template>
-                                    </multiselect>
-                                    <div class="share-with-card-buttons">
-                                        <!--submit/cancel buttons-->
-                                        <b-button
-                                            variant="outline-danger"
-                                            class="sharing_icon cancel-sharing-with"
-                                            @click="getSharing()">
-                                            Cancel
-                                        </b-button>
-                                        <b-button
-                                            v-b-tooltip.hover.bottom
-                                            variant="outline-primary"
-                                            :disabled="
-                                                !(sharedWithUsersChanged || !!multiselectValues.currentUserSearch)
-                                            "
-                                            :title="submitBtnTitle"
-                                            class="sharing_icon submit-sharing-with"
-                                            @click.stop="
-                                                setSharing(
-                                                    actions.share_with,
-                                                    multiselectValues.sharingCandidates.map(({ email }) => email)
-                                                )
-                                            ">
-                                            {{ multiselectValues.currentUserSearch ? `Add` : `Save` }}
-                                        </b-button>
-                                    </div>
+                                        {{ multiselectValues.currentUserSearch ? `Add` : `Save` }}
+                                    </b-button>
                                 </div>
                             </div>
-                        </CurrentUser>
+                        </div>
                     </ConfigProvider>
                     <b-alert variant="warning" dismissible fade :show="permissionsChangeRequired(item)">
                         <div class="text-center">
@@ -269,6 +263,8 @@
 
 <script>
 import Vue from "vue";
+import { mapState } from "pinia";
+import { useUserStore } from "@/stores/userStore";
 import BootstrapVue from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -280,7 +276,6 @@ import axios from "axios";
 import Multiselect from "vue-multiselect";
 import { copy } from "utils/clipboard";
 import ConfigProvider from "components/providers/ConfigProvider";
-import CurrentUser from "components/providers/CurrentUser";
 import { errorMessageAsString } from "utils/simple-error";
 import ErrorMessage from "./ErrorMessage";
 
@@ -300,7 +295,6 @@ export default {
         FontAwesomeIcon,
         SlugInput,
         Multiselect,
-        CurrentUser,
     },
     props: {
         id: {
@@ -360,6 +354,7 @@ export default {
         };
     },
     computed: {
+        ...mapState(useUserStore, ["currentUser"]),
         sharedWithUsersChanged() {
             if (this.item.users_shared_with.length !== this.multiselectValues.sharingCandidates.length) {
                 return true;

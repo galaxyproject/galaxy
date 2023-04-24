@@ -26,7 +26,8 @@
 </template>
 
 <script>
-import { mapGetters } from "vuex";
+import { mapState } from "pinia";
+import { useHistoryStore } from "@/stores/historyStore";
 import WorkflowInvocationState from "components/WorkflowInvocationState/WorkflowInvocationState";
 import Webhooks from "utils/webhooks";
 import { getAppRoot } from "onload/loadConfig";
@@ -47,7 +48,7 @@ export default {
         },
     },
     computed: {
-        ...mapGetters("history", ["currentHistoryId"]),
+        ...mapState(useHistoryStore, ["currentHistoryId"]),
         timesExecuted() {
             return this.invocations.length;
         },

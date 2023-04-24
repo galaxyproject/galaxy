@@ -202,6 +202,7 @@ class SentryClientMixin:
                 release=f"{self.config.version_major}.{self.config.version_minor}",
                 integrations=[sentry_logging],
                 traces_sample_rate=self.config.sentry_traces_sample_rate,
+                ca_certs=self.config.sentry_ca_certs,
             )
 
 

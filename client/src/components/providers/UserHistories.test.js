@@ -1,29 +1,22 @@
-import Vuex from "vuex";
+import { createPinia } from "pinia";
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
-import { historyStore } from "store/historyStore/historyStore";
+import { useHistoryStore } from "stores/historyStore";
 import UserHistories from "./UserHistories";
 import {
     getHistoryList,
-    getHistoryById,
+    getHistoryByIdFromServer,
     getCurrentHistoryFromServer,
     setCurrentHistoryOnServer,
-    createNewHistory,
+    createAndSelectNewHistory,
     updateHistoryFields,
     deleteHistoryById,
-} from "store/historyStore/model/queries";
+} from "stores/services/history.services";
 
 jest.mock("app");
-jest.mock("store/historyStore/model/queries");
+jest.mock("stores/services/history.services");
 
 const localVue = getLocalVue();
-
-// generate store for testing
-const localStore = new Vuex.Store({
-    modules: {
-        history: historyStore,
-    },
-});
 
 // test user data
 const fakeUser = { id: 123234, name: "Bob" };
@@ -45,10 +38,10 @@ getHistoryList.mockImplementation(async () => {
 getCurrentHistoryFromServer.mockImplementation(async () => {
     return histories.find((o) => o.id == currentHistoryId);
 });
-getHistoryById.mockImplementation(async (id) => {
+getHistoryByIdFromServer.mockImplementation(async (id) => {
     return histories.find((o) => o.id == id);
 });
-createNewHistory.mockImplementation(async () => {
+createAndSelectNewHistory.mockImplementation(async () => {
     histories.push(createdHistory);
     return Object.assign({}, createdHistory);
 });
@@ -69,12 +62,14 @@ deleteHistoryById.mockImplementation(async (id) => {
 describe("UserHistories", () => {
     let wrapper;
     let slotProps;
+    let historyStore;
 
     beforeEach(async () => {
         setTestData();
+        const pinia = createPinia();
+
         wrapper = shallowMount(UserHistories, {
             localVue,
-            store: localStore,
             propsData: {
                 user: fakeUser,
             },
@@ -83,11 +78,15 @@ describe("UserHistories", () => {
                     slotProps = props;
                 },
             },
+            pinia,
         });
+
+        historyStore = useHistoryStore();
+        historyStore.setHistories(histories);
+        historyStore.setCurrentHistoryId(currentHistoryId);
     });
 
     afterEach(async () => {
-        localStore.dispatch("history/resetHistory");
         if (wrapper) {
             await wrapper.destroy();
         }

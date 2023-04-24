@@ -18,14 +18,14 @@ const showCenter = ref(false);
 // computed
 const showPanels = computed(() => {
     const panels = route.query.hide_panels;
-    if (panels !== undefined) {
+    if (panels !== undefined && panels !== null && typeof panels === "string") {
         return panels.toLowerCase() != "true";
     }
     return true;
 });
 
 const showActivityBar = computed(() => {
-    return userStore.toggledActivityBar;
+    return userStore.showActivityBar;
 });
 
 // methods

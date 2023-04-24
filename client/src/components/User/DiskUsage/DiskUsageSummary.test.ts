@@ -1,12 +1,12 @@
+import { createPinia } from "pinia";
 import { mount } from "@vue/test-utils";
+import { useUserStore } from "@/stores/userStore";
 import MockConfigProvider from "@/components/providers/MockConfigProvider";
 import MockCurrentUser from "@/components/providers/MockCurrentUser";
 import MockProvider from "@/components/providers/MockProvider";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 import DiskUsageSummary from "./DiskUsageSummary.vue";
-import { userStore } from "../../../store/userStore/userStore";
-import Vuex from "vuex";
 
 const localVue = getLocalVue();
 
@@ -22,17 +22,8 @@ const QuotaUsageProviderMock = MockProvider({
 });
 const QuotaUsageSummaryMock = { template: `<div id='${quotaUsageSummaryComponentId}'/>` };
 
-const store = new Vuex.Store({
-    modules: {
-        user: {
-            state: fakeUser,
-            namespaced: true,
-            getters: userStore.getters,
-        },
-    },
-});
-
 async function mountDiskUsageSummaryWrapper(enableQuotas: boolean) {
+    const pinia = createPinia();
     const wrapper = mount(DiskUsageSummary, {
         stubs: {
             ConfigProvider: MockConfigProvider({
@@ -43,8 +34,10 @@ async function mountDiskUsageSummaryWrapper(enableQuotas: boolean) {
             QuotaUsageSummary: QuotaUsageSummaryMock,
         },
         localVue,
-        store,
+        pinia,
     });
+    const userStore = useUserStore();
+    userStore.currentUser = { id: "fakeUser", email: "fakeUserEmail", tags_used: [] };
     await flushPromises();
     return wrapper;
 }

@@ -1,4 +1,4 @@
-import Vuex from "vuex";
+import { createPinia } from "pinia";
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 import MockAdapter from "axios-mock-adapter";
@@ -6,7 +6,6 @@ import axios from "axios";
 import { filterToolSections, filterTools } from "./utilities";
 import ToolBox from "./ToolBox";
 import toolsList from "./testToolsList";
-import { userStore } from "store/userStore";
 import { useConfig } from "composables/config";
 
 jest.mock("composables/config");
@@ -32,24 +31,10 @@ describe("ToolBox", () => {
     };
 
     let wrapper;
-    let store;
-    let state;
 
     beforeEach(async () => {
+        const pinia = createPinia();
         axiosMock = new MockAdapter(axios);
-
-        store = new Vuex.Store({
-            modules: {
-                user: {
-                    state,
-                    actions: {
-                        loadUser: jest.fn(),
-                    },
-                    getters: userStore.getters,
-                    namespaced: true,
-                },
-            },
-        });
 
         wrapper = mount(ToolBox, {
             propsData: {
@@ -57,11 +42,11 @@ describe("ToolBox", () => {
                 currentPanelView: "default",
                 storedWorkflowMenuEntries: [],
             },
-            store,
             localVue,
             stubs: {
                 icon: { template: "<div></div>" },
             },
+            pinia,
         });
     });
 

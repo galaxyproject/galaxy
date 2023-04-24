@@ -6,7 +6,6 @@
 // (AdminRequired), but could be used for other client errors that need to be
 // presented to the user interrupting the normal flow and context of the app.
 
-import { defineProps } from "vue";
 import Alert from "@/components/Alert.vue";
 
 const props = defineProps<{
