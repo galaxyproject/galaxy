@@ -70,7 +70,7 @@ export default {
             return this.plural.toLowerCase();
         },
         publishedByUser() {
-            return `/${this.pluralPath}/list_published?f-username=${this.item.username}`;
+            return `/${this.pluralPath}/list_published?f-username=${this.owner}`;
         },
         urlAll() {
             return `/${this.pluralPath}/list_published`;
