@@ -22,7 +22,6 @@ export default Backbone.View.extend({
         group_tag: "_fieldSelect",
         library_data: "_fieldLibrary",
         ftpfile: "_fieldFtp",
-        upload: "_fieldUpload",
         rules: "_fieldRulesEdit",
         data_dialog: "_fieldDialog",
     },
@@ -176,14 +175,6 @@ export default Backbone.View.extend({
             id: input_def.id,
             optional: input_def.optional,
             multiple: input_def.multiple,
-            onchange: input_def.onchange,
-        });
-    },
-
-    /** Upload file field */
-    _fieldUpload: function (input_def) {
-        return new Ui.Upload({
-            id: input_def.id,
             onchange: input_def.onchange,
         });
     },
