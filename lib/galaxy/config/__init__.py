@@ -1196,7 +1196,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         # Load subdomains configuration
         if self._path_exists(self.subdomains_config_file):
             with open(self.subdomains_config_file) as f:
-                self.galaxy_subdomains = yaml.safe_load(f)['subdomains']
+                self.galaxy_subdomains = yaml.safe_load(f)["subdomains"]
         else:
             self.galaxy_subdomains = []
 

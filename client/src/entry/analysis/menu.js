@@ -162,9 +162,7 @@ export function fetchMenu(options = {}) {
 
     // Subdomain tab
     if (Galaxy.config.galaxy_subdomains) {
-        const showSubdomains = Galaxy.config.galaxy_subdomains.filter(
-            (s) => !location.origin.includes(s.url)
-        );
+        const showSubdomains = Galaxy.config.galaxy_subdomains.filter((s) => !location.origin.includes(s.url));
         const subdomainsTab = {
             id: "subdomain",
             title: _l("Domain"),
@@ -175,10 +173,9 @@ export function fetchMenu(options = {}) {
                 ...s,
                 target: "_blank",
             })),
-        }
+        };
         menu.push(subdomainsTab);
     }
-
 
     //
     // User tab.
