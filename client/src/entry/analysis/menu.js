@@ -204,10 +204,6 @@ export function fetchMenu(options = {}) {
                     url: "/user",
                 },
                 {
-                    title: _l("Custom Builds"),
-                    url: "/custom_builds",
-                },
-                {
                     title: _l("Show/Hide Activity Bar"),
                     onclick: () => {
                         userStore.toggleActivityBar();
