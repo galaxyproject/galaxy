@@ -24,6 +24,7 @@ export const useHistoryStore = defineStore(
         const historiesLoading = ref(false);
         const pinnedHistories = ref<{ id: string }[]>([]);
         const storedCurrentHistoryId = ref<string | null>(null);
+        const storedCurrentFilterText = ref<string | null>(null);
         const storedHistories = ref<{ [key: string]: HistorySummary }>({});
 
         const histories = computed(() => {
@@ -47,6 +48,10 @@ export const useHistoryStore = defineStore(
             } else {
                 return storedCurrentHistoryId.value;
             }
+        });
+
+        const currentFilterText = computed(() => {
+            return storedCurrentFilterText.value;
         });
 
         const getHistoryById = computed(() => {
@@ -73,6 +78,10 @@ export const useHistoryStore = defineStore(
 
         function setCurrentHistoryId(historyId: string) {
             storedCurrentHistoryId.value = historyId;
+        }
+
+        function setCurrentFilterText(filterText: string) {
+            storedCurrentFilterText.value = filterText;
         }
 
         function setHistory(history: HistorySummary) {
@@ -117,6 +126,13 @@ export const useHistoryStore = defineStore(
         function selectHistory(history: HistorySummary) {
             setHistory(history);
             setCurrentHistoryId(history.id);
+        }
+
+        function applyFilterText(history_id: string, filterText: string) {
+            setCurrentFilterText(filterText);
+            if (currentHistoryId.value !== history_id) {
+                return setCurrentHistory(history_id);
+            }
         }
 
         async function copyHistory(history: HistorySummary, name: string, copyAll: boolean) {
@@ -182,16 +198,19 @@ export const useHistoryStore = defineStore(
             histories,
             currentHistory,
             currentHistoryId,
+            currentFilterText,
             pinnedHistories,
             getHistoryById,
             getHistoryNameById,
             setCurrentHistory,
             setCurrentHistoryId,
+            setCurrentFilterText,
             setHistory,
             setHistories,
             pinHistory,
             unpinHistory,
             selectHistory,
+            applyFilterText,
             copyHistory,
             createNewHistory,
             deleteHistory,

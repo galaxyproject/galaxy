@@ -55,7 +55,7 @@
                 <b-button
                     v-if="showHighlight"
                     class="highlight-btn px-1"
-                    title="Show Inputs for this item"
+                    title="Show Related Items"
                     size="sm"
                     variant="link"
                     @click.stop="onHighlight">

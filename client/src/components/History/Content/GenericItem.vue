@@ -4,6 +4,7 @@
         <div v-else>
             <ContentItem
                 :id="item.hid"
+                add-highlight-btn
                 is-history-item
                 :item="item"
                 :name="item.name"
@@ -12,6 +13,7 @@
                 @update:expand-dataset="expandDataset = $event"
                 @view-collection="viewCollection = !viewCollection"
                 @delete="onDelete(item)"
+                @toggleHighlights="onHighlight(item)"
                 @undelete="onUndelete(item)"
                 @unhide="onUnhide(item)" />
             <div v-if="viewCollection">
@@ -27,6 +29,8 @@ import { DatasetCollectionProvider, DatasetProvider } from "components/providers
 import { deleteContent, updateContentFields } from "components/History/model/queries";
 import ContentItem from "./ContentItem";
 import GenericElement from "./GenericElement";
+import { mapActions } from "pinia";
+import { useHistoryStore } from "@/stores/historyStore";
 
 export default {
     components: {
@@ -58,6 +62,7 @@ export default {
         },
     },
     methods: {
+        ...mapActions(useHistoryStore, ["applyFilterText"]),
         onDelete(item) {
             deleteContent(item);
         },
@@ -69,6 +74,11 @@ export default {
         },
         onUnhide(item) {
             updateContentFields(item, { visible: true });
+        },
+        onHighlight(item) {
+            const { history_id } = item;
+            const filterText = `related:${item.hid}`;
+            this.applyFilterText(history_id, filterText);
         },
     },
 };
