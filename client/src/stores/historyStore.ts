@@ -156,7 +156,8 @@ export const useHistoryStore = defineStore(
             const deletedHistory = (await deleteHistoryById(historyId, purge)) as HistorySummary;
             Vue.delete(storedHistories.value, deletedHistory.id);
             if (getFirstHistoryId.value) {
-                return setCurrentHistoryId(getFirstHistoryId.value);
+                setCurrentHistoryId(getFirstHistoryId.value);
+                return setCurrentHistory(getFirstHistoryId.value);
             } else {
                 return createNewHistory();
             }
