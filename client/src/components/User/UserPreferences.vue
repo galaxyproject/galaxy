@@ -5,7 +5,7 @@
             {{ message }}
         </b-alert>
         <p>
-            <span v-localize>You are logged in as</span>
+            <span v-localize>You are signed in as</span>
             <strong id="user-preferences-current-email">{{ email }}</strong>
             <span v-localize>and you are using</span>
             <strong>{{ diskUsage }}</strong>

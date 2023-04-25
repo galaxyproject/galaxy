@@ -25,7 +25,7 @@ define({
     Login: "Authentification",
     Register: "Enregistrement",
     "Login or Register": "Authentification et Enregistrement",
-    "Logged in as": "Authentifié en tant que",
+    "Signed in as": "Authentifié en tant que",
     Preferences: "Préférences",
     "Custom Builds": "Mes génomes Builds de référence",
     Logout: "Déconnexion",
