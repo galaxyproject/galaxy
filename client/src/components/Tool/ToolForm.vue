@@ -1,6 +1,6 @@
 <template>
     <ConfigProvider v-slot="{ config }">
-        <UserHistories v-if="currentUser" v-slot="{ currentHistoryId }" :user="currentUser">
+        <div v-if="currentUser">
             <div v-if="currentHistoryId">
                 <b-alert :show="messageShow" :variant="messageVariant">
                     {{ messageText }}
@@ -96,7 +96,7 @@
                     </template>
                 </ToolCard>
             </div>
-        </UserHistories>
+        </div>
     </ConfigProvider>
 </template>
 
@@ -118,7 +118,6 @@ import FormDisplay from "components/Form/FormDisplay";
 import FormElement from "components/Form/FormElement";
 import ToolEntryPoints from "components/ToolEntryPoints/ToolEntryPoints";
 import ToolRecommendation from "../ToolRecommendation";
-import UserHistories from "components/providers/UserHistories";
 import Heading from "components/Common/Heading";
 
 export default {
@@ -131,7 +130,6 @@ export default {
         FormElement,
         ToolEntryPoints,
         ToolRecommendation,
-        UserHistories,
         Heading,
     },
     props: {
