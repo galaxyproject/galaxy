@@ -14,8 +14,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCopy } from "@fortawesome/free-solid-svg-icons";
 import { copy } from "utils/clipboard";
 import { absPath } from "@/utils/redirect";
-
-
+import _l from "utils/localization";
 
 library.add(faCopy);
 
@@ -47,7 +46,7 @@ export default {
             this.$emit("click-owner", this.owner);
         },
         copyLink() {
-            copy(absPath(`/u/${this.owner}/p/${this.slug}`), "Link copied to the clipboard.");
+            copy(absPath(`/u/${this.owner}/p/${this.slug}`), _l("Link copied to the clipboard."));
         },
     },
 };

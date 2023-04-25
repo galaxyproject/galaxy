@@ -21,11 +21,11 @@ describe("PageUrl.vue", () => {
 
     describe("component", () => {
         it("should localize title text", async () => {
-            expect(wrapper.find("svg title").text()).toBeLocalized();
+            expect(wrapper.getComponent(".page-url-copy").attributes("title")).toBeLocalized();
         });
 
         it("should emit an event when owner is clicked on", async () => {
-            const ownerEl = wrapper.find("a.page-url-owner");
+            const ownerEl = wrapper.getComponent("a.page-url-owner");
             expect(ownerEl.text()).toBe("jmchilton");
             await ownerEl.trigger("click");
 
