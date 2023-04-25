@@ -193,7 +193,7 @@ export function fetchMenu(options = {}) {
             tooltip: _l("Account and saved data"),
             menu: [
                 {
-                    title: `${_l("Logged in as")} ${
+                    title: `${_l("Signed in as")} ${
                         Galaxy.user.get("username") ? Galaxy.user.get("username") : Galaxy.user.get("email")
                     }`,
                     disabled: true,
