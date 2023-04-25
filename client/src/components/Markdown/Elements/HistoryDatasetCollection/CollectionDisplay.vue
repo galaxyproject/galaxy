@@ -13,7 +13,7 @@
                     class="py-0 px-1">
                     <span class="fa fa-download" />
                 </b-button>
-                <UserHistories v-if="user" v-slot="{ currentHistoryId }" :user="currentUser">
+                <div v-if="currentUser">
                     <b-button
                         v-if="currentHistoryId"
                         v-b-tooltip.hover
@@ -26,7 +26,7 @@
                         @click="onCopyCollection(currentHistoryId)">
                         <span class="fa fa-file-import" />
                     </b-button>
-                </UserHistories>
+                </div>
             </span>
             <span>
                 <span>Dataset Collection:</span>
@@ -49,17 +49,16 @@
 import axios from "axios";
 import { mapState } from "pinia";
 import { useUserStore } from "@/stores/userStore";
+import { useHistoryStore } from "@/stores/historyStore";
 import { getAppRoot } from "onload/loadConfig";
 import CollectionTree from "./CollectionTree";
 import LoadingSpan from "components/LoadingSpan";
-import UserHistories from "components/providers/UserHistories";
 import { copyCollection } from "components/Markdown/services";
 
 export default {
     components: {
         CollectionTree,
         LoadingSpan,
-        UserHistories,
     },
     props: {
         args: {
@@ -81,6 +80,7 @@ export default {
     },
     computed: {
         ...mapState(useUserStore, ["currentUser"]),
+        ...mapState(useHistoryStore, ["currentHistoryId"]),
         collectionName() {
             const collection = this.collections[this.args.history_dataset_collection_id];
             return collection && collection.name;
