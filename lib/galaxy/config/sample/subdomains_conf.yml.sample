@@ -5,4 +5,4 @@ subdomains:
   - title: Base
     url: https://mygalaxy.example.com/
   - title: Genomics
-    url: https://genome.mygalaxy.org
+    url: https://genome.example.com
