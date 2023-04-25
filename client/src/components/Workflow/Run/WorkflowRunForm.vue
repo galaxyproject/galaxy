@@ -1,5 +1,5 @@
 <template>
-    <UserHistories v-if="currentUser" v-slot="{ currentHistoryId }" :user="currentUser">
+    <div v-if="currentUser">
         <div v-if="currentHistoryId" class="workflow-expanded-form">
             <div class="h4 clearfix mb-3">
                 <b>Workflow: {{ model.name }}</b>
@@ -51,17 +51,17 @@
                     @onValidation="onValidation" />
             </div>
         </div>
-    </UserHistories>
+    </div>
 </template>
 
 <script>
 import { mapState } from "pinia";
 import { useUserStore } from "@/stores/userStore";
+import { useHistoryStore } from "@/stores/historyStore";
 import ButtonSpinner from "components/Common/ButtonSpinner";
 import FormDisplay from "components/Form/FormDisplay";
 import FormCard from "components/Form/FormCard";
 import FormElement from "components/Form/FormElement";
-import UserHistories from "components/providers/UserHistories";
 import WorkflowRunDefaultStep from "./WorkflowRunDefaultStep";
 import WorkflowRunInputStep from "./WorkflowRunInputStep";
 import { allowCachedJobs } from "components/Tool/utilities";
@@ -74,7 +74,6 @@ export default {
         FormDisplay,
         FormCard,
         FormElement,
-        UserHistories,
         WorkflowRunDefaultStep,
         WorkflowRunInputStep,
     },
@@ -128,6 +127,7 @@ export default {
     },
     computed: {
         ...mapState(useUserStore, ["currentUser"]),
+        ...mapState(useHistoryStore, ["currentHistoryId"]),
         resourceInputsAvailable() {
             return this.resourceInputs.length > 0;
         },
