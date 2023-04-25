@@ -24,7 +24,7 @@ export const useHistoryStore = defineStore(
         const historiesLoading = ref(false);
         const pinnedHistories = ref<{ id: string }[]>([]);
         const storedCurrentHistoryId = ref<string | null>(null);
-        const storedCurrentFilterText = ref<string | null>(null);
+        const storedCurrentFilterText = ref<string>("");
         const storedHistories = ref<{ [key: string]: HistorySummary }>({});
 
         const histories = computed(() => {

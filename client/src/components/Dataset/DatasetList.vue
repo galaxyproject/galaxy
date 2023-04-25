@@ -153,7 +153,17 @@ export default {
         async onShowDataset(item) {
             const historyId = item.history_id;
             try {
-                await this.applyFilterText(historyId, `hid:${item.hid}`);
+                let filterText = "";
+                if (item.hid) {
+                    filterText = `hid:${item.hid}`;
+                    if (item.deleted) {
+                        filterText += " deleted:true";
+                    }
+                    if (!item.visible) {
+                        filterText += " visible:false";
+                    }
+                }
+                await this.applyFilterText(historyId, filterText);
             } catch (error) {
                 this.onError(error);
             }

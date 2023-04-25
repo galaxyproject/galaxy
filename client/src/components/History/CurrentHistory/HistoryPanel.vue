@@ -286,6 +286,10 @@ export default {
         },
     },
     async mounted() {
+        // `filterable` here indicates if this is the current history panel
+        if (this.filterable && !this.filter) {
+            this.filterText = this.storeFilterText;
+        }
         await this.loadHistoryItems();
     },
     methods: {
