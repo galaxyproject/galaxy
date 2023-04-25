@@ -358,7 +358,7 @@ export default {
                         if ([true, "true"].includes(config.enable_tool_recommendations)) {
                             this.showRecommendation = true;
                         }
-                        document.querySelector(".center-panel").scrollTop = 0;
+                        document.querySelector("#center").scrollTop = 0;
                     }
                 },
                 (e) => {
