@@ -61,7 +61,7 @@
                 <UtcDate :date="data.value" mode="elapsed" />
             </template>
             <template v-slot:cell(owner)="data">
-                <a class="workflow-filter-link-owner" @click="appendTagFilter('user', data.value)">{{ data.value }}</a>
+                <a class="workflow-filter-link-owner" href="#" @click="appendTagFilter('user', data.value)">{{ data.value }}</a>
             </template>
             <template v-slot:cell(execute)="row">
                 <WorkflowRunButton v-if="!row.item.deleted" :id="row.item.id" :root="root" />
@@ -148,7 +148,7 @@ const UPDATED_FIELD = { label: _l("Updated"), key: "update_time", sortable: true
 const SHARING_FIELD = { label: _l("Sharing"), key: "published", sortable: false };
 const BOOKMARKED_FIELD = { label: _l("Bookmarked"), key: "show_in_tool_panel", sortable: false };
 const EXECUTE_FIELD = { key: "execute", label: "" };
-const OWNER_FIELD = { key: "owner", label: _l("Owner"), sortable: true };
+const OWNER_FIELD = { key: "owner", label: _l("Owner"), sortable: false };
 
 const PERSONAL_FIELDS = [NAME_FIELD, TAGS_FIELD, UPDATED_FIELD, SHARING_FIELD, BOOKMARKED_FIELD, EXECUTE_FIELD];
 const PUBLISHED_FIELDS = [NAME_FIELD, TAGS_FIELD, UPDATED_FIELD, OWNER_FIELD];
