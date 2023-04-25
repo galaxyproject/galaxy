@@ -46,7 +46,7 @@ export default {
             this.$emit("click-owner", this.owner);
         },
         copyLink() {
-            copy(absPath(`/u/${this.owner}/p/${this.slug}`), _l("Link copied to the clipboard."));
+            copy(absPath(`/u/${this.owner}/p/${this.slug}`), _l("Link copied to your clipboard"));
         },
     },
 };
