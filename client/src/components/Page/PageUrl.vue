@@ -2,13 +2,9 @@
     <span class="page-url-entry">
         <span>u/</span><a href="#" class="page-url-owner" @click.prevent="onClickOwner">{{ owner }}</a
         ><span>/p/{{ slug }}</span>
-        <font-awesome-icon
-            v-b-tooltip.hover
-            :title="linkTitle | localize"
-            class="page-url-copy"
-            icon="copy"
-            style="cursor: pointer"
-            @click="copyLink" />
+        <span v-b-tooltip.hover class="page-url-copy" :title="linkTitle | localize"
+            ><font-awesome-icon icon="copy" style="cursor: pointer" @click="copyLink"
+        /></span>
     </span>
 </template>
 
@@ -17,6 +13,9 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCopy } from "@fortawesome/free-solid-svg-icons";
 import { copy } from "utils/clipboard";
+import { absPath } from "@/utils/redirect";
+
+
 
 library.add(faCopy);
 
@@ -48,7 +47,7 @@ export default {
             this.$emit("click-owner", this.owner);
         },
         copyLink() {
-            copy(`${this.root}/u/${this.owner}/p/${this.slug}`);
+            copy(absPath(`/u/${this.owner}/p/${this.slug}`), "Link copied to the clipboard.");
         },
     },
 };
