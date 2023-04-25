@@ -59,7 +59,7 @@ masthead:
     admin: 'Admin'
 
     # user menu
-    logout: 'Logout'
+    logout: 'Sign Out'
     custom_builds: 'Custom Builds'
     preferences: 'Preferences'
     histories: 'Histories'
