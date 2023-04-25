@@ -61,7 +61,9 @@
                 <UtcDate :date="data.value" mode="elapsed" />
             </template>
             <template v-slot:cell(owner)="data">
-                <a class="workflow-filter-link-owner" href="#" @click="appendTagFilter('user', data.value)">{{ data.value }}</a>
+                <a class="workflow-filter-link-owner" href="#" @click="appendTagFilter('user', data.value)">{{
+                    data.value
+                }}</a>
             </template>
             <template v-slot:cell(execute)="row">
                 <WorkflowRunButton v-if="!row.item.deleted" :id="row.item.id" :root="root" />
