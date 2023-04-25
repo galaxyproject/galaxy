@@ -198,6 +198,7 @@ export function fetchMenu(options = {}) {
                     }`,
                     disabled: true,
                 },
+                { divider: true },
                 {
                     title: _l("Preferences"),
                     url: "/user",
@@ -206,12 +207,13 @@ export function fetchMenu(options = {}) {
                     title: _l("Custom Builds"),
                     url: "/custom_builds",
                 },
-                { divider: true },
                 {
-                    title: _l("Logout"),
-                    onclick: userLogout,
-                    hidden: Galaxy.config.single_user,
+                    title: _l("Show/Hide Activity Bar"),
+                    onclick: () => {
+                        userStore.toggleActivityBar();
+                    },
                 },
+                { divider: true },
                 {
                     title: _l("Datasets"),
                     url: "/datasets/list",
@@ -242,19 +244,16 @@ export function fetchMenu(options = {}) {
             });
         }
         if (Galaxy.config.interactivetools_enable) {
-            userTab.menu.push({ divider: true });
             userTab.menu.push({
                 title: _l("Active InteractiveTools"),
                 url: "/interactivetool_entry_points/list",
             });
         }
-
-        // beta switch for activity bar
+        userTab.menu.push({ divider: true });
         userTab.menu.push({
-            title: _l("Show/Hide Activity Bar"),
-            onclick: () => {
-                userStore.toggleActivityBar();
-            },
+            title: _l("Sign Out"),
+            onclick: userLogout,
+            hidden: Galaxy.config.single_user,
         });
     }
     menu.push(userTab);
