@@ -6,6 +6,7 @@ import ExportRecordDetails from "components/Common/ExportRecordDetails.vue";
 import ExportRecordTable from "components/Common/ExportRecordTable.vue";
 import ExportOptions from "./ExportOptions.vue";
 import ExportToFileSourceForm from "components/Common/ExportForm.vue";
+import { getHistoryById } from "@/store/historyStore/model/queries";
 import { getExportRecords, exportToFileSource, reimportHistoryFromRecord } from "./services";
 import { useTaskMonitor } from "composables/taskMonitor";
 import { useFileSources } from "composables/fileSources";
@@ -13,6 +14,9 @@ import { useShortTermStorage, DEFAULT_EXPORT_PARAMS } from "composables/shortTer
 import { useConfirmDialog } from "composables/confirmDialog";
 import { copy as sendToClipboard } from "utils/clipboard";
 import { absPath } from "@/utils/redirect";
+import { faFileExport } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
 
 const {
     isRunning: isExportTaskRunning,
@@ -39,11 +43,18 @@ const props = defineProps({
     },
 });
 
+library.add(faFileExport);
+
 const POLLING_DELAY = 3000;
+
+const history = ref(null);
+const isLoadingHistory = ref(true);
 
 const exportParams = reactive(DEFAULT_EXPORT_PARAMS);
 const isLoadingRecords = ref(true);
 const exportRecords = ref(null);
+
+const historyName = computed(() => history.value?.name ?? props.historyId);
 const latestExportRecord = computed(() => (exportRecords.value?.length ? exportRecords.value.at(0) : null));
 const previousExportRecords = computed(() => (exportRecords.value ? exportRecords.value.slice(1) : null));
 const hasPreviousExports = computed(() => previousExportRecords.value?.length > 0);
@@ -58,6 +69,10 @@ const actionMessageVariant = ref(null);
 
 onMounted(async () => {
     updateExports();
+    //TODO: replace direct query with useHistoriesStore in 23.1
+    isLoadingHistory.value = true;
+    history.value = await getHistoryById(props.historyId);
+    isLoadingHistory.value = false;
 });
 
 watch(isExportTaskRunning, (newValue, oldValue) => {
@@ -161,7 +176,12 @@ function updateExportParams(newParams) {
 </script>
 <template>
     <span class="history-export-component">
-        <h1 class="h-lg">Export history {{ props.historyId }}</h1>
+        <font-awesome-icon icon="file-export" size="2x" class="text-primary float-left mr-2" />
+        <h1 class="h-lg">
+            Export
+            <loading-span v-if="isLoadingHistory" spinner-only />
+            <b v-else id="history-name">{{ historyName }}</b>
+        </h1>
 
         <export-options
             id="history-export-options"
