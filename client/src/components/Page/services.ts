@@ -1,6 +1,3 @@
-import axios from "axios";
-import { rethrowSimple } from "@/utils/simple-error";
-import { withPrefix } from "@/utils/redirect";
 import type { FetchArgType } from "openapi-typescript-fetch";
 import { fetcher } from "@/schema";
 

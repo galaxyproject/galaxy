@@ -5929,6 +5929,7 @@ export interface components {
              * @description The title slug for the page URL, must be unique.
              */
             slug: string;
+            tags: components["schemas"]["TagCollection"];
             /**
              * Title
              * @description The name of the page
@@ -6012,6 +6013,7 @@ export interface components {
              * @description The title slug for the page URL, must be unique.
              */
             slug: string;
+            tags: components["schemas"]["TagCollection"];
             /**
              * Title
              * @description The name of the page
