@@ -328,8 +328,8 @@ export default {
             // have to hide the source items if that was requested
             if (modalResult.hide_source_items) {
                 this.$emit("hide-selection", allContents);
-                this.$emit("reset-selection");
             }
+            this.$emit("reset-selection");
         },
         async buildDatasetPair() {
             await this.buildNewCollection("paired");
