@@ -75,13 +75,16 @@ export default {
         };
     },
     computed: {
-        ...mapState(useHistoryStore, ["getHistoryById"]),
+        ...mapState(useHistoryStore, ["getHistoryById", "loadHistoryById"]),
         sameToCurrent() {
             return this.currentHistory.id === this.source.id;
         },
         getHistory() {
             return this.getHistoryById(this.source.id);
         },
+    },
+    mounted() {
+        this.loadHistoryById(this.source.id);
     },
     methods: {
         onViewCollection(collection) {
