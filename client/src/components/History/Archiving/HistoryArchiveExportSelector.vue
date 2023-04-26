@@ -6,8 +6,8 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 import ExportToFileSourceForm from "components/Common/ExportForm.vue";
 import { DEFAULT_EXPORT_PARAMS } from "@/composables/shortTermStorage";
 import type { ExportRecordModel } from "@/components/Common/models/exportRecordModel";
-import type { HistoryDetailedModel } from "@/components/History/model";
 import { useTaskMonitor } from "@/composables/taskMonitor";
+import type { HistorySummary } from "@/stores/historyStore";
 
 const {
     isRunning: isExportTaskRunning,
@@ -17,7 +17,7 @@ const {
 } = useTaskMonitor();
 
 interface HistoryExportSelectorProps {
-    history: HistoryDetailedModel;
+    history: HistorySummary;
 }
 
 const props = defineProps<HistoryExportSelectorProps>();

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, ref } from "vue";
 import { BAlert, BCard, BButton, BTab, BTabs } from "bootstrap-vue";
 import { useFileSources } from "@/composables/fileSources";
 import { faArchive } from "@fortawesome/free-solid-svg-icons";
@@ -7,8 +7,10 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { RouterLink } from "vue-router";
 import HistoryArchiveExportSelector from "@/components/History/Archiving/HistoryArchiveExportSelector.vue";
-import { getHistoryById } from "@/store/historyStore/model/queries";
-import type { HistoryDetailedModel } from "@/components/History/model";
+import { useHistoryStore, type HistorySummary } from "@/stores/historyStore";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+
+const historyStore = useHistoryStore();
 
 const { hasWritable: hasWritableFileSources } = useFileSources();
 
@@ -21,18 +23,14 @@ const props = defineProps<ArchiveHistoryWizardProps>();
 //@ts-ignore bad library types
 library.add(faArchive);
 
-const history = ref<HistoryDetailedModel | null>(null);
 const isArchiving = ref(false);
 
-const historyName = computed(() => history.value?.name ?? props.historyId);
-
-const goToArchivedHistoriesLink = computed(() => {
-    return "TODO";
+const history = computed<HistorySummary | null>(() => {
+    return historyStore.getHistoryById(props.historyId);
 });
 
-onMounted(async () => {
-    //TODO: replace with store
-    history.value = await getHistoryById(props.historyId);
+const goToArchivedHistoriesLink = computed(() => {
+    return "/histories/archived";
 });
 
 async function archiveHistory() {
@@ -51,7 +49,9 @@ async function archiveHistory() {
     <div class="history-archive-wizard">
         <font-awesome-icon icon="archive" size="2x" class="text-primary float-left mr-2" />
         <h1 class="h-lg">
-            Archive <b>{{ historyName }}</b>
+            Archive
+            <loading-span v-if="!history" spinner-only />
+            <b v-else>{{ history.name }}</b>
         </h1>
 
         <b-alert show variant="info">
