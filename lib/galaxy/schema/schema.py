@@ -1179,6 +1179,7 @@ class InvocationIndexQueryPayload(Model):
 class PageSortByEnum(str, Enum):
     create_time = "create_time"
     update_time = "update_time"
+    title = "title"
 
 
 class PageIndexQueryPayload(Model):
