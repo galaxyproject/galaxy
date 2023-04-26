@@ -64,15 +64,14 @@ export default {
             return !!this.page.shared;
         },
     },
-    created() {
-    },
+    created() {},
     methods: {
         onDelete() {
             const id = this.page.id;
             const name = this.page.title;
             const confirmationMessage = this.l(`Are you sure you want to delete page '${name}'?`);
             if (window.confirm(confirmationMessage)) {
-                    deletePage(id)
+                deletePage(id)
                     .then((message) => {
                         this.$emit("onRemove", id);
                         this.$emit("onSuccess", message);

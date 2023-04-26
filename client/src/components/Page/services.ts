@@ -14,7 +14,6 @@ export async function deletePage(itemId: PageDeleteArgs["id"]) {
     return data;
 }
 
-
 const _updateTags = fetcher.path("/api/tags").method("put").create();
 type UpdateTagsArgs = FetchArgType<typeof _updateTags>;
 export async function updateTags(
