@@ -425,7 +425,7 @@ history_export:
 
 history_export_tasks:
   selectors:
-    direct_download: '.direct-download-btn'
+    direct_download: '.gen-direct-download-btn'
     file_source_tab: '.tab-export-to-file'
     remote_file_name_input: '#file-source-tab #name'
     toggle_options_link: '#toggle-options-link'
