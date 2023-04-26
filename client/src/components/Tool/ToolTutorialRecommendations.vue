@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Heading from "@/components/Common/Heading.vue";
 import { useToolTrainingMaterial } from "@/composables/toolTrainingMaterial";
-import ExternalLink from "../ExternalLink.vue";
+import ExternalLink from "@/components/ExternalLink.vue";
 import { BCollapse, BButton } from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
