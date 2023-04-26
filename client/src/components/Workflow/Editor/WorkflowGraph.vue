@@ -9,11 +9,11 @@
             @dragover.prevent>
             <!-- canvas-background is sibling of node-area because it has a different transform origin, so can't be parent of node-area -->
             <div class="canvas-background" :style="canvasStyle" />
-            <WorkflowEdges
-                :transform="transform"
-                :dragging-terminal="draggingTerminal"
-                :dragging-connection="draggingPosition" />
             <div class="node-area" :style="canvasStyle">
+                <WorkflowEdges
+                    :transform="transform"
+                    :dragging-terminal="draggingTerminal"
+                    :dragging-connection="draggingPosition" />
                 <WorkflowNode
                     v-for="(step, key) in steps"
                     :id="step.id"
