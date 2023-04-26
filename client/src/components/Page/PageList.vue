@@ -133,9 +133,8 @@ export default {
         return {
             tableId: "page-table",
             fields: fields,
-            titleSearch: _l("Search Pages"),
+            titleSearch: _l("search pages"),
             pageItemsModel: [],
-            items: [],
             helpHtml: helpHtml,
             perPage: this.rowsPerPage(this.defaultPerPage || 50),
             dataProvider: pagesProvider,
