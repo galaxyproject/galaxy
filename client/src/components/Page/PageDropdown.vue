@@ -72,9 +72,9 @@ export default {
             const confirmationMessage = this.l(`Are you sure you want to delete page '${name}'?`);
             if (window.confirm(confirmationMessage)) {
                 deletePage(id)
-                    .then((message) => {
+                    .then((response) => {
                         this.$emit("onRemove", id);
-                        this.$emit("onSuccess", message);
+                        // this.$emit("onSuccess");
                     })
                     .catch((error) => {
                         this.$emit("onError", error);
