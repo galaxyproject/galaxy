@@ -1,20 +1,21 @@
+"""drop view
+
+Revision ID: 3356bc2ecfc4
+Revises: 460d0ecd1dd8
+Create Date: 2023-04-10 15:06:01.037416
+
 """
-Galaxy sql view models
-"""
-from sqlalchemy import Integer
-from sqlalchemy.orm import registry
-from sqlalchemy.sql import (
-    column,
-    text,
-)
+from alembic import op
 
-from galaxy.model.view.utils import View
+# revision identifiers, used by Alembic.
+revision = "3356bc2ecfc4"
+down_revision = "460d0ecd1dd8"
+branch_labels = None
+depends_on = None
 
 
-class HistoryDatasetCollectionJobStateSummary(View):
-    name = "collection_job_state_summary_view"
-
-    aggregate_state_query = """
+view_name = "collection_job_state_summary_view"
+aggregate_query = """
 SELECT
     hdca_id,
     SUM(CASE WHEN state = 'new' THEN 1 ELSE 0 END) AS new,
@@ -51,28 +52,12 @@ FROM (
 GROUP BY jobstates.hdca_id
 """
 
-    __view__ = text(aggregate_state_query).columns(
-        column("hdca_id", Integer),
-        column("new", Integer),
-        column("resubmitted", Integer),
-        column("waiting", Integer),
-        column("queued", Integer),
-        column("running", Integer),
-        column("ok", Integer),
-        column("error", Integer),
-        column("failed", Integer),
-        column("paused", Integer),
-        column("skipped", Integer),
-        column("deleted", Integer),
-        column("deleted_new", Integer),
-        column("upload", Integer),
-        column("all_jobs", Integer),
-    )
-    pkeys = {"hdca_id"}
-    __table__ = View._make_table(name, __view__, pkeys)
+
+def upgrade():
+    stmt = f"DROP VIEW IF EXISTS {view_name}"
+    op.execute(stmt)
 
 
-mapper_registry = registry()
-mapper_registry.map_imperatively(
-    HistoryDatasetCollectionJobStateSummary, HistoryDatasetCollectionJobStateSummary.__table__
-)
+def downgrade():
+    stmt = f"CREATE VIEW {view_name} AS {aggregate_query}"
+    op.execute(stmt)
