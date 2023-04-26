@@ -1,21 +1,21 @@
 # Galaxy is configured by default to be usable in a single-user development
 # environment.  To tune the application for a multi-user production
 # environment, see the documentation at:
-# 
+#
 #  https://docs.galaxyproject.org/en/master/admin/production.html
-# 
+#
 # Throughout this sample configuration file, except where stated otherwise,
 # uncommented values override the default if left unset, whereas commented
 # values are set to the default value.  Relative paths are relative to the root
 # Galaxy directory.
-# 
+#
 # Examples of many of these options are explained in more detail in the Galaxy
 # Community Hub.
-# 
+#
 #   https://galaxyproject.org/admin/config
-# 
+#
 # Config hackers are encouraged to check there before asking for help.
-# 
+#
 # Configuration for Gravity process manager.
 # ``uwsgi:`` section will be ignored if Galaxy is started via Gravity commands (e.g ``./run.sh``, ``galaxy`` or ``galaxyctl``).
 gravity:
@@ -2715,3 +2715,17 @@ galaxy:
   # integration.
   #enable_beacon_integration: false
 
+  # Displays a link to training material, if any includes the current
+  # tool. When activated the following options also need to be set:
+  # tool_training_recommendations_link,
+  # tool_training_recommendations_api_url
+  #tool_training_recommendations: true
+
+  # Template URL to display all tutorials containing current tool. Valid
+  # template inputs are:   {repository_owner}   {name}   {tool_id}
+  # {training_tool_identifier}   {version}
+  #tool_training_recommendations_link: https://training.galaxyproject.org/training-material/by-tool/{training_tool_identifier}.html
+
+  # URL to API describing tutorials containing specific tools. When CORS
+  # is used, make sure to add this host.
+  #tool_training_recommendations_api_url: https://training.galaxyproject.org/training-material/api/top-tools.json

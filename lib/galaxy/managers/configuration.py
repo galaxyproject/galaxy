@@ -203,6 +203,9 @@ class ConfigSerializer(base.ModelSerializer):
             "user_library_import_dir_available": lambda item, key, **context: bool(item.get("user_library_import_dir")),
             "welcome_directory": _use_config,
             "themes": _use_config,
+            "tool_training_recommendations": _use_config,
+            "tool_training_recommendations_link": _use_config,
+            "tool_training_recommendations_api_url": _use_config,
         }
 
 
