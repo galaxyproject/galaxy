@@ -5952,7 +5952,7 @@ export interface components {
          * @description An enumeration.
          * @enum {string}
          */
-        PageSortByEnum: "create_time" | "update_time";
+        PageSortByEnum: "create_time" | "update_time" | "title";
         /**
          * PageSummary
          * @description Base model definition with common configuration used by all derived models.
