@@ -216,6 +216,10 @@ export function fetchMenu(options = {}) {
                     hidden: Galaxy.config.single_user,
                 },
                 {
+                    title: _l("Archived Histories"),
+                    url: "/histories/archived",
+                },
+                {
                     title: _l("Pages"),
                     url: "/pages/list",
                 },

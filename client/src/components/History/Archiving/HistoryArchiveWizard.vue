@@ -29,7 +29,7 @@ const history = computed<HistorySummary | null>(() => {
     return historyStore.getHistoryById(props.historyId);
 });
 
-const goToArchivedHistoriesLink = computed(() => {
+const archivedHistoriesLink = computed(() => {
     return "/histories/archived";
 });
 
@@ -56,7 +56,7 @@ async function archiveHistory() {
 
         <b-alert show variant="info">
             Archiving a history will remove it from your <i>active histories</i>. You can still access it from the
-            <router-link :to="goToArchivedHistoriesLink">Archived Histories</router-link> section.
+            <router-link :to="archivedHistoriesLink">Archived Histories</router-link> section.
         </b-alert>
 
         <h2 class="h-md">How do you want to archive this history?</h2>
@@ -66,8 +66,8 @@ async function archiveHistory() {
                     <p>
                         If you want to remove the history from your <i>active histories</i> but keep it around for
                         reference, you can move it to the
-                        <router-link :to="goToArchivedHistoriesLink">Archived Histories</router-link> section, by
-                        clicking the button below.
+                        <router-link :to="archivedHistoriesLink">Archived Histories</router-link> section, by clicking
+                        the button below.
                     </p>
                     <p>
                         You can undo this action at any time, and the history will be moved back to your

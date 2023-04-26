@@ -69,6 +69,7 @@ import { ExternalIdentities } from "components/User/ExternalIdentities";
 import { HistoryExport } from "components/HistoryExport/index";
 import HistoryExportTasks from "components/History/Export/HistoryExport";
 import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
+import HistoryArchive from "@/components/History/Archiving/HistoryArchive.vue";
 
 Vue.use(VueRouter);
 
@@ -268,6 +269,10 @@ export function getRouter(Galaxy) {
                         path: "histories/list_published",
                         component: HistoryPublishedList,
                         props: true,
+                    },
+                    {
+                        path: "histories/archived",
+                        component: HistoryArchive,
                     },
                     {
                         path: "histories/:actionId",
