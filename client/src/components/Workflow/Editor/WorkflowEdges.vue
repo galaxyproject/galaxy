@@ -35,6 +35,10 @@ const draggingConnection: Ref<[Connection, TerminalPosition] | null> = computed(
 function key(connection: Connection) {
     return `${connection.input.stepId}-${connection.output.stepId}`;
 }
+
+function id(connection: Connection) {
+    return `connection-node-${connection.input.stepId}-input-${connection.input.name}-node-${connection.output.stepId}-output-${connection.output.name}`;
+}
 </script>
 
 <template>
@@ -46,7 +50,7 @@ function key(connection: Connection) {
                 :terminal-position="draggingConnection[1]" />
             <DrawableConnection
                 v-for="connection in connections"
-                :id="key(connection)"
+                :id="id(connection)"
                 :key="key(connection)"
                 :connection="connection" />
         </svg>

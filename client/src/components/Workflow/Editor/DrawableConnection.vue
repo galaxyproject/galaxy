@@ -1,9 +1,14 @@
 <script setup lang="ts">
 import { line, curveBasis } from "d3";
-import { computed, type PropType } from "vue";
+import { computed, unref, type PropType } from "vue";
 
 import { getConnectionId, type Connection } from "@/stores/workflowConnectionStore";
-import { useWorkflowStateStore, type TerminalPosition } from "@/stores/workflowEditorStateStore";
+import {
+    useWorkflowStateStore,
+    type TerminalPosition,
+    type OutputTerminalPosition,
+    type InputTerminalPosition,
+} from "@/stores/workflowEditorStateStore";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
@@ -28,18 +33,32 @@ const stateStore = useWorkflowStateStore();
 const connectionStore = useConnectionStore();
 const stepStore = useWorkflowStepStore();
 
-const position = computed(() => {
+const outputPos = computed(() => {
     if (props.terminalPosition) {
-        return props.terminalPosition;
+        return {
+            startX: props.terminalPosition.startX,
+            startY: props.terminalPosition.startY,
+        } as OutputTerminalPosition;
+    } else {
+        return unref(
+            stateStore.getOutputTerminalPosition(props.connection.output.stepId, props.connection.output.name)
+        );
     }
+});
 
-    const outputPos = stateStore.getOutputTerminalPosition(
-        props.connection.output.stepId,
-        props.connection.output.name
-    );
-    const inputPos = stateStore.getInputTerminalPosition(props.connection.input.stepId, props.connection.input.name);
+const inputPos = computed(() => {
+    if (props.terminalPosition) {
+        return {
+            endX: props.terminalPosition.endX,
+            endY: props.terminalPosition.endY,
+        } as InputTerminalPosition;
+    } else {
+        return unref(stateStore.getInputTerminalPosition(props.connection.input.stepId, props.connection.input.name));
+    }
+});
 
-    if (inputPos && outputPos) {
+const position = computed(() => {
+    if (inputPos.value && outputPos.value) {
         return {
             startX: outputPos.value.startX,
             startY: outputPos.value.startY,
