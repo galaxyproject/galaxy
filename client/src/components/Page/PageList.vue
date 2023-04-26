@@ -31,11 +31,11 @@
                     @onError="onError" />
             </template>
             <template v-slot:cell(tags)="row">
-                <Tags
+                <StatelessTags
+                    :value="row.item.tags"
                     :index="row.index"
-                    :tags="row.item.tags"
                     :disabled="published"
-                    @input="onTags"
+                    @input="(tags) => onTags(tags, row.index)"
                     @tag-click="onTagClick" />
             </template>
             <template v-slot:cell(published)="row">
@@ -62,9 +62,9 @@
 <script>
 import _l from "utils/localization";
 import { getAppRoot } from "onload/loadConfig";
-// import { Services } from "./services";
+import { updateTags } from "./services";
 import { pagesProvider } from "components/providers/PageProvider";
-import Tags from "components/Common/Tags";
+import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import PageDropdown from "./PageDropdown";
 import UtcDate from "components/UtcDate";
 import paginationMixin from "components/Workflow/paginationMixin";
@@ -113,7 +113,7 @@ const PUBLISHED_FIELDS = [TITLE_FIELD, URL_FIELD, TAGS_FIELD, UPDATED_FIELD];
 export default {
     components: {
         UtcDate,
-        Tags,
+        StatelessTags,
         PageIndexActions,
         SharingIndicators,
         PageDropdown,
@@ -159,24 +159,19 @@ export default {
     },
     created() {
         this.root = getAppRoot();
-        // this.services = new Services({ root: this.root });
     },
     methods: {
         onTags: function (tags, index) {
-            const workflow = this.itemsModel[index];
-            workflow.tags = tags;
-            this.services
-                .updateWorkflow(workflow.id, {
-                    tags: workflow.tags,
-                })
-                .catch((error) => {
-                    this.onError(error);
-                });
+            const page = this.itemsModel[index];
+            page.tags = tags;
+            updateTags(page.id, "Page", tags).catch((error) => {
+                this.onError(error);
+            });
         },
         onTagClick: function (tag) {
             this.appendTagFilter("tag", tag.text);
         },
-        onAdd: function (workflow) {
+        onAdd: function (page) {
             if (this.currentPage == 1) {
                 this.refresh();
             } else {

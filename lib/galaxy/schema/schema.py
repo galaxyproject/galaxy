@@ -3295,6 +3295,7 @@ class PageSummary(PageSummaryBase):
     )
     create_time: Optional[datetime] = CreateTimeField
     update_time: Optional[datetime] = UpdateTimeField
+    tags: TagCollection
 
 
 class PageDetails(PageSummary):

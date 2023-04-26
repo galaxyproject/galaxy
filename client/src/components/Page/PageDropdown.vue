@@ -35,7 +35,7 @@
     </div>
 </template>
 <script>
-import { Services } from "./services";
+import { deletePage } from "./services";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
@@ -65,7 +65,6 @@ export default {
         },
     },
     created() {
-        this.services = new Services({ root: this.root });
     },
     methods: {
         onDelete() {
@@ -73,8 +72,7 @@ export default {
             const name = this.page.title;
             const confirmationMessage = this.l(`Are you sure you want to delete page '${name}'?`);
             if (window.confirm(confirmationMessage)) {
-                this.services
-                    .deletePage(id)
+                    deletePage(id)
                     .then((message) => {
                         this.$emit("onRemove", id);
                         this.$emit("onSuccess", message);
