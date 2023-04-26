@@ -5,7 +5,6 @@ Revises: e0e3bb173ee6
 Create Date: 2022-10-12 18:02:34.659770
 
 """
-from alembic import op
 from sqlalchemy import (
     Column,
     DateTime,
@@ -16,6 +15,10 @@ from galaxy.model.custom_types import (
     JSONType,
     TrimmedString,
     UUIDType,
+)
+from galaxy.model.migrations.util import (
+    create_table,
+    drop_table,
 )
 
 # revision identifiers, used by Alembic.
@@ -29,7 +32,7 @@ table_name = "store_export_association"
 
 
 def upgrade():
-    op.create_table(
+    create_table(
         table_name,
         Column("id", Integer, primary_key=True),
         Column("task_uuid", UUIDType(), index=True, unique=True),
@@ -41,4 +44,4 @@ def upgrade():
 
 
 def downgrade():
-    op.drop_table(table_name)
+    drop_table(table_name)

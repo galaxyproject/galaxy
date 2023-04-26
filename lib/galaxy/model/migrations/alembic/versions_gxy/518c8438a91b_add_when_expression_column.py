@@ -5,12 +5,11 @@ Revises: 59e024ceaca1
 Create Date: 2022-10-24 16:43:39.565871
 
 """
-import sqlalchemy as sa
-from alembic import op
+from sqlalchemy import Column
 
 from galaxy.model.custom_types import JSONType
 from galaxy.model.migrations.util import (
-    column_exists,
+    add_column,
     drop_column,
 )
 
@@ -26,8 +25,7 @@ column_name = "when_expression"
 
 
 def upgrade():
-    if not column_exists(table_name, column_name):
-        op.add_column(table_name, sa.Column(column_name, JSONType))
+    add_column(table_name, Column(column_name, JSONType))
 
 
 def downgrade():

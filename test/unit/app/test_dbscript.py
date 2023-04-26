@@ -304,6 +304,14 @@ class TestUpgradeCommand:
         heads = get_db_heads(config)
         assert heads == ("d",)
 
+    def test_repair_arg_available_to_dev_script_only(self, config, command):
+        completed = run_command(f"{command} upgrade --repair")
+        if command == DEV_CMD:
+            assert completed.returncode == 0
+        else:
+            assert completed.returncode == 2
+            assert "unrecognized arguments: --repair" in completed.stderr
+
 
 @pytest.mark.parametrize("command", COMMANDS)
 class TestDowngradeCommand:
@@ -364,3 +372,11 @@ class TestDowngradeCommand:
 
         heads = get_db_heads(config)
         assert "a" in heads
+
+    def test_repair_arg_available_to_dev_script_only(self, config, command):
+        completed = run_command(f"{command} downgrade base --repair")
+        if command == DEV_CMD:
+            assert completed.returncode == 0
+        else:
+            assert completed.returncode == 2
+            assert "unrecognized arguments: --repair" in completed.stderr
