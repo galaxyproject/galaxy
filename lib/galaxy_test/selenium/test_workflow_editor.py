@@ -1102,22 +1102,17 @@ steps:
             self.screenshot(screenshot_partial)
         drag_and_drop(self.driver, source_element, sink_element)
 
-    def assert_connected(self, _source, _sink):
-        # NOOP
-        # Used to assert that an svg connection element exists.
-        # Since connections are no longer rendered with SVG, this is no longer possible.
-        # TODO: add different method of asserting connections
-        pass
+    def assert_connected(self, source, sink):
+        source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
+        self.components.workflow_editor.connector_for(source_id=source_id, sink_id=sink_id).wait_for_visible()
 
-    def assert_connection_invalid(self, _source, _sink):
-        # NOOP
-        # TODO: add different method of asserting connections
-        pass
+    def assert_connection_invalid(self, source, sink):
+        source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
+        self.components.workflow_editor.connector_invalid_for(source_id=source_id, sink_id=sink_id).wait_for_present()
 
-    def assert_not_connected(self, _source, _sink):
-        # NOOP
-        # TODO: add different method of asserting connections
-        pass
+    def assert_not_connected(self, source, sink):
+        source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
+        self.components.workflow_editor.connector_for(source_id=source_id, sink_id=sink_id).wait_for_absent()
 
     def open_in_workflow_editor(self, yaml_content, auto_layout=True):
         name = self.workflow_upload_yaml_with_random_name(yaml_content)
