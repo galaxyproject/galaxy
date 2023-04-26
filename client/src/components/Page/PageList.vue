@@ -9,7 +9,7 @@
                 <PageIndexActions :root="root" class="float-right" />
             </b-col>
         </b-row>
-        <b-table v-model="itemsModel" :fields="fields" v-bind="indexTableAttrs">
+        <b-table v-model="pageItemsModel" no-sort-reset :fields="fields" v-bind="indexTableAttrs">
             <template v-slot:empty>
                 <loading-span v-if="loading" message="Loading pages" />
                 <b-alert v-else id="no-pages" variant="info" show>
@@ -134,7 +134,7 @@ export default {
             tableId: "page-table",
             fields: fields,
             titleSearch: _l("Search Pages"),
-            itemsModel: [],
+            pageItemsModel: [],
             items: [],
             helpHtml: helpHtml,
             perPage: this.rowsPerPage(this.defaultPerPage || 50),
@@ -162,7 +162,7 @@ export default {
     },
     methods: {
         onTags: function (tags, index) {
-            const page = this.itemsModel[index];
+            const page = this.pageItemsModel[index];
             page.tags = tags;
             updateTags(page.id, "Page", tags).catch((error) => {
                 this.onError(error);
