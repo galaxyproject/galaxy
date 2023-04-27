@@ -16,9 +16,7 @@
                 </b-nav>
             </template>
             <div v-if="source === 'histories'" class="infomessage">
-                <ConfigProvider v-slot="{ config }">
-                    <div v-html="config.citations_export_message_html"></div>
-                </ConfigProvider>
+                <div v-html="config.citations_export_message_html"></div>
             </div>
             <div class="citations-formatted">
                 <Citation
@@ -55,7 +53,7 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { getCitations } from "./services";
 import Citation from "./Citation";
-import ConfigProvider from "components/providers/ConfigProvider";
+import { useConfig } from "@/composables/config";
 
 Vue.use(BootstrapVue);
 
@@ -68,7 +66,6 @@ const outputFormats = Object.freeze({
 export default {
     components: {
         Citation,
-        ConfigProvider
     },
     props: {
         source: {
@@ -84,6 +81,10 @@ export default {
             required: false,
             default: false,
         },
+    },
+    setup() {
+        const { config } = useConfig(true);
+        return { config };
     },
     data() {
         return {
@@ -107,7 +108,7 @@ export default {
             .catch((e) => {
                 console.error(e);
             });
-    }
+    },
 };
 </script>
 <style>
