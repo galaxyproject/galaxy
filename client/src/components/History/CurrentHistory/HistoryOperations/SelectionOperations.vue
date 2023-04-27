@@ -322,14 +322,7 @@ export default {
 
             allContents = await getHistoryContent(this.history.id, filters, "dataset");
 
-            const modalResult = await buildCollectionModal("list", allContents, this.history.id);
-            await createDatasetCollection(this.history, modalResult);
-
-            // have to hide the source items if that was requested
-            if (modalResult.hide_source_items) {
-                this.$emit("hide-selection", allContents);
-            }
-            this.$emit("reset-selection");
+            this.buildNewCollection("list", allContents);
         },
         async buildDatasetPair() {
             await this.buildNewCollection("paired");
@@ -340,8 +333,11 @@ export default {
         async buildCollectionFromRules() {
             await this.buildNewCollection("rules");
         },
-        async buildNewCollection(collectionType) {
-            const modalResult = await buildCollectionModal(collectionType, this.contentSelection, this.history.id);
+        async buildNewCollection(collectionType, contents) {
+            if (contents === undefined) {
+                contents = this.contentSelection;
+            }
+            const modalResult = await buildCollectionModal(collectionType, contents, this.history.id);
             await createDatasetCollection(this.history, modalResult);
 
             // have to hide the source items if that was requested
