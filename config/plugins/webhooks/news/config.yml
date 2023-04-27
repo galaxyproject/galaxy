@@ -3,5 +3,5 @@ type:
   - masthead
 activate: true
 
-icon: fa-bell
+icon: fa-bullhorn
 tooltip: See the Galaxy Release Notes
