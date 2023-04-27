@@ -126,7 +126,7 @@ var ImportDatasetModal = Backbone.View.extend({
         // set the used history as current so user will see the last one
         // that he imported into in the history panel on the 'analysis' page
         $.getJSON(`${getAppRoot()}history/set_as_current?id=${history_id}`);
-        this.chainCallImportingIntoHistory(items_to_import, history_name);
+        this.chainCallImportingIntoHistory(items_to_import, history_name, history_id);
     },
 
     initChainCallControlToHistory: function (options) {
@@ -147,27 +147,23 @@ var ImportDatasetModal = Backbone.View.extend({
      * @param  {array} history_item_set array of empty history items
      * @param  {str} history_name     name of the history to import to
      */
-    chainCallImportingIntoHistory: function (history_item_set, history_name) {
+    chainCallImportingIntoHistory: function (history_item_set, history_name, history_id) {
         const Galaxy = getGalaxyInstance();
         var popped_item = history_item_set.pop();
         if (typeof popped_item == "undefined") {
             if (this.options.chain_call_control.failed_number === 0) {
-                Toast.success("Selected datasets imported into history. Click this to start analyzing it.", "", {
-                    onclick: () => {
-                        window.location = getAppRoot();
-                    },
-                });
+                Toast.success(
+                    "Click here to start analyzing it.",
+                    "Selected datasets imported into history",
+                    `${getAppRoot()}histories/view?id=${history_id}`
+                );
             } else if (this.options.chain_call_control.failed_number === this.options.chain_call_control.total_number) {
                 Toast.error("There was an error and no datasets were imported into history.");
             } else if (this.options.chain_call_control.failed_number < this.options.chain_call_control.total_number) {
                 Toast.warning(
                     "Some of the datasets could not be imported into history. Click this to see what was imported.",
                     "",
-                    {
-                        onclick: () => {
-                            window.location = getAppRoot();
-                        },
-                    }
+                    `${getAppRoot()}histories/view?id=${history_id}`
                 );
             }
             Galaxy.modal.hide();

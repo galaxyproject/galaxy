@@ -17,20 +17,20 @@ export const setToastComponentRef = (newRef: typeof toastRef) => {
  * Use 'useToast' for the Composition Api instead.
  */
 export const Toast = {
-    success(message: string, title = "Success") {
-        toastRef.value?.showToast(message, title, "success");
+    success(message: string, title = "Success", href = "") {
+        toastRef.value?.showToast(message, title, "success", href);
     },
 
-    info(message: string, title = "Info") {
-        toastRef.value?.showToast(message, title, "info");
+    info(message: string, title = "Info", href = "") {
+        toastRef.value?.showToast(message, title, "info", href);
     },
 
-    warning(message: string, title = "Warning") {
-        toastRef.value?.showToast(message, title, "warning");
+    warning(message: string, title = "Warning", href = "") {
+        toastRef.value?.showToast(message, title, "warning", href);
     },
 
-    error(message: string, title = "Error") {
-        toastRef.value?.showToast(message, title, "danger");
+    error(message: string, title = "Error", href = "") {
+        toastRef.value?.showToast(message, title, "danger", href);
     },
 };
 
