@@ -200,6 +200,29 @@ class DropColumn(DDLAlterOperation):
         self._log_object_does_not_exist_message(name)
 
 
+class AlterColumn(DDLAlterOperation):
+    """Wraps alembic's alter_column directive."""
+
+    def __init__(self, table_name: str, column_name: str, **kw: Any) -> None:
+        self.table_name = table_name
+        self.column_name = column_name
+        self.kw = kw
+
+    def batch_execute(self, batch_op) -> None:
+        batch_op.alter_column(self.column_name, **self.kw)
+
+    def non_batch_execute(self) -> None:
+        op.alter_column(self.table_name, self.column_name, **self.kw)
+
+    def pre_execute_check(self) -> bool:
+        # Assume that if a column exists, it can be altered.
+        return column_exists(self.table_name, self.column_name, False)
+
+    def log_check_not_passed(self) -> None:
+        name = _table_object_description(self.column_name, self.table_name)
+        self._log_object_does_not_exist_message(name)
+
+
 class CreateUniqueConstraint(DDLAlterOperation):
     """Wraps alembic's create_unique_constraint directive."""
 
@@ -257,6 +280,10 @@ def add_column(table_name: str, column: sa.Column) -> None:
 
 def drop_column(table_name, column_name) -> None:
     DropColumn(table_name, column_name).run()
+
+
+def alter_column(table_name: str, column_name: str, **kw) -> None:
+    AlterColumn(table_name, column_name, **kw).run()
 
 
 def create_index(index_name, table_name, columns, **kw) -> None:
