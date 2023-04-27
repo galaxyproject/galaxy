@@ -28,18 +28,26 @@ const formattedOptions = computed(() => {
     }));
 });
 
+const hasOptions = computed(() => {
+    return props.options.length > 0;
+});
+
 const currentValue = computed({
     get: () => {
-        const selectedValues = !Array.isArray(props.value) ? [props.value] : props.value;
-        return formattedOptions.value.filter((option) => selectedValues.indexOf(option.value) > -1);
+        if (props.value === null) {
+            if (!props.optional && hasOptions) {
+                const initialValue = formattedOptions.value[0];
+                emit("input", initialValue.value);
+                return initialValue;
+            }
+        } else {
+            const selectedValues = Array.isArray(props.value) ? props.value : [props.value];
+            return formattedOptions.value.filter((option) => selectedValues.indexOf(option.value) > -1);
+        }
     },
     set: (val) => {
         emit("input", val.value);
     },
-});
-
-const hasOptions = computed(() => {
-    return props.options.length > 0;
 });
 </script>
 
