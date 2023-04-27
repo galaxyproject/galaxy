@@ -1,15 +1,19 @@
 <script setup>
+import { storeToRefs } from "pinia";
 import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
 import MastheadItem from "./MastheadItem";
 import { loadWebhookMenuItems } from "./_webhooks";
 import QuotaMeter from "./QuotaMeter";
-import NotificationBell from "./NotificationBell.vue";
 import { withPrefix } from "utils/redirect";
 import { getActiveTab } from "./utilities";
 import { watch, ref, reactive } from "vue";
 import { onMounted, onBeforeMount } from "vue";
 import { useRoute } from "vue-router/composables";
+import { useUserStore } from "@/stores/userStore";
 import { useEntryPointStore } from "stores/entryPointStore";
+import NotificationsBell from "@/components/NotificationsBell.vue";
+
+const { toggledActivityBar } = storeToRefs(useUserStore());
 
 const route = useRoute();
 const emit = defineEmits(["open-url"]);
@@ -129,7 +133,9 @@ onMounted(() => {
                 :active-tab="activeTab"
                 @open-url="emit('open-url', $event)" />
             <masthead-item v-if="windowTab" :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
-            <notification-bell />
+            <BNavItem id="notifications-bell" v-if="!toggledActivityBar">
+                <NotificationsBell tooltip-placement="bottom" />
+            </BNavItem>
         </b-navbar-nav>
         <quota-meter />
     </b-navbar>

@@ -13,6 +13,7 @@ import ActivityItem from "./ActivityItem.vue";
 import ActivitySettings from "./ActivitySettings.vue";
 import UploadItem from "./Items/UploadItem.vue";
 import WorkflowBox from "@/components/Panels/WorkflowBox.vue";
+import NotificationsBell from "@/components/NotificationsBell.vue";
 
 const activityStore = useActivityStore();
 const eventStore = useEventStore();
@@ -176,6 +177,7 @@ function toggleContextMenu(evt) {
                 </draggable>
             </b-nav>
             <b-nav vertical class="flex-nowrap p-1">
+                <NotificationsBell tooltip-placement="right" />
                 <ActivityItem
                     id="activity-settings"
                     icon="cog"
