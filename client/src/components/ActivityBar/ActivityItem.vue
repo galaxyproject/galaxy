@@ -2,6 +2,7 @@
 import { useRouter } from "vue-router/composables";
 import Popper from "@/components/Popper/Popper.vue";
 import TextShort from "@/components/Common/TextShort.vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 const router = useRouter();
 
@@ -12,10 +13,12 @@ interface Option {
 
 export interface Props {
     id: string;
-    title: string;
-    icon?: string;
+    title?: string;
+    indicator?: boolean;
+    icon?: string | object;
     isActive?: boolean;
     tooltip?: string;
+    tooltipPlacement?: string;
     progressPercentage?: number;
     progressStatus?: string;
     options?: Option[];
@@ -30,6 +33,7 @@ const props = withDefaults(defineProps<Props>(), {
     progressStatus: null,
     to: null,
     tooltip: null,
+    tooltipPlacement: "right",
 });
 
 const emit = defineEmits<{
@@ -45,7 +49,8 @@ function onClick(evt: MouseEvent): void {
 </script>
 
 <template>
-    <Popper reference-is="span" popper-is="span" placement="right">
+
+	<Popper reference-is="span" popper-is="span" :placement="tooltipPlacement">
         <template v-slot:reference>
             <div :id="id" class="activity-item" @click="onClick">
                 <b-nav-item
@@ -65,9 +70,10 @@ function onClick(evt: MouseEvent): void {
                     </span>
                     <span class="position-relative">
                         <div class="nav-icon">
-                            <icon :icon="icon" />
+                            <span v-if="indicator" class="indicator"> </span>
+                            <FontAwesomeIcon :icon="icon" />
                         </div>
-                        <TextShort :text="title" class="nav-title" />
+						<TextShort v-if="title" :text="title" class="nav-title" />
                     </span>
                 </b-nav-item>
             </div>
@@ -138,5 +144,15 @@ function onClick(evt: MouseEvent): void {
     -ms-transition: none;
     -o-transition: none;
     transition: none;
+}
+
+.indicator {
+    position: absolute;
+    top: -0.2rem;
+    right: -0.1rem;
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    background: $brand-danger;
 }
 </style>
