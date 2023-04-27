@@ -62,7 +62,9 @@ function setMockReturn(path: Path | RegExp, method: Method, value: any) {
 /**
  * Mock implementation for the fetcher found in `@/schema/fetcher`
  *
- * Importing this will mock fetcher automatically.
+ * You need to call `jest.mock("@/schema")` and/or `jest.mock("@/schema/fetcher")`
+ * (depending on what module the file you are testing imported)
+ * in order for this mock to take effect.
  *
  * To specify return values for the mock, use
  * `mockFetcher.path(...).method(...).mock(desiredReturnValue)`
@@ -88,3 +90,5 @@ export const mockFetcher = {
         mockValues.length = 0;
     },
 };
+
+export const fetcher = mockFetcher;

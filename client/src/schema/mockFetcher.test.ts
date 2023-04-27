@@ -1,5 +1,7 @@
-import { mockFetcher } from "../mockFetcher";
+import { mockFetcher } from "./__mocks__/fetcher";
 import { fetcher } from "@/schema";
+
+jest.mock("@/schema");
 
 mockFetcher.path("/api/configuration").method("get").mock("CONFIGURATION");
 
