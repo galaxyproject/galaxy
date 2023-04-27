@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useRouter } from "vue-router/composables";
 import Popper from "components/Popper/Popper.vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 const router = useRouter();
 
@@ -11,10 +12,12 @@ interface Option {
 
 export interface Props {
     id: string;
-    title: string;
-    icon?: string;
+    title?: string;
+    indicator?: boolean;
+    icon?: string | object;
     isActive?: boolean;
     tooltip?: string;
+    tooltipPlacement?: string;
     progressPercentage?: number;
     progressStatus?: string;
     options?: Option[];
@@ -29,6 +32,7 @@ const props = withDefaults(defineProps<Props>(), {
     progressStatus: null,
     to: null,
     tooltip: null,
+    tooltipPlacement: "right",
 });
 
 const emit = defineEmits<{
@@ -45,7 +49,7 @@ function onClick(): void {
 
 <template>
     <div>
-        <Popper reference-is="span" popper-is="span" placement="right">
+        <Popper reference-is="span" popper-is="span" :placement="tooltipPlacement">
             <template v-slot:reference>
                 <b-nav-item
                     :id="id"
@@ -66,9 +70,10 @@ function onClick(): void {
                     </span>
                     <span class="position-relative">
                         <div class="nav-icon">
-                            <Icon :icon="icon" />
+                            <span v-if="indicator" class="indicator"> </span>
+                            <FontAwesomeIcon :icon="icon" />
                         </div>
-                        <div class="nav-title">{{ title }}</div>
+                        <div v-if="title" class="nav-title">{{ title }}</div>
                     </span>
                 </b-nav-item>
             </template>
@@ -137,5 +142,15 @@ function onClick(): void {
     -ms-transition: none;
     -o-transition: none;
     transition: none;
+}
+
+.indicator {
+    position: absolute;
+    top: -0.2rem;
+    right: -0.1rem;
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    background: $brand-danger;
 }
 </style>
