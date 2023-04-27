@@ -1,8 +1,8 @@
+import { mockFetcher } from "tests/jest/mockFetcher";
 import PageDropdown from "./PageDropdown.vue";
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 import flushPromises from "flush-promises";
-import { mockFetcher } from "tests/jest/mockFetcher";
 
 import "jest-location-mock";
 
@@ -108,7 +108,7 @@ describe("PageDropdown.vue", () => {
             await mountAndDelete();
             const emitted = wrapper.emitted();
             expect(emitted["onRemove"][0][0]).toEqual("page1235");
-            // expect(emitted["onSuccess"][0][0]).toEqual("deleted...");
+            expect(emitted.onSuccess.exists);
         });
 
         it("should not fire deletion API request if not confirmed", async () => {

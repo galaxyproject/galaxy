@@ -74,7 +74,7 @@ export default {
                 deletePage(id)
                     .then((response) => {
                         this.$emit("onRemove", id);
-                        // this.$emit("onSuccess");
+                        this.$emit("onSuccess");
                     })
                     .catch((error) => {
                         this.$emit("onError", error);
