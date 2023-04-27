@@ -256,7 +256,7 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 :datalist="attrs.datalist"
                 :type="props.type" />
             <FormSelection
-                v-else-if="props.type === 'select' && ['radio', 'checkboxes'].includes(attrs.display)"
+                v-else-if="props.type === 'select'"
                 :id="id"
                 v-model="currentValue"
                 :data="attrs.data"
