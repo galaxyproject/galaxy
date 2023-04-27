@@ -1,5 +1,6 @@
 import $ from "jquery";
-import * as d3 from "d3";
+import * as d3 from "d3v3";
+import { event as currentEvent } from "d3v3";
 
 function date_by_subtracting_days(date, days) {
     return new Date(
@@ -125,14 +126,14 @@ export function create_chart(inp_data, name, time, title) {
             }
 
             var wdth = i * 4 + 10;
-            d3.select(d.target.parentElement)
+            d3.select(currentEvent.target.parentElement)
                 .select(".tool_tip")
                 .select("text")
                 .attr("transform", `translate( ${margin.left - 5}, ${height - d * zoom + margin.top + 10} )`)
                 .attr("visibility", "visible")
                 .text(d);
 
-            d3.select(d.target.parentElement)
+            d3.select(currentEvent.target.parentElement)
                 .select(".tool_tip")
                 .attr("width", `${wdth}px`)
                 .attr("height", "15px")
@@ -144,9 +145,12 @@ export function create_chart(inp_data, name, time, title) {
         })
         .on("mouseleave", (d) => {
             // Remove tool tip
-            d3.select(d.target.parentElement).select(".tool_tip").select("text").attr("visibility", "hidden");
+            d3.select(currentEvent.target.parentElement)
+                .select(".tool_tip")
+                .select("text")
+                .attr("visibility", "hidden");
 
-            d3.select(d.target.parentElement)
+            d3.select(currentEvent.target.parentElement)
                 .select(".tool_tip")
                 .select("rect")
                 .attr("width", "0")
@@ -178,14 +182,14 @@ export function create_chart(inp_data, name, time, title) {
         });
 
     // Declare how high the y axis goes
-    var y = d3.curveLinear().range([height, 0]);
+    var y = d3.scale.linear().range([height, 0]);
 
     // Create a yAxis object
     var yAxis = d3.svg
         .axis()
         .scale(y)
         .orient("left")
-        .tickFormat((d) => Math.round(d * d3.max(data), 0));
+        .tickFormat((d) => d3.round(d * d3.max(data), 0));
 
     // Put the y axis on the chart
     chart
@@ -438,13 +442,13 @@ export function create_histogram(inp_data, name, title) {
 
     // Cereate x axis metadata
     // Used for x axis, histogram creation, and bar initialization
-    var x = d3
-        .curveLinear()
+    var x = d3.scale
+        .linear()
         .domain([0, d3.max(data)])
         .range([0, width]);
 
     // Generate a histogram using twenty uniformly-spaced bins.
-    data = d3.histogram().bins(x.ticks(20))(data);
+    data = d3.layout.histogram().bins(x.ticks(20))(data);
 
     // Create an array of the sizes of the bars
     var lengths = [];
@@ -462,8 +466,8 @@ export function create_histogram(inp_data, name, title) {
 
     // Create y axis metadata
     // Used for y axis and bar initialization
-    var y = d3
-        .curveLinear()
+    var y = d3.scale
+        .linear()
         .domain([0, d3.max(data, (d) => d.y)])
         .range([height, 0]);
 
@@ -538,14 +542,14 @@ export function create_histogram(inp_data, name, title) {
                 i++;
             }
             var wdth = i * 4 + 10;
-            d3.select(d.target.parentElement)
+            d3.select(currentEvent.target.parentElement)
                 .select(".tool_tip")
                 .select("text")
                 .attr("transform", `translate( ${margin.left - 5}, ${height - d.length * zoom + margin.top + 10} )`)
                 .attr("visibility", "visible")
                 .text(d.length);
 
-            d3.select(d.target.parentElement)
+            d3.select(currentEvent.target.parentElement)
                 .select(".tool_tip")
                 .attr("width", `${wdth}px`)
                 .attr("height", "15px")
@@ -555,11 +559,14 @@ export function create_histogram(inp_data, name, title) {
                 .attr("height", "15px")
                 .attr("fill", "#ebd9b2");
         })
-        .on("mouseleave", (d) => {
+        .on("mouseleave", () => {
             // Remove tool tip
-            d3.select(d.target.parentElement).select(".tool_tip").select("text").attr("visibility", "hidden");
+            d3.select(currentEvent.target.parentElement)
+                .select(".tool_tip")
+                .select("text")
+                .attr("visibility", "hidden");
 
-            d3.select(d.target.parentElement)
+            d3.select(currentEvent.target.parentElement)
                 .select(".tool_tip")
                 .select("rect")
                 .attr("width", "0")
