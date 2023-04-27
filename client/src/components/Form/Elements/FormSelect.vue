@@ -55,6 +55,7 @@ const currentValue = computed({
     <multiselect
         v-if="hasOptions"
         v-model="currentValue"
+        :close-on-select="!multiple"
         :options="formattedOptions"
         :multiple="multiple"
         :allow-empty="optional"
