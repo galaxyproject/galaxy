@@ -1,10 +1,12 @@
-import { mockFetcher } from "tests/jest/mockFetcher";
 import PageDropdown from "./PageDropdown.vue";
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 import flushPromises from "flush-promises";
+import { mockFetcher } from "@/schema/__mocks__";
 
 import "jest-location-mock";
+
+jest.mock("@/schema");
 
 const localVue = getLocalVue(true);
 
