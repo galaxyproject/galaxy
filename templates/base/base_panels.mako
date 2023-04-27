@@ -147,9 +147,7 @@
             <div id="background"></div>
             
             ## Layer iframes over backgrounds
-            <div id="masthead" class="navbar navbar-fixed-top navbar-inverse">
-                ${self.masthead()}
-            </div>
+            ${self.masthead()}
             
             %if self.message_box_visible:
                 <div id="messagebox" class="alert alert-${app.config.message_box_class} rounded-0 m-0 p-2">
