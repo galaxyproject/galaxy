@@ -99,7 +99,7 @@
     "util": "^0.12.4",
     "vue": "^2.7.14",
     "vue-infinite-scroll": "^2.0.2",
-    "vue-multiselect": "^2.1.6",
+    "vue-multiselect": "^2.1.7",
     "vue-observe-visibility": "^1.0.0",
     "vue-prismjs": "^1.2.0",
     "vue-router": "^3.6.5",
