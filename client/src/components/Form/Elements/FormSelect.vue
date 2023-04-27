@@ -34,16 +34,15 @@ const hasOptions = computed(() => {
 
 const currentValue = computed({
     get: () => {
-        if (props.value === null) {
-            if (!props.optional && hasOptions) {
-                const initialValue = formattedOptions.value[0];
-                emit("input", initialValue.value);
-                return initialValue;
-            }
-        } else {
+        if (props.value) {
             const selectedValues = Array.isArray(props.value) ? props.value : [props.value];
-            return formattedOptions.value.filter((option) => selectedValues.indexOf(option.value) > -1);
+            return formattedOptions.value.filter((option) => selectedValues.includes(option.value));
+        } else if (!props.optional && hasOptions) {
+            const initialValue = formattedOptions.value[0];
+            emit("input", initialValue.value);
+            return initialValue;
         }
+        return null;
     },
     set: (val) => {
         emit("input", val.value);
@@ -55,10 +54,10 @@ const currentValue = computed({
     <multiselect
         v-if="hasOptions"
         v-model="currentValue"
+        :allow-empty="optional"
         :close-on-select="!multiple"
         :options="formattedOptions"
         :multiple="multiple"
-        :allow-empty="optional"
         placeholder="Select value"
         track-by="value"
         label="label" />
