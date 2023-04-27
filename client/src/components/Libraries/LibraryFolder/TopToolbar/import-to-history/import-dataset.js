@@ -153,8 +153,8 @@ var ImportDatasetModal = Backbone.View.extend({
         if (typeof popped_item == "undefined") {
             if (this.options.chain_call_control.failed_number === 0) {
                 Toast.success(
-                    "Selected datasets imported into history. Click this to start analyzing it.",
-                    "",
+                    "Click here to start analyzing it.",
+                    "Selected datasets imported into history",
                     `${getAppRoot()}histories/view?id=${history_id}`
                 );
             } else if (this.options.chain_call_control.failed_number === this.options.chain_call_control.total_number) {
