@@ -2128,12 +2128,12 @@ class DirectoryModelExportStore(ModelExportStore):
         datasets = query.all()
         for dataset in datasets:
             dataset.annotation = get_item_annotation_str(sa_session, history.user, dataset)
-            add_dataset = (dataset.visible or include_hidden) and (not dataset.deleted or include_deleted)
+            should_include_file = (dataset.visible or include_hidden) and (not dataset.deleted or include_deleted)
             if dataset.id in self.collection_datasets:
-                add_dataset = True
+                should_include_file = True
 
             if dataset not in self.included_datasets:
-                self.add_dataset(dataset, include_files=add_dataset)
+                self.add_dataset(dataset, include_files=should_include_file)
 
     def export_library(
         self, library: model.Library, include_hidden: bool = False, include_deleted: bool = False
@@ -2153,8 +2153,8 @@ class DirectoryModelExportStore(ModelExportStore):
     ) -> None:
         for library_dataset in library_folder.datasets:
             ldda = library_dataset.library_dataset_dataset_association
-            add_dataset = (not ldda.visible or not include_hidden) and (not ldda.deleted or include_deleted)
-            self.add_dataset(ldda, add_dataset)
+            should_include_file = (not ldda.visible or not include_hidden) and (not ldda.deleted or include_deleted)
+            self.add_dataset(ldda, should_include_file)
         for folder in library_folder.folders:
             self.export_library_folder_contents(folder, include_hidden=include_hidden, include_deleted=include_deleted)
 
