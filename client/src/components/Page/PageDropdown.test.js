@@ -89,8 +89,6 @@ describe("PageDropdown.vue", () => {
         }
 
         beforeEach(async () => {
-            const data = {status: 202, message: "deleted...", id: "page1235"}
-            mockFetcher.path(/^.*\/pages\/.*$/).method("delete").mock(data);
             confirmRequest = true;
             global.confirm = jest.fn(() => confirmRequest);
         });
@@ -105,10 +103,11 @@ describe("PageDropdown.vue", () => {
         });
 
         it("should fire deletion API request upon confirmation", async () => {
+            mockFetcher.path("/api/pages/{id}").method("delete").mock({ status: 204 });
             await mountAndDelete();
             const emitted = wrapper.emitted();
             expect(emitted["onRemove"][0][0]).toEqual("page1235");
-            expect(emitted.onSuccess.exists);
+            expect(emitted["onSuccess"]).toBeTruthy();
         });
 
         it("should not fire deletion API request if not confirmed", async () => {
@@ -117,6 +116,18 @@ describe("PageDropdown.vue", () => {
             const emitted = wrapper.emitted();
             expect(emitted["onRemove"]).toBeFalsy();
             expect(emitted["onSuccess"]).toBeFalsy();
+        });
+
+        it("should emit an error on API fail", async () => {
+            mockFetcher
+                .path("/api/pages/{id}")
+                .method("delete")
+                .mock(() => {
+                    throw Error("mock error");
+                });
+            await mountAndDelete();
+            const emitted = wrapper.emitted();
+            expect(emitted["onError"]).toBeTruthy();
         });
     });
 });
