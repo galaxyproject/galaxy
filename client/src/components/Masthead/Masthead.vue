@@ -13,7 +13,7 @@ import { useUserStore } from "@/stores/userStore";
 import { useEntryPointStore } from "stores/entryPointStore";
 import NotificationsBell from "@/components/NotificationsBell.vue";
 
-const { toggledActivityBar } = storeToRefs(useUserStore());
+const { showActivityBar } = storeToRefs(useUserStore());
 
 const route = useRoute();
 const emit = defineEmits(["open-url"]);
@@ -133,7 +133,7 @@ onMounted(() => {
                 :active-tab="activeTab"
                 @open-url="emit('open-url', $event)" />
             <masthead-item v-if="windowTab" :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
-            <BNavItem id="notifications-bell" v-if="!toggledActivityBar">
+            <BNavItem id="notifications-bell" v-if="!showActivityBar">
                 <NotificationsBell tooltip-placement="bottom" />
             </BNavItem>
         </b-navbar-nav>
