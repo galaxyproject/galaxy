@@ -27,6 +27,7 @@
 import LoadingSpan from "components/LoadingSpan";
 import { DatasetCollectionProvider, DatasetProvider } from "components/providers";
 import { deleteContent, updateContentFields } from "components/History/model/queries";
+import { HistoryFilters } from "components/History/HistoryFilters";
 import ContentItem from "./ContentItem";
 import GenericElement from "./GenericElement";
 import { mapActions } from "pinia";
@@ -75,10 +76,19 @@ export default {
         onUnhide(item) {
             updateContentFields(item, { visible: true });
         },
-        onHighlight(item) {
+        async onHighlight(item) {
             const { history_id } = item;
-            const filterText = `related:${item.hid}`;
-            this.applyFilterText(history_id, filterText);
+            const filterSettings = {
+                "deleted:": item.deleted,
+                "visible:": item.visible,
+                "related:": item.hid,
+            };
+            const filterText = HistoryFilters.getFilterText(filterSettings);
+            try {
+                await this.applyFilterText(history_id, filterText);
+            } catch (error) {
+                this.onError(error);
+            }
         },
     },
 };

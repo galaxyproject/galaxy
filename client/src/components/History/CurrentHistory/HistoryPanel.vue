@@ -153,6 +153,7 @@ import HistoryDetails from "./HistoryDetails";
 import HistoryDropZone from "./HistoryDropZone";
 import HistoryEmpty from "./HistoryEmpty";
 import HistoryFilters from "./HistoryFilters/HistoryFilters";
+import { HistoryFilters as FilterClass } from "components/History/HistoryFilters";
 import HistoryMessages from "./HistoryMessages";
 import HistorySelectionOperations from "./HistoryOperations/SelectionOperations";
 import HistorySelectionStatus from "./HistoryOperations/SelectionStatus";
@@ -192,7 +193,6 @@ export default {
         return {
             error: null,
             filterText: "",
-            highlightsKey: null,
             invisible: {},
             loading: false,
             offset: 0,
@@ -250,8 +250,12 @@ export default {
         },
         /** @returns {String} */
         storeFilterText() {
-            const { currentFilterText } = storeToRefs(useHistoryStore());
-            return currentFilterText.value;
+            const { currentFilterText, currentHistoryId } = storeToRefs(useHistoryStore());
+            if (this.historyId === currentHistoryId.value) {
+                return currentFilterText.value || "";
+            } else {
+                return "";
+            }
         },
     },
     watch: {
@@ -270,7 +274,7 @@ export default {
         },
         filterText(newVal) {
             if (this.filterable) {
-                this.setCurrentFilterText(newVal);
+                this.setFilterText(this.historyId, newVal);
             }
         },
         storeFilterText(newVal) {
@@ -293,20 +297,19 @@ export default {
         await this.loadHistoryItems();
     },
     methods: {
-        ...mapActions(useHistoryStore, ["loadHistoryById", "setCurrentFilterText"]),
+        ...mapActions(useHistoryStore, ["loadHistoryById", "setFilterText"]),
         ...mapActions(useHistoryItemsStore, ["fetchHistoryItems"]),
         getHighlight(item) {
-            if (this.filterText.includes("related:" + item.hid)) {
-                this.highlightsKey = item.hid;
+            const highlightsKey = FilterClass.getFilterValue(this.filterText, "related");
+            if (highlightsKey == item.hid) {
                 return "active";
-            } else if (this.filterText.includes("related:") && this.highlightsKey) {
-                if (item.hid > this.highlightsKey) {
+            } else if (highlightsKey) {
+                if (item.hid > highlightsKey) {
                     return "output";
                 } else {
                     return "input";
                 }
             } else {
-                this.highlightsKey = null;
                 return null;
             }
         },
@@ -358,22 +361,14 @@ export default {
             item.tags = newTags;
         },
         onTagClick(tag) {
-            if (this.filterText == "tag:" + tag) {
-                this.filterText = "";
-            } else {
-                this.filterText = "tag:" + tag;
-            }
+            this.filterText = FilterClass.updateFilterValue(this.filterText, "tag", tag);
         },
         onOperationError(error) {
             console.debug("HistoryPanel - Operation error.", error);
             this.operationError = error;
         },
         toggleHighlights(item) {
-            if (this.filterText == "related:" + item.hid) {
-                this.filterText = "";
-            } else {
-                this.filterText = "related:" + item.hid;
-            }
+            this.filterText = FilterClass.updateFilterValue(this.filterText, "related", item.hid);
         },
         onDragEnter(e) {
             this.dragTarget = e.target;

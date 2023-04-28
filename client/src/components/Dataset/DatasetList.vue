@@ -39,6 +39,7 @@ import { mapActions } from "pinia";
 import { useHistoryStore } from "@/stores/historyStore";
 import { getGalaxyInstance } from "app";
 import { copyDataset, getDatasets, updateTags } from "./services";
+import { HistoryFilters } from "components/History/HistoryFilters";
 import DatasetName from "./DatasetName";
 import DatasetHistory from "./DatasetHistory";
 import DelayedInput from "components/Common/DelayedInput";
@@ -151,19 +152,15 @@ export default {
                 });
         },
         async onShowDataset(item) {
-            const historyId = item.history_id;
+            const { history_id } = item;
+            const filterSettings = {
+                "deleted:": item.deleted,
+                "visible:": item.visible,
+                "hid:": item.hid,
+            };
+            const filterText = HistoryFilters.getFilterText(filterSettings);
             try {
-                let filterText = "";
-                if (item.hid) {
-                    filterText = `hid:${item.hid}`;
-                    if (item.deleted) {
-                        filterText += " deleted:true";
-                    }
-                    if (!item.visible) {
-                        filterText += " visible:false";
-                    }
-                }
-                await this.applyFilterText(historyId, filterText);
+                await this.applyFilterText(history_id, filterText);
             } catch (error) {
                 this.onError(error);
             }

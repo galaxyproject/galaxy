@@ -9,6 +9,8 @@
  * Comparison aliases are allowed converting e.g. '>' to '-gt' and '<' to '-lt'.
  */
 
+import { omit } from "lodash";
+
 type Converter<T> = (value: T) => T;
 type Handler<T> = (v: T, q: T) => boolean;
 
@@ -232,6 +234,48 @@ export default class Filtering<T> {
             }
         });
         return newFilterText;
+    }
+
+    /**
+     * Add (or remove) new filter(s) to existing filterText
+     * @param filterSettings New filter(s) to add
+     * @param existingText Existing filterText to modify
+     * @param remove default: `false` Whether to add or remove the new filter(s)
+     * @returns Parsed filterText string with added/removed filter(s)
+     */
+    applyFiltersToText(
+        filterSettings: Record<string, string | boolean>,
+        existingText: string,
+        remove: boolean = false
+    ) {
+        const existingSettings = this.toAlias(this.getFilters(existingText));
+        if (remove) {
+            filterSettings = omit(existingSettings, Object.keys(filterSettings));
+        } else {
+            filterSettings = Object.assign(existingSettings, filterSettings);
+        }
+        return this.getFilterText(filterSettings);
+    }
+
+    /**
+     * Updates (inserts/removes) the filter:value in a filterText
+     * @param filterText The filterText to update
+     * @param newFilter The new filter key to update a value for
+     * @param newVal The new value to update
+     * @param alias default: `eq` String alias for filter operator, e.g.:"lt"
+     * @returns Parsed filterText string with added/removed filter
+     */
+    updateFilterValue(filterText: string, newFilter: string, newVal: string, alias: Alias = "eq") {
+        let updatedText = "";
+        const oldVal = this.getFilterValue(filterText, newFilter, alias);
+        const newSetting = newFilter + getOperatorForAlias(alias);
+        const settings = { [newSetting]: newVal };
+        if (oldVal == newVal) {
+            updatedText = this.applyFiltersToText(settings, filterText, true);
+        } else {
+            updatedText = this.applyFiltersToText(settings, filterText);
+        }
+        return updatedText;
     }
 
     /** Parses single text input into a dict of field->value pairs.
