@@ -2134,7 +2134,7 @@ class DirectoryModelExportStore(ModelExportStore):
 
             if dataset not in self.included_datasets:
                 if should_include_file:
-                    self._ensure_dataset_file_accessible(dataset)
+                    self._ensure_dataset_file_exists(dataset)
                 self.add_dataset(dataset, include_files=should_include_file)
 
     def export_library(
@@ -2217,7 +2217,7 @@ class DirectoryModelExportStore(ModelExportStore):
     def add_dataset(self, dataset: model.DatasetInstance, include_files: bool = True) -> None:
         self.included_datasets[dataset] = (dataset, include_files)
 
-    def _ensure_dataset_file_accessible(self, dataset: model.DatasetInstance) -> None:
+    def _ensure_dataset_file_exists(self, dataset: model.DatasetInstance) -> None:
         state = dataset.dataset.state
         if state in [model.Dataset.states.OK] and not dataset.file_name:
             log.error("Dataset [%s] does not exists on disk or is not accessible, while trying to export." % dataset.id)
