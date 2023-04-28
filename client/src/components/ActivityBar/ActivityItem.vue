@@ -143,14 +143,4 @@ function onClick(): void {
     -o-transition: none;
     transition: none;
 }
-
-.indicator {
-    position: absolute;
-    top: -0.2rem;
-    right: -0.1rem;
-    width: 0.6rem;
-    height: 0.6rem;
-    border-radius: 50%;
-    background: $brand-danger;
-}
 </style>
