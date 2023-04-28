@@ -243,11 +243,7 @@ export default class Filtering<T> {
      * @param remove default: `false` Whether to add or remove the new filter(s)
      * @returns Parsed filterText string with added/removed filter(s)
      */
-    applyFiltersToText(
-        filterSettings: Record<string, string | boolean>,
-        existingText: string,
-        remove: boolean = false
-    ) {
+    applyFiltersToText(filterSettings: Record<string, string | boolean>, existingText: string, remove = false) {
         const existingSettings = this.toAlias(this.getFilters(existingText));
         if (remove) {
             filterSettings = omit(existingSettings, Object.keys(filterSettings));
