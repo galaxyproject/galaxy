@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { line, curveBasis } from "d3";
-import { computed, type PropType, ref } from "vue";
+import { computed, type PropType } from "vue";
 
 import { getConnectionId, type Connection } from "@/stores/workflowConnectionStore";
 import { useWorkflowStateStore, type TerminalPosition } from "@/stores/workflowEditorStateStore";
@@ -30,10 +30,10 @@ const stepStore = useWorkflowStepStore();
 
 const outputPos = computed(() => {
     if (props.terminalPosition) {
-        return ref({
+        return {
             startX: props.terminalPosition.startX,
             startY: props.terminalPosition.startY,
-        });
+        };
     } else {
         const pos = stateStore.getOutputTerminalPosition(props.connection.output.stepId, props.connection.output.name);
         if (pos) {
@@ -46,10 +46,10 @@ const outputPos = computed(() => {
 
 const inputPos = computed(() => {
     if (props.terminalPosition) {
-        return ref({
+        return {
             endX: props.terminalPosition.endX,
             endY: props.terminalPosition.endY,
-        });
+        };
     } else {
         const pos = stateStore.getInputTerminalPosition(props.connection.input.stepId, props.connection.input.name);
         if (pos) {
@@ -63,10 +63,10 @@ const inputPos = computed(() => {
 const position = computed(() => {
     if (inputPos.value && outputPos.value) {
         return {
-            startX: outputPos.value.value.startX,
-            startY: outputPos.value.value.startY,
-            endX: inputPos.value.value.endX,
-            endY: inputPos.value.value.endY,
+            startX: outputPos.value.startX,
+            startY: outputPos.value.startY,
+            endX: inputPos.value.endX,
+            endY: inputPos.value.endY,
         };
     }
 

@@ -1,4 +1,4 @@
-import Vue, { shallowRef, type ShallowRef } from "vue";
+import Vue, { reactive } from "vue";
 import type { UnwrapRef } from "vue";
 import { defineStore } from "pinia";
 import type { OutputTerminals } from "@/components/Workflow/Editor/modules/terminals";
@@ -22,8 +22,8 @@ export interface XYPosition {
 }
 
 interface State {
-    inputTerminals: { [index: number]: { [index: string]: ShallowRef<InputTerminalPosition> } };
-    outputTerminals: { [index: number]: { [index: string]: ShallowRef<OutputTerminalPosition> } };
+    inputTerminals: { [index: number]: { [index: string]: InputTerminalPosition } };
+    outputTerminals: { [index: number]: { [index: string]: OutputTerminalPosition } };
     draggingPosition: TerminalPosition | null;
     draggingTerminal: OutputTerminals | null;
     activeNodeId: number | null;
@@ -46,12 +46,12 @@ export const useWorkflowStateStore = defineStore("workflowStateStore", {
     getters: {
         getInputTerminalPosition(state: State) {
             return (stepId: number, inputName: string) => {
-                return state.inputTerminals[stepId]?.[inputName] as ShallowRef<InputTerminalPosition> | undefined;
+                return state.inputTerminals[stepId]?.[inputName] as InputTerminalPosition | undefined;
             };
         },
         getOutputTerminalPosition(state: State) {
             return (stepId: number, outputName: string) => {
-                return state.outputTerminals[stepId]?.[outputName] as ShallowRef<OutputTerminalPosition> | undefined;
+                return state.outputTerminals[stepId]?.[outputName] as OutputTerminalPosition | undefined;
             };
         },
         getStepLoadingState(state: State) {
@@ -64,22 +64,14 @@ export const useWorkflowStateStore = defineStore("workflowStateStore", {
                 Vue.set(this.inputTerminals, stepId, {});
             }
 
-            if (!this.inputTerminals[stepId][inputName]) {
-                this.inputTerminals[stepId][inputName] = shallowRef(position);
-            } else {
-                this.inputTerminals[stepId][inputName].value = position;
-            }
+            Vue.set(this.inputTerminals[stepId], inputName, position);
         },
         setOutputTerminalPosition(stepId: number, outputName: string, position: OutputTerminalPosition) {
             if (!this.outputTerminals[stepId]) {
-                Vue.set(this.outputTerminals, stepId, {});
+                Vue.set(this.outputTerminals, stepId, reactive({}));
             }
 
-            if (!this.outputTerminals[stepId][outputName]) {
-                this.outputTerminals[stepId][outputName] = shallowRef(position);
-            } else {
-                this.outputTerminals[stepId][outputName].value = position;
-            }
+            Vue.set(this.outputTerminals[stepId], outputName, position);
         },
         deleteInputTerminalPosition(stepId: number, inputName: string) {
             delete this.inputTerminals[stepId]?.[inputName];
