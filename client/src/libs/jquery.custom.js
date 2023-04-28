@@ -23,4 +23,7 @@ require("imports-loader?imports=default|jqueryVendor|jQuery!jquery-migrate");
 
 // require("imports-loader?jQuery=jqueryVendor!../ui/autocom_tagging");
 
+// Only used in reports
+require("imports-loader?imports=default|jqueryVendor|jQuery!libs/jquery.sparklines");
+
 module.exports = jQuery;
