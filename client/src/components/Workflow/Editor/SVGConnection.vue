@@ -1,14 +1,9 @@
 <script setup lang="ts">
 import { line, curveBasis } from "d3";
-import { computed, unref, type PropType } from "vue";
+import { computed, type PropType, ref } from "vue";
 
 import { getConnectionId, type Connection } from "@/stores/workflowConnectionStore";
-import {
-    useWorkflowStateStore,
-    type TerminalPosition,
-    type OutputTerminalPosition,
-    type InputTerminalPosition,
-} from "@/stores/workflowEditorStateStore";
+import { useWorkflowStateStore, type TerminalPosition } from "@/stores/workflowEditorStateStore";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
@@ -35,35 +30,43 @@ const stepStore = useWorkflowStepStore();
 
 const outputPos = computed(() => {
     if (props.terminalPosition) {
-        return {
+        return ref({
             startX: props.terminalPosition.startX,
             startY: props.terminalPosition.startY,
-        } as OutputTerminalPosition;
+        });
     } else {
-        return unref(
-            stateStore.getOutputTerminalPosition(props.connection.output.stepId, props.connection.output.name)
-        );
+        const pos = stateStore.getOutputTerminalPosition(props.connection.output.stepId, props.connection.output.name);
+        if (pos) {
+            return pos;
+        } else {
+            return null;
+        }
     }
 });
 
 const inputPos = computed(() => {
     if (props.terminalPosition) {
-        return {
+        return ref({
             endX: props.terminalPosition.endX,
             endY: props.terminalPosition.endY,
-        } as InputTerminalPosition;
+        });
     } else {
-        return unref(stateStore.getInputTerminalPosition(props.connection.input.stepId, props.connection.input.name));
+        const pos = stateStore.getInputTerminalPosition(props.connection.input.stepId, props.connection.input.name);
+        if (pos) {
+            return pos;
+        } else {
+            return null;
+        }
     }
 });
 
 const position = computed(() => {
     if (inputPos.value && outputPos.value) {
         return {
-            startX: outputPos.value.startX,
-            startY: outputPos.value.startY,
-            endX: inputPos.value.endX,
-            endY: inputPos.value.endY,
+            startX: outputPos.value.value.startX,
+            startY: outputPos.value.value.startY,
+            endX: inputPos.value.value.endX,
+            endY: inputPos.value.value.endY,
         };
     }
 
