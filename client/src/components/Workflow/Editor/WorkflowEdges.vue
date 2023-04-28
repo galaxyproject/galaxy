@@ -4,7 +4,7 @@ import { type Connection, useConnectionStore, type OutputTerminal } from "@/stor
 import { storeToRefs } from "pinia";
 import type { TerminalPosition } from "@/stores/workflowEditorStateStore";
 import type { OutputTerminals } from "./modules/terminals";
-import DrawableConnection from "./DrawableConnection.vue";
+import SVGConnection from "./SVGConnection.vue";
 
 const props = defineProps<{
     draggingConnection: TerminalPosition | null;
@@ -33,7 +33,7 @@ const draggingConnection: Ref<[Connection, TerminalPosition] | null> = computed(
 });
 
 function key(connection: Connection) {
-    return `${connection.input.stepId}-${connection.output.stepId}`;
+    return `${connection.input.stepId}-${connection.input.name}-${connection.output.stepId}`;
 }
 
 function id(connection: Connection) {
@@ -44,11 +44,11 @@ function id(connection: Connection) {
 <template>
     <div class="workflow-edges">
         <svg class="workflow-edges">
-            <DrawableConnection
+            <SVGConnection
                 v-if="draggingConnection"
                 :connection="draggingConnection[0]"
                 :terminal-position="draggingConnection[1]" />
-            <DrawableConnection
+            <SVGConnection
                 v-for="connection in connections"
                 :id="id(connection)"
                 :key="key(connection)"
