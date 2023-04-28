@@ -2129,7 +2129,7 @@ class DirectoryModelExportStore(ModelExportStore):
         for dataset in datasets:
             dataset.annotation = get_item_annotation_str(sa_session, history.user, dataset)
             should_include_file = (dataset.visible or include_hidden) and (not dataset.deleted or include_deleted)
-            if dataset.id in self.collection_datasets:
+            if not dataset.deleted and dataset.id in self.collection_datasets:
                 should_include_file = True
 
             if dataset not in self.included_datasets:
