@@ -43,7 +43,7 @@ masthead:
 
     username:
       type: xpath
-      selector: '//a[contains(text(), "Logged in as")]'
+      selector: '//a[contains(text(), "Signed in as")]'
 
     logged_in_only: '.loggedin-only'
     logged_out_only: '.loggedout-only'
@@ -59,8 +59,7 @@ masthead:
     admin: 'Admin'
 
     # user menu
-    logout: 'Logout'
-    custom_builds: 'Custom Builds'
+    logout: 'Sign Out'
     preferences: 'Preferences'
     histories: 'Histories'
     invocations: 'Workflow Invocations'
@@ -78,6 +77,7 @@ preferences:
     manage_information: '#edit-preferences-information'
     toolbox_filters: '#edit-preferences-toolbox-filters'
     manage_api_key: '#edit-preferences-api-key'
+    custom_builds: '#edit-preferences-custom-builds'
     current_email: "#user-preferences-current-email"
     get_new_key: '.create-button'
     api_key_input: '[data-test-id="api-key-input"]'
