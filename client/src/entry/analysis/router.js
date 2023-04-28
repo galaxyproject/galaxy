@@ -61,6 +61,7 @@ import WorkflowImport from "components/Workflow/WorkflowImport";
 import WorkflowList from "components/Workflow/WorkflowList";
 import WorkflowPublished from "components/Workflow/WorkflowPublished";
 import { APIKey } from "components/User/APIKey";
+import { NotificationsPreferences } from "components/User/Notifications";
 import { CloudAuth } from "components/User/CloudAuth";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
 import { HistoryExport } from "components/HistoryExport/index";
@@ -359,6 +360,11 @@ export function getRouter(Galaxy) {
                     {
                         path: "user/api_key",
                         component: APIKey,
+                        redirect: redirectAnon(),
+                    },
+                    {
+                        path: "user/notifications",
+                        component: NotificationsPreferences,
                         redirect: redirectAnon(),
                     },
                     {
