@@ -27,7 +27,6 @@
 import LoadingSpan from "components/LoadingSpan";
 import { DatasetCollectionProvider, DatasetProvider } from "components/providers";
 import { deleteContent, updateContentFields } from "components/History/model/queries";
-import { HistoryFilters } from "components/History/HistoryFilters";
 import ContentItem from "./ContentItem";
 import GenericElement from "./GenericElement";
 import { mapActions } from "pinia";
