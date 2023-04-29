@@ -39,7 +39,6 @@ import { mapActions } from "pinia";
 import { useHistoryStore } from "@/stores/historyStore";
 import { getGalaxyInstance } from "app";
 import { copyDataset, getDatasets, updateTags } from "./services";
-import { HistoryFilters } from "components/History/HistoryFilters";
 import DatasetName from "./DatasetName";
 import DatasetHistory from "./DatasetHistory";
 import DelayedInput from "components/Common/DelayedInput";
@@ -116,7 +115,7 @@ export default {
         this.load();
     },
     methods: {
-        ...mapActions(useHistoryStore, ["loadHistories", "applyFilterText"]),
+        ...mapActions(useHistoryStore, ["loadHistories", "applyFilters"]),
         load(concat = false) {
             this.loading = true;
             getDatasets({
@@ -153,14 +152,13 @@ export default {
         },
         async onShowDataset(item) {
             const { history_id } = item;
-            const filterSettings = {
-                "deleted:": item.deleted,
-                "visible:": item.visible,
-                "hid:": item.hid,
+            const filters = {
+                deleted: item.deleted,
+                visible: item.visible,
+                hid: item.hid,
             };
-            const filterText = HistoryFilters.getFilterText(filterSettings);
             try {
-                await this.applyFilterText(history_id, filterText);
+                await this.applyFilters(history_id, filters);
             } catch (error) {
                 this.onError(error);
             }

@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import Vue, { computed, ref } from "vue";
 import type { components } from "@/schema";
 import { sortByObjectProp } from "@/utils/sorting";
+import { HistoryFilters } from "@/components/History/HistoryFilters";
 import {
     cloneHistory,
     createAndSelectNewHistory,
@@ -133,10 +134,11 @@ export const useHistoryStore = defineStore(
             setCurrentHistoryId(history.id);
         }
 
-        async function applyFilterText(historyId: string, filterText: string) {
+        async function applyFilters(historyId: string, filters: Record<string, string | boolean>) {
             if (currentHistoryId.value !== historyId) {
                 await setCurrentHistory(historyId);
             }
+            const filterText = HistoryFilters.getFilterText(HistoryFilters.getValidFilterSettings(filters));
             setFilterText(historyId, filterText);
         }
 
@@ -215,7 +217,7 @@ export const useHistoryStore = defineStore(
             pinHistory,
             unpinHistory,
             selectHistory,
-            applyFilterText,
+            applyFilters,
             copyHistory,
             createNewHistory,
             deleteHistory,

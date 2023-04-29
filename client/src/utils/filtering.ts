@@ -223,7 +223,7 @@ export default class Filtering<T> {
         let newFilterText = "";
         Object.entries(filterSettings).forEach(([key, value]) => {
             const skipDefault = hasDefaults && normalized[key] !== undefined;
-            if (!skipDefault && value !== undefined && value !== "") {
+            if (!skipDefault && value !== null && value !== undefined && value !== "") {
                 if (newFilterText) {
                     newFilterText += " ";
                 }
@@ -243,14 +243,15 @@ export default class Filtering<T> {
      * @param remove default: `false` Whether to add or remove the new filter(s)
      * @returns Parsed filterText string with added/removed filter(s)
      */
-    applyFiltersToText(filterSettings: Record<string, string | boolean>, existingText: string, remove = false) {
+    applyFiltersToText(filters: Record<string, T>, existingText: string, remove = false) {
+        let validSettings = this.getValidFilterSettings(filters) as Record<string, string | boolean>;
         const existingSettings = this.toAlias(this.getFilters(existingText));
         if (remove) {
-            filterSettings = omit(existingSettings, Object.keys(filterSettings));
+            validSettings = omit(existingSettings, Object.keys(validSettings));
         } else {
-            filterSettings = Object.assign(existingSettings, filterSettings);
+            validSettings = Object.assign(existingSettings, validSettings);
         }
-        return this.getFilterText(filterSettings);
+        return this.getFilterText(validSettings);
     }
 
     /**
@@ -264,8 +265,8 @@ export default class Filtering<T> {
     updateFilterValue(filterText: string, newFilter: string, newVal: string, alias: Alias = "eq") {
         let updatedText = "";
         const oldVal = this.getFilterValue(filterText, newFilter, alias);
-        const newSetting = newFilter + getOperatorForAlias(alias);
-        const settings = { [newSetting]: newVal };
+        const newSetting = alias !== "eq" ? newFilter + getOperatorForAlias(alias) : newFilter;
+        const settings = { [newSetting]: newVal } as Record<string, T>;
         if (oldVal == newVal) {
             updatedText = this.applyFiltersToText(settings, filterText, true);
         } else {
@@ -334,9 +335,9 @@ export default class Filtering<T> {
     /** Returns a dictionary resembling filterSettings (for HistoryFilters):
      * e.g.: Unlike getFilters or getQueryDict, this maintains "hid>":"3" instead
      *       of changing it to "hid-gt":"3"
-     * Only used to sync filterSettings (in HistoryFilters)
+     * (Used to sync filterSettings in HistoryFilters)
      * @param filters Parsed filterText from getFilters()
-     * @returns filterSettings
+     * @returns `filterSettings` as dict of {"field:": "value"} pairs
      */
     toAlias(filters: [string, T][]) {
         const result: Record<string, T> = {};
@@ -355,6 +356,35 @@ export default class Filtering<T> {
             }
         }
         return result;
+    }
+
+    /** Returns valid filters with valid keys and values.
+     * @param filters Raw dictionary with **(potentially invalid)** filters and keys
+     * @returns **Valid** `filterSettings` as dict of {"field:": "value"} pairs
+     */
+    getValidFilterSettings(filters: Record<string, T>) {
+        // convert filters {"name":"value"} to settings in the form {"field:": "value"}
+        const rawSettings = this.toAlias(Object.entries(filters)) as Record<string, string | boolean>;
+        // get filterText from settings that can still contain invalid filters
+        const rawText = this.getFilterText(rawSettings);
+        // get filters with only valid filters and values
+        let validFilters = this.getFilters(rawText);
+
+        // check and remove if no default filter keys have been changed
+        let validFiltersDict = Object.fromEntries(validFilters);
+        let hasDefaults = false;
+        Object.entries(this.defaultFilters).forEach(([defaultKey, defaultValue]) => {
+            const value = validFiltersDict[defaultKey];
+            if (value !== undefined && value !== defaultValue) {
+                hasDefaults = true;
+            }
+        });
+        if (!hasDefaults) {
+            validFiltersDict = omit(validFiltersDict, Object.keys(this.defaultFilters));
+            validFilters = Object.entries(validFiltersDict);
+        }
+
+        return this.toAlias(validFilters);
     }
 
     /** Returns a dictionary with query key and values.

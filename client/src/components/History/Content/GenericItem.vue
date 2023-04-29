@@ -63,7 +63,7 @@ export default {
         },
     },
     methods: {
-        ...mapActions(useHistoryStore, ["applyFilterText"]),
+        ...mapActions(useHistoryStore, ["applyFilters"]),
         onDelete(item) {
             deleteContent(item);
         },
@@ -78,14 +78,13 @@ export default {
         },
         async onHighlight(item) {
             const { history_id } = item;
-            const filterSettings = {
-                "deleted:": item.deleted,
-                "visible:": item.visible,
-                "related:": item.hid,
+            const filters = {
+                deleted: item.deleted,
+                visible: item.visible,
+                related: item.hid,
             };
-            const filterText = HistoryFilters.getFilterText(filterSettings);
             try {
-                await this.applyFilterText(history_id, filterText);
+                await this.applyFilters(history_id, filters);
             } catch (error) {
                 this.onError(error);
             }
