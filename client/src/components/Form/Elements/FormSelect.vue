@@ -45,7 +45,12 @@ const currentValue = computed({
         return null;
     },
     set: (val) => {
-        emit("input", val.value);
+        if (props.multiple) {
+            const values = val.map((v) => v.value);
+            emit("input", values);
+        } else {
+            emit("input", val.value);
+        }
     },
 });
 </script>
