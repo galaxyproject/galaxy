@@ -44,7 +44,7 @@
 <script>
 import { getGalaxyInstance } from "app";
 import DelayedInput from "components/Common/DelayedInput";
-import { normalizeTools, searchToolsByKeys } from "../utilities.js";
+import { flattenTools, searchToolsByKeys } from "../utilities.js";
 
 export default {
     name: "ToolSearch",
@@ -98,7 +98,7 @@ export default {
             return this.currentPanelView === "default" ? "section" : "ontology";
         },
         toolsList() {
-            return normalizeTools(this.toolbox);
+            return flattenTools(this.toolbox);
         },
     },
     methods: {

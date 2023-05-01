@@ -51,7 +51,7 @@ export function createWhooshQuery(filterSettings, panelView, toolbox) {
 // Given toolbox and search results, returns filtered tool results
 export function filterTools(tools, results) {
     let toolsResults = [];
-    tools = normalizeTools(tools);
+    tools = flattenTools(tools);
     toolsResults = mapToolsResults(tools, results);
     toolsResults = sortToolsResults(toolsResults);
     toolsResults = removeDuplicateResults(toolsResults);
@@ -110,10 +110,12 @@ export function searchToolsByKeys(tools, keys, query) {
     return orderBy(returnedTools, ["order"], ["desc"]).map((tool) => tool.id);
 }
 
-export function normalizeTools(tools) {
-    tools = hideToolsSection(tools);
-    tools = flattenTools(tools);
-    return tools;
+export function flattenTools(tools) {
+    let normalizedTools = [];
+    tools.forEach((section) => {
+        normalizedTools = normalizedTools.concat(flattenToolsSection(section));
+    });
+    return normalizedTools;
 }
 
 export function hideToolsSection(tools) {
@@ -197,12 +199,4 @@ function deleteEmptyToolsSections(tools, results) {
         });
 
     return tools;
-}
-
-function flattenTools(tools) {
-    let normalizedTools = [];
-    tools.forEach((section) => {
-        normalizedTools = normalizedTools.concat(flattenToolsSection(section));
-    });
-    return normalizedTools;
 }
