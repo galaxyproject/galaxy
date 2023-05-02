@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from "vue";
+import { computed, onMounted, watch } from "vue";
 import Multiselect from "vue-multiselect";
 
 const emit = defineEmits(["input"]);
@@ -21,6 +21,10 @@ const props = defineProps({
     },
 });
 
+/**
+ * Translates input options for consumption by the
+ * select component into an array of objects
+ */
 const formattedOptions = computed(() => {
     const result = props.options.map((option) => ({
         label: option[0],
@@ -35,21 +39,26 @@ const formattedOptions = computed(() => {
     return result;
 });
 
+/**
+ * Tracks if the select field has options
+ */
 const hasOptions = computed(() => {
-    return props.options.length > 0;
+    return formattedOptions.value.length > 0;
 });
 
+/**
+ * Tracks selected values
+ */
+const selectedValues = computed(() => {
+    return Array.isArray(props.value) ? props.value : [props.value];
+});
+
+/**
+ * Tracks current value and emits changes
+ */
 const currentValue = computed({
     get: () => {
-        if (props.value) {
-            const selectedValues = Array.isArray(props.value) ? props.value : [props.value];
-            return formattedOptions.value.filter((option) => selectedValues.includes(option.value));
-        } else if (!props.optional && hasOptions) {
-            const initialValue = formattedOptions.value[0];
-            emit("input", initialValue.value);
-            return initialValue;
-        }
-        return null;
+        return formattedOptions.value.filter((option) => selectedValues.value.includes(option.value));
     },
     set: (val) => {
         if (props.multiple) {
@@ -59,6 +68,31 @@ const currentValue = computed({
             emit("input", val.value);
         }
     },
+});
+
+/**
+ * Ensures that an initial value is selected for non-optional inputs
+ */
+function setInitialValue() {
+    if (props.value === null && !props.optional && hasOptions.value) {
+        const initialValue = formattedOptions.value[0];
+        emit("input", initialValue.value);
+    }
+}
+
+/**
+ * Watches changes in select options and adjusts initial value if necessary
+ */
+watch(
+    () => props.options,
+    () => setInitialValue()
+);
+
+/**
+ * Sets initial value if necessary
+ */
+onMounted(() => {
+    setInitialValue();
 });
 </script>
 
