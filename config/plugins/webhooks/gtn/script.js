@@ -113,6 +113,7 @@
                 // Depends on the iframe being present
                 document.getElementById("gtn-embed").addEventListener("load", () => {
                     // Save our current location when possible
+                    const gtnEmbed = document.getElementById("gtn-embed");
                     if (onloadscroll !== undefined) {
                         document.getElementById("gtn-embed").contentWindow.scrollTo(0, parseInt(onloadscroll));
                         onloadscroll = undefined;
@@ -127,12 +128,12 @@
                         .contentDocument.getElementsByTagName("body")[0]
                         .classList.add("galaxy-proxy-active");
 
-                    let gtn_tools = document
+                    const gtnToolElements = document
                         .getElementById("gtn-embed")
                         .contentDocument.querySelectorAll("span[data-tool]");
 
                     // Buttonify
-                    gtn_tools.forEach(function (el) {
+                    gtnToolElements.forEach(function (el) {
                         el.classList.add("galaxy-proxy-active");
                         el.addEventListener("click", function (e) {
                             let target = e.target;
@@ -153,23 +154,27 @@
                         });
                     });
 
-                    const gtn_workflows = $("#gtn-embed").contents().find("span[data-workflow]");
+                    const gtnWorkflowElements = document
+                        .getElementById("gtn-embed")
+                        .contentDocument.querySelectorAll("span[data-workflow]");
+
                     // Buttonify
-                    gtn_workflows.addClass("galaxy-proxy-active");
+                    gtnWorkflowElements.forEach(function (el) {
+                        el.addClass("galaxy-proxy-active");
+                        el.addEventListener("click", (e) => {
+                            let target = e.target;
 
-                    gtn_workflows.click((e) => {
-                        let target = e.target;
+                            // Sometimes we get the i or the strong, not the parent.
+                            if (e.target.tagName.toLowerCase() !== "span") {
+                                target = e.target.parentElement;
+                            }
 
-                        // Sometimes we get the i or the strong, not the parent.
-                        if (e.target.tagName.toLowerCase() !== "span") {
-                            target = e.target.parentElement;
-                        }
-
-                        trs_url = target.dataset.workflow;
-                        Galaxy.router.push({
-                            path: `/workflows/trs_import?trs_url=${encodeURIComponent(trs_url)}&run_form=true`,
+                            trs_url = target.dataset.workflow;
+                            Galaxy.router.push({
+                                path: `/workflows/trs_import?trs_url=${encodeURIComponent(trs_url)}&run_form=true`,
+                            });
+                            removeOverlay();
                         });
-                        removeOverlay();
                     });
                 });
             });
