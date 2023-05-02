@@ -132,25 +132,27 @@
                     let gtn_tools = document
                         .getElementById("gtn-embed")
                         .contentDocument.querySelectorAll("span[data-tool]");
+
                     // Buttonify
-                    gtn_tools.addClass("galaxy-proxy-active");
+                    gtn_tools.forEach(function (el) {
+                        el.classList.add("galaxy-proxy-active");
+                        el.addEventListener("click", function (e) {
+                            let target = e.target;
 
-                    gtn_tools.click((e) => {
-                        let target = e.target;
+                            // Sometimes we get the i or the strong, not the parent.
+                            if (e.target.tagName.toLowerCase() !== "span") {
+                                target = e.target.parentElement;
+                            }
 
-                        // Sometimes we get the i or the strong, not the parent.
-                        if (e.target.tagName.toLowerCase() !== "span") {
-                            target = e.target.parentElement;
-                        }
+                            tool_id = target.dataset.tool;
 
-                        tool_id = target.dataset.tool;
-
-                        if (tool_id === "upload1" || tool_id === "upload") {
-                            document.getElementById("tool-panel-upload-button").click();
-                        } else {
-                            Galaxy.router.push({ path: `/?tool_id=${encodeURIComponent(tool_id)}` });
-                        }
-                        removeOverlay();
+                            if (tool_id === "upload1" || tool_id === "upload") {
+                                document.getElementById("tool-panel-upload-button").click();
+                            } else {
+                                Galaxy.router.push({ path: `/?tool_id=${encodeURIComponent(tool_id)}` });
+                            }
+                            removeOverlay();
+                        });
                     });
 
                     const gtn_workflows = $("#gtn-embed").contents().find("span[data-workflow]");
