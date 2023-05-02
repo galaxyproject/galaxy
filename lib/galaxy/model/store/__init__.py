@@ -2223,7 +2223,9 @@ class DirectoryModelExportStore(ModelExportStore):
             log.error(
                 f"Dataset [{dataset.id}] does not exists on on object store [{dataset.dataset.object_store_id or 'None'}], while trying to export."
             )
-            raise Exception(f"Cannot export dataset: {dataset.name}")
+            raise Exception(
+                f"Cannot export history dataset [{getattr(dataset, 'hid', '')}: {dataset.name}] with id {self.exported_key(dataset)}"
+            )
 
     def _finalize(self) -> None:
         export_directory = self.export_directory
