@@ -86,7 +86,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
 
         bucket_dict = config_dict["bucket"]
         connection_dict = config_dict.get("connection", {})
-        cache_dict = config_dict["cache"]
+        cache_dict = config_dict.get("cache") or {}
         self.enable_cache_monitor = config_dict.get("enable_cache_monitor", True)
 
         self.provider = config_dict["provider"]
@@ -101,7 +101,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
         self.is_secure = connection_dict.get("is_secure", True)
         self.conn_path = connection_dict.get("conn_path", "/")
 
-        self.cache_size = cache_dict.get("size", -1)
+        self.cache_size = cache_dict.get("size") or self.config.object_store_cache_size
         self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
 
         self._initialize()

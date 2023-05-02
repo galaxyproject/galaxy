@@ -39,6 +39,7 @@ class Config:
             config_file = "store.yaml"
         self.write(config_str, config_file)
         config = MockConfig(self.temp_directory, config_file, store_by=store_by)
+        self.global_config = config
         if clazz is None:
             self.object_store = objectstore.build_object_store_from_config(config)
         elif config_file == "store.xml":
@@ -68,6 +69,7 @@ class MockConfig:
         self.file_path = temp_directory
         self.object_store_config_file = os.path.join(temp_directory, config_file)
         self.object_store_check_old_style = False
+        self.object_store_cache_size = -1
         self.object_store_cache_path = os.path.join(temp_directory, "staging")
         self.object_store_store_by = store_by
         self.jobs_directory = temp_directory

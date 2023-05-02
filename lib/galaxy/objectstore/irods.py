@@ -202,10 +202,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         if self.connection_pool_monitor_interval is None:
             _config_dict_error("connection->connection_pool_monitor_interval")
 
-        cache_dict = config_dict["cache"]
-        if cache_dict is None:
-            _config_dict_error("cache")
-        self.cache_size = cache_dict.get("size", -1)
+        cache_dict = config_dict.get("cache") or {}
+        self.cache_size = cache_dict.get("size") or self.config.object_store_cache_path
         if self.cache_size is None:
             _config_dict_error("cache->size")
         self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path

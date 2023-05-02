@@ -70,10 +70,19 @@ def parse_config_xml(config_xml):
         is_secure = string_as_bool(cn_xml.get("is_secure", "True"))
         conn_path = cn_xml.get("conn_path", "/")
 
-        c_xml = config_xml.findall("cache")[0]
-        cache_size = float(c_xml.get("size", -1))
+        cache_els = config_xml.findall("cache")
+        if len(cache_els) > 0:
+            c_xml = config_xml.findall("cache")[0]
+            cache_size = float(c_xml.get("size", -1))
 
-        staging_path = c_xml.get("path", None)
+            staging_path = c_xml.get("path", None)
+
+            cache_dict = {
+                "size": cache_size,
+                "path": staging_path,
+            }
+        else:
+            cache_dict = {}
 
         tag, attrs = "extra_dir", ("type", "path")
         extra_dirs = config_xml.findall(tag)
@@ -100,10 +109,7 @@ def parse_config_xml(config_xml):
                 "is_secure": is_secure,
                 "conn_path": conn_path,
             },
-            "cache": {
-                "size": cache_size,
-                "path": staging_path,
-            },
+            "cache": cache_dict,
             "extra_dirs": extra_dirs,
             "private": ConcreteObjectStore.parse_private_from_config_xml(config_xml),
         }
@@ -158,7 +164,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         auth_dict = config_dict["auth"]
         bucket_dict = config_dict["bucket"]
         connection_dict = config_dict.get("connection", {})
-        cache_dict = config_dict["cache"]
+        cache_dict = config_dict.get("cache") or {}
         self.enable_cache_monitor = config_dict.get("enable_cache_monitor", True)
 
         self.access_key = auth_dict.get("access_key")
@@ -174,7 +180,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         self.is_secure = connection_dict.get("is_secure", True)
         self.conn_path = connection_dict.get("conn_path", "/")
 
-        self.cache_size = cache_dict.get("size", -1)
+        self.cache_size = cache_dict.get("size") or self.config.object_store_cache_size
         self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
 
         extra_dirs = {e["type"]: e["path"] for e in config_dict.get("extra_dirs", [])}
