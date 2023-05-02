@@ -36,8 +36,6 @@
         return loc;
     }
 
-    function restoreLocation() {}
-
     function persistLocation() {
         // Don't save every scroll event.
         const time = new Date().getTime();
