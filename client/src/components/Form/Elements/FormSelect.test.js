@@ -17,18 +17,25 @@ const defaultOptions = [
     ["label_3", "value_3"],
 ];
 
+function testDefaultOptions(wrapper) {
+    const target = wrapper.findComponent(MountTarget);
+    const options = target.findAll("li > span > span");
+    expect(options.length).toBe(3);
+    for (let i = 0; i < options.length; i++) {
+        expect(options.at(i).text()).toBe(`label_${i + 1}`);
+    }
+}
+
 describe("FormSelect", () => {
     it("basics", async () => {
         const wrapper = createTarget({
             options: defaultOptions,
-            value: "value_1",
         });
-        const target = wrapper.findComponent(MountTarget);
-        const options = target.findAll("li > span > span");
-        expect(options.length).toBe(3);
-        for (let i = 0; i < options.length; i++) {
-            expect(options.at(i).text()).toBe(`label_${i + 1}`);
-        }
+        testDefaultOptions(wrapper);
+        const noValue = wrapper.find(".multiselect__option--selected");
+        expect(noValue.exists()).toBe(false);
+        expect(wrapper.emitted().input[0][0]).toBe("value_1");
+        await wrapper.setProps({ value: "value_1" });
         const selectedValue = wrapper.find(".multiselect__option--selected");
         expect(selectedValue.text()).toBe("label_1");
     });
@@ -58,12 +65,7 @@ describe("FormSelect", () => {
             options: defaultOptions,
             value: ["value_1", "value_3"],
         });
-        const target = wrapper.findComponent(MountTarget);
-        const options = target.findAll("li > span > span");
-        expect(options.length).toBe(3);
-        for (let i = 0; i < options.length; i++) {
-            expect(options.at(i).text()).toBe(`label_${i + 1}`);
-        }
+        testDefaultOptions(wrapper);
         const selectedValue = wrapper.findAll(".multiselect__option--selected");
         expect(selectedValue.length).toBe(2);
         expect(selectedValue.at(0).text()).toBe("label_1");
