@@ -1494,24 +1494,20 @@ export interface components {
              * @enum {string}
              */
             source: "admin" | "galaxy";
-            /**
-             * Type
-             * @enum {string}
-             */
+            /** Type */
             type:
-                | "faster"
-                | "slower"
-                | "short_term"
-                | "cloud"
-                | "backed_up"
-                | "not_backed_up"
-                | "more_secure"
-                | "less_secure"
-                | "more_stable"
-                | "less_stable"
-                | "quota"
-                | "no_quota"
-                | "restricted";
+                | (
+                      | "faster"
+                      | "slower"
+                      | "short_term"
+                      | "backed_up"
+                      | "not_backed_up"
+                      | "more_secure"
+                      | "less_secure"
+                      | "more_stable"
+                      | "less_stable"
+                  )
+                | ("cloud" | "quota" | "no_quota" | "restricted");
         };
         /**
          * BasicRoleModel
