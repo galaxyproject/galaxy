@@ -201,8 +201,6 @@ class TestImportExportHistoryViaTasksIntegration(
 
     def test_export_missing_dataset_fails(self):
         history_name = f"for_export_failure_{uuid4()}"
-        model_store_format = "rocrate.zip"
-        target_uri = f"gxfiles://posix_test/{history_name}.{model_store_format}"
         history_id = self.dataset_populator.new_history(history_name)
         hda = self.dataset_populator.new_dataset(history_id, wait=True)
 
@@ -211,11 +209,11 @@ class TestImportExportHistoryViaTasksIntegration(
         unlink(hda["file_name"])
         assert not os.path.exists(hda["file_name"])
 
-        # Ensure the export task fails
-        with self.assertRaisesRegex(Exception, "task failed"):
-            self.dataset_populator.export_history_to_uri_async(
-                history_id, target_uri=target_uri, model_store_format=model_store_format, include_files=True
-            )
+        storage_request_id = self.dataset_populator.download_history_to_store(history_id)
+
+        result_response = self._get(f"short_term_storage/{storage_request_id}")
+        self._assert_status_code_is(result_response, 500)
+        assert "Cannot export history dataset" in result_response.json()["err_msg"]
 
     def _wait_for_export_task_on_record(self, record):
         if record["preparing"]:
