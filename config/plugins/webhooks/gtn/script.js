@@ -1,8 +1,9 @@
-(function () {
-    var gtnWebhookLoaded = false;
-    var lastUpdate = 0;
-    var urlParams = new URLSearchParams(document.location.search);
-    var autoLoadTutorial = urlParams.get('autoload_gtn_tutorial') === null ? "" : urlParams.get('autoload_gtn_tutorial');
+(() => {
+    let gtnWebhookLoaded = false;
+    let lastUpdate = 0;
+    const urlParams = new URLSearchParams(document.location.search);
+    const autoLoadTutorial =
+        urlParams.get("autoload_gtn_tutorial") === null ? "" : urlParams.get("autoload_gtn_tutorial");
 
     function removeOverlay() {
         const container = document.getElementById("gtn-container");
@@ -16,7 +17,7 @@
     }
 
     function getIframeUrl() {
-        var loc;
+        let loc;
         try {
             loc = document.getElementById("gtn-embed").contentWindow.location.pathname;
         } catch (e) {
@@ -26,7 +27,7 @@
     }
 
     function getIframeScroll() {
-        var loc;
+        let loc;
         try {
             loc = parseInt(document.getElementById("gtn-embed").contentWindow.scrollY);
         } catch (e) {
@@ -39,7 +40,7 @@
 
     function persistLocation() {
         // Don't save every scroll event.
-        var time = new Date().getTime();
+        const time = new Date().getTime();
         if (time - lastUpdate < 1000) {
             return;
         }
@@ -48,7 +49,9 @@
     }
 
     function addIframe() {
-        let url, message, onloadscroll;
+        let url;
+        let message;
+        let onloadscroll;
         gtnWebhookLoaded = true;
         let storedData = false;
         let safe = false;
@@ -68,7 +71,7 @@
                 } else {
                     safe = true;
 
-                    var storedLocation = window.localStorage.getItem("gtn-in-galaxy");
+                    const storedLocation = window.localStorage.getItem("gtn-in-galaxy");
                     if (
                         storedLocation !== null &&
                         storedLocation.split(" ")[1] !== undefined &&
@@ -122,14 +125,19 @@
                         persistLocation();
                     }
                     // Add the class to the entire GTN page
-                    document.getElementById("gtn-embed").contentDocument.getElementsByTagName('body').classList.add("galaxy-proxy-active")
+                    document
+                        .getElementById("gtn-embed")
+                        .contentDocument.getElementsByTagName("body")
+                        .classList.add("galaxy-proxy-active");
 
-                    let gtn_tools = document.getElementById("gtn-embed").contentDocument.querySelectorAll("span[data-tool]")
+                    let gtn_tools = document
+                        .getElementById("gtn-embed")
+                        .contentDocument.querySelectorAll("span[data-tool]");
                     // Buttonify
                     gtn_tools.addClass("galaxy-proxy-active");
 
                     gtn_tools.click((e) => {
-                        var target = e.target;
+                        let target = e.target;
 
                         // Sometimes we get the i or the strong, not the parent.
                         if (e.target.tagName.toLowerCase() !== "span") {
@@ -146,12 +154,12 @@
                         removeOverlay();
                     });
 
-                    var gtn_workflows = $("#gtn-embed").contents().find("span[data-workflow]");
+                    const gtn_workflows = $("#gtn-embed").contents().find("span[data-workflow]");
                     // Buttonify
                     gtn_workflows.addClass("galaxy-proxy-active");
 
                     gtn_workflows.click((e) => {
-                        var target = e.target;
+                        let target = e.target;
 
                         // Sometimes we get the i or the strong, not the parent.
                         if (e.target.tagName.toLowerCase() !== "span") {
@@ -159,11 +167,11 @@
                         }
 
                         trs_url = target.dataset.workflow;
-                        Galaxy.router.push({ path: `/workflows/trs_import?trs_url=${encodeURIComponent(trs_url)}&run_form=true` });
+                        Galaxy.router.push({
+                            path: `/workflows/trs_import?trs_url=${encodeURIComponent(trs_url)}&run_form=true`,
+                        });
                         removeOverlay();
                     });
-
-
                 });
             });
     }
@@ -205,7 +213,7 @@
                 showOverlay();
             }
         });
-        if(autoLoadTutorial){
+        if (autoLoadTutorial) {
             clean.click();
         }
     });
