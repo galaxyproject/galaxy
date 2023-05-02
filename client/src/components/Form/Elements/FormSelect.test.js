@@ -6,20 +6,22 @@ const localVue = getLocalVue(true);
 
 function createTarget(propsData) {
     return mount(MountTarget, {
-        propsData,
         localVue,
+        propsData,
     });
 }
+
+const defaultOptions = [
+    ["label_1", "value_1"],
+    ["label_2", "value_2"],
+    ["label_3", "value_3"],
+];
 
 describe("FormSelect", () => {
     it("basics", async () => {
         const wrapper = createTarget({
+            options: defaultOptions,
             value: "value_1",
-            options: [
-                ["label_1", "value_1"],
-                ["label_2", "value_2"],
-                ["label_3", "value_3"],
-            ],
         });
         const target = wrapper.findComponent(MountTarget);
         const options = target.findAll("li > span > span");
@@ -27,5 +29,44 @@ describe("FormSelect", () => {
         for (let i = 0; i < options.length; i++) {
             expect(options.at(i).text()).toBe(`label_${i + 1}`);
         }
+        const selectedValue = wrapper.find(".multiselect__option--selected");
+        expect(selectedValue.text()).toBe("label_1");
+    });
+
+    it("optional values", async () => {
+        const wrapper = createTarget({
+            options: defaultOptions,
+            optional: true,
+        });
+        const target = wrapper.findComponent(MountTarget);
+        const options = target.findAll("li > span > span");
+        expect(options.length).toBe(4);
+        expect(options.at(0).text()).toBe("Nothing selected");
+        const selectedDefault = wrapper.find(".multiselect__option--selected");
+        expect(selectedDefault.text()).toBe("Nothing selected");
+        await wrapper.setProps({ value: "value_1" });
+        const selectedValue = wrapper.find(".multiselect__option--selected");
+        expect(selectedValue.text()).toBe("label_1");
+        await wrapper.setProps({ value: null });
+        const unselectDefault = wrapper.find(".multiselect__option--selected");
+        expect(unselectDefault.text()).toBe("Nothing selected");
+    });
+
+    it("multiple values", async () => {
+        const wrapper = createTarget({
+            multiple: true,
+            options: defaultOptions,
+            value: ["value_1", "value_3"],
+        });
+        const target = wrapper.findComponent(MountTarget);
+        const options = target.findAll("li > span > span");
+        expect(options.length).toBe(3);
+        for (let i = 0; i < options.length; i++) {
+            expect(options.at(i).text()).toBe(`label_${i + 1}`);
+        }
+        const selectedValue = wrapper.findAll(".multiselect__option--selected");
+        expect(selectedValue.length).toBe(2);
+        expect(selectedValue.at(0).text()).toBe("label_1");
+        expect(selectedValue.at(1).text()).toBe("label_3");
     });
 });
