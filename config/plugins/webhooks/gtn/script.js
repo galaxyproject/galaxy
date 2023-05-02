@@ -126,7 +126,7 @@
                     // Add the class to the entire GTN page
                     document
                         .getElementById("gtn-embed")
-                        .contentDocument.getElementsByTagName("body")
+                        .contentDocument.getElementsByTagName("body")[0]
                         .classList.add("galaxy-proxy-active");
 
                     let gtn_tools = document
