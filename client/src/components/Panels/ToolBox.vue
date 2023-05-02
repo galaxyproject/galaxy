@@ -25,7 +25,7 @@
                 :current-panel-view="currentPanelView"
                 :placeholder="titleSearchTools"
                 :show-advanced.sync="showAdvanced"
-                :toolbox="toolbox"
+                :toolbox="tools"
                 :query="query"
                 @onQuery="onQuery"
                 @onResults="onResults" />
@@ -125,6 +125,9 @@ export default {
         };
     },
     computed: {
+        tools() {
+            return hideToolsSection(this.toolbox);
+        },
         queryTooShort() {
             return this.query && this.query.length < 3;
         },
@@ -133,11 +136,9 @@ export default {
         },
         sections() {
             if (this.showSections) {
-                return filterToolSections(this.toolbox, this.results);
+                return filterToolSections(this.tools, this.results);
             } else {
-                return hasResults(this.results)
-                    ? filterTools(this.toolbox, this.results)
-                    : hideToolsSection(this.toolbox);
+                return hasResults(this.results) ? filterTools(this.tools, this.results) : this.tools;
             }
         },
         isUser() {

@@ -1,5 +1,5 @@
 import toolsList from "components/ToolsView/testData/toolsList";
-import { createWhooshQuery, filterTools, filterToolSections, normalizeTools, searchToolsByKeys } from "./utilities";
+import { createWhooshQuery, filterTools, filterToolSections, flattenTools, searchToolsByKeys } from "./utilities";
 
 describe("test helpers in tool searching utilities", () => {
     it("test parsing helper that converts settings to whoosh query", async () => {
@@ -25,7 +25,7 @@ describe("test helpers in tool searching utilities", () => {
             "__ZIP_COLLECTION__",
         ];
         let keys = { description: 1, name: 0 };
-        let results = searchToolsByKeys(normalizeTools(toolsList), keys, q);
+        let results = searchToolsByKeys(flattenTools(toolsList), keys, q);
         expect(results).toEqual(expectedResults);
 
         expectedResults = [
@@ -35,14 +35,14 @@ describe("test helpers in tool searching utilities", () => {
             "__FILTER_EMPTY_DATASETS__",
         ];
         keys = { description: 0, name: 1 };
-        results = searchToolsByKeys(normalizeTools(toolsList), keys, q);
+        results = searchToolsByKeys(flattenTools(toolsList), keys, q);
         expect(results).toEqual(expectedResults);
 
         // whitespace precedes to ensure query.trim() works
         q = " filter empty datasets";
         expectedResults = ["__FILTER_EMPTY_DATASETS__"];
         keys = { description: 1, name: 2, combined: 0 };
-        results = searchToolsByKeys(normalizeTools(toolsList), keys, q);
+        results = searchToolsByKeys(flattenTools(toolsList), keys, q);
         expect(results).toEqual(expectedResults);
 
         const tempToolsList = [
@@ -64,7 +64,7 @@ describe("test helpers in tool searching utilities", () => {
         q = "uMi tools extract ";
         expectedResults = ["toolshed.g2.bx.psu.edu/repos/iuc/umi_tools_extract/umi_tools_extract/1.1.2+galaxy2"];
         keys = { description: 1, name: 2, hyphenated: 0 };
-        results = searchToolsByKeys(normalizeTools(tempToolsList), keys, q);
+        results = searchToolsByKeys(flattenTools(tempToolsList), keys, q);
         expect(results).toEqual(expectedResults);
     });
 

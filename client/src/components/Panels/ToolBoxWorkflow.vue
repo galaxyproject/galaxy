@@ -120,7 +120,7 @@ export default {
             return this.query && this.query.length < 3;
         },
         noResults() {
-            return this.query && this.results.length === 0;
+            return this.query && (!this.results || this.results.length === 0);
         },
         hasWorkflowSection() {
             return this.workflows.length > 0;
