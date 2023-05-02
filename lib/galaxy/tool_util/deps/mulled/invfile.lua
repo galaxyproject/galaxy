@@ -71,13 +71,6 @@ else
     verbose = '--verbose'
 end
 
-local solver = VAR.SOLVER
-if solver == '' then
-    solver = 'classic'
-else
-    solver = 'libmamba'
-end
-
 local preinstall = VAR.PREINSTALL
 if preinstall ~= '' then
     preinstall = preinstall .. ' && '
@@ -99,7 +92,6 @@ inv.task('build')
             .. channel_args .. ' '
             .. target_args
             .. ' --strict-channel-priority -p /usr/local --copy --yes '
-            .. ' --solver ' .. solver .. ' '
             .. verbose
             .. postinstall)
     .wrap('build/dist')
