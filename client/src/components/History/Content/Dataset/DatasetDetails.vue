@@ -17,6 +17,7 @@
                             result.genome_build
                         }}</b-link>
                     </span>
+                    <!-- Include Job Detail Provider and Dataset Error Details here -->
                     <div v-if="result.misc_info" class="info">
                         <span class="value">{{ result.misc_info }}</span>
                     </div>
