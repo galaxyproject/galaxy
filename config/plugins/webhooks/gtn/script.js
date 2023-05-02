@@ -62,8 +62,7 @@
         fetch("/training-material/")
             .then((response) => {
                 if (!response.ok) {
-                    url =
-                        `https://training.galaxyproject.org/training-material/${autoLoadTutorial}?utm_source=webhook&utm_medium=noproxy&utm_campaign=gxy`;
+                    url = `https://training.galaxyproject.org/training-material/${autoLoadTutorial}?utm_source=webhook&utm_medium=noproxy&utm_campaign=gxy`;
                     message = `
                         <span>
                             <a href="https://docs.galaxyproject.org/en/master/admin/special_topics/gtn.html">Click to run</a> unavailable.
@@ -219,9 +218,9 @@
     });
 
     // Remove the overlay on escape button click
-    document.addEventListener("keydown", (e) => {
-        // Check for escape button - "27"
-        if (e.which === 27 || e.keyCode === 27) {
+    document.addEventListener("keydown", (event) => {
+        // Check for escape button - "Escape" (modern browsers), "27" (old browsers)
+        if (event.key === "Escape" || event.keyCode === 27) {
             removeOverlay();
         }
     });
