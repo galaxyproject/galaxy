@@ -14,7 +14,7 @@ function createTarget(propsData) {
 const defaultOptions = [
     ["label_1", "value_1"],
     ["label_2", "value_2"],
-    ["label_3", "value_3"],
+    ["label_3", ""],
 ];
 
 function testDefaultOptions(wrapper) {
@@ -63,7 +63,7 @@ describe("FormSelect", () => {
         const wrapper = createTarget({
             multiple: true,
             options: defaultOptions,
-            value: ["value_1", "value_3"],
+            value: ["value_1", ""],
         });
         testDefaultOptions(wrapper);
         const selectedValue = wrapper.findAll(".multiselect__option--selected");
