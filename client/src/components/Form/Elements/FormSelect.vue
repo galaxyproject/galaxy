@@ -63,10 +63,7 @@ const selectedValues: ComputedRef<Array<SelectValue>> = computed(() => {
  * Tracks current value and emits changes
  */
 const currentValue = computed({
-    get: () =>
-        formattedOptions.value.filter(
-            (option: SelectOption) => option.value !== null && selectedValues.value.includes(option.value)
-        ),
+    get: () => formattedOptions.value.filter((option: SelectOption) => selectedValues.value.includes(option.value)),
     set: (val: Array<SelectOption> | SelectOption): void => {
         if (Array.isArray(val)) {
             const values: SelectValue[] = val.map((v: SelectOption) => v.value);
