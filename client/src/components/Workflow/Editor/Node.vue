@@ -75,7 +75,7 @@
         <div v-else class="node-body" @click="makeActive" @keyup.enter="makeActive">
             <node-input
                 v-for="(input, index) in inputs"
-                :key="`${index}-${input.name}`"
+                :key="`in-${index}-${input.name}`"
                 :input="input"
                 :step-id="id"
                 :datatypes-mapper="datatypesMapper"
@@ -83,21 +83,23 @@
                 :root-offset="rootOffset"
                 :scroll="scroll"
                 :scale="scale"
+                :parentNode="elHtml"
                 @onChange="onChange" />
             <div v-if="showRule" class="rule" />
             <node-output
                 v-for="(output, index) in outputs"
-                :key="`${index + inputs.length}-${output.name}`"
+                :key="`out-${index}-${output.name}`"
                 :output="output"
                 :workflow-outputs="workflowOutputs"
                 :post-job-actions="postJobActions"
                 :step-id="id"
                 :step-type="step.type"
                 :step-position="step.position"
-                :root-offset="rootOffset"
+                :root-offset="reactive(rootOffset)"
                 :scroll="scroll"
                 :scale="scale"
                 :datatypes-mapper="datatypesMapper"
+                :parentNode="elHtml"
                 @onDragConnector="onDragConnector"
                 @stopDragging="onStopDragging"
                 @onChange="onChange" />
@@ -107,7 +109,7 @@
 
 <script lang="ts" setup>
 import type { PropType, Ref } from "vue";
-import Vue from "vue";
+import Vue, { reactive } from "vue";
 import BootstrapVue from "bootstrap-vue";
 import WorkflowIcons from "@/components/Workflow/icons";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -121,7 +123,7 @@ import { useNodePosition } from "@/components/Workflow/Editor/composables/useNod
 import { useWorkflowStateStore, type TerminalPosition, type XYPosition } from "@/stores/workflowEditorStateStore";
 import type { Step } from "@/stores/workflowStepStore";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
-import type { UseElementBoundingReturn, UseScrollReturn } from "@vueuse/core";
+import type { UseElementBoundingReturn, UseScrollReturn, VueInstance } from "@vueuse/core";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { faCodeBranch } from "@fortawesome/free-solid-svg-icons";
@@ -172,7 +174,9 @@ function remove() {
     emit("onRemove", props.id);
 }
 
-const el: Ref<HTMLElement | null> = ref(null);
+const el: Ref<VueInstance | null> = ref(null);
+const elHtml: Ref<HTMLElement | null> = computed(() => (el.value?.$el as HTMLElement | undefined) ?? null);
+
 const postJobActions = computed(() => props.step.post_job_actions || {});
 const workflowOutputs = computed(() => props.step.workflow_outputs || []);
 const connectionStore = useConnectionStore();
@@ -180,7 +184,7 @@ const stateStore = useWorkflowStateStore();
 const stepStore = useWorkflowStepStore();
 const isLoading = computed(() => Boolean(stateStore.getStepLoadingState(props.id)?.loading));
 useNodePosition(
-    el,
+    elHtml,
     props.id,
     stateStore,
     computed(() => props.scale)

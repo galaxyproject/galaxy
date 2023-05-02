@@ -1,50 +1,71 @@
 <script setup lang="ts">
-import RawConnector from "./Connector.vue";
-import TerminalConnector from "./TerminalConnector.vue";
-import { computed } from "vue";
-import { useConnectionStore } from "@/stores/workflowConnectionStore";
+import { computed, type Ref } from "vue";
+import { type Connection, useConnectionStore, type OutputTerminal } from "@/stores/workflowConnectionStore";
 import { storeToRefs } from "pinia";
 import type { TerminalPosition } from "@/stores/workflowEditorStateStore";
 import type { OutputTerminals } from "./modules/terminals";
+import SVGConnection from "./SVGConnection.vue";
 
 const props = defineProps<{
     draggingConnection: TerminalPosition | null;
     draggingTerminal: OutputTerminals | null;
+    transform: { x: number; y: number; k: number };
 }>();
 
 const connectionStore = useConnectionStore();
 const { connections } = storeToRefs(connectionStore);
 
-const dragStyle = computed(() => {
-    // TODO: this isn't quite right, but 6 seems to work, probably because it's the outer strokewidth
-    // sync up with Connector.vue ?
-    const strokeWidth = 6;
-    const dragStyle: { [index: string]: string } = {};
-    if (props.draggingConnection) {
-        dragStyle.left = props.draggingConnection.endX - strokeWidth + "px";
-        dragStyle.top = props.draggingConnection.endY - strokeWidth + "px";
+const draggingConnection: Ref<[Connection, TerminalPosition] | null> = computed(() => {
+    if (props.draggingConnection && props.draggingTerminal) {
+        const connection: Connection = {
+            input: {
+                connectorType: "input",
+                name: "draggingInput",
+                stepId: -1,
+            },
+            output: props.draggingTerminal as unknown as OutputTerminal,
+        };
+
+        return [connection, props.draggingConnection];
+    } else {
+        return null;
     }
-    return dragStyle;
 });
 
-const dragIsOptional = computed(() => {
-    return props.draggingTerminal?.optional;
-});
+function key(connection: Connection) {
+    return `${connection.input.stepId}-${connection.input.name}-${connection.output.stepId}`;
+}
+
+function id(connection: Connection) {
+    return `connection-node-${connection.input.stepId}-input-${connection.input.name}-node-${connection.output.stepId}-output-${connection.output.name}`;
+}
 </script>
+
 <template>
-    <div>
-        <div v-if="draggingConnection" class="drag-terminal" :style="dragStyle" />
-        <svg class="canvas-svg node-area">
-            <raw-connector
-                v-if="draggingTerminal && draggingConnection"
-                :position="draggingConnection"
-                :input-is-mapped-over="false"
-                :output-is-mapped-over="draggingTerminal.mapOver.isCollection"
-                :nullable="dragIsOptional"></raw-connector>
-            <terminal-connector
+    <div class="workflow-edges">
+        <svg class="workflow-edges">
+            <SVGConnection
+                v-if="draggingConnection"
+                :connection="draggingConnection[0]"
+                :terminal-position="draggingConnection[1]" />
+            <SVGConnection
                 v-for="connection in connections"
-                :key="connection.id"
-                :connection="connection"></terminal-connector>
+                :id="id(connection)"
+                :key="key(connection)"
+                :connection="connection" />
         </svg>
     </div>
 </template>
+
+<style lang="scss" scoped>
+.workflow-edges {
+    display: block;
+    overflow: visible;
+    height: 100%;
+    width: 100%;
+    left: 0;
+    top: 0;
+    position: absolute;
+    transform-origin: 0 0;
+}
+</style>

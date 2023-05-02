@@ -1,11 +1,19 @@
 <template>
     <div id="workflow-canvas" class="unified-panel-body workflow-canvas">
         <ZoomControl :zoom-level="scale" :pan="transform" @onZoom="onZoom" @update:pan="panBy" />
-        <div id="canvas-container" ref="canvas" class="canvas-content" @drop.prevent @dragover.prevent>
+        <div
+            id="canvas-container"
+            ref="canvas"
+            class="canvas-content position-relative"
+            @drop.prevent
+            @dragover.prevent>
             <!-- canvas-background is sibling of node-area because it has a different transform origin, so can't be parent of node-area -->
             <div class="canvas-background" :style="canvasStyle" />
             <div class="node-area" :style="canvasStyle">
-                <WorkflowEdges :dragging-terminal="draggingTerminal" :dragging-connection="draggingPosition" />
+                <WorkflowEdges
+                    :transform="transform"
+                    :dragging-terminal="draggingTerminal"
+                    :dragging-connection="draggingPosition" />
                 <WorkflowNode
                     v-for="(step, key) in steps"
                     :id="step.id"

@@ -1,7 +1,6 @@
 import Vue from "vue";
 import { defineStore } from "pinia";
-import { useConnectionStore } from "@/stores/workflowConnectionStore";
-import { Connection } from "@/stores/workflowConnectionStore";
+import { getConnectionId, useConnectionStore, type Connection } from "@/stores/workflowConnectionStore";
 import type { CollectionTypeDescriptor } from "@/components/Workflow/Editor/modules/collectionTypeDescription";
 
 interface State {
@@ -266,7 +265,7 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
             const connectionStore = useConnectionStore();
             connectionStore
                 .getConnectionsForStep(stepId)
-                .forEach((connection) => connectionStore.removeConnection(connection.id));
+                .forEach((connection) => connectionStore.removeConnection(getConnectionId(connection)));
             Vue.delete(this.steps, stepId.toString());
             Vue.delete(this.stepExtraInputs, stepId);
         },
@@ -284,18 +283,18 @@ export function stepToConnections(step: Step): Connection[] {
                 outputArray = [outputArray];
             }
             outputArray.forEach((output) => {
-                const connection = new Connection(
-                    {
+                const connection: Connection = {
+                    input: {
                         stepId: step.id,
                         name: inputName,
                         connectorType: "input",
                     },
-                    {
+                    output: {
                         stepId: output.id,
                         name: output.output_name,
                         connectorType: "output",
-                    }
-                );
+                    },
+                };
                 const connectionInput = step.inputs.find((input) => input.name == inputName);
                 if (connectionInput && "input_subworkflow_step_id" in connectionInput) {
                     connection.input.input_subworkflow_step_id = connectionInput.input_subworkflow_step_id;
