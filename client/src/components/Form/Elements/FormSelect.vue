@@ -1,32 +1,38 @@
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, watch } from "vue";
 import Multiselect from "vue-multiselect";
 
-const emit = defineEmits(["input"]);
-const props = defineProps({
-    value: {
-        default: null,
-    },
-    multiple: {
-        type: Boolean,
-        default: false,
-    },
-    options: {
-        type: Array,
-        required: true,
-    },
-    optional: {
-        type: Boolean,
-        default: false,
-    },
-});
+type SelectValue = string | null;
+
+interface SelectOption {
+    label: string;
+    value: SelectValue;
+}
+
+const props = withDefaults(
+    defineProps<{
+        multiple?: boolean;
+        optional?: boolean;
+        options: Array<[string, string]>;
+        value?: string[] | string;
+    }>(),
+    {
+        multiple: false,
+        optional: false,
+        value: null,
+    }
+);
+
+const emit = defineEmits<{
+    (e: "input", value: SelectValue | SelectValue[]): void;
+}>();
 
 /**
  * Translates input options for consumption by the
  * select component into an array of objects
  */
 const formattedOptions = computed(() => {
-    const result = props.options.map((option) => ({
+    const result: Array<SelectOption> = props.options.map((option: [string, string]) => ({
         label: option[0],
         value: option[1],
     }));
@@ -57,12 +63,13 @@ const selectedValues = computed(() => {
  * Tracks current value and emits changes
  */
 const currentValue = computed({
-    get: () => {
-        return formattedOptions.value.filter((option) => selectedValues.value.includes(option.value));
-    },
-    set: (val) => {
-        if (props.multiple) {
-            const values = val.map((v) => v.value);
+    get: () =>
+        formattedOptions.value.filter(
+            (option: SelectOption) => option.value !== null && selectedValues.value.includes(option.value)
+        ),
+    set: (val: Array<SelectOption> | SelectOption) => {
+        if (Array.isArray(val)) {
+            const values: SelectValue[] = val.map((v: SelectOption) => v.value);
             emit("input", values);
         } else {
             emit("input", val.value);
@@ -76,7 +83,9 @@ const currentValue = computed({
 function setInitialValue() {
     if (props.value === null && !props.optional && hasOptions.value) {
         const initialValue = formattedOptions.value[0];
-        emit("input", initialValue.value);
+        if (initialValue) {
+            emit("input", initialValue.value);
+        }
     }
 }
 
