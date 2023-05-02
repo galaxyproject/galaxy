@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, watch } from "vue";
+import { computed, onMounted, watch, type ComputedRef } from "vue";
 import Multiselect from "vue-multiselect";
 
 type SelectValue = string | null;
@@ -31,7 +31,7 @@ const emit = defineEmits<{
  * Translates input options for consumption by the
  * select component into an array of objects
  */
-const formattedOptions = computed(() => {
+const formattedOptions: ComputedRef<Array<SelectOption>> = computed(() => {
     const result: Array<SelectOption> = props.options.map((option: [string, string]) => ({
         label: option[0],
         value: option[1],
@@ -48,14 +48,14 @@ const formattedOptions = computed(() => {
 /**
  * Tracks if the select field has options
  */
-const hasOptions = computed(() => {
+const hasOptions: ComputedRef<Boolean> = computed(() => {
     return formattedOptions.value.length > 0;
 });
 
 /**
  * Tracks selected values
  */
-const selectedValues = computed(() => {
+const selectedValues: ComputedRef<Array<SelectValue>> = computed(() => {
     return Array.isArray(props.value) ? props.value : [props.value];
 });
 
@@ -67,7 +67,7 @@ const currentValue = computed({
         formattedOptions.value.filter(
             (option: SelectOption) => option.value !== null && selectedValues.value.includes(option.value)
         ),
-    set: (val: Array<SelectOption> | SelectOption) => {
+    set: (val: Array<SelectOption> | SelectOption): void => {
         if (Array.isArray(val)) {
             const values: SelectValue[] = val.map((v: SelectOption) => v.value);
             emit("input", values);
@@ -80,7 +80,7 @@ const currentValue = computed({
 /**
  * Ensures that an initial value is selected for non-optional inputs
  */
-function setInitialValue() {
+function setInitialValue(): void {
     if (props.value === null && !props.optional && hasOptions.value) {
         const initialValue = formattedOptions.value[0];
         if (initialValue) {
