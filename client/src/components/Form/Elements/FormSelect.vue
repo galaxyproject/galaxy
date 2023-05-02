@@ -22,10 +22,17 @@ const props = defineProps({
 });
 
 const formattedOptions = computed(() => {
-    return props.options.map((option) => ({
+    const result = props.options.map((option) => ({
         label: option[0],
         value: option[1],
     }));
+    if (props.optional && !props.multiple) {
+        result.unshift({
+            label: "Nothing selected",
+            value: null,
+        });
+    }
+    return result;
 });
 
 const hasOptions = computed(() => {
