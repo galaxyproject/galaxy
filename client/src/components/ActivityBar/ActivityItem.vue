@@ -51,7 +51,7 @@ function onClick(): void {
                     :id="id"
                     class="position-relative mb-1"
                     :class="{ 'nav-item-active': isActive }"
-                    :aria-label="title | l"
+                    :aria-label="title | localize"
                     @click="onClick">
                     <span v-if="progressStatus" class="progress">
                         <div
@@ -73,7 +73,7 @@ function onClick(): void {
                 </b-nav-item>
             </template>
             <div class="px-2 py-1">
-                <small v-if="tooltip">{{ tooltip | l }}</small>
+                <small v-if="tooltip">{{ tooltip | localize }}</small>
                 <small v-else>No tooltip available for this item</small>
                 <div v-if="options" class="nav-options p-1">
                     <router-link v-for="(option, index) in options" :key="index" :to="option.value">

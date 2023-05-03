@@ -23,7 +23,8 @@ function localizeDirective(localize) {
 }
 
 export const localizationPlugin = {
-    install(Vue, localize = localize) {
-        Vue.directive("localize", localizeDirective(localize));
+    install(Vue, l = localize) {
+        Vue.filter("localize", l)
+        Vue.directive("localize", localizeDirective(l));
     },
 };

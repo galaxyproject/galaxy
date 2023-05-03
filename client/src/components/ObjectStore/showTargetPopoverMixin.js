@@ -1,4 +1,5 @@
 import ShowSelectedObjectStore from "./ShowSelectedObjectStore";
+import { localize } from "utils/localization";
 
 export default {
     components: {
@@ -12,7 +13,7 @@ export default {
     },
     computed: {
         title() {
-            return this.l(`Preferred Target Object Store ${this.titleSuffix || ""}`);
+            return localize(`Preferred Target Object Store ${this.titleSuffix || ""}`);
         },
     },
 };

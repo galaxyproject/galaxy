@@ -1,11 +1,13 @@
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
+
 import { localize } from "utils/localization";
 
 //==============================================================================
 /** @class Model for a Galaxy user (including anonymous users).
  *  @name User
  */
+
 var User = Backbone.Model.extend(
     /** @lends User.prototype */ {
         /** API location for this resource */

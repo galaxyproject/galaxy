@@ -38,7 +38,7 @@ function updateFilter(newFilter: string) {
                             size="sm"
                             :class="filter && 'font-weight-bold'"
                             :value="value"
-                            :placeholder="'search datasets in selected histories' | l"
+                            :placeholder="'search datasets in selected histories' | localize"
                             data-description="filter text input"
                             @input="input"
                             @keyup.esc="updateFilter('')" />

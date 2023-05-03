@@ -18,7 +18,7 @@
                 size="sm"
                 :pressed="showAdvanced"
                 :variant="showAdvanced ? 'info' : 'secondary'"
-                :title="titleAdvanced | l"
+                :title="titleAdvanced | localize"
                 data-description="toggle advanced search"
                 @click="onToggle">
                 <icon v-if="showAdvanced" icon="angle-double-up" />
@@ -29,7 +29,7 @@
                 aria-haspopup="true"
                 class="search-clear"
                 size="sm"
-                :title="titleClear | l"
+                :title="titleClear | localize"
                 data-description="reset query"
                 @click="clearBox">
                 <icon v-if="loading" icon="spinner" spin />
