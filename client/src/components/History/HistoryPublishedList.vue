@@ -50,14 +50,14 @@ const localFilter = computed({
     },
 });
 
-const filterSettings = computed(() => filters.toAlias(filters.getFilters(filterText.value)));
+const filterSettings = computed(() => filters.toAlias(filters.getFiltersForText(filterText.value)));
 
 const updateFilter = (newVal) => {
     filterText.value = newVal.trim();
 };
 
 const onTagClick = (tag) => {
-    updateFilter(filters.updateFilterValue(filterText.value, "tag", tag.label));
+    updateFilter(filters.setFilterValue(filterText.value, "tag", tag.label));
 };
 
 const load = async () => {

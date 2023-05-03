@@ -120,7 +120,7 @@ export default {
     },
     computed: {
         filterSettings() {
-            return HistoryFilters.toAlias(HistoryFilters.getFilters(this.filterText));
+            return HistoryFilters.toAlias(HistoryFilters.getFiltersForText(this.filterText));
         },
         localFilter: {
             get() {

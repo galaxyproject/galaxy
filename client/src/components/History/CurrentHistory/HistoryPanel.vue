@@ -119,7 +119,7 @@
                                     :filterable="filterable"
                                     @tag-click="onTagClick"
                                     @tag-change="onTagChange"
-                                    @toggleHighlights="toggleHighlights"
+                                    @toggleHighlights="updateFilterVal('related', item.hid)"
                                     @update:expand-dataset="setExpanded(item, $event)"
                                     @update:selected="setSelected(item, $event)"
                                     @view-collection="$emit('view-collection', item, currentOffset)"
@@ -361,14 +361,11 @@ export default {
             item.tags = newTags;
         },
         onTagClick(tag) {
-            this.filterText = FilterClass.updateFilterValue(this.filterText, "tag", tag);
+            this.updateFilterVal("tag", tag);
         },
         onOperationError(error) {
             console.debug("HistoryPanel - Operation error.", error);
             this.operationError = error;
-        },
-        toggleHighlights(item) {
-            this.filterText = FilterClass.updateFilterValue(this.filterText, "related", item.hid);
         },
         onDragEnter(e) {
             this.dragTarget = e.target;
@@ -407,6 +404,9 @@ export default {
         },
         onError(error) {
             Toast.error(error);
+        },
+        updateFilterVal(newFilter, newVal) {
+            this.filterText = FilterClass.setFilterValue(this.filterText, newFilter, newVal);
         },
     },
 };
