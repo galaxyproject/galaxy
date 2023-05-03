@@ -378,7 +378,7 @@ def get_file_from_conda_package(
     """
 
     if isinstance(checklist, str):
-        checklist = set([checklist])
+        checklist = {checklist}
     else:
         checklist = set(checklist)
     try:

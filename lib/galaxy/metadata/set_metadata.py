@@ -479,13 +479,11 @@ def set_metadata_portable(
             else:
                 dataset.metadata.to_JSON_dict(filename_out)  # write out results of set_meta
 
-            json.dump(
-                (True, "Metadata has been set successfully"), open(filename_results_code, "wt+")
-            )  # setting metadata has succeeded
+            with open(filename_results_code, "w+") as tf:
+                json.dump((True, "Metadata has been set successfully"), tf)  # setting metadata has succeeded
         except Exception:
-            json.dump(
-                (False, traceback.format_exc()), open(filename_results_code, "wt+")
-            )  # setting metadata has failed somehow
+            with open(filename_results_code, "w+") as tf:
+                json.dump((False, traceback.format_exc()), tf)  # setting metadata has failed somehow
 
     if export_store:
         export_store.push_metadata_files()
