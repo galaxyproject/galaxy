@@ -43,7 +43,7 @@
             to="/user/cloud_auth" />
         <ConfigProvider v-slot="{ config }">
             <user-preferences-element
-                v-if="!config.enable_oidc"
+                v-if="config.enable_oidc"
                 id="manage-third-party-identities"
                 icon="fa-id-card-o"
                 title="Manage Third-Party Identities"

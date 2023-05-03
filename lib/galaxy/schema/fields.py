@@ -64,6 +64,21 @@ class DecodedDatabaseIdField(int, BaseDatabaseIdField):
         return cls.security.encode_id(v)
 
 
+class EncodedDatabaseIdField(str, BaseDatabaseIdField):
+    @classmethod
+    def validate(cls, v):
+        if isinstance(v, int):
+            return cls(cls.security.encode_id(v))
+        if not isinstance(v, str):
+            raise TypeError("String required")
+        cls.ensure_valid(v)
+        return cls(v)
+
+    @classmethod
+    def decode(cls, v) -> int:
+        return cls.security.decode_id(v)
+
+
 class LibraryFolderDatabaseIdField(int, BaseDatabaseIdField):
     @classmethod
     def validate(cls, v):
@@ -80,18 +95,23 @@ class LibraryFolderDatabaseIdField(int, BaseDatabaseIdField):
         return f"F{cls.security.encode_id(v)}"
 
 
-class EncodedDatabaseIdField(str, BaseDatabaseIdField):
+class EncodedLibraryFolderDatabaseIdField(str, BaseDatabaseIdField):
     @classmethod
     def validate(cls, v):
         if isinstance(v, int):
-            return cls(cls.security.encode_id(v))
+            return cls(f"F{cls.security.encode_id(v)}")
         if not isinstance(v, str):
             raise TypeError("String required")
-        cls.ensure_valid(v)
+        if not v.startswith("F"):
+            raise TypeError("Invalid library folder ID. Folder IDs must start with an 'F'")
+        cls.ensure_valid(v[1:])
         return cls(v)
 
     @classmethod
-    def decode(cls, v) -> int:
+    def decode(cls, v: str) -> int:
+        if not v.startswith("F"):
+            raise TypeError("Invalid library folder ID. Folder IDs must start with an 'F'")
+        v = v[1:]
         return cls.security.decode_id(v)
 
 

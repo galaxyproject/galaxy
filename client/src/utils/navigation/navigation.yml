@@ -11,6 +11,7 @@ _:  # global stuff
   selectors:
     editable_text: '.editable-text'
     tooltip_balloon: '.tooltip'
+    tooltip_inner: .tooltip-inner
     left_panel_drag: '#left > .unified-panel-footer > .drag'
     left_panel_collapse: '#left > .unified-panel-footer > .panel-collapse'
     right_panel_drag: '#right > .unified-panel-footer > .drag'
@@ -130,7 +131,10 @@ object_store_details:
   selectors:
     stored_by_name: '.display-os-by-name'
     badge_of_type: '.object-store-badge-wrapper [data-badge-type="${type}"]'
-
+    usage_details: '.quota-usage-bar'
+    usage_bytes: '.quota-usage'
+    usage_percent: '.quota-percent-text'
+    usage_progress: '.quota-usage-bar .progress'
 
 history_panel:
   menu:
@@ -207,7 +211,7 @@ history_panel:
       alltags: '${_} .stateless-tags .tag'
       metadata_file_download: '${_} [data-description="download ${metadata_name}"]'
 
-      dataset_operations_dropdown: '${_}  .dataset-actions'
+      dataset_operations: '${_} .dataset-actions'
 
   # re-usable history editor, scoped for use in different layout scenarios (multi, etc.)
   editor:
@@ -688,6 +692,7 @@ workflow_editor:
     connector_invalid_for: "#connection-${sink_id}-${source_id} .ribbon-inner-invalid"
     connector_destroy_callout: '.delete-terminal'
     save_button: '.editor-button-save'
+    save_workflow_confirmation_button: '#save-workflow-confirmation .btn-primary'
     state_modal_body: '.state-upgrade-modal'
     modal_button_continue: '.modal-footer .btn'
 
@@ -780,6 +785,13 @@ admin:
       repo_search: '#toolshed-repo-search'
       search_results: '#shed-search-results'
       upgrade_notification: '#repository-table .badge'
+
+  quota:
+    selectors:
+      add_new: '.quotas .manage-table-actions .action-button'
+      items: '.quotas tbody tr td'
+      add_form: "[url='/admin/create_quota']"
+      add_form_submit: "[url='/admin/create_quota'] #submit"
 
   index:
     selectors:

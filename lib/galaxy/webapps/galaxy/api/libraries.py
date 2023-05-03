@@ -170,10 +170,10 @@ class FastAPILibraries:
             title="Is Library Access",
             description="Indicates whether the roles available for the library access are requested.",
         ),
-        page: Optional[int] = Query(
+        page: int = Query(
             default=1, title="Page", description="The page number to retrieve when paginating the available roles."
         ),
-        page_limit: Optional[int] = Query(
+        page_limit: int = Query(
             default=10, title="Page Limit", description="The maximum number of permissions per page when paginating."
         ),
         q: Optional[str] = Query(

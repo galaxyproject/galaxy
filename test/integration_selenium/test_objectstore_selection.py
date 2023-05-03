@@ -1,8 +1,5 @@
 import string
-from typing import (
-    Optional,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING
 
 from galaxy_test.driver.integration_util import ConfiguresObjectStores
 from galaxy_test.selenium.framework import managed_history
@@ -96,10 +93,8 @@ class TestObjectStoreSelectionSeleniumIntegration(SeleniumIntegrationTestCase, C
     @selenium_test
     @managed_history
     def test_0_tools_to_default(self):
-        self._run_environment_test_tool()
-        self.history_panel_wait_for_hid_ok(1)
-        self.history_panel_click_item_title(hid=1)
-        self.history_panel_item_view_dataset_details(1)
+        self.run_environment_test_tool()
+        self.wait_for_hid_ok_and_open_details(1)
         details = self.components.object_store_details
         text = details.stored_by_name.wait_for_text()
         assert "High Performance Storage" in text
@@ -109,11 +104,8 @@ class TestObjectStoreSelectionSeleniumIntegration(SeleniumIntegrationTestCase, C
     @selenium_test
     @managed_history
     def test_1_tools_override_run(self):
-        self._run_environment_test_tool(select_storage="second")
-
-        self.history_panel_wait_for_hid_ok(1)
-        self.history_panel_click_item_title(hid=1)
-        self.history_panel_item_view_dataset_details(1)
+        self.run_environment_test_tool(select_storage="second")
+        self.wait_for_hid_ok_and_open_details(1)
         details = self.components.object_store_details
         text = details.stored_by_name.wait_for_text()
         assert "Second Tier Storage" in text
@@ -125,11 +117,9 @@ class TestObjectStoreSelectionSeleniumIntegration(SeleniumIntegrationTestCase, C
         self.navigate_to_user_preferences()
         preferences = self.components.preferences
         preferences.preferred_storage.wait_for_and_click()
-        self._select_storage("second")
-        self._run_environment_test_tool()
-        self.history_panel_wait_for_hid_ok(1)
-        self.history_panel_click_item_title(hid=1)
-        self.history_panel_item_view_dataset_details(1)
+        self.select_storage("second")
+        self.run_environment_test_tool()
+        self.wait_for_hid_ok_and_open_details(1)
         details = self.components.object_store_details
         text = details.stored_by_name.wait_for_text()
         assert "Second Tier Storage" in text
@@ -145,30 +135,75 @@ class TestObjectStoreSelectionSeleniumIntegration(SeleniumIntegrationTestCase, C
         self.navigate_to_user_preferences()
         preferences = self.components.preferences
         preferences.preferred_storage.wait_for_and_click()
-        self._select_storage("__null__")
+        self.select_storage("__null__")
 
-        self._run_environment_test_tool()
-        self.history_panel_wait_for_hid_ok(1)
-        self.history_panel_click_item_title(hid=1)
-        self.history_panel_item_view_dataset_details(1)
+        self.run_environment_test_tool()
+        self.wait_for_hid_ok_and_open_details(1)
         details = self.components.object_store_details
         text = details.stored_by_name.wait_for_text()
         assert "High Performance Storage" in text
         details.badge_of_type(type="faster").wait_for_present()
         details.badge_of_type(type="more_stable").wait_for_present()
 
-    def _run_environment_test_tool(self, inttest_value="42", select_storage: Optional[str] = None):
-        self.home()
-        self.tool_open("environment_variables")
-        if select_storage:
-            self.components.tool_form.storage_options.wait_for_and_click()
-            self._select_storage(select_storage)
-        self.tool_set_value("inttest", inttest_value)
-        self.tool_form_execute()
 
-    def _select_storage(self, storage_id: str) -> None:
-        selection_component = self.components.preferences.object_store_selection
-        selection_component.option_buttons.wait_for_present()
-        button = selection_component.option_button(object_store_id=storage_id)
-        button.wait_for_and_click()
-        selection_component.option_buttons.wait_for_absent_or_hidden()
+class TestMultipleQuotasSeleniumIntegration(SeleniumIntegrationTestCase, ConfiguresObjectStores):
+    dataset_populator: "SeleniumSessionDatasetPopulator"
+    run_as_admin = True
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        cls._configure_object_store(MSI_EXAMPLE_OBJECT_STORE_CONFIG_TEMPLATE, config)
+        config["enable_quotas"] = True
+
+    @selenium_test
+    def test_multiple_quota_sources_for_user(self):
+        expected_bytes = 17
+
+        # create a user to create a quota for...
+        user_email = self._get_random_email("quota_user")
+        self.register(user_email)
+        self.logout()
+
+        # give them a quota on second_tier of 10 times the
+        # size of the output of the test tool.
+
+        self.admin_login()
+        quota_name = self._get_random_name(prefix="secondquota")
+        self.create_quota(
+            name=quota_name,
+            amount=f"{expected_bytes * 10} B",
+            quota_source_label="second_tier",
+            user=user_email,
+        )
+        admin_component = self.components.admin
+        quota_component = admin_component.quota
+        quota_component.items.wait_for_element_count_of_at_least(1)
+        self.logout()
+
+        # run the tool twice - once in the default object store without
+        # quota configured and once in second_tier storage with a quota
+        # configured.
+        self.submit_login(user_email)
+        self.run_environment_test_tool()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.run_environment_test_tool(select_storage="second")
+
+        # Assert no quota information on an object store without
+        # quota configured and check the usage and percent on the
+        # the dataset stored in an object store with a configured
+        # quota.
+
+        details = self.components.object_store_details
+        self.wait_for_hid_ok_and_open_details(1)
+        details.usage_percent.assert_absent()
+
+        self.wait_for_hid_ok_and_open_details(2)
+
+        usage_summary_el = details.usage_details.wait_for_visible()
+        assert usage_summary_el.get_attribute("quota-source-label") == "second_tier"
+
+        bytes_el = details.usage_bytes.wait_for_visible()
+        assert bytes_el.get_attribute("data-quota-usage") == f"{expected_bytes}"
+
+        percent_el = details.usage_percent.wait_for_visible()
+        assert percent_el.get_attribute("data-quota-percent") == "10"

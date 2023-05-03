@@ -13,8 +13,9 @@ import {
     type PostJobActions,
     type PostJobAction,
 } from "@/stores/workflowStepStore";
-import { assertDefined } from "@/utils/assertions";
+import { assertDefined, ensureDefined } from "@/utils/assertions";
 import type { UseScrollReturn } from "@vueuse/core";
+import { NULL_COLLECTION_TYPE_DESCRIPTION, type CollectionTypeDescriptor } from "./modules/collectionTypeDescription";
 
 const props = defineProps<{
     output: OutputTerminalSource;
@@ -122,8 +123,7 @@ function onToggleActive() {
 
 function onToggleVisible() {
     const actionKey = `HideDatasetAction${props.output.name}`;
-    const step = stepStore.getStep(stepId.value);
-    assertDefined(step);
+    const step = { ...ensureDefined(stepStore.getStep(stepId.value)) };
     if (isVisible.value) {
         step.post_job_actions = {
             ...step.post_job_actions,
@@ -205,6 +205,50 @@ const terminalClass = computed(() => {
     return cls;
 });
 
+function collectionTypeToDescription(collectionTypeDescription: CollectionTypeDescriptor) {
+    let collectionDescription = collectionTypeDescription.collectionType;
+    if (
+        collectionTypeDescription &&
+        collectionTypeDescription.isCollection &&
+        collectionTypeDescription.collectionType
+    ) {
+        // we'll give a prettier label to the must common nested lists
+        switch (collectionTypeDescription.collectionType) {
+            case "list:paired": {
+                collectionDescription = "list of pairs dataset collection";
+                break;
+            }
+            case "list:list": {
+                collectionDescription = "list of lists dataset collection";
+                break;
+            }
+            default: {
+                if (collectionTypeDescription.rank > 1) {
+                    collectionDescription = `dataset collection with ${collectionTypeDescription.rank} levels of nesting`;
+                }
+                break;
+            }
+        }
+    }
+    return collectionDescription;
+}
+
+const outputDetails = computed(() => {
+    let collectionType = "collectionType" in terminal.value && terminal.value.collectionType;
+    const outputType =
+        collectionType && collectionType.isCollection && collectionType.collectionType
+            ? `output is ${collectionTypeToDescription(collectionType)}`
+            : `output is dataset`;
+    if (isMultiple.value) {
+        if (!collectionType) {
+            collectionType = NULL_COLLECTION_TYPE_DESCRIPTION;
+        }
+        const effectiveOutputType = terminal.value.mapOver.append(collectionType);
+        return `${outputType} and mapped-over to produce a ${collectionTypeToDescription(effectiveOutputType)} `;
+    }
+    return outputType;
+});
+
 onBeforeUnmount(() => {
     stateStore.deleteOutputTerminalPosition(props.stepId, props.output.name);
 });
@@ -246,6 +290,7 @@ onBeforeUnmount(() => {
             @move="onMove">
             <div
                 ref="icon"
+                v-b-tooltip.hover="outputDetails"
                 class="icon prevent-zoom"
                 tabindex="0"
                 :aria-label="`Connect output ${output.name} to input. Press space to see a list of available inputs`"

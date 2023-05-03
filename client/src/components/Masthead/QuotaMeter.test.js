@@ -97,8 +97,8 @@ describe("QuotaMeter.vue", () => {
             const store = createStore(user, config);
             const wrapper = mount(QuotaMeter, { localVue, store });
 
-            expect(wrapper.find(".quota-meter > a").text()).toBe("Using 7 KB");
-            expect(wrapper.find(".quota-meter > a").attributes("title")).not.toContain("7 KB");
+            expect(wrapper.find(".quota-text > a").text()).toBe("Using 7 KB");
+            expect(wrapper.find(".quota-text > a").attributes("title")).not.toContain("7 KB");
         }
 
         {
@@ -111,8 +111,8 @@ describe("QuotaMeter.vue", () => {
             const store = createStore(user, config);
             const wrapper = mount(QuotaMeter, { localVue, store });
 
-            expect(wrapper.find(".quota-meter > a").text()).toBe("Using 21 KB");
-            expect(wrapper.find(".quota-meter > a").attributes("title")).not.toContain("21 KB");
+            expect(wrapper.find(".quota-text > a").text()).toBe("Using 21 KB");
+            expect(wrapper.find(".quota-text > a").attributes("title")).not.toContain("21 KB");
         }
     });
 });

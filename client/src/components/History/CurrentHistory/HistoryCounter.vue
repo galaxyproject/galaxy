@@ -7,6 +7,7 @@
                 variant="link"
                 size="sm"
                 class="rounded-0 text-decoration-none"
+                :disabled="!showControls"
                 @click="onDashboard">
                 <icon icon="database" />
                 <span>{{ historySize | niceFileSize }}</span>
@@ -49,6 +50,7 @@
                         variant="link"
                         size="sm"
                         class="rounded-0 text-decoration-none"
+                        :pressed="filterText == 'deleted:true'"
                         @click="setFilter('deleted:true')">
                         <icon icon="trash" />
                         <span>{{ numItemsDeleted }}</span>
@@ -60,6 +62,7 @@
                         variant="link"
                         size="sm"
                         class="rounded-0 text-decoration-none"
+                        :pressed="filterText == 'visible:false'"
                         @click="setFilter('visible:false')">
                         <icon icon="eye-slash" />
                         <span>{{ numItemsHidden }}</span>
@@ -69,7 +72,7 @@
                         :title="reloadButtonTitle"
                         :variant="reloadButtonVariant"
                         size="sm"
-                        class="rounded-0 text-decoration-none"
+                        class="rounded-0 text-decoration-none history-refresh-button"
                         @click="reloadContents()">
                         <span :class="reloadButtonCls" />
                     </b-button>
@@ -117,6 +120,8 @@ export default {
         history: { type: Object, required: true },
         isWatching: { type: Boolean, default: false },
         lastChecked: { type: Date, default: null },
+        filterText: { type: String, default: "" },
+        showControls: { type: Boolean, default: false },
     },
     data() {
         return {
@@ -138,6 +143,20 @@ export default {
         },
         setFilter(newFilterText) {
             this.$emit("update:filter-text", newFilterText);
+        },
+        toggleDeleted() {
+            if (this.filterText === "deleted:true") {
+                this.setFilter("");
+            } else {
+                this.setFilter("deleted:true");
+            }
+        },
+        toggleHidden() {
+            if (this.filterText === "visible:false") {
+                this.setFilter("");
+            } else {
+                this.setFilter("visible:false");
+            }
         },
         updateTime() {
             const diffToNow = formatDistanceToNowStrict(this.lastChecked, { addSuffix: true, includeSeconds: true });

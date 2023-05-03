@@ -56,6 +56,12 @@ from galaxy import (
 from galaxy.model import tool_shed_install
 from galaxy.schema import ValueFilterQueryParams
 from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.storage_cleaner import (
+    CleanableItemsSummary,
+    StorageItemsCleanupResult,
+    StoredItem,
+    StoredItemOrderBy,
+)
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import (
     BasicSharedApp,
@@ -1297,4 +1303,33 @@ class SortableManager:
     def parse_order_by(self, order_by_string, default=None):
         """Return an ORM compatible order_by clause using the given string (i.e.: 'name-dsc,create_time').
         This must be implemented by the manager."""
+        raise NotImplementedError
+
+
+class StorageCleanerManager(Protocol):
+    """
+    Interface for monitoring storage usage and managing deletion/purging of objects that consume user's storage space.
+    """
+
+    sort_map: Dict[StoredItemOrderBy, Any]
+
+    def get_discarded_summary(self, user: model.User) -> CleanableItemsSummary:
+        """Returns information with the total storage space taken by discarded items for the given user.
+
+        Discarded items are those that are deleted but not purged yet.
+        """
+        raise NotImplementedError
+
+    def get_discarded(
+        self,
+        user: model.User,
+        offset: Optional[int],
+        limit: Optional[int],
+        order: Optional[StoredItemOrderBy],
+    ) -> List[StoredItem]:
+        """Returns a paginated list of items deleted by the given user that are not yet purged."""
+        raise NotImplementedError
+
+    def cleanup_items(self, user: model.User, item_ids: Set[int]) -> StorageItemsCleanupResult:
+        """Purges the given list of items by ID. The items must be owned by the user."""
         raise NotImplementedError

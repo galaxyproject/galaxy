@@ -1,6 +1,6 @@
 # Security considerations
 
-### Protect Galaxy against data loss due to misbehaving tools
+## Protect Galaxy against data loss due to misbehaving tools
 
 Tools have access to the paths of input and output data sets which are stored in
 ``file_path``. If tools use reference data stored in data tables, they have access also to data in

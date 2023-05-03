@@ -114,10 +114,10 @@ class FastAPILibraryFolders:
             title="Scope",
             description="The scope of the permissions to retrieve. Either the `current` permissions or the `available`.",
         ),
-        page: Optional[int] = Query(
+        page: int = Query(
             default=1, title="Page", description="The page number to retrieve when paginating the available roles."
         ),
-        page_limit: Optional[int] = Query(
+        page_limit: int = Query(
             default=10, title="Page Limit", description="The maximum number of permissions per page when paginating."
         ),
         q: Optional[str] = Query(

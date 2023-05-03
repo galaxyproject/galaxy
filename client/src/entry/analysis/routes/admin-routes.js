@@ -25,6 +25,7 @@ export default [
     {
         path: "/admin",
         component: Admin,
+        meta: { requiresAdmin: true }, // All children of this route require admin
         children: [
             {
                 path: "",

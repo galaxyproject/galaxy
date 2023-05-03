@@ -44,6 +44,7 @@ from galaxy.schema.tasks import (
     ImportModelStoreTaskRequest,
     MaterializeDatasetInstanceTaskRequest,
     PrepareDatasetCollectionDownload,
+    PurgeDatasetsTaskRequest,
     SetupHistoryExportJob,
     WriteHistoryContentTo,
     WriteHistoryTo,
@@ -84,6 +85,11 @@ def recalculate_user_disk_usage(
 def purge_hda(hda_manager: HDAManager, hda_id: int):
     hda = hda_manager.by_id(hda_id)
     hda_manager._purge(hda)
+
+
+@galaxy_task(ignore_result=True, action="completely removes a set of datasets from the object_store")
+def purge_datasets(dataset_manager: DatasetManager, request: PurgeDatasetsTaskRequest):
+    dataset_manager.purge_datasets(request)
 
 
 @galaxy_task(ignore_result=True, action="materializing dataset instance")

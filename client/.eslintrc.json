@@ -18,6 +18,7 @@
         "prefer-const": "error",
         "one-var": ["error", "never"],
         "curly": "error",
+        "no-throw-literal": "error",
 
         "vue/valid-v-slot": "error",
         "vue/v-slot-style": ["error", { "atComponent": "v-slot", "default": "v-slot", "named": "longform" }],
@@ -86,6 +87,9 @@
                 "plugin:@typescript-eslint/eslint-recommended",
                 "plugin:@typescript-eslint/recommended"
             ],
+            "rules": {
+                "@typescript-eslint/no-throw-literal": "error"
+            },
             "parser": "@typescript-eslint/parser",
             "parserOptions": {
                 "ecmaFeatures": { "jsx": true },

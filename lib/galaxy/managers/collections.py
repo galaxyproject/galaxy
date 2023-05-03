@@ -786,7 +786,7 @@ class DatasetCollectionManager:
             instance_id
         )
         if not collection_instance:
-            raise RequestParameterInvalidException(f"History dataset collection association {id} not found")
+            raise RequestParameterInvalidException("History dataset collection association not found")
         history = getattr(trans, "history", collection_instance.history)
         if check_ownership:
             self.history_manager.error_unless_owner(collection_instance.history, trans.user, current_history=history)
@@ -808,7 +808,7 @@ class DatasetCollectionManager:
             instance_id
         )
         if not collection_instance:
-            raise RequestParameterInvalidException(f"Library dataset collection association {id} not found")
+            raise RequestParameterInvalidException("Library dataset collection association not found")
         if check_accessible:
             if not trans.app.security_agent.can_access_library_item(
                 trans.get_current_user_roles(), collection_instance, trans.user

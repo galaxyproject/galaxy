@@ -293,24 +293,28 @@ class RefactorActionExecutionMessage(BaseModel):
     step_label: Optional[str] = Field(description=f"Reference to the step the message refers to. ${INPUT_REFERENCE}")
     order_index: Optional[int] = Field(description=f"Reference to the step the message refers to. ${INPUT_REFERENCE}")
     input_name: Optional[str] = Field(
+        None,
         description=f"""If this message is about an input to a step,
-this field describes the target input name. ${INPUT_NAME_DESCRIPTION}"""
+this field describes the target input name. ${INPUT_NAME_DESCRIPTION}""",
     )
     output_name: Optional[str] = Field(
+        None,
         description="""If this message is about an output to a step,
 this field describes the target output name. The output name as defined by the workflow module corresponding to the step being referenced.
-"""
+""",
     )
     from_step_label: Optional[str] = Field(
+        None,
         description="""For dropped connections these optional attributes refer to the output
-side of the connection that was dropped."""
+side of the connection that was dropped.""",
     )
     from_order_index: Optional[int] = Field(
+        None,
         description="""For dropped connections these optional attributes refer to the output
-side of the connection that was dropped."""
+side of the connection that was dropped.""",
     )
     output_label: Optional[str] = Field(
-        description="If the message_type is workflow_output_drop_forced, this is the output label dropped."
+        None, description="If the message_type is workflow_output_drop_forced, this is the output label dropped."
     )
 
 

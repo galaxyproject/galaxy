@@ -180,6 +180,9 @@ gravity:
     # Set to true to start gx-it-proxy
     # enable: false
 
+    # gx-it-proxy version
+    # version: '>=0.0.5'
+
     # Public-facing IP of the proxy
     # ip: localhost
 
@@ -1244,11 +1247,6 @@ galaxy:
   # <config_dir>.
   #trs_servers_config_file: trs_servers_conf.yml
 
-  # Server-wide default selection to use the legacy history during the
-  # transition period, after which this option will disappear.  Users
-  # will remain able to swap back and forth per their preference.
-  #use_legacy_history: false
-
   # Location of the configuration file containing extra user
   # preferences.
   # The value of this option will be resolved with respect to
@@ -1671,6 +1669,11 @@ galaxy:
   # transaction created will have that percentage chance of being sent
   # to Sentry. A value higher than 0 is required to analyze performance.
   #sentry_traces_sample_rate: 0.0
+
+  # Use this option to provide the path to location of the CA
+  # (Certificate Authority) certificate file if the sentry server uses a
+  # self-signed certificate.
+  #sentry_ca_certs: null
 
   # Log to statsd Statsd is an external statistics aggregator
   # (https://github.com/etsy/statsd) Enabling the following options will

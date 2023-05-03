@@ -195,7 +195,10 @@ class UserVaultWrapper(Vault):
         self.user = user
 
     def read_secret(self, key: str) -> Optional[str]:
-        return self.vault.read_secret(f"user/{self.user.id}/{key}")
+        if self.user:
+            return self.vault.read_secret(f"user/{self.user.id}/{key}")
+        else:
+            return None
 
     def write_secret(self, key: str, value: str) -> None:
         return self.vault.write_secret(f"user/{self.user.id}/{key}", value)

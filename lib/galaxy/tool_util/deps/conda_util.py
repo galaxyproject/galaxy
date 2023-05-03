@@ -430,12 +430,12 @@ class CondaTarget:
     def __str__(self) -> str:
         attributes = f"package={self.package}"
         if self.version is not None:
-            attributes = f"{self.package},version={self.version}"
+            attributes += f",version={self.version}"
         else:
-            attributes = f"{self.package},unversioned"
+            attributes += ",unversioned"
 
         if self.channel:
-            attributes = "%s,channel=%s" % self.channel
+            attributes += f",channel={self.channel}"
 
         return f"CondaTarget[{attributes}]"
 

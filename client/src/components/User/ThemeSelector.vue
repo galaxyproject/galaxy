@@ -80,6 +80,7 @@ watch(
     background: var(--masthead-link-active);
 }
 img {
+    filter: $text-shadow;
     cursor: pointer;
     display: inline;
     border: none;

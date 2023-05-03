@@ -308,7 +308,7 @@ const View = Backbone.View.extend({
         // prepare extension component of error message
         const data = self.model.get("data");
         const formats = this.model.get("extensions");
-        const extensions = Utils.textify(formats);
+        const extensions = Array.isArray(formats) ? Utils.textify(formats) : "";
         const src_labels = this.model.get("src_labels");
 
         // build radio button for data selectors

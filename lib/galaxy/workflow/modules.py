@@ -805,7 +805,8 @@ class SubWorkflowModule(WorkflowModule):
             if step.type == "tool":
                 assert isinstance(step.module, ToolModule)
                 tool = step.module.tool
-                assert tool
+                if tool is None:
+                    raise ToolMissingException("Tool in subworkflow missing.", tool_id=step.module.tool_id)
                 tool_inputs = step.module.state
 
                 def callback(input, prefixed_name, prefixed_label, value=None, **kwds):
