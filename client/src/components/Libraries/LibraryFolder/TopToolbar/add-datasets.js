@@ -1,6 +1,6 @@
 import { getGalaxyInstance } from "app";
 import { Toast } from "composables/toast";
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import mod_library_model from "./library-model";
 import _ from "underscore";
 import Backbone from "backbone";
@@ -184,7 +184,7 @@ var AddDatasets = Backbone.View.extend({
                 var template_modal = this.templateAddFilesFromHistory();
                 this.modal.show({
                     closing_events: true,
-                    title: _l("Adding datasets from your history"),
+                    title: localize("Adding datasets from your history"),
                     body: template_modal({
                         histories: this.histories.models,
                     }),
@@ -224,7 +224,7 @@ var AddDatasets = Backbone.View.extend({
         this.modal = Galaxy.modal;
         this.modal.show({
             closing_events: true,
-            title: _l("Please select folders or files"),
+            title: localize("Please select folders or files"),
             body: template_modal({}),
             buttons: {
                 Import: () => {
@@ -430,7 +430,7 @@ var AddDatasets = Backbone.View.extend({
         var template_modal = this.templateImportPathModal();
         this.modal.show({
             closing_events: true,
-            title: _l("Please enter paths to import"),
+            title: localize("Please enter paths to import"),
             body: template_modal({}),
             buttons: {
                 Import: () => {

@@ -1,4 +1,4 @@
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import Vue from "vue";
 import { collectionCreatorModalSetup } from "./common/modal";
 
@@ -7,13 +7,13 @@ function ruleBasedCollectionCreatorModal(elements, elementsType, importType, opt
     // elementsType in [raw, ftp, datasets]
     let title;
     if (importType == "datasets") {
-        title = _l("Build Rules for Uploading Datasets");
+        title = localize("Build Rules for Uploading Datasets");
     } else if (elementsType == "collection_contents") {
-        title = _l("Build Rules for Applying to Existing Collection");
+        title = localize("Build Rules for Applying to Existing Collection");
     } else if (elementsType == "datasets" || elementsType == "library_datasets") {
-        title = _l("Build Rules for Creating Collection(s)");
+        title = localize("Build Rules for Creating Collection(s)");
     } else {
-        title = _l("Build Rules for Uploading Collections");
+        title = localize("Build Rules for Uploading Collections");
     }
     options.title = title;
     // Prevents user from accidentally closing the modal by clicking outside the bounds

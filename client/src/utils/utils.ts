@@ -7,7 +7,7 @@ import axios, { type AxiosError, type AxiosResponse } from "axios";
 
 import { getAppRoot } from "@/onload/loadConfig";
 import { getGalaxyInstance } from "@/app";
-import _l from "@/utils/localization";
+import { localize } from "@/utils/localization";
 
 /** Object with any internal structure. More specific key than built-in Object type */
 export type AnyObject = Record<string | number | symbol, any>;
@@ -304,7 +304,7 @@ export function appendScriptStyle(data: Readonly<{ script?: string; styles?: str
 export function setWindowTitle(title: string): void {
     const Galaxy = getGalaxyInstance();
     if (title) {
-        window.document.title = `Galaxy ${Galaxy.config.brand ? ` | ${Galaxy.config.brand}` : ""} | ${_l(title)}`;
+        window.document.title = `Galaxy ${Galaxy.config.brand ? ` | ${Galaxy.config.brand}` : ""} | ${localize(title)}`;
     } else {
         window.document.title = `Galaxy ${Galaxy.config.brand ? ` | ${Galaxy.config.brand}` : ""}`;
     }

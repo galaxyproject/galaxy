@@ -407,7 +407,7 @@
     </div>
 </template>
 <script>
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import mixin from "./common/mixin";
 import UnpairedDatasetElementView from "./UnpairedDatasetElementView";
 import levenshteinDistance from "utils/levenshtein";
@@ -433,10 +433,10 @@ export default {
     data: function () {
         return {
             state: "build", //error, duplicates
-            dragToChangeTitle: _l("Drag to change"),
-            chooseFilterTitle: _l("Choose from common filters"),
-            filterTextPlaceholder: _l("Filter text"),
-            filterTextTitle: _l("Use this box to filter elements, using simple matching or regular expressions."),
+            dragToChangeTitle: localize("Drag to change"),
+            chooseFilterTitle: localize("Choose from common filters"),
+            filterTextPlaceholder: localize("Filter text"),
+            filterTextTitle: localize("Use this box to filter elements, using simple matching or regular expressions."),
             pairedElements: [],
             unpairedElements: [],
             commonFilters: {
@@ -516,12 +516,12 @@ export default {
                 },
             }),
             strategy: null,
-            errorText: _l("Galaxy could not be reached and may be updating.  Try again in a few minutes."),
-            invalidHeader: _l("The following selections could not be included due to problems:"),
-            allInvalidElementsPartOne: _l("At least two elements are needed for the collection. You may need to"),
-            noElementsHeader: _l("No datasets were selected"),
-            cancelText: _l("cancel"),
-            allInvalidElementsPartTwo: _l("and reselect new elements."),
+            errorText: localize("Galaxy could not be reached and may be updating.  Try again in a few minutes."),
+            invalidHeader: localize("The following selections could not be included due to problems:"),
+            allInvalidElementsPartOne: localize("At least two elements are needed for the collection. You may need to"),
+            noElementsHeader: localize("No datasets were selected"),
+            cancelText: localize("cancel"),
+            allInvalidElementsPartTwo: localize("and reselect new elements."),
             duplicatePairNames: [],
         };
     },
@@ -601,7 +601,7 @@ export default {
     methods: {
         l(str) {
             // _l conflicts private methods of Vue internals, expose as l instead
-            return _l(str);
+            return localize(str);
         },
         removeExtensionsToggle: function () {
             this.removeExtensions = !this.removeExtensions;
@@ -656,14 +656,14 @@ export default {
         /** describe what is wrong with a particular element if anything */
         _isElementInvalid: function (element) {
             if (element.history_content_type === "dataset_collection") {
-                return _l("is a collection, this is not allowed");
+                return localize("is a collection, this is not allowed");
             }
             var validState = element.state === STATES.OK || STATES.NOT_READY_STATES.includes(element.state);
             if (!validState) {
-                return _l("has errored, is paused, or is not accessible");
+                return localize("has errored, is paused, or is not accessible");
             }
             if (element.deleted || element.purged) {
-                return _l("has been deleted or purged");
+                return localize("has been deleted or purged");
             }
             return null;
         },

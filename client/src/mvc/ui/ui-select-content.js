@@ -1,7 +1,7 @@
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 import Select from "mvc/ui/ui-select-default";
@@ -16,7 +16,7 @@ const Configurations = {
         {
             src: "hda",
             icon: "fa-file-o",
-            tooltip: _l("Single dataset"),
+            tooltip: localize("Single dataset"),
             library: true,
             multiple: false,
             batch: Batch.DISABLED,
@@ -24,14 +24,14 @@ const Configurations = {
         {
             src: "hda",
             icon: "fa-files-o",
-            tooltip: _l("Multiple datasets"),
+            tooltip: localize("Multiple datasets"),
             multiple: true,
             batch: Batch.LINKED,
         },
         {
             src: "hdca",
             icon: "fa-folder-o",
-            tooltip: _l("Dataset collection"),
+            tooltip: localize("Dataset collection"),
             multiple: false,
             batch: Batch.LINKED,
         },
@@ -40,14 +40,14 @@ const Configurations = {
         {
             src: "hda",
             icon: "fa-files-o",
-            tooltip: _l("Multiple datasets"),
+            tooltip: localize("Multiple datasets"),
             multiple: true,
             batch: Batch.DISABLED,
         },
         {
             src: "hdca",
             icon: "fa-folder-o",
-            tooltip: _l("Dataset collections"),
+            tooltip: localize("Dataset collections"),
             multiple: true,
             batch: Batch.DISABLED,
         },
@@ -56,7 +56,7 @@ const Configurations = {
         {
             src: "hdca",
             icon: "fa-folder-o",
-            tooltip: _l("Dataset collection"),
+            tooltip: localize("Dataset collection"),
             multiple: false,
             batch: Batch.DISABLED,
         },
@@ -65,7 +65,7 @@ const Configurations = {
         {
             src: "hda",
             icon: "fa-file-o",
-            tooltip: _l("Single dataset"),
+            tooltip: localize("Single dataset"),
             multiple: false,
             batch: Batch.DISABLED,
         },
@@ -74,7 +74,7 @@ const Configurations = {
         {
             src: "hda",
             icon: "fa-files-o",
-            tooltip: _l("Multiple datasets"),
+            tooltip: localize("Multiple datasets"),
             multiple: true,
             batch: Batch.DISABLED,
         },
@@ -83,7 +83,7 @@ const Configurations = {
         {
             src: "hdca",
             icon: "fa-folder-o",
-            tooltip: _l("Dataset collection"),
+            tooltip: localize("Dataset collection"),
             multiple: false,
             batch: Batch.DISABLED,
         },
@@ -92,14 +92,14 @@ const Configurations = {
         {
             src: "hda",
             icon: "fa-file-o",
-            tooltip: _l("Single dataset"),
+            tooltip: localize("Single dataset"),
             multiple: false,
             batch: Batch.DISABLED,
         },
         {
             src: "hda",
             icon: "fa-files-o",
-            tooltip: _l("Multiple datasets"),
+            tooltip: localize("Multiple datasets"),
             multiple: true,
             batch: Batch.ENABLED,
         },
@@ -108,14 +108,14 @@ const Configurations = {
         {
             src: "hdca",
             icon: "fa-folder-o",
-            tooltip: _l("Dataset collection"),
+            tooltip: localize("Dataset collection"),
             multiple: false,
             batch: Batch.DISABLED,
         },
         {
             src: "hdca",
             icon: "fa-folder",
-            tooltip: _l("Multiple collections"),
+            tooltip: localize("Multiple collections"),
             multiple: true,
             batch: Batch.ENABLED,
         },

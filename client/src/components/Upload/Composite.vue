@@ -59,7 +59,7 @@
 </template>
 
 <script>
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import _ from "underscore";
 import { refreshContentsWrapper } from "utils/data";
 import UploadRow from "mvc/upload/composite/composite-row";
@@ -77,8 +77,8 @@ export default {
             listGenomes: [],
             running: false,
             showHelper: true,
-            btnResetTitle: _l("Reset"),
-            btnStartTitle: _l("Start"),
+            btnResetTitle: localize("Reset"),
+            btnStartTitle: localize("Start"),
             readyStart: false,
         };
     },

@@ -1,5 +1,5 @@
 /** This class creates a ui component which enables the dynamic creation of portlets */
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
@@ -11,7 +11,7 @@ export var View = Backbone.View.extend({
     initialize: function (options) {
         this.list = {};
         this.options = Utils.merge(options, {
-            title: _l("Repeat"),
+            title: localize("Repeat"),
             empty_text: "Not available.",
             max: null,
             min: null,
@@ -47,7 +47,7 @@ export var View = Backbone.View.extend({
         }
         var button_delete = new Ui.Button({
             icon: "fa-trash-o",
-            tooltip: _l("Delete this repeat block"),
+            tooltip: localize("Delete this repeat block"),
             cls: "ui-button-icon-plain form-repeat-delete",
             onclick: function () {
                 if (options.ondel) {
@@ -57,7 +57,7 @@ export var View = Backbone.View.extend({
         });
         var portlet = new Portlet.View({
             id: options.id,
-            title: _l("placeholder"),
+            title: localize("placeholder"),
             cls: options.cls || "ui-portlet-section",
             operations: { button_delete: button_delete },
         });

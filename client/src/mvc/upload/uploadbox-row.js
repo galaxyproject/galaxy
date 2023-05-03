@@ -1,7 +1,7 @@
 /**
  * shared functionality between default-row and collection-row.
  */
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import Backbone from "backbone";
 import Utils from "utils/utils";
 import Popover from "mvc/ui/ui-popover";
@@ -19,7 +19,7 @@ export default Backbone.View.extend({
     _setupSettings: function () {
         // append popup to settings icon
         this.settings = new Popover({
-            title: _l("Upload configuration"),
+            title: localize("Upload configuration"),
             container: this.$(".upload-settings"),
             placement: "bottom",
         });

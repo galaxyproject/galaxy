@@ -84,7 +84,7 @@
     </div>
 </template>
 <script>
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import { Services } from "./services";
 import { getAppRoot } from "onload/loadConfig";
 import { storedWorkflowsProvider } from "components/providers/StoredWorkflowsProvider";
@@ -176,26 +176,26 @@ export default {
             fields: [
                 {
                     key: "name",
-                    label: _l("Name"),
+                    label: localize("Name"),
                     sortable: true,
                 },
                 {
                     key: "tags",
-                    label: _l("Tags"),
+                    label: localize("Tags"),
                     sortable: false,
                 },
                 {
-                    label: _l("Updated"),
+                    label: localize("Updated"),
                     key: "update_time",
                     sortable: true,
                 },
                 {
-                    label: _l("Sharing"),
+                    label: localize("Sharing"),
                     key: "published",
                     sortable: false,
                 },
                 {
-                    label: _l("Bookmarked"),
+                    label: localize("Bookmarked"),
                     key: "show_in_tool_panel",
                     sortable: false,
                 },
@@ -204,7 +204,7 @@ export default {
                     label: "",
                 },
             ],
-            titleSearch: _l("Search Workflows"),
+            titleSearch: localize("Search Workflows"),
             workflowItemsModel: [],
             workflowItems: [],
             helpHtml: helpHtml,

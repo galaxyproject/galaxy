@@ -1,10 +1,10 @@
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import Vue from "vue";
 import { collectionCreatorModalSetup } from "./common/modal";
 
 function pairCollectionCreatorModal(elements, options) {
     options = options || {};
-    options.title = _l("Create a collection from a pair of datasets");
+    options.title = localize("Create a collection from a pair of datasets");
     const { promise, showEl } = collectionCreatorModalSetup(options);
     return import(/* webpackChunkName: "PairCollectionCreator" */ "./PairCollectionCreator.vue").then((module) => {
         var pairCollectionCreatorInstance = Vue.extend(module.default);

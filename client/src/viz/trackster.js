@@ -7,7 +7,7 @@ import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import tracks from "viz/trackster/tracks";
 import visualization from "viz/visualization";
 import IconButton from "mvc/ui/icon-button";
@@ -98,7 +98,7 @@ export class TracksterUI extends Backbone.Model {
             .error(() => {
                 // show dialog
                 Galaxy.modal.show({
-                    title: _l("Could Not Save"),
+                    title: localize("Could Not Save"),
                     body: "Could not save visualization. Please try again later.",
                     buttons: {
                         Cancel: () => {
@@ -117,7 +117,7 @@ export class TracksterUI extends Backbone.Model {
             [
                 {
                     icon_class: "plus-button",
-                    title: _l("Add tracks"),
+                    title: localize("Add tracks"),
                     on_click: () => {
                         visualization.select_datasets({ dbkey: this.view.dbkey }, (new_tracks) => {
                             _.each(new_tracks, (track) => {
@@ -128,7 +128,7 @@ export class TracksterUI extends Backbone.Model {
                 },
                 {
                     icon_class: "block--plus",
-                    title: _l("Add group"),
+                    title: localize("Add group"),
                     on_click: () => {
                         this.view.add_drawable(
                             new tracks.DrawableGroup(this.view, this.view, {
@@ -139,7 +139,7 @@ export class TracksterUI extends Backbone.Model {
                 },
                 {
                     icon_class: "globe",
-                    title: _l("Circster"),
+                    title: localize("Circster"),
                     on_click: () => {
                         const vis_id = this.view.vis_id;
                         var circster_q = "id=" + vis_id;
@@ -151,14 +151,14 @@ export class TracksterUI extends Backbone.Model {
                 },
                 {
                     icon_class: "disk--arrow",
-                    title: _l("Save"),
+                    title: localize("Save"),
                     on_click: () => {
                         this.save_viz();
                     },
                 },
                 {
                     icon_class: "cross-circle",
-                    title: _l("Close"),
+                    title: localize("Close"),
                     on_click: () => {
                         this.handle_unsaved_changes(this.view);
                     },
@@ -334,7 +334,7 @@ export class TracksterUI extends Backbone.Model {
         const Galaxy = getGalaxyInstance();
         if (view.has_changes) {
             Galaxy.modal.show({
-                title: _l("Close visualization"),
+                title: localize("Close visualization"),
                 body: "There are unsaved changes to your visualization which will be lost if you do not save them.",
                 buttons: {
                     Cancel: () => {
@@ -440,7 +440,7 @@ export class TracksterUIView extends Backbone.View {
             embedded: true,
         });
         Galaxy.modal.show({
-            title: _l("Add Data to Saved Visualization"),
+            title: localize("Add Data to Saved Visualization"),
             body: tracks_grid.$el,
             buttons: {
                 Cancel: () => {
@@ -494,7 +494,7 @@ export class TracksterUIView extends Backbone.View {
             success: (response) => {
                 // show dialog
                 Galaxy.modal.show({
-                    title: _l("New Visualization"),
+                    title: localize("New Visualization"),
                     body: this.template_view_new(response),
                     buttons: {
                         Cancel: () => {

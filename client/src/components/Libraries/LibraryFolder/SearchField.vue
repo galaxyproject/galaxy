@@ -11,7 +11,7 @@
 </template>
 
 <script>
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 
 export default {
     name: "SearchField",
@@ -26,7 +26,7 @@ export default {
         return {
             search: "",
             awaitingSearch: false,
-            titleSearch: _l("Search"),
+            titleSearch: localize("Search"),
         };
     },
     watch: {

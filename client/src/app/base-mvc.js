@@ -1,7 +1,7 @@
 import $ from "jquery";
 import _ from "underscore";
 import Backbone from "backbone";
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 
 //==============================================================================
 /** Backbone model that syncs to the browser's sessionStorage API.
@@ -503,14 +503,14 @@ var SelectableViewMixin = {
  *
  *  The template strings can access:
  *      the json/model hash using model ("<%- model.myAttr %>) using the jsonNamespace above
- *      _l: the localizer function
+ *      localize: the localizer function
  *      view (if passed): ostensibly, the view using the template (handy for view instance vars)
  *      Because they're namespaced, undefined attributes will not throw an error.
  *
  *  @example:
  *      templateBler : BASE_MVC.wrapTemplate([
  *          '<div class="myclass <%- mynamespace.modelClass %>">',
- *              '<span><% print( _l( mynamespace.message ) ); %>:<%= view.status %></span>'
+ *              '<span><% print( localize( mynamespace.message ) ); %>:<%= view.status %></span>'
  *          '</div>'
  *      ], 'mynamespace' )
  *
@@ -521,7 +521,7 @@ function wrapTemplate(template, jsonNamespace) {
     jsonNamespace = jsonNamespace || "model";
     var templateFn = _.template(template.join(""));
     return (json, view) => {
-        var templateVars = { view: view || {}, _l: _l };
+        var templateVars = { view: view || {}, localize: localize };
         templateVars[jsonNamespace] = json || {};
         return templateFn(templateVars);
     };

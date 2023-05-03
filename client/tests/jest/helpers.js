@@ -10,7 +10,7 @@ import { eventHubPlugin } from "components/plugins/eventHub";
 import { iconPlugin } from "components/plugins/icons";
 import BootstrapVue from "bootstrap-vue";
 import Vuex from "vuex";
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import { PiniaVuePlugin } from "pinia";
 
 const defaultComparator = (a, b) => a == b;

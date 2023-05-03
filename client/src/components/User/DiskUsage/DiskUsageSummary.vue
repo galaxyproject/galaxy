@@ -40,7 +40,7 @@
 </template>
 
 <script>
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import { mapActions, mapState } from "pinia";
 import { useUserStore } from "@/stores/userStore";
 import { bytesToString } from "utils/utils";
@@ -58,7 +58,7 @@ export default {
     },
     data() {
         return {
-            errorMessageTitle: _l("Failed to access disk usage details."),
+            errorMessageTitle: localize("Failed to access disk usage details."),
             errorMessage: null,
             isRecalculating: false,
             dismissCountDown: 0,

@@ -199,7 +199,7 @@
 <script>
 import mixin from "./common/mixin";
 import DatasetCollectionElementView from "./ListDatasetCollectionElementView";
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import STATES from "mvc/dataset/states";
 import "ui/hoverhighlight";
 import Vue from "vue";
@@ -218,17 +218,17 @@ export default {
     data: function () {
         return {
             state: "build", //error
-            titleUndoButton: _l("Undo all reordering and discards"),
-            titleSortButton: _l("Sort datasets by name"),
-            titleDeselectButton: _l("De-select all selected datasets"),
-            noElementsHeader: _l("No datasets were selected"),
-            discardedElementsHeader: _l("No elements left. Would you like to"),
-            invalidHeader: _l("The following selections could not be included due to problems:"),
-            allInvalidElementsPartOne: _l("At least one element is needed for the collection. You may need to"),
-            cancelText: _l("cancel"),
-            startOverText: _l("start over"),
-            allInvalidElementsPartTwo: _l("and reselect new elements."),
-            errorText: _l("Galaxy could not be reached and may be updating.  Try again in a few minutes."),
+            titleUndoButton: localize("Undo all reordering and discards"),
+            titleSortButton: localize("Sort datasets by name"),
+            titleDeselectButton: localize("De-select all selected datasets"),
+            noElementsHeader: localize("No datasets were selected"),
+            discardedElementsHeader: localize("No elements left. Would you like to"),
+            invalidHeader: localize("The following selections could not be included due to problems:"),
+            allInvalidElementsPartOne: localize("At least one element is needed for the collection. You may need to"),
+            cancelText: localize("cancel"),
+            startOverText: localize("start over"),
+            allInvalidElementsPartTwo: localize("and reselect new elements."),
+            errorText: localize("Galaxy could not be reached and may be updating.  Try again in a few minutes."),
             workingElements: [],
             originalNamedElements: [],
             invalidElements: [],
@@ -277,7 +277,7 @@ export default {
     methods: {
         l(str) {
             // _l conflicts private methods of Vue internals, expose as l instead
-            return _l(str);
+            return localize(str);
         },
         /** set up instance vars */
         _instanceSetUp: function () {
@@ -321,14 +321,14 @@ export default {
         /** describe what is wrong with a particular element if anything */
         _isElementInvalid: function (element) {
             if (element.history_content_type === "dataset_collection") {
-                return _l("is a collection, this is not allowed");
+                return localize("is a collection, this is not allowed");
             }
             var validState = element.state === STATES.OK || STATES.NOT_READY_STATES.includes(element.state);
             if (!validState) {
-                return _l("has errored, is paused, or is not accessible");
+                return localize("has errored, is paused, or is not accessible");
             }
             if (element.deleted || element.purged) {
-                return _l("has been deleted or purged");
+                return localize("has been deleted or purged");
             }
             return null;
         },

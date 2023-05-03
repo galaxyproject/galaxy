@@ -77,7 +77,7 @@
 </template>
 
 <script>
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 export default {
     props: {
         oncancel: {
@@ -100,11 +100,11 @@ export default {
     },
     data: function () {
         return {
-            titleForHelp: _l("Expand or Close Help"),
-            hideOriginalsText: _l("Hide original elements?"),
-            titleMoreHelp: _l("Close and show more help"),
-            placeholderEnterName: _l("Enter a name for your new collection"),
-            dropdownText: _l("Create a <i>single</> pair"),
+            titleForHelp: localize("Expand or Close Help"),
+            hideOriginalsText: localize("Hide original elements?"),
+            titleMoreHelp: localize("Close and show more help"),
+            placeholderEnterName: localize("Enter a name for your new collection"),
+            dropdownText: localize("Create a <i>single</> pair"),
             isExpanded: false,
             collectionName: this.suggestedName,
             removeFileExtensionsText: "Remove file extensions?",
@@ -124,7 +124,7 @@ export default {
     methods: {
         l(str) {
             // _l conflicts private methods of Vue internals, expose as l instead
-            return _l(str);
+            return localize(str);
         },
         _clickForHelp: function () {
             this.isExpanded = !this.isExpanded;

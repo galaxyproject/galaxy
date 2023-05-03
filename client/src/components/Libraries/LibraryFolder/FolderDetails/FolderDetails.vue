@@ -61,7 +61,7 @@
 </template>
 
 <script>
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
@@ -94,10 +94,10 @@ export default {
     },
     data() {
         return {
-            detailsCaption: _l("Details"),
-            folderHeader: _l("Folder"),
-            libraryHeader: _l("Library"),
-            titleLocationDetails: _l("Location Details"),
+            detailsCaption: localize("Details"),
+            folderHeader: localize("Folder"),
+            libraryHeader: localize("Library"),
+            titleLocationDetails: localize("Location Details"),
             fields: [
                 {
                     key: "name",
@@ -105,12 +105,12 @@ export default {
                 },
                 { key: "value" },
             ],
-            folderFieldTitles: { folder_name: _l("Name"), folder_description: _l("Description"), id: "ID" },
+            folderFieldTitles: { folder_name: localize("Name"), folder_description: localize("Description"), id: "ID" },
             libraryFieldTitles: {
-                name: _l("Name"),
-                description: _l("Description"),
-                synopsis: _l("Synopsis"),
-                create_time_pretty: _l("Created"),
+                name: localize("Name"),
+                description: localize("Description"),
+                synopsis: localize("Synopsis"),
+                create_time_pretty: localize("Created"),
                 id: "ID",
             },
             libraryDetails: null,
@@ -138,7 +138,7 @@ export default {
                 const response = await axios.get(url);
                 return buildFields(this.libraryFieldTitles, response.data);
             } catch (e) {
-                this.error = `${_l("Failed to retrieve library details.")} ${e}`;
+                this.error = `${localize("Failed to retrieve library details.")} ${e}`;
                 return null;
             }
         },

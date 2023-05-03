@@ -53,7 +53,7 @@
     </div>
 </template>
 <script>
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
@@ -78,9 +78,9 @@ export default {
             name: null,
             error: null,
             fixed: false,
-            titleSearchVisualizations: _l("search visualizations"),
-            titleCreateVisualization: _l("Create Visualization"),
-            titleSelectDataset: _l("Select a dataset to visualize:"),
+            titleSearchVisualizations: localize("search visualizations"),
+            titleCreateVisualization: localize("Create Visualization"),
+            titleSelectDataset: localize("Select a dataset to visualize:"),
         };
     },
     created() {

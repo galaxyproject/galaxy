@@ -151,7 +151,7 @@
 <script>
 import mixin from "./common/mixin";
 import STATES from "mvc/dataset/states";
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 
@@ -161,14 +161,16 @@ export default {
     data: function () {
         return {
             state: "build", //error
-            errorText: _l("Galaxy could not be reached and may be updating.  Try again in a few minutes."),
-            noElementsHeader: _l("No datasets were selected."),
-            allInvalidElementsPartOne: _l("Exactly two elements needed for the collection. You may need to"),
-            cancelText: _l("cancel"),
-            allInvalidElementsPartTwo: _l("and reselect new elements."),
-            exactlyTwoValidElementsPartOne: _l("Two (and only two) elements are needed for the pair. You may need to "),
-            exactlyTwoValidElementsPartTwo: _l("and reselect new elements."),
-            invalidHeader: _l("The following selections could not be included due to problems:"),
+            errorText: localize("Galaxy could not be reached and may be updating.  Try again in a few minutes."),
+            noElementsHeader: localize("No datasets were selected."),
+            allInvalidElementsPartOne: localize("Exactly two elements needed for the collection. You may need to"),
+            cancelText: localize("cancel"),
+            allInvalidElementsPartTwo: localize("and reselect new elements."),
+            exactlyTwoValidElementsPartOne: localize(
+                "Two (and only two) elements are needed for the pair. You may need to "
+            ),
+            exactlyTwoValidElementsPartTwo: localize("and reselect new elements."),
+            invalidHeader: localize("The following selections could not be included due to problems:"),
             minElements: 2,
             workingElements: [],
             invalidElements: [],
@@ -204,7 +206,7 @@ export default {
     methods: {
         l(str) {
             // _l conflicts private methods of Vue internals, expose as l instead
-            return _l(str);
+            return localize(str);
         },
         _elementsSetUp: function () {
             /** a list of invalid elements and the reasons they aren't valid */
@@ -240,14 +242,14 @@ export default {
         /** describe what is wrong with a particular element if anything */
         _isElementInvalid: function (element) {
             if (element.history_content_type === "dataset_collection") {
-                return _l("is a collection, this is not allowed");
+                return localize("is a collection, this is not allowed");
             }
             var validState = element.state === STATES.OK || STATES.NOT_READY_STATES.includes(element.state);
             if (!validState) {
-                return _l("has errored, is paused, or is not accessible");
+                return localize("has errored, is paused, or is not accessible");
             }
             if (element.deleted || element.purged) {
-                return _l("has been deleted or purged");
+                return localize("has been deleted or purged");
             }
             return null;
         },

@@ -9,7 +9,7 @@
 </template>
 
 <script>
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 
 export default {
     props: {
@@ -23,8 +23,8 @@ export default {
     },
     data: function () {
         return {
-            applyLabel: _l("Apply"),
-            cancelLabel: _l("Cancel"),
+            applyLabel: localize("Apply"),
+            cancelLabel: localize("Cancel"),
         };
     },
     computed: {

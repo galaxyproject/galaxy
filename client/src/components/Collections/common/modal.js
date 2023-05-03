@@ -1,6 +1,6 @@
 import { getGalaxyInstance } from "app";
 import UI_MODAL from "mvc/ui/ui-modal";
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 
 export function collectionCreatorModalSetup(options, Galaxy = null) {
     Galaxy = Galaxy || getGalaxyInstance();
@@ -18,7 +18,7 @@ export function collectionCreatorModalSetup(options, Galaxy = null) {
     const showEl = function (el) {
         const close_event = options.closing_events === undefined || options.closing_events;
         modal.show({
-            title: options.title || _l("Create a collection"),
+            title: options.title || localize("Create a collection"),
             body: el,
             width: "85%",
             height: "100%",
