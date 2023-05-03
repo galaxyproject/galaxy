@@ -14,7 +14,7 @@ const props = withDefaults(
         multiple?: boolean;
         optional?: boolean;
         options: Array<[string, string]>;
-        value?: string[] | string;
+        value?: Array<string> | string;
     }>(),
     {
         multiple: false,
@@ -24,7 +24,7 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-    (e: "input", value: SelectValue | SelectValue[]): void;
+    (e: "input", value: SelectValue | Array<SelectValue>): void;
 }>();
 
 /**
@@ -66,7 +66,7 @@ const currentValue = computed({
     get: () => formattedOptions.value.filter((option: SelectOption) => selectedValues.value.includes(option.value)),
     set: (val: Array<SelectOption> | SelectOption): void => {
         if (Array.isArray(val)) {
-            const values: SelectValue[] = val.map((v: SelectOption) => v.value);
+            const values: Array<SelectValue> = val.map((v: SelectOption) => v.value);
             emit("input", values);
         } else {
             emit("input", val.value);
