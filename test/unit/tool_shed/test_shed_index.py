@@ -29,7 +29,9 @@ def community_file_dir():
     response = requests.get(URL)
     response.raise_for_status()
     b = BytesIO(response.content)
-    tarfile.open(fileobj=b, mode="r:gz").extractall(extracted_archive_dir)
+    with tarfile.open(fileobj=b, mode="r:gz") as tar:
+        tar.extraction_filter = getattr(tarfile, "data_filter", (lambda member, path: member))
+        tar.extractall(extracted_archive_dir)
     try:
         yield extracted_archive_dir
     finally:

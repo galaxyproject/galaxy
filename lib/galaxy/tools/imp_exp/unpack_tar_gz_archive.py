@@ -60,9 +60,9 @@ def unpack_archive(archive_file, dest_dir):
         with zipfile.ZipFile(archive_file, "r") as zip_archive:
             zip_archive.extractall(path=dest_dir)
     else:
-        archive_fp = tarfile.open(archive_file, mode="r")
-        archive_fp.extractall(path=dest_dir)
-        archive_fp.close()
+        with tarfile.open(archive_file, mode="r") as archive_fp:
+            archive_fp.extraction_filter = getattr(tarfile, "data_filter", (lambda member, path: member))
+            archive_fp.extractall(path=dest_dir)
 
 
 def main(options, args):

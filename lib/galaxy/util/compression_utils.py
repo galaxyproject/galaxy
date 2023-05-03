@@ -337,7 +337,12 @@ class CompressedFile:
         return False
 
     def open_tar(self, filepath: StrPath, mode: Literal["a", "r", "w", "x"]) -> tarfile.TarFile:
-        return tarfile.open(filepath, mode, errorlevel=0)
+        tf = tarfile.open(filepath, mode, errorlevel=0)
+        # Set a safe default ("data_filter") for the extraction filter if
+        # available, reverting to Python 3.11 behavior otherwise, see
+        # https://docs.python.org/3/library/tarfile.html#supporting-older-python-versions
+        tf.extraction_filter = getattr(tarfile, "data_filter", (lambda member, path: member))
+        return tf
 
     def open_zip(self, filepath: StrPath, mode: Literal["a", "r", "w", "x"]) -> zipfile.ZipFile:
         return zipfile.ZipFile(filepath, mode)

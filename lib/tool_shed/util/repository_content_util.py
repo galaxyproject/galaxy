@@ -37,6 +37,7 @@ def tar_open(uploaded_file):
         tar = tarfile.open(uploaded_file, "r:*")
     else:
         tar = tarfile.open(uploaded_file)
+    tar.extraction_filter = getattr(tarfile, "data_filter", (lambda member, path: member))
     return tar
 
 
@@ -49,14 +50,12 @@ def upload_tar(
     dry_run: bool = False,
     remove_repo_files_not_in_tar: bool = True,
     new_repo_alert: bool = False,
-    tar=None,
     rdah: Optional[RepositoryDependencyAttributeHandler] = None,
     tdah: Optional[ToolDependencyAttributeHandler] = None,
 ) -> ChangeResponseT:
     host = trans.repositories_hostname
     app = trans.app
-    if tar is None:
-        tar = tar_open(uploaded_file)
+    tar = tar_open(uploaded_file)
     rdah = rdah or RepositoryDependencyAttributeHandler(trans, unpopulate=False)
     tdah = tdah or ToolDependencyAttributeHandler(trans, unpopulate=False)
     # Upload a tar archive of files.
