@@ -181,7 +181,7 @@ export function getLocalVue(instrumentLocalization = false) {
     localVue.use(PiniaVuePlugin);
     localVue.use(Vuex);
     localVue.use(BootstrapVue);
-    const l = instrumentLocalization ? testLocalize : _l;
+    const l = instrumentLocalization ? testLocalize : localize;
     localVue.use(localizationPlugin, l);
     localVue.use(vueRxShortcutPlugin);
     localVue.use(eventHubPlugin);
