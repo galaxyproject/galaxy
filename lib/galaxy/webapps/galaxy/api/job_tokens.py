@@ -9,9 +9,7 @@ from galaxy import (
     util,
 )
 from galaxy.authnz.util import provider_name_to_backend
-from galaxy.web import (
-    expose_api_raw_anonymous_and_sessionless,
-)
+from galaxy.web import expose_api_raw_anonymous_and_sessionless
 from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
@@ -65,7 +63,7 @@ class JobTokensAPIController(BaseGalaxyAPIController):
             for plugin in self.app.job_config.runner_plugins:
                 if plugin["id"] == job.job_runner_name:
                     secret = plugin["kwds"]["secret"]
-        except:
+        except Exception:
             pass
 
         job_key = trans.security.encode_id(job_id, kind=secret)

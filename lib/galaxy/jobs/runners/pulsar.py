@@ -616,7 +616,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         files_endpoint = endpoint_base % (self.galaxy_url, encoded_job_id, job_key)
         secret = self.runner_params.secret or "jobs_token"
         job_key = self.app.security.encode_id(job_id, kind=secret)
-        token_endpoint = "%s/api/jobs/%s/oidc-tokens?job_key=%s" % (self.galaxy_url, encoded_job_id, job_key)
+        token_endpoint = f"{self.galaxy_url}/api/jobs/{encoded_job_id}/oidc-tokens?job_key={job_key}"
         get_client_kwds = dict(
             job_id=str(job_id), files_endpoint=files_endpoint, token_endpoint=token_endpoint, env=env
         )
