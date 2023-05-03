@@ -2822,6 +2822,8 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     slug = Column(TEXT)
     published = Column(Boolean, index=True, default=False)
     preferred_object_store_id = Column(String(255), nullable=True)
+    archived = Column(Boolean, index=True, default=False, server_default=false())
+    archive_export_id = Column(Integer, ForeignKey("store_export_association.id"), nullable=True, default=None)
 
     datasets = relationship(
         "HistoryDatasetAssociation", back_populates="history", cascade_backrefs=False, order_by=lambda: asc(HistoryDatasetAssociation.hid)  # type: ignore[has-type]
