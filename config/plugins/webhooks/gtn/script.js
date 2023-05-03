@@ -160,7 +160,7 @@
 
                     // Buttonify
                     gtnWorkflowElements.forEach(function (el) {
-                        el.addClass("galaxy-proxy-active");
+                        el.classList.add("galaxy-proxy-active");
                         el.addEventListener("click", (e) => {
                             let target = e.target;
 
