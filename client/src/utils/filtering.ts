@@ -50,9 +50,9 @@ export function toLower<FilterValue>(value: FilterValue): string {
     return String(value).toLowerCase();
 }
 
-/** Converts user input to boolean
+/** Converts user input to boolean (or undefined for null input)
  * @param value
- * @returns true if value is 'true', false if value is 'false'
+ * @returns true/false if value is 'true/false', undefined if value is null
  * */
 export function toBool<FilterValue>(value: FilterValue): boolean | undefined {
     return value !== null ? toLower(value) === "true" : undefined;
