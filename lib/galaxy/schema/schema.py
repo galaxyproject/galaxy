@@ -1038,6 +1038,11 @@ class HistorySummary(HistoryBase):
         title="Purged",
         description="Whether this item has been permanently removed.",
     )
+    archived: bool = Field(
+        ...,
+        title="Archived",
+        description="Whether this item has been archived and is no longer active.",
+    )
     url: RelativeUrl = RelativeUrlField
     published: bool = Field(
         ...,
