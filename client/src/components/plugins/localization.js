@@ -7,7 +7,7 @@ import { localize } from "utils/localization";
 const newlineMatch = /\r?\n|\r/g;
 const doublespaces = /\s\s+/g;
 
-function localizeDirective(l) {
+function localizeDirective(localize) {
     return {
         // TODO consider using a different hook if we need dynamic updates in content translation
         bind(el, binding, vnode) {
@@ -16,27 +16,14 @@ function localizeDirective(l) {
                     .replace(newlineMatch, " ")
                     .replace(doublespaces, " ")
                     .trim();
-                node.textContent = l(standardizedContent);
+                node.textContent = localize(standardizedContent);
             });
         },
     };
 }
 
-// adds localizeText mixin
-function localizeMixin(l) {
-    return {
-        methods: {
-            l: l,
-            localize: l,
-        },
-    };
-}
-
 export const localizationPlugin = {
-    install(Vue, l = _l) {
-        Vue.filter("localize", l);
-        Vue.filter("l", l);
-        Vue.directive("localize", localizeDirective(l));
-        Vue.mixin(localizeMixin(l));
+    install(Vue, localize = localize) {
+        Vue.directive("localize", localizeDirective(localize));
     },
 };
