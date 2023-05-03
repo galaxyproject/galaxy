@@ -101,10 +101,7 @@ class InstallRepositoryManager:
             repository_revision_dict: RepositoryMetadataInstallInfoDict = items[1]
             repo_info_dict: ExtraRepoInfo = items[2]
         else:
-            message = (
-                "Unable to retrieve installation information from tool shed %s for revision %s of repository %s owned by %s"
-                % (str(tool_shed_url), str(changeset_revision), str(name), str(owner))
-            )
+            message = f"Unable to retrieve installation information from tool shed {tool_shed_url} for revision {changeset_revision} of repository {name} owned by {owner}"
             log.warning(message)
             raise exceptions.InternalServerError(message)
         # Make sure the tool shed returned everything we need for installing the repository.

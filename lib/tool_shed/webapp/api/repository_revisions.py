@@ -199,15 +199,18 @@ class RepositoryRevisionsController(BaseAPIController):
                 # log information when setting attributes associated with the Tool Shed's install and test framework.
                 if key in ["includes_tools", "missing_test_components"]:
                     log.debug(
-                        "Setting repository_metadata column %s to value %s for changeset_revision %s via the Tool Shed API."
-                        % (str(key), str(new_value), str(repository_metadata.changeset_revision))
+                        "Setting repository_metadata column %s to value %s for changeset_revision %s via the Tool Shed API.",
+                        key,
+                        new_value,
+                        repository_metadata.changeset_revision,
                     )
                 setattr(repository_metadata, key, new_value)
                 flush_needed = True
         if flush_needed:
             log.debug(
-                "Updating repository_metadata record with id %s and changeset_revision %s."
-                % (str(decoded_repository_metadata_id), str(repository_metadata.changeset_revision))
+                "Updating repository_metadata record with id %s and changeset_revision %s.",
+                decoded_repository_metadata_id,
+                repository_metadata.changeset_revision,
             )
             trans.sa_session.add(repository_metadata)
             trans.sa_session.flush()

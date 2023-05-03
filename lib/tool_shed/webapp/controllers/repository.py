@@ -994,14 +994,13 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     self.install_matched_repository_grid.operations = operations
                     return self.install_matched_repository_grid(trans, **kwd)
                 else:
-                    kwd["message"] = (
-                        "tool id: <b>%s</b><br/>tool name: <b>%s</b><br/>tool version: <b>%s</b><br/>exact matches only: <b>%s</b>"
-                        % (
-                            basic_util.stringify(tool_ids),
-                            escape(basic_util.stringify(tool_names)),
-                            escape(basic_util.stringify(tool_versions)),
-                            str(exact_matches_checked),
-                        )
+                    kwd[
+                        "message"
+                    ] = "tool id: <b>{}</b><br/>tool name: <b>{}</b><br/>tool version: <b>{}</b><br/>exact matches only: <b>{}</b>".format(
+                        basic_util.stringify(tool_ids),
+                        escape(basic_util.stringify(tool_names)),
+                        escape(basic_util.stringify(tool_versions)),
+                        exact_matches_checked,
                     )
                     self.matched_repository_grid.title = "Repositories with matching tools"
                     return self.matched_repository_grid(trans, **kwd)
@@ -2292,8 +2291,9 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             return trans.response.send_redirect(web.url_for(controller="repository", action="index", user_id=user_id))
         else:
             return trans.show_error_message(
-                "The tool shed <b>%s</b> contains no repositories owned by <b>%s</b>."
-                % (web.url_for("/", qualified=True).rstrip("/"), str(owner))
+                "The tool shed <b>{}</b> contains no repositories owned by <b>{}</b>.".format(
+                    web.url_for("/", qualified=True).rstrip("/"), owner
+                )
             )
 
     @web.expose
@@ -2316,7 +2316,9 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 user = None
             if user:
                 user_id = trans.security.encode_id(user.id)
-                message = f"This list of repositories owned by <b>{str(owner)}</b>, does not include one named <b>{str(name)}</b>."
+                message = (
+                    f"This list of repositories owned by <b>{owner}</b>, does not include one named <b>{name}</b>."
+                )
                 return trans.response.send_redirect(
                     web.url_for(
                         controller="repository", action="index", user_id=user_id, message=message, status="error"
@@ -2324,8 +2326,9 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 )
             else:
                 return trans.show_error_message(
-                    "The tool shed <b>%s</b> contains no repositories named <b>%s</b> with owner <b>%s</b>."
-                    % (web.url_for("/", qualified=True).rstrip("/"), str(name), str(owner))
+                    "The tool shed <b>{}</b> contains no repositories named <b>{}</b> with owner <b>{}</b>.".format(
+                        web.url_for("/", qualified=True).rstrip("/"), name, owner
+                    )
                 )
 
     @web.expose
@@ -2360,10 +2363,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     )
                 )
             else:
-                message = (
-                    "The change log for the repository named <b>%s</b> owned by <b>%s</b> does not include revision <b>%s</b>."
-                    % (escape(str(name)), escape(str(owner)), escape(str(changeset_revision)))
-                )
+                message = f"The change log for the repository named <b>{escape(str(name))}</b> owned by <b>{escape(str(owner))}</b> does not include revision <b>{escape(str(changeset_revision))}</b>."
                 return trans.response.send_redirect(
                     web.url_for(
                         controller="repository",

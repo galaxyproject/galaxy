@@ -277,8 +277,7 @@ class Sequence(data.Text):
                     start_chunk = -1
                 # extract, unzip, trim, recompress
                 result.append(
-                    "(dd bs=1 skip=%s count=%s if=%s 2> /dev/null )| zcat | ( tail -n +%s 2> /dev/null) | head -%s | gzip -c >> %s"
-                    % (
+                    "(dd bs=1 skip={} count={} if={} 2> /dev/null )| zcat | ( tail -n +{} 2> /dev/null) | head -{} | gzip -c >> {}".format(
                         start_copy,
                         end_copy - start_copy,
                         input_name,

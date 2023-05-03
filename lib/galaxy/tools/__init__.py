@@ -1608,23 +1608,19 @@ class Tool(Dictifiable):
                             possible_cases.remove(case.value)
                         except Exception:
                             log.debug(
-                                "Tool with id '%s': a when tag has been defined for '%s (%s) --> %s', but does not appear to be selectable."
-                                % (
-                                    self.id,
-                                    group_c.name,
-                                    group_c.test_param.name,
-                                    case.value,
-                                )
-                            )
-                    for unspecified_case in possible_cases:
-                        log.warning(
-                            "Tool with id '%s': a when tag has not been defined for '%s (%s) --> %s', assuming empty inputs."
-                            % (
+                                "Tool with id '%s': a when tag has been defined for '%s (%s) --> %s', but does not appear to be selectable.",
                                 self.id,
                                 group_c.name,
                                 group_c.test_param.name,
-                                unspecified_case,
+                                case.value,
                             )
+                    for unspecified_case in possible_cases:
+                        log.warning(
+                            "Tool with id '%s': a when tag has not been defined for '%s (%s) --> %s', assuming empty inputs.",
+                            self.id,
+                            group_c.name,
+                            group_c.test_param.name,
+                            unspecified_case,
                         )
                         case = ConditionalWhen()
                         case.value = unspecified_case

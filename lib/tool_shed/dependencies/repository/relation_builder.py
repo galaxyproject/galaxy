@@ -263,21 +263,28 @@ class RelationBuilder:
                             # For backward compatibility to the 12/20/12 Galaxy release.
                             if len(components_list) in (4, 5):
                                 rd_only_if_compiling_contained_td = "False"
-                            message = (
+                            log.debug(
                                 "The revision %s defined for repository %s owned by %s is invalid, so repository "
-                                % (str(rd_changeset_revision), str(rd_name), str(rd_owner))
+                                "dependencies defined for repository %s will be ignored.",
+                                rd_changeset_revision,
+                                rd_name,
+                                rd_owner,
+                                repository_name,
                             )
-                            message += f"dependencies defined for repository {repository_name} will be ignored."
-                            log.debug(message)
                 else:
                     repository_components_tuple = container_util.get_components_from_key(key)
                     components_list = tool_shed.util.repository_util.extract_components_from_tuple(
                         repository_components_tuple
                     )
                     toolshed, repository_name, repository_owner, repository_changeset_revision = components_list[0:4]
-                    message = f"The revision {rd_changeset_revision} defined for repository {rd_name} owned by {rd_owner} is invalid, "
-                    message += f"so repository dependencies defined for repository {repository_name} will be ignored."
-                    log.debug(message)
+                    log.debug(
+                        "The revision %s defined for repository %s owned by %s is invalid, "
+                        "so repository dependencies defined for repository %s will be ignored.",
+                        rd_changeset_revision,
+                        rd_name,
+                        rd_owner,
+                        repository_name,
+                    )
         return updated_key_rd_dicts
 
     def handle_circular_repository_dependency(self, repository_key, repository_dependency):

@@ -237,8 +237,9 @@ class Registry:
                             # Because of the way that the value of can_process_datatype was set above, we know that the value of
                             # override is True.
                             self.log.debug(
-                                "Overriding conflicting datatype with extension '%s', using datatype from %s."
-                                % (str(extension), str(config))
+                                "Overriding conflicting datatype with extension '%s', using datatype from %s.",
+                                extension,
+                                config,
                             )
                         if make_subclass:
                             datatype_class = type(datatype_class_name, (datatype_class,), {})

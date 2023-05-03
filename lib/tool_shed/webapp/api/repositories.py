@@ -262,8 +262,9 @@ class RepositoriesController(BaseAPIController):
                 return repository_dict, repository_metadata_dict, repo_info_dict
             else:
                 log.debug(
-                    "Unable to locate repository_metadata record for repository id %s and changeset_revision %s"
-                    % (str(repository.id), str(changeset_revision))
+                    "Unable to locate repository_metadata record for repository id %s and changeset_revision %s",
+                    repository.id,
+                    changeset_revision,
                 )
                 return repository_dict, {}, {}
         else:
@@ -617,8 +618,9 @@ class RepositoriesController(BaseAPIController):
             encoded_id = trans.security.encode_id(repository.id)
             if encoded_id in encoded_ids_to_skip:
                 log.debug(
-                    "Skipping repository with id %s because it is in encoded_ids_to_skip %s"
-                    % (str(repository.id), str(encoded_ids_to_skip))
+                    "Skipping repository with id %s because it is in encoded_ids_to_skip %s",
+                    repository.id,
+                    encoded_ids_to_skip,
                 )
             elif repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
                 results = handle_repository(trans, rmm, repository, results)
@@ -627,8 +629,9 @@ class RepositoriesController(BaseAPIController):
             encoded_id = trans.security.encode_id(repository.id)
             if encoded_id in encoded_ids_to_skip:
                 log.debug(
-                    "Skipping repository with id %s because it is in encoded_ids_to_skip %s"
-                    % (str(repository.id), str(encoded_ids_to_skip))
+                    "Skipping repository with id %s because it is in encoded_ids_to_skip %s",
+                    repository.id,
+                    encoded_ids_to_skip,
                 )
             elif repository.type != rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
                 results = handle_repository(trans, rmm, repository, results)
@@ -811,8 +814,9 @@ class RepositoriesController(BaseAPIController):
             return repository_metadata_dict
         else:
             log.debug(
-                "Unable to locate repository_metadata record for repository id %s and changeset_revision %s"
-                % (str(id), str(changeset))
+                "Unable to locate repository_metadata record for repository id %s and changeset_revision %s",
+                id,
+                changeset,
             )
             return {}
 

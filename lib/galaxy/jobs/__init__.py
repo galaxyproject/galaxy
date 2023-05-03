@@ -1887,8 +1887,9 @@ class MinimalJobWrapper(HasResourceParameters):
                     # and when the job is recovered, it won't be found.
                     if os.path.exists(dataset_path.real_path) and os.stat(dataset_path.real_path).st_size > 0:
                         log.warning(
-                            "finish(): %s not found, but %s is not empty, so it will be used instead"
-                            % (dataset_path.false_path, dataset_path.real_path)
+                            "finish(): %s not found, but %s is not empty, so it will be used instead",
+                            dataset_path.false_path,
+                            dataset_path.real_path,
                         )
                     else:
                         # Prior to fail we need to set job.state
@@ -2160,8 +2161,9 @@ class MinimalJobWrapper(HasResourceParameters):
                 )
                 return (
                     JobState.runner_states.GLOBAL_WALLTIME_REACHED,
-                    "Job ran longer than the maximum allowed execution time (runtime: %s, limit: %s), please try different inputs or parameters"
-                    % (str(runtime).split(".")[0], self.app.job_config.limits.walltime),
+                    "Job ran longer than the maximum allowed execution time (runtime: {}, limit: {}), please try different inputs or parameters".format(
+                        str(runtime).split(".")[0], self.app.job_config.limits.walltime
+                    ),
                 )
         return None
 

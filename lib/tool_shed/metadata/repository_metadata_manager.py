@@ -975,8 +975,9 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                         unsuccessful_count += 1
                     else:
                         log.debug(
-                            "Successfully reset metadata on repository %s owned by %s"
-                            % (str(repository.name), str(repository.user.username))
+                            "Successfully reset metadata on repository %s owned by %s",
+                            repository.name,
+                            repository.user.username,
                         )
                         successful_count += 1
                 except Exception:
