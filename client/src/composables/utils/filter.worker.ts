@@ -47,7 +47,7 @@ function runFilter(f: string, arr: Record<string, unknown>[], fields: string[]) 
                 const val = obj[field];
 
                 if (typeof val === "string") {
-                    if (val.toLowerCase().includes(f)) {
+                    if (val.toLowerCase().includes(f.toLocaleLowerCase())) {
                         return true;
                     }
                 } else if (Array.isArray(val)) {
