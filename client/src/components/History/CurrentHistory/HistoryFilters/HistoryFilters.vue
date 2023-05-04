@@ -51,7 +51,13 @@
             <b-form-input v-model="filterSettings['tag:']" size="sm" placeholder="any tag" />
             <small class="mt-1">Filter by state:</small>
             <b-input-group>
-                <b-form-input v-model="filterSettings['state:']" size="sm" placeholder="any state" list="stateSelect" />
+                <b-form-input
+                    v-model="filterSettings['state:']"
+                    v-b-tooltip.focus.v-danger="hasError('state:')"
+                    :class="hasError('state:') && 'ui-input-error'"
+                    size="sm"
+                    placeholder="any state"
+                    list="stateSelect" />
                 <b-form-datalist id="stateSelect" :options="states"></b-form-datalist>
                 <b-input-group-append>
                     <b-button title="States Help" size="sm" @click="showHelp = true">
@@ -65,25 +71,25 @@
             <small class="mt-1">Filter by related to item index:</small>
             <b-form-input
                 v-model="filterSettings['related:']"
-                v-b-tooltip="hasError('related')"
+                v-b-tooltip.focus.v-danger="hasError('related:')"
+                :class="hasError('related:') && 'ui-input-error'"
                 size="sm"
-                placeholder="index equals"
-                :autofocus="hasError('related') !== ''" />
+                placeholder="index equals" />
             <small class="mt-1">Filter by item index:</small>
             <b-form-group class="m-0">
                 <b-input-group>
                     <b-form-input
                         v-model="filterSettings['hid>']"
-                        v-b-tooltip="hasError('hid', 'gt')"
+                        v-b-tooltip.focus.v-danger="hasError('hid>')"
+                        :class="hasError('hid>') && 'ui-input-error'"
                         size="sm"
-                        placeholder="index greater"
-                        :autofocus="hasError('hid', 'gt') !== ''" />
+                        placeholder="index greater" />
                     <b-form-input
                         v-model="filterSettings['hid<']"
-                        v-b-tooltip="hasError('hid', 'lt')"
+                        v-b-tooltip.focus.v-danger="hasError('hid<')"
+                        :class="hasError('hid<') && 'ui-input-error'"
                         size="sm"
-                        placeholder="index lower"
-                        :autofocus="hasError('hid', 'lt') !== ''" />
+                        placeholder="index lower" />
                 </b-input-group>
             </b-form-group>
             <small class="mt-1">Filter by creation time:</small>
@@ -91,19 +97,19 @@
                 <b-input-group>
                     <b-form-input
                         v-model="create_time_gt"
-                        v-b-tooltip="hasError('create_time', 'gt')"
+                        v-b-tooltip.focus.v-danger="hasError('create_time>')"
+                        :class="hasError('create_time>') && 'ui-input-error'"
                         size="sm"
-                        placeholder="created after"
-                        :autofocus="hasError('create_time', 'gt') !== ''" />
+                        placeholder="created after" />
                     <b-input-group-append>
                         <b-form-datepicker v-model="create_time_gt" reset-button button-only size="sm" />
                     </b-input-group-append>
                     <b-form-input
                         v-model="create_time_lt"
-                        v-b-tooltip="hasError('create_time', 'lt')"
+                        v-b-tooltip.focus.v-danger="hasError('create_time<')"
+                        :class="hasError('create_time<') && 'ui-input-error'"
                         size="sm"
-                        placeholder="created before"
-                        :autofocus="hasError('create_time', 'lt') !== ''" />
+                        placeholder="created before" />
                     <b-input-group-append>
                         <b-form-datepicker v-model="create_time_lt" reset-button button-only size="sm" />
                     </b-input-group-append>
@@ -140,7 +146,7 @@ export default {
     props: {
         filterText: { type: String, default: null },
         showAdvanced: { type: Boolean, default: false },
-        searchError: { type: Object, required: false },
+        searchError: { type: Object, default: null },
     },
     data() {
         return {
@@ -173,20 +179,14 @@ export default {
             this.create_time_gt = this.filterSettings["create_time>"];
             this.create_time_lt = this.filterSettings["create_time<"];
         },
-        searchError(newVal) {
-            if (newVal) {
-                this.onToggle();
-            }
+        showAdvanced(newVal) {
+            this.showHelp = !newVal ? false : this.showHelp;
         },
     },
     methods: {
-        hasError(col, op = "eq") {
-            if (
-                this.searchError &&
-                (this.searchError.column == col || this.searchError.col == col) &&
-                (this.searchError.operation == op || this.searchError.op == op)
-            ) {
-                return this.searchError.ValueError || this.searchError.err_msg;
+        hasError(field) {
+            if (this.searchError && this.searchError.filter == field) {
+                return this.searchError.typeError || this.searchError.msg;
             }
             return "";
         },
