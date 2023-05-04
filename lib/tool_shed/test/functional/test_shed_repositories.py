@@ -10,15 +10,13 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         populator = self.populator
         category_id = populator.new_category(prefix="testcreate").id
 
-        response = self.api_interactor.get(f"categories/{category_id}/repositories")
-        api_asserts.assert_status_code_is_ok(response)
-        repos = response.json()["repositories"]
+        repos_by_category = populator.repositories_by_category(category_id)
+        repos = repos_by_category.repositories
         assert len(repos) == 0
 
         populator.new_repository(category_id)
-        response = self.api_interactor.get(f"categories/{category_id}/repositories")
-        api_asserts.assert_status_code_is_ok(response)
-        repos = response.json()["repositories"]
+        repos_by_category = populator.repositories_by_category(category_id)
+        repos = repos_by_category.repositories
         assert len(repos) == 1
 
     def test_update_repository(self):

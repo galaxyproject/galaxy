@@ -63,13 +63,6 @@ def in_tool_dict(tool_dict, exact_matches_checked, tool_id=None, tool_name=None,
     return found
 
 
-def in_workflow_dict(workflow_dict, exact_matches_checked, workflow_name):
-    workflow_dict_workflow_name = workflow_dict["name"].lower()
-    return (workflow_name == workflow_dict_workflow_name) or (
-        not exact_matches_checked and workflow_dict_workflow_name.find(workflow_name) >= 0
-    )
-
-
 def make_same_length(list1, list2):
     # If either list is 1 item, we'll append to it until its length is the same as the other.
     if len(list1) == 1:
