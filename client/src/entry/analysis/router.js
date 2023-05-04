@@ -28,7 +28,6 @@ import DatasetError from "components/DatasetInformation/DatasetError";
 import DatasetList from "components/Dataset/DatasetList";
 import AvailableDatatypes from "components/AvailableDatatypes/AvailableDatatypes";
 import FormGeneric from "components/Form/FormGeneric";
-import Grid from "components/Grid/Grid";
 import GridShared from "components/Grid/GridShared";
 import GridHistory from "components/Grid/GridHistory";
 import HistoryImport from "components/HistoryImport";
@@ -447,10 +446,9 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "workflows/list_published",
-                        component: Grid,
+                        component: WorkflowList,
                         props: (route) => ({
-                            urlBase: "workflow/list_published",
-                            userFilter: route.query["f-username"],
+                            published: true,
                         }),
                     },
                     {

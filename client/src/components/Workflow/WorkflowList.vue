@@ -6,19 +6,13 @@
         </b-alert>
         <b-row class="mb-3">
             <b-col cols="6" class="m-1">
-                <index-filter
-                    id="workflow-search"
-                    v-model="filter"
-                    :debounce-delay="inputDebounceDelay"
-                    :placeholder="titleSearch"
-                    :help-html="helpHtml">
-                </index-filter>
+                <IndexFilter v-bind="filterAttrs" id="workflow-search" v-model="filter" />
             </b-col>
             <b-col>
                 <WorkflowIndexActions :root="root" class="float-right"></WorkflowIndexActions>
             </b-col>
         </b-row>
-        <b-table v-model="workflowItemsModel" no-sort-reset :fields="fields" :items="provider" v-bind="indexTableAttrs">
+        <b-table v-model="workflowItemsModel" no-sort-reset :fields="fields" v-bind="indexTableAttrs">
             <template v-slot:empty>
                 <loading-span v-if="loading" message="Loading workflows" />
                 <b-alert v-else id="no-workflows" variant="info" show>
@@ -45,7 +39,7 @@
                 <Tags
                     :index="row.index"
                     :tags="row.item.tags"
-                    :disabled="row.item.deleted"
+                    :disabled="row.item.deleted || published"
                     @input="onTags"
                     @tag-click="onTagClick" />
             </template>
@@ -65,6 +59,11 @@
             </template>
             <template v-slot:cell(update_time)="data">
                 <UtcDate :date="data.value" mode="elapsed" />
+            </template>
+            <template v-slot:cell(owner)="data">
+                <a class="workflow-filter-link-owner" href="#" @click="appendTagFilter('user', data.value)">{{
+                    data.value
+                }}</a>
             </template>
             <template v-slot:cell(execute)="row">
                 <WorkflowRunButton v-if="!row.item.deleted" :id="row.item.id" :root="root" />
@@ -145,6 +144,17 @@ const helpHtml = `<div>
     </dl>
 </div>`;
 
+const NAME_FIELD = { key: "name", label: _l("Name"), sortable: true };
+const TAGS_FIELD = { key: "tags", label: _l("Tags"), sortable: false };
+const UPDATED_FIELD = { label: _l("Updated"), key: "update_time", sortable: true };
+const SHARING_FIELD = { label: _l("Sharing"), key: "published", sortable: false };
+const BOOKMARKED_FIELD = { label: _l("Bookmarked"), key: "show_in_tool_panel", sortable: false };
+const EXECUTE_FIELD = { key: "execute", label: "" };
+const OWNER_FIELD = { key: "owner", label: _l("Owner"), sortable: false };
+
+const PERSONAL_FIELDS = [NAME_FIELD, TAGS_FIELD, UPDATED_FIELD, SHARING_FIELD, BOOKMARKED_FIELD, EXECUTE_FIELD];
+const PUBLISHED_FIELDS = [NAME_FIELD, TAGS_FIELD, UPDATED_FIELD, OWNER_FIELD];
+
 export default {
     components: {
         UtcDate,
@@ -169,47 +179,35 @@ export default {
             type: String,
             default: "success",
         },
+        published: {
+            // Render the published workflows version of this grid.
+            type: Boolean,
+            default: false,
+        },
     },
     data() {
+        const fields = this.published ? PUBLISHED_FIELDS : PERSONAL_FIELDS;
+        const implicitFilter = this.published ? "is:published" : null;
         return {
             tableId: "workflow-table",
-            fields: [
-                {
-                    key: "name",
-                    label: _l("Name"),
-                    sortable: true,
-                },
-                {
-                    key: "tags",
-                    label: _l("Tags"),
-                    sortable: false,
-                },
-                {
-                    label: _l("Updated"),
-                    key: "update_time",
-                    sortable: true,
-                },
-                {
-                    label: _l("Sharing"),
-                    key: "published",
-                    sortable: false,
-                },
-                {
-                    label: _l("Bookmarked"),
-                    key: "show_in_tool_panel",
-                    sortable: false,
-                },
-                {
-                    key: "execute",
-                    label: "",
-                },
-            ],
-            titleSearch: _l("Search Workflows"),
+            fields: fields,
+            titleSearch: "search workflows",
             workflowItemsModel: [],
-            workflowItems: [],
             helpHtml: helpHtml,
-            perPage: this.rowsPerPage(50),
+            perPage: this.rowsPerPage(this.defaultPerPage || 50),
+            dataProvider: storedWorkflowsProvider,
+            implicitFilter: implicitFilter,
         };
+    },
+    computed: {
+        dataProviderParameters() {
+            const extraParams = { search: this.effectiveFilter, skip_step_counts: true };
+            if (this.published) {
+                extraParams.show_published = true;
+                extraParams.show_shared = false;
+            }
+            return extraParams;
+        },
     },
     watch: {
         filter(val) {
@@ -221,14 +219,8 @@ export default {
         this.services = new Services();
     },
     methods: {
-        async provider(ctx) {
-            ctx.root = this.root;
-            const extraParams = { search: this.filter, skip_step_counts: true };
-            const promise = storedWorkflowsProvider(ctx, this.setRows, extraParams).catch(this.onError);
-            const workflowItems = await promise;
-            (workflowItems || []).forEach((item) => this.services._addAttributes(item));
-            this.workflowItems = workflowItems;
-            return this.workflowItems;
+        decorateData(item) {
+            this.services._addAttributes(item);
         },
         bookmarkWorkflow: function (id, checked) {
             const data = {
@@ -246,7 +238,7 @@ export default {
                         getGalaxyInstance().config.stored_workflow_menu_entries.splice(indexToRemove, 1);
                     }
 
-                    this.workflowItems.find((workflow) => {
+                    this.items.find((workflow) => {
                         if (workflow.id === id) {
                             workflow.show_in_tool_panel = checked;
                             return true;
