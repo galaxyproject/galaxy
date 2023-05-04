@@ -51,7 +51,9 @@
                                 <FormDisplay :inputs="result['conversion_inputs']" @onChange="onConversion" />
                                 <div class="mt-2">
                                     <b-button variant="primary" @click="submit('conversion', 'conversion')">
-                                        <font-awesome-icon icon="exchange-alt" class="mr-1" />{{ "Create Dataset" | localize }}
+                                        <font-awesome-icon icon="exchange-alt" class="mr-1" />{{
+                                            "Create Dataset" | localize
+                                        }}
                                     </b-button>
                                 </div>
                             </div>
