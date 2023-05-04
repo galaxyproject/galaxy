@@ -137,7 +137,14 @@ function openInMulti(history: HistorySummary) {
                     @click="() => historyClicked(history)">
                     <div class="d-flex justify-content-between align-items-center">
                         <Heading h3 inline bold size="text">{{ history.name }}</Heading>
-                        <b-badge pill><UtcDate :date="history.update_time" mode="elapsed" /></b-badge>
+                        <div class="d-flex align-items-center flex-gapx-1">
+                            <b-badge v-b-tooltip pill :title="localize('Amount of items in history')">
+                                {{ history.count }} {{ localize("items") }}
+                            </b-badge>
+                            <b-badge v-b-tooltip pill :title="localize('Last opened')">
+                                <UtcDate :date="history.update_time" mode="elapsed" />
+                            </b-badge>
+                        </div>
                     </div>
 
                     <p v-if="history.annotation" class="my-1">{{ history.annotation }}</p>
