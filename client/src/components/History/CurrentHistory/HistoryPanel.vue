@@ -94,10 +94,10 @@
                         </b-alert>
                         <div v-else-if="itemsLoaded.length === 0">
                             <HistoryEmpty v-if="queryDefault" class="m-2" />
-                            <b-alert v-else-if="searchError" class="m-2" variant="danger" show>
+                            <b-alert v-else-if="formattedSearchError" class="m-2" variant="danger" show>
                                 Error in filter:
                                 <a href="javascript:void(0)" @click="showAdvanced = true">
-                                    {{ formattedSearchError.filter }}'{{ formattedSearchError.value }}''
+                                    {{ formattedSearchError.filter }}'{{ formattedSearchError.value }}'
                                 </a>
                             </b-alert>
                             <b-alert v-else class="m-2" variant="info" show>
