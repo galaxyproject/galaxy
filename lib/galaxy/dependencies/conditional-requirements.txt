@@ -24,6 +24,8 @@ s3fs  # type: s3fs
 fs.anvilfs # type: anvil
 fs.googledrivefs # type: googledrive
 fs-gcsfs # type: googlecloudstorage
+# fs-gcsfs doesn't pin google-cloud-storage, and old versions log noisy exceptions and break test discovery
+google-cloud-storage>=2.8.0  # type: googlecloudstorage
 fs-onedatafs # type: onedata
 fs-basespace # type: basespace
 
