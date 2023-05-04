@@ -653,8 +653,9 @@ def get_tool_shed_status_for(tool_shed_registry: Registry, repository: ToolShedR
         # This should handle backward compatility to the Galaxy 12/20/12 release.  We used to only handle updates for an installed revision
         # using a boolean value.
         log.debug(
-            "Error attempting to get tool shed status for installed repository %s: %s\nAttempting older 'check_for_updates' method.\n"
-            % (str(repository.name), str(e))
+            "Error attempting to get tool shed status for installed repository %s: %s\nAttempting older 'check_for_updates' method.\n",
+            repository.name,
+            e,
         )
         pathspec = ["repository", "check_for_updates"]
         params["from_update_manager"] = True

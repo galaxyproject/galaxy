@@ -223,8 +223,9 @@ def get_repository_dependency_tups_from_repository_metadata(app, repository_meta
                                 dependency_tups.append(repository_dependency_tup)
                         else:
                             log.debug(
-                                "Cannot locate repository %s owned by %s for inclusion in repository dependency tups."
-                                % (name, owner)
+                                "Cannot locate repository %s owned by %s for inclusion in repository dependency tups.",
+                                name,
+                                owner,
                             )
     return dependency_tups
 

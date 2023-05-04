@@ -960,8 +960,7 @@ class NestedObjectStore(BaseObjectStore):
                 return store.__getattribute__(method)(obj, **kwargs)
         if default_is_exception:
             raise default(
-                "objectstore, _call_method failed: %s on %s, kwargs: %s"
-                % (method, self._repr_object_for_exception(obj), str(kwargs))
+                f"objectstore, _call_method failed: {method} on {self._repr_object_for_exception(obj)}, kwargs: {kwargs}"
             )
         else:
             return default
@@ -1138,8 +1137,10 @@ class DistributedObjectStore(NestedObjectStore):
                 )
             else:
                 log.debug(
-                    "Using preferred backend '%s' for creation of %s %s"
-                    % (object_store_id, obj.__class__.__name__, obj.id)
+                    "Using preferred backend '%s' for creation of %s %s",
+                    object_store_id,
+                    obj.__class__.__name__,
+                    obj.id,
                 )
             return self.backends[object_store_id].create(obj, **kwargs)
         else:
@@ -1151,8 +1152,7 @@ class DistributedObjectStore(NestedObjectStore):
             return self.backends[object_store_id].__getattribute__(method)(obj, **kwargs)
         if default_is_exception:
             raise default(
-                "objectstore, _call_method failed: %s on %s, kwargs: %s"
-                % (method, self._repr_object_for_exception(obj), str(kwargs))
+                f"objectstore, _call_method failed: {method} on {self._repr_object_for_exception(obj)}, kwargs: {kwargs}"
             )
         else:
             return default
@@ -1178,8 +1178,10 @@ class DistributedObjectStore(NestedObjectStore):
                 return obj.object_store_id
             else:
                 log.warning(
-                    "The backend object store ID (%s) for %s object with ID %s is invalid"
-                    % (obj.object_store_id, obj.__class__.__name__, obj.id)
+                    "The backend object store ID (%s) for %s object with ID %s is invalid",
+                    obj.object_store_id,
+                    obj.__class__.__name__,
+                    obj.id,
                 )
         elif self.search_for_missing:
             # if this instance has been switched from a non-distributed to a

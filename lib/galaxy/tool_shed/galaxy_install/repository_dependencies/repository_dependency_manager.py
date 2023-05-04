@@ -234,15 +234,14 @@ class RepositoryDependencyInstallManager:
                             install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES,
                             install_model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES,
                         ]:
-                            info_msg = (
+                            log.info(
                                 "Skipping installation of revision %s of repository '%s' because it was installed "
-                                % (changeset_revision, repository_db_record.name)
+                                "with the (possibly updated) revision %s and its current installation status is '%s'.",
+                                changeset_revision,
+                                repository_db_record.name,
+                                installed_changeset_revision,
+                                repository_db_record.status,
                             )
-                            info_msg += (
-                                "with the (possibly updated) revision %s and its current installation status is '%s'."
-                                % (installed_changeset_revision, repository_db_record.status)
-                            )
-                            log.info(info_msg)
                             can_update_db_record = False
                         else:
                             if repository_db_record.status in [

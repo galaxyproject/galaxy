@@ -1092,8 +1092,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 if current_history in target_histories:
                     refresh_frames = ["history"]
                 hist_names_str = ", ".join(
-                    '<a href="%s" target="_top">%s</a>'
-                    % (
+                    '<a href="{}" target="_top">{}</a>'.format(
                         url_for(
                             controller="history", action="switch_to_history", hist_id=trans.security.encode_id(hist.id)
                         ),
