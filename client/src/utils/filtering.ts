@@ -85,7 +85,7 @@ export function getOperatorForAlias(alias: Alias): Operator {
     return operatorForAlias[alias];
 }
 
-export type HandlerReturn<T> = {
+type HandlerReturn<T> = {
     attribute: string;
     converter?: Converter<T>;
     query: string;
