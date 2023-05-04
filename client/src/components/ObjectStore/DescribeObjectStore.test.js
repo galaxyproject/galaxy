@@ -66,7 +66,7 @@ describe("DescribeObjectStore.vue", () => {
         expect(byIdSpan.length).toBe(1);
         const byNameSpan = wrapper.findAll(".display-os-by-name");
         expect(byNameSpan.length).toBe(0);
-        expect(wrapper.find("object-store-restriction-span-stub").props("isPrivate")).toBeFalsy();
+        expect(wrapper.vm.isPrivate).toBeFalsy();
     });
 
     it("test dataset storage with object store name", async () => {
@@ -78,6 +78,6 @@ describe("DescribeObjectStore.vue", () => {
         expect(byIdSpan.length).toBe(0);
         const byNameSpan = wrapper.findAll(".display-os-by-name");
         expect(byNameSpan.length).toBe(1);
-        expect(wrapper.find("object-store-restriction-span-stub").props("isPrivate")).toBeTruthy();
+        expect(wrapper.vm.isPrivate).toBeTruthy();
     });
 });

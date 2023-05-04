@@ -1,3 +1,33 @@
+<script setup lang="ts">
+import ObjectStoreRestrictionSpan from "./ObjectStoreRestrictionSpan.vue";
+import QuotaUsageBar from "@/components/User/DiskUsage/Quota/QuotaUsageBar.vue";
+import { QuotaSourceUsageProvider } from "@/components/User/DiskUsage/Quota/QuotaUsageProvider.js";
+import ObjectStoreBadges from "./ObjectStoreBadges.vue";
+import { adminMarkup } from "./adminConfig";
+import type { components } from "@/schema";
+
+import { computed } from "vue";
+
+type ConcreteObjectStoreModel = components["schemas"]["ConcreteObjectStoreModel"];
+
+interface Props {
+    storageInfo: ConcreteObjectStoreModel;
+    what: string;
+}
+
+const props = defineProps<Props>();
+
+const quotaSourceLabel = computed(() => props.storageInfo.quota?.source);
+const descriptionRendered = computed(() => adminMarkup(props.storageInfo.description || ""));
+const isPrivate = computed(() => props.storageInfo.private);
+const badges = computed(() => props.storageInfo.badges);
+
+defineExpose({
+    descriptionRendered,
+    isPrivate,
+});
+</script>
+
 <template>
     <div>
         <div>
@@ -26,44 +56,3 @@
         <div v-html="descriptionRendered"></div>
     </div>
 </template>
-
-<script>
-import ObjectStoreRestrictionSpan from "./ObjectStoreRestrictionSpan";
-import QuotaUsageBar from "components/User/DiskUsage/Quota/QuotaUsageBar";
-import { QuotaSourceUsageProvider } from "components/User/DiskUsage/Quota/QuotaUsageProvider";
-import ObjectStoreBadges from "./ObjectStoreBadges";
-import { adminMarkup } from "./adminConfig";
-
-export default {
-    components: {
-        ObjectStoreBadges,
-        ObjectStoreRestrictionSpan,
-        QuotaSourceUsageProvider,
-        QuotaUsageBar,
-    },
-    props: {
-        storageInfo: {
-            type: Object,
-            required: true,
-        },
-        what: {
-            type: String,
-            required: true,
-        },
-    },
-    computed: {
-        quotaSourceLabel() {
-            return this.storageInfo.quota?.source;
-        },
-        descriptionRendered() {
-            return adminMarkup(this.storageInfo.description);
-        },
-        isPrivate() {
-            return this.storageInfo.private;
-        },
-        badges() {
-            return this.storageInfo.badges;
-        },
-    },
-};
-</script>
