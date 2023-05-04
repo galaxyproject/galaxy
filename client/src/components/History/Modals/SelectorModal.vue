@@ -146,7 +146,7 @@ function openInMulti(history: HistorySummary) {
                             <b-badge v-b-tooltip pill :title="localize('Amount of items in history')">
                                 {{ history.count }} {{ localize("items") }}
                             </b-badge>
-                            <b-badge v-b-tooltip pill :title="localize('Last opened')">
+                            <b-badge v-b-tooltip pill :title="localize('Last edited')">
                                 <UtcDate :date="history.update_time" mode="elapsed" />
                             </b-badge>
                         </div>
