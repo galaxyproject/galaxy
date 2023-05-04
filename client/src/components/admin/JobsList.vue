@@ -36,11 +36,7 @@
                     </b-form-group>
                 </b-form>
                 <b-form-group description="Use strings or regular expressions to search jobs.">
-                    <IndexFilter
-                        id="job-search"
-                        v-model="filter"
-                        :placeholder="titleSearchJobs"
-                        :help-html="helpHtml" />
+                    <IndexFilter v-bind="filterAttrs" id="job-search" v-model="filter" />
                 </b-form-group>
             </b-col>
         </b-row>
@@ -109,7 +105,6 @@ import { commonJobFields } from "./JobFields";
 import { errorMessageAsString } from "utils/simple-error";
 import { jobsProvider } from "components/providers/JobProvider";
 import Heading from "components/Common/Heading";
-import IndexFilter from "components/Indices/IndexFilter";
 import filtersMixin from "components/Indices/filtersMixin";
 
 function cancelJob(jobId, message) {
@@ -144,7 +139,7 @@ returned. So <code>tool:'cat1'</code> would show only jobs from the <code>cat1</
 `;
 
 export default {
-    components: { JobLock, JobsTable, Heading, IndexFilter },
+    components: { JobLock, JobsTable, Heading },
     mixins: [filtersMixin],
     data() {
         return {
@@ -169,7 +164,7 @@ export default {
             busy: true,
             cutoffMin: 5,
             showAllRunning: false,
-            titleSearchJobs: `search jobs`,
+            titleSearch: `search jobs`,
             helpHtml: helpHtml,
         };
     },

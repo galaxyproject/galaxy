@@ -19,7 +19,7 @@ export default {
     },
     computed: {
         isFiltered() {
-            return !!this.filter;
+            return Boolean(this.filter);
         },
         effectiveFilter() {
             let filter = this.filter;
