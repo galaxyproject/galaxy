@@ -3,7 +3,7 @@ import ObjectStoreRestrictionSpan from "./ObjectStoreRestrictionSpan.vue";
 import QuotaUsageBar from "@/components/User/DiskUsage/Quota/QuotaUsageBar.vue";
 import { QuotaSourceUsageProvider } from "@/components/User/DiskUsage/Quota/QuotaUsageProvider.js";
 import ObjectStoreBadges from "./ObjectStoreBadges.vue";
-import { adminMarkup } from "./adminConfig";
+import ConfigurationMarkdown from "./ConfigurationMarkdown.vue";
 import type { components } from "@/schema";
 
 import { computed } from "vue";
@@ -18,12 +18,10 @@ interface Props {
 const props = defineProps<Props>();
 
 const quotaSourceLabel = computed(() => props.storageInfo.quota?.source);
-const descriptionRendered = computed(() => adminMarkup(props.storageInfo.description || ""));
 const isPrivate = computed(() => props.storageInfo.private);
 const badges = computed(() => props.storageInfo.badges);
 
 defineExpose({
-    descriptionRendered,
     isPrivate,
 });
 </script>
@@ -53,6 +51,6 @@ defineExpose({
             <QuotaUsageBar v-else-if="quotaUsage" :quota-usage="quotaUsage" :embedded="true" />
         </QuotaSourceUsageProvider>
         <div v-else>Galaxy has no quota configured for this object store.</div>
-        <div v-html="descriptionRendered"></div>
+        <ConfigurationMarkdown :markdown="storageInfo.description" :admin="true" />
     </div>
 </template>
