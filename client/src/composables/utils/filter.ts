@@ -26,8 +26,14 @@ export function useFilterObjectArray<O extends object, K extends keyof O>(
                 for (const field of fields) {
                     const val = obj[field];
 
-                    if (typeof val === "string" && val.toLowerCase().includes(f)) {
-                        return true;
+                    if (typeof val === "string") {
+                        if (val.toLowerCase().includes(f)) {
+                            return true;
+                        }
+                    } else if (Array.isArray(val)) {
+                        if (val.includes(f)) {
+                            return true;
+                        }
                     }
                 }
 
