@@ -1,124 +1,232 @@
-<template>
-    <b-modal ref="modal" v-bind="$attrs" :title="title | l" footer-class="justify-content-between" v-on="$listeners">
-        <b-form-group :description="'Filter histories' | l">
-            <b-form-input v-model="filter" type="search" :placeholder="'Search Filter' | l" />
-        </b-form-group>
+<script setup lang="ts">
+import {
+    BModal,
+    BFormGroup,
+    BFormInput,
+    BListGroup,
+    BListGroupItem,
+    BPagination,
+    BBadge,
+    BButtonGroup,
+    BButton,
+} from "bootstrap-vue";
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
+import UtcDate from "@/components/UtcDate.vue";
+import { ref, type PropType, computed, type Ref, watch } from "vue";
+import { useFilterObjectArray } from "@/composables/utils/filter";
+import localize from "@/utils/localization";
+import Heading from "@/components/Common/Heading.vue";
+import type { HistorySummary } from "@/stores/historyStore";
+import { useRouter } from "vue-router/composables";
+import { useHistoryStore } from "@/stores/historyStore";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { faColumns, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
+import { faListAlt } from "@fortawesome/free-regular-svg-icons";
 
-        <b-table
-            striped
-            hover
-            sticky-header="50vh"
-            primary-key="id"
-            :fields="fields"
-            :filter="filter"
-            :items="histories"
-            :per-page="perPage"
-            :current-page="currentPage"
-            :selectable="true"
-            :sort-by.sync="sortBy"
-            :sort-desc.sync="sortDesc"
-            :sort-compare="currentFirstSortCompare"
-            :select-mode="multiple ? 'multi' : 'single'"
-            selected-variant="success"
-            @row-selected="rowSelected"
-            @filtered="onFiltered">
-            <template v-slot:cell(name)="row">
-                {{ row.item.name }} <i v-if="row.item.id === currentHistoryId"><b>(Current)</b></i>
+type AdditionalOptions = "set-current" | "multi" | "center";
+
+const props = defineProps({
+    multiple: { type: Boolean, default: false },
+    title: { type: String, default: "Switch to history" },
+    histories: { type: Array as PropType<HistorySummary[]>, default: () => [] },
+    perPage: { type: Number, default: 8 },
+    currentHistoryId: { type: String, required: true },
+    additionalOptions: { type: Array as PropType<AdditionalOptions[]>, default: () => [] },
+});
+
+const emit = defineEmits<{
+    (e: "selectHistory", history: HistorySummary): void;
+    (e: "selectHistories", histories: HistorySummary[]): void;
+}>();
+
+// @ts-ignore bad library types
+library.add(faColumns, faSignInAlt, faListAlt);
+
+const filter = ref("");
+const currentPage = ref(1);
+const modal: Ref<BModal | null> = ref(null);
+
+// reactive proxy for props.histories, as the prop is not
+// always guaranteed to be reactive for some strange reason.
+// TODO: Reinvestigate when upgrading to vue3
+const histories: Ref<HistorySummary[]> = ref([]);
+watch(
+    () => props.histories,
+    (h) => {
+        histories.value = h;
+    },
+    {
+        immediate: true,
+    }
+);
+
+const filtered = useFilterObjectArray(histories, filter, ["name", "tags", "annotation"]);
+
+watch(
+    () => filtered.value,
+    () => {
+        filtered.value.sort((a, b) => (a.update_time < b.update_time ? 1 : -1));
+    }
+);
+
+const paginated = computed(() =>
+    filtered.value.slice((currentPage.value - 1) * props.perPage, currentPage.value * props.perPage)
+);
+
+const totalRows = computed(() => filtered.value.length);
+const selectedHistories: Ref<HistorySummary[]> = ref([]);
+
+function historyClicked(history: HistorySummary) {
+    if (props.multiple) {
+        const index = selectedHistories.value.indexOf(history);
+        if (index !== -1) {
+            selectedHistories.value.splice(index, 1);
+        } else {
+            selectedHistories.value.push(history);
+        }
+    } else {
+        emit("selectHistory", history);
+        modal.value?.hide();
+    }
+}
+
+function selectHistories() {
+    emit("selectHistories", selectedHistories.value);
+    selectedHistories.value.length = 0;
+    modal.value?.hide();
+}
+
+const router = useRouter();
+const historyStore = useHistoryStore();
+
+function setCurrentHistory(history: HistorySummary) {
+    historyStore.setCurrentHistory(history.id);
+    modal.value?.hide();
+}
+
+function setCenterPanelHistory(history: HistorySummary) {
+    router.push(`/histories/view?id=${history.id}`);
+    modal.value?.hide();
+}
+
+function openInMulti(history: HistorySummary) {
+    router.push("/histories/view_multiple");
+    historyStore.pinHistory(history.id);
+    modal.value?.hide();
+}
+</script>
+
+<template>
+    <div>
+        <b-modal ref="modal" v-bind="$attrs" content-class="history-selector-modal" v-on="$listeners">
+            <template v-slot:modal-title>
+                <Heading h2 inline size="sm">{{ localize(title) }}</Heading>
             </template>
-            <template v-slot:cell(tags)="row">
-                <stateless-tags :value="row.item.tags" :disabled="true" />
+
+            <b-form-group :description="localize('Filter histories')">
+                <b-form-input v-model="filter" type="search" debounce="400" :placeholder="localize('Search Filter')" />
+            </b-form-group>
+
+            <b-list-group>
+                <b-list-group-item
+                    v-for="history in paginated"
+                    :key="history.id"
+                    button
+                    :active="selectedHistories.includes(history)"
+                    @click="() => historyClicked(history)">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <Heading h3 inline bold size="text">{{ history.name }}</Heading>
+                        <b-badge pill><UtcDate :date="history.update_time" mode="elapsed" /></b-badge>
+                    </div>
+
+                    <p v-if="history.annotation" class="my-1">{{ history.annotation }}</p>
+
+                    <StatelessTags
+                        v-if="history.tags.length > 0"
+                        class="my-1"
+                        :value="history.tags"
+                        :disabled="true"
+                        :max-visible-tags="10" />
+
+                    <div
+                        v-if="props.additionalOptions.length > 0"
+                        class="d-flex justify-content-end align-items-center mt-1">
+                        <b-button-group>
+                            <b-button
+                                v-if="props.additionalOptions.includes('set-current')"
+                                v-b-tooltip
+                                :title="localize('Set as current history')"
+                                variant="link"
+                                class="p-0 px-1"
+                                @click.stop="() => setCurrentHistory(history)">
+                                <FontAwesomeIcon icon="fa-sign-in-alt" />
+                            </b-button>
+
+                            <b-button
+                                v-if="props.additionalOptions.includes('multi')"
+                                v-b-tooltip
+                                :title="localize('Open in multi-view')"
+                                variant="link"
+                                class="p-0 px-1"
+                                @click.stop="() => openInMulti(history)">
+                                <FontAwesomeIcon icon="fa-columns" />
+                            </b-button>
+
+                            <b-button
+                                v-if="props.additionalOptions.includes('center')"
+                                v-b-tooltip
+                                :title="localize('Open in center panel')"
+                                variant="link"
+                                class="p-0 px-1"
+                                @click.stop="() => setCenterPanelHistory(history)">
+                                <FontAwesomeIcon icon="far fa-list-alt" />
+                            </b-button>
+                        </b-button-group>
+                    </div>
+                </b-list-group-item>
+            </b-list-group>
+
+            <b-pagination
+                v-if="totalRows > props.perPage"
+                v-model="currentPage"
+                class="mt-4"
+                :total-rows="totalRows"
+                :per-page="props.perPage"></b-pagination>
+
+            <template v-slot:modal-footer>
+                <b-button
+                    v-if="multiple"
+                    v-localize
+                    :disabled="selectedHistories.length === 0"
+                    variant="primary"
+                    @click="selectHistories">
+                    Add Selected
+                </b-button>
+                <span v-else v-localize> Click a history to switch to it </span>
             </template>
-            <template v-slot:cell(update_time)="data">
-                <UtcDate :date="data.value" mode="elapsed" />
-            </template>
-        </b-table>
-        <template v-slot:modal-footer>
-            <b-pagination v-model="currentPage" :total-rows="totalRows" :per-page="perPage" />
-            <b-button v-if="multiple" :disabled="isEmptySelection" variant="primary" @click="addSelected">
-                Add Selected
-            </b-button>
-        </template>
-    </b-modal>
+        </b-modal>
+    </div>
 </template>
 
-<script>
-import { BModal, BFormGroup, BFormInput, BTable, BPagination } from "bootstrap-vue";
-import { StatelessTags } from "components/Tags";
-import UtcDate from "components/UtcDate";
+<style lang="scss">
+@import "theme/blue.scss";
 
-export default {
-    components: {
-        StatelessTags,
-        UtcDate,
-        BModal,
-        BFormGroup,
-        BFormInput,
-        BTable,
-        BPagination,
-    },
-    props: {
-        multiple: { type: Boolean, default: false },
-        title: { type: String, default: "Switch to history" },
-        currentHistoryId: { type: String, required: true },
-        histories: { type: Array, default: () => [] },
-        perPage: { type: Number, required: false, default: 50 },
-    },
-    data() {
-        return {
-            filter: null,
-            currentPage: 1,
-            totalRows: 0,
-            sortBy: "update_time",
-            sortDesc: true,
-            selectedHistories: [],
-        };
-    },
-    computed: {
-        isEmptySelection() {
-            return this.selectedHistories.length === 0;
-        },
-    },
-    watch: {
-        histories(newVal) {
-            this.totalRows = newVal.length;
-        },
-    },
-    created() {
-        this.fields = [
-            { key: "name", sortable: true },
-            { key: "tags", sortable: true },
-            { key: "count", label: "Items", sortable: true },
-            { key: "update_time", label: "Updated", sortable: true },
-        ];
-    },
-    methods: {
-        rowSelected(selected) {
-            if (this.multiple) {
-                this.selectedHistories = selected;
-            } else if (selected.length === 1) {
-                this.$emit("selectHistory", selected[0]);
-                this.$refs.modal.hide();
+.history-selector-modal {
+    .list-group {
+        .list-group-item {
+            border-radius: 0;
+
+            &:first-child {
+                border-top-left-radius: inherit;
+                border-top-right-radius: inherit;
             }
-        },
-        addSelected() {
-            this.$emit("selectHistories", this.selectedHistories);
-            this.$refs.modal.hide();
-        },
-        onFiltered(filteredItems) {
-            this.totalRows = filteredItems.length;
-            this.currentPage = 1;
-        },
-        /** Make the current history appear always first when sorting. */
-        currentFirstSortCompare(a, b, key, sortDesc) {
-            if (a.id == this.currentHistoryId) {
-                return sortDesc ? 1 : -1;
-            } else if (b.id == this.currentHistoryId) {
-                return sortDesc ? -1 : 1;
-            } else {
-                // Fallback to default sorting
-                return false;
+
+            &:last-child {
+                border-bottom-left-radius: inherit;
+                border-bottom-right-radius: inherit;
             }
-        },
-    },
-};
-</script>
+        }
+    }
+}
+</style>

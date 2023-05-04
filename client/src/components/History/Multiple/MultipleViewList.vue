@@ -82,6 +82,7 @@ function addHistoriesToList(histories: HistorySummary[]) {
                 :multiple="true"
                 :histories="histories"
                 :current-history-id="currentHistory.id"
+                :additional-options="['center', 'set-current']"
                 title="Select histories"
                 @selectHistories="addHistoriesToList" />
         </div>
