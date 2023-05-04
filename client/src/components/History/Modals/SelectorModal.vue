@@ -133,10 +133,15 @@ function openInMulti(history: HistorySummary) {
                     v-for="history in paginated"
                     :key="history.id"
                     button
+                    :class="{ current: history.id === props.currentHistoryId }"
                     :active="selectedHistories.includes(history)"
                     @click="() => historyClicked(history)">
                     <div class="d-flex justify-content-between align-items-center">
-                        <Heading h3 inline bold size="text">{{ history.name }}</Heading>
+                        <Heading h3 inline bold size="text">
+                            {{ history.name }}
+                            <i v-if="history.id === props.currentHistoryId">(Current)</i>
+                        </Heading>
+
                         <div class="d-flex align-items-center flex-gapx-1">
                             <b-badge v-b-tooltip pill :title="localize('Amount of items in history')">
                                 {{ history.count }} {{ localize("items") }}
@@ -223,6 +228,10 @@ function openInMulti(history: HistorySummary) {
     .list-group {
         .list-group-item {
             border-radius: 0;
+
+            &.current {
+                border-left: 0.25rem solid $brand-primary;
+            }
 
             &:first-child {
                 border-top-left-radius: inherit;
