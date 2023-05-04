@@ -39,6 +39,8 @@ NO_APP_MESSAGE = "test_case._app called though no Galaxy has been configured."
 # Following should be for Homebrew Rabbitmq and Docker on Mac "amqp://guest:guest@localhost:5672//"
 AMQP_URL = os.environ.get("GALAXY_TEST_AMQP_URL", None)
 POSTGRES_CONFIGURED = "postgres" in os.environ.get("GALAXY_TEST_DBURI", "")
+SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
+VAULT_CONF = os.path.join(SCRIPT_DIRECTORY, "vault_conf.yml")
 
 
 def _identity(func):
@@ -243,3 +245,9 @@ class ConfiguresObjectStores:
             os.path.join(temp_directory, dir_name)
             safe_makedirs(path)
             setattr(cls, f"{dir_name}_path", path)
+
+
+class ConfiguresDatabaseVault:
+    @classmethod
+    def _configure_database_vault(cls, config):
+        config["vault_config_file"] = VAULT_CONF
