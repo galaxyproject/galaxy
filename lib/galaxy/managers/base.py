@@ -365,9 +365,10 @@ class ModelManager(Generic[U]):
         Returns all objects matching the given filters
         """
         # list becomes a way of applying both filters generated in the orm (such as .user ==)
-        # and functional filters that aren't currently possible using the orm (such as instance calcluated values
+        # and functional filters that aren't currently possible using the orm (such as instance calculated values
         # or annotations/tags). List splits those two filters and applies limits/offsets
         # only after functional filters (if any) using python.
+        self._handle_filters_case_sensitivity(filters)
         orm_filters, fn_filters = self._split_filters(filters)
         if not fn_filters:
             # if no fn_filtering required, we can use the 'all orm' version with limit offset
@@ -380,6 +381,18 @@ class ModelManager(Generic[U]):
         # apply limit, offset after SQL filtering
         items = self._apply_fn_filters_gen(items, fn_filters)
         return list(self._apply_fn_limit_offset_gen(items, limit, offset))
+
+    def _handle_filters_case_sensitivity(self, filters):
+        """Modifies the filters to make them case insensitive if needed."""
+        if filters is None:
+            return  # No filters to handle
+        iterable_filters = filters if isinstance(filters, list) else [filters]
+        for item in iterable_filters:
+            # If the filter has the case_insensitive attribute set to True this means that the filter
+            # is a parsed orm filter and that it needs to compare the column with a lower case version of the value.
+            is_case_insensitive = getattr(item, "case_insensitive", False)
+            if is_case_insensitive and isinstance(item.filter, sqlalchemy.sql.elements.BinaryExpression):
+                item.filter.left = sqlalchemy.func.lower(item.filter.left)
 
     def _split_filters(self, filters):
         """
