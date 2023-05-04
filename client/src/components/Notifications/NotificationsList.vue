@@ -10,6 +10,7 @@ import AsyncButton from "@/components/Common/AsyncButton.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import { faCircle, faInbox, faRetweet } from "@fortawesome/free-solid-svg-icons";
+import NotificationsPreferences from "@/components/User/Notifications/NotificationsPreferences.vue";
 
 Vue.use(BootstrapVue);
 
@@ -23,6 +24,7 @@ const { notifications, loadingNotifications } = storeToRefs(notificationsStore);
 
 const showUnread = ref(false);
 const showFavorites = ref(false);
+const preferencesOpen = ref(false);
 const selectedNotificationIds = ref<string[]>([]);
 
 const haveSelected = computed(() => selectedNotificationIds.value.length > 0);
@@ -53,6 +55,7 @@ function getNotificationVariant(item: UserNotificationResponse) {
             return item.variant;
     }
 }
+
 function getNotificationIcon(item: UserNotificationResponse) {
     switch (item.category) {
         case "new_shared_item":
@@ -81,11 +84,28 @@ function selectOrDeselectNotification(items: UserNotificationResponse[]) {
         selectedNotificationIds.value = newSelectedIds;
     }
 }
+
+function togglePreferences() {
+    preferencesOpen.value = !preferencesOpen.value;
+}
 </script>
 
 <template>
     <div aria-labelledby="notifications-list">
-        <h1 id="notifications-title" class="h-lg">Notifications</h1>
+        <div class="d-flex justify-content-between">
+            <h1 id="notifications-title" class="h-lg">Notifications</h1>
+            <BButton class="mb-2" variant="outline-primary" :pressed="preferencesOpen" @click="togglePreferences">
+                <FontAwesomeIcon icon="cog" />
+                Notifications preferences
+            </BButton>
+        </div>
+
+        <BCollapse v-model="preferencesOpen">
+            <BCard class="m-2">
+                <NotificationsPreferences header-size="h-md" />
+            </BCard>
+        </BCollapse>
+
         <BAlert v-if="loadingNotifications" show>
             <LoadingSpan message="Loading notifications" />
         </BAlert>
