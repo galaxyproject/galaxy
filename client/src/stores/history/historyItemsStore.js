@@ -12,7 +12,7 @@ import { mergeArray } from "store/historyStore/model/utilities";
 import { HistoryFilters } from "components/History/HistoryFilters";
 
 const limit = 100;
-const queue = new LastQueue();
+const queue = new LastQueue(1000, true);
 
 export const useHistoryItemsStore = defineStore("historyItemsStore", {
     state: () => ({
