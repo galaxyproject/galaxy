@@ -4493,6 +4493,11 @@ export interface components {
              */
             name: string;
             /**
+             * Preferred Object Store ID
+             * @description The ID of the object store that should be used to store new datasets in this history.
+             */
+            preferred_object_store_id?: string;
+            /**
              * Published
              * @description Whether this resource is currently publicly available to all users.
              */
@@ -4595,6 +4600,11 @@ export interface components {
              */
             name: string;
             /**
+             * Preferred Object Store ID
+             * @description The ID of the object store that should be used to store new datasets in this history.
+             */
+            preferred_object_store_id?: string;
+            /**
              * Published
              * @description Whether this resource is currently publicly available to all users.
              */
@@ -4605,6 +4615,12 @@ export interface components {
              */
             purged: boolean;
             tags: components["schemas"]["TagCollection"];
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time and date this item was updated.
+             */
+            update_time: string;
             /**
              * URL
              * @deprecated
