@@ -519,6 +519,10 @@ tool_form:
     reference: '.formatted-reference'
     about: '.tool-footer'
     storage_options: '.tool-storage'
+    drilldown_select_all: 'div.ui-form-element[id="form-element-${parameter}"] div.select-all-checkbox'
+    drilldown_option: '.drilldown-option'
+    drilldown_expand: '.fa-plus-square'
+
 
   labels:
     generate_tour: 'Generate Tour'

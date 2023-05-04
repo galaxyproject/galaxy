@@ -74,6 +74,26 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         generic_item.find_element(By.CSS_SELECTOR, "[title='Run Job Again']").click()
         self.components.tool_form.execute.wait_for_visible()
 
+    @selenium_test
+    def test_drilldown_tool(self):
+        self._open_drilldown_test_tool()
+        # click first option in first drilldown component
+        self.wait_for_and_click(self.components.tool_form.drilldown_expand)
+        self.wait_for_and_click(self.components.tool_form.drilldown_option)
+        # click select all in second drilldown component
+        self.wait_for_and_click(self.components.tool_form.drilldown_select_all(parameter="dd_recurse"))
+        self.tool_form_execute()
+        self.history_panel_wait_for_hid_ok(1)
+        # click hid 1 in history panel
+        self.history_panel_click_item_title(hid=1)
+        # assert that the dataset peek is d = a dd_recurse = a,b,c
+        self.assert_item_peek_includes(1, "dd a")
+        self.assert_item_peek_includes(1, "dd_recurse aa,aba,abb,ba,bba,bbb")
+
+    def _open_drilldown_test_tool(self):
+        self.home()
+        self.tool_open("drill_down")
+
     @staticmethod
     def click_menu_item(menu, text):
         for element in menu.find_elements(By.CSS_SELECTOR, "a"):
