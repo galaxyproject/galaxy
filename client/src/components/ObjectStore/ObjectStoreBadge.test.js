@@ -26,7 +26,7 @@ describe("ObjectStoreBadge", () => {
         const popoverStub = wrapper.find("b-popover-stub");
         const popoverText = popoverStub.text();
         expect(popoverText).toContain(TEST_MESSAGE);
-        expect(popoverText).toContain("more secure by the Galaxy adminstrator");
+        expect(popoverText).toContain("more secure by the Galaxy administrator");
     });
 
     it("should render a valid badge for less_secure type", async () => {
@@ -37,6 +37,6 @@ describe("ObjectStoreBadge", () => {
         const popoverStub = wrapper.find("b-popover-stub");
         const popoverText = popoverStub.text();
         expect(popoverText).toContain(TEST_MESSAGE);
-        expect(popoverText).toContain("less secure by the Galaxy adminstrator");
+        expect(popoverText).toContain("less secure by the Galaxy administrator");
     });
 });
