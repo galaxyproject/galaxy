@@ -13,8 +13,8 @@
 
 import { omit } from "lodash";
 
-type Converter<FilterValue> = (value: FilterValue) => FilterValue;
-type Handler<FilterValue> = (v: FilterValue, q: FilterValue) => boolean;
+type Converter<T> = (value: T) => T;
+type Handler<T> = (v: T, q: T) => boolean;
 
 /** Add comparison aliases i.e. '*>value' is converted to '*_gt=value' */
 const defaultValidAliases: Array<[string, string]> = [
@@ -38,7 +38,7 @@ type Operator = OperatorForAlias[Alias];
  * @param value
  * @returns seconds since epoch
  * */
-export function toDate<FilterValue>(value: FilterValue): number {
+export function toDate<T>(value: T): number {
     return Date.parse(String(value)) / 1000;
 }
 
@@ -46,7 +46,7 @@ export function toDate<FilterValue>(value: FilterValue): number {
  * @param value
  * @returns Lowercase value
  * */
-export function toLower<FilterValue>(value: FilterValue): string {
+export function toLower<T>(value: T): string {
     return String(value).toLowerCase();
 }
 
@@ -54,7 +54,7 @@ export function toLower<FilterValue>(value: FilterValue): string {
  * @param value
  * @returns true/false if value is 'true/false', undefined if value is null
  * */
-export function toBool<FilterValue>(value: FilterValue): boolean | undefined {
+export function toBool<T>(value: T): boolean | undefined {
     return value !== null ? toLower(value) === "true" : undefined;
 }
 
@@ -62,7 +62,7 @@ export function toBool<FilterValue>(value: FilterValue): boolean | undefined {
  * @param value
  * @returns Lowercase value without quotation marks
  * */
-export function toLowerNoQuotes<FilterValue>(value: FilterValue): string {
+export function toLowerNoQuotes<T>(value: T): string {
     return toLower(value).replace(/('|")/g, "");
 }
 
@@ -70,9 +70,9 @@ export function toLowerNoQuotes<FilterValue>(value: FilterValue): string {
  * @param value
  * @returns Lowercase value with 'name:' replaced with '#'
  * */
-export function expandNameTag<FilterValue>(value: FilterValue): string {
+export function expandNameTag<T>(value: T): string {
     if (value && typeof value === "string") {
-        value = value.replace(/^#/, "name:") as FilterValue;
+        value = value.replace(/^#/, "name:") as T;
     }
     return toLower(value);
 }
@@ -85,11 +85,11 @@ export function getOperatorForAlias(alias: Alias): Operator {
     return operatorForAlias[alias];
 }
 
-export type HandlerReturn<FilterValue> = {
+export type HandlerReturn<T> = {
     attribute: string;
-    converter?: Converter<FilterValue>;
+    converter?: Converter<T>;
     query: string;
-    handler: Handler<FilterValue>;
+    handler: Handler<T>;
 };
 
 /**
@@ -98,16 +98,12 @@ export type HandlerReturn<FilterValue> = {
  * @param query parameter if the attribute does not match the server query key
  * @param converter if item attribute value has to be transformed e.g. to a date.
  */
-export function equals<FilterValue>(
-    attribute: string,
-    query?: string,
-    converter?: Converter<FilterValue>
-): HandlerReturn<FilterValue> {
+export function equals<T>(attribute: string, query?: string, converter?: Converter<T>): HandlerReturn<T> {
     return {
         attribute,
         converter,
         query: query || `${attribute}-eq`,
-        handler: (v: FilterValue, q: FilterValue) => {
+        handler: (v: T, q: T) => {
             if (converter) {
                 v = converter(v);
                 q = converter(q);
@@ -123,16 +119,12 @@ export function equals<FilterValue>(
  * @param query parameter if the attribute does not match the server query key
  * @param converter if item attribute value has to be transformed e.g. to a date.
  */
-export function contains<FilterValue>(
-    attribute: string,
-    query?: string,
-    converter?: Converter<FilterValue>
-): HandlerReturn<FilterValue> {
+export function contains<T>(attribute: string, query?: string, converter?: Converter<T>): HandlerReturn<T> {
     return {
         attribute,
         converter,
         query: query || `${attribute}-contains`,
-        handler: (v: FilterValue, q: FilterValue) => {
+        handler: (v: T, q: T) => {
             if (converter) {
                 v = converter(v);
                 q = converter(q);
@@ -148,16 +140,12 @@ export function contains<FilterValue>(
  * @param variant specifying the comparison operation e.g. le(<=) and gt(>)
  * @param converter if item attribute value has to be transformed e.g. to a date.
  */
-export function compare<FilterValue>(
-    attribute: string,
-    variant: string,
-    converter?: Converter<FilterValue>
-): HandlerReturn<FilterValue> {
+export function compare<T>(attribute: string, variant: string, converter?: Converter<T>): HandlerReturn<T> {
     return {
         attribute,
         converter,
         query: `${attribute}-${variant}`,
-        handler: (v: FilterValue, q: FilterValue) => {
+        handler: (v: T, q: T) => {
             if (converter) {
                 v = converter(v);
                 q = converter(q);
@@ -178,17 +166,17 @@ export function compare<FilterValue>(
     };
 }
 
-export default class Filtering<FilterValue> {
-    validFilters: Record<string, HandlerReturn<FilterValue>>;
+export default class Filtering<T> {
+    validFilters: Record<string, HandlerReturn<T>>;
     validAliases: Array<[string, string]>;
     useDefaultFilters: boolean;
-    defaultFilters: Record<string, FilterValue> = {
-        deleted: false as FilterValue,
-        visible: true as FilterValue,
+    defaultFilters: Record<string, T> = {
+        deleted: false as T,
+        visible: true as T,
     };
 
     constructor(
-        validFilters: Record<string, HandlerReturn<FilterValue>>,
+        validFilters: Record<string, HandlerReturn<T>>,
         useDefaultFilters = true,
         validAliases?: Array<[string, string]>
     ) {
@@ -200,8 +188,8 @@ export default class Filtering<FilterValue> {
     /** Returns normalize defaults by adding the operator to the key identifier
      * @returns Dictionary with query key and values for default filters
      * */
-    getDefaults(): Record<string, FilterValue> {
-        const normalized: Record<string, FilterValue> = {};
+    getDefaults(): Record<string, T> {
+        const normalized: Record<string, T> = {};
         Object.entries(this.defaultFilters).forEach(([key, value]) => {
             normalized[`${key}:`] = value;
         });
@@ -212,7 +200,7 @@ export default class Filtering<FilterValue> {
      * @param filterSettings Object containing filter settings
      * @returns true if default filter values are not changed
      * **/
-    containsDefaults(filterSettings: Record<string, FilterValue>): boolean {
+    containsDefaults(filterSettings: Record<string, T>): boolean {
         const normalized = this.getDefaults();
         let hasDefaults = true;
         for (const key in normalized) {
@@ -231,7 +219,7 @@ export default class Filtering<FilterValue> {
      * @param filters Object containing filter:value
      * @returns true if all default __keys__ are found in `filters`
      */
-    hasAllDefaultKeys(filters: Record<string, FilterValue>): boolean {
+    hasAllDefaultKeys(filters: Record<string, T>): boolean {
         return Object.keys(this.defaultFilters).every((def) => Object.keys(filters).includes(def));
     }
 
@@ -239,7 +227,7 @@ export default class Filtering<FilterValue> {
      * @param filterSettings Object containing filter settings
      * @returns Parsed filter text string
      * */
-    getFilterText(filterSettings: Record<string, FilterValue>): string {
+    getFilterText(filterSettings: Record<string, T>): string {
         const normalized = this.getDefaults();
         const hasDefaults = this.containsDefaults(filterSettings);
 
@@ -251,7 +239,7 @@ export default class Filtering<FilterValue> {
                     newFilterText += " ";
                 }
                 if (String(value).includes(" ")) {
-                    value = `'${value}'` as FilterValue;
+                    value = `'${value}'` as T;
                 }
                 newFilterText += `${key}${value}`;
             }
@@ -264,10 +252,10 @@ export default class Filtering<FilterValue> {
      * @param removeAny default: `true` Whether to remove default filters if the are set to `any`
      * @returns Filters as 2D array of of [field, value] pairs
      * */
-    getFiltersForText(filterText: string, removeAny = true): [string, FilterValue][] {
+    getFiltersForText(filterText: string, removeAny = true): [string, T][] {
         const pairSplitRE = /[^\s'"]+(?:['"][^'"]*['"][^\s'"]*)*|(?:['"][^'"]*['"][^\s'"]*)+/g;
         const matches = filterText.match(pairSplitRE);
-        let result: Record<string, FilterValue> = {};
+        let result: Record<string, T> = {};
         let hasMatches = false;
         if (matches) {
             matches.forEach((pair) => {
@@ -288,7 +276,7 @@ export default class Filtering<FilterValue> {
                     const normalizedField = field.split("-").join("_");
                     if (this.validFilters[normalizedField]) {
                         // removes quotation and applies lower-case to filter value
-                        result[normalizedField] = toLowerNoQuotes(value) as FilterValue;
+                        result[normalizedField] = toLowerNoQuotes(value) as T;
                         hasMatches = true;
                     }
                 }
@@ -296,7 +284,7 @@ export default class Filtering<FilterValue> {
         }
         // assume name matching if no filter key has been matched
         if (!hasMatches && filterText.length > 0) {
-            result["name"] = filterText as FilterValue;
+            result["name"] = filterText as T;
         }
         // check if any default filter keys have been used
         let hasDefaults = false;
@@ -324,7 +312,7 @@ export default class Filtering<FilterValue> {
      * @param remove default: `false` Whether to add or remove the new filter(s)
      * @returns Parsed `filterText` string with added/removed filter(s)
      */
-    applyFiltersToText(filters: Record<string, FilterValue>, existingText: string, remove = false) {
+    applyFiltersToText(filters: Record<string, T>, existingText: string, remove = false) {
         let validSettings = this.getValidFilterSettings(filters);
         const existingSettings = this.toAlias(this.getFiltersForText(existingText, false));
         if (remove) {
@@ -335,8 +323,8 @@ export default class Filtering<FilterValue> {
         return this.getFilterText(validSettings);
     }
 
-    getValidFilters(filters: Record<string, FilterValue>) {
-        const validFilters: Record<string, FilterValue> = {};
+    getValidFilters(filters: Record<string, T>) {
+        const validFilters: Record<string, T> = {};
         Object.entries(filters).forEach(([key, value]) => {
             const validValue = this.getConvertedValue(key, value);
             if (validValue !== undefined) {
@@ -353,8 +341,8 @@ export default class Filtering<FilterValue> {
      * @param filters Parsed filters object from getFiltersForText()
      * @returns `filterSettings` as dict of {"field:": "value"} pairs
      */
-    toAlias(filters: [string, FilterValue][]) {
-        const result: Record<string, FilterValue> = {};
+    toAlias(filters: [string, T][]) {
+        const result: Record<string, T> = {};
         for (const [key, value] of filters) {
             let hasAlias = false;
             for (const [alias, substitute] of this.validAliases) {
@@ -376,7 +364,7 @@ export default class Filtering<FilterValue> {
      * @param filters Raw dictionary with **(potentially invalid)** filters and keys
      * @returns **Valid** `filterSettings` as dict of {"field:": "value"} pairs
      */
-    getValidFilterSettings(filters: Record<string, FilterValue>) {
+    getValidFilterSettings(filters: Record<string, T>) {
         const validFilters = this.getValidFilters(filters);
         return this.toAlias(Object.entries(validFilters));
     }
@@ -386,7 +374,7 @@ export default class Filtering<FilterValue> {
      * @returns Dictionary with query key and values
      */
     getQueryDict(filterText: string) {
-        const queryDict: Record<string, FilterValue> = {};
+        const queryDict: Record<string, T> = {};
         const filters = this.getFiltersForText(filterText);
         for (const [key, value] of filters) {
             const query = this.validFilters[key]!.query;
@@ -417,14 +405,14 @@ export default class Filtering<FilterValue> {
      * @param backendFormatted default: `false` Whether to format values (tags or times) for backend
      * @returns converted value if there is a converter, else `filterValue`
      */
-    getConvertedValue(filterName: string, filterValue: FilterValue, backendFormatted = false): FilterValue | undefined {
+    getConvertedValue(filterName: string, filterValue: T, backendFormatted = false): T | undefined {
         if (this.validFilters[filterName]) {
-            const { converter } = this.validFilters[filterName] as HandlerReturn<FilterValue>;
+            const { converter } = this.validFilters[filterName] as HandlerReturn<T>;
             if (converter) {
                 if (converter == toBool && filterValue == "any") {
                     return filterValue;
                 } else if (!backendFormatted && (converter == expandNameTag || converter == toDate)) {
-                    return toLower(filterValue) as FilterValue;
+                    return toLower(filterValue) as T;
                 }
                 return converter(filterValue);
             } else {
@@ -441,7 +429,7 @@ export default class Filtering<FilterValue> {
      * @param filterValue The filter value to check
      * @returns True if the filter is set to the given value
      * */
-    checkFilter(filterText: string, filterName: string, filterValue: FilterValue): boolean {
+    checkFilter(filterText: string, filterName: string, filterValue: T): boolean {
         const testValue = this.getFilterValue(filterText, filterName);
         return toLowerNoQuotes(testValue) === toLowerNoQuotes(filterValue);
     }
@@ -452,14 +440,14 @@ export default class Filtering<FilterValue> {
      * @param backendFormatted default: `false` Whether to format values (tags or times) for backend
      * @returns The filterValue for the filter
      * */
-    getFilterValue(filterText: string, filterName: string, backendFormatted = false): FilterValue | undefined {
+    getFilterValue(filterText: string, filterName: string, backendFormatted = false): T | undefined {
         const filters = Object.fromEntries(this.getFiltersForText(filterText));
         let filterVal = filters[filterName];
         if (filterVal !== undefined) {
             filterVal = this.getConvertedValue(filterName, filterVal, backendFormatted);
             return filterVal;
         } else if (Object.keys(this.defaultFilters).includes(filterName)) {
-            filterVal = this.getConvertedValue(filterName, "any" as FilterValue, backendFormatted);
+            filterVal = this.getConvertedValue(filterName, "any" as T, backendFormatted);
             return filterVal;
         }
         // if we don't have ALL defaultFilters in filters (a default filter is missing: val = "any")
@@ -477,7 +465,7 @@ export default class Filtering<FilterValue> {
      * @param newVal The new value to update
      * @returns Parsed filterText string with added/removed filter
      */
-    setFilterValue(filterText: string, newFilter: string, newVal: FilterValue) {
+    setFilterValue(filterText: string, newFilter: string, newVal: T) {
         let updatedText = "";
         const oldVal = this.getFilterValue(filterText, newFilter);
         const convVal = this.getConvertedValue(newFilter, newVal);
@@ -498,7 +486,7 @@ export default class Filtering<FilterValue> {
      * @param item Item to test against the filters
      * @returns True if the item passes all filters
      * */
-    testFilters(filters: [string, FilterValue][], item: Record<string, FilterValue>): boolean {
+    testFilters(filters: [string, T][], item: Record<string, T>): boolean {
         for (const [key, filterValue] of filters) {
             if (!(key in this.validFilters)) {
                 console.error(`Invalid filter ${key}`);
