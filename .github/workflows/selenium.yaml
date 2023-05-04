@@ -46,6 +46,11 @@ jobs:
       - uses: actions/checkout@v3
         with:
           path: 'galaxy root'
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18.12.1'
+          cache: 'yarn'
+          cache-dependency-path: 'galaxy root/client/yarn.lock'
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
@@ -63,11 +68,6 @@ jobs:
         with:
           path: 'galaxy root/.venv'
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-selenium
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '18.12.1'
-          cache: 'yarn'
-          cache-dependency-path: 'galaxy root/client/yarn.lock'
       - uses: nanasess/setup-chromedriver@v1
       - name: Run tests
         run: ./run_tests.sh --coverage -selenium lib/galaxy_test/selenium -- --num-shards=3 --shard-id=${{ matrix.chunk }}
