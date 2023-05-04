@@ -9,6 +9,11 @@ import AsyncButton from "@/components/Common/AsyncButton.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
 import {
+    browserSupportsPushNotifications,
+    pushNotificationsEnabled,
+    togglePushNotifications,
+} from "@/composables/utils/pushNotifications";
+import {
     getNotificationsPreferencesFromServer,
     updateNotificationsPreferencesOnServer,
 } from "@/components/User/Notifications/model/services";
@@ -18,15 +23,20 @@ Vue.use(BootstrapVue);
 // @ts-ignore
 library.add(faExclamationCircle);
 
+defineProps({
+    headerSize: {
+        type: String,
+        default: "h-lg",
+    },
+});
+
 type UserNotificationPreferences = components["schemas"]["UserNotificationPreferences"];
 
 const loading = ref(false);
-const errorMessage = ref(null);
-const notificationsPreferences = ref<UserNotificationPreferences["preferences"]>({});
+const errorMessage = ref<string | null>(null);
+const pushNotificationsGranted = ref(pushNotificationsEnabled());
 const categories = computed(() => Object.keys(notificationsPreferences.value));
-const pushNotificationsGranted = computed(() => {
-    return window.Notification && Notification.permission === "granted";
-});
+const notificationsPreferences = ref<UserNotificationPreferences["preferences"]>({});
 
 async function getNotificationsPreferences() {
     loading.value = true;
@@ -60,20 +70,8 @@ function capitalizeWords(str: string): string {
         .join(" ");
 }
 
-function togglePushNotifications() {
-    if (window.Notification) {
-        Notification.requestPermission().then(function (permission) {
-            if (permission === "granted") {
-                new Notification("Notifications enabled", {
-                    icon: "static/favicon.ico",
-                });
-            } else {
-                alert("Notifications disabled, please re-enable through browser settings.");
-            }
-        });
-    } else {
-        alert("Notifications are not supported by this browser.");
-    }
+async function onTogglePushNotifications() {
+    pushNotificationsGranted.value = await togglePushNotifications();
 }
 
 getNotificationsPreferences();
@@ -81,7 +79,7 @@ getNotificationsPreferences();
 
 <template>
     <section class="notifications-preferences">
-        <h1 v-localize class="h-lg">Manage notifications preferences</h1>
+        <h1 v-localize :class="headerSize">Manage notifications preferences</h1>
 
         <span v-localize class="mb-2"> You can manage notifications channels and preferences here. </span>
 
@@ -115,9 +113,9 @@ getNotificationsPreferences();
                     <BCollapse v-model="notificationsPreferences[category].enabled">
                         <BRow class="p-2">
                             <BCol
-                                class="d-flex align-items-center"
                                 v-for="channel in Object.keys(notificationsPreferences[category].channels)"
-                                :key="channel">
+                                :key="channel"
+                                class="d-flex align-items-center">
                                 <BFormCheckbox
                                     v-model="notificationsPreferences[category].channels[channel]"
                                     v-localize>
@@ -125,9 +123,9 @@ getNotificationsPreferences();
                                 </BFormCheckbox>
                                 <BButton
                                     v-if="channel === 'push'"
+                                    v-b-tooltip.hover
                                     variant="link"
                                     class="mx-2"
-                                    v-b-tooltip.hover
                                     title="Push notifications need to be enabled">
                                     <FontAwesomeIcon icon="exclamation-circle" />
                                 </BButton>
@@ -139,19 +137,29 @@ getNotificationsPreferences();
         </BRow>
 
         <BRow v-if="!loading" class="m-1" align-h="center">
-            <BCard class="my-2">
+            <BCard v-if="browserSupportsPushNotifications() && !pushNotificationsGranted" class="my-2">
                 Allow push and tab notifications. To disable, revoke the site notification privilege in your browser.
                 <BButton
-                    class="mx-2"
-                    @click="togglePushNotifications"
-                    :disabled="pushNotificationsGranted"
                     v-b-tooltip.hover
-                    :title="
-                        pushNotificationsGranted ? 'Push notifications enabled' : 'Click to enable push notifications'
-                    ">
+                    class="mx-2"
+                    title="Enable push notifications"
+                    @click="onTogglePushNotifications">
                     Enable push notifications
                 </BButton>
             </BCard>
+            <BAlert
+                v-else-if="browserSupportsPushNotifications() && pushNotificationsGranted"
+                show
+                variant="info"
+                class="my-2">
+                <FontAwesomeIcon icon="check-circle" />
+                Push notifications are enabled. You can disable them by revoking the site notification privilege in your
+                browser.
+            </BAlert>
+            <BAlert v-else show variant="warning" class="my-2">
+                <FontAwesomeIcon icon="exclamation-circle" />
+                Push notifications are not supported by this browser. You can still receive in-app notifications.
+            </BAlert>
         </BRow>
 
         <BRow v-if="!loading" class="m-1" align-h="center">
