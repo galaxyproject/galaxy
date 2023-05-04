@@ -2,7 +2,7 @@
     "extends": "@vue/tsconfig/tsconfig.json",
     "compilerOptions": {
         "target": "es2016",
-        "module": "es6",
+        "module": "es2020",
 
         "baseUrl": ".",
         "paths": {
