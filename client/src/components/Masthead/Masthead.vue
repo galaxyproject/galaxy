@@ -133,7 +133,7 @@ onMounted(() => {
                 :active-tab="activeTab"
                 @open-url="emit('open-url', $event)" />
             <masthead-item v-if="windowTab" :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
-            <BNavItem id="notifications-bell" v-if="!showActivityBar">
+            <BNavItem v-if="!showActivityBar" id="notifications-bell">
                 <NotificationsBell tooltip-placement="bottom" />
             </BNavItem>
         </b-navbar-nav>

@@ -33,7 +33,7 @@ async function onClick() {
 </script>
 
 <template>
-    <BButton :size="size" :variant="variant" @click="onClick" :disabled="loading">
+    <BButton :size="size" :variant="variant" :disabled="loading" @click="onClick">
         <span v-if="loading" class="loading-icon fa fa-spinner fa-spin" title="loading"></span>
         <FontAwesomeIcon v-else :icon="props.icon" @click="onClick" />
         <slot></slot>
