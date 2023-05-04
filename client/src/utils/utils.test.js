@@ -1,4 +1,4 @@
-import Utils, { mergeObjectListsById } from "./utils";
+import Utils from "./utils";
 
 describe("test utils", () => {
     it("test isEmpty", async () => {
