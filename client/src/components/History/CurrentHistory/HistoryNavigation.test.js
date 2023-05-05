@@ -6,7 +6,7 @@ import HistoryNavigation from "./HistoryNavigation";
 
 const localVue = getLocalVue();
 
-jest.mock("@/composables/filter/filter");
+jest.mock("@/composables/filter");
 
 // all options
 const expectedOptions = [

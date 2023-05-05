@@ -5,6 +5,8 @@ import SelectorModal from "./SelectorModal";
 import { getLocalVue } from "tests/jest/helpers";
 import { useHistoryStore } from "stores/historyStore";
 
+jest.mock("@/composables/filter");
+
 const localVue = getLocalVue();
 
 const CURRENT_HISTORY_ID = "COOL_ID";
