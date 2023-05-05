@@ -1,4 +1,4 @@
-import { runFilter } from "./filterFunction";
+import { runFilter } from "@/composables/filter/filterFunction";
 
 export type Message<O extends object, K extends keyof O> =
     | {
