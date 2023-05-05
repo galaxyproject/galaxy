@@ -6,7 +6,6 @@ import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { ROOT_COMPONENT } from "utils/navigation";
 import { PiniaVuePlugin, createPinia } from "pinia";
-import { createTestingPinia } from "@pinia/testing";
 import { useUserStore } from "stores/userStore";
 
 const localVue = getLocalVue(true);
@@ -14,12 +13,23 @@ localVue.use(PiniaVuePlugin);
 
 const TEST_WORKFLOW_NAME = "my workflow";
 const TEST_WORKFLOW_DESCRIPTION = "my cool workflow description";
+const TEST_WORKFLOW_ID = "workflowid123";
+const TEST_WORKFLOW_OWNER = "test";
+
+const descriptionlessWorkflow = {
+    name: TEST_WORKFLOW_NAME,
+    id: TEST_WORKFLOW_ID,
+    owner: TEST_WORKFLOW_OWNER,
+};
+const basicWorkflow = { description: TEST_WORKFLOW_DESCRIPTION, ...descriptionlessWorkflow }
+const sharedWorkflow = { shared: true, ...basicWorkflow };
+
 
 describe("WorkflowDropdown.vue", () => {
     let wrapper;
     let propsData;
 
-    function initWrapperForWorkflow(workflow) {
+    function initWrapperForWorkflow(workflow, isAnonymous=true) {
         propsData = {
             root: "/root/",
             workflow: workflow,
@@ -27,23 +37,13 @@ describe("WorkflowDropdown.vue", () => {
         wrapper = mount(WorkflowDropdown, {
             propsData,
             localVue,
-            pinia: createTestingPinia(),
+            pinia: createPinia(),
         });
-    }
+        if(!isAnonymous){
+            const userStore = useUserStore();
+            userStore.currentUser = { email: "my@email", id: 1 };
+        }
 
-    function initWrapperForWorkflowWithUser(workflow) {
-        const pinia = createPinia();
-        propsData = {
-            root: "/root/",
-            workflow: workflow,
-        };
-        wrapper = mount(WorkflowDropdown, {
-            propsData,
-            localVue,
-            pinia: pinia,
-        });
-        const userStore = useUserStore();
-        userStore.currentUser = { email: "my@email", id: 1 };
     }
 
     function workflowOptions() {
@@ -52,13 +52,7 @@ describe("WorkflowDropdown.vue", () => {
 
     describe("for workflows owned by user", () => {
         beforeEach(async () => {
-            const workflow = {
-                name: TEST_WORKFLOW_NAME,
-                id: "workflowid123",
-                description: TEST_WORKFLOW_DESCRIPTION,
-                owner: "test",
-            };
-            initWrapperForWorkflow(workflow);
+            initWrapperForWorkflow(basicWorkflow);
         });
 
         it("should not display source metadata if not present", async () => {
@@ -78,12 +72,7 @@ describe("WorkflowDropdown.vue", () => {
 
     describe("workflows without annotations", () => {
         beforeEach(async () => {
-            const workflow = {
-                name: TEST_WORKFLOW_NAME,
-                id: "workflowid123",
-                owner: "test",
-            };
-            initWrapperForWorkflow(workflow);
+            initWrapperForWorkflow(descriptionlessWorkflow);
         });
 
         it("should display name but not description", async () => {
@@ -94,13 +83,7 @@ describe("WorkflowDropdown.vue", () => {
 
     describe("for shared workflows", () => {
         beforeEach(async () => {
-            const workflow = {
-                name: TEST_WORKFLOW_NAME,
-                id: "workflowid123",
-                description: TEST_WORKFLOW_DESCRIPTION,
-                shared: true,
-            };
-            initWrapperForWorkflow(workflow);
+            initWrapperForWorkflow(sharedWorkflow);
         });
 
         it("should provide a specific options to anon users", () => {
@@ -112,13 +95,7 @@ describe("WorkflowDropdown.vue", () => {
 
     describe("for shared workflows", () => {
         beforeEach(async () => {
-            const workflow = {
-                name: TEST_WORKFLOW_NAME,
-                id: "workflowid123",
-                description: TEST_WORKFLOW_DESCRIPTION,
-                shared: true,
-            };
-            initWrapperForWorkflowWithUser(workflow);
+            initWrapperForWorkflow(sharedWorkflow, false);
         });
 
         it("should provide a specific options to logged in users", () => {
@@ -133,13 +110,7 @@ describe("WorkflowDropdown.vue", () => {
         let axiosMock;
 
         async function mountAndDelete() {
-            const workflow = {
-                name: TEST_WORKFLOW_NAME,
-                id: "workflowid123",
-                description: TEST_WORKFLOW_DESCRIPTION,
-                owner: "test",
-            };
-            initWrapperForWorkflow(workflow);
+            initWrapperForWorkflow(basicWorkflow);
             await wrapper.vm.onDelete();
             await flushPromises();
         }
@@ -157,18 +128,18 @@ describe("WorkflowDropdown.vue", () => {
         it("should fire deletion API request upon remove action", async () => {
             await mountAndDelete();
             const emitted = wrapper.emitted();
-            expect(emitted["onRemove"][0][0]).toEqual("workflowid123");
+            expect(emitted["onRemove"][0][0]).toEqual(TEST_WORKFLOW_ID);
             expect(emitted["onSuccess"][0][0]).toEqual("deleted...");
         });
 
         it("should restore previously deleted workflows", async () => {
             await mountAndDelete();
             const emitted = wrapper.emitted();
-            expect(emitted["onRemove"][0][0]).toEqual("workflowid123");
+            expect(emitted["onRemove"][0][0]).toEqual(TEST_WORKFLOW_ID);
             expect(emitted["onSuccess"][0][0]).toEqual("deleted...");
             await wrapper.vm.onRestore();
             await flushPromises();
-            expect(emitted["onRestore"][0][0]).toEqual("workflowid123");
+            expect(emitted["onRestore"][0][0]).toEqual(TEST_WORKFLOW_ID);
             expect(emitted["onSuccess"][1][0]).toEqual("restored...");
         });
     });
