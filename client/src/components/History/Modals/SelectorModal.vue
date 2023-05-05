@@ -93,7 +93,7 @@ function historyClicked(history: HistorySummary) {
 
 function selectHistories() {
     emit("selectHistories", selectedHistories.value);
-    selectedHistories.value.length = 0;
+    selectedHistories.value = [];
     modal.value?.hide();
 }
 
@@ -132,6 +132,7 @@ function openInMulti(history: HistorySummary) {
                 <b-list-group-item
                     v-for="history in paginated"
                     :key="history.id"
+                    :data-pk="history.id"
                     button
                     :class="{ current: history.id === props.currentHistoryId }"
                     :active="selectedHistories.includes(history)"
