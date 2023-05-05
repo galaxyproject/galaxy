@@ -8,14 +8,19 @@ from typing import (
     Any,
     AsyncGenerator,
     cast,
+    MutableMapping,
     NamedTuple,
     Optional,
     Tuple,
     Type,
     TypeVar,
 )
-from urllib.parse import urlencode
+from urllib.parse import (
+    urlencode,
+    urljoin,
+)
 
+from a2wsgi.wsgi import build_environ
 from fastapi import (
     Form,
     Header,
@@ -194,16 +199,37 @@ class GalaxyASGIRequest(GalaxyAbstractRequest):
 
     def __init__(self, request: Request):
         self.__request = request
+        self.__environ: Optional[MutableMapping[str, Any]] = None
 
     @property
     def base(self) -> str:
         return str(self.__request.base_url)
 
     @property
+    def url_path(self) -> str:
+        scope = self.__request.scope
+        root_path = scope.get("root_path")
+        url = self.base
+        if root_path:
+            url = urljoin(url, root_path)
+        return url
+
+    @property
     def host(self) -> str:
         client = self.__request.client
         assert client is not None
         return str(client.host)
+
+    @property
+    def environ(self) -> MutableMapping[str, Any]:
+        """
+        Fallback WSGI environ.
+
+        This is not a full environ, there is no body. This is only meant to make routes.url_for work.
+        """
+        if self.__environ is None:
+            self.__environ = build_environ(self.__request.scope, None)  # type: ignore[arg-type]
+        return self.__environ
 
 
 class GalaxyASGIResponse(GalaxyAbstractResponse):

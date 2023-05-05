@@ -15,6 +15,7 @@ from http.cookies import (
     SimpleCookie,
 )
 from importlib import import_module
+from urllib.parse import urljoin
 
 import routes
 import webob.compat
@@ -429,6 +430,10 @@ class Request(webob.Request):
     @lazy_property
     def base(self):
         return f"{self.scheme}://{self.host}"
+
+    @lazy_property
+    def url_path(self):
+        return urljoin(self.base, self.environ.get("SCRIPT_NAME", ""))
 
     # @lazy_property
     # def params( self ):

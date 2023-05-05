@@ -70,7 +70,7 @@ class ASync(BaseUIController):
                 data.state = data.blurb = data.states.RUNNING
                 log.debug(f"executing tool {tool.id}")
                 trans.log_event(f"Async executing tool {tool.id}", tool_id=tool.id)
-                galaxy_url = f"{trans.request.base}/async/{tool_id}/{data.id}/{key}"
+                galaxy_url = f"{trans.request.url_path}/async/{tool_id}/{data.id}/{key}"
                 galaxy_url = params.get("GALAXY_URL", galaxy_url)
                 params = dict(
                     URL=URL, GALAXY_URL=galaxy_url, name=data.name, info=data.info, dbkey=data.dbkey, data_type=data.ext
@@ -163,7 +163,7 @@ class ASync(BaseUIController):
 
             try:
                 key = hmac_new(trans.app.config.tool_secret, "%d:%d" % (data.id, data.history_id))
-                galaxy_url = f"{trans.request.base}/async/{tool_id}/{data.id}/{key}"
+                galaxy_url = f"{trans.request.url_path}/async/{tool_id}/{data.id}/{key}"
                 params.update({"GALAXY_URL": galaxy_url})
                 params.update({"data_id": data.id})
 

@@ -508,7 +508,9 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
 
         display_link_fn = hda.datatype.get_display_links
         for display_app in hda.datatype.get_display_types():
-            target_frame, display_links = display_link_fn(hda, display_app, self.app, trans.request.base)
+            target_frame, display_links = display_link_fn(
+                hda, display_app, self.app, trans.request.base, request=trans.request
+            )
 
             if len(display_links) > 0:
                 display_label = hda.datatype.get_display_label(display_app)

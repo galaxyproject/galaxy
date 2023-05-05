@@ -167,7 +167,7 @@ class InvocationsService(ServiceBase):
             short_term_storage_request_id=short_term_storage_target.request_id,
             user=trans.async_request_user,
             invocation_id=workflow_invocation.id,
-            galaxy_url=trans.request.base,
+            galaxy_url=trans.request.url_path,
             **payload.dict(),
         )
         result = prepare_invocation_download.delay(request=request)
@@ -181,7 +181,7 @@ class InvocationsService(ServiceBase):
         if not workflow_invocation:
             raise ObjectNotFound()
         request = WriteInvocationTo(
-            galaxy_url=trans.request.base,
+            galaxy_url=trans.request.url_path,
             user=trans.async_request_user,
             invocation_id=workflow_invocation.id,
             **payload.dict(),
