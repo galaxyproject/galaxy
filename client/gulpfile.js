@@ -17,6 +17,7 @@ const STATIC_PLUGIN_BUILD_IDS = [
     "drawrna",
     "editor",
     "example",
+    "h5web",
     "heatmap/heatmap_default",
     "hyphyvision",
     "jqplot/jqplot_bar",
