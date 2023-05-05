@@ -14,9 +14,7 @@ import {
     updateHistoryFields,
 } from "@/stores/services/history.services";
 
-export type HistorySummary = components["schemas"]["HistorySummary"] & {
-    update_time: string;
-};
+export type HistorySummary = components["schemas"]["HistorySummary"];
 
 const isLoadingHistory = new Set();
 
