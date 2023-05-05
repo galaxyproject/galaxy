@@ -96,7 +96,6 @@ import filtersMixin from "components/Indices/filtersMixin";
 import WorkflowIndexActions from "./WorkflowIndexActions";
 import WorkflowBookmark from "./WorkflowBookmark";
 import WorkflowRunButton from "./WorkflowRunButton.vue";
-
 import SharingIndicators from "components/Indices/SharingIndicators";
 
 const helpHtml = `<div>
@@ -199,7 +198,7 @@ export default {
             titleSearch: "search workflows",
             workflowItemsModel: [],
             helpHtml: helpHtml,
-            perPage: this.rowsPerPage(this.defaultPerPage || 50),
+            perPage: this.rowsPerPage(this.defaultPerPage || 20),
             dataProvider: storedWorkflowsProvider,
             implicitFilter: implicitFilter,
         };

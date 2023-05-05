@@ -37,6 +37,7 @@ export default {
                 "aria-controls": this.tableId,
                 "per-page": this.perPage,
                 "total-rows": this.rows,
+                align: "center",
             };
         },
         indexTableAttrs() {
