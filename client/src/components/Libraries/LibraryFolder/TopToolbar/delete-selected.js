@@ -1,6 +1,6 @@
 import { getGalaxyInstance } from "app";
 import { Toast } from "composables/toast";
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import mod_library_model from "./library-model";
 import _ from "underscore";
 import $ from "jquery";
@@ -24,7 +24,7 @@ export function deleteSelectedItems(checkedRows, onRemove, refreshTable, refresh
         const modal = Galaxy.modal;
         modal.show({
             closing_events: true,
-            title: _l("Deleting selected items"),
+            title: localize("Deleting selected items"),
             body: template({}),
             buttons: {
                 Close: () => {

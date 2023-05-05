@@ -3,7 +3,7 @@ import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import AjaxQueue from "utils/ajax-queue";
 import Utils from "utils/utils";
 import GridView from "mvc/grid/grid-view";
@@ -58,7 +58,7 @@ var HistoryGridView = GridView.extend({
 });
 
 var View = Backbone.View.extend({
-    title: _l("Histories"),
+    title: localize("Histories"),
     initialize: function (options) {
         const Galaxy = getGalaxyInstance();
         LoadingIndicator.markViewAsLoading(this);

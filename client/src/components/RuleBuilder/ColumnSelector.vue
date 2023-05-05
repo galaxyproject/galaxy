@@ -41,7 +41,7 @@
 
 <script>
 import Vue from "vue";
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import Select2 from "components/Select2";
 export default {
     components: {
@@ -54,7 +54,7 @@ export default {
         label: {
             required: false,
             type: String,
-            default: _l("From Column"),
+            default: localize("From Column"),
         },
         help: {
             required: false,
@@ -99,7 +99,7 @@ export default {
             return remaining;
         },
         title() {
-            return _l("Select a column");
+            return localize("Select a column");
         },
     },
     methods: {

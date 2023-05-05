@@ -2,7 +2,7 @@ import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import { Dataset } from "mvc/dataset/data";
 import util_mod from "viz/trackster/util";
 import config_mod from "utils/config";
@@ -63,19 +63,19 @@ var select_datasets = (filters, success_fn) => {
     var tabs = new Tabs.View();
     tabs.add({
         id: "histories",
-        title: _l("Histories"),
+        title: localize("Histories"),
         $el: $("<div/>").append(history_grid.$el),
     });
     tabs.add({
         id: "libraries",
-        title: _l("Libraries"),
+        title: localize("Libraries"),
         $el: $("<div/>").append(library_grid.$el),
     });
 
     // modal
     const Galaxy = getGalaxyInstance();
     Galaxy.modal.show({
-        title: _l("Select datasets for new tracks"),
+        title: localize("Select datasets for new tracks"),
         body: tabs.$el,
         closing_events: true,
         buttons: {

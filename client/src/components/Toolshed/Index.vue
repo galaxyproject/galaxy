@@ -27,7 +27,7 @@
     </div>
 </template>
 <script>
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import SearchList from "./SearchList/Index.vue";
 import InstalledList from "./InstalledList/Index.vue";
 
@@ -52,7 +52,7 @@ export default {
                 { text: "Search All", value: true },
                 { text: "Installed Only", value: false },
             ],
-            titleClearSearch: _l("clear search (esc)"),
+            titleClearSearch: localize("clear search (esc)"),
         };
     },
     computed: {

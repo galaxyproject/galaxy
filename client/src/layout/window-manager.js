@@ -1,5 +1,5 @@
 /** Adds window manager masthead icon and functionality **/
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import WinBox from "winbox/src/js/winbox.js";
 import "winbox/dist/css/winbox.min.css";
 import { withPrefix } from "utils/redirect";
@@ -16,7 +16,7 @@ export class WindowManager {
         return {
             id: "enable-window-manager",
             icon: "fa-th",
-            tooltip: _l("Enable/Disable Window Manager"),
+            tooltip: localize("Enable/Disable Window Manager"),
             visible: true,
             onclick: () => {
                 this.active = !this.active;

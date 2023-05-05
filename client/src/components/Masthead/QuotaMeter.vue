@@ -21,12 +21,13 @@ import { mapState } from "pinia";
 import { bytesToString } from "utils/utils";
 import { useUserStore } from "@/stores/userStore";
 import { mapGetters } from "vuex";
+import { localize } from "@/utils/localization";
 
 export default {
     name: "QuotaMeter",
     data() {
         return {
-            usingString: this.l("Using"),
+            usingString: localize("Using"),
         };
     },
     computed: {
@@ -52,9 +53,9 @@ export default {
         title() {
             let details = "";
             if (this.isAnonymous) {
-                details = this.l("Log in for details.");
+                details = localize("Log in for details.");
             } else {
-                details = this.l("Click for details.");
+                details = localize("Click for details.");
             }
 
             if (this.hasQuota) {

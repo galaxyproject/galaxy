@@ -76,7 +76,7 @@ import PanelViewButton from "./Buttons/PanelViewButton";
 import { filterToolSections, filterTools, hasResults, hideToolsSection } from "./utilities";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 
 export default {
     components: {
@@ -112,7 +112,7 @@ export default {
             showAdvanced: false,
             buttonText: "",
             buttonIcon: "",
-            titleSearchTools: _l("search tools"),
+            titleSearchTools: localize("search tools"),
         };
     },
     computed: {
@@ -141,7 +141,7 @@ export default {
             if (storedWorkflowMenuEntries) {
                 return [
                     {
-                        title: _l("All workflows"),
+                        title: localize("All workflows"),
                         href: `${getAppRoot()}workflows/list`,
                         id: "list",
                     },
@@ -189,7 +189,7 @@ export default {
             this.setButtonText();
         },
         setButtonText() {
-            this.buttonText = this.showSections ? _l("Hide Sections") : _l("Show Sections");
+            this.buttonText = this.showSections ? localize("Hide Sections") : localize("Show Sections");
             this.buttonIcon = this.showSections ? "fa fa-eye-slash" : "fa fa-eye";
         },
         updatePanelView(panelView) {

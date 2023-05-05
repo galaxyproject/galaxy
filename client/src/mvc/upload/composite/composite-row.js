@@ -2,7 +2,7 @@
 import $ from "jquery";
 import _ from "underscore";
 import Backbone from "backbone";
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import Utils from "utils/utils";
 import UploadSettings from "mvc/upload/upload-settings";
 import UploadFtp from "mvc/upload/upload-ftp";
@@ -61,13 +61,13 @@ export default Backbone.View.extend({
         // source selection popup
         this.button_menu = new Ui.ButtonMenu({
             icon: "fa-caret-down",
-            title: _l("Select"),
+            title: localize("Select"),
             pull: "left",
         });
         this.$source.append(this.button_menu.$el);
         this.button_menu.addMenu({
             icon: "fa-laptop",
-            title: _l("Choose local file"),
+            title: localize("Choose local file"),
             onclick: function () {
                 self.uploadinput.dialog();
             },
@@ -75,7 +75,7 @@ export default Backbone.View.extend({
         if (this.app.ftpUploadSite) {
             this.button_menu.addMenu({
                 icon: "fa-folder-open-o",
-                title: _l("Choose FTP file"),
+                title: localize("Choose FTP file"),
                 onclick: function () {
                     self._showFtp();
                 },
@@ -101,7 +101,7 @@ export default Backbone.View.extend({
 
         // append popup to settings icon
         this.settings = new Popover({
-            title: _l("Upload configuration"),
+            title: localize("Upload configuration"),
             container: this.$settings,
             placement: "bottom",
         });

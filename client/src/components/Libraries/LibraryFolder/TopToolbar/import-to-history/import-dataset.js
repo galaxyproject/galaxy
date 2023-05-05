@@ -1,6 +1,6 @@
 import { getGalaxyInstance } from "app";
 import { Toast } from "composables/toast";
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import mod_library_model from "../library-model";
 import _ from "underscore";
 import Backbone from "backbone";
@@ -35,7 +35,7 @@ var ImportDatasetModal = Backbone.View.extend({
                     this.modal = Galaxy.modal;
                     this.modal.show({
                         closing_events: true,
-                        title: _l("Import into History"),
+                        title: localize("Import into History"),
                         body: template({
                             histories: this.histories.models,
                         }),

@@ -64,7 +64,7 @@
                     <div v-if="showForm" id="fieldsAndButton">
                         <span class="mr-2 font-weight-bold">{{ emailTitle }}</span>
                         <span v-if="!!currentUser?.email">{{ currentUser?.email }}</span>
-                        <span v-else>{{ "You must be logged in to receive emails" | l }}</span>
+                        <span v-else>{{ "You must be logged in to receive emails" | localize }}</span>
                         <FormElement
                             id="dataset-error-message"
                             v-model="message"
@@ -95,6 +95,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBug } from "@fortawesome/free-solid-svg-icons";
 import { sendErrorReport } from "./services";
+import { localize } from "utils/localization";
 
 library.add(faBug);
 
@@ -118,7 +119,7 @@ export default {
             message: null,
             errorMessage: null,
             resultMessages: [],
-            emailTitle: this.l("Your email address"),
+            emailTitle: localize("Your email address"),
         };
     },
     computed: {

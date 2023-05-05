@@ -1,11 +1,11 @@
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import Vue from "vue";
 import { collectionCreatorModalSetup } from "./common/modal";
 import PairedListCollectionCreator from "./PairedListCollectionCreator.vue";
 
 function pairedListCollectionCreatorModal(elements, options) {
     options = options || {};
-    options.title = _l("Create a collection of paired datasets");
+    options.title = localize("Create a collection of paired datasets");
     const { promise, showEl } = collectionCreatorModalSetup(options);
     var pairedListCollectionCreatorInstance = Vue.extend(PairedListCollectionCreator);
     var vm = document.createElement("div");

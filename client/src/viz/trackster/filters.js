@@ -1,5 +1,5 @@
 import $ from "jquery";
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import _ from "underscore";
 import { getGalaxyInstance } from "app";
 
@@ -639,14 +639,14 @@ _.extend(FiltersManager.prototype, {
                 if (response.error) {
                     // General error.
                     Galaxy.modal.show({
-                        title: _l("Filter Dataset"),
+                        title: localize("Filter Dataset"),
                         body: `Error running tool ${tool_id}`,
                         buttons: { Close: Galaxy.modal.hide() },
                     });
                 } else if (filters.length === 0) {
                     // No more filters to run.
                     Galaxy.modal.show({
-                        title: _l("Filtering Dataset"),
+                        title: localize("Filtering Dataset"),
                         body: "Filter(s) are running on the complete dataset. Outputs are in dataset's history.",
                         buttons: { Close: Galaxy.modal.hide() },
                     });

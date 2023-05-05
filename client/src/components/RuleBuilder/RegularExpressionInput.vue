@@ -14,7 +14,7 @@
 </template>
 
 <script>
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 
 export default {
     props: {
@@ -24,16 +24,16 @@ export default {
     },
     computed: {
         label() {
-            return _l("Regular Expression");
+            return localize("Regular Expression");
         },
         title() {
-            return _l("Enter a regular expression.");
+            return localize("Enter a regular expression.");
         },
         popoverTitle() {
-            return _l("Regular Expressions");
+            return localize("Regular Expressions");
         },
         popoverContent() {
-            return _l(
+            return localize(
                 `Regular expressions are patterns used to match character combinations in strings. This input accepts Python-style regular expressions, find more information about these in <a href="https://pythonforbiologists.com/tutorial/regex.html">this Python for Biologists tutorial</a>.`
             );
         },

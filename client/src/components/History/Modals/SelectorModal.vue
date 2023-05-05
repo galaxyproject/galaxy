@@ -1,7 +1,12 @@
 <template>
-    <b-modal ref="modal" v-bind="$attrs" :title="title | l" footer-class="justify-content-between" v-on="$listeners">
-        <b-form-group :description="'Filter histories' | l">
-            <b-form-input v-model="filter" type="search" :placeholder="'Search Filter' | l" />
+    <b-modal
+        ref="modal"
+        v-bind="$attrs"
+        :title="title | localize"
+        footer-class="justify-content-between"
+        v-on="$listeners">
+        <b-form-group :description="'Filter histories' | localize">
+            <b-form-input v-model="filter" type="search" :placeholder="'Search Filter' | localize" />
         </b-form-group>
 
         <b-table

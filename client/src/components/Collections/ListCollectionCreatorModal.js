@@ -1,10 +1,10 @@
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import Vue from "vue";
 import { collectionCreatorModalSetup } from "./common/modal";
 
 function listCollectionCreatorModal(elements, options) {
     options = options || {};
-    options.title = _l("Create a collection from a list of datasets");
+    options.title = localize("Create a collection from a list of datasets");
     const { promise, showEl } = collectionCreatorModalSetup(options);
     return import(/* webpackChunkName: "ListCollectionCreator" */ "./ListCollectionCreator.vue").then((module) => {
         const listCollectionCreatorInstance = Vue.extend(module.default);

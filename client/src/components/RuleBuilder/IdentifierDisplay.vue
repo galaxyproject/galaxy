@@ -7,7 +7,7 @@
 </template>
 
 <script>
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import RuleDefs from "./rule-definitions";
 const MAPPING_TARGETS = RuleDefs.MAPPING_TARGETS;
 
@@ -33,10 +33,10 @@ export default {
             return MAPPING_TARGETS[this.type].help || "";
         },
         titleEdit() {
-            return _l("Edit column definition");
+            return localize("Edit column definition");
         },
         titleRemove() {
-            return _l("Remove this column definition");
+            return localize("Remove this column definition");
         },
         columnsLabel() {
             return RuleDefs.columnDisplay(this.columns, this.colHeaders);

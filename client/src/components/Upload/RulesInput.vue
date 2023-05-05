@@ -1,8 +1,8 @@
 <template>
-    <upload-wrapper ref="wrapper" :top-info="topInfo | l">
+    <upload-wrapper ref="wrapper" :top-info="topInfo | localize">
         <span style="width: 25%; display: inline; height: 100%" class="float-left">
             <div class="upload-rule-option">
-                <div class="upload-rule-option-title">{{ "Upload data as" | l }}</div>
+                <div class="upload-rule-option-title">{{ "Upload data as" | localize }}</div>
                 <div class="rule-data-type">
                     <select2 v-model="dataType" container-class="upload-footer-selection">
                         <option value="datasets">Datasets</option>
@@ -11,13 +11,13 @@
                 </div>
             </div>
             <div class="upload-rule-option">
-                <div class="upload-rule-option-title">{{ "Load tabular data from" | l }}</div>
+                <div class="upload-rule-option-title">{{ "Load tabular data from" | localize }}</div>
                 <div class="rule-select-type">
                     <select2 v-model="selectionType" container-class="upload-footer-selection">
-                        <option value="paste">{{ "Pasted Table" | l }}</option>
-                        <option value="dataset">{{ "History Dataset" | l }}</option>
-                        <option v-if="ftpUploadSite" value="ftp">{{ "FTP Directory" | l }}</option>
-                        <option value="remote_files">{{ "Remote Files Directory" | l }}</option>
+                        <option value="paste">{{ "Pasted Table" | localize }}</option>
+                        <option value="dataset">{{ "History Dataset" | localize }}</option>
+                        <option v-if="ftpUploadSite" value="ftp">{{ "FTP Directory" | localize }}</option>
+                        <option value="remote_files">{{ "Remote Files Directory" | localize }}</option>
                     </select2>
                 </div>
             </div>
@@ -25,7 +25,7 @@
                 <div class="upload-rule-option-title">History dataset</div>
                 <div>
                     <b-link v-if="selectedDatasetName == null" @click="onSelectDataset">
-                        {{ "Select" | l }}
+                        {{ "Select" | localize }}
                     </b-link>
                     <span v-else>
                         {{ selectedDatasetName }} <font-awesome-icon icon="edit" @click="onSelectDataset" />
@@ -47,7 +47,7 @@
                 class="ui-button-default"
                 :title="btnCloseTitle"
                 @click="$emit('dismiss')">
-                {{ btnCloseTitle | l }}
+                {{ btnCloseTitle | localize }}
             </b-button>
             <b-button
                 id="btn-build"
@@ -57,7 +57,7 @@
                 :title="btnBuildTitle"
                 :variant="sourceContent ? 'primary' : ''"
                 @click="_eventBuild">
-                {{ btnBuildTitle | l }}
+                {{ btnBuildTitle | localize }}
             </b-button>
             <b-button
                 id="btn-reset"
@@ -66,7 +66,7 @@
                 :title="btnResetTitle"
                 :disabled="!enableReset"
                 @click="_eventReset">
-                {{ btnResetTitle | l }}
+                {{ btnResetTitle | localize }}
             </b-button>
         </template>
     </upload-wrapper>

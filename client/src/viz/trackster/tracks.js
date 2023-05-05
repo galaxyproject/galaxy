@@ -3,7 +3,7 @@ import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import visualization from "viz/visualization";
 import viz_views from "viz/viz_views";
 import util from "viz/trackster/util";
@@ -316,7 +316,7 @@ Drawable.prototype.action_icons_def = [
     // Edit settings.
     {
         name: "settings_icon",
-        title: _l("Edit settings"),
+        title: localize("Edit settings"),
         css_class: "gear",
         on_click_fn: function (drawable) {
             var view = new config_mod.ConfigSettingCollectionView({
@@ -328,7 +328,7 @@ Drawable.prototype.action_icons_def = [
     // Remove.
     {
         name: "remove_icon",
-        title: _l("Remove"),
+        title: localize("Remove"),
         css_class: "remove-icon",
         on_click_fn: function (drawable) {
             // Tooltip for remove icon must be deleted when drawable is deleted.
@@ -648,7 +648,7 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
         // Replace group with composite track.
         {
             name: "composite_icon",
-            title: _l("Show composite track"),
+            title: localize("Show composite track"),
             css_class: "layers-stack",
             on_click_fn: function (group) {
                 $(".tooltip").remove();
@@ -658,7 +658,7 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
         // Toggle track filters.
         {
             name: "filters_icon",
-            title: _l("Filters"),
+            title: localize("Filters"),
             css_class: "ui-slider-050",
             on_click_fn: function (group) {
                 // TODO: update Tooltip text.
@@ -2348,7 +2348,7 @@ extend(Track.prototype, Drawable.prototype, {
         // Change track mode.
         {
             name: "mode_icon",
-            title: _l("Set display mode"),
+            title: localize("Set display mode"),
             css_class: "chevron-expand",
             on_click_fn: function () {},
         },
@@ -2357,7 +2357,7 @@ extend(Track.prototype, Drawable.prototype, {
         // Set track as overview.
         {
             name: "overview_icon",
-            title: _l("Set as overview"),
+            title: localize("Set as overview"),
             css_class: "application-dock-270",
             on_click_fn: function (track) {
                 track.view.set_overview(track);
@@ -2368,7 +2368,7 @@ extend(Track.prototype, Drawable.prototype, {
         // Toggle track filters.
         {
             name: "filters_icon",
-            title: _l("Filters"),
+            title: localize("Filters"),
             css_class: "ui-slider-050",
             on_click_fn: function (drawable) {
                 // TODO: update Tooltip text.
@@ -2383,7 +2383,7 @@ extend(Track.prototype, Drawable.prototype, {
         // Toggle track tool.
         {
             name: "tools_icon",
-            title: _l("Tool"),
+            title: localize("Tool"),
             css_class: "hammer",
             on_click_fn: function (track) {
                 // TODO: update Tooltip text.
@@ -2403,7 +2403,7 @@ extend(Track.prototype, Drawable.prototype, {
         // Go to parameter exploration visualization.
         {
             name: "param_space_viz_icon",
-            title: _l("Tool parameter space visualization"),
+            title: localize("Tool parameter space visualization"),
             css_class: "arrow-split",
             on_click_fn: (track) => {
                 const Galaxy = getGalaxyInstance();
@@ -2666,7 +2666,7 @@ extend(Track.prototype, Drawable.prototype, {
                             .click(() => {
                                 const Galaxy = getGalaxyInstance();
                                 Galaxy.modal.show({
-                                    title: _l("Trackster Error"),
+                                    title: localize("Trackster Error"),
                                     body: `<pre>${result.message}</pre>`,
                                     buttons: {
                                         Close: function () {
@@ -3630,7 +3630,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         // Create composite track from group's tracks.
         {
             name: "composite_icon",
-            title: _l("Show individual tracks"),
+            title: localize("Show individual tracks"),
             css_class: "layers-stack",
             on_click_fn: function (track) {
                 $(".tooltip").remove();

@@ -21,7 +21,7 @@ The last three lines contain a mapping of English text to their Spanish equivale
 
 - Find untranslated text in the UI
 - Find the corresponding text in the codebase
-- Ensure that it uses `_l()` localisation statements
+- Ensure that it uses `localize()` localization statements
 - Add the translation for that text to the `locale.js` file.
 
 A quick example.
@@ -123,7 +123,7 @@ What you're looking for is the ``data()`` block which returns a dictionary. Ther
      </template>
 
      <script>
-    +import _l from "utils/localization";
+    +import { localize } from "utils/localization";
      import { VBTooltip } from "bootstrap-vue";
      import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
      import { library } from "@fortawesome/fontawesome-svg-core";
@@ -135,7 +135,7 @@ What you're looking for is the ``data()`` block which returns a dictionary. Ther
              return {
                  status: "",
                  percentage: 0,
-    +            titleUploadData: _l("Upload Data"),
+    +            titleUploadData: localize("Upload Data"),
              };
          },
 

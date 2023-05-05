@@ -7,7 +7,7 @@ import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import * as d3 from "d3v3";
 import visualization from "viz/visualization";
 import tracks from "viz/trackster/tracks";
@@ -406,14 +406,14 @@ var SweepsterTrackView = Backbone.View.extend({
 
         var icon_menu = mod_icon_btn.create_icon_buttons_menu([
             {
-                title: _l("Settings"),
+                title: localize("Settings"),
                 icon_class: "gear track-settings",
                 on_click: function () {
                     settings_div.toggle();
                 },
             },
             {
-                title: _l("Remove"),
+                title: localize("Remove"),
                 icon_class: "cross-circle",
                 on_click: function () {
                     self.$el.remove();
@@ -522,7 +522,7 @@ var ToolInputValOrSweepView = Backbone.View.extend({
         var menu = mod_icon_btn.create_icon_buttons_menu(
             [
                 {
-                    title: _l("Add parameter to tree"),
+                    title: localize("Add parameter to tree"),
                     icon_class: "plus-button",
                     on_click: function () {
                         input.set("in_ptree", true);
@@ -533,7 +533,7 @@ var ToolInputValOrSweepView = Backbone.View.extend({
                     },
                 },
                 {
-                    title: _l("Remove parameter from tree"),
+                    title: localize("Remove parameter from tree"),
                     icon_class: "toggle",
                     on_click: function () {
                         // Remove parameter from tree params where name matches clicked paramter.
@@ -806,7 +806,7 @@ export var SweepsterVisualizationView = Backbone.View.extend({
 
         var close_button = mod_icon_btn.create_icon_buttons_menu([
             {
-                title: _l("Close"),
+                title: localize("Close"),
                 icon_class: "cross-circle",
                 on_click: function () {
                     $(".tooltip").remove();
@@ -855,7 +855,7 @@ export var SweepsterVisualizationView = Backbone.View.extend({
                 // Close viz.
                 {
                     icon_class: "cross-circle",
-                    title: _l("Close"),
+                    title: localize("Close"),
                     on_click: function () {
                         window.top.location = `${getAppRoot()}visualizations/list`;
                     },

@@ -101,7 +101,7 @@
 </template>
 
 <script>
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import _ from "underscore";
 import UploadRow from "mvc/upload/default/default-row";
 import UploadBoxMixin from "./UploadBoxMixin";
@@ -138,11 +138,11 @@ export default {
             enableReset: false,
             enableStart: false,
             enableSources: false,
-            btnLocalTitle: _l("Choose local files"),
-            btnCreateTitle: _l("Paste/Fetch data"),
-            btnStartTitle: _l("Start"),
-            btnStopTitle: _l("Pause"),
-            btnResetTitle: _l("Reset"),
+            btnLocalTitle: localize("Choose local files"),
+            btnCreateTitle: localize("Paste/Fetch data"),
+            btnStartTitle: localize("Start"),
+            btnStopTitle: localize("Pause"),
+            btnResetTitle: localize("Reset"),
         };
     },
     computed: {

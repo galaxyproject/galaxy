@@ -180,7 +180,7 @@
 </template>
 
 <script>
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import Vue from "vue";
 import { mapState } from "pinia";
 import { useUserStore } from "@/stores/userStore";
@@ -226,17 +226,17 @@ export default {
                 description: "",
                 synopsis: "",
             },
-            titleLibrary: _l("Library"),
-            titleName: _l("Name"),
-            titleDescription: _l("Description"),
-            titleSynopsis: _l("Synopsis"),
-            titleSave: _l("Save"),
-            titleUndelete: _l("Undelete"),
-            titleEdit: _l("Edit"),
-            titleCancel: _l("Cancel"),
-            titleDelete: _l("Delete"),
-            titlePerPage: _l("per page"),
-            titleTotal: _l("total"),
+            titleLibrary: localize("Library"),
+            titleName: localize("Name"),
+            titleDescription: localize("Description"),
+            titleSynopsis: localize("Synopsis"),
+            titleSave: localize("Save"),
+            titleUndelete: localize("Undelete"),
+            titleEdit: localize("Edit"),
+            titleCancel: localize("Cancel"),
+            titleDelete: localize("Delete"),
+            titlePerPage: localize("per page"),
+            titleTotal: localize("total"),
         };
     },
     computed: {

@@ -9,7 +9,7 @@
                 <div v-if="showEntryPoints">
                     <ToolEntryPoints v-for="job in entryPoints" :key="job.id" :job-id="job.id" />
                 </div>
-                <b-modal v-model="showError" size="sm" :title="errorTitle | l" scrollable ok-only>
+                <b-modal v-model="showError" size="sm" :title="errorTitle | localize" scrollable ok-only>
                     <b-alert v-if="errorMessage" show variant="danger">
                         {{ errorMessage }}
                     </b-alert>

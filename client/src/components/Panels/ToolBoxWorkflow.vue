@@ -74,7 +74,7 @@
 </template>
 
 <script>
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import ToolSection from "./Common/ToolSection";
 import ToolSearch from "./Common/ToolSearch";
 import { filterToolSections, removeDisabledTools } from "./utilities";
@@ -129,7 +129,7 @@ export default {
         },
         workflowSection() {
             return {
-                name: _l("Workflows"),
+                name: localize("Workflows"),
                 elems: this.workflows,
             };
         },
@@ -138,7 +138,7 @@ export default {
         },
         dataManagerSection() {
             return {
-                name: _l("Data Managers"),
+                name: localize("Data Managers"),
                 elems: this.dataManagers,
             };
         },

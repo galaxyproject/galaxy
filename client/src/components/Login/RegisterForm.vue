@@ -86,7 +86,7 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { withPrefix } from "utils/redirect";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin";
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 
 Vue.use(BootstrapVue);
 
@@ -142,11 +142,11 @@ export default {
             subscribe: null,
             messageText: null,
             messageVariant: null,
-            labelEmailAddress: _l("Email address"),
-            labelPassword: _l("Password"),
-            labelConfirmPassword: _l("Confirm password"),
-            labelPublicName: _l("Public name"),
-            labelSubscribe: _l("Subscribe to mailing list"),
+            labelEmailAddress: localize("Email address"),
+            labelPassword: localize("Password"),
+            labelConfirmPassword: localize("Confirm password"),
+            labelPublicName: localize("Public name"),
+            labelSubscribe: localize("Subscribe to mailing list"),
         };
     },
     computed: {

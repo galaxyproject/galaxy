@@ -117,7 +117,7 @@ import BootstrapVue from "bootstrap-vue";
 import ThemeSelector from "./ThemeSelector.vue";
 import { getGalaxyInstance } from "app";
 import { withPrefix } from "utils/redirect";
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import axios from "axios";
 import QueryStringParsing from "utils/query-string-parsing";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
@@ -212,7 +212,7 @@ export default {
             const Galaxy = getGalaxyInstance();
             if (
                 confirm(
-                    _l(
+                    localize(
                         "WARNING: This will make all datasets (excluding library datasets) for which you have " +
                             "'management' permissions, in all of your histories " +
                             "private, and will set permissions such that all " +
@@ -225,7 +225,7 @@ export default {
             ) {
                 axios.post(withPrefix(`/history/make_private?all_histories=true`)).then((response) => {
                     Galaxy.modal.show({
-                        title: _l("Datasets are now private"),
+                        title: localize("Datasets are now private"),
                         body: `All of your histories and datsets have been made private.  If you'd like to make all *future* histories private please use the <a href="${withPrefix(
                             "/user/permissions"
                         )}">User Permissions</a> interface.`,
@@ -241,7 +241,7 @@ export default {
         signOut() {
             const Galaxy = getGalaxyInstance();
             Galaxy.modal.show({
-                title: _l("Sign out"),
+                title: localize("Sign out"),
                 body: "Do you want to continue and sign out of all active sessions?",
                 buttons: {
                     Cancel: function () {

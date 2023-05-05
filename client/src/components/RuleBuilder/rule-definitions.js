@@ -1,5 +1,5 @@
 import _ from "underscore";
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import pyre from "pyre-to-regexp";
 
 const NEW_COLUMN = "new";
@@ -69,7 +69,7 @@ const flatMap = (f, xs) => {
 
 const RULES = {
     add_column_basename: {
-        title: _l("Basename of Path of URL"),
+        title: localize("Basename of Path of URL"),
         display: (rule, colHeaders) => {
             return `Add column using basename of column ${colHeaders[rule.target_column]}`;
         },
@@ -96,7 +96,7 @@ const RULES = {
         },
     },
     add_column_rownum: {
-        title: _l("Row Number"),
+        title: localize("Row Number"),
         display: (rule, colHeaders) => {
             return `Add column for the current row number.`;
         },
@@ -124,7 +124,7 @@ const RULES = {
         },
     },
     add_column_value: {
-        title: _l("Fixed Value"),
+        title: localize("Fixed Value"),
         display: (rule, colHeaders) => {
             return `Add column for the constant value of ${rule.value}.`;
         },
@@ -151,7 +151,7 @@ const RULES = {
         },
     },
     add_column_metadata: {
-        title: _l("Add Column from Metadata"),
+        title: localize("Add Column from Metadata"),
         display: (rule, colHeaders) => {
             return `Add column for ${rule.value}.`;
         },
@@ -198,7 +198,7 @@ const RULES = {
         },
     },
     add_column_group_tag_value: {
-        title: _l("Add Column from Group Tag Value"),
+        title: localize("Add Column from Group Tag Value"),
         display: (rule, colHeaders) => {
             return `Add column for value of group tag ${rule.value}.`;
         },
@@ -239,7 +239,7 @@ const RULES = {
         },
     },
     add_column_regex: {
-        title: _l("Using a Regular Expression"),
+        title: localize("Using a Regular Expression"),
         display: (rule, colHeaders) => {
             return `Add new column using ${rule.expression} applied to column ${colHeaders[rule.target_column]}`;
         },
@@ -292,7 +292,7 @@ const RULES = {
         },
     },
     add_column_concatenate: {
-        title: _l("Concatenate Columns"),
+        title: localize("Concatenate Columns"),
         display: (rule, colHeaders) => {
             return `Concatenate column ${colHeaders[rule.target_column_0]} and column ${
                 colHeaders[rule.target_column_1]
@@ -325,7 +325,7 @@ const RULES = {
         },
     },
     add_column_substr: {
-        title: _l("Keep or Trim Prefix or Suffix"),
+        title: localize("Keep or Trim Prefix or Suffix"),
         display: (rule, colHeaders) => {
             const type = rule.substr_type;
             let display;
@@ -393,7 +393,7 @@ const RULES = {
         },
     },
     remove_columns: {
-        title: _l("Remove Column(s)"),
+        title: localize("Remove Column(s)"),
         display: (rule, colHeaders) => {
             const targetColumns = rule.target_columns;
             return `Remove ${multiColumnsToString(targetColumns, colHeaders)}`;
@@ -425,7 +425,7 @@ const RULES = {
         },
     },
     add_filter_regex: {
-        title: _l("Using a Regular Expression"),
+        title: localize("Using a Regular Expression"),
         display: (rule, colHeaders) => {
             return `Filter rows using regular expression ${rule.expression} on column ${
                 colHeaders[rule.target_column]
@@ -467,7 +467,7 @@ const RULES = {
         },
     },
     add_filter_count: {
-        title: _l("First or Last N Rows"),
+        title: localize("First or Last N Rows"),
         display: (rule, colHeaders) => {
             const which = rule.which;
             const invert = rule.invert;
@@ -517,7 +517,7 @@ const RULES = {
         },
     },
     add_filter_empty: {
-        title: _l("On Emptiness"),
+        title: localize("On Emptiness"),
         display: (rule, colHeaders) => {
             return `Filter rows if no value for column ${colHeaders[rule.target_column]}`;
         },
@@ -547,7 +547,7 @@ const RULES = {
         },
     },
     add_filter_matches: {
-        title: _l("Matching a Supplied Value"),
+        title: localize("Matching a Supplied Value"),
         display: (rule, colHeaders) => {
             return `Filter rows with value ${rule.value} for column ${colHeaders[rule.target_column]}`;
         },
@@ -581,7 +581,7 @@ const RULES = {
         },
     },
     add_filter_compare: {
-        title: _l("By Comparing to a Numeric Value"),
+        title: localize("By Comparing to a Numeric Value"),
         display: (rule, colHeaders) => {
             return `Filter rows with value ${rule.compare_type} ${rule.value} for column ${
                 colHeaders[rule.target_column]
@@ -628,7 +628,7 @@ const RULES = {
         },
     },
     sort: {
-        title: _l("Sort"),
+        title: localize("Sort"),
         display: (rule, colHeaders) => {
             return `Sort on column ${colHeaders[rule.target_column]}`;
         },
@@ -681,7 +681,7 @@ const RULES = {
         },
     },
     swap_columns: {
-        title: _l("Swap Column(s)"),
+        title: localize("Swap Column(s)"),
         display: (rule, colHeaders) => {
             return `Swap ${multiColumnsToString([rule.target_column_0, rule.target_column_1], colHeaders)}`;
         },
@@ -715,7 +715,7 @@ const RULES = {
         },
     },
     split_columns: {
-        title: _l("Split Column(s)"),
+        title: localize("Split Column(s)"),
         display: (rule, colHeaders) => {
             return `Duplicate each row and split up columns`;
         },
@@ -763,87 +763,87 @@ const RULES = {
 const MAPPING_TARGETS = {
     list_identifiers: {
         multiple: true,
-        label: _l("List Identifier(s)"),
-        columnHeader: _l("List Identifier"),
-        help: _l(
+        label: localize("List Identifier(s)"),
+        columnHeader: localize("List Identifier"),
+        help: localize(
             "This should be a short description of the replicate, sample name, condition, etc... that describes each level of the list structure."
         ),
         importType: "collections",
     },
     paired_identifier: {
-        label: _l("Paired-end Indicator"),
-        columnHeader: _l("Paired Indicator"),
-        help: _l(
+        label: localize("Paired-end Indicator"),
+        columnHeader: localize("Paired Indicator"),
+        help: localize(
             "This should be set to '1', 'R1', 'forward', 'f', or 'F' to indicate forward reads, and '2', 'r', 'reverse', 'R2', 'R', or 'R2' to indicate reverse reads."
         ),
         importType: "collections",
     },
     collection_name: {
-        label: _l("Collection Name"),
-        help: _l(
+        label: localize("Collection Name"),
+        help: localize(
             "If this is set, all rows with the same collection name will be joined into a collection and it is possible to create multiple collections at once."
         ),
         modes: ["raw", "ftp", "datasets", "library_datasets"],
         importType: "collections",
     },
     name_tag: {
-        label: _l("Name Tag"),
-        help: _l("Add a name tag or hash tag based on the specified column value for imported datasets."),
+        label: localize("Name Tag"),
+        help: localize("Add a name tag or hash tag based on the specified column value for imported datasets."),
         importType: "datasets",
         modes: ["raw", "ftp"],
     },
     tags: {
         multiple: true,
-        label: _l("General Purpose Tag(s)"),
-        help: _l(
+        label: localize("General Purpose Tag(s)"),
+        help: localize(
             "Add a general purpose tag based on the specified column value, use : to separate key-value pairs if desired. These tags are not propagated to derived datasets the way name and group tags are."
         ),
         modes: ["raw", "ftp", "datasets", "library_datasets", "collection_contents"],
     },
     group_tags: {
         multiple: true,
-        label: _l("Group Tag(s)"),
-        help: _l(
+        label: localize("Group Tag(s)"),
+        help: localize(
             "Add a group tag based on the specified column value, use : to separate key-value pairs. These tags are propagated to derived datasets and may be useful for factorial experiments."
         ),
         modes: ["raw", "ftp", "datasets", "library_datasets", "collection_contents"],
     },
     name: {
-        label: _l("Name"),
+        label: localize("Name"),
         importType: "datasets",
     },
     dbkey: {
-        label: _l("Genome"),
+        label: localize("Genome"),
         modes: ["raw", "ftp"],
     },
     file_type: {
-        label: _l("Type"),
+        label: localize("Type"),
         modes: ["raw", "ftp"],
-        help: _l("This should be the Galaxy file type corresponding to this file."),
+        help: localize("This should be the Galaxy file type corresponding to this file."),
     },
     url: {
-        label: _l("URL"),
+        label: localize("URL"),
         modes: ["raw"],
-        help: _l("This should be a URL (or Galaxy-aware URI) the file can be downloaded from."),
+        help: localize("This should be a URL (or Galaxy-aware URI) the file can be downloaded from."),
     },
     url_deferred: {
-        label: _l("Deferred URL"),
+        label: localize("Deferred URL"),
         modes: ["raw"],
-        help: _l(
+        help: localize(
             "This should be a URL (or Galaxy-aware URI) th efile can be downloaded from - the file will not be downloaded until it used by a tool."
         ),
     },
     info: {
-        label: _l("Info"),
-        help: _l(
+        label: localize("Info"),
+        help: localize(
             "Unstructured text associated with the dataset that shows up in the history panel, this is optional and can be whatever you would like."
         ),
         modes: ["raw", "ftp"],
     },
     ftp_path: {
-        label: _l("FTP Path"),
+        label: localize("FTP Path"),
         modes: ["raw", "ftp"],
-        help: _l(
+        help: localize(
             "This should be the path to the target file to include relative to your FTP directory on the Galaxy server"
         ),
         requiresFtp: true,
@@ -887,7 +887,7 @@ const applyRules = function (data, sources, columns, rules, headersPerRule = [])
         rule.error = null;
         rule.warn = null;
         if (hasRuleError) {
-            rule.warn = _l("Skipped due to previous errors.");
+            rule.warn = localize("Skipped due to previous errors.");
             continue;
         }
         var ruleType = rule.type;

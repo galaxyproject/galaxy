@@ -16,6 +16,7 @@
 <script>
 import { mapState } from "pinia";
 import { useUserStore } from "@/stores/userStore";
+import { localize } from "@/utils/localization";
 
 export default {
     name: "FavoritesButton",
@@ -34,12 +35,12 @@ export default {
         ...mapState(useUserStore, ["isAnonymous"]),
         tooltipText() {
             if (this.isAnonymous) {
-                return this.l("Log in to Favorite Tools");
+                return localize("Log in to Favorite Tools");
             } else {
                 if (this.toggle) {
-                    return this.l("Clear");
+                    return localize("Clear");
                 } else {
-                    return this.l("Show favorites");
+                    return localize("Show favorites");
                 }
             }
         },

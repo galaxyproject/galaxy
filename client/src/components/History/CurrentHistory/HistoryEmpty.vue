@@ -2,7 +2,7 @@
     <b-alert show>
         <h4 class="mb-1">
             <i class="fa fa-info-circle empty-message"></i>
-            <span>{{ message | l }}</span>
+            <span>{{ message | localize }}</span>
         </h4>
         <p>
             <a v-localize href="#" @click.prevent="openGlobalUploadModal">You can load your own data</a>

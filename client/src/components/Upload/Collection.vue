@@ -117,7 +117,7 @@
 </template>
 
 <script>
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import _ from "underscore";
 import { getGalaxyInstance } from "app";
 import { refreshContentsWrapper } from "utils/data";
@@ -153,13 +153,13 @@ export default {
             enableBuild: false,
             highlightBox: false,
             rowUploadModel: UploadRow,
-            btnLocalTitle: _l("Choose local files"),
-            btnCreateTitle: _l("Paste/Fetch data"),
-            btnFtpTitle: _l("Choose FTP files"),
-            btnStartTitle: _l("Start"),
-            btnBuildTitle: _l("Build"),
-            btnStopTitle: _l("Pause"),
-            btnResetTitle: _l("Reset"),
+            btnLocalTitle: localize("Choose local files"),
+            btnCreateTitle: localize("Paste/Fetch data"),
+            btnFtpTitle: localize("Choose FTP files"),
+            btnStartTitle: localize("Start"),
+            btnBuildTitle: localize("Build"),
+            btnStopTitle: localize("Pause"),
+            btnResetTitle: localize("Reset"),
         };
     },
     computed: {

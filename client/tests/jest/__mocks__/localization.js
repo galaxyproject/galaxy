@@ -6,6 +6,8 @@ export function _getUserLocale(user, config) {
     return "en";
 }
 
-export default function localize(l) {
+export function localize(l) {
     return l;
 }
+
+export default localize;

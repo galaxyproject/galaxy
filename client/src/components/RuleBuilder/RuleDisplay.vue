@@ -15,7 +15,7 @@
 </template>
 
 <script>
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import RuleDefs from "./rule-definitions";
 const RULES = RuleDefs.RULES;
 
@@ -36,10 +36,10 @@ export default {
             return RULES[ruleType].display(this.rule, this.colHeaders);
         },
         editTitle() {
-            return _l("Edit this rule.");
+            return localize("Edit this rule.");
         },
         removeTitle() {
-            return _l("Remove this rule.");
+            return localize("Remove this rule.");
         },
     },
     methods: {

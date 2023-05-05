@@ -21,7 +21,7 @@
 import { getToolPredictions } from "./modules/services";
 import { getCompatibleRecommendations } from "./modules/utilities";
 import LoadingSpan from "components/LoadingSpan";
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 export default {
@@ -46,8 +46,8 @@ export default {
         return {
             compatibleTools: [],
             isDeprecated: false,
-            popoverHeaderText: _l("Tool recommendations"),
-            noRecommendationsMessage: _l("No tool recommendations"),
+            popoverHeaderText: localize("Tool recommendations"),
+            noRecommendationsMessage: localize("No tool recommendations"),
             deprecatedMessage: "",
             showLoading: true,
         };

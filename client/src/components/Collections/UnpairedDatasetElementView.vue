@@ -7,7 +7,7 @@
 </template>
 
 <script>
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 export default {
     props: {
         element: {
@@ -16,14 +16,14 @@ export default {
     },
     data: function () {
         return {
-            titleElementName: _l("Click to rename"),
+            titleElementName: localize("Click to rename"),
             isSelected: false,
         };
     },
     methods: {
         l(str) {
             // _l conflicts private methods of Vue internals, expose as l instead
-            return _l(str);
+            return localize(str);
         },
         /** string rep */
         toString() {

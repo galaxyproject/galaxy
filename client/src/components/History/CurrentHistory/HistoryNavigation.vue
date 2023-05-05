@@ -60,7 +60,7 @@
                     <b-dropdown-divider></b-dropdown-divider>
 
                     <b-dropdown-item
-                        :title="l('Resume all Paused Jobs in this History')"
+                        :title="localize('Resume all Paused Jobs in this History')"
                         @click="iframeRedirect('/history/resume_paused_jobs?current=True')">
                         <Icon fixed-width icon="play" class="mr-1" />
                         <span v-localize>Resume Paused Jobs</span>
@@ -76,13 +76,13 @@
                         <span v-localize>Copy this History</span>
                     </b-dropdown-item>
 
-                    <b-dropdown-item v-b-modal:delete-history-modal :title="l('Permanently Delete History')">
+                    <b-dropdown-item v-b-modal:delete-history-modal :title="localize('Permanently Delete History')">
                         <Icon fixed-width icon="trash" class="mr-1" />
                         <span v-localize>Delete this History</span>
                     </b-dropdown-item>
 
                     <b-dropdown-item
-                        :title="l('Export Citations for all Tools used in this History')"
+                        :title="localize('Export Citations for all Tools used in this History')"
                         @click="$router.push(`/histories/citations?id=${history.id}`)">
                         <Icon fixed-width icon="stream" class="mr-1" />
                         <span v-localize>Export Tool Citations</span>
@@ -90,7 +90,7 @@
 
                     <b-dropdown-item
                         data-description="export to file"
-                        :title="l('Export and Download History as a File')"
+                        :title="localize('Export and Download History as a File')"
                         @click="$router.push(`/histories/${history.id}/export`)">
                         <Icon fixed-width icon="file-archive" class="mr-1" />
                         <span v-localize>Export History to File</span>
@@ -172,6 +172,7 @@
 import { mapState } from "pinia";
 import { useUserStore } from "@/stores/userStore";
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
+import { localize } from "utils/localization";
 import CopyModal from "components/History/Modals/CopyModal";
 import SelectorModal from "components/History/Modals/SelectorModal";
 
@@ -193,11 +194,12 @@ export default {
     methods: {
         userTitle(title) {
             if (this.isAnonymous) {
-                return this.l("Log in to") + " " + this.l(title);
+                return localize("Log in to") + " " + localize(title);
             } else {
-                return this.l(title);
+                return localize(title);
             }
         },
+        localize,
     },
 };
 </script>

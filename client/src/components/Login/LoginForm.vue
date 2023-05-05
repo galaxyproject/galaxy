@@ -86,7 +86,7 @@ import BootstrapVue from "bootstrap-vue";
 import { withPrefix } from "utils/redirect";
 import NewUserConfirmation from "./NewUserConfirmation";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin";
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 
 Vue.use(BootstrapVue);
 
@@ -136,9 +136,9 @@ export default {
             url: null,
             messageText: null,
             messageVariant: null,
-            headerWelcome: _l("Welcome to Galaxy, please log in"),
-            labelNameAddress: _l("Public Name or Email Address"),
-            labelPassword: _l("Password"),
+            headerWelcome: localize("Welcome to Galaxy, please log in"),
+            labelNameAddress: localize("Public Name or Email Address"),
+            labelPassword: localize("Password"),
         };
     },
     computed: {

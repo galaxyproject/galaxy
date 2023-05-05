@@ -1,11 +1,13 @@
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
-import _l from "utils/localization";
+
+import { localize } from "utils/localization";
 
 //==============================================================================
 /** @class Model for a Galaxy user (including anonymous users).
  *  @name User
  */
+
 var User = Backbone.Model.extend(
     /** @lends User.prototype */ {
         /** API location for this resource */
@@ -19,7 +21,7 @@ var User = Backbone.Model.extend(
          */
         defaults: /** @lends User.prototype */ {
             id: null,
-            username: `(${_l("anonymous user")})`,
+            username: `(${localize("anonymous user")})`,
             email: "",
             total_disk_usage: 0,
             nice_total_disk_usage: "",

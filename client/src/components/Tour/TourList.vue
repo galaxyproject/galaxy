@@ -28,7 +28,7 @@
 </template>
 
 <script>
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import { getAppRoot } from "onload/loadConfig";
 import { urlData } from "utils/url";
 import DelayedInput from "components/Common/DelayedInput";
@@ -42,7 +42,7 @@ export default {
             tours: [],
             search: "",
             error: null,
-            searchTours: _l("search tours"),
+            searchTours: localize("search tours"),
         };
     },
     created() {

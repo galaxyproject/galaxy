@@ -24,7 +24,7 @@
 
 <script>
 import Vue from "vue";
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import BootstrapVue from "bootstrap-vue";
 import { RULES, MAPPING_TARGETS } from "./rule-definitions";
 import UtcDate from "components/UtcDate";
@@ -42,7 +42,7 @@ export default {
     },
     data: function () {
         return {
-            savedRulesMenu: _l("Recently used rules"),
+            savedRulesMenu: localize("Recently used rules"),
             // Get the 61 character values for ASCII 65 (A) to 126 (~), which is how handson table labels its columns
             // This ensures the handson table headers are available for passing to the display method in formatPreview
             hotHeaders: [...new Array(61).keys()].map((i) => String.fromCharCode(i + 65)),

@@ -69,6 +69,7 @@
 <script>
 import { mapState } from "pinia";
 import { useUserStore } from "@/stores/userStore";
+import { localize } from "@/utils/localization";
 import short from "components/directives/v-short";
 import StatelessTags from "components/TagsMultiselect/StatelessTags";
 
@@ -97,12 +98,12 @@ export default {
         ...mapState(useUserStore, ["isAnonymous"]),
         editButtonTitle() {
             if (this.isAnonymous) {
-                return this.l("Log in to Rename History");
+                return localize("Log in to Rename History");
             } else {
                 if (this.writeable) {
-                    return this.l("Edit");
+                    return localize("Edit");
                 } else {
-                    return this.l("Not Editable");
+                    return localize("Not Editable");
                 }
             }
         },

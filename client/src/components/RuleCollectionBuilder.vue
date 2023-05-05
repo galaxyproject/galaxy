@@ -581,7 +581,7 @@ import _ from "underscore";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
-import _l from "utils/localization";
+import { localize } from "utils/localization";
 import { refreshContentsWrapper } from "utils/data";
 import HotTable from "@handsontable/vue";
 import UploadUtils from "mvc/upload/upload-utils";
@@ -760,26 +760,28 @@ export default {
             errorMessage: "",
             jaggedData: false,
             waitingJobState: "new",
-            titleReset: _l("Undo all reordering and discards"),
-            titleNumericSort: _l(
+            titleReset: localize("Undo all reordering and discards"),
+            titleNumericSort: localize(
                 "By default columns will be sorted lexicographically, check this option if the columns are numeric values and should be sorted as numbers"
             ),
-            titleInvertFilterRegex: _l("Remove rows not matching the specified regular expression at specified column"),
-            titleInvertFilterEmpty: _l("Remove rows that have non-empty values at specified column"),
-            titleInvertFilterMatches: _l("Remove rows matching supplied value"),
-            titleViewSource: _l(
+            titleInvertFilterRegex: localize(
+                "Remove rows not matching the specified regular expression at specified column"
+            ),
+            titleInvertFilterEmpty: localize("Remove rows that have non-empty values at specified column"),
+            titleInvertFilterMatches: localize("Remove rows matching supplied value"),
+            titleViewSource: localize(
                 "Advanced Option: View and or edit the JSON representation of the rules to apply to this tabular data"
             ),
-            titleSourceCancel: _l("Stop editing rules and dismiss changes"),
-            titleSourceReset: _l("Reset text area to current set of rules"),
-            titleSourceApply: _l("Apply changes to rule source and return to rule preview"),
-            titleRulesMenu: _l("General rules to apply"),
-            titleFilterMenu: _l("Rules that filter rows from the data"),
-            titleColumMenu: _l("Rules that generate new columns"),
-            titleRemoveMapping: _l("Remove column definition assignment"),
-            titleApplyColumnDefinitions: _l("Apply these column definitions and return to rules preview"),
-            titleErrorOkay: _l("Dismiss this error and return to the rule builder to try again with new rules"),
-            namePlaceholder: _l("Enter a name for your new collection"),
+            titleSourceCancel: localize("Stop editing rules and dismiss changes"),
+            titleSourceReset: localize("Reset text area to current set of rules"),
+            titleSourceApply: localize("Apply changes to rule source and return to rule preview"),
+            titleRulesMenu: localize("General rules to apply"),
+            titleFilterMenu: localize("Rules that filter rows from the data"),
+            titleColumMenu: localize("Rules that generate new columns"),
+            titleRemoveMapping: localize("Remove column definition assignment"),
+            titleApplyColumnDefinitions: localize("Apply these column definitions and return to rules preview"),
+            titleErrorOkay: localize("Dismiss this error and return to the rule builder to try again with new rules"),
+            namePlaceholder: localize("Enter a name for your new collection"),
             activeRuleIndex: null,
             addColumnRegexTarget: 0,
             addColumnBasenameTarget: 0,
@@ -827,7 +829,7 @@ export default {
             hideSourceItems: this.defaultHideSourceItems,
             addNameTag: false,
             orientation: orientation,
-            validityErrorHeader: _l("These issues must be resolved to proceed:"),
+            validityErrorHeader: localize("These issues must be resolved to proceed:"),
         };
     },
     computed: {
@@ -860,29 +862,29 @@ export default {
         },
         titleFinish() {
             if (this.validityErrorMessages.length != 0) {
-                return _l("Button is disabled due to validation errors. Please see alerts above.");
+                return localize("Button is disabled due to validation errors. Please see alerts above.");
             } else if (this.elementsType == "datasets" || this.elementsType == "library_datasets") {
-                return _l("Create new collection from specified rules and datasets");
+                return localize("Create new collection from specified rules and datasets");
             } else if (this.elementsType == "collection_contents") {
-                return _l("Save rules and return to tool form");
+                return localize("Save rules and return to tool form");
             } else {
-                return _l("Upload collection using specified rules");
+                return localize("Upload collection using specified rules");
             }
         },
         titleCancel() {
             if (this.importType == "datasets") {
-                return _l("Close this modal and do not upload any datasets");
+                return localize("Close this modal and do not upload any datasets");
             } else {
-                return _l("Close this modal and do not create any collections");
+                return localize("Close this modal and do not create any collections");
             }
         },
         finishButtonTitle() {
             if (this.elementsType == "datasets" || this.elementsType == "library_datasets") {
-                return _l("Create");
+                return localize("Create");
             } else if (this.elementsType == "collection_contents") {
-                return _l("Save");
+                return localize("Save");
             } else {
-                return _l("Upload");
+                return localize("Upload");
             }
         },
         hasActiveMappingEdit() {
@@ -982,22 +984,22 @@ export default {
                     const collectionTypeRank = collectionTypeRanks[index];
                     if (collectionTypeRank == "list") {
                         // TODO: drop the numeral at the end if only flat list
-                        metadataOptions["identifier" + index] = _l("List Identifier ") + (parseInt(index) + 1);
+                        metadataOptions["identifier" + index] = localize("List Identifier ") + (parseInt(index) + 1);
                     } else {
-                        metadataOptions["identifier" + index] = _l("Paired Identifier");
+                        metadataOptions["identifier" + index] = localize("Paired Identifier");
                     }
                 }
-                metadataOptions["tags"] = _l("Tags");
+                metadataOptions["tags"] = localize("Tags");
             } else if (this.elementsType == "ftp") {
-                metadataOptions["path"] = _l("Path");
+                metadataOptions["path"] = localize("Path");
             } else if (this.elementsType == "remote_files") {
-                metadataOptions["url"] = _l("URL");
-                metadataOptions["url_deferred"] = _l("URL (deferred)");
+                metadataOptions["url"] = localize("URL");
+                metadataOptions["url_deferred"] = localize("URL (deferred)");
             } else if (this.elementsType == "library_datasets") {
-                metadataOptions["name"] = _l("Name");
+                metadataOptions["name"] = localize("Name");
             } else if (this.elementsType == "datasets") {
-                metadataOptions["hid"] = _l("History ID (hid)");
-                metadataOptions["name"] = _l("Name");
+                metadataOptions["hid"] = localize("History ID (hid)");
+                metadataOptions["name"] = localize("Name");
             } else {
                 metadataOptions = null;
             }
@@ -1227,7 +1229,7 @@ export default {
         },
         l(str) {
             // _l conflicts private methods of Vue internals, expose as l instead
-            return _l(str);
+            return localize(str);
         },
         cancel() {
             this.oncancel();

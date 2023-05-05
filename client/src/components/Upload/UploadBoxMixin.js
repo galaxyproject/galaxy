@@ -1,6 +1,6 @@
-import _l from "utils/localization";
 import $ from "jquery";
 import Select2 from "components/Select2";
+import { localize } from "utils/localization";
 import Popover from "mvc/ui/ui-popover";
 import UploadExtension from "mvc/upload/upload-extension";
 import UploadModel from "mvc/upload/upload-model";
@@ -13,8 +13,6 @@ import { filesDialog, refreshContentsWrapper } from "utils/data";
 import { getAppRoot } from "onload";
 import { UploadQueue } from "utils/uploadbox";
 import axios from "axios";
-
-const localize = _l;
 
 export default {
     components: {
@@ -335,7 +333,7 @@ export default {
         initFtpPopover() {
             // add ftp file viewer
             this.ftp = new Popover({
-                title: _l("FTP files"),
+                title: localize("FTP files"),
                 class: "ftp-upload",
                 container: $(this.$refs.btnFtp),
             });
