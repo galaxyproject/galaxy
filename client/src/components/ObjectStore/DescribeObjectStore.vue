@@ -4,11 +4,9 @@ import QuotaUsageBar from "@/components/User/DiskUsage/Quota/QuotaUsageBar.vue";
 import { QuotaSourceUsageProvider } from "@/components/User/DiskUsage/Quota/QuotaUsageProvider.js";
 import ObjectStoreBadges from "./ObjectStoreBadges.vue";
 import ConfigurationMarkdown from "./ConfigurationMarkdown.vue";
-import type { components } from "@/schema";
+import type { ConcreteObjectStoreModel } from "./types";
 
 import { computed } from "vue";
-
-type ConcreteObjectStoreModel = components["schemas"]["ConcreteObjectStoreModel"];
 
 interface Props {
     storageInfo: ConcreteObjectStoreModel;
@@ -51,6 +49,6 @@ defineExpose({
             <QuotaUsageBar v-else-if="quotaUsage" :quota-usage="quotaUsage" :embedded="true" />
         </QuotaSourceUsageProvider>
         <div v-else>Galaxy has no quota configured for this object store.</div>
-        <ConfigurationMarkdown :markdown="storageInfo.description" :admin="true" />
+        <ConfigurationMarkdown v-if="storageInfo.description" :markdown="storageInfo.description" :admin="true" />
     </div>
 </template>
