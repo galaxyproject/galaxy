@@ -136,6 +136,42 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
         assert len(index_response) == 1
         assert index_response[0]["name"] == expected_history_name
 
+    def test_index_case_insensitive_contains_query(self):
+        # Create the histories with a different user to ensure the test
+        # is not conflicted with the current user's histories.
+        with self._different_user(f"user_{uuid4()}@bx.psu.edu"):
+            unique_id = uuid4()
+            expected_history_name = f"Test History That Match Query_{unique_id}"
+            self._create_history(expected_history_name)
+            self._create_history(expected_history_name.upper())
+            self._create_history(expected_history_name.lower())
+            self._create_history(f"Another history_{uuid4()}")
+
+            name_contains = "history"
+            query = f"?q=name-contains&qv={name_contains}"
+            index_response = self._get(f"histories{query}").json()
+            assert len(index_response) == 4
+
+            name_contains = "history that match query"
+            query = f"?q=name-contains&qv={name_contains}"
+            index_response = self._get(f"histories{query}").json()
+            assert len(index_response) == 3
+
+            name_contains = "ANOTHER"
+            query = f"?q=name-contains&qv={name_contains}"
+            index_response = self._get(f"histories{query}").json()
+            assert len(index_response) == 1
+
+            name_contains = "test"
+            query = f"?q=name-contains&qv={name_contains}"
+            index_response = self._get(f"histories{query}").json()
+            assert len(index_response) == 3
+
+            name_contains = unique_id
+            query = f"?q=name-contains&qv={name_contains}"
+            index_response = self._get(f"histories{query}").json()
+            assert len(index_response) == 3
+
     def test_delete(self):
         # Setup a history and ensure it is in the index
         history_id = self._create_history("TestHistoryForDelete")["id"]
