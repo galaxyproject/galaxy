@@ -1,3 +1,5 @@
+import { runFilter } from "./filterFunction";
+
 export type Message<O extends object, K extends keyof O> =
     | {
           type: "setArray";
@@ -37,27 +39,3 @@ self.addEventListener("message", (e: MessageEvent<Message<Record<string, unknown
         self.postMessage({ type: "result", filtered });
     }
 });
-
-function runFilter(f: string, arr: Record<string, unknown>[], fields: string[]) {
-    if (f === "") {
-        return arr;
-    } else {
-        return arr.filter((obj) => {
-            for (const field of fields) {
-                const val = obj[field];
-
-                if (typeof val === "string") {
-                    if (val.toLowerCase().includes(f.toLocaleLowerCase())) {
-                        return true;
-                    }
-                } else if (Array.isArray(val)) {
-                    if (val.includes(f)) {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
-        });
-    }
-}
