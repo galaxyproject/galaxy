@@ -610,7 +610,7 @@ workflow_run:
     runtime_setting_target: '.workflow-run-settings-target'
     input_select_field:
       type: xpath
-      selector: '//div[@data-label="${label}"]//span[@class="multiselect__single"]'
+      selector: '//div[@data-label="${label}"]//div[contains(@class, "multiselect")]'
     primary_storage_indciator: '.workflow-storage-indicator-primary'
     intermediate_storage_indciator: '.workflow-storage-indicator-intermediate'
 
@@ -681,7 +681,7 @@ workflow_editor:
     change_datatype:
       type: xpath
       selector: >
-        //div[@data-label='Change datatype' and not(ancestor::div[contains(@style,'display: none')])]//span[contains(@class, 'multiselect__single')]
+        //div[@data-label='Change datatype']//div[contains(@class, 'multiselect')]
     select_datatype_text_search:
       type: xpath
       selector: >
