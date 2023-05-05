@@ -77,7 +77,7 @@ greenlet==2.0.2 ; python_version >= "3.7" and platform_machine == "aarch64" and 
 gunicorn==20.1.0 ; python_version >= "3.7" and python_version < "3.12"
 gxformat2==0.17.0 ; python_version >= "3.7" and python_version < "3.12"
 h11==0.14.0 ; python_version >= "3.7" and python_version < "3.12"
-h5grove==1.2.1 ; python_version >= "3.7" and python_version < "3.11"
+h5grove==1.2.1 ; python_version >= "3.7" and python_version < "3.12"
 h5py==3.8.0 ; python_version >= "3.7" and python_version < "3.12"
 humanfriendly==10.0 ; python_version >= "3.7" and python_version < "3.12"
 idna==3.4 ; python_version >= "3.7" and python_version < "3.12"
