@@ -13,7 +13,7 @@ import {
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import UtcDate from "@/components/UtcDate.vue";
 import { ref, type PropType, computed, type Ref, watch } from "vue";
-import { useFilterObjectArray } from "@/composables/utils/filter";
+import { useFilterObjectArray } from "@/composables/filter/filter";
 import localize from "@/utils/localization";
 import Heading from "@/components/Common/Heading.vue";
 import type { HistorySummary } from "@/stores/historyStore";
