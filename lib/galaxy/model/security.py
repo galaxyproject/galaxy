@@ -520,9 +520,7 @@ class GalaxyRBACAgent(RBACAgent):
 
         return True
 
-    def can_access_collection(
-        self, user_roles: List[galaxy.model.Role], collection: galaxy.model.DatasetCollection
-    ):
+    def can_access_collection(self, user_roles: List[galaxy.model.Role], collection: galaxy.model.DatasetCollection):
         action_tuples = collection.dataset_action_tuples
         if not self.can_access_datasets(user_roles, action_tuples):
             return False

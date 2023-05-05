@@ -424,12 +424,12 @@ const View = Backbone.View.extend({
         const select_options = { hda: [], hdca: [] };
         _.each(options, (items, src) => {
             _.each(items, (item) => {
-                self._patchValue(item);
+                self._patchValue(item, src);
                 const current_src = item.src || src;
                 const addOption = !this.model.attributes.tag || item.tags.includes(this.model.attributes.tag);
                 if (addOption) {
                     select_options[current_src].push({
-                        hid: item.hid,
+                        hid: item.hid || Infinity, // if we got no hid we have a "Selected" item
                         keep: item.keep,
                         label: `${item.hid || "Selected"}: ${item.name}`,
                         value: item.id,
@@ -455,7 +455,12 @@ const View = Backbone.View.extend({
                 list.push(value.id);
             });
             // sniff first suitable field type from config list
-            const src = new_value.values[0].src;
+            let src = new_value.values[0].src;
+            if (src === "dce") {
+                src =
+                    this.cache[`dce${new_value.values[0].id}_hda`]?.src ||
+                    this.cache[`dce${new_value.values[0].id}_hdca`]?.src;
+            }
             const multiple = new_value.values.length > 1;
             for (let i = 0; i < this.config.length; i++) {
                 const field = this.fields[i];
@@ -480,11 +485,11 @@ const View = Backbone.View.extend({
 
     /** Library datasets are displayed and selected together with history datasets,
         Dataset collection elements are displayed together with history dataset collections **/
-    _patchValue: function (v) {
-        const patchTo = { ldda: "hda", dce: "hdca" };
+    _patchValue: function (v, src) {
+        const patchTo = { ldda: "hda", dce: src };
         if (v.values) {
             _.each(v.values, (v) => {
-                this._patchValue(v);
+                this._patchValue(v, src);
             });
         } else if (patchTo[v.src]) {
             v.origin = v.src;
