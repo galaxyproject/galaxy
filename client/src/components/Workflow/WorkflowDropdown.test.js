@@ -21,15 +21,14 @@ const descriptionlessWorkflow = {
     id: TEST_WORKFLOW_ID,
     owner: TEST_WORKFLOW_OWNER,
 };
-const basicWorkflow = { description: TEST_WORKFLOW_DESCRIPTION, ...descriptionlessWorkflow }
+const basicWorkflow = { description: TEST_WORKFLOW_DESCRIPTION, ...descriptionlessWorkflow };
 const sharedWorkflow = { shared: true, ...basicWorkflow };
-
 
 describe("WorkflowDropdown.vue", () => {
     let wrapper;
     let propsData;
 
-    function initWrapperForWorkflow(workflow, isAnonymous=true) {
+    function initWrapperForWorkflow(workflow, isAnonymous = true) {
         propsData = {
             root: "/root/",
             workflow: workflow,
@@ -39,11 +38,10 @@ describe("WorkflowDropdown.vue", () => {
             localVue,
             pinia: createPinia(),
         });
-        if(!isAnonymous){
+        if (!isAnonymous) {
             const userStore = useUserStore();
             userStore.currentUser = { email: "my@email", id: 1 };
         }
-
     }
 
     function workflowOptions() {
