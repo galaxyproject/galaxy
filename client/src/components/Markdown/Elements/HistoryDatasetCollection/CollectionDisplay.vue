@@ -13,20 +13,18 @@
                     class="py-0 px-1">
                     <span class="fa fa-download" />
                 </b-button>
-                <div v-if="currentUser">
-                    <b-button
-                        v-if="currentHistoryId"
-                        v-b-tooltip.hover
-                        href="#"
-                        role="button"
-                        variant="link"
-                        title="Import Collection"
-                        type="button"
-                        class="py-0 px-1"
-                        @click="onCopyCollection(currentHistoryId)">
-                        <span class="fa fa-file-import" />
-                    </b-button>
-                </div>
+                <b-button
+                    v-if="vcurrentUser && currentHistoryId"
+                    v-b-tooltip.hover
+                    href="#"
+                    role="button"
+                    variant="link"
+                    title="Import Collection"
+                    type="button"
+                    class="py-0 px-1"
+                    @click="onCopyCollection(currentHistoryId)">
+                    <span class="fa fa-file-import" />
+                </b-button>
             </span>
             <span>
                 <span>Dataset Collection:</span>

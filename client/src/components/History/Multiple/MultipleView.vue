@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { storeToRefs } from "pinia";
+import localize from "@/utils/localization";
 import { useUserStore } from "@/stores/userStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-import DebouncedInput from "@/components/DebouncedInput";
 import MultipleViewList from "./MultipleViewList.vue";
 
 const filter = ref("");
@@ -30,16 +30,14 @@ function updateFilter(newFilter: string) {
         </b-alert>
         <div v-else-if="histories.length" class="multi-history-panel d-flex flex-column h-100">
             <b-input-group class="w-100">
-                <DebouncedInput v-slot="{ value, input }" v-model="filter">
-                    <b-form-input
-                        size="sm"
-                        :class="filter && 'font-weight-bold'"
-                        :value="value"
-                        :placeholder="'search datasets in selected histories' | l"
-                        data-description="filter text input"
-                        @input="input"
-                        @keyup.esc="updateFilter('')" />
-                </DebouncedInput>
+                <b-form-input
+                    v-model="filter"
+                    size="sm"
+                    debounce="500"
+                    :class="filter && 'font-weight-bold'"
+                    :placeholder="localize('search datasets in selected histories')"
+                    data-description="filter text input"
+                    @keyup.esc="updateFilter('')" />
                 <b-input-group-append>
                     <b-button size="sm" data-description="show deleted filter toggle" @click="updateFilter('')">
                         <FontAwesomeIcon icon="fa-times" />

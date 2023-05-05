@@ -1,101 +1,99 @@
 <template>
     <ConfigProvider v-slot="{ config }">
-        <div v-if="currentUser">
-            <div v-if="currentHistoryId">
-                <b-alert :show="messageShow" :variant="messageVariant">
-                    {{ messageText }}
-                </b-alert>
-                <LoadingSpan v-if="showLoading" message="Loading Tool" />
-                <div v-if="showEntryPoints">
-                    <ToolEntryPoints v-for="job in entryPoints" :key="job.id" :job-id="job.id" />
-                </div>
-                <b-modal v-model="showError" size="sm" :title="errorTitle | l" scrollable ok-only>
-                    <b-alert v-if="errorMessage" show variant="danger">
-                        {{ errorMessage }}
-                    </b-alert>
-                    <b-alert show variant="warning">
-                        The server could not complete this request. Please verify your parameter settings, retry
-                        submission and contact the Galaxy Team if this error persists. A transcript of the submitted
-                        data is shown below.
-                    </b-alert>
-                    <small class="text-muted">
-                        <pre>{{ errorContentPretty }}</pre>
-                    </small>
-                </b-modal>
-                <ToolRecommendation v-if="showRecommendation" :tool-id="formConfig.id" />
-                <ToolCard
-                    v-if="showForm"
-                    :id="formConfig.id"
-                    :version="formConfig.version"
-                    :title="formConfig.name"
-                    :description="formConfig.description"
-                    :options="formConfig"
-                    :message-text="messageText"
-                    :message-variant="messageVariant"
-                    :disabled="disabled || showExecuting"
-                    :allow-object-store-selection="config.object_store_allows_id_selection"
-                    :preferred-object-store-id="preferredObjectStoreId"
-                    itemscope="itemscope"
-                    itemtype="https://schema.org/CreativeWork"
-                    @updatePreferredObjectStoreId="onUpdatePreferredObjectStoreId"
-                    @onChangeVersion="onChangeVersion">
-                    <template v-slot:body>
-                        <div class="mt-2 mb-4">
-                            <Heading h2 separator bold size="sm"> Tool Parameters </Heading>
-                            <FormDisplay
-                                :id="toolId"
-                                :inputs="formConfig.inputs"
-                                :validation-scroll-to="validationScrollTo"
-                                @onChange="onChange"
-                                @onValidation="onValidation" />
-                        </div>
-
-                        <div
-                            v-if="emailAllowed(config, currentUser) || remapAllowed || reuseAllowed(currentUser)"
-                            class="mt-2 mb-4">
-                            <Heading h2 separator bold size="sm"> Additional Options </Heading>
-                            <FormElement
-                                v-if="emailAllowed(config, currentUser)"
-                                id="send_email_notification"
-                                v-model="useEmail"
-                                title="Email notification"
-                                help="Send an email notification when the job completes."
-                                type="boolean" />
-                            <FormElement
-                                v-if="remapAllowed"
-                                id="rerun_remap_job_id"
-                                v-model="useJobRemapping"
-                                :title="remapTitle"
-                                :help="remapHelp"
-                                type="boolean" />
-                            <FormElement
-                                v-if="reuseAllowed(currentUser)"
-                                id="use_cached_job"
-                                v-model="useCachedJobs"
-                                title="Attempt to re-use jobs with identical parameters?"
-                                help="This may skip executing jobs that you have already run."
-                                type="boolean" />
-                        </div>
-                    </template>
-                    <template v-slot:header-buttons>
-                        <ButtonSpinner
-                            id="execute"
-                            title="Run Tool"
-                            class="btn-sm"
-                            :wait="showExecuting"
-                            :tooltip="tooltip"
-                            @onClick="onExecute(config, currentHistoryId)" />
-                    </template>
-                    <template v-slot:buttons>
-                        <ButtonSpinner
-                            title="Run Tool"
-                            class="mt-3 mb-3"
-                            :wait="showExecuting"
-                            :tooltip="tooltip"
-                            @onClick="onExecute(config, currentHistoryId)" />
-                    </template>
-                </ToolCard>
+        <div v-if="currentUser && currentHistoryId">
+            <b-alert :show="messageShow" :variant="messageVariant">
+                {{ messageText }}
+            </b-alert>
+            <LoadingSpan v-if="showLoading" message="Loading Tool" />
+            <div v-if="showEntryPoints">
+                <ToolEntryPoints v-for="job in entryPoints" :key="job.id" :job-id="job.id" />
             </div>
+            <b-modal v-model="showError" size="sm" :title="errorTitle | l" scrollable ok-only>
+                <b-alert v-if="errorMessage" show variant="danger">
+                    {{ errorMessage }}
+                </b-alert>
+                <b-alert show variant="warning">
+                    The server could not complete this request. Please verify your parameter settings, retry submission
+                    and contact the Galaxy Team if this error persists. A transcript of the submitted data is shown
+                    below.
+                </b-alert>
+                <small class="text-muted">
+                    <pre>{{ errorContentPretty }}</pre>
+                </small>
+            </b-modal>
+            <ToolRecommendation v-if="showRecommendation" :tool-id="formConfig.id" />
+            <ToolCard
+                v-if="showForm"
+                :id="formConfig.id"
+                :version="formConfig.version"
+                :title="formConfig.name"
+                :description="formConfig.description"
+                :options="formConfig"
+                :message-text="messageText"
+                :message-variant="messageVariant"
+                :disabled="disabled || showExecuting"
+                :allow-object-store-selection="config.object_store_allows_id_selection"
+                :preferred-object-store-id="preferredObjectStoreId"
+                itemscope="itemscope"
+                itemtype="https://schema.org/CreativeWork"
+                @updatePreferredObjectStoreId="onUpdatePreferredObjectStoreId"
+                @onChangeVersion="onChangeVersion">
+                <template v-slot:body>
+                    <div class="mt-2 mb-4">
+                        <Heading h2 separator bold size="sm"> Tool Parameters </Heading>
+                        <FormDisplay
+                            :id="toolId"
+                            :inputs="formConfig.inputs"
+                            :validation-scroll-to="validationScrollTo"
+                            @onChange="onChange"
+                            @onValidation="onValidation" />
+                    </div>
+
+                    <div
+                        v-if="emailAllowed(config, currentUser) || remapAllowed || reuseAllowed(currentUser)"
+                        class="mt-2 mb-4">
+                        <Heading h2 separator bold size="sm"> Additional Options </Heading>
+                        <FormElement
+                            v-if="emailAllowed(config, currentUser)"
+                            id="send_email_notification"
+                            v-model="useEmail"
+                            title="Email notification"
+                            help="Send an email notification when the job completes."
+                            type="boolean" />
+                        <FormElement
+                            v-if="remapAllowed"
+                            id="rerun_remap_job_id"
+                            v-model="useJobRemapping"
+                            :title="remapTitle"
+                            :help="remapHelp"
+                            type="boolean" />
+                        <FormElement
+                            v-if="reuseAllowed(currentUser)"
+                            id="use_cached_job"
+                            v-model="useCachedJobs"
+                            title="Attempt to re-use jobs with identical parameters?"
+                            help="This may skip executing jobs that you have already run."
+                            type="boolean" />
+                    </div>
+                </template>
+                <template v-slot:header-buttons>
+                    <ButtonSpinner
+                        id="execute"
+                        title="Run Tool"
+                        class="btn-sm"
+                        :wait="showExecuting"
+                        :tooltip="tooltip"
+                        @onClick="onExecute(config, currentHistoryId)" />
+                </template>
+                <template v-slot:buttons>
+                    <ButtonSpinner
+                        title="Run Tool"
+                        class="mt-3 mb-3"
+                        :wait="showExecuting"
+                        :tooltip="tooltip"
+                        @onClick="onExecute(config, currentHistoryId)" />
+                </template>
+            </ToolCard>
         </div>
     </ConfigProvider>
 </template>
