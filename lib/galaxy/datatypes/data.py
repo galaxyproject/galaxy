@@ -731,7 +731,7 @@ class Data(metaclass=DataMeta):
         return f"This display type ({type}) is not implemented for this datatype ({dataset.ext})."
 
     def get_display_links(
-        self, dataset: "DatasetInstance", type: str, app, base_url: str, target_frame: str = "_blank", **kwd
+        self, dataset: "DatasetInstance", type: str, app, base_url, request, target_frame: str = "_blank", **kwd
     ):
         """
         Returns a list of tuples of (name, link) for a particular display type.  No check on
@@ -742,7 +742,7 @@ class Data(metaclass=DataMeta):
         try:
             if app.config.enable_old_display_applications and type in self.get_display_types():
                 return target_frame, getattr(self, self.supported_display_apps[type]["links_function"])(
-                    dataset, type, app, base_url, **kwd
+                    dataset, type, app, base_url, request, **kwd
                 )
         except Exception:
             log.exception(
