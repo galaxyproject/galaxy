@@ -105,8 +105,6 @@ describe("History SelectorModal.vue", () => {
 
             await button.trigger("click");
 
-            console.log(wrapper.emitted());
-
             expect(wrapper.emitted()["selectHistories"][0][0][0].id).toBe(targetHistoryId1);
         });
     });
