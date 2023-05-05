@@ -67,6 +67,12 @@ watch(
     () => filtered.value,
     () => {
         filtered.value.sort((a, b) => (a.update_time < b.update_time ? 1 : -1));
+
+        const highestPage = Math.ceil(filtered.value.length / props.perPage);
+
+        if (highestPage < currentPage.value) {
+            currentPage.value = highestPage;
+        }
     }
 );
 
