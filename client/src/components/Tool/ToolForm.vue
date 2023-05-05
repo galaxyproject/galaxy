@@ -155,7 +155,6 @@ export default {
     data() {
         return {
             disabled: false,
-            initialized: false,
             showLoading: true,
             showForm: false,
             showEntryPoints: false,
@@ -163,7 +162,7 @@ export default {
             showError: false,
             showExecuting: false,
             formConfig: {},
-            formData: {},
+            formData: undefined,
             remapAllowed: false,
             errorTitle: null,
             errorContent: null,
@@ -214,6 +213,9 @@ export default {
                 return "The previous run of this tool failed and other tools were waiting for it to finish successfully. Use this option to resume those tools using the new output(s) of this tool run.";
             }
         },
+        initialized() {
+            return this.formData !== undefined;
+        },
     },
     watch: {
         currentHistoryId() {
@@ -224,10 +226,7 @@ export default {
         },
     },
     created() {
-        this.requestTool().then(() => {
-            this.initialized = true;
-            console.debug(`ToolForm::created - Started listening to history changes. [${this.id}]`);
-        });
+        this.requestTool();
     },
     methods: {
         ...mapActions(useJobStore, ["saveLatestResponse"]),
