@@ -5,12 +5,9 @@
             data-toggle="dropdown"
             :data-workflow-dropdown="workflow.id"
             aria-expanded="false">
-            <Icon icon="caret-down" class="mr-1" />
+            <Icon icon="caret-down" class="fa-lg" />
             <span class="workflow-dropdown-name">{{ workflow.name }}</span>
         </b-link>
-        <p v-if="workflow.description" class="workflow-dropdown-description">
-            <TextSummary :description="workflow.description" :show-details.sync="showDetails" />
-        </p>
         <span
             v-if="sourceType.includes('trs')"
             v-b-tooltip.hover
@@ -25,6 +22,9 @@
             :title="getWorkflowTooltip(sourceType, workflow)">
             <Icon fixed-width icon="link" class="mr-1 workflow-external-link" />
         </span>
+        <p v-if="workflow.description" class="workflow-dropdown-description">
+            <TextSummary :description="workflow.description" :show-details.sync="showDetails" />
+        </p>
         <div class="dropdown-menu" aria-labelledby="workflow-dropdown">
             <a
                 v-if="!readOnly && !isDeleted"
@@ -248,7 +248,7 @@ export default {
         getWorkflowTooltip: function (sourceType, workflow) {
             let tooltip = "";
             if (sourceType.includes("trs")) {
-                tooltip = `Imported from TRS ID (version ${workflow.source_metadata.trs_version_id})`;
+                tooltip = `Imported from TRS ID (version: ${workflow.source_metadata.trs_version_id})`;
             } else if (sourceType == "url") {
                 tooltip = `Imported from ${workflow.source_metadata.url}`;
             }
