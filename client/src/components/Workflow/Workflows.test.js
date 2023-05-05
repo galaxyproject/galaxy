@@ -33,6 +33,12 @@ const mockWorkflowsData = [
     },
 ];
 
+const defaultApiParams = {
+    limit: 20,
+    offset: 0,
+    skip_step_counts: true,
+};
+
 describe("WorkflowList.vue", () => {
     let axiosMock;
     let wrapper;
@@ -64,7 +70,7 @@ describe("WorkflowList.vue", () => {
     describe(" with server error", () => {
         beforeEach(async () => {
             axiosMock
-                .onGet("/api/workflows", { params: { limit: 50, offset: 0, skip_step_counts: true, search: "" } })
+                .onGet("/api/workflows", { params: { search: "", ...defaultApiParams } })
                 .reply(403, { err_msg: "this is a problem" });
             const propsData = {};
             wrapper = mount(Workflows, {
@@ -83,7 +89,7 @@ describe("WorkflowList.vue", () => {
     describe(" with single workflow", () => {
         beforeEach(async () => {
             axiosMock
-                .onGet("/api/workflows", { params: { limit: 50, offset: 0, skip_step_counts: true, search: "" } })
+                .onGet("/api/workflows", { params: { search: "", ...defaultApiParams } })
                 .reply(200, mockWorkflowsData, { total_matches: "1" });
             const propsData = {
                 inputDebounceDelay: 0,
@@ -137,10 +143,6 @@ describe("WorkflowList.vue", () => {
         });
 
         it("fetched filtered results when search filter is used", async () => {
-            axiosMock
-                .onGet("/api/workflows", { params: { limit: 50, offset: 0, skip_step_counts: true, search: "mytext" } })
-                .reply(200, [], { total_matches: "0" });
-
             await wrapper.find("#workflow-search").setValue("mytext");
             flushPromises();
             expect(wrapper.find("#workflow-search").element.value).toBe("mytext");
@@ -148,12 +150,6 @@ describe("WorkflowList.vue", () => {
         });
 
         it("update filter when a tag is clicked", async () => {
-            axiosMock
-                .onGet("/api/workflows", {
-                    params: { limit: 50, offset: 0, skip_step_counts: true, search: "tag:'tagmoo'" },
-                })
-                .reply(200, mockWorkflowsData, { total_matches: "1" });
-
             const tags = wrapper.findAll("tbody > tr .tag-name").wrappers;
             expect(tags.length).toBe(2);
             tags[0].trigger("click");
@@ -162,12 +158,6 @@ describe("WorkflowList.vue", () => {
         });
 
         it("update filter when a tag is clicked only happens on first click", async () => {
-            axiosMock
-                .onGet("/api/workflows", {
-                    params: { limit: 50, offset: 0, skip_step_counts: true, search: "tag:'tagmoo'" },
-                })
-                .reply(200, mockWorkflowsData, { total_matches: "1" });
-
             const tags = wrapper.findAll("tbody > tr .tag-name").wrappers;
             expect(tags.length).toBe(2);
             tags[0].trigger("click");
@@ -178,11 +168,6 @@ describe("WorkflowList.vue", () => {
         });
 
         it("update filter when published icon is clicked", async () => {
-            axiosMock
-                .onGet("/api/workflows", {
-                    params: { limit: 50, offset: 0, skip_step_counts: true, search: "is:published" },
-                })
-                .reply(200, mockWorkflowsData, { total_matches: "1" });
             const rows = wrapper.findAll("tbody > tr").wrappers;
             const row = rows[0];
             row.find(".fa-globe").trigger("click");
@@ -191,11 +176,6 @@ describe("WorkflowList.vue", () => {
         });
 
         it("update filter when shared with me icon is clicked", async () => {
-            axiosMock
-                .onGet("/api/workflows", {
-                    params: { limit: 50, offset: 0, skip_step_counts: true, search: "is:shared_with_me" },
-                })
-                .reply(200, mockWorkflowsData, { total_matches: "1" });
             const rows = wrapper.findAll("tbody > tr").wrappers;
             const row = rows[0];
             row.find(".fa-share-alt").trigger("click");
@@ -209,12 +189,10 @@ describe("WorkflowList.vue", () => {
             axiosMock
                 .onGet("/api/workflows", {
                     params: {
-                        limit: 50,
-                        offset: 0,
                         search: "is:published",
-                        skip_step_counts: true,
                         show_published: true,
                         show_shared: false,
+                        ...defaultApiParams,
                     },
                 })
                 .reply(200, mockWorkflowsData, { total_matches: "1" });
