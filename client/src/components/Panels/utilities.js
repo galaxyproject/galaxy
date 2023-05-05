@@ -12,6 +12,9 @@ export function createWorkflowQuery(filterSettings) {
     query = Object.entries(filterSettings)
         .filter(([filter, value]) => value)
         .map(([filter, value]) => {
+            if (value === true) {
+                return `is:${filter}`;
+            }
             return `${filter}:${value}`;
         })
         .join(" ");

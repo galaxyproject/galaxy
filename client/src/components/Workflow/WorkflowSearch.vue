@@ -5,6 +5,7 @@
             :class="!showAdvanced && 'mb-3'"
             :query="query"
             :delay="100"
+            :loading="loading"
             :show-advanced="showAdvanced"
             :enable-advanced="enableAdvanced"
             :placeholder="showAdvanced ? 'any name' : placeholder"
@@ -17,6 +18,33 @@
             @keyup.esc="onToggle(false)">
             <small class="mt-1">Filter by tag:</small>
             <b-form-input v-model="filterSettings['tag']" size="sm" placeholder="any tag" />
+            <small>Published:</small>
+            <b-form-group class="m-0">
+                <b-form-radio-group
+                    v-model="filterSettings.published"
+                    :options="options"
+                    size="sm"
+                    buttons
+                    description="filter published" />
+            </b-form-group>
+            <small>Shared:</small>
+            <b-form-group class="m-0">
+                <b-form-radio-group
+                    v-model="filterSettings.shared"
+                    :options="options"
+                    size="sm"
+                    buttons
+                    description="filter shared" />
+            </b-form-group>
+            <small>Deleted:</small>
+            <b-form-group class="m-0">
+                <b-form-radio-group
+                    v-model="filterSettings.deleted"
+                    :options="options"
+                    size="sm"
+                    buttons
+                    description="filter deleted" />
+            </b-form-group>
             <div class="mt-3">
                 <b-button class="mr-1" size="sm" variant="primary" @click="onSearch">
                     <icon icon="search" />
@@ -42,6 +70,10 @@ export default {
         DelayedInput,
     },
     props: {
+        loading: {
+            type: Boolean,
+            default: false,
+        },
         enableAdvanced: {
             type: Boolean,
             default: false,
@@ -62,7 +94,15 @@ export default {
     data() {
         return {
             favorites: ["#favs", "#favorites", "#favourites"],
-            filterSettings: {},
+            filterSettings: {
+                published: false,
+                shared: false,
+                deleted: false,
+            },
+            options: [
+                { text: "Yes", value: true },
+                { text: "No", value: false },
+            ],
         };
     },
     methods: {
@@ -78,8 +118,10 @@ export default {
             this.$emit("update:show-advanced", toggleAdvanced);
         },
         onSearch() {
-            const query = { query: createWorkflowQuery(this.filterSettings) };
-            this.$router.push({ path: "/workflows/list", query: query });
+            const query = createWorkflowQuery(this.filterSettings);
+            const path = "/workflows/list";
+            const routerParams = query ? { path, query: { query } } : { path };
+            this.$router.push(routerParams);
         },
     },
 };

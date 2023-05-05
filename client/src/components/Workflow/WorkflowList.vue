@@ -189,6 +189,7 @@ export default {
         query: {
             type: String,
             required: false,
+            default: "",
         },
     },
     data() {
