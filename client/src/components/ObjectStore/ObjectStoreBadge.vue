@@ -135,7 +135,7 @@ const message = computed(() => {
             placement="bottom"
             class="object-store-badge-popover">
             <p v-localize>{{ stockMessage }}</p>
-            <ConfigurationMarkdown :markdown="message" :admin="true" />
+            <ConfigurationMarkdown v-if="message" :markdown="message" :admin="true" />
         </b-popover>
     </span>
 </template>
