@@ -5,7 +5,7 @@
             {{ message }}
         </b-alert>
         <Heading h2 size="md" separator>Job Lock</Heading>
-        <job-lock />
+        <JobLock />
         <Heading h2 size="md" separator>Job Overview</Heading>
         <p>
             Below unfinished jobs are displayed (in the 'new', 'queued', 'running', or 'upload' states) and recently
@@ -36,9 +36,7 @@
                     </b-form-group>
                 </b-form>
                 <b-form-group description="Use strings or regular expressions to search jobs.">
-                    <b-input-group id="filter-regex">
-                        <b-form-input v-model="filter" placeholder="Type to Search" @keyup.esc.native="filter = ''" />
-                    </b-input-group>
+                    <IndexFilter v-bind="filterAttrs" id="job-search" v-model="filter" />
                 </b-form-group>
             </b-col>
         </b-row>
@@ -56,11 +54,10 @@
             </b-form>
         </transition>
         <h3 class="mb-0 h-sm">Unfinished Jobs</h3>
-        <jobs-table
+        <JobsTable
             v-model="jobsItemsModel"
             :fields="unfinishedJobFields"
             :items="unfinishedJobs"
-            :filter="filter"
             :table-caption="runningTableCaption"
             :no-items-message="runningNoJobsMessage"
             :loading="loading"
@@ -78,19 +75,22 @@
                     :checked="allSelected"
                     :value="data.item['id']"></b-form-checkbox>
             </template>
-        </jobs-table>
+        </JobsTable>
 
         <template v-if="!showAllRunning">
             <h3 class="mb-0 h-sm">Finished Jobs</h3>
-            <jobs-table
+            <JobsTable
                 :table-caption="finishedTableCaption"
                 :fields="finishedJobFields"
                 :items="finishedJobs"
-                :filter="filter"
                 :no-items-message="finishedNoJobsMessage"
                 :loading="loading"
-                :busy="busy">
-            </jobs-table>
+                :busy="busy"
+                @tool-clicked="(toolId) => appendTagFilter('tool', toolId)"
+                @runner-clicked="(runner) => appendTagFilter('runner', runner)"
+                @handler-clicked="(handler) => appendTagFilter('handler', handler)"
+                @user-clicked="(user) => appendTagFilter('user', user)">
+            </JobsTable>
         </template>
     </div>
 </template>
@@ -105,14 +105,42 @@ import { commonJobFields } from "./JobFields";
 import { errorMessageAsString } from "utils/simple-error";
 import { jobsProvider } from "components/providers/JobProvider";
 import Heading from "components/Common/Heading";
+import filtersMixin from "components/Indices/filtersMixin";
 
 function cancelJob(jobId, message) {
     const url = `${getAppRoot()}api/jobs/${jobId}`;
     return axios.delete(url, { data: { message: message } });
 }
 
+const helpHtml = `<div>
+<p>This textbox box can be used to filter the jobs displayed.
+
+<p>Text entered here will be searched against job user, tool ID, job runner, and handler. Additionally,
+advanced filtering tags can be used to refine the search more precisely. Tags are of the form
+<code>&lt;tag_name&gt;:&lt;tag_value&gt;</code> or <code>&lt;tag_name&gt;:'&lt;tag_value&gt;'</code>.
+For instance to search just for jobs with <code>cat1</code> in the tool name, <code>tool:cat1</code> can be used.
+Notice by default the search is not case-sensitive.
+
+<p>If the quoted version of tag is used, the search is case sensitive and only full matches will be
+returned. So <code>tool:'cat1'</code> would show only jobs from the <code>cat1</code> tool exactly.</p>
+
+<p>The available tags are:
+<dl>
+    <dt><code>user</code></dt>
+    <dd>This filters the job index to contain only jobs executed by matching user(s). You may also just click on a user in the list of jobs to filter on that exact user using this directly.</dd>
+    <dt><code>handler</code></dt>
+    <dd>This filters the job index to contain only jobs executed on matching handler(s).  You may also just click on a handler in the list of jobs to filter on that exact user using this directly.</dd>
+    <dt><code>runner</code></dt>
+    <dd>This filters the job index to contain only jobs executed on matching job runner(s).  You may also just click on a runner in the list of jobs to filter on that exact user using this directly.</dd>
+    <dt><code>tool</code></dt>
+    <dd>This filters the job index to contain only jobs from the matching tool(s).  You may also just click on a tool in the list of jobs to filter on that exact user using this directly.</dd>
+</dl>
+</div>
+`;
+
 export default {
     components: { JobLock, JobsTable, Heading },
+    mixins: [filtersMixin],
     data() {
         return {
             jobs: [],
@@ -130,13 +158,14 @@ export default {
             allSelected: false,
             indeterminate: false,
             stopMessage: "",
-            filter: "",
             message: "",
             status: "info",
             loading: true,
             busy: true,
             cutoffMin: 5,
             showAllRunning: false,
+            titleSearch: `search jobs`,
+            helpHtml: helpHtml,
         };
     },
     computed: {
@@ -204,6 +233,9 @@ export default {
                 const cutoff = Math.floor(this.cutoffMin);
                 const dateRangeMin = new Date(Date.now() - cutoff * 60 * 1000).toISOString();
                 params.date_range_min = `${dateRangeMin}`;
+            }
+            if (this.filter) {
+                params.search = this.filter;
             }
             const ctx = {
                 root: getAppRoot(),
