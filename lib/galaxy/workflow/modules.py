@@ -17,7 +17,6 @@ from typing import (
     Union,
 )
 
-import packaging.version
 from cwl_utils.expression import do_eval
 from typing_extensions import TypedDict
 
@@ -48,6 +47,7 @@ from galaxy.schema.invocation import (
 )
 from galaxy.tool_util.cwl.util import set_basename_and_derived_properties
 from galaxy.tool_util.parser.output_objects import ToolExpressionOutput
+from galaxy.tool_util.version import parse_version
 from galaxy.tools import (
     DatabaseOperationTool,
     DefaultToolState,
@@ -1679,11 +1679,7 @@ class ToolModule(WorkflowModule):
                 if safe_version and self.tool.lineage:
                     # tool versions are sorted from old to new, so check newest version first
                     for lineage_version in reversed(self.tool.lineage.tool_versions):
-                        if (
-                            safe_version.current_version
-                            >= packaging.version.parse(lineage_version)
-                            >= safe_version.min_version
-                        ):
+                        if safe_version.current_version >= parse_version(lineage_version) >= safe_version.min_version:
                             self.tool = trans.app.toolbox.get_tool(
                                 tool_id, tool_version=lineage_version, exact=True, tool_uuid=tool_uuid
                             )

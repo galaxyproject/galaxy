@@ -22,8 +22,8 @@ from typing import (
     TYPE_CHECKING,
 )
 
-import packaging.version
 import yaml
+from packaging.version import Version
 from pulsar.client.staging import COMMAND_VERSION_FILENAME
 
 from galaxy import (
@@ -1089,7 +1089,7 @@ class MinimalJobWrapper(HasResourceParameters):
     @property
     def outputs_directory(self):
         """Default location of ``outputs_to_working_directory``."""
-        return None if self.created_with_galaxy_version < packaging.version.parse("20.01") else "outputs"
+        return None if self.created_with_galaxy_version < Version("20.01") else "outputs"
 
     @property
     def outputs_to_working_directory(self):
@@ -1098,7 +1098,7 @@ class MinimalJobWrapper(HasResourceParameters):
     @property
     def created_with_galaxy_version(self):
         galaxy_version = self.get_job().galaxy_version or "19.05"
-        return packaging.version.parse(galaxy_version)
+        return Version(galaxy_version)
 
     @property
     def dependency_shell_commands(self):

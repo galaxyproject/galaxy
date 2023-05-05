@@ -25,10 +25,7 @@ from typing import (
 )
 
 import requests
-from packaging.version import (
-    parse as parse_version,
-    Version,
-)
+from packaging.version import Version
 from requests import Response
 from requests.cookies import RequestsCookieJar
 from typing_extensions import (
@@ -200,7 +197,7 @@ class GalaxyInteractorApi:
     @property
     def target_galaxy_version(self):
         if self._target_galaxy_version is None:
-            self._target_galaxy_version = parse_version(self._get("version").json()["version_major"])
+            self._target_galaxy_version = Version(self._get("version").json()["version_major"])
         return self._target_galaxy_version
 
     @property
