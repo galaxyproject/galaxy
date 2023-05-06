@@ -344,8 +344,12 @@ export default {
                 this.searchError = null;
                 this.loading = false;
             } catch (error) {
-                console.error("HistoryPanel - Load items error.", error);
-                this.searchError = error.err_msg ? error : null;
+                if (error.response && error.response.data && error.response.data.err_msg) {
+                    console.debug("HistoryPanel - Load items error:", error.response.data.err_msg);
+                    this.searchError = error.response.data;
+                } else {
+                    console.debug("HistoryPanel - Load items error.", error);
+                }
                 this.loading = false;
             }
         },
