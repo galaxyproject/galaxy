@@ -5,9 +5,8 @@
  * See also: https://stackoverflow.com/questions/53540348/js-async-await-tasks-queue
  */
 export class LastQueue {
-    constructor(throttlePeriod = 1000, urlHeaders = false) {
+    constructor(throttlePeriod = 1000) {
         this.throttlePeriod = throttlePeriod;
-        this.urlHeaders = urlHeaders;
         this.nextPromise = {};
         this.pendingPromise = false;
     }
@@ -27,20 +26,8 @@ export class LastQueue {
             delete this.nextPromise[nextKey];
             this.pendingPromise = true;
             try {
-                if (this.urlHeaders) {
-                    const { url, headers } = item.args;
-                    const response = await fetch(url, { headers });
-                    if (!response.ok) {
-                        const error = await response.json();
-                        item.reject(error);
-                    } else {
-                        const payload = await response.json();
-                        item.resolve(payload);
-                    }
-                } else {
-                    const payload = await item.action(item.args);
-                    item.resolve(payload);
-                }
+                const payload = await item.action(item.args);
+                item.resolve(payload);
             } catch (e) {
                 item.reject(e);
             } finally {

@@ -12,7 +12,7 @@ import { mergeArray } from "store/historyStore/model/utilities";
 import { HistoryFilters } from "components/History/HistoryFilters";
 
 const limit = 100;
-const queue = new LastQueue(1000, true);
+const queue = new LastQueue();
 
 export const useHistoryItemsStore = defineStore("historyItemsStore", {
     state: () => ({
@@ -67,7 +67,7 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
             const params = `v=dev&order=hid&offset=${offset}&limit=${limit}`;
             const url = `/api/histories/${historyId}/contents?${params}&${queryString}`;
             const headers = { accept: "application/vnd.galaxy.history.contents.stats+json" };
-            return await queue.enqueue(urlData, { url, headers }, historyId).then((data) => {
+            return await queue.enqueue(urlData, { url, headers, errorSimplify: false }, historyId).then((data) => {
                 const stats = data.stats;
                 this.totalMatchesCount = stats.total_matches;
                 const payload = data.contents;
