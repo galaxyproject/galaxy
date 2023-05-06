@@ -1,6 +1,7 @@
 import toolsList from "components/ToolsView/testData/toolsList";
 import {
     createWhooshQuery,
+    createWorkflowQuery,
     determineWidth,
     filterTools,
     filterToolSections,
@@ -92,5 +93,19 @@ describe("test helpers in tool searching utilities and panel handling", () => {
         ).toHaveLength(1);
         // check length of filtered tools without sections
         expect(filterTools(toolsList, ids)).toHaveLength(2);
+    });
+});
+
+describe("test helpers in workflow searching utilities", () => {
+    it("test helper that creates workflow query given filters", async () => {
+        const settings = {
+            name: "extract",
+            tag: "Genomic",
+            published: null,
+            shared_with_me: true,
+            deleted: false,
+        };
+        const q = createWorkflowQuery(settings);
+        expect(q).toEqual("name:extract tag:Genomic is:shared_with_me");
     });
 });
