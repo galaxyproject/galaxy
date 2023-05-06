@@ -171,7 +171,7 @@ class HasDriver:
     def wait_for_element_count_of_at_least(self, selector_template: Target, n: int, **kwds) -> WebElement:
         element = self._wait_on(
             lambda driver: len(driver.find_elements(*selector_template.element_locator)) >= n,
-            f"{selector_template.description} to become absent",
+            f"{selector_template.description} to become visible",
             **kwds,
         )
         return element

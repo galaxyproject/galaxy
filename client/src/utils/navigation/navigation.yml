@@ -810,7 +810,7 @@ admin:
   quota:
     selectors:
       add_new: '.quotas .manage-table-actions .action-button'
-      items: '.quotas tbody tr td'
+      items: '.quotas #grid-table-body tr'
       add_form: "[url='/admin/create_quota']"
       add_form_submit: "[url='/admin/create_quota'] #submit"
 
