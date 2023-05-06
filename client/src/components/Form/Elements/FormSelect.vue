@@ -28,6 +28,13 @@ const emit = defineEmits<{
 }>();
 
 /**
+ * Configure deselect label
+ */
+const deselectLabel: ComputedRef<string> = computed(() => {
+    return props.multiple ? "Press enter to remove" : "";
+});
+
+/**
  * Translates input options for consumption by the
  * select component into an array of objects
  */
@@ -108,6 +115,7 @@ onMounted(() => {
         v-model="currentValue"
         :allow-empty="optional"
         :close-on-select="!multiple"
+        :deselect-label="deselectLabel"
         :options="formattedOptions"
         :multiple="multiple"
         placeholder="Select value"
