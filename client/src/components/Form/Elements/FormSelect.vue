@@ -28,6 +28,13 @@ const emit = defineEmits<{
 }>();
 
 /**
+ * Determine dom wrapper class
+ */
+const cls: ComputedRef<string> = computed(() => {
+    return props.multiple ? "form-select-multiple" : "form-select";
+});
+
+/**
  * Configure deselect label
  */
 const deselectLabel: ComputedRef<string> = computed(() => {
@@ -57,6 +64,13 @@ const formattedOptions: ComputedRef<Array<SelectOption>> = computed(() => {
  */
 const hasOptions: ComputedRef<Boolean> = computed(() => {
     return formattedOptions.value.length > 0;
+});
+
+/**
+ * Configure selected label
+ */
+const selectedLabel: ComputedRef<string> = computed(() => {
+    return props.multiple ? "Selected" : "";
 });
 
 /**
@@ -114,12 +128,26 @@ onMounted(() => {
         v-if="hasOptions"
         v-model="currentValue"
         :allow-empty="optional"
+        :class="cls"
         :close-on-select="!multiple"
         :deselect-label="deselectLabel"
         :options="formattedOptions"
         :multiple="multiple"
+        :selected-label="selectedLabel"
         placeholder="Select value"
         track-by="value"
         label="label" />
     <b-alert v-else v-localize variant="warning" show> No options available. </b-alert>
 </template>
+
+<style lang="scss">
+@import "theme/blue.scss";
+.form-select
+    > .multiselect__content-wrapper
+    > .multiselect__content
+    > .multiselect__element
+    > .multiselect__option--selected {
+    background: $brand-primary;
+    color: $brand-light;
+}
+</style>
