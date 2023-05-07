@@ -85,7 +85,7 @@ PyJWT = "*"
 pykwalify = "*"
 pylibmagic = "*"
 pyparsing = "*"
-pysam = ">=0.20"
+pysam = ">=0.20, !=0.21.0"  # https://github.com/pysam-developers/pysam/pull/1186
 python = ">=3.7,<3.12"  # Keep maximum version strict to appease numpy and scipy
 python-dateutil = "*"
 python-magic = "*"
