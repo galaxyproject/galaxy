@@ -87,8 +87,12 @@ const currentValue = computed({
     get: () => formattedOptions.value.filter((option: SelectOption) => selectedValues.value.includes(option.value)),
     set: (val: Array<SelectOption> | SelectOption): void => {
         if (Array.isArray(val)) {
-            const values: Array<SelectValue> = val.map((v: SelectOption) => v.value);
-            emit("input", values);
+            if (val.length > 0) {
+                const values: Array<SelectValue> = val.map((v: SelectOption) => v.value);
+                emit("input", values);
+            } else {
+                emit("input", null);
+            }
         } else {
             emit("input", val.value);
         }
