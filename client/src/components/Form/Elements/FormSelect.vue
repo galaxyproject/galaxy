@@ -135,6 +135,7 @@ onMounted(() => {
         :multiple="multiple"
         :selected-label="selectedLabel"
         placeholder="Select value"
+        select-label="Click to select"
         track-by="value"
         label="label" />
     <b-alert v-else v-localize variant="warning" show> No options available. </b-alert>
