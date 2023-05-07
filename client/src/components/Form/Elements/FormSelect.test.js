@@ -62,6 +62,7 @@ describe("FormSelect", () => {
     it("multiple values", async () => {
         const wrapper = createTarget({
             multiple: true,
+            optional: true,
             options: defaultOptions,
             value: ["value_1", ""],
         });
@@ -70,5 +71,16 @@ describe("FormSelect", () => {
         expect(selectedValue.length).toBe(2);
         expect(selectedValue.at(0).text()).toBe("label_1");
         expect(selectedValue.at(1).text()).toBe("label_3");
+        selectedValue.at(0).trigger("click");
+        const newValue = wrapper.emitted().input[0][0][0];
+        expect(newValue).toBe("");
+        await wrapper.setProps({ value: newValue });
+        selectedValue.at(1).trigger("click");
+        const nullValue = wrapper.emitted().input[1][0];
+        expect(nullValue).toBe(null);
+        await wrapper.setProps({ value: nullValue });
+        selectedValue.at(0).trigger("click");
+        const finalValue = wrapper.emitted().input[2][0][0];
+        expect(finalValue).toBe("value_1");
     });
 });
