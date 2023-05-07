@@ -56,7 +56,20 @@ class TestCustosAuthnz(TestCase):
                 self._get_credential_url(): {"iam_client_secret": "TESTSECRET"},
             }
         )
-        self.setUpCustosAuthnz()
+        self.custos_authnz = custos_authnz.CustosAuthnz(
+            "Custos",
+            {"VERIFY_SSL": True},
+            {
+                "url": self._get_idp_url(),
+                "client_id": "test-client-id",
+                "client_secret": "test-client-secret",
+                "redirect_uri": "https://test-redirect-uri",
+                "realm": "test-realm",
+                "label": "test-identity-provider",
+                "require_create_confirmation": False,
+            },
+        )
+        self.setupMocks()
         self.test_state = "abc123"
         self.test_nonce = b"4662892146306485421546981092"
         self.test_nonce_hash = hashlib.sha256(self.test_nonce).hexdigest()
@@ -84,24 +97,6 @@ class TestCustosAuthnz(TestCase):
         self.trans.app.config.enable_oidc = True
         self.trans.app.config.oidc = []
         self.trans.app.auth_manager.authenticators = []
-
-    def setUpCustosAuthnz(
-        self, provider="Custos", redirect_uri="https://test-redirect-uri", require_confirmation=False
-    ):
-        self.custos_authnz = custos_authnz.CustosAuthnz(
-            provider,
-            {"VERIFY_SSL": True},
-            {
-                "url": self._get_idp_url(),
-                "client_id": "test-client-id",
-                "client_secret": "test-client-secret",
-                "redirect_uri": redirect_uri,
-                "realm": "test-realm",
-                "label": "test-identity-provider",
-                "require_create_confirmation": require_confirmation,
-            },
-        )
-        self.setupMocks()
 
     @property
     def test_id_token(self):
@@ -259,7 +254,7 @@ class TestCustosAuthnz(TestCase):
         assert self.custos_authnz.config["token_endpoint"] == "https://test-token-endpoint"
         assert self.custos_authnz.config["userinfo_endpoint"] == "https://test-userinfo-endpoint"
         assert self.custos_authnz.config["label"] == "test-identity-provider"
-        assert self.custos_authnz.config["require_create_confirmation"] is False
+        assert self.custos_authnz.config["require_create_confirmation"] == False
 
     def test_authenticate_set_state_cookie(self):
         """Verify that authenticate() sets a state cookie."""
@@ -300,7 +295,18 @@ class TestCustosAuthnz(TestCase):
 
     def test_authenticate_sets_env_var_when_localhost_redirect(self):
         """Verify that OAUTHLIB_INSECURE_TRANSPORT var is set with localhost redirect."""
-        self.setUpCustosAuthnz(redirect_uri="http://localhost/auth/callback")
+        self.custos_authnz = custos_authnz.CustosAuthnz(
+            "Custos",
+            {"VERIFY_SSL": True},
+            {
+                "url": self._get_idp_url(),
+                "client_id": "test-client-id",
+                "client_secret": "test-client-secret",
+                "redirect_uri": "http://localhost/auth/callback",
+                "realm": "test-realm",
+            },
+        )
+        self.setupMocks()
         assert os.environ.get("OAUTHLIB_INSECURE_TRANSPORT") is None
         self.custos_authnz.authenticate(self.trans)
         assert os.environ["OAUTHLIB_INSECURE_TRANSPORT"] == "1"
@@ -374,7 +380,20 @@ class TestCustosAuthnz(TestCase):
         assert not self._get_userinfo_called
 
     def test_callback_user_not_created_when_does_not_exists(self):
-        self.setUpCustosAuthnz(provider="Keycloak", require_confirmation=True)
+        self.custos_authnz = custos_authnz.CustosAuthnz(
+            "Keycloak",
+            {"VERIFY_SSL": True},
+            {
+                "url": self._get_idp_url(),
+                "client_id": "test-client-id",
+                "client_secret": "test-client-secret",
+                "redirect_uri": "https://test-redirect-uri",
+                "realm": "test-realm",
+                "label": "test-identity-provider",
+                "require_create_confirmation": True,
+            },
+        )
+        self.setupMocks()
         self.trans.set_cookie(value=self.test_state, name=custos_authnz.STATE_COOKIE_NAME)
         self.trans.set_cookie(value=self.test_nonce, name=custos_authnz.NONCE_COOKIE_NAME)
 
