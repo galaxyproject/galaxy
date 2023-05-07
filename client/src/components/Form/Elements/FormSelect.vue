@@ -131,7 +131,7 @@ onMounted(() => {
     <multiselect
         v-if="hasOptions"
         v-model="currentValue"
-        :allow-empty="optional"
+        :allow-empty="true"
         :class="['form-select', cls]"
         :close-on-select="!multiple"
         :deselect-label="deselectLabel"
