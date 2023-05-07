@@ -38,7 +38,7 @@ const cls: ComputedRef<string> = computed(() => {
  * Configure deselect label
  */
 const deselectLabel: ComputedRef<string> = computed(() => {
-    return props.multiple ? "Press enter to remove" : "";
+    return props.multiple ? "Click to remove" : "";
 });
 
 /**
