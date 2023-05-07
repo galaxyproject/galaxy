@@ -254,7 +254,7 @@ class TestCustosAuthnz(TestCase):
         assert self.custos_authnz.config["token_endpoint"] == "https://test-token-endpoint"
         assert self.custos_authnz.config["userinfo_endpoint"] == "https://test-userinfo-endpoint"
         assert self.custos_authnz.config["label"] == "test-identity-provider"
-        assert self.custos_authnz.config["require_create_confirmation"] == False
+        assert self.custos_authnz.config["require_create_confirmation"] is False
 
     def test_authenticate_set_state_cookie(self):
         """Verify that authenticate() sets a state cookie."""
