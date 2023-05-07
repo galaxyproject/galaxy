@@ -149,6 +149,8 @@ class AuthnzManager:
         }
         if config_xml.find("label") is not None:
             rtv["label"] = config_xml.find("label").text
+        if config_xml.find("require_create_confirmation") is not None:
+            rtv["require_create_confirmation"] = asbool(config_xml.find("require_create_confirmation").text)
         if config_xml.find("prompt") is not None:
             rtv["prompt"] = config_xml.find("prompt").text
         if config_xml.find("api_url") is not None:
@@ -174,6 +176,8 @@ class AuthnzManager:
         }
         if config_xml.find("label") is not None:
             rtv["label"] = config_xml.find("label").text
+        if config_xml.find("require_create_confirmation") is not None:
+            rtv["require_create_confirmation"] = asbool(config_xml.find("require_create_confirmation").text)
         if config_xml.find("credential_url") is not None:
             rtv["credential_url"] = config_xml.find("credential_url").text
         if config_xml.find("well_known_oidc_config_uri") is not None:

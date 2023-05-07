@@ -47,6 +47,7 @@ class CustosAuthnz(IdentityProvider):
         self.config["label"] = oidc_backend_config.get("label", provider.capitalize())
         self.config["client_id"] = oidc_backend_config["client_id"]
         self.config["client_secret"] = oidc_backend_config["client_secret"]
+        self.config["require_create_confirmation"] = oidc_backend_config.get("require_create_confirmation", False)
         self.config["redirect_uri"] = oidc_backend_config["redirect_uri"]
         self.config["ca_bundle"] = oidc_backend_config.get("ca_bundle", None)
         self.config["pkce_support"] = oidc_backend_config.get("pkce_support", False)
@@ -152,7 +153,7 @@ class CustosAuthnz(IdentityProvider):
                             f"&connect_external_label={self.config['label']}"
                         )
                         return login_redirect_url, None
-                elif self.config["provider"] in KEYCLOAK_BACKENDS:
+                elif self.config["require_create_confirmation"]:
                     login_redirect_url = f"{login_redirect_url}login/start?confirm=true&provider_token={json.dumps(token)}&provider={self.config['provider']}"
                     return login_redirect_url, None
                 else:
