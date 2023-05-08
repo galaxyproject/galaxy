@@ -1324,7 +1324,7 @@ def type_to_object_store_class(store: str, fsmon: bool = False) -> Tuple[Type[Ba
     objectstore_constructor_kwds = {}
     if store == "disk":
         objectstore_class = DiskObjectStore
-    elif store == "s3":
+    elif store in ["s3", "aws_s3"]:
         from .s3 import S3ObjectStore
 
         objectstore_class = S3ObjectStore
@@ -1332,10 +1332,10 @@ def type_to_object_store_class(store: str, fsmon: bool = False) -> Tuple[Type[Ba
         from .cloud import Cloud
 
         objectstore_class = Cloud
-    elif store == "swift":
-        from .s3 import SwiftObjectStore
+    elif store in ["swift", "generic_s3"]:
+        from .s3 import GenericS3ObjectStore
 
-        objectstore_class = SwiftObjectStore
+        objectstore_class = GenericS3ObjectStore
     elif store == "distributed":
         objectstore_class = DistributedObjectStore
         objectstore_constructor_kwds["fsmon"] = fsmon
