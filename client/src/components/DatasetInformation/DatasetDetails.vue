@@ -19,7 +19,10 @@
                             <job-information :job_id="dataset.creating_job" />
                             <dataset-storage :dataset-id="datasetId" />
                             <inheritance-chain :dataset-id="datasetId" :dataset-name="dataset.name" />
-                            <job-metrics v-if="config" :should-show-aws-estimate="config.aws_estimate" :dataset-id="datasetId" />
+                            <job-metrics
+                                v-if="config"
+                                :should-show-aws-estimate="config.aws_estimate"
+                                :dataset-id="datasetId" />
                             <job-destination-params v-if="currentUser.is_admin" :job-id="dataset.creating_job" />
                             <job-dependencies :dependencies="job.dependencies"></job-dependencies>
                             <div v-if="dataset.peek">
