@@ -1,7 +1,9 @@
-<script setup>
+<script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import FormCard from "./FormCard";
+import FormCard from "./FormCard.vue";
 import { defineAsyncComponent } from "vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faPlus, faTrashAlt, faCaretUp, faCaretDown } from "@fortawesome/free-solid-svg-icons";
 
 const FormNode = defineAsyncComponent(() => import("./FormInputs.vue"));
 
@@ -24,17 +26,24 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits("insert", "delete", "swap");
+const emit = defineEmits<{
+    (e: "insert"): void;
+    (e: "delete", index: number): void;
+    (e: "swap", a: number, b: number): void;
+}>();
+
+// @ts-ignore: bad library types
+library.add(faPlus, faTrashAlt, faCaretUp, faCaretDown);
 
 function onInsert() {
     emit("insert");
 }
 
-function onDelete(index) {
+function onDelete(index: number) {
     emit("delete", index);
 }
 
-function getPrefix(index) {
+function getPrefix(index: number) {
     const name = `${props.input.name}_${index}`;
 
     if (props.prefix) {
@@ -44,32 +53,25 @@ function getPrefix(index) {
     }
 }
 
-function getTitle(index) {
-    return `${parseInt(index) + 1}: ${props.input.title}`;
+function getTitle(index: number) {
+    return `${index + 1}: ${props.input.title}`;
 }
 
 /** swap blocks if possible */
-function swap(index, swapWith, up) {
+function swap(index: number, swapWith: number, direction: "up" | "down") {
     if (swapWith >= 0 && swapWith < props.input.cache?.length) {
         emit("swap", index, swapWith);
 
-        const buttonId = getButtonId(swapWith, up);
-        document.getElementById(buttonId).focus();
+        const buttonId = getButtonId(swapWith, direction);
+        document.getElementById(buttonId)?.focus();
     }
 }
 
 /** get a uid for the up/down button */
-function getButtonId(index, up) {
+function getButtonId(index: number, direction: "up" | "down") {
     const prefix = getPrefix(index);
-    return `${prefix}_${up ? "up" : "down"}`;
+    return `${prefix}_${direction}`;
 }
-</script>
-
-<script>
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faPlus, faTrashAlt, faCaretUp, faCaretDown } from "@fortawesome/free-solid-svg-icons";
-
-library.add(faPlus, faTrashAlt, faCaretUp, faCaretDown);
 </script>
 
 <template>
@@ -89,25 +91,25 @@ library.add(faPlus, faTrashAlt, faCaretUp, faCaretDown);
                 <span v-if="!props.sustainRepeats" class="float-right">
                     <b-button-group>
                         <b-button
+                            :id="getButtonId(cacheId, 'up')"
                             v-b-tooltip.hover.bottom
                             title="move up"
                             role="button"
                             variant="link"
                             size="sm"
                             class="ml-0"
-                            :id="getButtonId(cacheId, true)"
-                            @click="() => swap(cacheId, cacheId - 1, true)">
+                            @click="() => swap(cacheId, cacheId - 1, 'up')">
                             <FontAwesomeIcon icon="caret-up" />
                         </b-button>
                         <b-button
+                            :id="getButtonId(cacheId, 'down')"
                             v-b-tooltip.hover.bottom
                             title="move down"
                             role="button"
                             variant="link"
                             size="sm"
                             class="ml-0"
-                            :id="getButtonId(cacheId, false)"
-                            @click="() => swap(cacheId, cacheId + 1, false)">
+                            @click="() => swap(cacheId, cacheId + 1, 'down')">
                             <FontAwesomeIcon icon="caret-down" />
                         </b-button>
                     </b-button-group>
