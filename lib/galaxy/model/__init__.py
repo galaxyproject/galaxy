@@ -2917,6 +2917,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         "genome_build",
         "deleted",
         "purged",
+        "archived",
         "update_time",
         "published",
         "importable",
