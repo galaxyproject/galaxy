@@ -25,6 +25,10 @@
             <b-form-datalist id="sectionSelect" :options="sectionNames"></b-form-datalist>
             <small class="mt-1">Filter by id:</small>
             <b-form-input v-model="filterSettings['id']" size="sm" placeholder="any id" />
+            <small class="mt-1">Filter by repository name:</small>
+            <b-form-input v-model="filterSettings['repository']" size="sm" placeholder="any name" />
+            <small class="mt-1">Filter by repository owner:</small>
+            <b-form-input v-model="filterSettings['owner']" size="sm" placeholder="any owner" />
             <small class="mt-1">Filter by help text:</small>
             <b-form-input v-model="filterSettings['help']" size="sm" placeholder="any help text" />
             <div class="mt-3">

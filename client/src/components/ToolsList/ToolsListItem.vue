@@ -14,6 +14,8 @@ const props = defineProps({
     link: { type: String, default: null },
     workflowCompatible: { type: Boolean, default: false },
     local: { type: Boolean, default: false },
+    repository: { type: String, default: null },
+    owner: { type: String, default: null },
 });
 
 const emit = defineEmits(["open"]);
@@ -40,9 +42,21 @@ import {
     faAngleDown,
     faAngleUp,
     faExclamationTriangle,
+    faUser,
+    faToolbox,
 } from "@fortawesome/free-solid-svg-icons";
 
-library.add(faWrench, faExternalLinkAlt, faCheck, faTimes, faAngleDown, faAngleUp, faExclamationTriangle);
+library.add(
+    faWrench,
+    faExternalLinkAlt,
+    faCheck,
+    faTimes,
+    faAngleDown,
+    faAngleUp,
+    faExclamationTriangle,
+    faUser,
+    faToolbox
+);
 </script>
 
 <template>
@@ -96,6 +110,17 @@ library.add(faWrench, faExternalLinkAlt, faCheck, faTimes, faAngleDown, faAngleU
                 <span v-if="!props.workflowCompatible" class="tag warn">
                     <FontAwesomeIcon icon="fa-exclamation-triangle" />
                     Not Workflow compatible
+                </span>
+
+                <span v-if="props.repository" class="tag info">
+                    <FontAwesomeIcon icon="fa-toolbox" />
+                    <b>Repo:</b>
+                    <b-link :to="`/tools/list?repository=${props.repository}`">{{ props.repository }}</b-link>
+                </span>
+
+                <span v-if="props.owner" class="tag success">
+                    <FontAwesomeIcon icon="fa-user" />
+                    <b>Owner:</b> <b-link :to="`/tools/list?owner=${props.owner}`">{{ props.owner }}</b-link>
                 </span>
             </div>
 
