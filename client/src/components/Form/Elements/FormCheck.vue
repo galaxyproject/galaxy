@@ -9,7 +9,7 @@ export interface FormCheckProps {
 const props = defineProps<FormCheckProps>();
 
 const emit = defineEmits<{
-    (e: "input", value: string[]): void;
+    (e: "input", value: string[] | null): void;
 }>();
 
 const indeterminate = ref(false);
@@ -20,8 +20,11 @@ const currentValue = computed({
         return Array.isArray(val) ? val : [val];
     },
     set: (newValue) => {
-        emit("input", newValue);
-
+        if (newValue.length > 0) {
+            emit("input", newValue);
+        } else {
+            emit("input", null);
+        }
         if (newValue.length === 0) {
             selectAll.value = false;
             indeterminate.value = false;
