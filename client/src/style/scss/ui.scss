@@ -213,6 +213,10 @@ $ui-margin-horizontal-large: $margin-v * 2;
     }
 }
 
+.ui-input-error {
+    border-color: $brand-danger;
+}
+
 .ui-textarea {
     @extend .ui-input;
     height: 100px !important;

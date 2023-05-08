@@ -51,7 +51,13 @@
             <b-form-input v-model="filterSettings['tag:']" size="sm" placeholder="any tag" />
             <small class="mt-1">Filter by state:</small>
             <b-input-group>
-                <b-form-input v-model="filterSettings['state:']" size="sm" placeholder="any state" list="stateSelect" />
+                <b-form-input
+                    v-model="filterSettings['state:']"
+                    v-b-tooltip.focus.v-danger="hasError('state:')"
+                    :class="hasError('state:') && 'ui-input-error'"
+                    size="sm"
+                    placeholder="any state"
+                    list="stateSelect" />
                 <b-form-datalist id="stateSelect" :options="states"></b-form-datalist>
                 <b-input-group-append>
                     <b-button title="States Help" size="sm" @click="showHelp = true">
@@ -63,22 +69,47 @@
             <small>Filter by database:</small>
             <b-form-input v-model="filterSettings['genome_build:']" size="sm" placeholder="any database" />
             <small class="mt-1">Filter by related to item index:</small>
-            <b-form-input v-model="filterSettings['related:']" size="sm" placeholder="index equals" />
+            <b-form-input
+                v-model="filterSettings['related:']"
+                v-b-tooltip.focus.v-danger="hasError('related:')"
+                :class="hasError('related:') && 'ui-input-error'"
+                size="sm"
+                placeholder="index equals" />
             <small class="mt-1">Filter by item index:</small>
             <b-form-group class="m-0">
                 <b-input-group>
-                    <b-form-input v-model="filterSettings['hid>']" size="sm" placeholder="index greater" />
-                    <b-form-input v-model="filterSettings['hid<']" size="sm" placeholder="index lower" />
+                    <b-form-input
+                        v-model="filterSettings['hid>']"
+                        v-b-tooltip.focus.v-danger="hasError('hid>')"
+                        :class="hasError('hid>') && 'ui-input-error'"
+                        size="sm"
+                        placeholder="index greater" />
+                    <b-form-input
+                        v-model="filterSettings['hid<']"
+                        v-b-tooltip.focus.v-danger="hasError('hid<')"
+                        :class="hasError('hid<') && 'ui-input-error'"
+                        size="sm"
+                        placeholder="index lower" />
                 </b-input-group>
             </b-form-group>
             <small class="mt-1">Filter by creation time:</small>
             <b-form-group class="m-0">
                 <b-input-group>
-                    <b-form-input v-model="create_time_gt" size="sm" placeholder="created after" />
+                    <b-form-input
+                        v-model="create_time_gt"
+                        v-b-tooltip.focus.v-danger="hasError('create_time>')"
+                        :class="hasError('create_time>') && 'ui-input-error'"
+                        size="sm"
+                        placeholder="created after" />
                     <b-input-group-append>
                         <b-form-datepicker v-model="create_time_gt" reset-button button-only size="sm" />
                     </b-input-group-append>
-                    <b-form-input v-model="create_time_lt" size="sm" placeholder="created before" />
+                    <b-form-input
+                        v-model="create_time_lt"
+                        v-b-tooltip.focus.v-danger="hasError('create_time<')"
+                        :class="hasError('create_time<') && 'ui-input-error'"
+                        size="sm"
+                        placeholder="created before" />
                     <b-input-group-append>
                         <b-form-datepicker v-model="create_time_lt" reset-button button-only size="sm" />
                     </b-input-group-append>
@@ -115,6 +146,7 @@ export default {
     props: {
         filterText: { type: String, default: null },
         showAdvanced: { type: Boolean, default: false },
+        searchError: { type: Object, default: null },
     },
     data() {
         return {
@@ -147,8 +179,17 @@ export default {
             this.create_time_gt = this.filterSettings["create_time>"];
             this.create_time_lt = this.filterSettings["create_time<"];
         },
+        showAdvanced(newVal) {
+            this.showHelp = !newVal ? false : this.showHelp;
+        },
     },
     methods: {
+        hasError(field) {
+            if (this.searchError && this.searchError.filter == field) {
+                return this.searchError.typeError || this.searchError.msg;
+            }
+            return "";
+        },
         onOption(name, value) {
             this.filterSettings[name] = value;
         },
