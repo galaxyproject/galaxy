@@ -703,6 +703,20 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         history = self.manager.archive_history(history, archive_export_id=archive_export_id)
         return self._serialize_archived_history(trans, history, serialization_params)
 
+    def restore_archived_history(
+        self,
+        trans: ProvidesHistoryContext,
+        history_id: DecodedDatabaseIdField,
+        serialization_params: SerializationParams,
+        force: Optional[bool] = False,
+    ) -> AnyHistoryView:
+        if trans.anonymous:
+            raise glx_exceptions.AuthenticationRequired("Only registered users can access archived histories.")
+
+        history = self.manager.get_owned(history_id, trans.user)
+        history = self.manager.restore_archived_history(history, force=force or False)
+        return self._serialize_archived_history(trans, history, serialization_params)
+
     def get_archived_histories(
         self,
         trans: ProvidesHistoryContext,

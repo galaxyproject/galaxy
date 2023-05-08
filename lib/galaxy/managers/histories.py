@@ -378,6 +378,25 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
             history.archive_export_id = archive_export_id
         return history
 
+    def restore_archived_history(self, history: model.History, force: bool = False):
+        """Marks the history with the given id as not archived anymore.
+
+        Only un-archives the history if it is not associated with an archive export record. You can force the un-archiving
+        in this case by passing `force=True`.
+
+        Please note that histories that are associated with an archive export are usually purged after export, so un-archiving them
+        will not restore the datasets that were in the history before it was archived. You will need to import the archive export
+        record to restore the history and its datasets as a new copy.
+        """
+        if history.archive_export_id is not None and not force:
+            raise glx_exceptions.RequestParameterInvalidException(
+                "Cannot restore an archived history that is associated with an archive export record. "
+                "Please try importing the archive export record as a new copy instead."
+            )
+        with self.session().begin():
+            history.archived = False
+        return history
+
 
 class HistoryStorageCleanerManager(StorageCleanerManager):
     def __init__(self, history_manager: HistoryManager):
