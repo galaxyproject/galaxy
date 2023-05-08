@@ -33,7 +33,9 @@ from galaxy.schema import (
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
+    AnyArchivedHistoryView,
     AnyHistoryView,
+    ArchiveHistoryRequestPayload,
     AsyncFile,
     AsyncTaskResultSummary,
     CreateHistoryFromStore,
@@ -179,6 +181,22 @@ class FastAPIHistories:
         serialization_params: SerializationParams = Depends(query_serialization_params),
     ) -> List[AnyHistoryView]:
         return self.service.shared_with_me(trans, serialization_params, filter_query_params)
+
+    @router.get(
+        "/api/histories/archived",
+        summary="Get a list of all archived histories for the current user.",
+    )
+    def get_archived_histories(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+        filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
+    ) -> List[AnyArchivedHistoryView]:
+        """Get a list of all archived histories for the current user.
+
+        Archived histories are histories are not part of the active histories of the user but they can be accessed using this endpoint.
+        """
+        return self.service.get_archived_histories(trans, serialization_params, filter_query_params)
 
     @router.get(
         "/api/histories/most_recently_used",
@@ -456,6 +474,31 @@ class FastAPIHistories:
         history_id: DecodedDatabaseIdField = HistoryIDPathParam,
     ) -> CustomBuildsMetadataResponse:
         return self.service.get_custom_builds_metadata(trans, history_id)
+
+    @router.post(
+        "/api/histories/{history_id}/archive",
+        summary="Archive a history.",
+    )
+    def archive_history(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+        payload: Optional[ArchiveHistoryRequestPayload] = Body(default=None),
+    ) -> AnyArchivedHistoryView:
+        """Marks the given history as 'archived' and returns the history.
+
+        Archiving a history will remove it from the list of active histories of the user but it will still be
+        accessible via the `/api/histories/{id}` or the `/api/histories/archived` endpoints.
+
+
+        Optionally, an export record (containing information about a recent snapshot of the history) can be associated with the
+        archived history by providing an `archive_export_id` in the payload.
+
+        **Warning**: If the export record is provided, the history will be **purged** and the record can then be used to reimport the history snapshot into
+        a new history if required in the future.
+        """
+        return self.service.archive_history(trans, history_id, serialization_params, payload)
 
     @router.get(
         "/api/histories/{history_id}/sharing",

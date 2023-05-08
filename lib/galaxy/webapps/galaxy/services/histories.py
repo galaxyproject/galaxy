@@ -48,7 +48,9 @@ from galaxy.schema import (
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
+    AnyArchivedHistoryView,
     AnyHistoryView,
+    ArchiveHistoryRequestPayload,
     AsyncFile,
     AsyncTaskResultSummary,
     CreateHistoryFromStore,
@@ -670,3 +672,72 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
 
     def _build_order_by(self, order: Optional[str]):
         return self.build_order_by(self.manager, order or DEFAULT_ORDER_BY)
+
+    def archive_history(
+        self,
+        trans: ProvidesHistoryContext,
+        history_id: DecodedDatabaseIdField,
+        serialization_params: SerializationParams,
+        payload: Optional[ArchiveHistoryRequestPayload] = None,
+    ) -> AnyArchivedHistoryView:
+        """Marks the history with the given id as archived and optionally associates it with the given archive export record in the payload.
+
+        Archived histories are not part of the active histories of the user, so they won't be shown to the user by default.
+        """
+        if trans.anonymous:
+            raise glx_exceptions.AuthenticationRequired("Only registered users can archive histories.")
+
+        history = self.manager.get_owned(history_id, trans.user)
+        archive_export_id = payload.archive_export_id if payload else None
+        if archive_export_id:
+            export_record = self.history_export_manager.get_task_export_by_id(archive_export_id)
+            if export_record.object_id != history_id or export_record.object_type != "history":
+                raise glx_exceptions.RequestParameterInvalidException(
+                    "The given archive export record does not belong to this history"
+                )
+            export_metadata = self.history_export_manager.get_record_metadata(export_record)
+            if not self.history_export_manager.is_export_metadata_ready(export_metadata):
+                raise glx_exceptions.RequestParameterInvalidException(
+                    "The given archive export record must be ready before it can be used to archive a history"
+                )
+        history = self.manager.archive_history(history, archive_export_id=archive_export_id)
+        return self._serialize_archived_history(trans, history, serialization_params)
+
+    def get_archived_histories(
+        self,
+        trans: ProvidesHistoryContext,
+        serialization_params: SerializationParams,
+        filter_query_params: FilterQueryParams,
+    ) -> List[AnyArchivedHistoryView]:
+        if trans.anonymous:
+            raise glx_exceptions.AuthenticationRequired("Only registered users can have or access archived histories.")
+
+        filters = self.filters.parse_query_filters(filter_query_params)
+        filters += [
+            model.History.user == trans.user,
+            model.History.archived == true(),
+        ]
+        order_by = self._build_order_by(filter_query_params.order)
+        histories = self.manager.list(
+            filters=filters, order_by=order_by, limit=filter_query_params.limit, offset=filter_query_params.offset
+        )
+
+        rval = [self._serialize_archived_history(trans, history, serialization_params) for history in histories]
+        return rval
+
+    def _serialize_archived_history(
+        self, trans: ProvidesHistoryContext, history: model.History, serialization_params: SerializationParams
+    ):
+        archived_history = self.serializer.serialize_to_view(
+            history, user=trans.user, trans=trans, **serialization_params.dict()
+        )
+        archived_history["export_record_data"] = self._get_export_record_data(history)
+        return archived_history
+
+    def _get_export_record_data(self, history: model.History) -> Optional[WriteStoreToPayload]:
+        if history.archive_export_id:
+            export_record = self.history_export_manager.get_task_export_by_id(history.archive_export_id)
+            export_metadata = self.history_export_manager.get_record_metadata(export_record)
+            if export_metadata and isinstance(export_metadata.request_data.payload, WriteStoreToPayload):
+                return export_metadata.request_data.payload
+        return None

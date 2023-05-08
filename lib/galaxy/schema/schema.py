@@ -1562,6 +1562,52 @@ class ExportTaskListResponse(Model):
     __accept_type__ = "application/vnd.galaxy.task.export+json"
 
 
+class ArchiveHistoryRequestPayload(Model):
+    archive_export_id: Optional[DecodedDatabaseIdField] = Field(
+        default=None,
+        title="Export Record ID",
+        description=(
+            "The encoded ID of the export record to associate with this history archival."
+            "This is used to be able to recover the history from the export record."
+        ),
+    )
+
+
+class ExportRecordData(WriteStoreToPayload):
+    """Data of an export record associated with a history that was archived."""
+
+    # Initially this is just a WriteStoreToPayload, but we may want to add more data to
+    # this in the future to support more complex export scenarios or target destinations.
+    pass
+
+
+class ArchivedHistorySummary(HistorySummary):
+    """Summary of an archived history.
+
+    In addition to the fields of a regular history summary, this also includes the
+    export record data associated with this archived history.
+    """
+
+    export_record_data: Optional[ExportRecordData] = Field(
+        default=None,
+        title="Export Record Data",
+        description="The export record data associated with this archived history. Used to recover the history.",
+    )
+
+
+class ArchivedHistoryDetailed(HistoryDetailed, ArchivedHistorySummary):
+    pass
+
+
+AnyArchivedHistoryView = Union[
+    ArchivedHistorySummary,
+    ArchivedHistoryDetailed,
+    # Any will cover those cases in which only specific `keys` are requested
+    # otherwise the validation will fail because the required fields are not returned
+    Any,
+]
+
+
 class LabelValuePair(Model):
     """Generic Label/Value pair model."""
 

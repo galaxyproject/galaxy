@@ -368,6 +368,16 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
                 else:
                     log.warning(f"User without permissions tried to make dataset with id: {dataset.id} public")
 
+    def archive_history(self, history: model.History, archive_export_id: Optional[int]):
+        """Marks the history with the given id as archived and optionally associates it with the given archive export record.
+
+        **Important**: The caller is responsible for passing a valid `archive_export_id` that belongs to the given history.
+        """
+        with self.session().begin():
+            history.archived = True
+            history.archive_export_id = archive_export_id
+        return history
+
 
 class HistoryStorageCleanerManager(StorageCleanerManager):
     def __init__(self, history_manager: HistoryManager):
