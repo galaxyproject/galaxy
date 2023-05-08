@@ -48,7 +48,7 @@ function onSelectAll() {
         const allValues = props.options.map((option) => option[1]);
         emit("input", allValues);
     } else {
-        emit("input", []);
+        emit("input", null);
     }
 }
 </script>
@@ -63,7 +63,6 @@ function onSelectAll() {
             @input="onSelectAll">
             Select / Deselect all
         </b-form-checkbox>
-
         <b-form-checkbox-group v-model="currentValue" stacked class="pl-3">
             <b-form-checkbox v-for="(option, index) in options" :key="index" :value="option[1]">
                 {{ option[0] }}

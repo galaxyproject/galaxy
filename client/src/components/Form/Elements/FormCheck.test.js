@@ -29,7 +29,7 @@ describe("FormCheck", () => {
         const inputs = wrapper.findAll("[type='checkbox']");
         const labels = wrapper.findAll(".custom-control-label");
         expect(inputs.length).toBe(n + 1);
-        const expectedValues = [];
+        let expectedValues = [];
         for (let i = 0; i < n; i++) {
             await inputs.at(i + 1).setChecked();
             expect(labels.at(i + 1).text()).toBe(`label_${i}`);
@@ -37,6 +37,15 @@ describe("FormCheck", () => {
             expectedValues.push(`value_${i}`);
             expect(wrapper.emitted()["input"][i][0]).toEqual(expectedValues);
         }
+        for (let i = 0; i < n; i++) {
+            await inputs.at(i + 1).setChecked(false);
+            expectedValues = expectedValues.slice(1);
+            if (expectedValues.length === 0) {
+                expectedValues = null;
+            }
+            expect(wrapper.emitted().input[i + 4][0]).toEqual(expectedValues);
+        }
+        expect(wrapper.emitted().input[7][0]).toBe(null);
     });
 
     it("Confirm checkboxes are created when various 'empty values' are passed.", async () => {
