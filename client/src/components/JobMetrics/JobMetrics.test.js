@@ -60,9 +60,6 @@ describe("JobMetrics/JobMetrics.vue", () => {
 
         // Wait for axios and rendering.
         await flushPromises();
-        expect(wrapper.vm.jobId).toBe(JOB_ID);
-        expect(wrapper.vm.jobMetricsGroupedByPluginType.core.runtime).toBe(145);
-        expect(wrapper.vm.pluginsSortedByPluginType.length).toBe(2);
 
         // Three metrics, begin metrics for two plugins
         const metricsTables = wrapper.findAll(".metrics_plugin");
@@ -100,7 +97,7 @@ describe("JobMetrics/JobMetrics.vue", () => {
                 pinia,
                 propsData: {
                     jobId: JOB_ID,
-                    aws_estimate: true,
+                    shouldShowAwsEstimate: true,
                 },
             });
 

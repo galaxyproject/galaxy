@@ -12,8 +12,7 @@ const props = defineProps({
         type: String,
         default: "",
     },
-    // eslint-disable-next-line vue/prop-name-casing
-    aws_estimate: {
+    shouldShowAwsEstimate: {
         type: Boolean,
         default: false,
     },
@@ -66,7 +65,7 @@ const pluginsSortedByPluginType = computed(() => {
 });
 
 const computedAwsEstimate = computed(() => {
-    if (!props.aws_estimate) {
+    if (!props.shouldShowAwsEstimate) {
         return;
     }
 
@@ -107,8 +106,6 @@ const computedAwsEstimate = computed(() => {
 
     return aws;
 });
-
-defineExpose({ jobMetricsGroupedByPluginType, pluginsSortedByPluginType });
 </script>
 
 <template>
@@ -129,7 +126,7 @@ defineExpose({ jobMetricsGroupedByPluginType, pluginsSortedByPluginType });
             </table>
         </div>
 
-        <div v-if="aws_estimate && computedAwsEstimate" id="aws-estimate">
+        <div v-if="shouldShowAwsEstimate && computedAwsEstimate" id="aws-estimate">
             <div class="aws">
                 <h3>AWS estimate</h3>
 
