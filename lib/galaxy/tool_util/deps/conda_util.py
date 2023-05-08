@@ -20,8 +20,9 @@ from typing import (
     Union,
 )
 
-import packaging.version
+from packaging.version import Version
 
+from galaxy.tool_util.version import parse_version
 from galaxy.util import (
     commands,
     download_to_file,
@@ -87,7 +88,7 @@ def find_conda_prefix() -> str:
 class CondaContext(installable.InstallableContext):
     installable_description = "Conda"
     _conda_build_available: Optional[bool]
-    _conda_version: Optional[Union[packaging.version.Version, packaging.version.LegacyVersion]]
+    _conda_version: Optional[Version]
     _experimental_solver_available: Optional[bool]
 
     def __init__(
@@ -132,10 +133,10 @@ class CondaContext(installable.InstallableContext):
         self._experimental_solver_available = None
 
     @property
-    def conda_version(self) -> Union[packaging.version.Version, packaging.version.LegacyVersion]:
+    def conda_version(self) -> Version:
         if self._conda_version is None:
             self._guess_conda_properties()
-        assert isinstance(self._conda_version, (packaging.version.Version, packaging.version.LegacyVersion))
+        assert isinstance(self._conda_version, Version)
         return self._conda_version
 
     @property
@@ -147,12 +148,12 @@ class CondaContext(installable.InstallableContext):
 
     def _guess_conda_properties(self) -> None:
         info = self.conda_info()
-        self._conda_version = packaging.version.parse(info["conda_version"])
+        self._conda_version = Version(info["conda_version"])
         self._conda_build_available = False
         conda_build_version = info.get("conda_build_version")
         if conda_build_version and conda_build_version != "not installed":
             try:
-                packaging.version.parse(conda_build_version)
+                Version(conda_build_version)
                 self._conda_build_available = True
             except Exception:
                 pass
@@ -169,9 +170,9 @@ class CondaContext(installable.InstallableContext):
     @property
     def _experimental_solver_args(self) -> List[str]:
         if self._experimental_solver_available is None:
-            self._experimental_solver_available = self.conda_version >= packaging.version.parse(
-                "4.12.0"
-            ) and self.is_package_installed("conda-libmamba-solver")
+            self._experimental_solver_available = self.conda_version >= Version("4.12.0") and self.is_package_installed(
+                "conda-libmamba-solver"
+            )
         if self._experimental_solver_available:
             return ["--experimental-solver", "libmamba"]
         else:
@@ -282,7 +283,7 @@ class CondaContext(installable.InstallableContext):
         for try_strict in [True, False]:
             create_args = ["-y", "--quiet"]
             if try_strict:
-                if self.conda_version >= packaging.version.parse("4.7.5"):
+                if self.conda_version >= Version("4.7.5"):
                     create_args.append("--strict-channel-priority")
                 else:
                     continue
@@ -313,7 +314,7 @@ class CondaContext(installable.InstallableContext):
         for try_strict in [True, False]:
             install_args = ["-y"]
             if try_strict:
-                if self.conda_version >= packaging.version.parse("4.7.5"):
+                if self.conda_version >= Version("4.7.5"):
                     install_args.append("--strict-channel-priority")
                 else:
                     continue
@@ -567,7 +568,7 @@ def best_search_result(
         # the latest update time.
         hits = json.loads(res).get(conda_target.package, [])[::-1]
         hits = sorted(hits, key=lambda hit: hit["build_number"], reverse=True)
-        hits = sorted(hits, key=lambda hit: packaging.version.parse(hit["version"]), reverse=True)
+        hits = sorted(hits, key=lambda hit: parse_version(hit["version"]), reverse=True)
     except commands.CommandLineException as e:
         log.error(f"Could not execute: '{e.command}'\n{e}")
         hits = []
@@ -632,8 +633,8 @@ def build_isolated_environment(
         # Adjust fix if they fix Conda - xref
         # - https://github.com/galaxyproject/galaxy/issues/3635
         # - https://github.com/conda/conda/issues/2035
-        offline_works = (conda_context.conda_version < packaging.version.parse("4.3")) or (
-            conda_context.conda_version >= packaging.version.parse("4.4")
+        offline_works = (conda_context.conda_version < Version("4.3")) or (
+            conda_context.conda_version >= Version("4.4")
         )
         if offline_works:
             create_args.append("--offline")

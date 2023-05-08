@@ -19,6 +19,8 @@ import subprocess
 import sys
 from sys import platform as _platform
 from typing import (
+    Any,
+    Dict,
     List,
     TYPE_CHECKING,
 )
@@ -157,7 +159,7 @@ def conda_versions(pkg_name, file_name):
     return ret
 
 
-def get_conda_hits_for_targets(targets, conda_context):
+def get_conda_hits_for_targets(targets, conda_context: CondaContext) -> List[Dict[str, Any]]:
     search_results = (best_search_result(t, conda_context, platform="linux-64")[0] for t in targets)
     return [r for r in search_results if r]
 
