@@ -140,7 +140,7 @@ export default {
             return matchCase(input, input.test_param.value) == caseId;
         },
         repeatInsert(input) {
-            const newInputs = JSON.parse(JSON.stringify(input.inputs));
+            const newInputs = structuredClone(input.inputs);
             input.cache = input.cache || [];
             input.cache.push(newInputs);
             this.onChangeForm();
@@ -150,7 +150,12 @@ export default {
             this.onChangeForm();
         },
         repeatSwap(input, a, b) {
-            [input.cache[a], input.cache[b]] = [input.cache[b], input.cache[a]];
+            const tmpA = input.cache[a];
+            const tmpB = input.cache[b];
+
+            input.cache.splice(a, 1, tmpB);
+            input.cache.splice(b, 1, tmpA);
+
             this.onChangeForm();
         },
     },

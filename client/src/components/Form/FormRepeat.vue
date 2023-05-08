@@ -1,15 +1,23 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import FormCard from "./FormCard.vue";
-import { defineAsyncComponent } from "vue";
+import { defineAsyncComponent, unref, type PropType, nextTick } from "vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPlus, faTrashAlt, faCaretUp, faCaretDown } from "@fortawesome/free-solid-svg-icons";
+import { useUid } from "@/composables/utils/uid";
 
 const FormNode = defineAsyncComponent(() => import("./FormInputs.vue"));
 
+interface Input {
+    name: string;
+    title: string;
+    help?: string;
+    cache: Array<Record<string, unknown>>;
+}
+
 const props = defineProps({
     input: {
-        type: Object,
+        type: Object as PropType<Input>,
         required: true,
     },
     sustainRepeats: {
@@ -58,9 +66,11 @@ function getTitle(index: number) {
 }
 
 /** swap blocks if possible */
-function swap(index: number, swapWith: number, direction: "up" | "down") {
+async function swap(index: number, swapWith: number, direction: "up" | "down") {
     if (swapWith >= 0 && swapWith < props.input.cache?.length) {
         emit("swap", index, swapWith);
+
+        await nextTick();
 
         const buttonId = getButtonId(swapWith, direction);
         document.getElementById(buttonId)?.focus();
@@ -71,6 +81,20 @@ function swap(index: number, swapWith: number, direction: "up" | "down") {
 function getButtonId(index: number, direction: "up" | "down") {
     const prefix = getPrefix(index);
     return `${prefix}_${direction}`;
+}
+
+const keyCache = new WeakMap<object, string>();
+
+function getOrSetKey(object: Object) {
+    const cachedKey = keyCache.get(object);
+
+    if (cachedKey) {
+        return cachedKey;
+    } else {
+        const key = unref(useUid("repeat-"));
+        keyCache.set(object, key);
+        return key;
+    }
 }
 </script>
 
@@ -83,7 +107,7 @@ function getButtonId(index: number, direction: "up" | "down") {
 
         <FormCard
             v-for="(cache, cacheId) in props.input.cache"
-            :key="cacheId"
+            :key="getOrSetKey(cache)"
             data-description="repeat block"
             class="card"
             :title="getTitle(cacheId)">
