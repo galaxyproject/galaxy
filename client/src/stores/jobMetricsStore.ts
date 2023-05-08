@@ -3,7 +3,7 @@ import { defineStore } from "pinia";
 import { prependPath } from "@/utils/redirect";
 import Vue, { computed, ref } from "vue";
 
-interface JobMertic {
+interface JobMetric {
     title: string;
     value: string;
     plugin: string;
@@ -12,20 +12,20 @@ interface JobMertic {
 }
 
 export const useJobMetricsStore = defineStore("jobMetricsStore", () => {
-    const jobMetricsByHdaId = ref<Record<string, JobMertic[]>>({});
-    const jobMetricsByLddaId = ref<Record<string, JobMertic[]>>({});
-    const jobMetricsByJobId = ref<Record<string, JobMertic[]>>({});
+    const jobMetricsByHdaId = ref<Record<string, JobMetric[]>>({});
+    const jobMetricsByLddaId = ref<Record<string, JobMetric[]>>({});
+    const jobMetricsByJobId = ref<Record<string, JobMetric[]>>({});
 
     const getJobMetricsByDatasetId = computed(() => {
         return (datasetId: string, datasetType = "hda") => {
-            const jobMetricsObject = datasetType == "hda" ? jobMetricsByHdaId : jobMetricsByLddaId;
-            return jobMetricsObject.value[datasetId] || ([] as JobMertic[]);
+            const jobMetricsObject = datasetType === "hda" ? jobMetricsByHdaId : jobMetricsByLddaId;
+            return jobMetricsObject.value[datasetId] ?? [];
         };
     });
 
     const getJobMetricsByJobId = computed(() => {
         return (jobId: string) => {
-            return jobMetricsByJobId.value[jobId] || ([] as JobMertic[]);
+            return jobMetricsByJobId.value[jobId] ?? [];
         };
     });
 
@@ -34,8 +34,8 @@ export const useJobMetricsStore = defineStore("jobMetricsStore", () => {
             return;
         }
 
-        const jobMetrics = (await axios.get(prependPath(`api/datasets/${datasetId}/metrics?hda_ldda=${datasetType}`)))
-            .data as JobMertic[];
+        const path = prependPath(`api/datasets/${datasetId}/metrics?hda_ldda=${datasetType}`);
+        const jobMetrics = (await axios.get<JobMetric[]>(path)).data;
         const jobMetricsObject = datasetType == "hda" ? jobMetricsByHdaId : jobMetricsByLddaId;
 
         Vue.set(jobMetricsObject.value, datasetId, jobMetrics);
@@ -46,7 +46,8 @@ export const useJobMetricsStore = defineStore("jobMetricsStore", () => {
             return;
         }
 
-        const jobMetrics = (await axios.get(prependPath(`api/jobs/${jobId}/metrics`))).data as JobMertic[];
+        const path = prependPath(`api/jobs/${jobId}/metrics`);
+        const jobMetrics = (await axios.get<JobMetric[]>(path)).data;
 
         Vue.set(jobMetricsByJobId.value, jobId, jobMetrics);
     }
