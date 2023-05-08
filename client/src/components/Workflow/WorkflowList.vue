@@ -127,7 +127,7 @@ const helpHtml = `<div>
             "published" icon of a workflow in your list to filter on this
             directly.
         </dd>
-        <dt><code>is:shared</code></dt>
+        <dt><code>is:shared_with_me</code></dt>
         <dd>
             Shows workflows shared by another user directly with you. You may
             also just click on the "shared with me" icon of a workflow in your
