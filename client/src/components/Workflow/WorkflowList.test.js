@@ -37,6 +37,8 @@ const defaultApiParams = {
     limit: 20,
     offset: 0,
     skip_step_counts: true,
+    sort_by: "update_time",
+    sort_desc: true,
 };
 
 describe("WorkflowList.vue", () => {

@@ -12,7 +12,7 @@
                 <WorkflowIndexActions :root="root" class="float-right"></WorkflowIndexActions>
             </b-col>
         </b-row>
-        <b-table v-model="workflowItemsModel" no-sort-reset :fields="fields" v-bind="indexTableAttrs">
+        <b-table v-model="workflowItemsModel" v-bind="{ ...defaultTableAttrs, ...indexTableAttrs }">
             <template v-slot:empty>
                 <loading-span v-if="loading" message="Loading workflows" />
                 <b-alert v-else id="no-workflows" variant="info" show>
@@ -119,24 +119,20 @@ const helpHtml = `<div>
     <dl>
         <dt><code>name</code></dt>
         <dd>
-            Shows workflows with given sequence of characters in their names.
+            Shows workflows with the given sequence of characters in their names.
         </dd>
         <dt><code>tag</code></dt>
         <dd>
-            Shows workflows with the given workflow tag. You may also just click
+            Shows workflows with the given workflow tag. You may also click
             on a tag in your list of workflows to filter on that tag directly.
         </dd>
         <dt><code>is:published</code></dt>
         <dd>
-            Shows published workflows. You may also just click on the
-            "published" icon of a workflow in your list to filter on this
-            directly.
+            Shows published workflows.
         </dd>
         <dt><code>is:shared</code></dt>
         <dd>
-            Shows workflows shared by another user directly with you. You may
-            also just click on the "shared with me" icon of a workflow in your
-            list to filter on this directly.
+            Shows workflows shared by another user directly with you.
         </dd>
         <dt><code>is:deleted</code></dt>
         <dd>Shows deleted workflows.</dd>
@@ -201,6 +197,7 @@ export default {
             perPage: this.rowsPerPage(this.defaultPerPage || 20),
             dataProvider: storedWorkflowsProvider,
             implicitFilter: implicitFilter,
+            defaultTableAttrs: { "sort-by": "update_time", "sort-desc": true, "no-sort-reset": "", fields: fields },
         };
     },
     computed: {
