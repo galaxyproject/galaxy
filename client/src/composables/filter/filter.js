@@ -1,26 +1,13 @@
-import { onScopeDispose, ref, watch, type Ref } from "vue";
-import type { MaybeComputedRef } from "@vueuse/core";
+import { onScopeDispose, ref, watch } from "vue";
 import { resolveUnref } from "@vueuse/core";
-import type { Message, ResultMessage } from "./filter.worker";
 
-/**
- * Reactively filter an array of objects, by comparing `filter` to all `fields`.
- * All parameters can optionally be refs.
- * @param array array of objects to filter
- * @param filter string to filter by
- * @param objectFields string array of fields to filter by on each object
- */
-export function useFilterObjectArray<O extends object, K extends keyof O>(
-    array: MaybeComputedRef<Array<O>>,
-    filter: MaybeComputedRef<string>,
-    objectFields: MaybeComputedRef<Array<K>>
-) {
-    const worker = new Worker(new URL("./filter.worker.ts", import.meta.url));
+export function useFilterObjectArray(array, filter, objectFields) {
+    const worker = new Worker(new URL("./filter.worker.js", import.meta.url));
 
-    const filtered: Ref<O[]> = ref([]);
+    const filtered = ref([]);
     filtered.value = resolveUnref(array);
 
-    const post = (message: Message<O, K>) => {
+    const post = (message) => {
         worker.postMessage(message);
     };
 
@@ -54,7 +41,7 @@ export function useFilterObjectArray<O extends object, K extends keyof O>(
         }
     );
 
-    worker.onmessage = (e: MessageEvent<ResultMessage<O>>) => {
+    worker.onmessage = (e) => {
         const message = e.data;
 
         if (message.type === "result") {

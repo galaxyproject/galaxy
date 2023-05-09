@@ -6,8 +6,6 @@ import HistoryNavigation from "./HistoryNavigation";
 
 const localVue = getLocalVue();
 
-jest.mock("@/composables/filter");
-
 // all options
 const expectedOptions = [
     "Show Histories Side-by-Side",
