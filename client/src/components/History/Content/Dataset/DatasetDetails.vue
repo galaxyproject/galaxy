@@ -18,9 +18,14 @@
                         }}</b-link>
                     </span>
                     <!-- Include Job Detail Provider and Dataset Error Details here -->
-                    <div v-if="result.misc_info" class="info">
+                    <JobDetailsProvider>
+                        <div v-if="toolStderr" class="info">
+                            <span class="value">{{ toolStderr }}</span>
+                        </div>
+                    </JobDetailsProvider>
+                    <!-- <div v-if="result.misc_info" class="info">
                         <span class="value">{{ result.misc_info }}</span>
-                    </div>
+                    </div> -->
                 </div>
                 <DatasetActions
                     :item="result"
@@ -89,19 +94,22 @@
 import { STATES } from "components/History/Content/model/states";
 import { DatasetProvider } from "components/providers/storeProviders";
 import DatasetActions from "./DatasetActions";
-import { BLink } from "bootstrap-vue";
+import { BLink } from "bootstrap-vue"; 
+import { JobDetailsProvider} from "components/providers/JobProvider";
 
 export default {
     components: {
         DatasetActions,
         DatasetProvider,
         BLink,
+        JobDetailsProvider,
     },
     props: {
         dataset: { type: Object, required: true },
         writable: { type: Boolean, default: true },
         showHighlight: { type: Boolean, default: false },
         itemUrls: { type: Object, required: true },
+        toolStderr: {type: String, default: null},
     },
     computed: {
         stateText() {
