@@ -24,17 +24,12 @@
 </template>
 
 <script>
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { VBTooltip } from "bootstrap-vue";
-
 import { faShareAlt, faGlobe } from "@fortawesome/free-solid-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
 library.add(faGlobe, faShareAlt);
 
 export default {
-    components: {
-        FontAwesomeIcon,
-    },
     directives: {
         VBTooltip,
     },
