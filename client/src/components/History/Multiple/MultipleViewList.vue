@@ -13,9 +13,6 @@ const historyStore = useHistoryStore();
 const props = withDefaults(
     defineProps<{
         histories: HistorySummary[];
-        currentHistory: HistorySummary;
-        // todo: stricter typedef for handlers, when MultipleViewItem is refactored
-        handlers: { [handler: string]: Function };
         filter?: string;
     }>(),
     {
@@ -35,10 +32,6 @@ const scrolledLeft = computed(() => !isScrollable.value || arrived.left);
 const scrolledRight = computed(() => !isScrollable.value || arrived.right);
 
 const selectedHistories = computed(() => historyStore.pinnedHistories);
-
-function removeHistoryFromList(history: HistorySummary) {
-    historyStore.unpinHistory(history.id);
-}
 
 if (!selectedHistories.value.length ?? props.histories.length > 0) {
     historyStore.pinHistory(props.histories[0]!.id);
@@ -64,7 +57,7 @@ function addHistoriesToList(histories: HistorySummary[]) {
                 :data-component="MultipleViewItem"
                 :data-sources="selectedHistories"
                 :direction="'horizontal'"
-                :extra-props="{ currentHistory, handlers, filter, removeHistoryFromList }"
+                :extra-props="{ filter }"
                 :item-style="{ width: '15rem' }"
                 item-class="d-flex mx-1 mt-1"
                 class="d-flex"
@@ -81,7 +74,6 @@ function addHistoriesToList(histories: HistorySummary[]) {
                 id="select-histories-modal"
                 :multiple="true"
                 :histories="histories"
-                :current-history-id="currentHistory.id"
                 :additional-options="['center', 'set-current']"
                 title="Select histories"
                 @selectHistories="addHistoriesToList" />
