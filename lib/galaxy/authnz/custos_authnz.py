@@ -153,7 +153,7 @@ class CustosAuthnz(IdentityProvider):
                             f"&connect_external_label={self.config['label']}"
                         )
                         return login_redirect_url, None
-                elif self.config["require_create_confirmation"]:
+                elif self.config["require_create_confirmation"] or self.config["provider"] == "custos":
                     login_redirect_url = f"{login_redirect_url}login/start?confirm=true&provider_token={json.dumps(token)}&provider={self.config['provider']}"
                     return login_redirect_url, None
                 else:
