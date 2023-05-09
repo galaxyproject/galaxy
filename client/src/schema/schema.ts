@@ -410,6 +410,15 @@ export interface paths {
          */
         post: operations["create_api_histories_post"];
     };
+    "/api/histories/archived": {
+        /**
+         * Get a list of all archived histories for the current user.
+         * @description Get a list of all archived histories for the current user.
+         *
+         * Archived histories are histories are not part of the active histories of the user but they can be accessed using this endpoint.
+         */
+        get: operations["get_archived_histories_api_histories_archived_get"];
+    };
     "/api/histories/count": {
         /** Returns number of histories for the current user. */
         get: operations["count_api_histories_count_get"];
@@ -449,6 +458,39 @@ export interface paths {
         put: operations["update_api_histories__history_id__put"];
         /** Marks the history with the given ID as deleted. */
         delete: operations["delete_api_histories__history_id__delete"];
+    };
+    "/api/histories/{history_id}/archive": {
+        /**
+         * Archive a history.
+         * @description Marks the given history as 'archived' and returns the history.
+         *
+         * Archiving a history will remove it from the list of active histories of the user but it will still be
+         * accessible via the `/api/histories/{id}` or the `/api/histories/archived` endpoints.
+         *
+         * Associating an export record:
+         *
+         * - Optionally, an export record (containing information about a recent snapshot of the history) can be associated with the
+         * archived history by providing an `archive_export_id` in the payload. The export record must belong to the history and
+         * must be in the ready state.
+         * - When associating an export record, the history can be purged after it has been archived using the `purge_history` flag.
+         *
+         * If the history is already archived, this endpoint will return a 409 Conflict error, indicating that the history is already archived.
+         * If the history was not purged after it was archived, you can restore it using the `/api/histories/{id}/archive/restore` endpoint.
+         */
+        post: operations["archive_history_api_histories__history_id__archive_post"];
+    };
+    "/api/histories/{history_id}/archive/restore": {
+        /**
+         * Restore an archived history.
+         * @description Restores an archived history and returns it.
+         *
+         * Restoring an archived history will add it back to the list of active histories of the user (unless it was purged).
+         *
+         * **Warning**: Please note that histories that are associated with an archive export might be purged after export, so un-archiving them
+         * will not restore the datasets that were in the history before it was archived. You will need to import the archive export
+         * record to restore the history and its datasets as a new copy. See `/api/histories/from_store_async` for more information.
+         */
+        put: operations["restore_archived_history_api_histories__history_id__archive_restore_put"];
     };
     "/api/histories/{history_id}/citations": {
         /** Return all the citations for the tools used to produce the datasets in the history. */
@@ -1587,6 +1629,240 @@ export interface components {
              * @description The link to be opened when the button is clicked.
              */
             link: string;
+        };
+        /**
+         * ArchiveHistoryRequestPayload
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        ArchiveHistoryRequestPayload: {
+            /**
+             * Export Record ID
+             * @description The encoded ID of the export record to associate with this history archival.This is used to be able to recover the history from the export record.
+             * @example 0123456789ABCDEF
+             */
+            archive_export_id?: string;
+            /**
+             * Purge History
+             * @description Whether to purge the history after archiving it. It requires an `archive_export_id` to be set.
+             * @default false
+             */
+            purge_history?: boolean;
+        };
+        /**
+         * ArchivedHistoryDetailed
+         * @description History detailed information.
+         */
+        ArchivedHistoryDetailed: {
+            /**
+             * Annotation
+             * @description An annotation to provide details or to help understand the purpose and usage of this item.
+             */
+            annotation: string;
+            /**
+             * Archived
+             * @description Whether this item has been archived and is no longer active.
+             */
+            archived: boolean;
+            /**
+             * Contents URL
+             * @description The relative URL to access the contents of this History.
+             */
+            contents_url: string;
+            /**
+             * Count
+             * @description The number of items in the history.
+             */
+            count: number;
+            /**
+             * Create Time
+             * Format: date-time
+             * @description The time and date this item was created.
+             */
+            create_time: string;
+            /**
+             * Deleted
+             * @description Whether this item is marked as deleted.
+             */
+            deleted: boolean;
+            /**
+             * Export Record Data
+             * @description The export record data associated with this archived history. Used to recover the history.
+             */
+            export_record_data?: components["schemas"]["ExportRecordData"];
+            /**
+             * Genome Build
+             * @description TODO
+             * @default ?
+             */
+            genome_build?: string;
+            /**
+             * ID
+             * @description The encoded ID of this entity.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Importable
+             * @description Whether this History can be imported by other users with a shared link.
+             */
+            importable: boolean;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @default History
+             * @enum {string}
+             */
+            model_class: "History";
+            /**
+             * Name
+             * @description The name of the history.
+             */
+            name: string;
+            /**
+             * Preferred Object Store ID
+             * @description The ID of the object store that should be used to store new datasets in this history.
+             */
+            preferred_object_store_id?: string;
+            /**
+             * Published
+             * @description Whether this resource is currently publicly available to all users.
+             */
+            published: boolean;
+            /**
+             * Purged
+             * @description Whether this item has been permanently removed.
+             */
+            purged: boolean;
+            /**
+             * Size
+             * @description The total size of the contents of this history in bytes.
+             */
+            size: number;
+            /**
+             * Slug
+             * @description Part of the URL to uniquely identify this History by link in a readable way.
+             */
+            slug?: string;
+            /**
+             * State
+             * @description The current state of the History based on the states of the datasets it contains.
+             */
+            state: components["schemas"]["DatasetState"];
+            /**
+             * State Counts
+             * @description A dictionary keyed to possible dataset states and valued with the number of datasets in this history that have those states.
+             */
+            state_details: {
+                [key: string]: number | undefined;
+            };
+            /**
+             * State IDs
+             * @description A dictionary keyed to possible dataset states and valued with lists containing the ids of each HDA in that state.
+             */
+            state_ids: {
+                [key: string]: string[] | undefined;
+            };
+            tags: components["schemas"]["TagCollection"];
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time and date this item was updated.
+             */
+            update_time: string;
+            /**
+             * URL
+             * @deprecated
+             * @description The relative URL to access this item.
+             */
+            url: string;
+            /**
+             * User ID
+             * @description The encoded ID of the user that owns this History.
+             * @example 0123456789ABCDEF
+             */
+            user_id: string;
+            /**
+             * Username and slug
+             * @description The relative URL in the form of /u/{username}/h/{slug}
+             */
+            username_and_slug?: string;
+        };
+        /**
+         * ArchivedHistorySummary
+         * @description History summary information.
+         */
+        ArchivedHistorySummary: {
+            /**
+             * Annotation
+             * @description An annotation to provide details or to help understand the purpose and usage of this item.
+             */
+            annotation: string;
+            /**
+             * Archived
+             * @description Whether this item has been archived and is no longer active.
+             */
+            archived: boolean;
+            /**
+             * Count
+             * @description The number of items in the history.
+             */
+            count: number;
+            /**
+             * Deleted
+             * @description Whether this item is marked as deleted.
+             */
+            deleted: boolean;
+            /**
+             * Export Record Data
+             * @description The export record data associated with this archived history. Used to recover the history.
+             */
+            export_record_data?: components["schemas"]["ExportRecordData"];
+            /**
+             * ID
+             * @description The encoded ID of this entity.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @default History
+             * @enum {string}
+             */
+            model_class: "History";
+            /**
+             * Name
+             * @description The name of the history.
+             */
+            name: string;
+            /**
+             * Preferred Object Store ID
+             * @description The ID of the object store that should be used to store new datasets in this history.
+             */
+            preferred_object_store_id?: string;
+            /**
+             * Published
+             * @description Whether this resource is currently publicly available to all users.
+             */
+            published: boolean;
+            /**
+             * Purged
+             * @description Whether this item has been permanently removed.
+             */
+            purged: boolean;
+            tags: components["schemas"]["TagCollection"];
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time and date this item was updated.
+             */
+            update_time: string;
+            /**
+             * URL
+             * @deprecated
+             * @description The relative URL to access this item.
+             */
+            url: string;
         };
         /**
          * AsyncFile
@@ -3333,6 +3609,40 @@ export interface components {
          */
         ExportObjectType: "history" | "invocation";
         /**
+         * ExportRecordData
+         * @description Data of an export record associated with a history that was archived.
+         */
+        ExportRecordData: {
+            /**
+             * Include deleted
+             * @description Include file contents for deleted datasets (if include_files is True).
+             * @default false
+             */
+            include_deleted?: boolean;
+            /**
+             * Include Files
+             * @description include materialized files in export when available
+             * @default true
+             */
+            include_files?: boolean;
+            /**
+             * Include hidden
+             * @description Include file contents for hidden datasets (if include_files is True).
+             * @default false
+             */
+            include_hidden?: boolean;
+            /**
+             * @description format of model store to export
+             * @default tar.gz
+             */
+            model_store_format?: components["schemas"]["ModelStoreFormat"];
+            /**
+             * Target URI
+             * @description Galaxy Files URI to write mode store content to.
+             */
+            target_uri: string;
+        };
+        /**
          * ExportTaskListResponse
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -4751,6 +5061,11 @@ export interface components {
              */
             annotation: string;
             /**
+             * Archived
+             * @description Whether this item has been archived and is no longer active.
+             */
+            archived: boolean;
+            /**
              * Contents URL
              * @description The relative URL to access the contents of this History.
              */
@@ -4879,6 +5194,11 @@ export interface components {
              * @description An annotation to provide details or to help understand the purpose and usage of this item.
              */
             annotation: string;
+            /**
+             * Archived
+             * @description Whether this item has been archived and is no longer active.
+             */
+            archived: boolean;
             /**
              * Count
              * @description The number of items in the history.
@@ -8949,10 +9269,7 @@ export interface operations {
              */
             /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
             /** @description The maximum number of items to return. */
-            /**
-             * @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values.
-             * @example name-dsc,create_time
-             */
+            /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
             query?: {
                 history_id?: string;
                 view?: string;
@@ -10575,10 +10892,7 @@ export interface operations {
              */
             /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
             /** @description The maximum number of items to return. */
-            /**
-             * @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values.
-             * @example name-dsc,create_time
-             */
+            /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
             /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
@@ -10657,6 +10971,60 @@ export interface operations {
             };
         };
     };
+    get_archived_histories_api_histories_archived_get: {
+        /**
+         * Get a list of all archived histories for the current user.
+         * @description Get a list of all archived histories for the current user.
+         *
+         * Archived histories are histories are not part of the active histories of the user but they can be accessed using this endpoint.
+         */
+        parameters?: {
+            /** @description View to be passed to the serializer */
+            /** @description Comma-separated list of keys to be passed to the serializer */
+            /**
+             * @description Generally a property name to filter by followed by an (often optional) hyphen and operator string.
+             * @example create_time-gt
+             */
+            /**
+             * @description The value to filter by.
+             * @example 2015-01-29
+             */
+            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
+            /** @description The maximum number of items to return. */
+            /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
+            query?: {
+                view?: string;
+                keys?: string;
+                q?: string[];
+                qv?: string[];
+                offset?: number;
+                limit?: number;
+                order?: string;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": (
+                        | components["schemas"]["ArchivedHistorySummary"]
+                        | components["schemas"]["ArchivedHistoryDetailed"]
+                        | Record<string, never>
+                    )[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     count_api_histories_count_get: {
         /** Returns number of histories for the current user. */
         parameters?: {
@@ -10694,10 +11062,7 @@ export interface operations {
              */
             /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
             /** @description The maximum number of items to return. */
-            /**
-             * @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values.
-             * @example name-dsc,create_time
-             */
+            /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
             /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
@@ -10880,10 +11245,7 @@ export interface operations {
              */
             /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
             /** @description The maximum number of items to return. */
-            /**
-             * @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values.
-             * @example name-dsc,create_time
-             */
+            /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
             /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
@@ -10932,10 +11294,7 @@ export interface operations {
              */
             /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
             /** @description The maximum number of items to return. */
-            /**
-             * @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values.
-             * @example name-dsc,create_time
-             */
+            /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
             /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
@@ -11090,6 +11449,110 @@ export interface operations {
             };
         };
     };
+    archive_history_api_histories__history_id__archive_post: {
+        /**
+         * Archive a history.
+         * @description Marks the given history as 'archived' and returns the history.
+         *
+         * Archiving a history will remove it from the list of active histories of the user but it will still be
+         * accessible via the `/api/histories/{id}` or the `/api/histories/archived` endpoints.
+         *
+         * Associating an export record:
+         *
+         * - Optionally, an export record (containing information about a recent snapshot of the history) can be associated with the
+         * archived history by providing an `archive_export_id` in the payload. The export record must belong to the history and
+         * must be in the ready state.
+         * - When associating an export record, the history can be purged after it has been archived using the `purge_history` flag.
+         *
+         * If the history is already archived, this endpoint will return a 409 Conflict error, indicating that the history is already archived.
+         * If the history was not purged after it was archived, you can restore it using the `/api/histories/{id}/archive/restore` endpoint.
+         */
+        parameters: {
+            /** @description View to be passed to the serializer */
+            /** @description Comma-separated list of keys to be passed to the serializer */
+            query?: {
+                view?: string;
+                keys?: string;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the History. */
+            path: {
+                history_id: string;
+            };
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ArchiveHistoryRequestPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json":
+                        | components["schemas"]["ArchivedHistorySummary"]
+                        | components["schemas"]["ArchivedHistoryDetailed"]
+                        | Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_archived_history_api_histories__history_id__archive_restore_put: {
+        /**
+         * Restore an archived history.
+         * @description Restores an archived history and returns it.
+         *
+         * Restoring an archived history will add it back to the list of active histories of the user (unless it was purged).
+         *
+         * **Warning**: Please note that histories that are associated with an archive export might be purged after export, so un-archiving them
+         * will not restore the datasets that were in the history before it was archived. You will need to import the archive export
+         * record to restore the history and its datasets as a new copy. See `/api/histories/from_store_async` for more information.
+         */
+        parameters: {
+            /** @description If true, the history will un-archived even if it has an associated archive export record and was purged. */
+            /** @description View to be passed to the serializer */
+            /** @description Comma-separated list of keys to be passed to the serializer */
+            query?: {
+                force?: boolean;
+                view?: string;
+                keys?: string;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the History. */
+            path: {
+                history_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json":
+                        | components["schemas"]["HistorySummary"]
+                        | components["schemas"]["HistoryDetailed"]
+                        | Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     citations_api_histories__history_id__citations_get: {
         /** Return all the citations for the tools used to produce the datasets in the history. */
         parameters: {
@@ -11165,10 +11628,7 @@ export interface operations {
              */
             /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
             /** @description The maximum number of items to return. */
-            /**
-             * @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values.
-             * @example name-dsc,create_time
-             */
+            /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
             query?: {
                 v?: string;
                 details?: string;
@@ -11333,10 +11793,7 @@ export interface operations {
              */
             /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
             /** @description The maximum number of items to return. */
-            /**
-             * @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values.
-             * @example name-dsc,create_time
-             */
+            /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
             query?: {
                 filename?: string;
                 dry_run?: boolean;
@@ -11389,10 +11846,7 @@ export interface operations {
              */
             /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
             /** @description The maximum number of items to return. */
-            /**
-             * @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values.
-             * @example name-dsc,create_time
-             */
+            /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
             query?: {
                 dry_run?: boolean;
                 q?: string[];
@@ -11988,10 +12442,7 @@ export interface operations {
              */
             /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
             /** @description The maximum number of items to return. */
-            /**
-             * @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values.
-             * @example name-dsc,create_time
-             */
+            /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
             query?: {
                 v?: string;
                 details?: string;
