@@ -491,12 +491,15 @@ class FastAPIHistories:
         Archiving a history will remove it from the list of active histories of the user but it will still be
         accessible via the `/api/histories/{id}` or the `/api/histories/archived` endpoints.
 
+        Associating an export record:
 
-        Optionally, an export record (containing information about a recent snapshot of the history) can be associated with the
-        archived history by providing an `archive_export_id` in the payload.
+        - Optionally, an export record (containing information about a recent snapshot of the history) can be associated with the
+        archived history by providing an `archive_export_id` in the payload. The export record must belong to the history and
+        must be in the ready state.
+        - When associating an export record, the history can be purged after it has been archived using the `purge_history` flag.
 
-        **Warning**: If the export record is provided, the history will be **purged** and the record can then be used to reimport the history snapshot into
-        a new history if required in the future.
+        If the history is already archived, this endpoint will return a 409 Conflict error, indicating that the history is already archived.
+        If the history was not purged after it was archived, you can restore it using the `/api/histories/{id}/archive/restore` endpoint.
         """
         return self.service.archive_history(trans, history_id, serialization_params, payload)
 
@@ -518,7 +521,7 @@ class FastAPIHistories:
 
         Restoring an archived history will add it back to the list of active histories of the user (unless it was purged).
 
-        **Warning**: Please note that histories that are associated with an archive export are purged after export, so un-archiving them
+        **Warning**: Please note that histories that are associated with an archive export might be purged after export, so un-archiving them
         will not restore the datasets that were in the history before it was archived. You will need to import the archive export
         record to restore the history and its datasets as a new copy. See `/api/histories/from_store_async` for more information.
         """

@@ -1485,8 +1485,17 @@ class BaseDatasetPopulator(BasePopulator):
             assert export_record["task_uuid"]
             self.wait_on_task_id(export_record["task_uuid"])
 
-    def archive_history(self, history_id: str, export_record_id: Optional[str] = None) -> Response:
-        payload = {"archive_export_id": export_record_id} if export_record_id else None
+    def archive_history(
+        self, history_id: str, export_record_id: Optional[str] = None, purge_history: Optional[bool] = False
+    ) -> Response:
+        payload = (
+            {
+                "archive_export_id": export_record_id,
+                "purge_history": purge_history,
+            }
+            if export_record_id
+            else None
+        )
         archive_response = self._post(f"histories/{history_id}/archive", data=payload, json=True)
         return archive_response
 

@@ -695,7 +695,11 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         if archive_export_id:
             export_record = self.history_export_manager.get_task_export_by_id(archive_export_id)
             self._ensure_export_record_can_be_associated_with_history_archival(history_id, export_record)
+            # After this point, the export record is valid and can be associated with the history archival
         history = self.manager.archive_history(history, archive_export_id=archive_export_id)
+        purge_history = payload.purge_history if payload else False
+        if archive_export_id and purge_history:
+            self.manager.purge(history)
         return self._serialize_archived_history(trans, history, serialization_params)
 
     def _ensure_export_record_can_be_associated_with_history_archival(
@@ -767,7 +771,8 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         archived_history = self.serializer.serialize_to_view(
             history, user=trans.user, trans=trans, **serialization_params.dict()
         )
-        archived_history["export_record_data"] = self._get_export_record_data(history)
+        export_record_data = self._get_export_record_data(history)
+        archived_history["export_record_data"] = export_record_data.dict() if export_record_data else None
         return archived_history
 
     def _get_export_record_data(self, history: model.History) -> Optional[WriteStoreToPayload]:

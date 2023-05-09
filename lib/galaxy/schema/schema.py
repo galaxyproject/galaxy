@@ -1579,6 +1579,11 @@ class ArchiveHistoryRequestPayload(Model):
             "This is used to be able to recover the history from the export record."
         ),
     )
+    purge_history: bool = Field(
+        default=False,
+        title="Purge History",
+        description="Whether to purge the history after archiving it. It requires an `archive_export_id` to be set.",
+    )
 
 
 class ExportRecordData(WriteStoreToPayload):
@@ -1589,13 +1594,7 @@ class ExportRecordData(WriteStoreToPayload):
     pass
 
 
-class ArchivedHistorySummary(HistorySummary):
-    """Summary of an archived history.
-
-    In addition to the fields of a regular history summary, this also includes the
-    export record data associated with this archived history.
-    """
-
+class ExportAssociationData(Model):
     export_record_data: Optional[ExportRecordData] = Field(
         default=None,
         title="Export Record Data",
@@ -1603,7 +1602,11 @@ class ArchivedHistorySummary(HistorySummary):
     )
 
 
-class ArchivedHistoryDetailed(HistoryDetailed, ArchivedHistorySummary):
+class ArchivedHistorySummary(HistorySummary, ExportAssociationData):
+    pass
+
+
+class ArchivedHistoryDetailed(HistoryDetailed, ExportAssociationData):
     pass
 
 
