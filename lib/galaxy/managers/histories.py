@@ -500,19 +500,12 @@ class HistoryExportManager:
         export_metadata = ExportObjectMetadata.parse_raw(json_metadata) if json_metadata else None
         return export_metadata
 
-    def is_export_metadata_ready(self, export_metadata: Optional[ExportObjectMetadata]) -> bool:
-        return (
-            export_metadata is not None
-            and export_metadata.result_data is not None
-            and export_metadata.result_data.success
-        )
-
     def _serialize_task_export(self, export: model.StoreExportAssociation, history: model.History):
         task_uuid = export.task_uuid
         export_date = export.create_time
         history_has_changed = history.update_time > export_date
         export_metadata = self.get_record_metadata(export)
-        is_ready = self.is_export_metadata_ready(export_metadata)
+        is_ready = export_metadata is not None and export_metadata.is_ready()
         is_export_up_to_date = is_ready and not history_has_changed
         return {
             "id": export.id,

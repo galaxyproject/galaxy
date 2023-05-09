@@ -1542,6 +1542,14 @@ class ExportObjectMetadata(Model):
     request_data: ExportObjectRequestMetadata
     result_data: Optional[ExportObjectResultMetadata]
 
+    def is_short_term(self):
+        """Whether the export is a short term export."""
+        return isinstance(self.request_data.payload, ShortTermStoreExportPayload)
+
+    def is_ready(self):
+        """Whether the export has finished and it's ready to be used."""
+        return self.result_data is not None and self.result_data.success
+
 
 class ObjectExportTaskResponse(ObjectExportResponseBase):
     task_uuid: UUID4 = Field(

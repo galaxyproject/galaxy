@@ -691,17 +691,36 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         archive_export_id = payload.archive_export_id if payload else None
         if archive_export_id:
             export_record = self.history_export_manager.get_task_export_by_id(archive_export_id)
-            if export_record.object_id != history_id or export_record.object_type != "history":
-                raise glx_exceptions.RequestParameterInvalidException(
-                    "The given archive export record does not belong to this history"
-                )
-            export_metadata = self.history_export_manager.get_record_metadata(export_record)
-            if not self.history_export_manager.is_export_metadata_ready(export_metadata):
-                raise glx_exceptions.RequestParameterInvalidException(
-                    "The given archive export record must be ready before it can be used to archive a history"
-                )
+            self._ensure_export_record_can_be_associated_with_history_archival(history_id, export_record)
         history = self.manager.archive_history(history, archive_export_id=archive_export_id)
         return self._serialize_archived_history(trans, history, serialization_params)
+
+    def _ensure_export_record_can_be_associated_with_history_archival(
+        self, history_id: int, export_record: model.StoreExportAssociation
+    ):
+        if export_record.object_id != history_id or export_record.object_type != "history":
+            raise glx_exceptions.RequestParameterInvalidException(
+                "The given archive export record does not belong to this history."
+            )
+        export_metadata = self.history_export_manager.get_record_metadata(export_record)
+        if export_metadata is None:
+            log.error(
+                f"Trying to archive history [{history_id}] with an export record. "
+                f"But the given archive export record [{export_record.id}] does not have the required metadata."
+            )
+            raise glx_exceptions.RequestParameterInvalidException(
+                "The given archive export record does not have the required metadata."
+            )
+        if not export_metadata.is_ready():
+            raise glx_exceptions.RequestParameterInvalidException(
+                "The given archive export record must be ready before it can be used to archive a history. "
+                "Please wait for the export to finish and try again."
+            )
+        if export_metadata.is_short_term():
+            raise glx_exceptions.RequestParameterInvalidException(
+                "The given archive export record is temporal, only persistent sources can be used to archive a history."
+            )
+        # TODO: should we also ensure the export was requested to include files with `include_files`, `include_hidden`, etc.?
 
     def restore_archived_history(
         self,
