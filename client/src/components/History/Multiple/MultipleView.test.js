@@ -9,8 +9,6 @@ import MockUserHistories from "components/providers/MockUserHistories";
 import { useUserStore } from "stores/userStore";
 import { useHistoryStore } from "stores/historyStore";
 
-jest.mock("@/composables/filter");
-
 const COUNT = 8;
 const USER_ID = "test-user-id";
 const CURRENT_HISTORY_ID = "test-history-id-0";

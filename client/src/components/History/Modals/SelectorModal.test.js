@@ -6,8 +6,6 @@ import { getLocalVue } from "tests/jest/helpers";
 import { useHistoryStore } from "stores/historyStore";
 import { BListGroupItem } from "bootstrap-vue";
 
-jest.mock("@/composables/filter");
-
 const localVue = getLocalVue();
 
 const CURRENT_HISTORY_ID = "COOL_ID";
