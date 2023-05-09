@@ -1480,6 +1480,27 @@ class BaseDatasetPopulator(BasePopulator):
         api_asserts.assert_status_code_is_ok(response)
         return response.json()
 
+    def wait_for_export_task_on_record(self, export_record):
+        if export_record["preparing"]:
+            assert export_record["task_uuid"]
+            self.wait_on_task_id(export_record["task_uuid"])
+
+    def archive_history(self, history_id: str, export_record_id: Optional[str] = None) -> Response:
+        payload = {"archive_export_id": export_record_id} if export_record_id else None
+        archive_response = self._post(f"histories/{history_id}/archive", data=payload, json=True)
+        return archive_response
+
+    def restore_archived_history(self, history_id: str) -> Response:
+        restore_response = self._put(f"histories/{history_id}/archive/restore")
+        return restore_response
+
+    def get_archived_histories(self, query: Optional[str] = None) -> List[Dict[str, Any]]:
+        if query:
+            query = f"?{query}"
+        index_response = self._get(f"histories/archived{query if query else ''}")
+        index_response.raise_for_status()
+        return index_response.json()
+
 
 class GalaxyInteractorHttpMixin:
     galaxy_interactor: ApiTestInteractor

@@ -1,8 +1,5 @@
 import time
-from typing import (
-    ClassVar,
-    Optional,
-)
+from typing import ClassVar
 from unittest import SkipTest
 from uuid import uuid4
 
@@ -821,7 +818,7 @@ class TestArchivingHistoriesWithoutExportRecord(ApiTestCase, BaseHistories):
         history_details = self._show(history_id)
         assert history_details["archived"] is False
 
-        archive_response = self._archive(history_id)
+        archive_response = self.dataset_populator.archive_history(history_id)
         self._assert_status_code_is(archive_response, 200)
         assert archive_response.json()["archived"] is True
 
@@ -832,40 +829,40 @@ class TestArchivingHistoriesWithoutExportRecord(ApiTestCase, BaseHistories):
         history_id = self.dataset_populator.new_history()
 
         with self._different_user():
-            archive_response = self._archive(history_id)
+            archive_response = self.dataset_populator.archive_history(history_id)
             self._assert_status_code_is(archive_response, 403)
 
     def test_restore(self):
         history_id = self.dataset_populator.new_history()
 
-        archive_response = self._archive(history_id)
+        archive_response = self.dataset_populator.archive_history(history_id)
         self._assert_status_code_is(archive_response, 200)
         assert archive_response.json()["archived"] is True
 
-        restore_response = self._restore(history_id)
+        restore_response = self.dataset_populator.restore_archived_history(history_id)
         self._assert_status_code_is(restore_response, 200)
         assert restore_response.json()["archived"] is False
 
     def test_other_users_cannot_restore_history(self):
         history_id = self.dataset_populator.new_history()
 
-        archive_response = self._archive(history_id)
+        archive_response = self.dataset_populator.archive_history(history_id)
         self._assert_status_code_is(archive_response, 200)
         assert archive_response.json()["archived"] is True
 
         with self._different_user():
-            restore_response = self._restore(history_id)
+            restore_response = self.dataset_populator.restore_archived_history(history_id)
             self._assert_status_code_is(restore_response, 403)
 
     def test_archived_histories_index(self):
         with self._different_user("archived_histories_index_user@bx.psu.edu"):
             history_id = self.dataset_populator.new_history()
 
-            archive_response = self._archive(history_id)
+            archive_response = self.dataset_populator.archive_history(history_id)
             self._assert_status_code_is(archive_response, 200)
             assert archive_response.json()["archived"] is True
 
-            archived_histories = self._get_archived_histories()
+            archived_histories = self.dataset_populator.get_archived_histories()
             assert len(archived_histories) == 1
             assert archived_histories[0]["id"] == history_id
 
@@ -875,40 +872,25 @@ class TestArchivingHistoriesWithoutExportRecord(ApiTestCase, BaseHistories):
             history_ids = []
             for i in range(num_histories):
                 history_id = self.dataset_populator.new_history(name=f"History {i}")
-                archive_response = self._archive(history_id)
+                archive_response = self.dataset_populator.archive_history(history_id)
                 self._assert_status_code_is(archive_response, 200)
                 assert archive_response.json()["archived"] is True
                 history_ids.append(history_id)
 
             # Filter by name
-            archived_histories = self._get_archived_histories(query="q=name-contains&qv=history")
+            archived_histories = self.dataset_populator.get_archived_histories(query="q=name-contains&qv=history")
             assert len(archived_histories) == num_histories
 
-            archived_histories = self._get_archived_histories(query="q=name-contains&qv=History 1")
+            archived_histories = self.dataset_populator.get_archived_histories(query="q=name-contains&qv=History 1")
             assert len(archived_histories) == 1
 
             # Order by name
-            archived_histories = self._get_archived_histories(query="order=name-dsc")
+            archived_histories = self.dataset_populator.get_archived_histories(query="order=name-dsc")
             assert len(archived_histories) == num_histories
             assert archived_histories[0]["name"] == "History 1"
             assert archived_histories[1]["name"] == "History 0"
 
-            archived_histories = self._get_archived_histories(query="order=name-asc")
+            archived_histories = self.dataset_populator.get_archived_histories(query="order=name-asc")
             assert len(archived_histories) == num_histories
             assert archived_histories[0]["name"] == "History 0"
             assert archived_histories[1]["name"] == "History 1"
-
-    def _archive(self, history_id: str):
-        archive_response = self._post(f"histories/{history_id}/archive")
-        return archive_response
-
-    def _restore(self, history_id: str):
-        restore_response = self._put(f"histories/{history_id}/archive/restore")
-        return restore_response
-
-    def _get_archived_histories(self, query: Optional[str] = None):
-        if query:
-            query = f"?{query}"
-        index_response = self._get(f"histories/archived{query if query else ''}")
-        self._assert_status_code_is(index_response, 200)
-        return index_response.json()
