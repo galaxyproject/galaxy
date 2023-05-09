@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { storeToRefs } from "pinia";
 import {
     BModal,
     BFormGroup,
@@ -31,7 +32,6 @@ const props = defineProps({
     title: { type: String, default: "Switch to history" },
     histories: { type: Array as PropType<HistorySummary[]>, default: () => [] },
     perPage: { type: Number, default: 8 },
-    currentHistoryId: { type: String, required: true },
     additionalOptions: { type: Array as PropType<AdditionalOptions[]>, default: () => [] },
 });
 
@@ -49,7 +49,7 @@ const modal: Ref<BModal | null> = ref(null);
 
 // reactive proxy for props.histories, as the prop is not
 // always guaranteed to be reactive for some strange reason.
-// TODO: Reinvestigate when upgrading to vue3
+// TODO: Re investigate when upgrading to vue3
 const histories: Ref<HistorySummary[]> = ref([]);
 watch(
     () => props.histories,
@@ -105,6 +105,7 @@ function selectHistories() {
 
 const router = useRouter();
 const historyStore = useHistoryStore();
+const { currentHistoryId } = storeToRefs(useHistoryStore());
 
 function setCurrentHistory(history: HistorySummary) {
     historyStore.setCurrentHistory(history.id);
@@ -140,13 +141,13 @@ function openInMulti(history: HistorySummary) {
                     :key="history.id"
                     :data-pk="history.id"
                     button
-                    :class="{ current: history.id === props.currentHistoryId }"
+                    :class="{ current: history.id === currentHistoryId }"
                     :active="selectedHistories.includes(history)"
                     @click="() => historyClicked(history)">
                     <div class="d-flex justify-content-between align-items-center">
                         <Heading h3 inline bold size="text">
                             {{ history.name }}
-                            <i v-if="history.id === props.currentHistoryId">(Current)</i>
+                            <i v-if="history.id === currentHistoryId">(Current)</i>
                         </Heading>
 
                         <div class="d-flex align-items-center flex-gapx-1">
