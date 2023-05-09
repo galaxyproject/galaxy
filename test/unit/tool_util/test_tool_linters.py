@@ -1505,10 +1505,10 @@ def test_outputs_duplicated_name_label(lint_ctx):
     )
     assert len(lint_ctx.info_messages) == 2
     assert not lint_ctx.valid_messages
-    assert not lint_ctx.warn_messages
+    assert len(lint_ctx.warn_messages) == 1
+    assert "Tool output [valid_name] uses duplicated label '${tool.name} on ${on_string}'" in lint_ctx.warn_messages
     assert "Tool output [valid_name] has duplicated name" in lint_ctx.error_messages
-    assert "Tool output [valid_name] uses duplicated label '${tool.name} on ${on_string}'" in lint_ctx.error_messages
-    assert len(lint_ctx.error_messages) == 2
+    assert len(lint_ctx.error_messages) == 1
 
 
 def test_stdio_default_for_default_profile(lint_ctx):
