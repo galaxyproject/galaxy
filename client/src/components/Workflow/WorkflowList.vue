@@ -1,5 +1,8 @@
 <template>
-    <div>
+    <div class="workflows-list" aria-labelledby="workflows-title">
+        <h1 id="workflows-title" class="mb-3 h-lg">
+            {{ title }}
+        </h1>
         <b-alert class="index-grid-message" :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
         <b-alert class="index-grid-message" dismissible :variant="importStatus" :show="Boolean(importMessage)">
             {{ importMessage }}
@@ -208,6 +211,9 @@ export default {
                 extraParams.show_shared = false;
             }
             return extraParams;
+        },
+        title() {
+            return this.published ? `Published Workflows` : `Workflows`;
         },
     },
     watch: {
