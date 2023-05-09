@@ -1,13 +1,6 @@
 import { onScopeDispose, ref, watch } from "vue";
 import { resolveUnref } from "@vueuse/core";
 
-/**
- * Reactively filter an array of objects, by comparing `filter` to all `fields`.
- * All parameters can optionally be refs.
- * @param array array of objects to filter
- * @param filter string to filter by
- * @param objectFields string array of fields to filter by on each object
- */
 export function useFilterObjectArray(array, filter, objectFields) {
     const worker = new Worker(new URL("./filter.worker.js", import.meta.url));
 
