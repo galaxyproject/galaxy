@@ -99,7 +99,7 @@
                     <b-dropdown-item
                         :disabled="isAnonymous"
                         data-description="archive history"
-                        :title="l('Archive this History')"
+                        :title="userTitle('Archive this History')"
                         @click="$router.push(`/histories/${history.id}/archive`)">
                         <Icon fixed-width icon="archive" class="mr-1" />
                         <span v-localize>Archive History</span>
