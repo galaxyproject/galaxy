@@ -688,6 +688,9 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             raise glx_exceptions.AuthenticationRequired("Only registered users can archive histories.")
 
         history = self.manager.get_owned(history_id, trans.user)
+        if history.archived:
+            raise glx_exceptions.Conflict("History is already archived.")
+
         archive_export_id = payload.archive_export_id if payload else None
         if archive_export_id:
             export_record = self.history_export_manager.get_task_export_by_id(archive_export_id)
