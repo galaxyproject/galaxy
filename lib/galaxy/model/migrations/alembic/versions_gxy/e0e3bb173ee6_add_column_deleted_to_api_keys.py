@@ -5,15 +5,16 @@ Revises: 186d4835587b
 Create Date: 2022-09-27 14:09:05.890227
 
 """
-from alembic import op
 from sqlalchemy import (
     Boolean,
     Column,
 )
 
 from galaxy.model.migrations.util import (
-    column_exists,
+    add_column,
     drop_column,
+    drop_index,
+    transaction,
 )
 
 # revision identifiers, used by Alembic.
@@ -29,9 +30,10 @@ column_name = "deleted"
 
 
 def upgrade():
-    if not column_exists(table_name, column_name):
-        op.add_column(table_name, Column(column_name, Boolean(), default=False))
+    add_column(table_name, Column(column_name, Boolean(), default=False, index=True))
 
 
 def downgrade():
-    drop_column(table_name, column_name)
+    with transaction():
+        drop_index("ix_api_keys_deleted", table_name)
+        drop_column(table_name, column_name)

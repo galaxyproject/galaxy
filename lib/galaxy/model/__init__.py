@@ -56,7 +56,9 @@ from sqlalchemy import (
     BigInteger,
     bindparam,
     Boolean,
+    case,
     Column,
+    column,
     DateTime,
     desc,
     event,
@@ -126,13 +128,13 @@ from galaxy.model.item_attrs import (
 )
 from galaxy.model.orm.now import now
 from galaxy.model.orm.util import add_object_to_object_session
-from galaxy.model.view import HistoryDatasetCollectionJobStateSummary
 from galaxy.objectstore import ObjectStore
 from galaxy.security import get_permitted_actions
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.security.validate_user_input import validate_password_str
 from galaxy.util import (
     directory_hash_id,
+    enum_values,
     listify,
     ready_name_for_url,
     unicodify,
@@ -3510,7 +3512,7 @@ class DefaultQuotaAssociation(Base, Dictifiable, RepresentById):
     id = Column(Integer, primary_key=True)
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, default=now, onupdate=now)
-    type = Column(String(32), index=True)
+    type = Column(String(32))
     quota_id = Column(Integer, ForeignKey("quota.id"), index=True)
     quota = relationship("Quota", back_populates="default")
 
@@ -6438,15 +6440,6 @@ class HistoryDatasetCollectionAssociation(
         back_populates="history_dataset_collection_associations",
         uselist=False,
     )
-    job_state_summary = relationship(
-        HistoryDatasetCollectionJobStateSummary,
-        primaryjoin=(
-            lambda: HistoryDatasetCollectionAssociation.id
-            == HistoryDatasetCollectionJobStateSummary.__table__.c.hdca_id
-        ),
-        foreign_keys=HistoryDatasetCollectionJobStateSummary.__table__.c.hdca_id,
-        uselist=False,
-    )
     tags = relationship(
         "HistoryDatasetCollectionTagAssociation",
         order_by=lambda: HistoryDatasetCollectionTagAssociation.id,
@@ -6466,6 +6459,7 @@ class HistoryDatasetCollectionAssociation(
 
     dict_dbkeysandextensions_visible_keys = ["dbkeys", "extensions"]
     editable_keys = ("name", "deleted", "visible")
+    _job_state_summary = None
 
     def __init__(self, deleted=False, visible=True, **kwd):
         super().__init__(**kwd)
@@ -6501,12 +6495,74 @@ class HistoryDatasetCollectionAssociation(
             return None
 
     @property
+    def job_state_summary(self):
+        """
+        Aggregate counts of jobs by state, stored in a JobStateSummary object.
+        """
+        if not self._job_state_summary:
+            self._job_state_summary = self._get_job_state_summary()
+            # if summary exists, but there are no jobs, load zeroes for all other counts (otherwise they will be None)
+            if self._job_state_summary and self._job_state_summary.all_jobs == 0:
+                zeroes = [0] * (len(Job.states) + 1)
+                self._job_state_summary = JobStateSummary._make(zeroes)
+
+        return self._job_state_summary
+
+    def _get_job_state_summary(self):
+        def build_statement():
+            state_label = "state"  # used to generate `SELECT job.state AS state`, and then refer to it in aggregates.
+
+            # Select job states joining on icjja > icj > hdca
+            # (We are selecting Job.id in addition to Job.state because otherwise the UNION operation
+            #  will get rid of duplicates, making aggregates meaningless.)
+            subq1 = (
+                select(Job.id, Job.state.label(state_label))
+                .join(ImplicitCollectionJobsJobAssociation, ImplicitCollectionJobsJobAssociation.job_id == Job.id)
+                .join(
+                    ImplicitCollectionJobs,
+                    ImplicitCollectionJobs.id == ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id,
+                )
+                .join(
+                    HistoryDatasetCollectionAssociation,
+                    HistoryDatasetCollectionAssociation.implicit_collection_jobs_id == ImplicitCollectionJobs.id,
+                )
+                .where(HistoryDatasetCollectionAssociation.id == self.id)
+            )
+
+            # Select job states joining on hdca
+            subq2 = (
+                select(Job.id, Job.state.label(state_label))
+                .join(HistoryDatasetCollectionAssociation, HistoryDatasetCollectionAssociation.job_id == Job.id)
+                .where(HistoryDatasetCollectionAssociation.id == self.id)
+            )
+
+            # Combine subqueries
+            subq = subq1.union(subq2)
+
+            # Build and return final query
+            stm = select().select_from(subq)
+            # Add aggregate columns for each job state
+            for state in enum_values(Job.states):
+                col = func.sum(case((column(state_label) == state, 1), else_=0)).label(state)
+                stm = stm.add_columns(col)
+            # Add aggregate column for all jobs
+            col = func.count("*").label("all_jobs")
+            stm = stm.add_columns(col)
+            return stm
+
+        if not object_session(self):
+            return None  # no session means object is not persistant; therefore, it has no associated jobs.
+
+        engine = object_session(self).bind
+        with engine.connect() as conn:
+            counts = conn.execute(build_statement()).one()
+            assert len(counts) == len(Job.states) + 1  # Verify all job states + all jobs are counted
+            return JobStateSummary._make(counts)
+
+    @property
     def job_state_summary_dict(self):
         if self.job_state_summary:
-            states = self.job_state_summary.__dict__.copy()
-            del states["_sa_instance_state"]
-            del states["hdca_id"]
-            return states
+            return self.job_state_summary._asdict()
 
     @property
     def dataset_dbkeys_and_extensions_summary(self):
@@ -10084,7 +10140,7 @@ class APIKeys(Base, RepresentById):
     user_id = Column(Integer, ForeignKey("galaxy_user.id"), index=True)
     key = Column(TrimmedString(32), index=True, unique=True)
     user = relationship("User", back_populates="api_keys")
-    deleted = Column(Boolean, index=True, default=False)
+    deleted = Column(Boolean, index=True, server_default=false(), nullable=False)
 
 
 def copy_list(lst, *args, **kwds):
@@ -10555,3 +10611,6 @@ def receive_init(target, args, kwargs):
         if obj:
             add_object_to_object_session(target, obj)
             return  # Once is enough.
+
+
+JobStateSummary = NamedTuple("JobStateSummary", [(value, int) for value in enum_values(Job.states)] + [("all_jobs", int)])  # type: ignore[misc]  # Ref https://github.com/python/mypy/issues/848#issuecomment-255237167

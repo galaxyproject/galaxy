@@ -117,6 +117,7 @@ function open(tab, event) {
                 :href="withPrefix(item.url)"
                 :target="item.target || '_parent'"
                 role="menuitem"
+                title=""
                 :active="item.disabled"
                 :disabled="item.disabled"
                 @click="open(item, $event)">

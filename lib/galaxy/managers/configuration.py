@@ -124,6 +124,7 @@ class ConfigSerializer(base.ModelSerializer):
             "wiki_url": _use_config,
             "screencasts_url": _use_config,
             "citation_url": _use_config,
+            "citations_export_message_html": _use_config,
             "support_url": _use_config,
             "quota_url": _use_config,
             "helpsite_url": _use_config,
@@ -203,6 +204,9 @@ class ConfigSerializer(base.ModelSerializer):
             "user_library_import_dir_available": lambda item, key, **context: bool(item.get("user_library_import_dir")),
             "welcome_directory": _use_config,
             "themes": _use_config,
+            "tool_training_recommendations": _use_config,
+            "tool_training_recommendations_link": _use_config,
+            "tool_training_recommendations_api_url": _use_config,
         }
 
 

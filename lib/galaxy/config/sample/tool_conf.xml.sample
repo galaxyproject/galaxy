@@ -120,8 +120,6 @@
     <tool file="maf/vcf_to_maf_customtrack.xml" />
   </section>
   <section id="hgv" name="Phenotype Association">
-    <tool file="evolution/codingSnps.xml" />
-    <tool file="evolution/add_scores.xml" />
     <tool file="phenotype_association/sift.xml" />
     <tool file="phenotype_association/linkToGProfile.xml" />
     <tool file="phenotype_association/linkToDavid.xml" />
@@ -130,7 +128,6 @@
   </section>
   <!--
   <section id="interactivetools" name="Interactive tools">
-    <tool file="interactive/codingSnps.xml" />
     <tool file="interactive/interactivetool_askomics.xml" />
     <tool file="interactive/interactivetool_bam_iobio.xml" />
     <tool file="interactive/interactivetool_cellxgene.xml" />

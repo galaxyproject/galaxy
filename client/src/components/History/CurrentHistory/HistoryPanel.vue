@@ -31,7 +31,8 @@
                     v-if="showControls"
                     class="content-operations-filters mx-3"
                     :filter-text.sync="filterText"
-                    :show-advanced.sync="showAdvanced" />
+                    :show-advanced.sync="showAdvanced"
+                    :search-error="formattedSearchError" />
                 <section v-if="!showAdvanced">
                     <HistoryDetails
                         :history="history"
@@ -93,6 +94,12 @@
                         </b-alert>
                         <div v-else-if="itemsLoaded.length === 0">
                             <HistoryEmpty v-if="queryDefault" class="m-2" />
+                            <b-alert v-else-if="formattedSearchError" class="m-2" variant="danger" show>
+                                Error in filter:
+                                <a href="javascript:void(0)" @click="showAdvanced = true">
+                                    {{ formattedSearchError.filter }}'{{ formattedSearchError.value }}'
+                                </a>
+                            </b-alert>
                             <b-alert v-else class="m-2" variant="info" show>
                                 No data found for selected filter.
                             </b-alert>
@@ -192,11 +199,11 @@ export default {
     },
     data() {
         return {
-            error: null,
             filterText: "",
             invisible: {},
             loading: false,
             offset: 0,
+            searchError: null,
             showAdvanced: false,
             showDropZone: false,
             operationRunning: null,
@@ -248,6 +255,23 @@ export default {
         isWatching() {
             const { getWatchingVisibility } = storeToRefs(useHistoryItemsStore());
             return getWatchingVisibility.value;
+        },
+        /** @returns {Object} */
+        formattedSearchError() {
+            if (this.searchError) {
+                const { column, col, operation, op, value, val, err_msg, ValueError } = this.searchError;
+                const alias = operation || op;
+                const operator = alias ? getOperatorForAlias(alias) : ":";
+                const formatted = {
+                    filter: `${column || col}${operator}`,
+                    value: value || val,
+                    msg: err_msg,
+                    typeError: ValueError,
+                };
+                return formatted;
+            } else {
+                return null;
+            }
         },
         /** @returns {String} */
         storeFilterText() {
@@ -324,11 +348,15 @@ export default {
             this.loading = true;
             try {
                 await this.fetchHistoryItems(this.historyId, this.filterText, this.offset);
-                this.error = null;
+                this.searchError = null;
                 this.loading = false;
             } catch (error) {
-                console.debug("HistoryPanel - Load error.", error);
-                this.error = error;
+                if (error.response && error.response.data && error.response.data.err_msg) {
+                    console.debug("HistoryPanel - Load items error:", error.response.data.err_msg);
+                    this.searchError = error.response.data;
+                } else {
+                    console.debug("HistoryPanel - Load items error.", error);
+                }
                 this.loading = false;
             }
         },

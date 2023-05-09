@@ -504,7 +504,7 @@ class UsesHistoryItemAssertions(NavigatesGalaxyMixin):
     def assert_item_peek_includes(self, hid, expected):
         item_body = self.history_panel_item_component(hid=hid)
         peek_text = item_body.peek.wait_for_text()
-        assert expected in peek_text
+        assert expected in peek_text, f"Expected peek [{expected}] not found in peek [{peek_text}]"
 
     def assert_item_info_includes(self, hid, expected):
         item_body = self.history_panel_item_component(hid=hid)

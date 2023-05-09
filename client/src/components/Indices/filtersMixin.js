@@ -4,14 +4,39 @@ export default {
     components: {
         IndexFilter,
     },
+    props: {
+        inputDebounceDelay: {
+            type: Number,
+            default: 500,
+        },
+    },
     data() {
         return {
             filter: "",
+            implicitFilter: null,
+            helpHtml: null,
         };
     },
     computed: {
         isFiltered() {
-            return !!this.filter;
+            return Boolean(this.filter);
+        },
+        effectiveFilter() {
+            let filter = this.filter;
+            const implicitFilter = this.implicitFilter;
+            if (implicitFilter && filter) {
+                filter = `${implicitFilter} ${filter}`;
+            } else if (implicitFilter) {
+                filter = implicitFilter;
+            }
+            return filter;
+        },
+        filterAttrs() {
+            return {
+                "debounce-delay": this.inputDebounceDelay,
+                placeholder: this.titleSearch,
+                "help-html": this.helpHtml,
+            };
         },
     },
     methods: {

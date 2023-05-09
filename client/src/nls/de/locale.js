@@ -24,7 +24,7 @@ define({
     Login: "Anmeldung",
     Register: "Neu registrieren",
     "Login or Register": "Einloggen oder Registrieren",
-    "Logged in as": "Angemeldet als",
+    "Signed in as": "Angemeldet als",
     Preferences: "Präferenzen",
     "Custom Builds": "Custom Builds",
     Logout: "Ausloggen",

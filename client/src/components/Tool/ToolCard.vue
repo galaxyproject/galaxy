@@ -11,6 +11,7 @@ import Heading from "components/Common/Heading";
 import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore";
 import ToolTargetPreferredObjectStorePopover from "./ToolTargetPreferredObjectStorePopover";
 import { getAppRoot } from "onload/loadConfig";
+import ToolTutorialRecommendations from "./ToolTutorialRecommendations.vue";
 
 import { computed, ref, watch } from "vue";
 
@@ -166,10 +167,16 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
         <slot name="buttons" />
 
         <div>
-            <div class="mt-2 mb-4">
+            <div v-if="props.options.help" class="mt-2 mb-4">
                 <Heading h2 separator bold size="sm"> Help </Heading>
                 <ToolHelp :content="props.options.help" />
             </div>
+
+            <ToolTutorialRecommendations
+                :id="props.options.id"
+                :name="props.options.name"
+                :version="props.options.version"
+                :owner="props.options.tool_shed_repository?.owner" />
 
             <ToolFooter
                 :id="props.id"

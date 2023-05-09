@@ -16,9 +16,7 @@
                 </b-nav>
             </template>
             <div v-if="source === 'histories'" class="infomessage">
-                When writing up your analysis, remember to include all references that should be cited in order to
-                completely describe your work. Also, please remember to
-                <a href="https://galaxyproject.org/citing-galaxy">cite Galaxy</a>.
+                <div v-html="config.citations_export_message_html"></div>
             </div>
             <div class="citations-formatted">
                 <Citation
@@ -55,6 +53,7 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { getCitations } from "./services";
 import Citation from "./Citation";
+import { useConfig } from "@/composables/config";
 
 Vue.use(BootstrapVue);
 
@@ -82,6 +81,10 @@ export default {
             required: false,
             default: false,
         },
+    },
+    setup() {
+        const { config } = useConfig(true);
+        return { config };
     },
     data() {
         return {

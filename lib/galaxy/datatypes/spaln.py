@@ -71,8 +71,9 @@ class _SpalnDb(Data):
             opt_text = ""
             if composite_file.get("description"):
                 rval.append(
-                    '<li><a href="%s" type="application/binary">%s (%s)</a>%s</li>'
-                    % (fn, fn, composite_file.get("description"), opt_text)
+                    '<li><a href="{}" type="application/binary">{} ({})</a>{}</li>'.format(
+                        fn, fn, composite_file.get("description"), opt_text
+                    )
                 )
             else:
                 rval.append(f'<li><a href="{fn}" type="application/binary">{fn}</a>{opt_text}</li>')
@@ -86,8 +87,7 @@ class _SpalnDb(Data):
         efp = dataset.extra_files_path
         flist = os.listdir(efp)
         rval = [
-            "<html><head><title>Files for Composite Dataset %s</title></head><body><p/>Composite %s contains:<p/><ul>"
-            % (dataset.name, dataset.name)
+            f"<html><head><title>Files for Composite Dataset {dataset.name}</title></head><body><p/>Composite {dataset.name} contains:<p/><ul>"
         ]
         for fname in flist:
             sfname = os.path.split(fname)[-1]

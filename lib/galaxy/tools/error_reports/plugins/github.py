@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 
 class GithubPlugin(BaseGitPlugin):
-    """Send error report to Github."""
+    """Send error report to GitHub."""
 
     plugin_type = "github"
 
@@ -23,7 +23,7 @@ class GithubPlugin(BaseGitPlugin):
         self.verbose = string_as_bool(kwargs.get("verbose", False))
         self.user_submission = string_as_bool(kwargs.get("user_submission", False))
 
-        # Github settings
+        # GitHub settings
         self.github_base_url = kwargs.get("github_base_url", "https://github.com")
         self.github_api_url = kwargs.get("github_api_url", "https://api.github.com")
         self.git_default_repo_owner = kwargs.get("github_default_repo_owner", False)
@@ -46,7 +46,7 @@ class GithubPlugin(BaseGitPlugin):
             self.label_cache["default"] = {}
             self._fill_label_cache(repo, "default")
         except ImportError:
-            log.error("Please install pygithub to submit bug reports to github")
+            log.error("Please install pygithub to submit bug reports to GitHub")
             self.github = None
 
     def submit_report(self, dataset, job, tool, **kwargs):
@@ -99,9 +99,8 @@ class GithubPlugin(BaseGitPlugin):
             else:
                 self._append_issue(issue_cache_key, error_title, error_message)
             return (
-                'Submitted error report to Github. Your issue number is <a href="%s/%s/issues/%s" '
-                'target="_blank">#%s</a>.'
-                % (
+                'Submitted error report to GitHub. Your issue number is <a href="{}/{}/issues/{}" '
+                'target="_blank">#{}</a>.'.format(
                     self.github_base_url,
                     github_projecturl,
                     self.issue_cache[issue_cache_key][error_title].number,

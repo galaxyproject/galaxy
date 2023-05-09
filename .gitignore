@@ -77,6 +77,7 @@ workflow_schedulers_conf.xml
 config/*
 config/plugins/interactive_environments/**/*.ini
 config/plugins/**/.cache
+config/plugins/**/.parcel-cache
 !config/plugins
 static/welcome.html.*
 static/welcome.html
@@ -179,6 +180,7 @@ config/plugins/**/static/*.map
 # viz-specific build artifacts to ignore (until these are removed from codebase)
 config/plugins/visualizations/annotate_image/static/jquery.contextMenu.css
 config/plugins/visualizations/nvd3/nvd3_bar/static/nvd3.js
+config/plugins/visualizations/h5web/static/script.css
 
 # CWL conformance tests
 lib/galaxy_test/api/cwl/test_cwl_conformance_v1_?.py

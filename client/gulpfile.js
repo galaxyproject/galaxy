@@ -17,6 +17,7 @@ const STATIC_PLUGIN_BUILD_IDS = [
     "drawrna",
     "editor",
     "example",
+    "h5web",
     "heatmap/heatmap_default",
     "hyphyvision",
     "jqplot/jqplot_bar",
@@ -156,7 +157,11 @@ function buildPlugins(callback, forceRebuild) {
                     };
                     // if node version is >16, set NODE_OPTIONS to use legacy openssl provider
                     if (process.versions.node.split(".")[0] > "16") {
-                        opts.env = { ...process.env, NODE_OPTIONS: "--openssl-legacy-provider" };
+                        opts.env = {
+                            ...process.env,
+                            PARCEL_WORKER_BACKEND: "process",
+                            NODE_OPTIONS: "--openssl-legacy-provider",
+                        };
                     }
                     if (child_process.spawnSync("yarn", ["build"], opts).status === 0) {
                         console.log(`Successfully built, saving build state to ${hashFilePath}`);

@@ -9,7 +9,7 @@ from typing import (
     Optional,
 )
 
-import packaging.version
+from packaging.version import Version
 
 from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.parser.util import (
@@ -525,7 +525,7 @@ class XmlToolSource(ToolSource):
 
     def parse_strict_shell(self):
         command_el = self._command_el
-        if packaging.version.parse(self.parse_profile()) < packaging.version.parse("20.09"):
+        if Version(self.parse_profile()) < Version("20.09"):
             default = "False"
         else:
             default = "True"
@@ -558,7 +558,7 @@ class XmlToolSource(ToolSource):
 
         return rval
 
-    def parse_profile(self):
+    def parse_profile(self) -> str:
         # Pre-16.04 or default XML defaults
         # - Use standard error for error detection.
         # - Don't run shells with -e
@@ -573,7 +573,7 @@ class XmlToolSource(ToolSource):
     def parse_python_template_version(self):
         python_template_version = self.root.get("python_template_version")
         if python_template_version is not None:
-            python_template_version = packaging.version.Version(python_template_version)
+            python_template_version = Version(python_template_version)
         return python_template_version
 
     def parse_creator(self):

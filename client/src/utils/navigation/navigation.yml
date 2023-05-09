@@ -43,7 +43,7 @@ masthead:
 
     username:
       type: xpath
-      selector: '//a[contains(text(), "Logged in as")]'
+      selector: '//a[contains(text(), "Signed in as")]'
 
     logged_in_only: '.loggedin-only'
     logged_out_only: '.loggedout-only'
@@ -59,8 +59,7 @@ masthead:
     admin: 'Admin'
 
     # user menu
-    logout: 'Logout'
-    custom_builds: 'Custom Builds'
+    logout: 'Sign Out'
     preferences: 'Preferences'
     histories: 'Histories'
     invocations: 'Workflow Invocations'
@@ -69,7 +68,9 @@ masthead:
 
     # Shared data
     libraries: 'Data Libraries'
+    published_workflows: 'Workflows'
     published_histories: 'Histories'
+    published_pages: 'Pages'
 
 preferences:
   selectors:
@@ -78,6 +79,7 @@ preferences:
     manage_information: '#edit-preferences-information'
     toolbox_filters: '#edit-preferences-toolbox-filters'
     manage_api_key: '#edit-preferences-api-key'
+    custom_builds: '#edit-preferences-custom-builds'
     current_email: "#user-preferences-current-email"
     get_new_key: '.create-button'
     api_key_input: '[data-test-id="api-key-input"]'
@@ -480,6 +482,10 @@ pages:
     create: '.manage-table-actions .action-button'
     submit: '#submit'
     export: '.markdown-pdf-export'
+    dropdown: '[data-page-dropdown*="${id}"]'
+    index_table: "#page-table"
+    index_rows: "#page-table > tbody > tr:not(.b-table-empty-row, [style*='display: none'])"
+
   editor:
     selectors:
       save: '#save-button'
@@ -519,6 +525,10 @@ tool_form:
     reference: '.formatted-reference'
     about: '.tool-footer'
     storage_options: '.tool-storage'
+    drilldown_select_all: 'div.ui-form-element[id="form-element-${parameter}"] div.select-all-checkbox'
+    drilldown_option: '.drilldown-option'
+    drilldown_expand: '.fa-plus-square'
+
 
   labels:
     generate_tour: 'Generate Tour'
@@ -540,6 +550,7 @@ workflows:
     pager_page_last: '.gx-workflows-grid-pager .gx-grid-pager-last button'
     pager_page_previous: '.gx-workflows-grid-pager .gx-grid-pager-prev button'
     pager_page_active: '.gx-workflows-grid-pager .gx-grid-pager-page.active button'
+    dropdown: '[data-workflow-dropdown*="${id}"]'
     run_button: '[data-workflow-run*="${id}"]'
     bookmark_link: '.workflow-bookmark-link'
     workflow_with_name:
@@ -779,6 +790,16 @@ admin:
         type: xpath
         selector: "//label[@for='prevent-job-dispatching']/strong"
       cutoff: '#cutoff'
+      table: '.jobs-table'
+      filter_link_user: '.job-filter-link-user'
+      filter_link_tool: '.job-filter-link-tool-id'
+      filter_link_handler: '.job-filter-link-handler'
+      filter_link_runner: '.job-filter-link-runner'
+      filter_link_by_user: '.job-filter-link-user[data-user="${user}"]'
+      filter_link_by_tool: '.job-filter-link-tool-id[data-tool-id="${tool_id}"]'
+      filter_link_by_handler: '.job-filter-link-handler[data-handler="${handler}"]'
+      filter_link_by_runner: '.job-filter-link-runner[data-runner="${runner}"]'
+      filter_query: '.index-filter-query'
 
   toolshed:
     selectors:

@@ -3705,3 +3705,43 @@ mapping:
         desc: |
           Enables user preferences and api endpoint for the beacon integration.
 
+      tool_training_recommendations:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Displays a link to training material, if any includes the current tool.
+          When activated the following options also need to be set:
+            tool_training_recommendations_link,
+            tool_training_recommendations_api_url
+
+      tool_training_recommendations_link:
+        type: str
+        default: https://training.galaxyproject.org/training-material/by-tool/{training_tool_identifier}.html
+        required: false
+        desc: |
+          Template URL to display all tutorials containing current tool.
+          Valid template inputs are:
+            {repository_owner}
+            {name}
+            {tool_id}
+            {training_tool_identifier}
+            {version}
+
+      tool_training_recommendations_api_url:
+        type: str
+        default: https://training.galaxyproject.org/training-material/api/top-tools.json
+        required: false
+        desc: |
+          URL to API describing tutorials containing specific tools.
+          When CORS is used, make sure to add this host.
+
+      citations_export_message_html:
+        type: str
+        default: >-
+          When writing up your analysis, remember to include all references that should be cited in order to
+          completely describe your work. Also, please remember to
+          <a href="https://galaxyproject.org/citing-galaxy">cite Galaxy</a>.
+        required: false
+        desc: |
+          Message to display on the export citations tool page

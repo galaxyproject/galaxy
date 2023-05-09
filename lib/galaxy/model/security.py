@@ -1342,8 +1342,7 @@ class GalaxyRBACAgent(RBACAgent):
                     break
             else:
                 raise Exception(
-                    "Invalid class (%s) specified for target_library_item (%s)"
-                    % (target_library_item.__class__, target_library_item.__class__.__name__)
+                    f"Invalid class ({target_library_item.__class__}) specified for target_library_item ({target_library_item.__class__.__name__})"
                 )
             # Make sure user's private role is included
             private_role = self.model.security_agent.get_private_user_role(user)

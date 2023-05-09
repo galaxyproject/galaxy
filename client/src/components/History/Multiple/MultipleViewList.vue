@@ -3,21 +3,17 @@ import { computed, ref, type Ref } from "vue";
 //@ts-ignore missing typedefs
 import VirtualList from "vue-virtual-scroll-list";
 import MultipleViewItem from "./MultipleViewItem.vue";
-import { useHistoryStore } from "@/stores/historyStore";
+import { useHistoryStore, type HistorySummary } from "@/stores/historyStore";
 import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
 import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
 
 const historyStore = useHistoryStore();
 
-interface History {
-    id: string;
-}
-
 const props = withDefaults(
     defineProps<{
-        histories: History[];
-        currentHistory: History;
+        histories: HistorySummary[];
+        currentHistory: HistorySummary;
         // todo: stricter typedef for handlers, when MultipleViewItem is refactored
         handlers: { [handler: string]: Function };
         filter?: string;
@@ -38,9 +34,9 @@ useAnimationFrameResizeObserver(scrollContainer, ({ clientSize, scrollSize }) =>
 const scrolledLeft = computed(() => !isScrollable.value || arrived.left);
 const scrolledRight = computed(() => !isScrollable.value || arrived.right);
 
-const selectedHistories: Ref<History[]> = computed(() => historyStore.pinnedHistories);
+const selectedHistories = computed(() => historyStore.pinnedHistories);
 
-function removeHistoryFromList(history: History) {
+function removeHistoryFromList(history: HistorySummary) {
     historyStore.unpinHistory(history.id);
 }
 
@@ -48,7 +44,7 @@ if (!selectedHistories.value.length ?? props.histories.length > 0) {
     historyStore.pinHistory(props.histories[0]!.id);
 }
 
-function addHistoriesToList(histories: History[]) {
+function addHistoriesToList(histories: HistorySummary[]) {
     histories.forEach((history) => {
         const historyExists = selectedHistories.value.find((h) => h.id === history.id);
         if (!historyExists) {
@@ -86,6 +82,7 @@ function addHistoriesToList(histories: History[]) {
                 :multiple="true"
                 :histories="histories"
                 :current-history-id="currentHistory.id"
+                :additional-options="['center', 'set-current']"
                 title="Select histories"
                 @selectHistories="addHistoriesToList" />
         </div>

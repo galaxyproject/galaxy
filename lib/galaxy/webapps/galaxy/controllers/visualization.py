@@ -476,8 +476,9 @@ class VisualizationController(
 
             # Redirect to load galaxy frames.
             return trans.show_ok_message(
-                message="""Visualization "%s" has been imported. <br>You can <a href="%s">start using this visualization</a> or %s."""
-                % (visualization.title, web.url_for("/visualizations/list"), referer_message),
+                message="""Visualization "{}" has been imported. <br>You can <a href="{}">start using this visualization</a> or {}.""".format(
+                    visualization.title, web.url_for("/visualizations/list"), referer_message
+                ),
                 use_panels=True,
             )
 

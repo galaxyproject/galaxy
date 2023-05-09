@@ -25,10 +25,10 @@ from typing import (
 )
 from urllib.parse import unquote_plus
 
-import packaging.version
 import webob.exc
 from lxml import etree
 from mako.template import Template
+from packaging.version import Version
 
 from galaxy import (
     exceptions,
@@ -79,6 +79,10 @@ from galaxy.tool_util.toolbox import (
 )
 from galaxy.tool_util.toolbox.views.sources import StaticToolBoxViewSources
 from galaxy.tool_util.verify.test_data import TestDataNotFoundError
+from galaxy.tool_util.version import (
+    LegacyVersion,
+    parse_version,
+)
 from galaxy.tools import expressions
 from galaxy.tools.actions import (
     DefaultToolAction,
@@ -223,28 +227,28 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
 # Tools that needed galaxy on the PATH in the past but no longer do along
 # with the version at which they were fixed.
 GALAXY_LIB_TOOLS_VERSIONED = {
-    "meme_fimo": packaging.version.parse("5.0.5"),
-    "Extract genomic DNA 1": packaging.version.parse("3.0.0"),
-    "fetchflank": packaging.version.parse("1.0.1"),
-    "gops_intersect_1": packaging.version.parse("1.0.0"),
-    "lastz_wrapper_2": packaging.version.parse("1.3"),
-    "PEsortedSAM2readprofile": packaging.version.parse("1.1.1"),
-    "sam_to_bam": packaging.version.parse("1.1.3"),
-    "sam_pileup": packaging.version.parse("1.1.3"),
-    "vcf_to_maf_customtrack1": packaging.version.parse("1.0.1"),
-    "secure_hash_message_digest": packaging.version.parse("0.0.2"),
-    "join1": packaging.version.parse("2.1.3"),
-    "wiggle2simple1": packaging.version.parse("1.0.1"),
-    "CONVERTER_wiggle_to_interval_0": packaging.version.parse("1.0.1"),
-    "aggregate_scores_in_intervals2": packaging.version.parse("1.1.4"),
-    "CONVERTER_fastq_to_fqtoc0": packaging.version.parse("1.0.1"),
-    "CONVERTER_tar_to_directory": packaging.version.parse("1.0.1"),
-    "tabular_to_dbnsfp": packaging.version.parse("1.0.1"),
-    "cufflinks": packaging.version.parse("2.2.1.3"),
-    "Convert characters1": packaging.version.parse("1.0.1"),
-    "substitutions1": packaging.version.parse("1.0.1"),
-    "winSplitter": packaging.version.parse("1.0.1"),
-    "Interval2Maf1": packaging.version.parse("1.0.1+galaxy0"),
+    "meme_fimo": parse_version("5.0.5"),
+    "Extract genomic DNA 1": parse_version("3.0.0"),
+    "fetchflank": parse_version("1.0.1"),
+    "gops_intersect_1": parse_version("1.0.0"),
+    "lastz_wrapper_2": parse_version("1.3"),
+    "PEsortedSAM2readprofile": parse_version("1.1.1"),
+    "sam_to_bam": parse_version("1.1.3"),
+    "sam_pileup": parse_version("1.1.3"),
+    "vcf_to_maf_customtrack1": parse_version("1.0.1"),
+    "secure_hash_message_digest": parse_version("0.0.2"),
+    "join1": parse_version("2.1.3"),
+    "wiggle2simple1": parse_version("1.0.1"),
+    "CONVERTER_wiggle_to_interval_0": parse_version("1.0.1"),
+    "aggregate_scores_in_intervals2": parse_version("1.1.4"),
+    "CONVERTER_fastq_to_fqtoc0": parse_version("1.0.1"),
+    "CONVERTER_tar_to_directory": parse_version("1.0.1"),
+    "tabular_to_dbnsfp": parse_version("1.0.1"),
+    "cufflinks": parse_version("2.2.1.3"),
+    "Convert characters1": parse_version("1.0.1"),
+    "substitutions1": parse_version("1.0.1"),
+    "winSplitter": parse_version("1.0.1"),
+    "Interval2Maf1": parse_version("1.0.1+galaxy0"),
 }
 
 REQUIRE_FULL_DIRECTORY = {
@@ -252,7 +256,7 @@ REQUIRE_FULL_DIRECTORY = {
 }
 IMPLICITLY_REQUIRED_TOOL_FILES: Dict[str, Dict] = {
     "deseq2": {
-        "version": packaging.version.parse("2.11.40.6"),
+        "version": parse_version("2.11.40.6"),
         "required": {"includes": [{"path": "*.R", "path_type": "glob"}]},
     },
     # minimum example:
@@ -277,21 +281,21 @@ IMPLICITLY_REQUIRED_TOOL_FILES: Dict[str, Dict] = {
 
 
 class safe_update(NamedTuple):
-    min_version: Union[packaging.version.LegacyVersion, packaging.version.Version]
-    current_version: Union[packaging.version.LegacyVersion, packaging.version.Version]
+    min_version: Union[LegacyVersion, Version]
+    current_version: Union[LegacyVersion, Version]
 
 
 # Tool updates that did not change parameters in a way that requires rebuilding workflows
 WORKFLOW_SAFE_TOOL_VERSION_UPDATES = {
-    "Filter1": safe_update(packaging.version.parse("1.1.0"), packaging.version.parse("1.1.1")),
-    "__BUILD_LIST__": safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.1.0")),
-    "__APPLY_RULES__": safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.1.0")),
-    "__EXTRACT_DATASET__": safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.0.1")),
-    "Grep1": safe_update(packaging.version.parse("1.0.1"), packaging.version.parse("1.0.4")),
-    "Show beginning1": safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.0.2")),
-    "Show tail1": safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.0.1")),
-    "sort1": safe_update(packaging.version.parse("1.1.0"), packaging.version.parse("1.2.0")),
-    "CONVERTER_interval_to_bgzip_0": safe_update(packaging.version.parse("1.0.1"), packaging.version.parse("1.0.2")),
+    "Filter1": safe_update(parse_version("1.1.0"), parse_version("1.1.1")),
+    "__BUILD_LIST__": safe_update(parse_version("1.0.0"), parse_version("1.1.0")),
+    "__APPLY_RULES__": safe_update(parse_version("1.0.0"), parse_version("1.1.0")),
+    "__EXTRACT_DATASET__": safe_update(parse_version("1.0.0"), parse_version("1.0.1")),
+    "Grep1": safe_update(parse_version("1.0.1"), parse_version("1.0.4")),
+    "Show beginning1": safe_update(parse_version("1.0.0"), parse_version("1.0.2")),
+    "Show tail1": safe_update(parse_version("1.0.0"), parse_version("1.0.1")),
+    "sort1": safe_update(parse_version("1.1.0"), parse_version("1.2.0")),
+    "CONVERTER_interval_to_bgzip_0": safe_update(parse_version("1.0.1"), parse_version("1.0.2")),
 }
 
 
@@ -757,7 +761,7 @@ class Tool(Dictifiable):
         # guid attribute since it is useful to have.
         self.guid = guid
         self.old_id: Optional[str] = None
-        self.python_template_version: Optional[packaging.version.Version] = None
+        self.python_template_version: Optional[Version] = None
         self._lineage = None
         self.dependencies: List = []
         # populate toolshed repository info, if available
@@ -835,7 +839,7 @@ class Tool(Dictifiable):
 
     @property
     def version_object(self):
-        return packaging.version.parse(self.version)
+        return parse_version(self.version)
 
     @property
     def sa_session(self):
@@ -1005,12 +1009,8 @@ class Tool(Dictifiable):
         if not dynamic and not self.id:
             raise Exception(f"Missing tool 'id' for tool at '{tool_source}'")
 
-        profile = packaging.version.parse(str(self.profile))
-        if (
-            self.app.name == "galaxy"
-            and profile >= packaging.version.parse("16.04")
-            and packaging.version.parse(VERSION_MAJOR) < profile
-        ):
+        profile = Version(str(self.profile))
+        if self.app.name == "galaxy" and profile >= Version("16.04") and Version(VERSION_MAJOR) < profile:
             message = f"The tool [{self.id}] targets version {self.profile} of Galaxy, you should upgrade Galaxy to ensure proper functioning of this tool."
             raise Exception(message)
 
@@ -1018,9 +1018,9 @@ class Tool(Dictifiable):
         if self.python_template_version is None:
             # If python_template_version not specified we assume tools with profile versions >= 19.05 are python 3 ready
             if self.profile >= 19.05:
-                self.python_template_version = packaging.version.Version("3.5")
+                self.python_template_version = Version("3.5")
             else:
-                self.python_template_version = packaging.version.Version("2.7")
+                self.python_template_version = Version("2.7")
 
         # Get the (user visible) name of the tool
         self.name = tool_source.parse_name()
@@ -1608,23 +1608,19 @@ class Tool(Dictifiable):
                             possible_cases.remove(case.value)
                         except Exception:
                             log.debug(
-                                "Tool with id '%s': a when tag has been defined for '%s (%s) --> %s', but does not appear to be selectable."
-                                % (
-                                    self.id,
-                                    group_c.name,
-                                    group_c.test_param.name,
-                                    case.value,
-                                )
-                            )
-                    for unspecified_case in possible_cases:
-                        log.warning(
-                            "Tool with id '%s': a when tag has not been defined for '%s (%s) --> %s', assuming empty inputs."
-                            % (
+                                "Tool with id '%s': a when tag has been defined for '%s (%s) --> %s', but does not appear to be selectable.",
                                 self.id,
                                 group_c.name,
                                 group_c.test_param.name,
-                                unspecified_case,
+                                case.value,
                             )
+                    for unspecified_case in possible_cases:
+                        log.warning(
+                            "Tool with id '%s': a when tag has not been defined for '%s (%s) --> %s', assuming empty inputs.",
+                            self.id,
+                            group_c.name,
+                            group_c.test_param.name,
+                            unspecified_case,
                         )
                         case = ConditionalWhen()
                         case.value = unspecified_case

@@ -218,6 +218,11 @@ class RepositoryIndexRequest(BaseModel):
     deleted: str = "false"
 
 
+class RepositoriesByCategory(Category):
+    repository_count: int
+    repositories: List[Repository]
+
+
 class RepositoryIndexResponse(BaseModel):
     __root__: List[Repository]
 

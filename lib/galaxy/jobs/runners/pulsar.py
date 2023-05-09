@@ -14,9 +14,9 @@ from typing import (
     Dict,
 )
 
-import packaging.version
 import pulsar.core
 import yaml
+from packaging.version import Version
 from pulsar.client import (
     build_client_manager,
     CLIENT_INPUT_PATH_TYPES,
@@ -64,9 +64,9 @@ __all__ = (
 )
 
 MINIMUM_PULSAR_VERSIONS = {
-    "_default_": packaging.version.parse("0.7.0.dev3"),
-    "remote_metadata": packaging.version.parse("0.8.0"),
-    "remote_container_handling": packaging.version.parse("0.9.1.dev0"),  # probably 0.10 ultimately?
+    "_default_": Version("0.7.0.dev3"),
+    "remote_metadata": Version("0.8.0"),
+    "remote_container_handling": Version("0.9.1.dev0"),  # probably 0.10 ultimately?
 }
 
 NO_REMOTE_GALAXY_FOR_METADATA_MESSAGE = "Pulsar misconfiguration - Pulsar client configured to set metadata remotely, but remote Pulsar isn't properly configured with a galaxy_home directory."
@@ -311,7 +311,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         return job_state
 
     def _update_job_state_for_status(self, job_state, pulsar_status, full_status=None):
-        log.debug("(%s) Received status update: %s %s", job_state.job_id, type(pulsar_status), pulsar_status)
+        log.debug("(%s) Received status update: %s", job_state.job_id, pulsar_status)
         if pulsar_status in ["complete", "cancelled"] or job_state.job_wrapper.get_state() == model.Job.states.STOPPED:
             self.mark_as_finished(job_state)
             return None
@@ -498,7 +498,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 pulsar_version=pulsar_version,
             )
             rewrite_paths = not PulsarJobRunner.__rewrite_parameters(client)
-            if pulsar_version < packaging.version.parse("0.14.999") and rewrite_paths:
+            if pulsar_version < Version("0.14.999") and rewrite_paths:
                 job_wrapper.disable_commands_in_new_shell()
             container = None
             if remote_container is None:
@@ -810,7 +810,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
 
     @staticmethod
     def pulsar_version(remote_job_config):
-        pulsar_version = packaging.version.parse(remote_job_config.get("pulsar_version", "0.6.0"))
+        pulsar_version = Version(remote_job_config.get("pulsar_version", "0.6.0"))
         return pulsar_version
 
     @staticmethod
@@ -818,7 +818,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         check_features = check_features or {}
         # 0.6.0 was newest Pulsar version that did not report it's version.
         pulsar_version = PulsarJobRunner.pulsar_version(remote_job_config)
-        needed_version = packaging.version.parse("0.0.0")
+        needed_version = Version("0.0.0")
         log.info(f"pulsar_version is {pulsar_version}")
         for feature, needed in list(check_features.items()) + [("_default_", True)]:
             if not needed:

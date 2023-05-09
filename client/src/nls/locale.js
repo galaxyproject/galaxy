@@ -26,7 +26,7 @@ define({
         Login: false,
         Register: false,
         "Login or Register": false,
-        "Logged in as": false,
+        "Signed in as": false,
         Preferences: false,
         "Custom Builds": false,
         Logout: false,

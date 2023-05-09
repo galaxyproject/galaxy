@@ -213,6 +213,10 @@ $ui-margin-horizontal-large: $margin-v * 2;
     }
 }
 
+.ui-input-error {
+    border-color: $brand-danger;
+}
+
 .ui-textarea {
     @extend .ui-input;
     height: 100px !important;
@@ -392,6 +396,10 @@ $ui-margin-horizontal-large: $margin-v * 2;
     column-gap: 0.25rem;
 }
 
+.flex-gapy-1 {
+    row-gap: 0.25rem;
+}
+
 /* Heading Sizes */
 .h-xl {
     font-size: $h1-font-size;
@@ -422,6 +430,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
     display: inline;
     line-height: unset;
     vertical-align: unset;
+    user-select: text;
 
     &:hover {
         text-decoration: underline;

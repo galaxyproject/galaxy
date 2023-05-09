@@ -2,14 +2,18 @@ import axios from "axios";
 import { withPrefix } from "utils/redirect";
 import { rethrowSimple } from "utils/simple-error";
 
-export async function urlData({ url, headers, params }) {
+export async function urlData({ url, headers, params, errorSimplify = true }) {
     try {
         headers = headers || {};
         params = params || {};
         const { data } = await axios.get(withPrefix(url), { headers, params });
         return data;
     } catch (e) {
-        rethrowSimple(e);
+        if (errorSimplify) {
+            rethrowSimple(e);
+        } else {
+            throw e;
+        }
     }
 }
 

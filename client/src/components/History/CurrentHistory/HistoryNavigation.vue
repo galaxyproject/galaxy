@@ -138,6 +138,7 @@
             id="selector-history-modal"
             :histories="histories"
             :current-history-id="history.id"
+            :additional-options="['center', 'multi']"
             @selectHistory="$emit('setCurrentHistory', $event)" />
 
         <CopyModal id="copy-current-history-modal" :history="history" />

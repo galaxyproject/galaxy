@@ -146,7 +146,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
     Galaxy and S3.
     """
 
-    store_type = "s3"
+    store_type = "aws_s3"
 
     def __init__(self, config, config_dict):
         super().__init__(config, config_dict)
@@ -776,17 +776,17 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
             thread.join(5)
 
 
-class SwiftObjectStore(S3ObjectStore):
+class GenericS3ObjectStore(S3ObjectStore):
     """
-    Object store that stores objects as items in a Swift bucket. A local
-    cache exists that is used as an intermediate location for files between
-    Galaxy and Swift.
+    Object store that stores objects as items in a generic S3 (non AWS) bucket.
+    A local cache exists that is used as an intermediate location for files between
+    Galaxy and the S3 storage service.
     """
 
-    store_type = "swift"
+    store_type = "generic_s3"
 
     def _configure_connection(self):
-        log.debug("Configuring Swift Connection")
+        log.debug("Configuring generic S3 Connection")
         self.conn = boto.connect_s3(
             aws_access_key_id=self.access_key,
             aws_secret_access_key=self.secret_key,
