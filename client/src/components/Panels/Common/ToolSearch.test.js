@@ -29,6 +29,8 @@ describe("ToolSearch", () => {
             name: "name-filter",
             "[placeholder='any section']": "section-filter",
             "[placeholder='any id']": "id-filter",
+            "[placeholder='any repository']": "repo-filter",
+            "[placeholder='any owner']": "owner-filter",
             "[placeholder='any help text']": "help-filter",
         };
 
