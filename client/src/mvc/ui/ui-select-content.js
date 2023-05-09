@@ -449,11 +449,6 @@ const View = Backbone.View.extend({
     _changeValue: function () {
         const new_value = this.model.get("value");
         if (new_value && new_value.values && new_value.values.length > 0) {
-            // create list with content ids
-            const list = [];
-            _.each(new_value.values, (value) => {
-                list.push(value.id);
-            });
             // sniff first suitable field type from config list
             let src = new_value.values[0].src;
             if (src === "dce") {
@@ -461,6 +456,12 @@ const View = Backbone.View.extend({
                     this.cache[`dce${new_value.values[0].id}_hda`]?.src ||
                     this.cache[`dce${new_value.values[0].id}_hdca`]?.src;
             }
+            this._patchValue(new_value, src);
+            // create list with content ids
+            const list = [];
+            _.each(new_value.values, (value) => {
+                list.push(value.id);
+            });
             const multiple = new_value.values.length > 1;
             for (let i = 0; i < this.config.length; i++) {
                 const field = this.fields[i];
