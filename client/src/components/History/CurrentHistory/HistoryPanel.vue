@@ -154,6 +154,7 @@ import HistoryDropZone from "./HistoryDropZone";
 import HistoryEmpty from "./HistoryEmpty";
 import HistoryFilters from "./HistoryFilters/HistoryFilters";
 import { HistoryFilters as FilterClass } from "components/History/HistoryFilters";
+import { getOperatorForAlias } from "utils/filtering";
 import HistoryMessages from "./HistoryMessages";
 import HistorySelectionOperations from "./HistoryOperations/SelectionOperations";
 import HistorySelectionStatus from "./HistoryOperations/SelectionStatus";
