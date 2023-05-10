@@ -11468,12 +11468,6 @@ export interface operations {
          * If the history was not purged after it was archived, you can restore it using the `/api/histories/{id}/archive/restore` endpoint.
          */
         parameters: {
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
-            query?: {
-                view?: string;
-                keys?: string;
-            };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
                 "run-as"?: string;
@@ -11519,12 +11513,8 @@ export interface operations {
          */
         parameters: {
             /** @description If true, the history will be un-archived even if it has an associated archive export record and was purged. */
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
                 force?: boolean;
-                view?: string;
-                keys?: string;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {

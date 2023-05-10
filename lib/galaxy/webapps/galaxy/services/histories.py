@@ -677,7 +677,6 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         self,
         trans: ProvidesHistoryContext,
         history_id: DecodedDatabaseIdField,
-        serialization_params: SerializationParams,
         payload: Optional[ArchiveHistoryRequestPayload] = None,
     ) -> AnyArchivedHistoryView:
         """Marks the history with the given id as archived and optionally associates it with the given archive export record in the payload.
@@ -704,7 +703,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
                     "Cannot purge history without an export record. A valid archive_export_id is required."
                 )
             self.manager.purge(history)
-        return self._serialize_archived_history(trans, history, serialization_params)
+        return self._serialize_archived_history(trans, history)
 
     def _ensure_export_record_can_be_associated_with_history_archival(
         self, history_id: int, export_record: model.StoreExportAssociation
@@ -737,7 +736,6 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         self,
         trans: ProvidesHistoryContext,
         history_id: DecodedDatabaseIdField,
-        serialization_params: SerializationParams,
         force: Optional[bool] = False,
     ) -> AnyHistoryView:
         if trans.anonymous:
@@ -745,7 +743,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
 
         history = self.manager.get_owned(history_id, trans.user)
         history = self.manager.restore_archived_history(history, force=force or False)
-        return self._serialize_archived_history(trans, history, serialization_params)
+        return self._serialize_archived_history(trans, history)
 
     def get_archived_histories(
         self,
@@ -770,8 +768,13 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         return rval
 
     def _serialize_archived_history(
-        self, trans: ProvidesHistoryContext, history: model.History, serialization_params: SerializationParams
+        self,
+        trans: ProvidesHistoryContext,
+        history: model.History,
+        serialization_params: Optional[SerializationParams] = None,
     ):
+        if serialization_params is None:
+            serialization_params = SerializationParams(default_view="summary")
         archived_history = self.serializer.serialize_to_view(
             history, user=trans.user, trans=trans, **serialization_params.dict()
         )

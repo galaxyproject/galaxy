@@ -483,7 +483,6 @@ class FastAPIHistories:
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
         history_id: DecodedDatabaseIdField = HistoryIDPathParam,
-        serialization_params: SerializationParams = Depends(query_serialization_params),
         payload: Optional[ArchiveHistoryRequestPayload] = Body(default=None),
     ) -> AnyArchivedHistoryView:
         """Marks the given history as 'archived' and returns the history.
@@ -501,7 +500,7 @@ class FastAPIHistories:
         If the history is already archived, this endpoint will return a 409 Conflict error, indicating that the history is already archived.
         If the history was not purged after it was archived, you can restore it using the `/api/histories/{id}/archive/restore` endpoint.
         """
-        return self.service.archive_history(trans, history_id, serialization_params, payload)
+        return self.service.archive_history(trans, history_id, payload)
 
     @router.put(
         "/api/histories/{history_id}/archive/restore",
@@ -511,7 +510,6 @@ class FastAPIHistories:
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
         history_id: DecodedDatabaseIdField = HistoryIDPathParam,
-        serialization_params: SerializationParams = Depends(query_serialization_params),
         force: Optional[bool] = Query(
             default=None,
             description="If true, the history will be un-archived even if it has an associated archive export record and was purged.",
@@ -525,7 +523,7 @@ class FastAPIHistories:
         will not restore the datasets that were in the history before it was archived. You will need to import back the archive export
         record to restore the history and its datasets as a new copy. See `/api/histories/from_store_async` for more information.
         """
-        return self.service.restore_archived_history(trans, history_id, serialization_params, force)
+        return self.service.restore_archived_history(trans, history_id, force)
 
     @router.get(
         "/api/histories/{history_id}/sharing",
