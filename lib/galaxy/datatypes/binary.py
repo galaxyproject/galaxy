@@ -617,7 +617,8 @@ class BamNative(CompressedArchive, _BamOrSam):
         if not offset == -1:
             try:
                 with pysam.AlignmentFile(dataset.file_name, "rb", check_sq=False) as bamfile:
-                    ck_size = 300  # 300 lines
+                    if ck_size is None:
+                        ck_size = 300  # 300 lines
                     if offset == 0:
                         offset = bamfile.tell()
                         ck_lines = bamfile.text.strip().replace("\t", " ").splitlines()  # type: ignore[attr-defined]
