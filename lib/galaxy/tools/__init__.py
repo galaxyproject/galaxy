@@ -2437,12 +2437,6 @@ class Tool(Dictifiable):
         # create parameter object
         params = Params(kwd, sanitize=False)
 
-        # expand incoming parameters (parameters might trigger multiple tool executions,
-        # here we select the first execution only in order to resolve dynamic parameters)
-        expanded_incomings, _ = expand_meta_parameters(trans, self, params.__dict__)
-        if expanded_incomings:
-            params.__dict__ = expanded_incomings[0]
-
         # do param translation here, used by datasource tools
         if self.input_translator:
             self.input_translator.translate(params)
