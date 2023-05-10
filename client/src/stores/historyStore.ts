@@ -32,7 +32,9 @@ export const useHistoryStore = defineStore("historyStore", () => {
     const storedHistories = ref<{ [key: string]: HistorySummary }>({});
 
     const histories = computed(() => {
-        return Object.values(storedHistories.value).sort(sortByObjectProp("name"));
+        return Object.values(storedHistories.value)
+            .filter((h) => !h.archived)
+            .sort(sortByObjectProp("name"));
     });
 
     const getFirstHistoryId = computed(() => {

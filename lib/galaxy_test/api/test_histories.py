@@ -904,3 +904,13 @@ class TestArchivingHistoriesWithoutExportRecord(ApiTestCase, BaseHistories):
 
         archive_response = self.dataset_populator.archive_history(history_id)
         self._assert_status_code_is(archive_response, 409)
+
+    def test_archived_histories_are_not_listed_by_default(self):
+        history_id = self.dataset_populator.new_history()
+        archive_response = self.dataset_populator.archive_history(history_id)
+        self._assert_status_code_is(archive_response, 200)
+        assert archive_response.json()["archived"] is True
+
+        histories = self.dataset_populator.get_histories()
+        for history in histories:
+            assert history["id"] != history_id

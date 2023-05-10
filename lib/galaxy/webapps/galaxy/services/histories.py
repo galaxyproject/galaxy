@@ -158,7 +158,9 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
                 raise glx_exceptions.AdminRequiredException(message)
         else:
             filters += [model.History.user == current_user]
-        # and any sent in from the query string
+        # exclude archived histories
+        filters += [model.History.archived == false()]
+        # and apply any other filters
         filters += self.filters.parse_filters(filter_params)
         order_by = self._build_order_by(filter_query_params.order)
 
