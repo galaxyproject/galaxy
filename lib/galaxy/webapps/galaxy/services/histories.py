@@ -698,7 +698,11 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             # After this point, the export record is valid and can be associated with the history archival
         history = self.manager.archive_history(history, archive_export_id=archive_export_id)
         purge_history = payload.purge_history if payload else False
-        if archive_export_id and purge_history:
+        if purge_history:
+            if archive_export_id is None:
+                raise glx_exceptions.RequestParameterMissingException(
+                    "Cannot purge history without an export record. A valid archive_export_id is required."
+                )
             self.manager.purge(history)
         return self._serialize_archived_history(trans, history, serialization_params)
 

@@ -514,7 +514,7 @@ class FastAPIHistories:
         serialization_params: SerializationParams = Depends(query_serialization_params),
         force: Optional[bool] = Query(
             default=None,
-            description="If true, the history will un-archived even if it has an associated archive export record and was purged.",
+            description="If true, the history will be un-archived even if it has an associated archive export record and was purged.",
         ),
     ) -> AnyHistoryView:
         """Restores an archived history and returns it.
@@ -522,7 +522,7 @@ class FastAPIHistories:
         Restoring an archived history will add it back to the list of active histories of the user (unless it was purged).
 
         **Warning**: Please note that histories that are associated with an archive export might be purged after export, so un-archiving them
-        will not restore the datasets that were in the history before it was archived. You will need to import the archive export
+        will not restore the datasets that were in the history before it was archived. You will need to import back the archive export
         record to restore the history and its datasets as a new copy. See `/api/histories/from_store_async` for more information.
         """
         return self.service.restore_archived_history(trans, history_id, serialization_params, force)

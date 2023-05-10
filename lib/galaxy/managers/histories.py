@@ -388,10 +388,11 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         will not restore the datasets that were in the history before it was archived. You will need to import the archive export
         record to restore the history and its datasets as a new copy.
         """
-        if history.archive_export_id is not None and not force:
+        if history.archive_export_id is not None and history.purged and not force:
             raise glx_exceptions.RequestParameterInvalidException(
-                "Cannot restore an archived history that is associated with an archive export record. "
-                "Please try importing the archive export record as a new copy instead."
+                "Cannot restore an archived (and purged) history that is associated with an archive export record. "
+                "Please try importing it back as a new copy from the associated archive export record instead. "
+                "You can still force the un-archiving of the purged history by setting the 'force' parameter."
             )
         with self.session().begin():
             history.archived = False

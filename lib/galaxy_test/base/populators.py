@@ -1493,14 +1493,14 @@ class BaseDatasetPopulator(BasePopulator):
                 "archive_export_id": export_record_id,
                 "purge_history": purge_history,
             }
-            if export_record_id
+            if export_record_id is not None or purge_history is not None
             else None
         )
         archive_response = self._post(f"histories/{history_id}/archive", data=payload, json=True)
         return archive_response
 
-    def restore_archived_history(self, history_id: str) -> Response:
-        restore_response = self._put(f"histories/{history_id}/archive/restore")
+    def restore_archived_history(self, history_id: str, force: Optional[bool] = None) -> Response:
+        restore_response = self._put(f"histories/{history_id}/archive/restore{f'?force={force}' if force else ''}")
         return restore_response
 
     def get_archived_histories(self, query: Optional[str] = None) -> List[Dict[str, Any]]:

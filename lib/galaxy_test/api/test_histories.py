@@ -894,3 +894,13 @@ class TestArchivingHistoriesWithoutExportRecord(ApiTestCase, BaseHistories):
             assert len(archived_histories) == num_histories
             assert archived_histories[0]["name"] == "History 0"
             assert archived_histories[1]["name"] == "History 1"
+
+    def test_archiving_an_archived_history_conflicts(self):
+        history_id = self.dataset_populator.new_history()
+
+        archive_response = self.dataset_populator.archive_history(history_id)
+        self._assert_status_code_is(archive_response, 200)
+        assert archive_response.json()["archived"] is True
+
+        archive_response = self.dataset_populator.archive_history(history_id)
+        self._assert_status_code_is(archive_response, 409)
