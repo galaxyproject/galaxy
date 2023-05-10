@@ -126,7 +126,7 @@
                                     :filterable="filterable"
                                     @tag-click="onTagClick"
                                     @tag-change="onTagChange"
-                                    @toggleHighlights="toggleHighlights"
+                                    @toggleHighlights="updateFilterVal('related', item.hid)"
                                     @update:expand-dataset="setExpanded(item, $event)"
                                     @update:selected="setSelected(item, $event)"
                                     @view-collection="$emit('view-collection', item, currentOffset)"
@@ -160,6 +160,7 @@ import HistoryDetails from "./HistoryDetails";
 import HistoryDropZone from "./HistoryDropZone";
 import HistoryEmpty from "./HistoryEmpty";
 import HistoryFilters from "./HistoryFilters/HistoryFilters";
+import { HistoryFilters as FilterClass } from "components/History/HistoryFilters";
 import { getOperatorForAlias } from "utils/filtering";
 import HistoryMessages from "./HistoryMessages";
 import HistorySelectionOperations from "./HistoryOperations/SelectionOperations";
@@ -199,7 +200,6 @@ export default {
     data() {
         return {
             filterText: "",
-            highlightsKey: null,
             invisible: {},
             loading: false,
             offset: 0,
@@ -275,8 +275,12 @@ export default {
         },
         /** @returns {String} */
         storeFilterText() {
-            const { currentFilterText } = storeToRefs(useHistoryStore());
-            return currentFilterText.value;
+            const { currentFilterText, currentHistoryId } = storeToRefs(useHistoryStore());
+            if (this.historyId === currentHistoryId.value) {
+                return currentFilterText.value || "";
+            } else {
+                return "";
+            }
         },
     },
     watch: {
@@ -295,7 +299,7 @@ export default {
         },
         filterText(newVal) {
             if (this.filterable) {
-                this.setCurrentFilterText(newVal);
+                this.setFilterText(this.historyId, newVal);
             }
         },
         storeFilterText(newVal) {
@@ -311,23 +315,26 @@ export default {
         },
     },
     async mounted() {
+        // `filterable` here indicates if this is the current history panel
+        if (this.filterable && !this.filter) {
+            this.filterText = this.storeFilterText;
+        }
         await this.loadHistoryItems();
     },
     methods: {
-        ...mapActions(useHistoryStore, ["loadHistoryById", "setCurrentFilterText"]),
+        ...mapActions(useHistoryStore, ["loadHistoryById", "setFilterText"]),
         ...mapActions(useHistoryItemsStore, ["fetchHistoryItems"]),
         getHighlight(item) {
-            if (this.filterText.includes("related:" + item.hid)) {
-                this.highlightsKey = item.hid;
+            const highlightsKey = FilterClass.getFilterValue(this.filterText, "related");
+            if (highlightsKey == item.hid) {
                 return "active";
-            } else if (this.filterText.includes("related:") && this.highlightsKey) {
-                if (item.hid > this.highlightsKey) {
+            } else if (highlightsKey) {
+                if (item.hid > highlightsKey) {
                     return "output";
                 } else {
                     return "input";
                 }
             } else {
-                this.highlightsKey = null;
                 return null;
             }
         },
@@ -383,22 +390,11 @@ export default {
             item.tags = newTags;
         },
         onTagClick(tag) {
-            if (this.filterText == "tag:" + tag) {
-                this.filterText = "";
-            } else {
-                this.filterText = "tag:" + tag;
-            }
+            this.updateFilterVal("tag", tag);
         },
         onOperationError(error) {
             console.debug("HistoryPanel - Operation error.", error);
             this.operationError = error;
-        },
-        toggleHighlights(item) {
-            if (this.filterText == "related:" + item.hid) {
-                this.filterText = "";
-            } else {
-                this.filterText = "related:" + item.hid;
-            }
         },
         onDragEnter(e) {
             this.dragTarget = e.target;
@@ -437,6 +433,9 @@ export default {
         },
         onError(error) {
             Toast.error(error);
+        },
+        updateFilterVal(newFilter, newVal) {
+            this.filterText = FilterClass.setFilterValue(this.filterText, newFilter, newVal);
         },
     },
 };

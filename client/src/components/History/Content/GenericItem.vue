@@ -62,7 +62,7 @@ export default {
         },
     },
     methods: {
-        ...mapActions(useHistoryStore, ["applyFilterText"]),
+        ...mapActions(useHistoryStore, ["applyFilters"]),
         onDelete(item) {
             deleteContent(item);
         },
@@ -75,10 +75,18 @@ export default {
         onUnhide(item) {
             updateContentFields(item, { visible: true });
         },
-        onHighlight(item) {
+        async onHighlight(item) {
             const { history_id } = item;
-            const filterText = `related:${item.hid}`;
-            this.applyFilterText(history_id, filterText);
+            const filters = {
+                deleted: item.deleted,
+                visible: item.visible,
+                related: item.hid,
+            };
+            try {
+                await this.applyFilters(history_id, filters);
+            } catch (error) {
+                this.onError(error);
+            }
         },
     },
 };

@@ -6,6 +6,7 @@ import { formatDistanceToNowStrict } from "date-fns";
 import { toRef, ref, computed, onMounted } from "vue";
 import { useDetailedHistory } from "./usesDetailedHistory.js";
 import { useConfig } from "@/composables/config";
+import { HistoryFilters } from "@/components/History/HistoryFilters.js";
 import PreferredStorePopover from "./PreferredStorePopover.vue";
 import SelectPreferredStore from "./SelectPreferredStore.vue";
 
@@ -57,27 +58,27 @@ function onDashboard() {
     router.push("/storage");
 }
 
-function setFilter(newFilterText: string) {
+function setFilter(filter: string) {
+    let newFilterText = "";
+    let settings = {};
+    if (filter == "") {
+        settings = {
+            deleted: false,
+            visible: true,
+        };
+    } else {
+        const newVal = getCurrentFilterVal(filter) === "any" ? HistoryFilters.defaultFilters[filter] : "any";
+        settings = {
+            deleted: filter === "deleted" ? newVal : getCurrentFilterVal("deleted"),
+            visible: filter === "visible" ? newVal : getCurrentFilterVal("visible"),
+        };
+    }
+    newFilterText = HistoryFilters.applyFiltersToText(settings, props.filterText);
     emit("update:filter-text", newFilterText);
 }
 
-// TODO: bad merge forward, these are no longer utilized?
-// eslint-disable-next-line no-unused-vars
-function toggleDeleted() {
-    if (props.filterText === "deleted:true") {
-        setFilter("");
-    } else {
-        setFilter("deleted:true");
-    }
-}
-
-// eslint-disable-next-line no-unused-vars
-function toggleHidden() {
-    if (props.filterText === "visible:false") {
-        setFilter("");
-    } else {
-        setFilter("visible:false");
-    }
+function getCurrentFilterVal(filter: string) {
+    return HistoryFilters.getFilterValue(props.filterText, filter);
 }
 
 function updateTime() {
@@ -153,24 +154,24 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
                 <b-button
                     v-if="numItemsDeleted"
                     v-b-tooltip.hover
-                    title="Show deleted"
+                    title="Include deleted"
                     variant="link"
                     size="sm"
                     class="rounded-0 text-decoration-none"
-                    :pressed="filterText == 'deleted:true'"
-                    @click="setFilter('deleted:true')">
+                    :pressed="getCurrentFilterVal('deleted') !== false"
+                    @click="setFilter('deleted')">
                     <icon icon="trash" />
                     <span>{{ numItemsDeleted }}</span>
                 </b-button>
                 <b-button
                     v-if="numItemsHidden"
                     v-b-tooltip.hover
-                    title="Show hidden"
+                    title="Include hidden"
                     variant="link"
                     size="sm"
                     class="rounded-0 text-decoration-none"
-                    :pressed="filterText == 'visible:false'"
-                    @click="setFilter('visible:false')">
+                    :pressed="getCurrentFilterVal('visible') !== true"
+                    @click="setFilter('visible')">
                     <icon icon="eye-slash" />
                     <span>{{ numItemsHidden }}</span>
                 </b-button>

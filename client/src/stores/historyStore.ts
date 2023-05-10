@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import Vue, { computed, ref } from "vue";
 import type { components } from "@/schema";
 import { sortByObjectProp } from "@/utils/sorting";
+import { HistoryFilters } from "@/components/History/HistoryFilters";
 import {
     cloneHistory,
     createAndSelectNewHistory,
@@ -24,7 +25,7 @@ export const useHistoryStore = defineStore(
         const historiesLoading = ref(false);
         const pinnedHistories = ref<{ id: string }[]>([]);
         const storedCurrentHistoryId = ref<string | null>(null);
-        const storedCurrentFilterText = ref<string | null>(null);
+        const storedFilterTexts = ref<{ [key: string]: string }>({});
         const storedHistories = ref<{ [key: string]: HistorySummary }>({});
 
         const histories = computed(() => {
@@ -51,7 +52,11 @@ export const useHistoryStore = defineStore(
         });
 
         const currentFilterText = computed(() => {
-            return storedCurrentFilterText.value;
+            if (currentHistoryId.value) {
+                return storedFilterTexts.value[currentHistoryId.value];
+            } else {
+                return "";
+            }
         });
 
         const getHistoryById = computed(() => {
@@ -74,14 +79,15 @@ export const useHistoryStore = defineStore(
         async function setCurrentHistory(historyId: string) {
             const currentHistory = await setCurrentHistoryOnServer(historyId);
             selectHistory(currentHistory as HistorySummary);
+            setFilterText(historyId, "");
         }
 
         function setCurrentHistoryId(historyId: string) {
             storedCurrentHistoryId.value = historyId;
         }
 
-        function setCurrentFilterText(filterText: string) {
-            storedCurrentFilterText.value = filterText;
+        function setFilterText(historyId: string, filterText: string) {
+            Vue.set(storedFilterTexts.value, historyId, filterText);
         }
 
         function setHistory(history: HistorySummary) {
@@ -128,11 +134,12 @@ export const useHistoryStore = defineStore(
             setCurrentHistoryId(history.id);
         }
 
-        function applyFilterText(history_id: string, filterText: string) {
-            setCurrentFilterText(filterText);
-            if (currentHistoryId.value !== history_id) {
-                return setCurrentHistory(history_id);
+        async function applyFilters(historyId: string, filters: Record<string, string | boolean>) {
+            if (currentHistoryId.value !== historyId) {
+                await setCurrentHistory(historyId);
             }
+            const filterText = HistoryFilters.getFilterText(HistoryFilters.getValidFilterSettings(filters));
+            setFilterText(historyId, filterText);
         }
 
         async function copyHistory(history: HistorySummary, name: string, copyAll: boolean) {
@@ -204,13 +211,13 @@ export const useHistoryStore = defineStore(
             getHistoryNameById,
             setCurrentHistory,
             setCurrentHistoryId,
-            setCurrentFilterText,
+            setFilterText,
             setHistory,
             setHistories,
             pinHistory,
             unpinHistory,
             selectHistory,
-            applyFilterText,
+            applyFilters,
             copyHistory,
             createNewHistory,
             deleteHistory,

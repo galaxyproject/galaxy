@@ -115,7 +115,7 @@ export default {
         this.load();
     },
     methods: {
-        ...mapActions(useHistoryStore, ["loadHistories", "applyFilterText"]),
+        ...mapActions(useHistoryStore, ["loadHistories", "applyFilters"]),
         load(concat = false) {
             this.loading = true;
             getDatasets({
@@ -151,9 +151,14 @@ export default {
                 });
         },
         async onShowDataset(item) {
-            const historyId = item.history_id;
+            const { history_id } = item;
+            const filters = {
+                deleted: item.deleted,
+                visible: item.visible,
+                hid: item.hid,
+            };
             try {
-                await this.applyFilterText(historyId, `hid:${item.hid}`);
+                await this.applyFilters(history_id, filters);
             } catch (error) {
                 this.onError(error);
             }
