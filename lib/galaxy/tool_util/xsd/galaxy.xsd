@@ -1477,7 +1477,7 @@ discouraged, to use the value specified as `truevalue` or `falsevalue`.
 Data input parameters can be given as a file name. The file should exist in the
 `test-data` folder. Multiple files can be specified as comma separated list.
 
-Note that it is possiible to use compressed (gz, bz2) files in the `test-data` folder
+Note that it is possible to use compressed (gz, bz2) files in the `test-data` folder
 also for decompressed data types which is useful for large test data files.
 Galaxy will unzip these files on upload.
 
@@ -1488,7 +1488,7 @@ Galaxy will unzip these files on upload.
 Unzipping won't be done for compressed data types, e.g.
 
 ```xml
-<param valuei="test.fastq.gz" ftype="fastq.gz">
+<param value="test.fastq.gz" ftype="fastq.gz">
 ```
 
 #### ``select``
