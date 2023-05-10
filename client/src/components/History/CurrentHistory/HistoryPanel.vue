@@ -34,10 +34,7 @@
                     :show-advanced.sync="showAdvanced"
                     :search-error="formattedSearchError" />
                 <section v-if="!showAdvanced">
-                    <HistoryDetails
-                        :history="history"
-                        :writeable="writable"
-                        @update:history="$emit('updateHistory', $event)" />
+                    <HistoryDetails :history="history" :writeable="writable" @update:history="updateHistory($event)" />
                     <HistoryMessages :history="history" />
                     <HistoryCounter
                         :history="history"
@@ -322,7 +319,7 @@ export default {
         await this.loadHistoryItems();
     },
     methods: {
-        ...mapActions(useHistoryStore, ["loadHistoryById", "setFilterText"]),
+        ...mapActions(useHistoryStore, ["loadHistoryById", "setFilterText", "updateHistory"]),
         ...mapActions(useHistoryItemsStore, ["fetchHistoryItems"]),
         getHighlight(item) {
             const highlightsKey = FilterClass.getFilterValue(this.filterText, "related");
