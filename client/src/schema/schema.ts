@@ -487,7 +487,7 @@ export interface paths {
          * Restoring an archived history will add it back to the list of active histories of the user (unless it was purged).
          *
          * **Warning**: Please note that histories that are associated with an archive export might be purged after export, so un-archiving them
-         * will not restore the datasets that were in the history before it was archived. You will need to import the archive export
+         * will not restore the datasets that were in the history before it was archived. You will need to import back the archive export
          * record to restore the history and its datasets as a new copy. See `/api/histories/from_store_async` for more information.
          */
         put: operations["restore_archived_history_api_histories__history_id__archive_restore_put"];
@@ -11514,11 +11514,11 @@ export interface operations {
          * Restoring an archived history will add it back to the list of active histories of the user (unless it was purged).
          *
          * **Warning**: Please note that histories that are associated with an archive export might be purged after export, so un-archiving them
-         * will not restore the datasets that were in the history before it was archived. You will need to import the archive export
+         * will not restore the datasets that were in the history before it was archived. You will need to import back the archive export
          * record to restore the history and its datasets as a new copy. See `/api/histories/from_store_async` for more information.
          */
         parameters: {
-            /** @description If true, the history will un-archived even if it has an associated archive export record and was purged. */
+            /** @description If true, the history will be un-archived even if it has an associated archive export record and was purged. */
             /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
