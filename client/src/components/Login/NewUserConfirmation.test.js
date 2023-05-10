@@ -23,6 +23,10 @@ describe("NewUserConfirmation", () => {
     });
 
     it("basics", async () => {
+        await wrapper.setData({
+            provider: "test_provider",
+            token: "sample_token",
+        });
         const cardHeader = wrapper.find(".card-header");
         expect(cardHeader.text()).toBe("Confirm new account creation");
         const inputs = wrapper.findAll("input");
@@ -35,7 +39,7 @@ describe("NewUserConfirmation", () => {
         await checkField.setChecked();
         await submitButton.trigger("click");
         const postedData = axiosMock.history.post[0];
-        expect(postedData.url).toBe("/authnz/custos/create_user?token=null");
+        expect(postedData.url).toBe("/authnz/test_provider/create_user?token=sample_token");
         await wrapper.setProps({ registrationWarningMessage: "registration warning message" });
         const alert = wrapper.find(".alert");
         expect(alert.text()).toBe("registration warning message");

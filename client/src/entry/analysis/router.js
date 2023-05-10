@@ -39,7 +39,6 @@ import HistoryMultipleView from "components/History/Multiple/MultipleView";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools";
 import InvocationReport from "components/Workflow/InvocationReport";
 import JobDetails from "components/JobInformation/JobDetails";
-import NewUserConfirmation from "components/Login/NewUserConfirmation";
 import NewUserWelcome from "components/NewUserWelcome/NewUserWelcome";
 import PageDisplay from "components/PageDisplay/PageDisplay";
 import PageEditor from "components/PageEditor/PageEditor";
@@ -80,6 +79,14 @@ function redirectAnon() {
     }
 }
 
+// redirect logged in users
+function redirectLoggedIn() {
+    const Galaxy = getGalaxyInstance();
+    if (Galaxy.user.id) {
+        return "/";
+    }
+}
+
 // produces the client router
 export function getRouter(Galaxy) {
     const router = new VueRouter({
@@ -90,7 +97,11 @@ export function getRouter(Galaxy) {
             ...LibraryRoutes,
             ...StorageDashboardRoutes,
             /** Login entry route */
-            { path: "/login/start", component: Login },
+            {
+                path: "/login/start",
+                component: Login,
+                redirect: redirectLoggedIn(),
+            },
             /** Page editor */
             {
                 path: "/pages/editor",
@@ -269,14 +280,6 @@ export function getRouter(Galaxy) {
                         path: "jobs/:jobId/view",
                         component: JobDetails,
                         props: true,
-                    },
-                    {
-                        path: "login/confirm",
-                        component: NewUserConfirmation,
-                        props: {
-                            registrationWarningMessage: Galaxy.config.registration_warning_message,
-                            termsUrl: Galaxy.config.terms_url,
-                        },
                     },
                     {
                         path: "pages/create",
