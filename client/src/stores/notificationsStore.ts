@@ -8,12 +8,12 @@ import {
     updateBatchNotificationsOnServer,
 } from "@/stores/services/notifications.service";
 
-type UserNotificationResponse = components["schemas"]["UserNotificationResponse"];
+type UserNotificationListResponse = components["schemas"]["UserNotificationListResponse"];
 type UserNotificationsBatchUpdateRequest = components["schemas"]["UserNotificationsBatchUpdateRequest"];
 
 export const useNotificationsStore = defineStore("notificationsStore", () => {
     const totalUnreadCount = ref<number>(0);
-    const notifications = ref<UserNotificationResponse[]>([]);
+    const notifications = ref<UserNotificationListResponse>([]);
 
     const pollId = ref<any>(null);
     const loadingNotifications = ref<boolean>(false);
