@@ -115,6 +115,38 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         self._check_dataset_details_for_inttest_value(2)
 
     @selenium_test
+    def test_rerun_dataset_collection_element(self):
+        # upload a first dataset that should not become selected on re-run
+        test_path = self.get_filename("1.fasta")
+        self.perform_upload(test_path)
+        self.history_panel_wait_for_hid_ok(1)
+
+        history_id = self.current_history_id()
+        # upload a nested collection
+        collection_id = self.dataset_collection_populator.create_list_of_list_in_history(
+            history_id,
+            collection_type="list:list",
+            wait=True,
+        ).json()["id"]
+        self.tool_open("identifier_multiple")
+        self.components.tool_form.parameter_batch_dataset_collection(parameter="input1").wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.components.tool_form.data_option_value(item_id=collection_id).wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.tool_form_execute()
+        self.history_panel_wait_for_hid_ok(7)
+        self.history_panel_expand_collection(7)
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.history_panel_click_item_title(1)
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.hda_click_primary_action_button(1, "rerun")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        assert self.driver.find_element(By.CSS_SELECTOR, "option:checked").text == "Selected: test0"
+        self.tool_form_execute()
+        self.components.history_panel.collection_view.back_to_history.wait_for_and_click()
+        self.history_panel_wait_for_hid_ok(9)
+
+    @selenium_test
     @flakey
     def test_run_data(self):
         test_path = self.get_filename("1.fasta")

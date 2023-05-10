@@ -242,6 +242,7 @@ history_panel:
       tag_area_button: '.details .stateless-tags .multiselect button'
       tag_area_input: '.details .stateless-tags .multiselect input'
       list_items: '.dataset-collection-panel .listing .content-item'
+      back_to_history: svg[data-description="back to history"]
 
   selectors:
     _: '#current-history-panel'
@@ -492,6 +493,11 @@ tool_form:
     parameter_checkbox: 'div.ui-form-element[id="form-element-${parameter}"] .ui-switch'
     parameter_input: 'div.ui-form-element[id="form-element-${parameter}"] .ui-input'
     parameter_textarea: 'div.ui-form-element[id="form-element-${parameter}"] textarea'
+    parameter_batch_dataset_collection:
+      type: xpath
+      selector: //div[@id='form-element-${parameter}']//i[contains(@class, 'fa-folder-o')]/parent::label
+    data_option_value: option[value="${item_id}"]
+
     repeat_insert: '[data-description="repeat insert"]'
     reference: '.formatted-reference'
     about: '.tool-footer'
