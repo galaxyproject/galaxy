@@ -17,7 +17,6 @@ const props = defineProps<{
     owner?: string;
 }>();
 
-//@ts-ignore: bad library types
 library.add(faCaretDown);
 
 const { trainingAvailable, trainingCategories, tutorialDetails, allTutorialsUrl, versionAvailable } =

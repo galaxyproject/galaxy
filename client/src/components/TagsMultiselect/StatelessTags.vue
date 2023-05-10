@@ -32,7 +32,6 @@ const emit = defineEmits<{
     (e: "tag-click", tag: string): void;
 }>();
 
-//@ts-ignore bad library types
 library.add(faTags, faCheck, faTimes, faPlus);
 
 const { userTags, addLocalTag } = useUserTags();

@@ -7,7 +7,10 @@
         "baseUrl": ".",
         "paths": {
             "@/*": ["src/*"],
-            "@tests/*": ["tests/*"]
+            "@tests/*": ["tests/*"],
+            "@fortawesome/fontawesome-common-types": [
+                "./node_modules/@fortawesome/fontawesome-common-types/index"
+            ]
         },
         "outDir": "./dist/build",
 

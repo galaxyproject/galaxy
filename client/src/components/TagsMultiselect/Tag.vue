@@ -19,7 +19,6 @@ const emit = defineEmits<{
     (e: "deleted", tag: string): void;
 }>();
 
-//@ts-ignore bad types
 library.add(faTimes);
 
 const color = computed(() => keyedColorScheme(props.option));

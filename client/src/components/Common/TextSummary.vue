@@ -32,7 +32,6 @@ const propShowDetails = computed({
     },
 });
 
-//@ts-ignore bad library types
 library.add(faChevronUp, faChevronDown);
 const collapsedEnableIcon = "fas fa-chevron-down";
 const collapsedDisableIcon = "fas fa-chevron-up";
