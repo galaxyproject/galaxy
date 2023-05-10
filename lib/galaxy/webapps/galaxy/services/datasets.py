@@ -565,6 +565,8 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,
         raw: bool = False,
+        offset: Optional[int] = None,
+        ck_size: Optional[int] = None,
         **kwd,
     ):
         """
@@ -572,7 +574,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
         The query parameter 'raw' should be considered experimental and may be dropped at
         some point in the future without warning. Generally, data should be processed by its
-        datatype prior to display (the defult if raw is unspecified or explicitly false.
+        datatype prior to display (the default if raw is unspecified or explicitly false.
         """
         headers = {}
         rval: Any = ""
@@ -589,6 +591,10 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                     file_path = dataset_instance.file_name
                 rval = open(file_path, "rb")
             else:
+                if offset is not None:
+                    kwd["offset"] = offset
+                if ck_size is not None:
+                    kwd["ck_size"] = ck_size
                 rval, headers = dataset_instance.datatype.display_data(
                     trans, dataset_instance, preview, filename, to_ext, **kwd
                 )

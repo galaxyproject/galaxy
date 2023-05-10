@@ -417,6 +417,11 @@ class BaseDatasetPopulator(BasePopulator):
             self.wait_for_tool_run(history_id, run_response, assert_ok=kwds.get("assert_ok", True))
         return run_response
 
+    def new_bam_dataset(self, history_id: str, test_data_resolver):
+        return self.new_dataset(
+            history_id, content=open(test_data_resolver.get_filename("1.bam"), "rb"), file_type="bam", wait=True
+        )
+
     def fetch(
         self,
         payload: dict,
@@ -925,6 +930,19 @@ class BaseDatasetPopulator(BasePopulator):
             return display_response.text
         else:
             return display_response.content
+
+    def display_chunk(self, dataset_id: str, offset: int = 0, ck_size: Optional[int] = None) -> Dict[str, Any]:
+        # use the dataset display API endpoint with the offset parameter to enable chunking
+        # of the target dataset for certain datatypes
+        kwds = {
+            "offset": offset,
+        }
+        if ck_size is not None:
+            kwds["ck_size"] = ck_size
+        display_response = self._get(f"datasets/{dataset_id}/display", kwds)
+        api_asserts.assert_status_code_is(display_response, 200)
+        print(display_response.content)
+        return display_response.json()
 
     def get_history_dataset_source_transform_actions(self, history_id: str, **kwd) -> Set[str]:
         details = self.get_history_dataset_details(history_id, **kwd)

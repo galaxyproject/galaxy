@@ -341,6 +341,118 @@ class TestDatasetsApi(ApiTestCase):
         self._assert_status_code_is(display_response, 200)
         assert display_response.text == contents
 
+    def test_dataprovider_chunk(self, history_id):
+        contents = textwrap.dedent(
+            """\
+        1   2   3   4
+        A   B   C   D
+        10  20  30  40
+        """
+        )
+        # test first chunk
+        hda1 = self.dataset_populator.new_dataset(history_id, content=contents, wait=True)
+        kwds = {
+            "data_type": "raw_data",
+            "provider": "chunk",
+            "chunk_index": "0",
+            "chunk_size": "5",
+        }
+
+        display_response = self._get(f"datasets/{hda1['id']}", kwds)
+        self._assert_status_code_is(display_response, 200)
+        display = display_response.json()
+        self._assert_has_key(display, "data")
+        assert display["data"] == ["1   2"]
+
+        # test index
+        kwds = {
+            "data_type": "raw_data",
+            "provider": "chunk",
+            "chunk_index": "1",
+            "chunk_size": "5",
+        }
+
+        display_response = self._get(f"datasets/{hda1['id']}", kwds)
+        self._assert_status_code_is(display_response, 200)
+        display = display_response.json()
+        self._assert_has_key(display, "data")
+        assert display["data"] == ["   3 "]
+
+        # test line breaks
+        kwds = {
+            "data_type": "raw_data",
+            "provider": "chunk",
+            "chunk_index": "0",
+            "chunk_size": "20",
+        }
+
+        display_response = self._get(f"datasets/{hda1['id']}", kwds)
+        self._assert_status_code_is(display_response, 200)
+        display = display_response.json()
+        self._assert_has_key(display, "data")
+        assert "\nA" in display["data"][0]
+
+    def test_bam_chunking_through_display_endpoint(self, history_id):
+        # This endpoint does not use data providers and instead overrides display_data
+        # in the bam datatype. This is the endpoint is very close to the legacy non-API
+        # controller endpoint used by the UI to produce these chunks.
+        bam_dataset = self.dataset_populator.new_bam_dataset(history_id, self.test_data_resolver)
+        bam_id = bam_dataset["id"]
+
+        chunk_1 = self._display_chunk(bam_id, 0, 1)
+        self._assert_has_keys(chunk_1, "offset", "ck_data")
+
+        offset = chunk_1["offset"]
+
+        chunk_2 = self._display_chunk(bam_id, offset, 1)
+        assert chunk_2["offset"] > offset
+        # chunk_1 just contains all the headers so this check wouldn't work.
+        assert len(chunk_2["ck_data"].split("\n")) == 1
+
+        double_chunk = self._display_chunk(bam_id, offset, 2)
+        assert len(double_chunk["ck_data"].split("\n")) == 2
+
+    def _display_chunk(self, dataset_id: str, offset: int, ck_size: int):
+        return self.dataset_populator.display_chunk(dataset_id, offset, ck_size)
+
+    def test_tabular_chunking_through_display_endpoint(self, history_id):
+        contents = textwrap.dedent(
+            """\
+        1   2   3   4
+        A   B   C   D
+        10  20  30  40
+        """
+        )
+        # test first chunk
+        hda1 = self.dataset_populator.new_dataset(history_id, content=contents, wait=True, file_type="tabular")
+        dataset_id = hda1["id"]
+        chunk_1 = self._display_chunk(dataset_id, 0, 1)
+        self._assert_has_keys(chunk_1, "offset", "ck_data")
+
+        assert chunk_1["ck_data"] == "1   2   3   4"
+        assert chunk_1["offset"] == 14
+
+        chunk_2 = self._display_chunk(dataset_id, 14, 1)
+        assert chunk_2["ck_data"] == "A   B   C   D"
+        assert chunk_2["offset"] == 28
+
+        chunk_3 = self._display_chunk(dataset_id, 28, 1)
+        assert chunk_3["ck_data"] == "10  20  30  40"
+
+    def test_connectivity_table_chunking_through_display_endpoint(self, history_id):
+        ct_dataset = self.dataset_populator.new_dataset(
+            history_id, content=open(self.test_data_resolver.get_filename("1.ct"), "rb"), file_type="ct", wait=True
+        )
+        dataset_id = ct_dataset["id"]
+        chunk_1 = self._display_chunk(dataset_id, 0, 1)
+        self._assert_has_keys(chunk_1, "offset", "ck_data")
+
+        assert chunk_1["ck_data"] == "363	tmRNA"
+        assert chunk_1["offset"] == 10, chunk_1
+
+        chunk_2 = self._display_chunk(dataset_id, 10, 1)
+        assert chunk_2["ck_data"] == "1	G	0	2	359	1"
+
     def test_head(self, history_id):
         hda1 = self.dataset_populator.new_dataset(history_id, wait=True)
         display_response = self._head(f"histories/{history_id}/contents/{hda1['id']}/display", {"raw": "True"})

@@ -415,9 +415,7 @@ class ImportExportTests(BaseHistories):
             raise SkipTest("skipping test_import_metadata_regeneration for task based...")
         history_name = f"for_import_metadata_regeneration_{uuid4()}"
         history_id = self.dataset_populator.new_history(name=history_name)
-        self.dataset_populator.new_dataset(
-            history_id, content=open(self.test_data_resolver.get_filename("1.bam"), "rb"), file_type="bam", wait=True
-        )
+        self.dataset_populator.new_bam_dataset(history_id, self.test_data_resolver)
         imported_history_id = self._reimport_history(history_id, history_name)
         self._assert_history_length(imported_history_id, 1)
         self._check_imported_dataset(history_id=imported_history_id, hid=1)
