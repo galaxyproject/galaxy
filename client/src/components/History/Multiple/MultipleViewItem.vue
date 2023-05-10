@@ -11,7 +11,6 @@
             :history="getHistory"
             :filter="filter"
             :show-controls="false"
-            v-on="handlers"
             @view-collection="onViewCollection" />
         <hr class="w-100 m-2" />
         <div class="flex-row flex-grow-0">
@@ -21,7 +20,7 @@
                 :disabled="sameToCurrent"
                 :variant="sameToCurrent ? 'disabled' : 'outline-info'"
                 :title="sameToCurrent ? 'Current History' : 'Switch to this history'"
-                @click="handlers.setCurrentHistory(source)">
+                @click="setCurrentHistory(source.id)">
                 {{ sameToCurrent ? "Current History" : "Switch to" }}
             </b-button>
             <b-button
@@ -29,7 +28,7 @@
                 class="my-1"
                 variant="outline-danger"
                 title="Hide this history from the list"
-                @click="removeHistoryFromList(source)">
+                @click="unpinHistory(source.id)">
                 Hide
             </b-button>
         </div>
@@ -37,7 +36,7 @@
 </template>
 
 <script>
-import { mapState } from "pinia";
+import { mapActions, mapState } from "pinia";
 import { useHistoryStore } from "@/stores/historyStore";
 import HistoryPanel from "components/History/CurrentHistory/HistoryPanel";
 import CollectionPanel from "components/History/CurrentCollection/CollectionPanel";
@@ -52,21 +51,9 @@ export default {
             type: Object,
             required: true,
         },
-        currentHistory: {
-            type: Object,
-            required: true,
-        },
-        handlers: {
-            type: Object,
-            required: true,
-        },
         filter: {
             type: String,
             default: null,
-        },
-        removeHistoryFromList: {
-            type: Function,
-            required: true,
         },
     },
     data() {
@@ -75,15 +62,16 @@ export default {
         };
     },
     computed: {
-        ...mapState(useHistoryStore, ["getHistoryById"]),
+        ...mapState(useHistoryStore, ["currentHistoryId", "getHistoryById"]),
         sameToCurrent() {
-            return this.currentHistory.id === this.source.id;
+            return this.currentHistoryId === this.source.id;
         },
         getHistory() {
             return this.getHistoryById(this.source.id);
         },
     },
     methods: {
+        ...mapActions(useHistoryStore, ["setCurrentHistory", "unpinHistory"]),
         onViewCollection(collection) {
             this.selectedCollections = [...this.selectedCollections, collection];
         },

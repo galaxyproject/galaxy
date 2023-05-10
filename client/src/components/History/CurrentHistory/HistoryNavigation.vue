@@ -14,7 +14,7 @@
                     variant="link"
                     :disabled="isAnonymous"
                     :title="userTitle('Create new history')"
-                    @click="$emit('createNewHistory')">
+                    @click="createNewHistory">
                     <Icon fixed-width icon="plus" />
                 </b-button>
 
@@ -137,17 +137,12 @@
         <SelectorModal
             id="selector-history-modal"
             :histories="histories"
-            :current-history-id="history.id"
             :additional-options="['center', 'multi']"
-            @selectHistory="$emit('setCurrentHistory', $event)" />
+            @selectHistory="setCurrentHistory($event.id)" />
 
         <CopyModal id="copy-current-history-modal" :history="history" />
 
-        <b-modal
-            id="history-privacy-modal"
-            title="Make History Private"
-            title-tag="h2"
-            @ok="$emit('secureHistory', history)">
+        <b-modal id="history-privacy-modal" title="Make History Private" title-tag="h2" @ok="secureHistory(history)">
             <p v-localize>
                 This will make all the data in this history private (excluding library datasets), and will set
                 permissions such that all new data is created as private. Any datasets within that are currently shared
@@ -155,7 +150,7 @@
             </p>
         </b-modal>
 
-        <b-modal id="delete-history-modal" title="Delete History?" title-tag="h2" @ok="$emit('deleteHistory', history)">
+        <b-modal id="delete-history-modal" title="Delete History?" title-tag="h2" @ok="deleteHistory(history.id)">
             <p v-localize>Really delete the current history?</p>
         </b-modal>
 
@@ -163,15 +158,16 @@
             id="purge-history-modal"
             title="Permanently Delete History?"
             title-tag="h2"
-            @ok="$emit('purgeHistory', history)">
+            @ok="deleteHistory(history.id, true)">
             <p v-localize>Really delete the current history permanently? This cannot be undone.</p>
         </b-modal>
     </div>
 </template>
 
 <script>
-import { mapState } from "pinia";
+import { mapActions, mapState } from "pinia";
 import { useUserStore } from "@/stores/userStore";
+import { useHistoryStore } from "@/stores/historyStore";
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import CopyModal from "components/History/Modals/CopyModal";
 import SelectorModal from "components/History/Modals/SelectorModal";
@@ -192,6 +188,7 @@ export default {
         ...mapState(useUserStore, ["isAnonymous"]),
     },
     methods: {
+        ...mapActions(useHistoryStore, ["createNewHistory", "deleteHistory", "secureHistory", "setCurrentHistory"]),
         userTitle(title) {
             if (this.isAnonymous) {
                 return this.l("Log in to") + " " + this.l(title);

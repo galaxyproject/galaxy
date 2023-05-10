@@ -13,6 +13,8 @@
 </template>
 
 <script>
+import { mapActions } from "pinia";
+import { useHistoryStore } from "@/stores/historyStore";
 import short from "components/directives/v-short";
 import DetailsLayout from "components/History/Layout/DetailsLayout";
 
@@ -28,9 +30,10 @@ export default {
         writeable: { type: Boolean, default: true },
     },
     methods: {
+        ...mapActions(useHistoryStore, ["updateHistory"]),
         onSave(newDetails) {
             const id = this.history.id;
-            this.$emit("update:history", { ...newDetails, id });
+            this.updateHistory({ ...newDetails, id });
         },
     },
 };

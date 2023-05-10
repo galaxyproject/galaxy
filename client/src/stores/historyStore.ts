@@ -152,14 +152,21 @@ export const useHistoryStore = defineStore(
             return selectHistory(newHistory as HistorySummary);
         }
 
+        function getNextAvailableHistoryId(excludedIds: string[]) {
+            const historyIds = Object.keys(storedHistories.value);
+            const filteredHistoryIds = historyIds.filter((id) => !excludedIds.includes(id));
+            return filteredHistoryIds[0];
+        }
+
         async function deleteHistory(historyId: string, purge: boolean) {
             const deletedHistory = (await deleteHistoryById(historyId, purge)) as HistorySummary;
-            Vue.delete(storedHistories.value, deletedHistory.id);
-            if (getFirstHistoryId.value) {
-                return setCurrentHistoryId(getFirstHistoryId.value);
+            const nextAvailableHistoryId = getNextAvailableHistoryId([deletedHistory.id]);
+            if (nextAvailableHistoryId) {
+                await setCurrentHistory(nextAvailableHistoryId);
             } else {
-                return createNewHistory();
+                await createNewHistory();
             }
+            Vue.delete(storedHistories.value, deletedHistory.id);
         }
 
         async function loadCurrentHistory() {
