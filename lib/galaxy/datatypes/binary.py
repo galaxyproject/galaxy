@@ -628,7 +628,7 @@ class BamNative(CompressedArchive, _BamOrSam):
                     for line_number, alignment in enumerate(bamfile, len(ck_lines)):
                         # return only Header lines if 'header_line_count' exceeds 'ck_size'
                         # FIXME: Can be problematic if bam has million lines of header
-                        if line_number > ck_size:
+                        if line_number >= ck_size:
                             break
 
                         offset = bamfile.tell()
