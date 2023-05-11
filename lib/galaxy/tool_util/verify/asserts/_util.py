@@ -1,10 +1,25 @@
 from math import inf
+from typing import (
+    Callable,
+    Optional,
+    TypeVar,
+    Union,
+)
 
 from galaxy.util import asbool
 from galaxy.util.bytesize import parse_bytesize
 
 
-def _assert_number(count, n, delta, min, max, negate, n_text, min_max_text):
+def _assert_number(
+    count: int,
+    n: Optional[Union[int, str]],
+    delta: Union[int, str],
+    min: Optional[Union[int, str]],
+    max: Optional[Union[int, str]],
+    negate: Union[bool, str],
+    n_text: str,
+    min_max_text: str,
+) -> None:
     """
     helper function for assering that count is in
     - [n-delta:n+delta]
@@ -26,12 +41,12 @@ def _assert_number(count, n, delta, min, max, negate, n_text, min_max_text):
         )
     if min is not None or max is not None:
         if min is None:
-            min = -inf  # also replacing min/max for output
+            min = "-inf"  # also replacing min/max for output
             min_bytes = -inf
         else:
             min_bytes = parse_bytesize(min)
         if max is None:
-            max = inf
+            max = "inf"
             max_bytes = inf
         else:
             max_bytes = parse_bytesize(max)
@@ -41,9 +56,24 @@ def _assert_number(count, n, delta, min, max, negate, n_text, min_max_text):
         )
 
 
+OutputType = TypeVar("OutputType")
+TextType = TypeVar("TextType")
+
+
 def _assert_presence_number(
-    output, text, n, delta, min, max, negate, check_presence_foo, count_foo, presence_text, n_text, min_max_text
-):
+    output: OutputType,
+    text: TextType,
+    n: Optional[Union[int, str]],
+    delta: Union[int, str],
+    min: Optional[Union[int, str]],
+    max: Optional[Union[int, str]],
+    negate: Union[bool, str],
+    check_presence_foo: Callable[[OutputType, TextType], bool],
+    count_foo: Callable[[OutputType, TextType], int],
+    presence_text: str,
+    n_text: str,
+    min_max_text: str,
+) -> None:
     """
     helper function to assert that
     - text is present in output using check_presence_foo
