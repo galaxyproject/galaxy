@@ -21,6 +21,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCopy, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { copy } from "utils/clipboard";
 import DatasetSourceTransform from "./DatasetSourceTransform";
+import _l from "utils/localization";
 
 library.add(faCopy, faExternalLinkAlt);
 
@@ -46,7 +47,7 @@ export default {
     },
     methods: {
         copyLink() {
-            copy(this.sourceUri, "Link copied to the clipboard.");
+            copy(this.sourceUri, _l("Link copied to your clipboard"));
         },
     },
 };

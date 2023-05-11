@@ -108,6 +108,10 @@ export interface paths {
          */
         get: operations["show_api_datasets__dataset_id__get"];
     };
+    "/api/datasets/{dataset_id}/content/{content_type}": {
+        /** Retrieve information about the content of a dataset. */
+        get: operations["get_structured_content_api_datasets__dataset_id__content__content_type__get"];
+    };
     "/api/datasets/{dataset_id}/converted": {
         /**
          * Return a a map with all the existing converted datasets associated with this instance.
@@ -1494,24 +1498,20 @@ export interface components {
              * @enum {string}
              */
             source: "admin" | "galaxy";
-            /**
-             * Type
-             * @enum {string}
-             */
+            /** Type */
             type:
-                | "faster"
-                | "slower"
-                | "short_term"
-                | "cloud"
-                | "backed_up"
-                | "not_backed_up"
-                | "more_secure"
-                | "less_secure"
-                | "more_stable"
-                | "less_stable"
-                | "quota"
-                | "no_quota"
-                | "restricted";
+                | (
+                      | "faster"
+                      | "slower"
+                      | "short_term"
+                      | "backed_up"
+                      | "not_backed_up"
+                      | "more_secure"
+                      | "less_secure"
+                      | "more_stable"
+                      | "less_stable"
+                  )
+                | ("cloud" | "quota" | "no_quota" | "restricted");
         };
         /**
          * BasicRoleModel
@@ -2472,6 +2472,12 @@ export interface components {
          * @description Represents a collection of elements contained in the dataset collection.
          */
         DatasetCollectionContentElements: components["schemas"]["DCESummary"][];
+        /**
+         * DatasetContentType
+         * @description For retrieving content from a structured dataset (e.g. HDF5)
+         * @enum {string}
+         */
+        DatasetContentType: "meta" | "attr" | "stats" | "data";
         /**
          * DatasetErrorMessage
          * @description Base model definition with common configuration used by all derived models.
@@ -4497,6 +4503,11 @@ export interface components {
              */
             name: string;
             /**
+             * Preferred Object Store ID
+             * @description The ID of the object store that should be used to store new datasets in this history.
+             */
+            preferred_object_store_id?: string;
+            /**
              * Published
              * @description Whether this resource is currently publicly available to all users.
              */
@@ -4599,6 +4610,11 @@ export interface components {
              */
             name: string;
             /**
+             * Preferred Object Store ID
+             * @description The ID of the object store that should be used to store new datasets in this history.
+             */
+            preferred_object_store_id?: string;
+            /**
              * Published
              * @description Whether this resource is currently publicly available to all users.
              */
@@ -4609,6 +4625,12 @@ export interface components {
              */
             purged: boolean;
             tags: components["schemas"]["TagCollection"];
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time and date this item was updated.
+             */
+            update_time: string;
             /**
              * URL
              * @deprecated
@@ -8181,6 +8203,34 @@ export interface operations {
             /** @description The encoded database identifier of the dataset. */
             path: {
                 dataset_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_structured_content_api_datasets__dataset_id__content__content_type__get: {
+        /** Retrieve information about the content of a dataset. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the dataset. */
+            path: {
+                dataset_id: string;
+                content_type: components["schemas"]["DatasetContentType"];
             };
         };
         responses: {

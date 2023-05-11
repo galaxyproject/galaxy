@@ -47,7 +47,7 @@ ssahapematches = {}  # type: ignore
 linkerlengths = {}  # type: ignore
 
 # set to true if something really fishy is going on with the sequences
-stern_warning = True
+stern_warning = False
 
 
 def read_bin_fragment(struct_def, fileh, offset=0, data=None, byte_padding=None):
@@ -983,7 +983,7 @@ def check_for_dubious_startseq(seqcheckstore, sffname, seqdata):
         for shortseq, count in seqdict.items():
             if float(count) / len(seqcheckstore) >= 0.5:
                 foundinloop = True
-                stern_warning
+                stern_warning = True
                 foundproblem = "\n" + "*" * 80
                 foundproblem += "\nWARNING: "
                 foundproblem += "weird sequences in file " + sffname + "\n\n"

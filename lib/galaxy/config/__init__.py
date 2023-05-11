@@ -112,6 +112,10 @@ LOGGING_CONFIG_DEFAULT: Dict[str, Any] = {
             "propagate": False,
             "handlers": ["console"],
         },
+        "watchdog.observers.inotify_buffer": {
+            "level": "INFO",
+            "qualname": "watchdog.observers.inotify_buffer",
+        },
     },
     "filters": {
         "stack": {

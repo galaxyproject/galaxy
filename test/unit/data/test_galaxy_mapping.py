@@ -753,7 +753,7 @@ class TestMappings(BaseModelTestCase):
         assert "id" in inspect(galaxy_model_object_new).unloaded
 
         # Verify a targeted flush prevent expiring unrelated objects.
-        galaxy_model_object_new.id
+        galaxy_model_object_new.id  # noqa: B018
         assert "id" not in inspect(galaxy_model_object_new).unloaded
         session.flush(model.GalaxySession())
         assert "id" not in inspect(galaxy_model_object_new).unloaded

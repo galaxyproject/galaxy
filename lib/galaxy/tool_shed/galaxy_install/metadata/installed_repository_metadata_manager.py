@@ -156,8 +156,9 @@ class InstalledRepositoryMetadataManager(MetadataGenerator):
                         unsuccessful_count += 1
                     else:
                         log.debug(
-                            "Successfully reset metadata on repository %s owned by %s"
-                            % (str(repository.name), str(repository.owner))
+                            "Successfully reset metadata on repository %s owned by %s",
+                            repository.name,
+                            repository.owner,
                         )
                         successful_count += 1
                 except Exception:

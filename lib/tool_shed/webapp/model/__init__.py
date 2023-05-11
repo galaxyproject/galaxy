@@ -438,8 +438,7 @@ class Repository(Base, Dictifiable):
             if str(role.name) == admin_role_name:
                 return role
         raise Exception(
-            "Repository %s owned by %s is not associated with a required administrative role."
-            % (str(self.name), str(self.user.username))
+            f"Repository {self.name} owned by {self.user.username} is not associated with a required administrative role."
         )
 
     def allow_push(self):

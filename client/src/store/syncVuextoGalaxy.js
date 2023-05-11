@@ -10,7 +10,7 @@ import { getGalaxyInstance } from "app";
 import { waitForInit } from "utils/observable";
 
 // store subscriptions
-import { syncUserToGalaxy } from "store/userStore";
+import { syncUserToGalaxy } from "stores/users/syncUserToGalaxy";
 import { syncConfigToGalaxy } from "store/configStore";
 
 export const syncVuextoGalaxy = (store) => {

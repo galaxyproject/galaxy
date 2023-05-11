@@ -1,132 +1,126 @@
 <template>
     <ConfigProvider v-slot="{ config }">
-        <CurrentUser v-slot="{ user }">
-            <UserHistories v-if="user" v-slot="{ currentHistoryId }" :user="user">
-                <div v-if="currentHistoryId">
-                    <b-alert :show="messageShow" :variant="messageVariant">
-                        {{ messageText }}
-                    </b-alert>
-                    <LoadingSpan v-if="showLoading" message="Loading Tool" />
-                    <div v-if="showEntryPoints">
-                        <ToolEntryPoints v-for="job in entryPoints" :key="job.id" :job-id="job.id" />
+        <div v-if="currentUser && currentHistoryId">
+            <b-alert :show="messageShow" :variant="messageVariant">
+                {{ messageText }}
+            </b-alert>
+            <LoadingSpan v-if="showLoading" message="Loading Tool" />
+            <div v-if="showEntryPoints">
+                <ToolEntryPoints v-for="job in entryPoints" :key="job.id" :job-id="job.id" />
+            </div>
+            <b-modal v-model="showError" size="sm" :title="errorTitle | l" scrollable ok-only>
+                <b-alert v-if="errorMessage" show variant="danger">
+                    {{ errorMessage }}
+                </b-alert>
+                <b-alert show variant="warning">
+                    The server could not complete this request. Please verify your parameter settings, retry submission
+                    and contact the Galaxy Team if this error persists. A transcript of the submitted data is shown
+                    below.
+                </b-alert>
+                <small class="text-muted">
+                    <pre>{{ errorContentPretty }}</pre>
+                </small>
+            </b-modal>
+            <ToolRecommendation v-if="showRecommendation" :tool-id="formConfig.id" />
+            <ToolCard
+                v-if="showForm"
+                :id="formConfig.id"
+                :version="formConfig.version"
+                :title="formConfig.name"
+                :description="formConfig.description"
+                :options="formConfig"
+                :message-text="messageText"
+                :message-variant="messageVariant"
+                :disabled="disabled || showExecuting"
+                :allow-object-store-selection="config.object_store_allows_id_selection"
+                :preferred-object-store-id="preferredObjectStoreId"
+                itemscope="itemscope"
+                itemtype="https://schema.org/CreativeWork"
+                @updatePreferredObjectStoreId="onUpdatePreferredObjectStoreId"
+                @onChangeVersion="onChangeVersion">
+                <template v-slot:body>
+                    <div class="mt-2 mb-4">
+                        <Heading h2 separator bold size="sm"> Tool Parameters </Heading>
+                        <FormDisplay
+                            :id="toolId"
+                            :inputs="formConfig.inputs"
+                            :validation-scroll-to="validationScrollTo"
+                            @onChange="onChange"
+                            @onValidation="onValidation" />
                     </div>
-                    <b-modal v-model="showError" size="sm" :title="errorTitle | l" scrollable ok-only>
-                        <b-alert v-if="errorMessage" show variant="danger">
-                            {{ errorMessage }}
-                        </b-alert>
-                        <b-alert show variant="warning">
-                            The server could not complete this request. Please verify your parameter settings, retry
-                            submission and contact the Galaxy Team if this error persists. A transcript of the submitted
-                            data is shown below.
-                        </b-alert>
-                        <small class="text-muted">
-                            <pre>{{ errorContentPretty }}</pre>
-                        </small>
-                    </b-modal>
-                    <ToolRecommendation v-if="showRecommendation" :tool-id="formConfig.id" />
-                    <ToolCard
-                        v-if="showForm"
-                        :id="formConfig.id"
-                        :version="formConfig.version"
-                        :title="formConfig.name"
-                        :description="formConfig.description"
-                        :options="formConfig"
-                        :message-text="messageText"
-                        :message-variant="messageVariant"
-                        :disabled="disabled || showExecuting"
-                        :allow-object-store-selection="config.object_store_allows_id_selection"
-                        :preferred-object-store-id="preferredObjectStoreId"
-                        itemscope="itemscope"
-                        itemtype="https://schema.org/CreativeWork"
-                        @updatePreferredObjectStoreId="onUpdatePreferredObjectStoreId"
-                        @onChangeVersion="onChangeVersion">
-                        <template v-slot:body>
-                            <div class="mt-2 mb-4">
-                                <Heading h2 separator bold size="sm"> Tool Parameters </Heading>
-                                <FormDisplay
-                                    :id="toolId"
-                                    :inputs="formConfig.inputs"
-                                    :validation-scroll-to="validationScrollTo"
-                                    @onChange="onChange"
-                                    @onValidation="onValidation" />
-                            </div>
 
-                            <div
-                                v-if="emailAllowed(config, user) || remapAllowed || reuseAllowed(user)"
-                                class="mt-2 mb-4">
-                                <Heading h2 separator bold size="sm"> Additional Options </Heading>
-                                <FormElement
-                                    v-if="emailAllowed(config, user)"
-                                    id="send_email_notification"
-                                    v-model="useEmail"
-                                    title="Email notification"
-                                    help="Send an email notification when the job completes."
-                                    type="boolean" />
-                                <FormElement
-                                    v-if="remapAllowed"
-                                    id="rerun_remap_job_id"
-                                    v-model="useJobRemapping"
-                                    :title="remapTitle"
-                                    :help="remapHelp"
-                                    type="boolean" />
-                                <FormElement
-                                    v-if="reuseAllowed(user)"
-                                    id="use_cached_job"
-                                    v-model="useCachedJobs"
-                                    title="Attempt to re-use jobs with identical parameters?"
-                                    help="This may skip executing jobs that you have already run."
-                                    type="boolean" />
-                            </div>
-                        </template>
-                        <template v-slot:header-buttons>
-                            <ButtonSpinner
-                                title="Run Tool"
-                                class="btn-sm"
-                                :wait="showExecuting"
-                                :tooltip="tooltip"
-                                @onClick="onExecute(config, currentHistoryId)" />
-                        </template>
-                        <template v-slot:buttons>
-                            <ButtonSpinner
-                                id="execute"
-                                title="Run Tool"
-                                class="mt-3 mb-3"
-                                :wait="showExecuting"
-                                :tooltip="tooltip"
-                                @onClick="onExecute(config, currentHistoryId)" />
-                        </template>
-                    </ToolCard>
-                </div>
-            </UserHistories>
-        </CurrentUser>
+                    <div
+                        v-if="emailAllowed(config, currentUser) || remapAllowed || reuseAllowed(currentUser)"
+                        class="mt-2 mb-4">
+                        <Heading h2 separator bold size="sm"> Additional Options </Heading>
+                        <FormElement
+                            v-if="emailAllowed(config, currentUser)"
+                            id="send_email_notification"
+                            v-model="useEmail"
+                            title="Email notification"
+                            help="Send an email notification when the job completes."
+                            type="boolean" />
+                        <FormElement
+                            v-if="remapAllowed"
+                            id="rerun_remap_job_id"
+                            v-model="useJobRemapping"
+                            :title="remapTitle"
+                            :help="remapHelp"
+                            type="boolean" />
+                        <FormElement
+                            v-if="reuseAllowed(currentUser)"
+                            id="use_cached_job"
+                            v-model="useCachedJobs"
+                            title="Attempt to re-use jobs with identical parameters?"
+                            help="This may skip executing jobs that you have already run."
+                            type="boolean" />
+                    </div>
+                </template>
+                <template v-slot:header-buttons>
+                    <ButtonSpinner
+                        id="execute"
+                        title="Run Tool"
+                        class="btn-sm"
+                        :wait="showExecuting"
+                        :tooltip="tooltip"
+                        @onClick="onExecute(config, currentHistoryId)" />
+                </template>
+                <template v-slot:buttons>
+                    <ButtonSpinner
+                        title="Run Tool"
+                        class="mt-3 mb-3"
+                        :wait="showExecuting"
+                        :tooltip="tooltip"
+                        @onClick="onExecute(config, currentHistoryId)" />
+                </template>
+            </ToolCard>
+        </div>
     </ConfigProvider>
 </template>
 
 <script>
 import { getGalaxyInstance } from "app";
+import { useUserStore } from "@/stores/userStore";
+import { useHistoryStore } from "@/stores/historyStore";
 import { useHistoryItemsStore } from "stores/history/historyItemsStore";
 import { useJobStore } from "stores/jobStore";
 import { mapState, mapActions } from "pinia";
-import { mapGetters } from "vuex";
 import { getToolFormData, updateToolFormData, submitJob } from "./services";
 import { allowCachedJobs } from "./utilities";
 import { refreshContentsWrapper } from "utils/data";
 import ToolCard from "./ToolCard";
 import ButtonSpinner from "components/Common/ButtonSpinner";
-import CurrentUser from "components/providers/CurrentUser";
 import ConfigProvider from "components/providers/ConfigProvider";
 import LoadingSpan from "components/LoadingSpan";
 import FormDisplay from "components/Form/FormDisplay";
 import FormElement from "components/Form/FormElement";
 import ToolEntryPoints from "components/ToolEntryPoints/ToolEntryPoints";
 import ToolRecommendation from "../ToolRecommendation";
-import UserHistories from "components/providers/UserHistories";
 import Heading from "components/Common/Heading";
 
 export default {
     components: {
         ButtonSpinner,
-        CurrentUser,
         ConfigProvider,
         LoadingSpan,
         FormDisplay,
@@ -134,7 +128,6 @@ export default {
         FormElement,
         ToolEntryPoints,
         ToolRecommendation,
-        UserHistories,
         Heading,
     },
     props: {
@@ -187,8 +180,9 @@ export default {
         };
     },
     computed: {
+        ...mapState(useUserStore, ["currentUser"]),
+        ...mapState(useHistoryStore, ["currentHistoryId"]),
         ...mapState(useHistoryItemsStore, ["getLastUpdateTime"]),
-        ...mapGetters("history", ["currentHistoryId"]),
         toolName() {
             return this.formConfig.name;
         },
@@ -360,7 +354,7 @@ export default {
                         if ([true, "true"].includes(config.enable_tool_recommendations)) {
                             this.showRecommendation = true;
                         }
-                        document.querySelector(".center-panel").scrollTop = 0;
+                        document.querySelector("#center").scrollTop = 0;
                     }
                 },
                 (e) => {

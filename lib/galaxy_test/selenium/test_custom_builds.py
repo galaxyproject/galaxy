@@ -78,8 +78,8 @@ class TestCustomBuilds(SharedStateSeleniumTestCase):
 
     def navigate_to_custom_builds_page(self):
         self.home()
-        self.click_masthead_user()  # Open masthead menu
-        self.components.masthead.custom_builds.wait_for_and_click()
+        self.navigate_to_user_preferences()
+        self.components.preferences.custom_builds.wait_for_and_click()
 
     def setup_shared_state(self):
         TestCustomBuilds.user_email = self._get_random_email()

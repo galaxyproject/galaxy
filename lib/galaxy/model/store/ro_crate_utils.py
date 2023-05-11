@@ -3,6 +3,7 @@ import os
 from typing import (
     Any,
     Dict,
+    Optional,
 )
 
 from rocrate.model.computationalworkflow import (
@@ -46,11 +47,6 @@ class WorkflowRunCrateProfileBuilder:
         self.model_store = model_store
         self.invocation: WorkflowInvocation = model_store.included_invocations[0]
         self.workflow: Workflow = self.invocation.workflow
-        self.collection_type_mapping = {
-            "list": "https://training.galaxyproject.org/training-material/faqs/galaxy/collections_build_list.html",
-            "paired": "https://training.galaxyproject.org/training-material/faqs/galaxy/collections_build_list_paired.html",
-            None: "https://training.galaxyproject.org/training-material/faqs/galaxy/collections_build_list.html",
-        }
         self.param_type_mapping = {
             "integer": "Integer",
             "text": "Text",
@@ -72,7 +68,6 @@ class WorkflowRunCrateProfileBuilder:
             "rules": "Text",
             "directory_uri": "URI",
             "drill_down": "Text",
-            None: "Text",
         }
 
         self.ignored_parameter_type = [
@@ -157,7 +152,7 @@ class WorkflowRunCrateProfileBuilder:
         collection_properties = {
             "name": name,
             "@type": "Collection",
-            "additionalType": self.collection_type_mapping[hdca.collection.collection_type],
+            "additionalType": self._get_collection_additional_type(hdca.collection.collection_type),
             "hasPart": dataset_ids,
             "exampleOfWork": {"@id": f"#{hdca.type_id}-param"},
         }
@@ -173,6 +168,16 @@ class WorkflowRunCrateProfileBuilder:
         crate.root_dataset.append_to("mentions", collection_entity)
 
         return collection_entity
+
+    def _get_collection_additional_type(self, collection_type: Optional[str]) -> str:
+        if collection_type and "paired" in collection_type:
+            return "https://training.galaxyproject.org/training-material/faqs/galaxy/collections_build_list_paired.html"
+        return "https://training.galaxyproject.org/training-material/faqs/galaxy/collections_build_list.html"
+
+    def _get_parameter_additional_type(self, parameter_type: Optional[str]) -> str:
+        if parameter_type in self.param_type_mapping:
+            return self.param_type_mapping[parameter_type]
+        return "Text"
 
     def _add_collections(self, crate: ROCrate):
         for wfdca in self.invocation.input_dataset_collections:
@@ -356,7 +361,7 @@ class WorkflowRunCrateProfileBuilder:
                 f"{param_id}-param",
                 properties={
                     "@type": "FormalParameter",
-                    "additionalType": self.param_type_mapping[param_type],
+                    "additionalType": self._get_parameter_additional_type(param_type),
                     "description": self._get_association_description(step.workflow_step),
                     "name": f"{param_id}",
                     "valueRequired": str(not step.workflow_step.input_optional),
@@ -387,7 +392,7 @@ class WorkflowRunCrateProfileBuilder:
             f"{param_id}-param",
             properties={
                 "@type": "FormalParameter",
-                "additionalType": self.param_type_mapping[param_type],
+                "additionalType": self._get_parameter_additional_type(param_type),
                 "description": self._get_association_description(step.workflow_step),
                 "name": f"{step.workflow_step.label}",
                 "valueRequired": str(not step.workflow_step.input_optional),

@@ -16,7 +16,9 @@
                 <font-awesome-icon class="workflow-external-link" icon="link" />
             </span>
         </b-link>
-        <p v-if="workflow.description" class="workflow-dropdown-description">{{ workflow.description }}</p>
+        <p v-if="workflow.description" class="workflow-dropdown-description">
+            <TextSummary :description="workflow.description" :show-details.sync="showDetails" />
+        </p>
         <div class="dropdown-menu" aria-labelledby="workflow-dropdown">
             <a
                 v-if="!readOnly && !isDeleted"
@@ -80,6 +82,7 @@
 <script>
 import { Services } from "./services";
 import { withPrefix } from "utils/redirect";
+import TextSummary from "components/Common/TextSummary";
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -89,10 +92,22 @@ library.add(faCaretDown);
 
 export default {
     components: {
+        TextSummary,
         FontAwesomeIcon,
     },
-    props: ["workflow"],
+    props: {
+        workflow: { type: Object, required: true },
+        detailsShowing: { type: Boolean, default: false },
+    },
     computed: {
+        showDetails: {
+            get() {
+                return this.detailsShowing;
+            },
+            set() {
+                this.$emit("toggleDetails");
+            },
+        },
         urlEdit() {
             return `/workflows/edit?id=${this.workflow.id}`;
         },

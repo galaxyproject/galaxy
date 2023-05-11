@@ -32,12 +32,14 @@
             <template v-slot:cell(name)="row">
                 <WorkflowDropdown
                     :workflow="row.item"
+                    :details-showing="row.detailsShowing"
                     @onAdd="onAdd"
                     @onRemove="onRemove"
                     @onUpdate="onUpdate"
                     @onSuccess="onSuccess"
                     @onError="onError"
-                    @onRestore="onRestore" />
+                    @onRestore="onRestore"
+                    @toggleDetails="row.toggleDetails" />
             </template>
             <template v-slot:cell(tags)="row">
                 <Tags
@@ -67,6 +69,11 @@
             <template v-slot:cell(execute)="row">
                 <WorkflowRunButton v-if="!row.item.deleted" :id="row.item.id" :root="root" />
                 <div v-else>&#8212;</div>
+            </template>
+            <template v-slot:row-details="data">
+                <b-card>
+                    <p class="workflow-dropdown-description">{{ data.item.description }}</p>
+                </b-card>
             </template>
         </b-table>
         <b-pagination

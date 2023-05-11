@@ -127,12 +127,12 @@
 -->
 
 <!--
-    Sample S3 Object Store
+    Sample AWS S3 Object Store
 
     The "size" attribute of <cache> is in gigabytes.
 -->
 <!--
-<object_store type="s3">
+<object_store type="aws_s3">
      <auth access_key="...." secret_key="....." />
      <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
      <cache path="database/object_store_cache" size="1000" />
@@ -157,12 +157,12 @@
 -->
 
 <!--
-    Sample Swift Object Store
+    Sample non-AWS S3 Object Store (e.g. swift)
 
     The "size" attribute of <cache> is in gigabytes.
 -->
 <!--
-<object_store type="swift">
+<object_store type="generic_s3">
     <auth access_key="...." secret_key="....." />
     <bucket name="unique_bucket_name" use_reduced_redundancy="False" max_chunk_size="250"/>
     <connection host="" port="" is_secure="" conn_path="" multipart="True"/>

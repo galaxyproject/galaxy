@@ -234,7 +234,10 @@ class NavigatesGalaxy(HasDriver):
     def home(self) -> None:
         """Return to root Galaxy page and wait for some basic widgets to appear."""
         self.get()
-        self.components.masthead._.wait_for_visible()
+        try:
+            self.components.masthead._.wait_for_visible()
+        except SeleniumTimeoutException as e:
+            raise ClientBuildException(e)
 
     def go_to_trs_search(self) -> None:
         self.driver.get(self.build_url("workflows/trs_search"))
@@ -1080,6 +1083,21 @@ class NavigatesGalaxy(HasDriver):
         self.click_masthead_user()
         self.components.masthead.pages.wait_for_and_click()
 
+    def navigate_to_published_workflows(self):
+        self.home()
+        self.click_masthead_shared_data()
+        self.components.masthead.published_workflows.wait_for_and_click()
+
+    def navigate_to_published_histories_page(self):
+        self.home()
+        self.click_masthead_shared_data()
+        self.components.masthead.published_histories.wait_for_and_click()
+
+    def navigate_to_published_pages(self):
+        self.home()
+        self.click_masthead_shared_data()
+        self.components.masthead.published_pages.wait_for_and_click()
+
     def admin_open(self):
         self.components.masthead.admin.wait_for_and_click()
 
@@ -1240,6 +1258,16 @@ class NavigatesGalaxy(HasDriver):
         center_element = self.driver.find_element(By.CSS_SELECTOR, "#center")
         action_chains.move_to_element(center_element).perform()
         self.wait_for_selector_absent_or_hidden(".b-tooltip", wait_type=WAIT_TYPES.UX_POPUP)
+
+    def pages_index_table_elements(self):
+        pages = self.components.pages
+        pages.index_table.wait_for_visible()
+        return pages.index_rows.all()
+
+    def page_index_click_option(self, option_title, page_id):
+        self.components.pages.dropdown(id=page_id).wait_for_and_click()
+        if not self.select_dropdown_item(option_title):
+            raise AssertionError(f"Failed to find page action option with title [{option_title}]")
 
     def workflow_index_open(self):
         self.home()
@@ -2064,4 +2092,10 @@ class NotLoggedInException(SeleniumTimeoutException):
     def __init__(self, timeout_exception, user_info, dom_message):
         template = "Waiting for UI to reflect user logged in but it did not occur. API indicates no user is currently logged in. %s API response was [%s]. %s"
         msg = template % (dom_message, user_info, timeout_exception.msg)
+        super().__init__(msg=msg, screen=timeout_exception.screen, stacktrace=timeout_exception.stacktrace)
+
+
+class ClientBuildException(SeleniumTimeoutException):
+    def __init__(self, timeout_exception: SeleniumTimeoutException):
+        msg = f"Error waiting for Galaxy masthead to appear, this frequently means there is a problem with the client build and the Galaxy client is broken. {timeout_exception.msg}"
         super().__init__(msg=msg, screen=timeout_exception.screen, stacktrace=timeout_exception.stacktrace)

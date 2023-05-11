@@ -48,6 +48,19 @@ export function createWhooshQuery(filterSettings, panelView, toolbox) {
     return query;
 }
 
+// Determines width given the root and draggable element, smallest and largest size and the current position
+export function determineWidth(rectRoot, rectDraggable, minWidth, maxWidth, direction, positionX) {
+    let newWidth = null;
+    if (direction === "right") {
+        const offset = rectRoot.left - rectDraggable.left;
+        newWidth = rectRoot.right - positionX - offset;
+    } else {
+        const offset = rectRoot.right - rectDraggable.left;
+        newWidth = positionX - rectRoot.left + offset;
+    }
+    return Math.max(minWidth, Math.min(maxWidth, newWidth));
+}
+
 // Given toolbox and search results, returns filtered tool results
 export function filterTools(tools, results) {
     let toolsResults = [];

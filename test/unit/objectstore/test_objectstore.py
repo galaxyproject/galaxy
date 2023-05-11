@@ -735,7 +735,7 @@ def test_config_parse_s3():
             as_dict = object_store.to_dict()
             _assert_has_keys(as_dict, ["auth", "bucket", "connection", "cache", "extra_dirs", "type"])
 
-            _assert_key_has_value(as_dict, "type", "s3")
+            _assert_key_has_value(as_dict, "type", "aws_s3")
 
             auth_dict = as_dict["auth"]
             bucket_dict = as_dict["bucket"]

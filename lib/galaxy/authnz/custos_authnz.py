@@ -15,10 +15,7 @@ import requests
 from oauthlib.common import generate_nonce
 from requests_oauthlib import OAuth2Session
 
-from galaxy import (
-    exceptions,
-    util,
-)
+from galaxy import util
 from galaxy.model import (
     CustosAuthnzToken,
     User,
@@ -48,8 +45,12 @@ class CustosAuthnz(IdentityProvider):
         self.config = {"provider": provider}
         self.config["verify_ssl"] = oidc_config["VERIFY_SSL"]
         self.config["url"] = oidc_backend_config["url"]
+        self.config["label"] = oidc_backend_config.get("label", provider.capitalize())
         self.config["client_id"] = oidc_backend_config["client_id"]
         self.config["client_secret"] = oidc_backend_config["client_secret"]
+        self.config["require_create_confirmation"] = oidc_backend_config.get(
+            "require_create_confirmation", provider == "custos"
+        )
         self.config["redirect_uri"] = oidc_backend_config["redirect_uri"]
         self.config["ca_bundle"] = oidc_backend_config.get("ca_bundle", None)
         self.config["pkce_support"] = oidc_backend_config.get("pkce_support", False)
@@ -183,8 +184,8 @@ class CustosAuthnz(IdentityProvider):
         custos_authnz_token = self._get_custos_authnz_token(trans.sa_session, user_id, self.config["provider"])
         if custos_authnz_token is None:
             user = trans.user
+            existing_user = trans.sa_session.query(User).filter_by(email=email).first()
             if not user:
-                existing_user = trans.sa_session.query(User).filter_by(email=email).first()
                 if existing_user:
                     # If there is only a single external authentication
                     # provider in use, trust the user provided and
@@ -200,16 +201,23 @@ class CustosAuthnz(IdentityProvider):
                         user = existing_user
                     else:
                         message = f"There already exists a user with email {email}.  To associate this external login, you must first be logged in as that existing account."
-                        log.exception(message)
-                        raise exceptions.AuthenticationFailed(message)
-                elif self.config["provider"] == "custos":
-                    login_redirect_url = f"{login_redirect_url}root/login?confirm=true&custos_token={json.dumps(token)}"
+                        log.info(message)
+                        login_redirect_url = (
+                            f"{login_redirect_url}login/start"
+                            f"?connect_external_provider={self.config['provider']}"
+                            f"&connect_external_email={email}"
+                            f"&connect_external_label={self.config['label']}"
+                        )
+                        return login_redirect_url, None
+                elif self.config["require_create_confirmation"]:
+                    login_redirect_url = f"{login_redirect_url}login/start?confirm=true&provider_token={json.dumps(token)}&provider={self.config['provider']}"
                     return login_redirect_url, None
                 else:
                     user = trans.app.user_manager.create(email=email, username=username)
                     if trans.app.config.user_activation_on:
                         trans.app.user_manager.send_activation_email(trans, email, username)
 
+            # Create a token to link this identity with an existing account
             custos_authnz_token = CustosAuthnzToken(
                 user=user,
                 external_user_id=user_id,
@@ -220,15 +228,33 @@ class CustosAuthnz(IdentityProvider):
                 expiration_time=expiration_time,
                 refresh_expiration_time=refresh_expiration_time,
             )
+            label = self.config["label"]
+            if existing_user and existing_user != user:
+                redirect_url = (
+                    f"{login_redirect_url}user/external_ids"
+                    f"?email_exists={email}"
+                    f"&notification=Your%20{label}%20identity%20has%20been%20linked"
+                    "%20to%20your%20Galaxy%20account."
+                )
+            else:
+                redirect_url = (
+                    f"{login_redirect_url}user/external_ids"
+                    f"?notification=Your%20{label}%20identity%20has%20been%20linked"
+                    "%20to%20your%20Galaxy%20account."
+                )
         else:
+            # Identity is already linked to account - login as usual
             custos_authnz_token.access_token = access_token
             custos_authnz_token.id_token = id_token
             custos_authnz_token.refresh_token = refresh_token
             custos_authnz_token.expiration_time = expiration_time
             custos_authnz_token.refresh_expiration_time = refresh_expiration_time
+            redirect_url = "/"
+
         trans.sa_session.add(custos_authnz_token)
         trans.sa_session.flush()
-        return "/", custos_authnz_token.user
+
+        return redirect_url, custos_authnz_token.user
 
     def create_user(self, token, trans, login_redirect_url):
         token_dict = json.loads(token)

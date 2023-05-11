@@ -975,6 +975,12 @@ class HistorySummary(HistoryBase):
     )
     annotation: Optional[str] = AnnotationField
     tags: TagCollection
+    update_time: datetime = UpdateTimeField
+    preferred_object_store_id: Optional[str] = Field(
+        None,
+        title="Preferred Object Store ID",
+        description="The ID of the object store that should be used to store new datasets in this history.",
+    )
 
 
 class HistoryActiveContentCounts(Model):
@@ -1016,7 +1022,6 @@ class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, whi
         description="The encoded ID of the user that owns this History.",
     )
     create_time: datetime = CreateTimeField
-    update_time: datetime = UpdateTimeField
     importable: bool = Field(
         ...,
         title="Importable",

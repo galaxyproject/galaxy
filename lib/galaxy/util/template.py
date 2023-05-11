@@ -3,11 +3,11 @@
 import traceback
 from lib2to3.refactor import RefactoringTool
 
-import packaging.version
 from Cheetah.Compiler import Compiler
 from Cheetah.NameMapper import NotFound
 from Cheetah.Parser import ParseError
 from Cheetah.Template import Template
+from packaging.version import Version
 from past.translation import myfixes
 
 from . import unicodify
@@ -55,7 +55,7 @@ def fill_template(
     if not context:
         context = kwargs
     if isinstance(python_template_version, str):
-        python_template_version = packaging.version.parse(python_template_version)
+        python_template_version = Version(python_template_version)
     try:
         klass = Template.compile(source=template_text, compilerClass=compiler_class)
     except ParseError as e:

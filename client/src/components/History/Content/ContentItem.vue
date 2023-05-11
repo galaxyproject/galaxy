@@ -92,7 +92,7 @@
                 v-if="expandDataset"
                 :dataset="item"
                 :writable="writable"
-                :show-highlight="isHistoryItem && filterable"
+                :show-highlight="(isHistoryItem && filterable) || addHighlightBtn"
                 :item-urls="itemUrls"
                 @edit="onEdit"
                 @toggleHighlights="toggleHighlights" />
@@ -125,6 +125,7 @@ export default {
     props: {
         writable: { type: Boolean, default: true },
         expandDataset: { type: Boolean, required: true },
+        addHighlightBtn: { type: Boolean, default: false },
         highlight: { type: String, default: null },
         id: { type: Number, required: true },
         isDataset: { type: Boolean, default: true },

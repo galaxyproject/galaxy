@@ -185,9 +185,8 @@ class GitLabPlugin(BaseGitPlugin):
                         )
 
                 return (
-                    'Submitted error report to GitLab. Your issue number is <a href="%s/%s/issues/%s" '
-                    'target="_blank">#%s</a>.'
-                    % (
+                    'Submitted error report to GitLab. Your issue number is <a href="{}/{}/issues/{}" '
+                    'target="_blank">#{}</a>.'.format(
                         self.gitlab_base_url,
                         gitlab_projecturl,
                         self.issue_cache[issue_cache_key][error_title],

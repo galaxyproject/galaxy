@@ -60,8 +60,8 @@
                                 >
                             </b-card-body>
                         </b-collapse>
-                        <b-card-footer v-if="showLoginLink" v-localize>
-                            Already have an account?
+                        <b-card-footer v-if="showLoginLink">
+                            <span v-localize>Already have an account?</span>
                             <a
                                 id="login-toggle"
                                 v-localize

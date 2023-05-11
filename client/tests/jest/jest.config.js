@@ -38,7 +38,7 @@ module.exports = {
     rootDir: path.join(__dirname, "../../"),
     roots: ["<rootDir>/src/", "<rootDir>/tests/jest/standalone/"],
     setupFilesAfterEnv: ["<rootDir>/tests/jest/jest.setup.js"],
-    testEnvironment: "jsdom",
+    testEnvironment: "<rootDir>/tests/jest/jest-environment.js",
     testPathIgnorePatterns: ["/node_modules/", "/dist/"],
     transform: {
         "^.+\\.js$": "babel-jest",

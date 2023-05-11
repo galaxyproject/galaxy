@@ -31,12 +31,10 @@
                     v-if="showControls"
                     class="content-operations-filters mx-3"
                     :filter-text.sync="filterText"
-                    :show-advanced.sync="showAdvanced" />
+                    :show-advanced.sync="showAdvanced"
+                    :search-error="formattedSearchError" />
                 <section v-if="!showAdvanced">
-                    <HistoryDetails
-                        :history="history"
-                        :writeable="writable"
-                        @update:history="$emit('updateHistory', $event)" />
+                    <HistoryDetails :history="history" :writeable="writable" @update:history="updateHistory($event)" />
                     <HistoryMessages :history="history" />
                     <HistoryCounter
                         :history="history"
@@ -93,6 +91,12 @@
                         </b-alert>
                         <div v-else-if="itemsLoaded.length === 0">
                             <HistoryEmpty v-if="queryDefault" class="m-2" />
+                            <b-alert v-else-if="formattedSearchError" class="m-2" variant="danger" show>
+                                Error in filter:
+                                <a href="javascript:void(0)" @click="showAdvanced = true">
+                                    {{ formattedSearchError.filter }}'{{ formattedSearchError.value }}'
+                                </a>
+                            </b-alert>
                             <b-alert v-else class="m-2" variant="info" show>
                                 No data found for selected filter.
                             </b-alert>
@@ -119,7 +123,7 @@
                                     :filterable="filterable"
                                     @tag-click="onTagClick"
                                     @tag-change="onTagChange"
-                                    @toggleHighlights="toggleHighlights"
+                                    @toggleHighlights="updateFilterVal('related', item.hid)"
                                     @update:expand-dataset="setExpanded(item, $event)"
                                     @update:selected="setSelected(item, $event)"
                                     @view-collection="$emit('view-collection', item, currentOffset)"
@@ -138,7 +142,7 @@
 <script>
 import Vue from "vue";
 import { Toast } from "composables/toast";
-import { mapActions as vuexMapActions } from "vuex";
+import { useHistoryStore } from "stores/historyStore";
 import { mapActions, mapState, storeToRefs } from "pinia";
 import { useHistoryItemsStore } from "stores/history/historyItemsStore";
 import LoadingSpan from "components/LoadingSpan";
@@ -148,11 +152,13 @@ import ExpandedItems from "components/History/Content/ExpandedItems";
 import SelectedItems from "components/History/Content/SelectedItems";
 import ListingLayout from "components/History/Layout/ListingLayout";
 import HistoryCounter from "./HistoryCounter";
-import HistoryOperations from "./HistoryOperations/Index";
+import HistoryOperations from "./HistoryOperations/HistoryOperations";
 import HistoryDetails from "./HistoryDetails";
 import HistoryDropZone from "./HistoryDropZone";
 import HistoryEmpty from "./HistoryEmpty";
 import HistoryFilters from "./HistoryFilters/HistoryFilters";
+import { HistoryFilters as FilterClass } from "components/History/HistoryFilters";
+import { getOperatorForAlias } from "utils/filtering";
 import HistoryMessages from "./HistoryMessages";
 import HistorySelectionOperations from "./HistoryOperations/SelectionOperations";
 import HistorySelectionStatus from "./HistoryOperations/SelectionStatus";
@@ -190,12 +196,11 @@ export default {
     },
     data() {
         return {
-            error: null,
             filterText: "",
-            highlightsKey: null,
             invisible: {},
             loading: false,
             offset: 0,
+            searchError: null,
             showAdvanced: false,
             showDropZone: false,
             operationRunning: null,
@@ -248,6 +253,32 @@ export default {
             const { getWatchingVisibility } = storeToRefs(useHistoryItemsStore());
             return getWatchingVisibility.value;
         },
+        /** @returns {Object} */
+        formattedSearchError() {
+            if (this.searchError) {
+                const { column, col, operation, op, value, val, err_msg, ValueError } = this.searchError;
+                const alias = operation || op;
+                const operator = alias ? getOperatorForAlias(alias) : ":";
+                const formatted = {
+                    filter: `${column || col}${operator}`,
+                    value: value || val,
+                    msg: err_msg,
+                    typeError: ValueError,
+                };
+                return formatted;
+            } else {
+                return null;
+            }
+        },
+        /** @returns {String} */
+        storeFilterText() {
+            const { currentFilterText, currentHistoryId } = storeToRefs(useHistoryStore());
+            if (this.historyId === currentHistoryId.value) {
+                return currentFilterText.value || "";
+            } else {
+                return "";
+            }
+        },
     },
     watch: {
         queryKey() {
@@ -263,6 +294,16 @@ export default {
         filter(newVal) {
             this.filterText = newVal;
         },
+        filterText(newVal) {
+            if (this.filterable) {
+                this.setFilterText(this.historyId, newVal);
+            }
+        },
+        storeFilterText(newVal) {
+            if (this.filterable) {
+                this.filterText = newVal;
+            }
+        },
         offset() {
             this.loadHistoryItems();
         },
@@ -271,23 +312,26 @@ export default {
         },
     },
     async mounted() {
+        // `filterable` here indicates if this is the current history panel
+        if (this.filterable && !this.filter) {
+            this.filterText = this.storeFilterText;
+        }
         await this.loadHistoryItems();
     },
     methods: {
-        ...vuexMapActions("history", ["loadHistoryById"]),
+        ...mapActions(useHistoryStore, ["loadHistoryById", "setFilterText", "updateHistory"]),
         ...mapActions(useHistoryItemsStore, ["fetchHistoryItems"]),
         getHighlight(item) {
-            if (this.filterText.includes("related:" + item.hid)) {
-                this.highlightsKey = item.hid;
+            const highlightsKey = FilterClass.getFilterValue(this.filterText, "related");
+            if (highlightsKey == item.hid) {
                 return "active";
-            } else if (this.filterText.includes("related:") && this.highlightsKey) {
-                if (item.hid > this.highlightsKey) {
+            } else if (highlightsKey) {
+                if (item.hid > highlightsKey) {
                     return "output";
                 } else {
                     return "input";
                 }
             } else {
-                this.highlightsKey = null;
                 return null;
             }
         },
@@ -301,11 +345,15 @@ export default {
             this.loading = true;
             try {
                 await this.fetchHistoryItems(this.historyId, this.filterText, this.offset);
-                this.error = null;
+                this.searchError = null;
                 this.loading = false;
             } catch (error) {
-                console.debug("HistoryPanel - Load error.", error);
-                this.error = error;
+                if (error.response && error.response.data && error.response.data.err_msg) {
+                    console.debug("HistoryPanel - Load items error:", error.response.data.err_msg);
+                    this.searchError = error.response.data;
+                } else {
+                    console.debug("HistoryPanel - Load items error.", error);
+                }
                 this.loading = false;
             }
         },
@@ -339,22 +387,11 @@ export default {
             item.tags = newTags;
         },
         onTagClick(tag) {
-            if (this.filterText == "tag:" + tag) {
-                this.filterText = "";
-            } else {
-                this.filterText = "tag:" + tag;
-            }
+            this.updateFilterVal("tag", tag);
         },
         onOperationError(error) {
             console.debug("HistoryPanel - Operation error.", error);
             this.operationError = error;
-        },
-        toggleHighlights(item) {
-            if (this.filterText == "related:" + item.hid) {
-                this.filterText = "";
-            } else {
-                this.filterText = "related:" + item.hid;
-            }
         },
         onDragEnter(e) {
             this.dragTarget = e.target;
@@ -393,6 +430,9 @@ export default {
         },
         onError(error) {
             Toast.error(error);
+        },
+        updateFilterVal(newFilter, newVal) {
+            this.filterText = FilterClass.setFilterValue(this.filterText, newFilter, newVal);
         },
     },
 };

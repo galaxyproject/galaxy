@@ -5092,4 +5092,50 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_training_recommendations``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Displays a link to training material, if any includes the current
+    tool. When activated the following options also need to be set:
+    tool_training_recommendations_link,
+    tool_training_recommendations_api_url
+:Default: ``true``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_training_recommendations_link``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Template URL to display all tutorials containing current tool.
+    Valid template inputs are:   {repository_owner}   {name}
+    {tool_id}   {training_tool_identifier}   {version}
+:Default: ``https://training.galaxyproject.org/training-material/by-tool/{training_tool_identifier}.html``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_training_recommendations_api_url``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    URL to API describing tutorials containing specific tools. When
+    CORS is used, make sure to add this host.
+:Default: ``https://training.galaxyproject.org/training-material/api/top-tools.json``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``citations_export_message_html``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Message to display on the export citations tool page
+:Default: ``When writing up your analysis, remember to include all references that should be cited in order to completely describe your work. Also, please remember to <a href="https://galaxyproject.org/citing-galaxy">cite Galaxy</a>.``
+:Type: str
+
+
 

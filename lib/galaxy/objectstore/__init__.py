@@ -18,17 +18,12 @@ from typing import (
     List,
     NamedTuple,
     Optional,
-    Set,
     Tuple,
     Type,
 )
 
 import yaml
 from pydantic import BaseModel
-from typing_extensions import (
-    Literal,
-    TypedDict,
-)
 
 from galaxy.exceptions import (
     ObjectInvalid,
@@ -47,6 +42,12 @@ from galaxy.util.path import (
     safe_relpath,
 )
 from galaxy.util.sleeper import Sleeper
+from .badges import (
+    BadgeDict,
+    read_badges,
+    serialize_badges,
+    StoredBadgeDict,
+)
 
 NO_SESSION_ERROR_MESSAGE = (
     "Attempted to 'create' object store entity in configuration with no database session present."
@@ -56,44 +57,6 @@ DEFAULT_QUOTA_SOURCE = None  # Just track quota right on user object in Galaxy.
 DEFAULT_QUOTA_ENABLED = True  # enable quota tracking in object stores by default
 
 log = logging.getLogger(__name__)
-
-BadgeSourceT = Literal["admin", "galaxy"]
-BadgeT = Literal[
-    "faster",
-    "slower",
-    "short_term",
-    "cloud",
-    "backed_up",
-    "not_backed_up",
-    "more_secure",
-    "less_secure",
-    "more_stable",
-    "less_stable",
-    "quota",
-    "no_quota",
-    "restricted",
-]
-
-BADGE_SPECIFICATION = [
-    {"type": "faster", "conflicts": ["slower"]},
-    {"type": "slower", "conflicts": ["faster"]},
-    {"type": "short_term", "conflicts": []},
-    {"type": "cloud", "conflicts": []},
-    {"type": "backed_up", "conflicts": ["not_backed_up"]},
-    {"type": "not_backed_up", "conflicts": ["backed_up"]},
-    {"type": "more_secure", "conflicts": ["less_secure"]},
-    {"type": "less_secure", "conflicts": ["more_secure"]},
-    {"type": "more_stable", "conflicts": ["less_stable"]},
-    {"type": "less_stable", "conflicts": ["more_stable"]},
-]
-KNOWN_BADGE_TYPES = [s["type"] for s in BADGE_SPECIFICATION]
-BADGE_SPECIFCATION_BY_TYPE = {s["type"]: s for s in BADGE_SPECIFICATION}
-
-
-class BadgeDict(TypedDict):
-    type: BadgeT
-    message: Optional[str]
-    source: BadgeSourceT
 
 
 class ObjectStore(metaclass=abc.ABCMeta):
@@ -511,6 +474,8 @@ class ConcreteObjectStore(BaseObjectStore):
     persisted, not how a file is routed to a persistence source.
     """
 
+    badges: List[StoredBadgeDict]
+
     def __init__(self, config, config_dict=None, **kwargs):
         """
         :type config: object
@@ -537,31 +502,7 @@ class ConcreteObjectStore(BaseObjectStore):
         quota_config = config_dict.get("quota", {})
         self.quota_source = quota_config.get("source", DEFAULT_QUOTA_SOURCE)
         self.quota_enabled = quota_config.get("enabled", DEFAULT_QUOTA_ENABLED)
-        raw_badges = config_dict.get("badges", [])
-        badges = []
-        badge_types: Set[str] = set()
-        badge_conflicts: Dict[str, str] = {}
-        for badge in raw_badges:
-            # when recovering serialized badges, skip ones that are set by Galaxy
-            badge_source = badge.get("source")
-            if badge_source and badge_source != "admin":
-                continue
-            assert "type" in badge
-            badge_type = badge["type"]
-            if badge_type not in KNOWN_BADGE_TYPES:
-                raise Exception(f"badge_type {badge_type} unimplemented/unknown {badge}")
-            message = badge.get("message", None)
-            badges.append({"type": badge_type, "message": message})
-            badge_types.add(badge_type)
-            if badge_type in badge_conflicts:
-                conflicting_badge_type = badge_conflicts[badge_type]
-                raise Exception(
-                    f"Conflicting badge to [{badge_type}] defined on the object store [{conflicting_badge_type}]."
-                )
-            conflicts = BADGE_SPECIFCATION_BY_TYPE[badge_type]["conflicts"]
-            for conflict in conflicts:
-                badge_conflicts[conflict] = badge_type
-        self.badges = badges
+        self.badges = read_badges(config_dict)
 
     def to_dict(self):
         rval = super().to_dict()
@@ -587,37 +528,11 @@ class ConcreteObjectStore(BaseObjectStore):
         )
 
     def _get_concrete_store_badges(self, obj) -> List[BadgeDict]:
-        badge_dicts: List[BadgeDict] = []
-        for badge in self.badges:
-            badge_dict: BadgeDict = {
-                "source": "admin",
-                "type": badge["type"],
-                "message": badge["message"],
-            }
-            badge_dicts.append(badge_dict)
-
-        quota_badge_dict: BadgeDict
-        if self.galaxy_enable_quotas and self.quota_enabled:
-            quota_badge_dict = {
-                "type": "quota",
-                "message": None,
-                "source": "galaxy",
-            }
-        else:
-            quota_badge_dict = {
-                "type": "no_quota",
-                "message": None,
-                "source": "galaxy",
-            }
-        badge_dicts.append(quota_badge_dict)
-        if self.private:
-            restricted_badge_dict: BadgeDict = {
-                "type": "restricted",
-                "message": None,
-                "source": "galaxy",
-            }
-            badge_dicts.append(restricted_badge_dict)
-        return badge_dicts
+        return serialize_badges(
+            self.badges,
+            self.galaxy_enable_quotas and self.quota_enabled,
+            self.private,
+        )
 
     def _get_concrete_store_name(self, obj):
         return self.name
@@ -1045,8 +960,7 @@ class NestedObjectStore(BaseObjectStore):
                 return store.__getattribute__(method)(obj, **kwargs)
         if default_is_exception:
             raise default(
-                "objectstore, _call_method failed: %s on %s, kwargs: %s"
-                % (method, self._repr_object_for_exception(obj), str(kwargs))
+                f"objectstore, _call_method failed: {method} on {self._repr_object_for_exception(obj)}, kwargs: {kwargs}"
             )
         else:
             return default
@@ -1223,8 +1137,10 @@ class DistributedObjectStore(NestedObjectStore):
                 )
             else:
                 log.debug(
-                    "Using preferred backend '%s' for creation of %s %s"
-                    % (object_store_id, obj.__class__.__name__, obj.id)
+                    "Using preferred backend '%s' for creation of %s %s",
+                    object_store_id,
+                    obj.__class__.__name__,
+                    obj.id,
                 )
             return self.backends[object_store_id].create(obj, **kwargs)
         else:
@@ -1236,8 +1152,7 @@ class DistributedObjectStore(NestedObjectStore):
             return self.backends[object_store_id].__getattribute__(method)(obj, **kwargs)
         if default_is_exception:
             raise default(
-                "objectstore, _call_method failed: %s on %s, kwargs: %s"
-                % (method, self._repr_object_for_exception(obj), str(kwargs))
+                f"objectstore, _call_method failed: {method} on {self._repr_object_for_exception(obj)}, kwargs: {kwargs}"
             )
         else:
             return default
@@ -1263,8 +1178,10 @@ class DistributedObjectStore(NestedObjectStore):
                 return obj.object_store_id
             else:
                 log.warning(
-                    "The backend object store ID (%s) for %s object with ID %s is invalid"
-                    % (obj.object_store_id, obj.__class__.__name__, obj.id)
+                    "The backend object store ID (%s) for %s object with ID %s is invalid",
+                    obj.object_store_id,
+                    obj.__class__.__name__,
+                    obj.id,
                 )
         elif self.search_for_missing:
             # if this instance has been switched from a non-distributed to a
@@ -1407,7 +1324,7 @@ def type_to_object_store_class(store: str, fsmon: bool = False) -> Tuple[Type[Ba
     objectstore_constructor_kwds = {}
     if store == "disk":
         objectstore_class = DiskObjectStore
-    elif store == "s3":
+    elif store in ["s3", "aws_s3"]:
         from .s3 import S3ObjectStore
 
         objectstore_class = S3ObjectStore
@@ -1415,10 +1332,10 @@ def type_to_object_store_class(store: str, fsmon: bool = False) -> Tuple[Type[Ba
         from .cloud import Cloud
 
         objectstore_class = Cloud
-    elif store == "swift":
-        from .s3 import SwiftObjectStore
+    elif store in ["swift", "generic_s3"]:
+        from .s3 import GenericS3ObjectStore
 
-        objectstore_class = SwiftObjectStore
+        objectstore_class = GenericS3ObjectStore
     elif store == "distributed":
         objectstore_class = DistributedObjectStore
         objectstore_constructor_kwds["fsmon"] = fsmon

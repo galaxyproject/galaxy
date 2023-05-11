@@ -193,9 +193,9 @@ export default {
                 if (!silent && inputId) {
                     const element = this.$el.querySelector(`[id='form-element-${inputId}']`);
                     if (element) {
-                        const centerPanel = document.querySelector(".center-panel");
+                        const centerPanel = document.querySelector("#center");
                         if (centerPanel) {
-                            centerPanel.scrollTo(0, this.getOffsetTop(element));
+                            centerPanel.scrollTo(0, this.getOffsetTop(element) - 50);
                         }
                     }
                 }

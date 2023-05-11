@@ -23,6 +23,7 @@ from galaxy import (
     web,
 )
 from galaxy.celery.tasks import compute_dataset_hash
+from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.dataproviders.exceptions import NoProviderAvailable
 from galaxy.managers.base import ModelSerializer
 from galaxy.managers.context import ProvidesHistoryContext
@@ -97,6 +98,15 @@ class RequestDataType(str, Enum):
     track_config = "track_config"
     genome_data = "genome_data"
     in_use_state = "in_use_state"
+
+
+class DatasetContentType(str, Enum):
+    """For retrieving content from a structured dataset (e.g. HDF5)"""
+
+    meta = "meta"
+    attr = "attr"
+    stats = "stats"
+    data = "data"
 
 
 class ConcreteObjectStoreQuotaSourceDetails(Model):
@@ -697,6 +707,30 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         if success_count:
             trans.sa_session.flush()
         return DeleteDatasetBatchResult.construct(success_count=success_count, errors=errors)
+
+    def get_structured_content(
+        self,
+        trans: ProvidesHistoryContext,
+        dataset_id: DecodedDatabaseIdField,
+        content_type: DatasetContentType,
+        **params,
+    ):
+        """
+        Retrieves contents of a dataset. It is left to the datatype to decide how
+        to interpret the content types.
+        """
+        headers = {}
+        content: Any = ""
+        dataset = self.hda_manager.get_accessible(dataset_id, trans.user)
+        if not isinstance(dataset.datatype, Binary):
+            raise galaxy_exceptions.InvalidFileFormatError("Only available for structured datatypes")
+        try:
+            content, headers = dataset.datatype.get_structured_content(dataset, content_type, **params)
+        except galaxy_exceptions.MessageException:
+            raise
+        except Exception as e:
+            raise galaxy_exceptions.InternalServerError(f"Could not get content for dataset: {util.unicodify(e)}")
+        return content, headers
 
     def _get_or_create_converted(self, trans, original: model.DatasetInstance, target_ext: str):
         try:

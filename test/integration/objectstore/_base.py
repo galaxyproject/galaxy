@@ -13,7 +13,7 @@ OBJECT_STORE_CONFIG = string.Template(
     """
 <object_store type="hierarchical" id="primary">
     <backends>
-        <object_store id="swifty" type="swift" weight="1" order="0">
+        <object_store id="swifty" type="generic_s3" weight="1" order="0">
             <auth access_key="${access_key}" secret_key="${secret_key}" />
             <bucket name="galaxy" use_reduced_redundancy="False" max_chunk_size="250"/>
             <connection host="${host}" port="${port}" is_secure="False" conn_path="" multipart="True"/>

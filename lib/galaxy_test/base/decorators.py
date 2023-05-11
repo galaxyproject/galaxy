@@ -50,9 +50,7 @@ def using_requirement(tag: KnownRequirementT):
 
 def _attach_requirements(method, tag: KnownRequirementT):
     requirement = f"requires_{tag}"
-    try:
-        method.__required_galaxy_features
-    except AttributeError:
+    if not hasattr(method, "__required_galaxy_features"):
         method.__required_galaxy_features = []
     method.__required_galaxy_features.append(tag)
     getattr(pytest.mark, requirement)(method)

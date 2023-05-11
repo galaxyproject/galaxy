@@ -1,7 +1,10 @@
+import { createPinia } from "pinia";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
 import SelectorModal from "./SelectorModal";
+import { getLocalVue } from "tests/jest/helpers";
+import { useHistoryStore } from "stores/historyStore";
+import { BListGroupItem } from "bootstrap-vue";
 
 const localVue = getLocalVue();
 
@@ -33,10 +36,16 @@ describe("History SelectorModal.vue", () => {
     let wrapper;
 
     async function mountWith(props) {
+        const pinia = createPinia();
         wrapper = mount(SelectorModal, {
             propsData: props,
             localVue,
+            pinia,
         });
+        const historyStore = useHistoryStore();
+        historyStore.setHistories(props.histories);
+        historyStore.setCurrentHistoryId(props.currentHistoryId);
+
         await flushPromises();
     }
 
@@ -50,9 +59,14 @@ describe("History SelectorModal.vue", () => {
     it("paginates the histories", async () => {
         await mountWith(PROPS_WITH_10_HISTORIES);
 
-        const displayedRows = wrapper.findAll("tbody > tr").wrappers;
+        const displayedRows = wrapper.findAllComponents(BListGroupItem).wrappers;
         expect(displayedRows.length).toBe(3);
-        expect(wrapper.vm.histories.length).toBe(10);
+
+        // filter out all page buttons. e.g [1] [2] [3] etc...
+        const pages = wrapper
+            .findAll(".pagination > .page-item")
+            .wrappers.filter((item) => item.text().match(/[0-9]+/));
+        expect(pages.length).toBe(4);
     });
 
     it("emits selectHistory with the correct history ID when a row is clicked", async () => {
@@ -82,15 +96,14 @@ describe("History SelectorModal.vue", () => {
             const targetRow2 = wrapper.find(`[data-pk="${targetHistoryId2}"]`);
             await targetRow2.trigger("click");
 
-            expect(wrapper.vm.selectedHistories.length).toBe(2);
+            const selectedHistories = wrapper.findAll(".list-group-item.active").wrappers;
+            expect(selectedHistories.length).toBe(2);
 
-            const button = wrapper.find(".btn-primary");
+            const button = wrapper.find("footer > .btn-primary");
 
             await button.trigger("click");
 
             expect(wrapper.emitted()["selectHistories"][0][0][0].id).toBe(targetHistoryId1);
-
-            console.debug(wrapper.html());
         });
     });
 });

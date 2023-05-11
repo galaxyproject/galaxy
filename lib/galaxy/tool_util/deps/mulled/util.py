@@ -17,10 +17,11 @@ from typing import (
     Union,
 )
 
-import packaging.version
 import requests
 from conda_package_streaming.package_streaming import stream_conda_info
 from conda_package_streaming.url import stream_conda_info as stream_conda_info_from_url
+
+from galaxy.tool_util.version import parse_version
 
 if TYPE_CHECKING:
     from galaxy.tool_util.deps.container_resolvers import ResolutionCache
@@ -189,8 +190,8 @@ def parse_tag(tag):
         build_number = -1
     return PARSED_TAG(
         tag=tag,
-        version=packaging.version.parse(version),
-        build_string=packaging.version.parse(build_string),
+        version=parse_version(version),
+        build_string=parse_version(build_string),
         build_number=build_number,
     )
 
@@ -378,7 +379,7 @@ def get_file_from_conda_package(
     """
 
     if isinstance(checklist, str):
-        checklist = set([checklist])
+        checklist = {checklist}
     else:
         checklist = set(checklist)
     try:

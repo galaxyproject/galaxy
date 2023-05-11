@@ -1,6 +1,6 @@
 <template>
     <b-button
-        id="tool-panel-upload-button"
+        id="activity-upload"
         v-b-tooltip.hover.bottom
         :aria-label="title | localize"
         :title="title | localize"

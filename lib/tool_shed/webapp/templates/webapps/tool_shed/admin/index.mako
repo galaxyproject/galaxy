@@ -18,7 +18,6 @@
     ${parent.init()}
     <%
         self.has_left_panel=True
-        self.has_right_panel=False
         self.active_view="tools"
     %>
     %if trans.app.config.require_login and not trans.user:
@@ -34,7 +33,7 @@
     <div class="unified-panel-header" unselectable="on">
         <div class='unified-panel-header-inner'>Administration</div>
     </div>
-    <div class="unified-panel-body">
+    <div style="padding: 0.5rem;">
         <div class="toolMenu">
             <div class="toolSectionList">
                 <div class="toolSectionTitle">
@@ -102,5 +101,5 @@
     <%
         center_url = h.url_for(controller='admin', action='center' )
     %>
-    <iframe name="galaxy_main" id="galaxy_main" frameborder="0" style="position: absolute; width: 100%; height: 100%;" src="${center_url}"> </iframe>
+    <iframe name="galaxy_main" id="galaxy_main" frameborder="0" style="position: absolute; width: 75%; height: 100%;" src="${center_url}"> </iframe>
 </%def>

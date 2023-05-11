@@ -1,9 +1,11 @@
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import { userLogout } from "utils/logout";
+import { useUserStore } from "@/stores/userStore";
 
 export function fetchMenu(options = {}) {
     const Galaxy = getGalaxyInstance();
+    const userStore = useUserStore();
     const menu = [];
     //
     // Analyze data tab.
@@ -191,25 +193,23 @@ export function fetchMenu(options = {}) {
             tooltip: _l("Account and saved data"),
             menu: [
                 {
-                    title: `${_l("Logged in as")} ${
+                    title: `${_l("Signed in as")} ${
                         Galaxy.user.get("username") ? Galaxy.user.get("username") : Galaxy.user.get("email")
                     }`,
                     disabled: true,
                 },
+                { divider: true },
                 {
                     title: _l("Preferences"),
                     url: "/user",
                 },
                 {
-                    title: _l("Custom Builds"),
-                    url: "/custom_builds",
+                    title: _l("Show/Hide Activity Bar"),
+                    onclick: () => {
+                        userStore.toggleActivityBar();
+                    },
                 },
                 { divider: true },
-                {
-                    title: _l("Logout"),
-                    onclick: userLogout,
-                    hidden: Galaxy.config.single_user,
-                },
                 {
                     title: _l("Datasets"),
                     url: "/datasets/list",
@@ -240,12 +240,17 @@ export function fetchMenu(options = {}) {
             });
         }
         if (Galaxy.config.interactivetools_enable) {
-            userTab.menu.push({ divider: true });
             userTab.menu.push({
                 title: _l("Active InteractiveTools"),
                 url: "/interactivetool_entry_points/list",
             });
         }
+        userTab.menu.push({ divider: true });
+        userTab.menu.push({
+            title: _l("Sign Out"),
+            onclick: userLogout,
+            hidden: Galaxy.config.single_user,
+        });
     }
     menu.push(userTab);
     return menu;

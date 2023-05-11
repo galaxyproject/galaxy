@@ -875,14 +875,12 @@ class InstalledRepositoryManager:
                 if new_dependency_name and new_dependency_type and new_dependency_version:
                     # Update all attributes of the tool_dependency record in the database.
                     log.debug(
-                        "Updating version %s of tool dependency %s %s to have new version %s and type %s."
-                        % (
-                            str(tool_dependency.version),
-                            str(tool_dependency.type),
-                            str(tool_dependency.name),
-                            str(new_dependency_version),
-                            str(new_dependency_type),
-                        )
+                        "Updating version %s of tool dependency %s %s to have new version %s and type %s.",
+                        tool_dependency.version,
+                        tool_dependency.type,
+                        tool_dependency.name,
+                        new_dependency_version,
+                        new_dependency_type,
                     )
                     tool_dependency.type = new_dependency_type
                     tool_dependency.version = new_dependency_version
@@ -895,8 +893,10 @@ class InstalledRepositoryManager:
                     # We have no new tool dependency definition based on a matching dependency name, so remove
                     # the existing tool dependency record from the database.
                     log.debug(
-                        "Deleting version %s of tool dependency %s %s from the database since it is no longer defined."
-                        % (str(tool_dependency.version), str(tool_dependency.type), str(tool_dependency.name))
+                        "Deleting version %s of tool dependency %s %s from the database since it is no longer defined.",
+                        tool_dependency.version,
+                        tool_dependency.type,
+                        tool_dependency.name,
                     )
                     context.delete(tool_dependency)
                     context.flush()

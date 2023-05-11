@@ -1,7 +1,10 @@
 """This module contains linting functions for general aspects of the tool."""
 import re
 
-import packaging.version
+from galaxy.tool_util.version import (
+    LegacyVersion,
+    parse_version,
+)
 
 ERROR_VERSION_MSG = "Tool version is missing or empty."
 WARN_VERSION_MSG = "Tool version [%s] is not compliant with PEP 440."
@@ -34,10 +37,10 @@ def lint_general(tool_source, lint_ctx):
     else:
         tool_node = None
     version = tool_source.parse_version() or ""
-    parsed_version = packaging.version.parse(version)
+    parsed_version = parse_version(version)
     if not version:
         lint_ctx.error(ERROR_VERSION_MSG, node=tool_node)
-    elif isinstance(parsed_version, packaging.version.LegacyVersion):
+    elif isinstance(parsed_version, LegacyVersion):
         lint_ctx.warn(WARN_VERSION_MSG % version, node=tool_node)
     elif version != version.strip():
         lint_ctx.warn(WARN_WHITESPACE_PRESUFFIX % ("Tool version", version), node=tool_node)

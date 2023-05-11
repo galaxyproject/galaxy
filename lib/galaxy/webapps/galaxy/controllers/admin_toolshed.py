@@ -105,12 +105,10 @@ class AdminToolshed(AdminGalaxy):
         repository = get_installed_tool_shed_repository(trans.app, repository_id)
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(trans.app, str(repository.tool_shed))
         if tool_shed_url is None or repository_name is None or repository_owner is None or changeset_revision is None:
-            message = "Unable to retrieve updated repository information from the Tool Shed because one or more of the following "
-            message += (
-                "required parameters is None: tool_shed_url: %s, repository_name: %s, repository_owner: %s, changeset_revision: %s "
-                % (str(tool_shed_url), str(repository_name), str(repository_owner), str(changeset_revision))
+            raise Exception(
+                "Unable to retrieve updated repository information from the Tool Shed because one or more of the following "
+                f"required parameters is None: tool_shed_url: {tool_shed_url}, repository_name: {repository_name}, repository_owner: {repository_owner}, changeset_revision: {changeset_revision} "
             )
-            raise Exception(message)
         params = dict(name=str(repository_name), owner=str(repository_owner), changeset_revision=changeset_revision)
         pathspec = ["repository", "get_updated_repository_information"]
         raw_text = util.url_get(

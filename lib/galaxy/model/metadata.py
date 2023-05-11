@@ -273,7 +273,7 @@ class MetadataCollection(Mapping):
             raise Exception(f"Failed encoding metadata dictionary: {meta_dict}") from e
         if filename is None:
             return encoded_meta_dict
-        with open(filename, "wt+") as fh:
+        with open(filename, "w+") as fh:
             fh.write(encoded_meta_dict)
 
     def __getstate__(self):

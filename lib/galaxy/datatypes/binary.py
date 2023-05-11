@@ -30,6 +30,12 @@ from bx.seq.twobit import (
     TWOBIT_MAGIC_NUMBER,
     TWOBIT_MAGIC_NUMBER_SWAP,
 )
+from h5grove.content import (
+    DatasetContent,
+    get_content_from_file,
+    ResolvedEntityContent,
+)
+from h5grove.encoders import encode
 
 from galaxy import util
 from galaxy.datatypes import metadata
@@ -124,6 +130,9 @@ class Binary(data.Data):
         """Returns the mime type of the datatype"""
         return "application/octet-stream"
 
+    def get_structured_content(self, dataset, content_type, **kwargs):
+        raise Exception("get_structured_content is not implemented for this datatype.")
+
 
 class Ab1(Binary):
     """Class describing an ab1 binary sequence file"""
@@ -170,7 +179,7 @@ class Cel(Binary):
     """
 
     # cel 3 is a text format
-    is_binary = "maybe"  # type: ignore[assignment]  # https://github.com/python/mypy/issues/8796
+    is_binary = "maybe"
     file_ext = "cel"
     edam_format = "format_1638"
     edam_data = "data_3110"
@@ -243,7 +252,7 @@ class MashSketch(Binary):
 
     file_ext = "msh"
     # example data is actually text, maybe text would be a better base
-    is_binary = "maybe"  # type: ignore[assignment]  # https://github.com/python/mypy/issues/8796
+    is_binary = "maybe"
 
 
 class CompressedArchive(Binary):
@@ -254,7 +263,7 @@ class CompressedArchive(Binary):
 
     file_ext = "compressed_archive"
     compressed = True
-    is_binary = "maybe"  # type: ignore[assignment]  # https://github.com/python/mypy/issues/8796
+    is_binary = "maybe"
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
@@ -609,30 +618,34 @@ class BamNative(CompressedArchive, _BamOrSam):
             try:
                 with pysam.AlignmentFile(dataset.file_name, "rb", check_sq=False) as bamfile:
                     ck_size = 300  # 300 lines
-                    ck_data = ""
-                    header_line_count = 0
                     if offset == 0:
-                        ck_data = bamfile.text.replace("\t", " ")  # type: ignore[attr-defined]
-                        header_line_count = bamfile.text.count("\n")  # type: ignore[attr-defined]
+                        offset = bamfile.tell()
+                        ck_lines = bamfile.text.strip().replace("\t", " ").splitlines()  # type: ignore[attr-defined]
                     else:
                         bamfile.seek(offset)
-                    for line_number, alignment in enumerate(bamfile):
+                        ck_lines = []
+                    for line_number, alignment in enumerate(bamfile, len(ck_lines)):
                         # return only Header lines if 'header_line_count' exceeds 'ck_size'
                         # FIXME: Can be problematic if bam has million lines of header
-                        offset = bamfile.tell()
-                        if (line_number + header_line_count) > ck_size:
+                        if line_number > ck_size:
                             break
-                        else:
-                            bamline = alignment.tostring(bamfile)
-                            # Galaxy display each tag as separate column because 'tostring()' funcition put tabs in between each tag of tags column.
-                            # Below code will remove spaces between each tag.
-                            bamline_modified = ("\t").join(bamline.split()[:11] + [(" ").join(bamline.split()[11:])])
-                            ck_data = f"{ck_data}\n{bamline_modified}"
+
+                        offset = bamfile.tell()
+                        bamline = alignment.tostring(bamfile)
+                        # With multiple tags, Galaxy would display each as a separate column
+                        # because the 'tostring()' function uses tabs also between tags.
+                        # Below code will turn these extra tabs into spaces.
+                        n_tabs = bamline.count("\t")
+                        if n_tabs > 11:
+                            bamline, *extra_tags = bamline.rsplit("\t", maxsplit=n_tabs - 11)
+                            bamline = f"{bamline} {' '.join(extra_tags)}"
+                        ck_lines.append(bamline)
                     else:
                         # Nothing to enumerate; we've either offset to the end
                         # of the bamfile, or there is no data. (possible with
                         # header-only bams)
                         offset = -1
+                    ck_data = "\n".join(ck_lines)
             except Exception as e:
                 offset = -1
                 ck_data = f"Could not display BAM file, error was:\n{e}"
@@ -1136,6 +1149,40 @@ class H5(Binary):
             return dataset.peek
         except Exception:
             return f"Binary HDF5 file ({nice_size(dataset.get_size())})"
+
+    def get_structured_content(
+        self,
+        dataset,
+        content_type=None,
+        path="/",
+        dtype="origin",
+        format="json",
+        flatten=False,
+        selection=None,
+        **kwargs,
+    ):
+        """
+        Implements h5grove protocol (https://silx-kit.github.io/h5grove/).
+        This allows the h5web visualization tool (https://github.com/silx-kit/h5web)
+        to be used directly with Galaxy datasets.
+        """
+        with get_content_from_file(dataset.file_name, path, self._create_error) as content:
+            if content_type == "attr":
+                assert isinstance(content, ResolvedEntityContent)
+                resp = encode(content.attributes(), "json")
+            elif content_type == "meta":
+                resp = encode(content.metadata(), "json")
+            elif content_type == "stats":
+                assert isinstance(content, DatasetContent)
+                resp = encode(content.data_stats(selection), "json")
+            else:  # default 'data'
+                assert isinstance(content, DatasetContent)
+                resp = encode(content.data(selection, flatten, dtype), format)
+
+            return resp.content, resp.headers
+
+    def _create_error(self, status_code, message):
+        return Exception(status_code, message)
 
 
 class Loom(H5):

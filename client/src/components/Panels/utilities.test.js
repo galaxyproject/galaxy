@@ -1,7 +1,21 @@
 import toolsList from "components/ToolsView/testData/toolsList";
-import { createWhooshQuery, filterTools, filterToolSections, normalizeTools, searchToolsByKeys } from "./utilities";
+import {
+    createWhooshQuery,
+    determineWidth,
+    filterTools,
+    filterToolSections,
+    normalizeTools,
+    searchToolsByKeys,
+} from "./utilities";
 
-describe("test helpers in tool searching utilities", () => {
+describe("test helpers in tool searching utilities and panel handling", () => {
+    it("panel width determination", () => {
+        const widthA = determineWidth({ left: 10, right: 200 }, { left: 90 }, 20, 200, "right", 160);
+        expect(widthA).toBe(120);
+        const widthB = determineWidth({ left: 30, right: 250 }, { left: 60 }, 30, 500, "left", 180);
+        expect(widthB).toBe(340);
+    });
+
     it("test parsing helper that converts settings to whoosh query", async () => {
         const settings = {
             name: "Filter",
