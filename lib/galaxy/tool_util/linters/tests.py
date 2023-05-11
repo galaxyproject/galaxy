@@ -185,23 +185,11 @@ def _check_asserts(test_idx, assertions, lint_ctx):
                 lint_ctx.error(f"Test {test_idx}: unknown assertion '{a.tag}'", node=a)
                 continue
             assert_function_sig = signature(asserts.assertion_functions[assert_function_name])
-            # check type of the attributes (int, float ...)
+            # check of the attributes
             for attrib in a.attrib:
                 if attrib not in assert_function_sig.parameters:
                     lint_ctx.error(f"Test {test_idx}: unknown attribute '{attrib}' for '{a.tag}'", node=a)
                     continue
-                annotation = assert_function_sig.parameters[attrib].annotation
-                annotation = _handle_optionals(annotation)
-                if annotation is not Parameter.empty:
-                    try:
-                        annotation(a.attrib[attrib])
-                    except TypeError:
-                        raise Exception(f"Faild to instantiate {attrib} for {assert_function_name}")
-                    except ValueError:
-                        lint_ctx.error(
-                            f"Test {test_idx}: attribute '{attrib}' for '{a.tag}' needs to be '{annotation.__name__}' got '{a.attrib[attrib]}'",
-                            node=a,
-                        )
             # check missing required attributes
             for p in assert_function_sig.parameters:
                 if p in ["output", "output_bytes", "verify_assertions_function", "children"]:

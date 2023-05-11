@@ -1,10 +1,13 @@
 import re
-from typing import Optional
+from typing import (
+    Optional,
+    Union,
+)
 
 from ._util import _assert_number
 
 
-def get_first_line(output, comment):
+def get_first_line(output: str, comment: str) -> str:
     """
     get the first non-comment and non-empty line
     """
@@ -19,15 +22,15 @@ def get_first_line(output, comment):
 
 
 def assert_has_n_columns(
-    output,
-    n: Optional[int] = None,
-    delta: int = 0,
-    min: Optional[int] = None,
-    max: Optional[int] = None,
-    sep="\t",
-    comment="",
-    negate: bool = False,
-):
+    output: str,
+    n: Optional[Union[int, str]] = None,
+    delta: Union[int, str] = 0,
+    min: Optional[Union[int, str]] = None,
+    max: Optional[Union[int, str]] = None,
+    sep: str = "\t",
+    comment: str = "",
+    negate: Union[bool, str] = False,
+) -> None:
     """Asserts the tabular output contains n columns. The optional
     sep argument specifies the column seperator used to determine the
     number of columns. The optional comment argument specifies
