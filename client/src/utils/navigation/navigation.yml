@@ -450,7 +450,7 @@ history_export:
 
 history_export_tasks:
   selectors:
-    direct_download: '.direct-download-btn'
+    direct_download: '.gen-direct-download-btn'
     file_source_tab: '.tab-export-to-file'
     remote_file_name_input: '#file-source-tab #name'
     toggle_options_link: '#toggle-options-link'
@@ -700,7 +700,7 @@ workflow_editor:
         //div[@data-label='Remove Tags']//input
     tool_version_button: ".tool-versions"
     connector_for: "#connection-${sink_id}-${source_id}"
-    connector_invalid_for: "#connection-${sink_id}-${source_id} .ribbon-inner-invalid"
+    connector_invalid_for: "#connection-${sink_id}-${source_id} .connection.invalid"
     connector_destroy_callout: '.delete-terminal'
     save_button: '.editor-button-save'
     save_workflow_confirmation_button: '#save-workflow-confirmation .btn-primary'

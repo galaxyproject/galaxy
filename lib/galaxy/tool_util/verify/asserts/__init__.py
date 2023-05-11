@@ -60,7 +60,7 @@ def verify_assertion(data: bytes, assertion_description):
     # output. children is the parsed version of the child elements of
     # the XML element describing this assertion. See
     # assert_element_text in test/base/asserts/xml.py as an example of
-    # how to use verify_assertions_function and children in conjuction
+    # how to use verify_assertions_function and children in conjunction
     # to apply assertion checking to a subset of the input. The parsed
     # version of an elements child elements do not need to just define
     # assertions, developers of assertion functions can also use the

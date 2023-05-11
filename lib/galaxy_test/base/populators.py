@@ -1444,6 +1444,8 @@ class BaseDatasetPopulator(BasePopulator):
         self.wait_for_download_ready(storage_request_id)
         if serve_file:
             return self._get_to_tempfile(f"short_term_storage/{storage_request_id}")
+        else:
+            return storage_request_id
 
     def get_history_export_tasks(self, history_id: str):
         headers = {"accept": "application/vnd.galaxy.task.export+json"}

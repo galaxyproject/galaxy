@@ -19,7 +19,13 @@ const mockGetExportRecords = getExportRecords as jest.MockedFunction<typeof getE
 mockGetExportRecords.mockResolvedValue([]);
 
 const FAKE_HISTORY_ID = "fake-history-id";
+const FAKE_HISTORY = {
+    id: FAKE_HISTORY_ID,
+    name: "fake-history-name",
+};
+
 const REMOTE_FILES_API_ENDPOINT = new RegExp("/api/remote_files/plugins");
+const GET_HISTORY_ENDPOINT = new RegExp(`/api/histories/${FAKE_HISTORY_ID}`);
 
 type FilesSourcePluginList = components["schemas"]["FilesSourcePlugin"][];
 const REMOTE_FILES_API_RESPONSE: FilesSourcePluginList = [
@@ -50,10 +56,17 @@ describe("HistoryExport.vue", () => {
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
         axiosMock.onGet(REMOTE_FILES_API_ENDPOINT).reply(200, []);
+        axiosMock.onGet(GET_HISTORY_ENDPOINT).reply(200, FAKE_HISTORY);
     });
 
     afterEach(() => {
         axiosMock.restore();
+    });
+
+    it("should render the history name", async () => {
+        const wrapper = await mountHistoryExport();
+
+        expect(wrapper.find("#history-name").text()).toBe(FAKE_HISTORY.name);
     });
 
     it("should render export options", async () => {

@@ -103,7 +103,7 @@
 
         ## relative href for site root
         <link rel="index" href="${ h.url_for( '/' ) }"/>
-        
+
         ${self.stylesheets()}
 
         ## Normally, we'd put all the javascripts at the bottom of the <body>
@@ -137,10 +137,10 @@
             </noscript>
         %endif
         <div id="everything">
-            
+
             ## Background displays first
             <div id="background"></div>
-            
+
             ## Layer iframes over backgrounds
             ${self.masthead()}
 
@@ -149,15 +149,15 @@
                     ${app.config.message_box_content}
                 </div>
             %endif
-            
+
             %if self.show_inactivity_warning:
                 <div id="inactivebox" class="alert alert-warning rounded-0 m-0 p-2">
                     ${app.config.inactivity_box_content} <a href="${h.url_for( controller='user', action='resend_verification' )}">Resend verification.</a>
                 </div>
             %endif
-            
+
             ${self.overlay(visible=self.overlay_visible)}
-            
+
             <div id="columns" class="d-flex">
                 %if self.has_left_panel:
                     <div id="left" style="overflow: auto;">

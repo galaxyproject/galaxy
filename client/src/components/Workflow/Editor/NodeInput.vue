@@ -28,15 +28,14 @@
 </template>
 
 <script>
-import { useCoordinatePosition } from "./composables/useCoordinatePosition";
-import { useConnectionStore } from "@/stores/workflowConnectionStore";
-import { computed } from "vue";
-import { inject, ref, toRefs, watchEffect } from "vue";
+import { useConnectionStore, getConnectionId } from "@/stores/workflowConnectionStore";
+import { computed, inject, ref, toRefs, watchEffect, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useTerminal } from "./composables/useTerminal";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { terminalFactory, ConnectionAcceptable } from "@/components/Workflow/Editor/modules/terminals";
+import { useRelativePosition } from "./composables/relativePosition";
 
 export default {
     props: {
@@ -69,17 +68,25 @@ export default {
             type: Object,
             required: true,
         },
+        parentNode: {
+            type: HTMLElement,
+            default: null,
+        },
     },
     setup(props) {
         const el = ref(null);
-        const { rootOffset, stepPosition, stepId, input, datatypesMapper } = toRefs(props);
-        const position = useCoordinatePosition(el, rootOffset, stepPosition);
+        const { stepId, input, datatypesMapper } = toRefs(props);
+        const position = useRelativePosition(
+            el,
+            computed(() => props.parentNode)
+        );
         const isDragging = inject("isDragging");
         const id = computed(() => `node-${props.stepId}-input-${props.input.name}`);
         const iconId = computed(() => `${id.value}-icon`);
         const connectionStore = useConnectionStore();
         const { terminal, isMappedOver: isMultiple } = useTerminal(stepId, input, datatypesMapper);
         const hasTerminals = ref(false);
+
         watchEffect(() => {
             hasTerminals.value = connectionStore.getOutputTerminalsForInputTerminal(id.value).length > 0;
         });
@@ -101,7 +108,7 @@ export default {
         });
         const invalidConnectionReasons = computed(() =>
             connections.value
-                .map((connection) => connectionStore.invalidConnections[connection.id])
+                .map((connection) => connectionStore.invalidConnections[getConnectionId(connection)])
                 .filter((reason) => reason)
         );
 
@@ -122,9 +129,19 @@ export default {
             }
         });
 
+        const endX = computed(
+            () => position.value.offsetLeft + props.stepPosition.left + (el.value?.offsetWidth ?? 2) / 2
+        );
+        const endY = computed(
+            () => position.value.offsetTop + props.stepPosition.top + (el.value?.offsetHeight ?? 2) / 2
+        );
+
+        watch([endX, endY], ([x, y]) => {
+            stateStore.setInputTerminalPosition(props.stepId, props.input.name, { endX: x, endY: y });
+        });
+
         return {
             el,
-            position,
             isDragging,
             connectionStore,
             id,
@@ -142,15 +159,6 @@ export default {
     computed: {
         terminalArgs() {
             return { stepId: this.stepId, name: this.input.name, connectorType: "input" };
-        },
-        terminalPosition() {
-            return Object.freeze({ endX: this.startX, endY: this.startY });
-        },
-        startX() {
-            return this.position.left + this.scroll.x.value / this.scale + this.position.width / 2;
-        },
-        startY() {
-            return this.position.top + this.scroll.y.value / this.scale + this.position.height / 2;
         },
         label() {
             return this.input.label || this.input.name;
@@ -173,11 +181,6 @@ export default {
                 classes.push("multiple");
             }
             return classes;
-        },
-    },
-    watch: {
-        terminalPosition(position) {
-            this.stateStore.setInputTerminalPosition(this.stepId, this.input.name, position);
         },
     },
     beforeDestroy() {
