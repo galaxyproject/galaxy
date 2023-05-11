@@ -1,157 +1,171 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
-import { BAlert, BTable, BButton, BInputGroup, BInputGroupAppend, BFormInput } from "bootstrap-vue";
-import DebouncedInput from "@/components/DebouncedInput";
-import LoadingSpan from "@/components/LoadingSpan.vue";
+import { computed, onMounted, ref, watch } from "vue";
+import localize from "@/utils/localization";
 import UtcDate from "@/components/UtcDate.vue";
-import type { HistorySummary } from "@/stores/historyStore";
-
-export interface ArchivedHistorySummary extends HistorySummary {
-    archived_time: string;
-    import_source?: string;
-}
+import Heading from "@/components/Common/Heading.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import DelayedInput from "@/components/Common/DelayedInput.vue";
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
+import * as ArchiveServices from "@/stores/services/historyArchive.services";
+import type { ArchivedHistorySummary } from "@/stores/services/historyArchive.services";
+import { BAlert, BButton, BButtonGroup, BBadge, BPagination, BListGroup, BListGroupItem } from "bootstrap-vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { faRecycle, faCopy, faEye } from "@fortawesome/free-solid-svg-icons";
 
 const archivedHistories = ref<ArchivedHistorySummary[]>([]);
 const isLoading = ref(true);
-
-const perPage = ref(50);
+const perPage = ref(10);
 const currentPage = ref(1);
-const sortBy = ref("archived_time");
-const sortDesc = ref(false);
-const filterText = ref("");
-const fields = [
-    { key: "name", sortable: true },
-    { key: "annotation", sortable: false },
-    { label: "Archived", key: "archived_time", sortable: true },
-    { label: "Contents Available", key: "purged", sortable: true },
-    { key: "actions", sortable: false },
-];
+const totalRows = ref(0);
+const sortBy = ref("update_time");
+const sortDesc = ref(true);
+const searchText = ref("");
 
-const isArchiveEmpty = computed(() => archivedHistories.value.length === 0);
+const noResults = computed(() => totalRows.value === 0);
+const hasFilters = computed(() => searchText.value !== "");
+const noHistoriesMatchingFilter = computed(() => hasFilters.value && noResults.value);
+const showPagination = computed(() => totalRows.value > perPage.value && !isLoading.value && !noResults.value);
 
-const localFilter = computed({
-    get() {
-        return filterText.value;
-    },
-    set(newVal) {
-        if (newVal !== filterText.value) {
-            updateFilter(newVal);
-        }
-    },
-});
+library.add(faRecycle, faCopy, faEye);
 
-function updateFilter(newVal: string, append = false) {
-    let oldValue = filterText.value;
-    if (append) {
-        oldValue += newVal;
-    } else {
-        oldValue = newVal;
-    }
-    filterText.value = oldValue.trim();
-}
-
-onMounted(() => {
+onMounted(async () => {
     loadArchivedHistories();
 });
 
+watch([searchText, currentPage, perPage, sortBy, sortDesc], () => {
+    loadArchivedHistories();
+});
+
+async function updateSearchQuery(query: string) {
+    searchText.value = query;
+}
+
 async function loadArchivedHistories() {
     isLoading.value = true;
-    archivedHistories.value = await getArchivedHistories();
+    const result = await ArchiveServices.getArchivedHistories({
+        query: searchText.value,
+        currentPage: currentPage.value,
+        pageSize: perPage.value,
+        sortBy: sortBy.value,
+        sortDesc: sortDesc.value,
+    });
+    totalRows.value = result.totalMatches;
+    archivedHistories.value = result.histories;
     isLoading.value = false;
 }
 
-// TODO: Replace this with the appropriate historyStore method.
-async function getArchivedHistories(): Promise<ArchivedHistorySummary[]> {
-    // Returns a fake list of ArchivedHistorySummary for now.
-    return [
-        {
-            id: "b2486a20bc56b90f",
-            name: "History 1",
-            annotation: "This is a test history",
-            count: 10,
-            tags: [],
-            deleted: false,
-            purged: false,
-            published: false,
-            model_class: "History",
-            url: "/api/histories/1",
-            archived_time: "2021-05-06T15:00:00.000Z",
-        },
-        {
-            id: "0c1da521da72c0b0",
-            name: "Deleted History",
-            annotation: "This is a test history",
-            count: 10,
-            tags: [],
-            deleted: false,
-            purged: true,
-            published: false,
-            model_class: "History",
-            url: "/api/histories/2",
-            import_source: "gxfiles://test-posix-source/b2486a20bc56b90f_Tester.rocrate.zip",
-            archived_time: "2022-02-09T15:00:00.000Z",
-        },
-    ];
+function canRestore(history: ArchivedHistorySummary) {
+    return !history.purged;
+}
+
+function canImportCopy(history: ArchivedHistorySummary) {
+    // TODO
+    return history.purged;
+}
+
+function onViewHistory(history: ArchivedHistorySummary) {
+    // TODO
+    console.log("VIEW HISTORY", history);
+}
+
+function onRestoreHistory(history: ArchivedHistorySummary) {
+    // TODO
+    console.log("RESTORE HISTORY", history);
+}
+
+function onImportCopy(history: ArchivedHistorySummary) {
+    // TODO
+    console.log("IMPORT COPY", history);
 }
 </script>
 <template>
     <section id="archived-histories" class="d-flex flex-column">
         <h1>Archived Histories</h1>
+        <div>
+            <delayed-input
+                :query="searchText"
+                class="m-1 mb-3"
+                placeholder="Search by name"
+                @change="updateSearchQuery" />
+            <b-alert v-if="isLoading" variant="info" show>
+                <loading-span v-if="isLoading" message="Loading archived histories" />
+            </b-alert>
+            <b-alert v-else-if="noHistoriesMatchingFilter" variant="info" show>
+                There are no archived histories matching your current filter: <b>{{ searchText }}</b>
+            </b-alert>
+            <b-alert v-else-if="noResults" variant="info" show>
+                You do not have any archived histories. You can select the 'Archive History' option from the history
+                menu to archive a history.
+            </b-alert>
+            <b-list-group v-else>
+                <b-list-group-item v-for="history in archivedHistories" :key="history.id" :data-pk="history.id">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <Heading h3 inline bold size="text">
+                            {{ history.name }}
+                        </Heading>
 
-        <b-alert v-if="isLoading" variant="info" show>
-            <loading-span message="Loading archived histories..." />
-        </b-alert>
-        <b-alert v-else-if="isArchiveEmpty" variant="info" show> You do not have any archived histories. </b-alert>
-        <div v-else>
-            <b-input-group class="mb-2">
-                <debounced-input v-slot="{ value, input }" v-model="localFilter">
-                    <b-form-input
-                        id="archived-histories-filter"
-                        size="sm"
-                        :class="filterText && 'font-weight-bold'"
-                        :value="value"
-                        placeholder="Filter by name or annotation"
-                        title="clear search (esc)"
-                        data-description="filter text input"
-                        @input="input"
-                        @keyup.esc="updateFilter('')" />
-                </debounced-input>
-                <b-input-group-append>
-                    <b-button
-                        size="sm"
-                        aria-label="Clear filters"
-                        data-description="clear filters"
-                        @click="updateFilter('')">
-                        <icon icon="times" />
-                    </b-button>
-                </b-input-group-append>
-            </b-input-group>
-            <b-table
-                id="archived-histories-table"
-                no-sort-reset
-                no-local-sorting
-                striped
-                :fields="fields"
-                :items="archivedHistories"
-                :per-page="perPage"
-                :current-page="currentPage"
-                :sort-by.sync="sortBy"
-                :sort-desc.sync="sortDesc">
-                <template v-slot:cell(name)="row">
-                    <router-link :to="`/histories/view?id=${row.item.id}`">{{ row.item.name }}</router-link>
-                </template>
-                <template v-slot:cell(archived_time)="data">
-                    <UtcDate :date="data.value" mode="elapsed" />
-                </template>
-                <template v-slot:cell(purged)="data">
-                    <span v-if="data.value">No</span>
-                    <span v-else>Yes</span>
-                </template>
-                <template v-slot:cell(actions)="row">
-                    <b-button v-if="!row.item.purged" variant="primary" size="sm"> Restore </b-button>
-                    <b-button v-if="row.item.import_source" variant="primary" size="sm"> Import Copy </b-button>
-                </template>
-            </b-table>
+                        <div class="d-flex align-items-center flex-gapx-1">
+                            <b-badge v-b-tooltip pill :title="localize('Amount of items in history')">
+                                {{ history.count }} {{ localize("items") }}
+                            </b-badge>
+                            <b-badge v-b-tooltip pill :title="localize('Last edited')">
+                                <UtcDate :date="history.update_time" mode="elapsed" />
+                            </b-badge>
+                        </div>
+                    </div>
+
+                    <p v-if="history.annotation" class="my-1">{{ history.annotation }}</p>
+
+                    <StatelessTags
+                        v-if="history.tags.length > 0"
+                        class="my-1"
+                        :value="history.tags"
+                        :disabled="true"
+                        :max-visible-tags="10" />
+
+                    <div class="d-flex justify-content-end align-items-center mt-1">
+                        <b-button-group>
+                            <b-button
+                                v-b-tooltip
+                                :title="localize('View this history')"
+                                variant="link"
+                                class="p-0 px-1"
+                                @click.stop="() => onViewHistory(history)">
+                                <FontAwesomeIcon icon="fa-eye" />
+                                View
+                            </b-button>
+                            <b-button
+                                v-if="canRestore(history)"
+                                v-b-tooltip
+                                :title="localize('Unarchive this history and move it back to your active histories')"
+                                variant="link"
+                                class="p-0 px-1"
+                                @click.stop="() => onRestoreHistory(history)">
+                                <FontAwesomeIcon icon="fa-recycle" />
+                                Restore
+                            </b-button>
+
+                            <b-button
+                                v-if="canImportCopy(history)"
+                                v-b-tooltip
+                                :title="localize('Import a new copy of this history from the associated export record')"
+                                variant="link"
+                                class="p-0 px-1"
+                                @click.stop="() => onImportCopy(history)">
+                                <FontAwesomeIcon icon="fa-copy" />
+                                Import Copy
+                            </b-button>
+                        </b-button-group>
+                    </div>
+                </b-list-group-item>
+            </b-list-group>
+            <b-pagination
+                v-if="showPagination"
+                v-model="currentPage"
+                class="mt-3"
+                :total-rows="totalRows"
+                :per-page="perPage" />
         </div>
     </section>
 </template>
