@@ -5,7 +5,9 @@ import io
 import json
 import logging
 import os
+import random
 import socket
+import string
 import tarfile
 import tempfile
 import time
@@ -26,7 +28,10 @@ import webob.exc as httpexceptions
 # We will use some very basic HTTP/wsgi utilities from the paste library
 from paste.response import HeaderDict
 
-from galaxy.util import smart_str
+from galaxy.util import (
+    smart_str,
+    UNKNOWN,
+)
 from galaxy.util.resources import resource_string
 
 log = logging.getLogger(__name__)
@@ -200,9 +205,13 @@ class WebApplication:
 
     def handle_request(self, environ, start_response, body_renderer=None):
         # Grab the request_id (should have been set by middleware)
-        request_id = environ.get("request_id", "unknown")
-        # Map url using routes
+        request_id = environ.get("request_id", UNKNOWN)
         path_info = environ.get("PATH_INFO", "")
+
+        unique_request_id = self._make_unique_request_id(request_id, path_info)
+        self._model.set_request_id(unique_request_id)  # Start SQLAlchemy session scope
+
+        # Map url using routes
         client_match = self.clientside_routes.match(path_info, environ)
         map_match = self.mapper.match(path_info, environ) or client_match
         if path_info.startswith("/api"):
@@ -255,7 +264,19 @@ class WebApplication:
             if not body:
                 raise
         body_renderer = body_renderer or self._render_body
+        self._model.unset_request_id(unique_request_id)  # End SQLAlchemy session scope
         return body_renderer(trans, body, environ, start_response)
+
+    def _make_unique_request_id(self, request_id, path_info):
+        """
+        If request_id is insufficiently unique, construct a reasonably unique identifier.
+        """
+        if not request_id or request_id == UNKNOWN:
+            path_hash = hash(path_info)
+            # Add a pseudo-random suffix to account for identical paths
+            suffix = "".join(random.choices(string.ascii_lowercase, k=5))
+            request_id = f"{request_id}_{path_hash}_{suffix}"
+        return request_id
 
     def _render_body(self, trans, body, environ, start_response):
         # Now figure out what we got back and try to get it to the browser in
