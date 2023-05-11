@@ -64,7 +64,6 @@ const emit = defineEmits<{
     (e: "change", shouldRefresh: boolean): void;
 }>();
 
-//@ts-ignore bad library types
 library.add(faExclamation, faTimes, faArrowsAltH, faCaretSquareDown, faCaretSquareUp);
 
 /** TODO: remove attrs computed.

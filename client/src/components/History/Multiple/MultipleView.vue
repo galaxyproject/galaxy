@@ -12,7 +12,6 @@ import MultipleViewList from "./MultipleViewList.vue";
 
 const filter = ref("");
 
-//@ts-ignore bad library types
 library.add(faTimes);
 
 const { currentUser } = storeToRefs(useUserStore());

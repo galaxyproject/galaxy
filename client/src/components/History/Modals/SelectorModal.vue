@@ -40,7 +40,6 @@ const emit = defineEmits<{
     (e: "selectHistories", histories: HistorySummary[]): void;
 }>();
 
-// @ts-ignore bad library types
 library.add(faColumns, faSignInAlt, faListAlt);
 
 const filter = ref("");

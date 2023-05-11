@@ -131,7 +131,6 @@ import type { OutputTerminals } from "./modules/terminals";
 
 Vue.use(BootstrapVue);
 
-// @ts-ignore
 library.add(faCodeBranch);
 
 const props = defineProps({
