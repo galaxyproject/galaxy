@@ -1075,13 +1075,6 @@ def populate_api_routes(webapp, app):
         path_prefix="/api/jobs/{job_id}",
         parent_resources=dict(member_name="job", collection_name="jobs"),
     )
-    webapp.mapper.connect(
-        "job_tokens",
-        "/api/jobs/{job_id}/oidc-tokens",
-        controller="job_tokens",
-        action="get_token",
-        conditions=dict(method=["GET"]),
-    )
 
     webapp.mapper.resource(
         "port",
