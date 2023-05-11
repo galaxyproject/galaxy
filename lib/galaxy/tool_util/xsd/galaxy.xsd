@@ -4811,6 +4811,8 @@ The ``static_value`` and ``regexp`` filters can be inverted by setting ``keep`` 
 * ``unique_value``: remove options that have duplicate entries in the given ``column``.
 * ``sort_by``: sort options by the entries of a given ``column``. If ``reverse_sort_order`` is set to ``true``, reverse sort order from ascending to descending.
 * ``multiple_splitter``: split the entries of the specified ``column``(s) in the referenced file using a ``separator``. Thereby the number of columns is increased.
+* ``attribute_value_splitter``: split the attribute-value pairs within the specified ``column`` in the referenced file using ``pair_separator`` and ``name_val_separator``. Thereby a new column is introduced before ``column`` containing a list of all attribute names.
+
 
 ### Examples
 
@@ -4907,6 +4909,20 @@ demonstrates splitting up strings into multiple values.
     </options>
 </param>
 ```
+
+This example demonstrates compiling a list of available attributes by parsing a GFF containing a column of multiple attribute-value pairs formatted in the input as ``gene_id=ABC;transcript_id=abc;transcript_biotype=mRNA``
+
+```xml
+<param name="available_attributes" type="select" label="List of all attributes mentioned in a GFF">
+    <options from_data_table="a_gff_as_table">
+        <column name="name" index="8"/>
+        <column name="value" index="8"/>
+        <filter type="attribute_value_splitter" column="8" pair_separator=";" name_val_separator="="/>
+    </options>
+</param>
+```
+
+
 ]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="type" type="FilterType" use="required">
@@ -4914,10 +4930,6 @@ demonstrates splitting up strings into multiple values.
         <xs:documentation xml:lang="en"><![CDATA[
 Currently the filters in the ``filter_types`` dictionary in the module
 [/lib/galaxy/tools/parameters/dynamic_options.py](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tools/parameters/dynamic_options.py) are defined.
-
-Deprecated filter types:
-
-* ``attribute_value_splitter``
         ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
@@ -5003,6 +5015,16 @@ from the list.</xs:documentation>
         <xs:documentation xml:lang="en">Used when ``type`` is ``sort_by``, if set to
         ``true`` it will reverse the sort order from ascending to descending. Default
         is ``false``.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="pair_separator" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Only used if ``type`` is ``attribute_value_splitter``. This is used to separate attribute-value pairs from other pairs, i.e. ``;`` if the target content is ``A=V; B=W; C=Y`` . Default is ``,``.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="name_val_separator" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Only used if ``type`` is ``attribute_value_splitter``. This is used to separate attributes and values from each other within an attribute-value pair, i.e. ``=`` if the target content is ``A=V; B=W; C=Y``. Defaults to whitespace.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -7065,7 +7087,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       <xs:enumeration value="regexp"/>
       <xs:enumeration value="unique_value"/>
       <xs:enumeration value="multiple_splitter"/>
-      <xs:enumeration value="attribute_value_splitter" />
+      <xs:enumeration value="attribute_value_splitter"/>
       <xs:enumeration value="add_value"/>
       <xs:enumeration value="remove_value"/>
       <xs:enumeration value="sort_by"/>
@@ -7080,6 +7102,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       <xs:enumeration value="insert_column"/>
       <xs:enumeration value="column_strip"/>
       <xs:enumeration value="multiple_splitter"/>
+      <xs:enumeration value="attribute_value_splitter"/>
       <xs:enumeration value="column_replace"/>
       <xs:enumeration value="metadata_value"/>
       <xs:enumeration value="boolean"/>
