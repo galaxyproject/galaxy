@@ -6,7 +6,6 @@ import _ from "underscore";
 import Backbone from "backbone";
 import Select from "mvc/ui/ui-select-default";
 import Options from "mvc/ui/ui-options";
-import Drilldown from "mvc/ui/ui-drilldown";
 import Buttons from "mvc/ui/ui-buttons";
 import Modal from "mvc/ui/ui-modal";
 import Switch from "mvc/ui/ui-switch";
@@ -222,51 +221,6 @@ export var TextSelect = Backbone.View.extend({
     },
 });
 
-/** Creates a upload element input field */
-export var Upload = Backbone.View.extend({
-    initialize: function (options) {
-        var self = this;
-        this.model = (options && options.model) || new Backbone.Model(options);
-        this.setElement(
-            $("<div/>")
-                .append((this.$info = $("<div/>")))
-                .append((this.$file = $("<input/>").attr("type", "file").addClass("mb-1")))
-                .append((this.$text = $("<textarea/>").addClass("ui-textarea").attr("disabled", true)))
-                .append((this.$wait = $("<i/>").addClass("fa fa-spinner fa-spin")))
-        );
-        this.listenTo(this.model, "change", this.render, this);
-        this.$file.on("change", (e) => {
-            self._readFile(e);
-        });
-        this.render();
-    },
-    value: function (new_val) {
-        new_val !== undefined && this.model.set("value", new_val);
-        return this.model.get("value");
-    },
-    render: function () {
-        this.$el.attr("id", this.model.id);
-        this.model.get("info") ? this.$info.show().text(this.model.get("info")) : this.$info.hide();
-        this.model.get("value") ? this.$text.text(this.model.get("value")).show() : this.$text.hide();
-        this.model.get("wait") ? this.$wait.show() : this.$wait.hide();
-        return this;
-    },
-    _readFile: function (e) {
-        var file = e.target.files && e.target.files[0];
-        if (file) {
-            var reader = new FileReader();
-            reader.onload = () => {
-                this.model.set({ wait: false, value: reader.result });
-                if (this.model.get("onchange")) {
-                    this.model.get("onchange")(this.value());
-                }
-            };
-            this.model.set({ wait: true, value: null });
-            reader.readAsText(file);
-        }
-    },
-});
-
 /* Make more Ui stuff directly available at this namespace (for backwards
  * compatibility).  We should eliminate this practice, though, and just require
  * what we need where we need it, allowing for better package optimization.
@@ -279,7 +233,7 @@ export const ButtonLink = Buttons.ButtonLink;
 export const Checkbox = Options.Checkbox;
 export const RadioButton = Options.RadioButton;
 export const Radio = Options.Radio;
-export { Select, Drilldown };
+export { Select };
 
 export default {
     Button: Buttons.Button,
@@ -289,7 +243,6 @@ export default {
     Input: Input,
     Message: Message,
     UnescapedMessage: UnescapedMessage,
-    Upload: Upload,
     Modal: Modal,
     RadioButton: Options.RadioButton,
     Checkbox: Options.Checkbox,
@@ -297,5 +250,4 @@ export default {
     Select: Select,
     NullableText: NullableText,
     TextSelect: TextSelect,
-    Drilldown: Drilldown,
 };

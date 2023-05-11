@@ -14,18 +14,14 @@ import DataPicker from "mvc/ui/ui-data-picker";
 export default Backbone.View.extend({
     /** Available parameter types */
     types: {
-        text: "_fieldText",
-        password: "_fieldText",
         select: "_fieldSelect",
         data_column: "_fieldSelect",
         genomebuild: "_fieldSelect",
         data: "_fieldData",
         data_collection: "_fieldData",
-        drill_down: "_fieldDrilldown",
         group_tag: "_fieldSelect",
         library_data: "_fieldLibrary",
         ftpfile: "_fieldFtp",
-        upload: "_fieldUpload",
         rules: "_fieldRulesEdit",
         data_dialog: "_fieldDialog",
     },
@@ -114,23 +110,6 @@ export default Backbone.View.extend({
         });
     },
 
-    /** Drill down options field */
-    _fieldDrilldown: function (input_def) {
-        // show text field e.g. in workflow editor
-        if (input_def.is_workflow) {
-            return this._fieldText(input_def);
-        }
-
-        // create drill down field
-        return new Ui.Drilldown.View({
-            id: input_def.id,
-            data: input_def.options,
-            display: input_def.display,
-            optional: input_def.optional,
-            onchange: input_def.onchange,
-        });
-    },
-
     /** Text input field */
     _fieldText: function (input_def) {
         // field replaces e.g. a select field
@@ -196,14 +175,6 @@ export default Backbone.View.extend({
             id: input_def.id,
             optional: input_def.optional,
             multiple: input_def.multiple,
-            onchange: input_def.onchange,
-        });
-    },
-
-    /** Upload file field */
-    _fieldUpload: function (input_def) {
-        return new Ui.Upload({
-            id: input_def.id,
             onchange: input_def.onchange,
         });
     },
