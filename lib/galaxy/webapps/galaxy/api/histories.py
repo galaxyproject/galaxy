@@ -188,6 +188,7 @@ class FastAPIHistories:
     )
     def get_archived_histories(
         self,
+        response: Response,
         trans: ProvidesHistoryContext = DependsOnTrans,
         serialization_params: SerializationParams = Depends(query_serialization_params),
         filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
@@ -196,7 +197,11 @@ class FastAPIHistories:
 
         Archived histories are histories are not part of the active histories of the user but they can be accessed using this endpoint.
         """
-        return self.service.get_archived_histories(trans, serialization_params, filter_query_params)
+        archived_histories, total_matches = self.service.get_archived_histories(
+            trans, serialization_params, filter_query_params, include_total_matches=True
+        )
+        response.headers["total_matches"] = str(total_matches)
+        return archived_histories
 
     @router.get(
         "/api/histories/most_recently_used",

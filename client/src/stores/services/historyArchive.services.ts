@@ -29,18 +29,32 @@ interface SortingOptions {
 
 interface GetArchivedHistoriesOptions extends FilterOptions, PaginationOptions, SortingOptions, SerializationOptions {}
 
+interface ArchivedHistoriesResult {
+    histories: ArchivedHistorySummary[] | ArchivedHistoryDetailed[];
+    totalMatches: number;
+}
+
+const DEFAULT_PAGE_SIZE = 10;
+
 /**
  * Get a list of archived histories.
  */
 export async function getArchivedHistories(
     options: GetArchivedHistoriesOptions = {}
-): Promise<ArchivedHistorySummary[] | ArchivedHistoryDetailed[]> {
+): Promise<ArchivedHistoriesResult> {
     const params = optionsToApiParams(options);
-    const { data } = await _getArchivedHistories(params);
+    const { data, headers } = await _getArchivedHistories(params);
+    const totalMatches = parseInt(headers.get("total_matches") ?? "0");
     if (params.view === "detailed") {
-        return data as ArchivedHistoryDetailed[];
+        return {
+            histories: data as ArchivedHistoryDetailed[],
+            totalMatches,
+        };
     }
-    return data as ArchivedHistorySummary[];
+    return {
+        histories: data as ArchivedHistorySummary[],
+        totalMatches,
+    };
 }
 
 /**
@@ -96,8 +110,9 @@ function optionsToApiParams(options: GetArchivedHistoriesOptions): GetArchivedHi
         params.q = ["name-contains"];
         params.qv = [options.query];
     }
-    params.offset = (options.currentPage ?? 0) * (options.pageSize ?? 10);
-    params.limit = options.pageSize;
+    const pageSize = options.pageSize ?? DEFAULT_PAGE_SIZE;
+    params.offset = (options.currentPage ? options.currentPage - 1 : 0) * pageSize;
+    params.limit = pageSize;
     params.order = options.sortBy ? `${options.sortBy}${options.sortDesc ? "-dsc" : "-asc"}` : undefined;
     params.view = options.view;
     params.keys = options.keys;

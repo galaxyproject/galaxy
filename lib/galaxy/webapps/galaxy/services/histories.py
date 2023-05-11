@@ -752,7 +752,8 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         trans: ProvidesHistoryContext,
         serialization_params: SerializationParams,
         filter_query_params: FilterQueryParams,
-    ) -> List[AnyArchivedHistoryView]:
+        include_total_matches: bool = False,
+    ) -> Tuple[List[AnyArchivedHistoryView], Optional[int]]:
         if trans.anonymous:
             raise glx_exceptions.AuthenticationRequired("Only registered users can have or access archived histories.")
 
@@ -761,13 +762,14 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             model.History.user == trans.user,
             model.History.archived == true(),
         ]
+        total_matches = self.manager.count(filters=filters) if include_total_matches else None
         order_by = self._build_order_by(filter_query_params.order)
         histories = self.manager.list(
             filters=filters, order_by=order_by, limit=filter_query_params.limit, offset=filter_query_params.offset
         )
 
-        rval = [self._serialize_archived_history(trans, history, serialization_params) for history in histories]
-        return rval
+        histories = [self._serialize_archived_history(trans, history, serialization_params) for history in histories]
+        return histories, total_matches
 
     def _serialize_archived_history(
         self,
