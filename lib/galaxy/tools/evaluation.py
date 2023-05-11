@@ -100,7 +100,6 @@ DeferrableObjectsT = Union[
 class ToolEvaluator:
     """An abstraction linking together a tool and a job runtime to evaluate
     tool inputs in an isolated, testable manner.
-    tool inputs in an isolated, testable manner.
     """
 
     app: MinimalToolApp
