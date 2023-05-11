@@ -26,17 +26,26 @@ library.add(faArchive);
 const isArchiving = ref(false);
 
 const history = computed<HistorySummary | null>(() => {
-    return historyStore.getHistoryById(props.historyId);
+    const history = historyStore.getHistoryById(props.historyId);
+    if (history === null) {
+        // It could be already an archived history, so we won't find it in the store
+        // as it's not in the active histories anymore.
+        historyStore.loadHistoryById(props.historyId);
+        return historyStore.getHistoryById(props.historyId);
+    }
+    return history;
 });
 
-const archivedHistoriesLink = computed(() => {
-    return "/histories/archived";
+const isHistoryAlreadyArchived = computed(() => {
+    return history.value?.archived;
 });
 
-async function archiveHistory() {
+const archivedHistoriesRoute = "/histories/archived";
+
+async function onArchiveHistory() {
     isArchiving.value = true;
     try {
-        console.log("TODO: archive history");
+        await historyStore.archiveHistoryById(props.historyId);
     } catch (error) {
         console.error(error);
     } finally {
@@ -54,34 +63,40 @@ async function archiveHistory() {
             <b v-else>{{ history.name }}</b>
         </h1>
 
-        <b-alert show variant="info">
-            Archiving a history will remove it from your <i>active histories</i>. You can still access it from the
-            <router-link :to="archivedHistoriesLink">Archived Histories</router-link> section.
+        <b-alert v-if="isHistoryAlreadyArchived" show variant="info">
+            This history has been archived. You can access it from the
+            <router-link :to="archivedHistoriesRoute">Archived Histories</router-link> section.
         </b-alert>
+        <div v-else-if="history">
+            <b-alert show variant="info">
+                Archiving a history will remove it from your <i>active histories</i>. You can still access it from the
+                <router-link :to="archivedHistoriesRoute">Archived Histories</router-link> section.
+            </b-alert>
 
-        <h2 class="h-md">How do you want to archive this history?</h2>
-        <b-card v-if="history" no-body class="mt-3">
-            <b-tabs pills card vertical lazy>
-                <b-tab id="keep-storage-tab" title="Keep storage space" active>
-                    <p>
-                        If you want to remove the history from your <i>active histories</i> but keep it around for
-                        reference, you can move it to the
-                        <router-link :to="archivedHistoriesLink">Archived Histories</router-link> section, by clicking
-                        the button below.
-                    </p>
-                    <p>
-                        You can undo this action at any time, and the history will be moved back to your
-                        <i>active histories</i>.
-                    </p>
+            <h2 class="h-md">How do you want to archive this history?</h2>
+            <b-card no-body class="mt-3">
+                <b-tabs pills card vertical lazy>
+                    <b-tab id="keep-storage-tab" title="Keep storage space" active>
+                        <p>
+                            If you want to remove the history from your <i>active histories</i> but keep it around for
+                            reference, you can move it to the
+                            <router-link :to="archivedHistoriesRoute">Archived Histories</router-link> section, by
+                            clicking the button below.
+                        </p>
+                        <p>
+                            You can undo this action at any time, and the history will be moved back to your
+                            <i>active histories</i>.
+                        </p>
 
-                    <b-button class="archive-history-btn mt-3" variant="primary" @click="archiveHistory">
-                        Archive history
-                    </b-button>
-                </b-tab>
-                <b-tab v-if="hasWritableFileSources" id="free-storage-tab" title="Free storage space">
-                    <history-archive-export-selector :history="history" />
-                </b-tab>
-            </b-tabs>
-        </b-card>
+                        <b-button class="archive-history-btn mt-3" variant="primary" @click="onArchiveHistory">
+                            Archive history
+                        </b-button>
+                    </b-tab>
+                    <b-tab v-if="hasWritableFileSources" id="free-storage-tab" title="Free storage space">
+                        <history-archive-export-selector :history="history" />
+                    </b-tab>
+                </b-tabs>
+            </b-card>
+        </div>
     </div>
 </template>
