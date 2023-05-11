@@ -15,7 +15,10 @@ import requests
 from oauthlib.common import generate_nonce
 from requests_oauthlib import OAuth2Session
 
-from galaxy import util
+from galaxy import (
+    exceptions,
+    util,
+)
 from galaxy.model import (
     CustosAuthnzToken,
     User,
