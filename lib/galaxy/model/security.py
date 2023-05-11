@@ -4,6 +4,7 @@ from datetime import (
     datetime,
     timedelta,
 )
+from typing import List
 
 from sqlalchemy import (
     and_,
@@ -517,6 +518,12 @@ class GalaxyRBACAgent(RBACAgent):
                 if user_role_id not in user_role_ids:
                     return False
 
+        return True
+
+    def can_access_collection(self, user_roles: List[galaxy.model.Role], collection: galaxy.model.DatasetCollection):
+        action_tuples = collection.dataset_action_tuples
+        if not self.can_access_datasets(user_roles, action_tuples):
+            return False
         return True
 
     def can_manage_dataset(self, roles, dataset):

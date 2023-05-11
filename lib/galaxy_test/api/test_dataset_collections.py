@@ -196,6 +196,40 @@ class TestDatasetCollectionsApi(ApiTestCase):
                 create_response = self._post("dataset_collections", payload, json=True)
                 self._assert_status_code_is(create_response, 403)
 
+    def test_dataset_collection_element_security(self):
+        with self.dataset_populator.test_history(require_new=False) as history_id:
+            dataset_collection = self.dataset_collection_populator.create_list_of_list_in_history(
+                history_id,
+                collection_type="list:list:list",
+                wait=True,
+            ).json()
+            first_element = dataset_collection["elements"][0]
+            assert first_element["model_class"] == "DatasetCollectionElement"
+            assert first_element["element_type"] == "dataset_collection"
+            first_element_url = f"/api/dataset_collection_element/{first_element['id']}"
+            # Make one dataset private to check that access permissions are respected
+            first_dataset_element = first_element["object"]["elements"][0]["object"]["elements"][0]
+            self.dataset_populator.make_private(history_id, first_dataset_element["object"]["id"])
+            with self._different_user():
+                assert self._get(first_element_url).status_code == 403
+            collection_dce_response = self._get(first_element_url)
+            collection_dce_response.raise_for_status()
+            collection_dce = collection_dce_response.json()
+            assert collection_dce["model_class"] == "DatasetCollectionElement"
+            assert collection_dce["element_type"] == "dataset_collection"
+            first_dataset_element = first_element["object"]["elements"][0]["object"]["elements"][0]
+            assert first_dataset_element["model_class"] == "DatasetCollectionElement"
+            assert first_dataset_element["element_type"] == "hda"
+            first_dataset_element_url = f"/api/dataset_collection_element/{first_dataset_element['id']}"
+            with self._different_user():
+                assert self._get(first_dataset_element_url).status_code == 403
+            dataset_dce_response = self._get(first_dataset_element_url)
+            dataset_dce_response.raise_for_status()
+            dataset_dce = dataset_dce_response.json()
+            assert dataset_dce["model_class"] == "DatasetCollectionElement"
+            assert dataset_dce["element_type"] == "hda"
+            assert dataset_dce["object"]["model_class"] == "HistoryDatasetAssociation"
+
     def test_enforces_unique_names(self):
         with self.dataset_populator.test_history(require_new=False) as history_id:
             element_identifiers = self.dataset_collection_populator.list_identifiers(history_id)

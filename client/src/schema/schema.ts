@@ -47,6 +47,10 @@ export interface paths {
          */
         put: operations["reload_toolbox_api_configuration_toolbox_put"];
     };
+    "/api/dataset_collection_element/{dce_id}": {
+        /** Content */
+        get: operations["content_api_dataset_collection_element__dce_id__get"];
+    };
     "/api/dataset_collections": {
         /** Create a new dataset collection instance. */
         post: operations["create_api_dataset_collections_post"];
@@ -7534,6 +7538,33 @@ export interface operations {
             200: {
                 content: {
                     "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    content_api_dataset_collection_element__dce_id__get: {
+        /** Content */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded identifier of the dataset collection element. */
+            path: {
+                dce_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["DCESummary"];
                 };
             };
             /** @description Validation Error */
