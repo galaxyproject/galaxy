@@ -15,6 +15,7 @@ import {
     setCurrentHistoryOnServer,
     updateHistoryFields,
 } from "@/stores/services/history.services";
+import * as ArchiveServices from "@/stores/services/historyArchive.services";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 
 export type HistorySummary = components["schemas"]["HistorySummary"];
@@ -254,6 +255,22 @@ export const useHistoryStore = defineStore("historyStore", () => {
         setHistory(securedHistory as HistorySummary);
     }
 
+    async function archiveHistoryById(historyId: string, archiveExportId?: string, purgeHistory = false) {
+        const history = await ArchiveServices.archiveHistory(historyId, archiveExportId, purgeHistory);
+        setHistory(history as HistorySummary);
+        if (!history.archived) {
+            return;
+        }
+        // If the current history is archived, we need to switch to another one as it is
+        // no longer part of the active histories.
+        const nextHistoryId = getNextAvailableHistoryId([historyId]);
+        if (nextHistoryId) {
+            return setCurrentHistory(nextHistoryId);
+        } else {
+            return createNewHistory();
+        }
+    }
+
     async function updateHistory({ id, ...update }: HistorySummary) {
         const savedHistory = await updateHistoryFields(id, update);
         setHistory(savedHistory as HistorySummary);
@@ -284,6 +301,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         loadHistoryById,
         secureHistory,
         updateHistory,
+        archiveHistoryById,
         historiesLoading,
         historiesOffset,
         totalHistoryCount,
