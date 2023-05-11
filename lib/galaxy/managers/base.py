@@ -388,6 +388,27 @@ class ModelManager(Generic[U]):
         items = self._apply_fn_filters_gen(items, fn_filters)
         return list(self._apply_fn_limit_offset_gen(items, limit, offset))
 
+    def count(self, filters=None, **kwargs):
+        """
+        Returns the number of objects matching the given filters.
+
+        If the filters include functional filters, the count is performed by getting all objects
+        and then applying the functional filters which may impact performance.
+        """
+        # TODO: requires case sensitivity fix from https://github.com/galaxyproject/galaxy/pull/16036
+        orm_filters, fn_filters = self._split_filters(filters)
+        query = self.query(filters=orm_filters, **kwargs)
+        if not fn_filters:
+            # if no fn_filtering required, we can use count
+            return query.count()
+
+        # TODO: raise an error instead to avoid performance issues?
+
+        # fn filters will change the number of items
+        items = query.all()
+        items = self._apply_fn_filters_gen(items, fn_filters)
+        return len(list(items))
+
     def _handle_filters_case_sensitivity(self, filters):
         """Modifies the filters to make them case insensitive if needed."""
         if filters is None:

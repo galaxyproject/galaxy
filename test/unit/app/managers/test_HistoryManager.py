@@ -938,6 +938,38 @@ class TestHistoryFilters(BaseTestCase):
         found = self.history_manager.list(filters=filters, offset=-1)
         assert found == deleted_and_annotated
 
-    # TODO: eq, ge, le
-    # def test_ratings( self ):
-    #     pass
+    def test_count(self):
+        user2 = self.user_manager.create(**user2_data)
+        history1 = self.history_manager.create(name="history1", user=user2)
+        history2 = self.history_manager.create(name="history2", user=user2)
+        history3 = self.history_manager.create(name="history3", user=user2)
+        history4 = self.history_manager.create(name="history4", user=user2)
+
+        self.history_manager.delete(history1)
+        self.history_manager.delete(history2)
+        self.history_manager.delete(history3)
+
+        test_annotation = "testing"
+        history2.add_item_annotation(self.trans.sa_session, user2, history2, test_annotation)
+        self.trans.sa_session.flush()
+        history3.add_item_annotation(self.trans.sa_session, user2, history3, test_annotation)
+        self.trans.sa_session.flush()
+        history3.add_item_annotation(self.trans.sa_session, user2, history4, test_annotation)
+        self.trans.sa_session.flush()
+
+        all_histories = [history1, history2, history3, history4]
+        deleted = [history1, history2, history3]
+        annotated = [history2, history3, history4]
+        deleted_and_annotated = [history2, history3]
+
+        self.log("no filters should work")
+        assert self.history_manager.count() == len(all_histories)
+        self.log("orm filtered should work")
+        filters = [model.History.deleted == true()]
+        assert self.history_manager.count(filters=filters) == len(deleted)
+        self.log("fn filtered should work")
+        filters = self.filter_parser.parse_filters([("annotation", "has", test_annotation)])
+        assert self.history_manager.count(filters=filters) == len(annotated)
+        self.log("orm and fn filtered should work")
+        filters = self.filter_parser.parse_filters([("deleted", "eq", "True"), ("annotation", "has", test_annotation)])
+        assert self.history_manager.count(filters=filters) == len(deleted_and_annotated)
