@@ -38,8 +38,7 @@
             v-if="elementBounding"
             :steps="steps"
             :viewport-bounds="elementBounding"
-            :viewport-scale="scale"
-            :viewport-pan="transform"
+            :viewport-bounding-box="viewportBoundingBox"
             @panBy="panBy"
             @moveTo="moveTo" />
     </div>
@@ -61,6 +60,7 @@ import type { XYPosition } from "@/stores/workflowEditorStateStore";
 import type { OutputTerminals } from "./modules/terminals";
 import { assertDefined } from "@/utils/assertions";
 import { minZoom, maxZoom } from "./modules/zoomLevels";
+import { useViewportBoundingBox } from "./composables/viewportBoundingBox";
 
 const emit = defineEmits(["transform", "graph-offset", "onRemove", "scrollTo"]);
 const props = defineProps({
@@ -78,6 +78,7 @@ const canvas: Ref<HTMLElement | null> = ref(null);
 const elementBounding = useElementBounding(canvas, { windowResize: false, windowScroll: false });
 const scroll = useScroll(canvas);
 const { transform, panBy, setZoom, moveTo } = useD3Zoom(1, minZoom, maxZoom, canvas, scroll, { x: 20, y: 20 });
+const { viewportBoundingBox } = useViewportBoundingBox(elementBounding, scale, transform);
 
 const isDragging = ref(false);
 provide("isDragging", isDragging);
