@@ -29,8 +29,10 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
         self.workflow_index_open()
         self._workflow_import_from_url()
         self.workflow_index_click_option("View external link")
+        self.driver.switch_to.window(self.driver.window_handles[1])
         assert self.driver.current_url == EXAMPLE_WORKFLOW_URL_1
-        self.driver.back()
+        self.driver.close()
+        self.driver.switch_to.window(self.driver.window_handles[0])
         self.components.workflows.external_link.wait_for_visible()
         # font-awesome title handling broken... https://github.com/FortAwesome/vue-fontawesome/issues/63
         # title_element = external_link_icon.find_element(By.TAG_NAME, "title")

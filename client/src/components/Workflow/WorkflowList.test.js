@@ -5,8 +5,11 @@ import MockAdapter from "axios-mock-adapter";
 import { getLocalVue } from "tests/jest/helpers";
 import flushPromises from "flush-promises";
 import { parseISO, formatDistanceToNow } from "date-fns";
+import { PiniaVuePlugin } from "pinia";
+import { createTestingPinia } from "@pinia/testing";
 
 const localVue = getLocalVue();
+localVue.use(PiniaVuePlugin);
 
 jest.mock("app");
 
@@ -30,6 +33,14 @@ const mockWorkflowsData = [
     },
 ];
 
+const defaultApiParams = {
+    limit: 20,
+    offset: 0,
+    skip_step_counts: true,
+    sort_by: "update_time",
+    sort_desc: true,
+};
+
 describe("WorkflowList.vue", () => {
     let axiosMock;
     let wrapper;
@@ -49,6 +60,7 @@ describe("WorkflowList.vue", () => {
             wrapper = mount(Workflows, {
                 propsData,
                 localVue,
+                pinia: createTestingPinia(),
             });
         });
 
@@ -60,12 +72,13 @@ describe("WorkflowList.vue", () => {
     describe(" with server error", () => {
         beforeEach(async () => {
             axiosMock
-                .onGet("/api/workflows", { params: { limit: 50, offset: 0, skip_step_counts: true, search: "" } })
+                .onGet("/api/workflows", { params: { search: "", ...defaultApiParams } })
                 .reply(403, { err_msg: "this is a problem" });
             const propsData = {};
             wrapper = mount(Workflows, {
                 propsData,
                 localVue,
+                pinia: createTestingPinia(),
             });
             flushPromises();
         });
@@ -78,7 +91,7 @@ describe("WorkflowList.vue", () => {
     describe(" with single workflow", () => {
         beforeEach(async () => {
             axiosMock
-                .onGet("/api/workflows", { params: { limit: 50, offset: 0, skip_step_counts: true, search: "" } })
+                .onGet("/api/workflows", { params: { search: "", ...defaultApiParams } })
                 .reply(200, mockWorkflowsData, { total_matches: "1" });
             const propsData = {
                 inputDebounceDelay: 0,
@@ -86,6 +99,7 @@ describe("WorkflowList.vue", () => {
             wrapper = mount(Workflows, {
                 propsData,
                 localVue,
+                pinia: createTestingPinia(),
             });
             flushPromises();
         });
@@ -131,10 +145,6 @@ describe("WorkflowList.vue", () => {
         });
 
         it("fetched filtered results when search filter is used", async () => {
-            axiosMock
-                .onGet("/api/workflows", { params: { limit: 50, offset: 0, skip_step_counts: true, search: "mytext" } })
-                .reply(200, [], { total_matches: "0" });
-
             await wrapper.find("#workflow-search").setValue("mytext");
             flushPromises();
             expect(wrapper.find("#workflow-search").element.value).toBe("mytext");
@@ -142,12 +152,6 @@ describe("WorkflowList.vue", () => {
         });
 
         it("update filter when a tag is clicked", async () => {
-            axiosMock
-                .onGet("/api/workflows", {
-                    params: { limit: 50, offset: 0, skip_step_counts: true, search: "tag:'tagmoo'" },
-                })
-                .reply(200, mockWorkflowsData, { total_matches: "1" });
-
             const tags = wrapper.findAll("tbody > tr .tag-name").wrappers;
             expect(tags.length).toBe(2);
             tags[0].trigger("click");
@@ -156,12 +160,6 @@ describe("WorkflowList.vue", () => {
         });
 
         it("update filter when a tag is clicked only happens on first click", async () => {
-            axiosMock
-                .onGet("/api/workflows", {
-                    params: { limit: 50, offset: 0, skip_step_counts: true, search: "tag:'tagmoo'" },
-                })
-                .reply(200, mockWorkflowsData, { total_matches: "1" });
-
             const tags = wrapper.findAll("tbody > tr .tag-name").wrappers;
             expect(tags.length).toBe(2);
             tags[0].trigger("click");
@@ -172,11 +170,6 @@ describe("WorkflowList.vue", () => {
         });
 
         it("update filter when published icon is clicked", async () => {
-            axiosMock
-                .onGet("/api/workflows", {
-                    params: { limit: 50, offset: 0, skip_step_counts: true, search: "is:published" },
-                })
-                .reply(200, mockWorkflowsData, { total_matches: "1" });
             const rows = wrapper.findAll("tbody > tr").wrappers;
             const row = rows[0];
             row.find(".fa-globe").trigger("click");
@@ -185,16 +178,57 @@ describe("WorkflowList.vue", () => {
         });
 
         it("update filter when shared with me icon is clicked", async () => {
-            axiosMock
-                .onGet("/api/workflows", {
-                    params: { limit: 50, offset: 0, skip_step_counts: true, search: "is:shared_with_me" },
-                })
-                .reply(200, mockWorkflowsData, { total_matches: "1" });
             const rows = wrapper.findAll("tbody > tr").wrappers;
             const row = rows[0];
             row.find(".fa-share-alt").trigger("click");
             flushPromises();
             expect(wrapper.vm.filter).toBe("is:shared_with_me");
+        });
+    });
+
+    describe("published grid", () => {
+        beforeEach(async () => {
+            axiosMock
+                .onGet("/api/workflows", {
+                    params: {
+                        search: "is:published",
+                        show_published: true,
+                        show_shared: false,
+                        ...defaultApiParams,
+                    },
+                })
+                .reply(200, mockWorkflowsData, { total_matches: "1" });
+            const propsData = {
+                inputDebounceDelay: 0,
+                published: true,
+            };
+            wrapper = mount(Workflows, {
+                propsData,
+                localVue,
+                pinia: createTestingPinia(),
+            });
+            flushPromises();
+        });
+
+        it("should be error free", async () => {
+            const errorDiv = wrapper.find(".index-grid-message");
+            expect(errorDiv.text()).toBeFalsy();
+        });
+
+        it("renders one row", async () => {
+            const rows = wrapper.findAll("tbody > tr").wrappers;
+            expect(rows.length).toBe(1);
+            const row = rows[0];
+            const columns = row.findAll("td");
+            expect(columns.at(0).text()).toContain("workflow name");
+            expect(columns.at(1).text()).toContain("tagmoo");
+            expect(columns.at(1).text()).toContain("tagcow");
+            expect(columns.at(2).text()).toBe(
+                formatDistanceToNow(parseISO(`${mockWorkflowsData[0].update_time}Z`), { addSuffix: true })
+            );
+            expect(columns.at(2).text()).toBe(
+                formatDistanceToNow(parseISO(`${mockWorkflowsData[0].update_time}Z`), { addSuffix: true })
+            );
         });
     });
 });
