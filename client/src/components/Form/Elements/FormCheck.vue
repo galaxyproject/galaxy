@@ -9,7 +9,7 @@ export interface FormCheckProps {
 const props = defineProps<FormCheckProps>();
 
 const emit = defineEmits<{
-    (e: "input", value: string[]): void;
+    (e: "input", value: string[] | null): void;
 }>();
 
 const indeterminate = ref(false);
@@ -20,8 +20,11 @@ const currentValue = computed({
         return Array.isArray(val) ? val : [val];
     },
     set: (newValue) => {
-        emit("input", newValue);
-
+        if (newValue.length > 0) {
+            emit("input", newValue);
+        } else {
+            emit("input", null);
+        }
         if (newValue.length === 0) {
             selectAll.value = false;
             indeterminate.value = false;
@@ -45,7 +48,7 @@ function onSelectAll() {
         const allValues = props.options.map((option) => option[1]);
         emit("input", allValues);
     } else {
-        emit("input", []);
+        emit("input", null);
     }
 }
 </script>
@@ -60,7 +63,6 @@ function onSelectAll() {
             @input="onSelectAll">
             Select / Deselect all
         </b-form-checkbox>
-
         <b-form-checkbox-group v-model="currentValue" stacked class="pl-3">
             <b-form-checkbox v-for="(option, index) in options" :key="index" :value="option[1]">
                 {{ option[0] }}
