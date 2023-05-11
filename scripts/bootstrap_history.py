@@ -640,7 +640,7 @@ def _write_file(path, contents, skip_if_exists=False):
         f.write(contents)
 
 
-def _text_target(pull_request, labels=None):
+def _text_target(pull_request, labels=None, skip_merge=True):
     if isinstance(pull_request, str):
         pr_number = pull_request
     else:
@@ -683,7 +683,7 @@ def _text_target(pull_request, labels=None):
         print(f"No 'kind/*' or 'minor' or 'merge' or 'procedures' label found for {_pr_to_str(pull_request)}")
         text_target = None
 
-    if is_minor or is_merge:
+    if is_minor or is_merge and skip_merge:
         return
 
     if is_some_kind_of_enhancement and is_major:
@@ -759,9 +759,13 @@ def get_first_sentence(message):
     return first_line
 
 
+def strip_release(message):
+    return re.sub(r"^\s*\[.*\]\s*", r"", message)
+
+
 def process_sentence(message):
     # Strip tags like [15.07].
-    message = re.sub(r"^\s*\[.*\]\s*", r"", message)
+    message = strip_release(message=message)
     # Link issues and pull requests...
     issue_url = f"https://github.com/{PROJECT_OWNER}/{PROJECT_NAME}/issues"
     message = re.sub(r"#(\d+)", rf"`#\1 <{issue_url}/\1>`__", message)
