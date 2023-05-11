@@ -86,6 +86,13 @@ from . import (
     dataproviders,
 )
 
+#Optional dependency to enable better metadata support in FITS datatype
+try:
+    from astropy.io import fits
+except ModuleNotFoundError:
+    #If astropy cannot be found FITS datatype will work with minimal metadata support
+    pass
+
 if TYPE_CHECKING:
     from galaxy.util.compression_utils import FileObjType
 
@@ -4313,6 +4320,11 @@ class FITS(Binary):
 
     file_ext = "fits"
 
+    MetadataElement(
+        name="HDUs", default=['FITS File HDUs'], desc="Header Data Units", param=metadata.ListParameter, readonly=True,
+        visible=True, no_value=()
+    )
+
     def __init__(self, **kwd):
         super().__init__(**kwd)
         self._magic = b"SIMPLE  ="
@@ -4331,16 +4343,27 @@ class FITS(Binary):
 
         try:
             # The first 9 bytes of any FITS file are always "SIMPLE  ="
-            header = open(filename, "rb").read(9)
-            if header == self._magic:
-                return True
+            with open(filename, "rb") as header:
+                if header.read(9) == self._magic:
+                    return True
+                return False
+        except Exception as e:
+            log.warning("%s, sniff Exception: %s", self, e)
             return False
-        except Exception:
-            return False
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
+        try:
+            with fits.open(dataset.file_name) as hdul:
+                dataset.metadata.HDUs = []
+                for i in range(len(hdul)):
+                    dataset.metadata.HDUs.append(hdul[i].__class__.__name__)
+        except Exception as e:
+            log.warning("%s, set_meta Exception: %s", self, e)
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = "FITS file"
+            dataset.peek = "\n".join(dataset.metadata.HDUs)
             dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = "file does not exist"
