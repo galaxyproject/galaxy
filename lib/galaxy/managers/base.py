@@ -392,22 +392,16 @@ class ModelManager(Generic[U]):
         """
         Returns the number of objects matching the given filters.
 
-        If the filters include functional filters, the count is performed by getting all objects
-        and then applying the functional filters which may impact performance.
+        If the filters include functional filters, this function will raise an exception as they might cause
+        performance issues.
         """
         # TODO: requires case sensitivity fix from https://github.com/galaxyproject/galaxy/pull/16036
         orm_filters, fn_filters = self._split_filters(filters)
+        if fn_filters:
+            raise exceptions.RequestParameterInvalidException("Counting with functional filters is not supported.")
+
         query = self.query(filters=orm_filters, **kwargs)
-        if not fn_filters:
-            # if no fn_filtering required, we can use count
-            return query.count()
-
-        # TODO: raise an error instead to avoid performance issues?
-
-        # fn filters will change the number of items
-        items = query.all()
-        items = self._apply_fn_filters_gen(items, fn_filters)
-        return len(list(items))
+        return query.count()
 
     def _handle_filters_case_sensitivity(self, filters):
         """Modifies the filters to make them case insensitive if needed."""

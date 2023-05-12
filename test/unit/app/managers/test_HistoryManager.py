@@ -2,6 +2,7 @@
 """
 from unittest import mock
 
+import pytest
 import sqlalchemy
 from sqlalchemy import true
 
@@ -959,17 +960,23 @@ class TestHistoryFilters(BaseTestCase):
 
         all_histories = [history1, history2, history3, history4]
         deleted = [history1, history2, history3]
-        annotated = [history2, history3, history4]
-        deleted_and_annotated = [history2, history3]
 
         self.log("no filters should work")
         assert self.history_manager.count() == len(all_histories)
         self.log("orm filtered should work")
         filters = [model.History.deleted == true()]
         assert self.history_manager.count(filters=filters) == len(deleted)
-        self.log("fn filtered should work")
-        filters = self.filter_parser.parse_filters([("annotation", "has", test_annotation)])
-        assert self.history_manager.count(filters=filters) == len(annotated)
-        self.log("orm and fn filtered should work")
-        filters = self.filter_parser.parse_filters([("deleted", "eq", "True"), ("annotation", "has", test_annotation)])
-        assert self.history_manager.count(filters=filters) == len(deleted_and_annotated)
+
+        raw_annotation_fn_filter = ("annotation", "has", test_annotation)
+        self.log("fn filtered is not supported")
+        with pytest.raises(exceptions.RequestParameterInvalidException) as exc:
+            filters = self.filter_parser.parse_filters([raw_annotation_fn_filter])
+            self.history_manager.count(filters=filters)
+            assert "not supported" in str(exc)
+
+        raw_deleted_orm_filter = ("deleted", "eq", "True")
+        self.log("mixin orm and fn filtered is not supported")
+        with pytest.raises(exceptions.RequestParameterInvalidException) as exc:
+            filters = self.filter_parser.parse_filters([raw_deleted_orm_filter, raw_annotation_fn_filter])
+            self.history_manager.count(filters=filters)
+            assert "not supported" in str(exc)
