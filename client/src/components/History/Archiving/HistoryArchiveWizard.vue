@@ -9,8 +9,12 @@ import { RouterLink } from "vue-router";
 import HistoryArchiveExportSelector from "@/components/History/Archiving/HistoryArchiveExportSelector.vue";
 import { useHistoryStore, type HistorySummary } from "@/stores/historyStore";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import { useToast } from "@/composables/toast";
+
+library.add(faArchive);
 
 const historyStore = useHistoryStore();
+const toast = useToast();
 
 const { hasWritable: hasWritableFileSources } = useFileSources();
 
@@ -19,9 +23,6 @@ interface ArchiveHistoryWizardProps {
 }
 
 const props = defineProps<ArchiveHistoryWizardProps>();
-
-//@ts-ignore bad library types
-library.add(faArchive);
 
 const isArchiving = ref(false);
 
@@ -42,12 +43,14 @@ const isHistoryAlreadyArchived = computed(() => {
 
 const archivedHistoriesRoute = "/histories/archived";
 
-async function onArchiveHistory() {
+async function onArchiveHistory(exportRecordId?: string) {
     isArchiving.value = true;
     try {
-        await historyStore.archiveHistoryById(props.historyId);
+        const shouldPurge = exportRecordId !== undefined;
+        await historyStore.archiveHistoryById(props.historyId, exportRecordId, shouldPurge);
+        toast.success("History archived successfully.");
     } catch (error) {
-        console.error(error);
+        toast.error(`The history archive request failed. Please try again later. Reason: ${error}`);
     } finally {
         isArchiving.value = false;
     }
@@ -88,12 +91,12 @@ async function onArchiveHistory() {
                             <i>active histories</i>.
                         </p>
 
-                        <b-button class="archive-history-btn mt-3" variant="primary" @click="onArchiveHistory">
+                        <b-button class="archive-history-btn mt-3" variant="primary" @click="onArchiveHistory()">
                             Archive history
                         </b-button>
                     </b-tab>
                     <b-tab v-if="hasWritableFileSources" id="free-storage-tab" title="Free storage space">
-                        <history-archive-export-selector :history="history" />
+                        <history-archive-export-selector :history="history" @onArchive="onArchiveHistory" />
                     </b-tab>
                 </b-tabs>
             </b-card>

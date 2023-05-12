@@ -56,6 +56,10 @@ export class ExportRecordModel {
             : undefined;
     }
 
+    get id() {
+        return this._data.id;
+    }
+
     get isReady() {
         return (this._data.ready && !this.hasExpired) ?? false;
     }

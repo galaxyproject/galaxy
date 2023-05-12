@@ -22,6 +22,10 @@ interface HistoryExportSelectorProps {
 
 const props = defineProps<HistoryExportSelectorProps>();
 
+const emit = defineEmits<{
+    (e: "onArchive", exportRecordId: string): void;
+}>();
+
 const existingExports = ref<ExportRecordModel[]>([]);
 const isLoading = ref(true);
 const isExportingRecord = ref(false);
@@ -104,8 +108,10 @@ async function doExportToFileSource(exportDirectory: string, fileName: string) {
     updateExports();
 }
 
-async function deleteAndArchiveHistory() {
-    console.log("TODO: archive history");
+function onArchiveHistoryWithExport() {
+    if (mostUpToDateExport.value) {
+        emit("onArchive", mostUpToDateExport.value.id);
+    }
 }
 </script>
 
@@ -182,11 +188,11 @@ async function deleteAndArchiveHistory() {
             class="archive-history-btn mt-3"
             :disabled="!canArchiveHistory"
             variant="primary"
-            @click="deleteAndArchiveHistory">
+            @click="onArchiveHistoryWithExport">
             Delete and Archive history
         </b-button>
 
-        <b-modal v-model="isExportDialogOpen" title="Export history" size="lg" hide-footer>
+        <b-modal v-model="isExportDialogOpen" title="Export history to permanent storage" size="lg" hide-footer>
             <ExportToFileSourceForm what="history" @export="doExportToFileSource" />
         </b-modal>
     </div>
