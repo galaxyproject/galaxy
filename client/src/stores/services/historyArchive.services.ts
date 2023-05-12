@@ -97,9 +97,12 @@ export async function unarchiveHistory(historyId: string, force?: boolean): Prom
 export async function reimportHistoryFromExportRecordAsync(
     archivedHistory: ArchivedHistorySummary
 ): Promise<AsyncTaskResultSummary> {
+    if (!archivedHistory.export_record_data) {
+        throw new Error("The archived history does not have an associated export record.");
+    }
     const { data } = await _reimportHistoryFromStoreAsync({
-        model_store_format: archivedHistory.export_record_data?.model_store_format,
-        store_content_uri: archivedHistory.export_record_data?.target_uri,
+        model_store_format: archivedHistory.export_record_data.model_store_format,
+        store_content_uri: archivedHistory.export_record_data.target_uri,
     });
     return data as AsyncTaskResultSummary;
 }

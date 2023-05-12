@@ -7,7 +7,10 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import * as ArchiveServices from "@/stores/services/historyArchive.services";
-import type { ArchivedHistorySummary } from "@/stores/services/historyArchive.services";
+import {
+    reimportHistoryFromExportRecordAsync,
+    type ArchivedHistorySummary,
+} from "@/stores/services/historyArchive.services";
 import { BAlert, BButton, BButtonGroup, BBadge, BPagination, BListGroup, BListGroupItem } from "bootstrap-vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -69,8 +72,7 @@ function canRestore(history: ArchivedHistorySummary) {
 }
 
 function canImportCopy(history: ArchivedHistorySummary) {
-    // TODO
-    return history.purged;
+    return history.export_record_data?.target_uri !== undefined;
 }
 
 function onViewHistoryInCenterPanel(history: ArchivedHistorySummary) {
@@ -78,7 +80,14 @@ function onViewHistoryInCenterPanel(history: ArchivedHistorySummary) {
 }
 
 async function onRestoreHistory(history: ArchivedHistorySummary) {
-    const confirmed = await confirm(localize(`Are you sure you want to unarchive the history '${history.name}'?`));
+    const confirmed = await confirm(
+        localize(
+            "Are you sure you want to unarchive this history? This will move the history back to your active histories."
+        ),
+        {
+            title: localize(`Unarchive '${history.name}'?`),
+        }
+    );
     if (!confirmed) {
         return;
     }
@@ -94,9 +103,33 @@ async function onRestoreHistory(history: ArchivedHistorySummary) {
     }
 }
 
-function onImportCopy(history: ArchivedHistorySummary) {
-    // TODO
-    console.log("IMPORT COPY", history);
+async function onImportCopy(history: ArchivedHistorySummary) {
+    const confirmed = await confirm(
+        localize(
+            `Are you sure you want to import a new copy of this history? This will create a new history with the same datasets contained in the associated export snapshot.`
+        ),
+        {
+            title: localize(`Import Copy of '${history.name}'?`),
+        }
+    );
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+        await reimportHistoryFromExportRecordAsync(history);
+        toast.success(
+            localize(
+                `The History '${history.name}' it's being imported. This process may take a while. Check your histories list after a few minutes.`
+            ),
+            localize("Importing History in background...")
+        );
+    } catch (error) {
+        toast.error(
+            localize(`Failed to import history '${history.name}' with reason: ${error}`),
+            localize("History Import Failed")
+        );
+    }
 }
 </script>
 <template>
