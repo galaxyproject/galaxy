@@ -88,5 +88,6 @@ split_requirement () {
 # supported by Galaxy, so Poetry resorts to an old version that didn't have a
 # maximum Python version pin. Here we replace any such requirement with multiple
 # Python-version-specific requirements.
+split_requirement matplotlib
 split_requirement numpy
 split_requirement scipy
