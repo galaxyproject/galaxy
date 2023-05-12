@@ -47,9 +47,6 @@ library.add(faFileExport);
 
 const POLLING_DELAY = 3000;
 
-const history = ref(null);
-const isLoadingHistory = ref(true);
-
 const exportParams = reactive(DEFAULT_EXPORT_PARAMS);
 const isLoadingRecords = ref(true);
 const exportRecords = ref(null);
@@ -71,18 +68,21 @@ const availableRecordsMessage = computed(() =>
         ? "Loading export records..."
         : "This history has no export records yet. You can choose one of the export options above."
 );
+
+const historyStore = useHistoryStore();
+
+const history = computed(() => {
+    const history = historyStore.getHistoryById(props.historyId);
+    console.log("HISTORY", history);
+    return history;
+});
+
 const errorMessage = ref(null);
 const actionMessage = ref(null);
 const actionMessageVariant = ref(null);
 
-const { getHistoryById } = useHistoryStore();
-
 onMounted(async () => {
     updateExports();
-    //TODO: replace direct query with useHistoriesStore in 23.1
-    isLoadingHistory.value = true;
-    history.value = await getHistoryById(props.historyId);
-    isLoadingHistory.value = false;
 });
 
 watch(isExportTaskRunning, (newValue, oldValue) => {
@@ -176,7 +176,7 @@ function updateExportParams(newParams) {
         <font-awesome-icon icon="file-export" size="2x" class="text-primary float-left mr-2" />
         <h1 class="h-lg">
             Export
-            <loading-span v-if="isLoadingHistory" spinner-only />
+            <loading-span v-if="!history" spinner-only />
             <b v-else id="history-name">{{ historyName }}</b>
         </h1>
 
