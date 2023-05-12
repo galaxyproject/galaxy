@@ -2473,6 +2473,12 @@ export interface components {
          */
         DatasetCollectionContentElements: components["schemas"]["DCESummary"][];
         /**
+         * DatasetCollectionPopulatedState
+         * @description An enumeration.
+         * @enum {string}
+         */
+        DatasetCollectionPopulatedState: "new" | "ok" | "failed";
+        /**
          * DatasetContentType
          * @description For retrieving content from a structured dataset (e.g. HDF5)
          * @enum {string}
@@ -2558,6 +2564,24 @@ export interface components {
          */
         DatasetSourceType: "hda" | "ldda";
         /**
+         * DatasetState
+         * @description An enumeration.
+         * @enum {string}
+         */
+        DatasetState:
+            | "new"
+            | "upload"
+            | "queued"
+            | "running"
+            | "ok"
+            | "empty"
+            | "error"
+            | "paused"
+            | "setting_metadata"
+            | "failed_metadata"
+            | "deferred"
+            | "discarded";
+        /**
          * DatasetStorageDetails
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -2634,6 +2658,12 @@ export interface components {
              */
             truncated: boolean;
         };
+        /**
+         * DatasetValidatedState
+         * @description An enumeration.
+         * @enum {string}
+         */
+        DatasetValidatedState: "unknown" | "invalid" | "ok";
         /** DatatypeConverter */
         DatatypeConverter: {
             /**
@@ -3178,7 +3208,7 @@ export interface components {
              * State
              * @description The current state of this dataset.
              */
-            state: components["schemas"]["galaxy__model__Dataset__states"];
+            state: components["schemas"]["DatasetState"];
             /** Tags */
             tags: string;
             /**
@@ -3684,7 +3714,7 @@ export interface components {
              * State
              * @description The current state of this dataset.
              */
-            state: components["schemas"]["galaxy__model__Dataset__states"];
+            state: components["schemas"]["DatasetState"];
             tags: components["schemas"]["TagCollection"];
             /**
              * Type
@@ -3721,7 +3751,7 @@ export interface components {
              * Validated State
              * @description The state of the datatype validation for this dataset.
              */
-            validated_state: components["schemas"]["validated_states"];
+            validated_state: components["schemas"]["DatasetValidatedState"];
             /**
              * Validated State Message
              * @description The message with details about the datatype validation result for this dataset.
@@ -3772,7 +3802,7 @@ export interface components {
              * State
              * @description The current state of this dataset.
              */
-            state: components["schemas"]["galaxy__model__Dataset__states"];
+            state: components["schemas"]["DatasetState"];
             /** Tags */
             tags: string[];
         };
@@ -3840,7 +3870,7 @@ export interface components {
              * State
              * @description The current state of this dataset.
              */
-            state: components["schemas"]["galaxy__model__Dataset__states"];
+            state: components["schemas"]["DatasetState"];
             tags: components["schemas"]["TagCollection"];
             /**
              * Type
@@ -3978,7 +4008,7 @@ export interface components {
              * Populated State
              * @description Indicates the general state of the elements in the dataset collection:- 'new': new dataset collection, unpopulated elements.- 'ok': collection elements populated (HDAs may or may not have errors).- 'failed': some problem populating, won't be populated.
              */
-            populated_state: components["schemas"]["populated_states"];
+            populated_state: components["schemas"]["DatasetCollectionPopulatedState"];
             /**
              * Populated State Message
              * @description Optional message with further information in case the population of the dataset collection failed.
@@ -4107,7 +4137,7 @@ export interface components {
              * Populated State
              * @description Indicates the general state of the elements in the dataset collection:- 'new': new dataset collection, unpopulated elements.- 'ok': collection elements populated (HDAs may or may not have errors).- 'failed': some problem populating, won't be populated.
              */
-            populated_state: components["schemas"]["populated_states"];
+            populated_state: components["schemas"]["DatasetCollectionPopulatedState"];
             /**
              * Populated State Message
              * @description Optional message with further information in case the population of the dataset collection failed.
@@ -4531,7 +4561,7 @@ export interface components {
              * State
              * @description The current state of the History based on the states of the datasets it contains.
              */
-            state: components["schemas"]["galaxy__model__Dataset__states"];
+            state: components["schemas"]["DatasetState"];
             /**
              * State Counts
              * @description A dictionary keyed to possible dataset states and valued with the number of datasets in this history that have those states.
@@ -4683,7 +4713,7 @@ export interface components {
              * Populated State
              * @description Indicates the general state of the elements in the dataset collection:- 'new': new dataset collection, unpopulated elements.- 'ok': collection elements populated (HDAs may or may not have errors).- 'failed': some problem populating, won't be populated.
              */
-            populated_state: components["schemas"]["populated_states"];
+            populated_state: components["schemas"]["DatasetCollectionPopulatedState"];
             /**
              * States
              * @description A dictionary of job states and the number of jobs in that state.
@@ -4964,7 +4994,7 @@ export interface components {
              * State
              * @description Current state of the job.
              */
-            state: components["schemas"]["galaxy__model__Job__states"];
+            state: components["schemas"]["JobState"];
             /**
              * Tool ID
              * @description Identifier of the tool that generated this job.
@@ -5004,6 +5034,27 @@ export interface components {
          */
         JobSourceType: "Job" | "ImplicitCollectionJobs" | "WorkflowInvocation";
         /**
+         * JobState
+         * @description An enumeration.
+         * @enum {string}
+         */
+        JobState:
+            | "new"
+            | "resubmitted"
+            | "upload"
+            | "waiting"
+            | "queued"
+            | "running"
+            | "ok"
+            | "error"
+            | "failed"
+            | "paused"
+            | "deleting"
+            | "deleted"
+            | "stop"
+            | "stopped"
+            | "skipped";
+        /**
          * JobStateSummary
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -5025,7 +5076,7 @@ export interface components {
              * Populated State
              * @description Indicates the general state of the elements in the dataset collection:- 'new': new dataset collection, unpopulated elements.- 'ok': collection elements populated (HDAs may or may not have errors).- 'failed': some problem populating, won't be populated.
              */
-            populated_state: components["schemas"]["populated_states"];
+            populated_state: components["schemas"]["DatasetCollectionPopulatedState"];
             /**
              * States
              * @description A dictionary of job states and the number of jobs in that state.
@@ -7475,7 +7526,7 @@ export interface components {
              * Populated State
              * @description Indicates the general state of the elements in the dataset collection:- 'new': new dataset collection, unpopulated elements.- 'ok': collection elements populated (HDAs may or may not have errors).- 'failed': some problem populating, won't be populated.
              */
-            populated_state: components["schemas"]["populated_states"];
+            populated_state: components["schemas"]["DatasetCollectionPopulatedState"];
             /**
              * States
              * @description A dictionary of job states and the number of jobs in that state.
@@ -7615,57 +7666,6 @@ export interface components {
              */
             namespace: string;
         };
-        /**
-         * states
-         * @description An enumeration.
-         * @enum {string}
-         */
-        galaxy__model__Dataset__states:
-            | "new"
-            | "upload"
-            | "queued"
-            | "running"
-            | "ok"
-            | "empty"
-            | "error"
-            | "paused"
-            | "setting_metadata"
-            | "failed_metadata"
-            | "deferred"
-            | "discarded";
-        /**
-         * states
-         * @description An enumeration.
-         * @enum {string}
-         */
-        galaxy__model__Job__states:
-            | "new"
-            | "resubmitted"
-            | "upload"
-            | "waiting"
-            | "queued"
-            | "running"
-            | "ok"
-            | "error"
-            | "failed"
-            | "paused"
-            | "deleting"
-            | "deleted"
-            | "stop"
-            | "stopped"
-            | "skipped";
-        /**
-         * populated_states
-         * @description An enumeration.
-         * @enum {string}
-         */
-        populated_states: "new" | "ok" | "failed";
-        /**
-         * validated_states
-         * @description An enumeration.
-         * @enum {string}
-         */
-        validated_states: "unknown" | "invalid" | "ok";
     };
     responses: never;
     parameters: never;
