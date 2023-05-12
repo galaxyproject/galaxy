@@ -11,6 +11,7 @@
             :per-page="perPage"
             :current-page="currentPage"
             :busy.sync="isBusy"
+            primary-key="id"
             @row-clicked="clicked"
             @filtered="filtered">
             <template v-slot:head(select_icon)="">

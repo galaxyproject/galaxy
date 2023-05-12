@@ -1,3 +1,7 @@
+from galaxy_test.base.workflow_fixtures import (
+    WORKFLOW_WITH_BAD_COLUMN_PARAMETER,
+    WORKFLOW_WITH_OLD_TOOL_VERSION,
+)
 from .framework import (
     managed_history,
     selenium_test,
@@ -19,14 +23,41 @@ class TestPages(SeleniumTestCase):
         self.screenshot("pages_grid")
         name = self.create_page_and_edit(screenshot_name="pages_create_form")
         self.screenshot("pages_editor_new")
-        self.components.pages.editor.markdown_editor.wait_for_and_send_keys("moo\n\n\ncow\n\n")
-        self.components.pages.editor.embed_dataset.wait_for_and_click()
+        editor = self._page_editor
+        editor.markdown_editor.wait_for_and_send_keys("moo\n\n\ncow\n\n")
+        editor.embed_dataset.wait_for_and_click()
         self.screenshot("pages_editor_embed_dataset_dialog")
-        self.components.pages.editor.dataset_selector.wait_for_and_click()
+        editor.dataset_selector.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
-        self.components.pages.editor.save.wait_for_and_click()
+        editor.save.wait_for_and_click()
         self.screenshot("pages_editor_saved")
-        self.home()
+        self.page_open_with_name(name, "page_view_with_embedded_dataset")
+
+    @selenium_test
+    @managed_history
+    def test_workflow_problem_display(self):
+        workflow_populator = self.workflow_populator
+        problem_workflow_1_id = workflow_populator.upload_yaml_workflow(
+            WORKFLOW_WITH_OLD_TOOL_VERSION, exact_tools=True
+        )
+        problem_workflow_2_id = workflow_populator.upload_yaml_workflow(
+            WORKFLOW_WITH_BAD_COLUMN_PARAMETER, exact_tools=True
+        )
+
         self.navigate_to_pages()
-        self.click_grid_popup_option(name, "View")
-        self.screenshot("pages_view_simple")
+        name = self.create_page_and_edit()
+        editor = self._page_editor
+        editor.markdown_editor.wait_for_and_send_keys("moo\n\n\ncow\n\n")
+        editor.embed_workflow_display.wait_for_and_click()
+        self.screenshot("pages_editor_embed_workflow_dialog")
+        editor.workflow_selection(id=problem_workflow_1_id).wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        editor.embed_workflow_display.wait_for_and_click()
+        editor.workflow_selection(id=problem_workflow_2_id).wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        editor.save.wait_for_and_click()
+        self.page_open_with_name(name, "page_view_with_workflow_problems")
+
+    @property
+    def _page_editor(self):
+        return self.components.pages.editor
