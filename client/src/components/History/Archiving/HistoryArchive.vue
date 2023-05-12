@@ -11,7 +11,16 @@ import type { ArchivedHistorySummary } from "@/stores/services/historyArchive.se
 import { BAlert, BButton, BButtonGroup, BBadge, BPagination, BListGroup, BListGroupItem } from "bootstrap-vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faRecycle, faCopy, faEye } from "@fortawesome/free-solid-svg-icons";
+import { faUndo, faCopy, faEye } from "@fortawesome/free-solid-svg-icons";
+import { useRouter } from "vue-router/composables";
+import { useHistoryStore } from "@/stores/historyStore";
+import { useToast } from "@/composables/toast";
+import { useConfirmDialog } from "@/composables/confirmDialog";
+
+const router = useRouter();
+const historyStore = useHistoryStore();
+const toast = useToast();
+const { confirm } = useConfirmDialog();
 
 const archivedHistories = ref<ArchivedHistorySummary[]>([]);
 const isLoading = ref(true);
@@ -27,7 +36,7 @@ const hasFilters = computed(() => searchText.value !== "");
 const noHistoriesMatchingFilter = computed(() => hasFilters.value && noResults.value);
 const showPagination = computed(() => totalRows.value > perPage.value && !isLoading.value && !noResults.value);
 
-library.add(faRecycle, faCopy, faEye);
+library.add(faUndo, faCopy, faEye);
 
 onMounted(async () => {
     loadArchivedHistories();
@@ -64,14 +73,25 @@ function canImportCopy(history: ArchivedHistorySummary) {
     return history.purged;
 }
 
-function onViewHistory(history: ArchivedHistorySummary) {
-    // TODO
-    console.log("VIEW HISTORY", history);
+function onViewHistoryInCenterPanel(history: ArchivedHistorySummary) {
+    router.push(`/histories/view?id=${history.id}`);
 }
 
-function onRestoreHistory(history: ArchivedHistorySummary) {
-    // TODO
-    console.log("RESTORE HISTORY", history);
+async function onRestoreHistory(history: ArchivedHistorySummary) {
+    const confirmed = await confirm(localize(`Are you sure you want to unarchive the history '${history.name}'?`));
+    if (!confirmed) {
+        return;
+    }
+    try {
+        await historyStore.unarchiveHistoryById(history.id);
+        toast.success(localize(`History '${history.name}' has been restored.`), localize("History Restored"));
+        return loadArchivedHistories();
+    } catch (error) {
+        toast.error(
+            localize(`Failed to restore history '${history.name}' with reason: ${error}`),
+            localize("History Restore Failed")
+        );
+    }
 }
 
 function onImportCopy(history: ArchivedHistorySummary) {
@@ -131,7 +151,7 @@ function onImportCopy(history: ArchivedHistorySummary) {
                                 :title="localize('View this history')"
                                 variant="link"
                                 class="p-0 px-1"
-                                @click.stop="() => onViewHistory(history)">
+                                @click.stop="() => onViewHistoryInCenterPanel(history)">
                                 <FontAwesomeIcon icon="fa-eye" />
                                 View
                             </b-button>
@@ -142,8 +162,8 @@ function onImportCopy(history: ArchivedHistorySummary) {
                                 variant="link"
                                 class="p-0 px-1"
                                 @click.stop="() => onRestoreHistory(history)">
-                                <FontAwesomeIcon icon="fa-recycle" />
-                                Restore
+                                <FontAwesomeIcon icon="fa-undo" />
+                                Unarchive
                             </b-button>
 
                             <b-button
