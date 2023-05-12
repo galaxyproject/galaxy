@@ -11,6 +11,8 @@ import type { components } from "@/schema";
 import { getLocalVue } from "@tests/jest/helpers";
 import HistoryExport from "./HistoryExport.vue";
 import { getExportRecords } from "./services";
+import { setActivePinia } from "pinia";
+import { createTestingPinia } from "@pinia/testing";
 
 const localVue = getLocalVue(true);
 
@@ -25,7 +27,6 @@ const FAKE_HISTORY = {
 };
 
 const REMOTE_FILES_API_ENDPOINT = new RegExp("/api/remote_files/plugins");
-const GET_HISTORY_ENDPOINT = new RegExp(`/api/histories/${FAKE_HISTORY_ID}`);
 
 type FilesSourcePluginList = components["schemas"]["FilesSourcePlugin"][];
 const REMOTE_FILES_API_RESPONSE: FilesSourcePluginList = [
@@ -41,10 +42,20 @@ const REMOTE_FILES_API_RESPONSE: FilesSourcePluginList = [
     },
 ];
 
+const pinia = createTestingPinia({
+    initialState: {
+        historyStore: {
+            getHistoryById: (historyId: string) => FAKE_HISTORY,
+        },
+    },
+});
+
 async function mountHistoryExport() {
+    setActivePinia(pinia);
     const wrapper = shallowMount(HistoryExport, {
         propsData: { historyId: FAKE_HISTORY_ID },
         localVue,
+        pinia,
     });
     await flushPromises();
     return wrapper;
@@ -56,7 +67,6 @@ describe("HistoryExport.vue", () => {
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
         axiosMock.onGet(REMOTE_FILES_API_ENDPOINT).reply(200, []);
-        axiosMock.onGet(GET_HISTORY_ENDPOINT).reply(200, FAKE_HISTORY);
     });
 
     afterEach(() => {
