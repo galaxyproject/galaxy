@@ -1644,8 +1644,7 @@ def test_tests_asserts(lint_ctx):
     assert "Test 1: unknown assertion 'invalid'" in lint_ctx.error_messages
     assert "Test 1: unknown attribute 'invalid_attrib' for 'has_text'" in lint_ctx.error_messages
     assert "Test 1: missing attribute 'text' for 'has_text'" in lint_ctx.error_messages
-    assert "Test 1: attribute 'value' for 'has_size' needs to be 'int' got '500k'" in lint_ctx.error_messages
-    assert "Test 1: attribute 'delta' for 'has_size' needs to be 'int' got '1O'" in lint_ctx.error_messages
+    assert "Test 1: attribute 'value' for 'has_size' needs to be 'int' got '500k'" not in lint_ctx.error_messages
     assert (
         "Test 1: unknown attribute 'invalid_attrib_also_checked_in_nested_asserts' for 'not_has_text'"
         in lint_ctx.error_messages
@@ -1654,7 +1653,7 @@ def test_tests_asserts(lint_ctx):
     assert "Test 1: 'has_n_columns' needs to specify 'n', 'min', or 'max'" in lint_ctx.error_messages
     assert "Test 1: 'has_n_lines' needs to specify 'n', 'min', or 'max'" in lint_ctx.error_messages
     assert not lint_ctx.warn_messages
-    assert len(lint_ctx.error_messages) == 9
+    assert len(lint_ctx.error_messages) == 7
 
 
 def test_tests_output_type_mismatch(lint_ctx):

@@ -22,12 +22,20 @@ export function useShortTermStorage() {
 
     const isPreparing = ref(false);
 
+    async function prepareHistoryDownload(historyId, options = DEFAULT_OPTIONS) {
+        return prepareObjectDownload(historyId, "histories", options, false);
+    }
+
     async function downloadHistory(historyId, options = DEFAULT_OPTIONS) {
-        return prepareObjectDownload(historyId, "histories", options);
+        return prepareObjectDownload(historyId, "histories", options, true);
+    }
+
+    async function prepareWorkflowInvocationDownload(invocationId, options = DEFAULT_OPTIONS) {
+        return prepareObjectDownload(invocationId, "invocations", options, false);
     }
 
     async function downloadWorkflowInvocation(invocationId, options = DEFAULT_OPTIONS) {
-        return prepareObjectDownload(invocationId, "invocations", options);
+        return prepareObjectDownload(invocationId, "invocations", options, true);
     }
 
     function getDownloadObjectUrl(storageRequestId) {
@@ -40,7 +48,7 @@ export function useShortTermStorage() {
         window.location.assign(url);
     }
 
-    async function prepareObjectDownload(object_id, object_api, options = DEFAULT_OPTIONS) {
+    async function prepareObjectDownload(object_id, object_api, options = DEFAULT_OPTIONS, downloadWhenReady = true) {
         const finalOptions = Object.assign(DEFAULT_OPTIONS, options);
         resetTimeout();
         isPreparing.value = true;
@@ -54,29 +62,31 @@ export function useShortTermStorage() {
         };
 
         const response = await axios.post(url, exportParams).catch(handleError);
-        handleInitialize(response);
+        handleInitialize(response, downloadWhenReady);
     }
 
-    function handleInitialize(response) {
+    function handleInitialize(response, downloadWhenReady) {
         const storageRequestId = response.data.storage_request_id;
-        pollStorageRequestId(storageRequestId);
+        pollStorageRequestId(storageRequestId, downloadWhenReady);
     }
 
-    function pollStorageRequestId(storageRequestId) {
+    function pollStorageRequestId(storageRequestId, downloadWhenReady) {
         const url = withPrefix(`/api/short_term_storage/${storageRequestId}/ready`);
         axios
             .get(url)
             .then((r) => {
-                handlePollResponse(r, storageRequestId);
+                handlePollResponse(r, storageRequestId, downloadWhenReady);
             })
             .catch(handleError);
     }
 
-    function handlePollResponse(response, storageRequestId) {
+    function handlePollResponse(response, storageRequestId, downloadWhenReady) {
         const ready = response.data;
         if (ready) {
             isPreparing.value = false;
-            downloadObjectByRequestId(storageRequestId);
+            if (downloadWhenReady) {
+                downloadObjectByRequestId(storageRequestId);
+            }
         } else {
             pollAfterDelay(storageRequestId);
         }
@@ -103,13 +113,25 @@ export function useShortTermStorage() {
 
     return {
         /**
-         * Starts preparing a history download file. When `isPreparing` is false the download will start automatically.
+         * Starts preparing a history download file in the short term storage.
+         * @param {String} historyId The ID of the history to be prepared for download
+         * @param {Object} options Options for the download preparation
+         */
+        prepareHistoryDownload,
+        /**
+         * Prepares a history download file in the short term storage and starts the download when ready.
          * @param {String} historyId The ID of the history to be downloaded
          * @param {Object} options Options for the download preparation
          */
         downloadHistory,
         /**
-         * Starts preparing a workflow invocation download file. When `isPreparing` is false the download will start automatically.
+         * Starts preparing a workflow invocation download file in the short term storage.
+         * @param {String} invocationId The ID of the workflow invocation to be prepared for download
+         * @param {Object} options Options for the download preparation
+         */
+        prepareWorkflowInvocationDownload,
+        /**
+         * Starts preparing a workflow invocation download file in the short term storage and starts the download when ready.
          * @param {String} invocationId The ID of the workflow invocation to be downloaded
          * @param {Object} options Options for the download preparation
          */

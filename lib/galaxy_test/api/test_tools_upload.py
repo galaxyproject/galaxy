@@ -281,6 +281,40 @@ class TestToolsUpload(ApiTestCase):
         assert details["genome_build"] == "hg19"
 
     @skip_if_github_down
+    def test_stage_fetch_decompress_true(self, history_id: str) -> None:
+        job = {
+            "input1": {
+                "class": "File",
+                "format": "fasta",
+                "location": "https://github.com/galaxyproject/galaxy/blob/dev/test-data/1.fasta.gz?raw=true",
+                "decompress": True,
+            }
+        }
+        inputs, datasets = stage_inputs(
+            self.galaxy_interactor, history_id, job, use_path_paste=False, to_posix_lines=False
+        )
+        dataset = datasets[0]
+        content = self.dataset_populator.get_history_dataset_content(history_id=history_id, dataset=dataset)
+        assert content.startswith(">hg17")
+
+    @skip_if_github_down
+    def test_stage_fetch_decompress_false(self, history_id: str) -> None:
+        job = {
+            "input1": {
+                "class": "File",
+                "format": "fasta",
+                "location": "https://github.com/galaxyproject/galaxy/blob/dev/test-data/1.fasta.gz?raw=true",
+                "decompress": False,
+            }
+        }
+        inputs, datasets = stage_inputs(
+            self.galaxy_interactor, history_id, job, use_path_paste=False, to_posix_lines=False
+        )
+        dataset = datasets[0]
+        content = self.dataset_populator.get_history_dataset_content(history_id=history_id, dataset=dataset)
+        assert not content.startswith(">hg17")
+
+    @skip_if_github_down
     def test_upload_multiple_mixed_success(self, history_id):
         destination = {"type": "hdas"}
         targets = [

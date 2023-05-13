@@ -903,7 +903,7 @@ def summarize_job_parameters(trans, job):
                             value=f"{len(param_values[input.name])} uploaded datasets",
                         )
                     )
-                elif input.type == "data":
+                elif input.type == "data" or input.type == "data_collection":
                     value = []
                     for element in listify(param_values[input.name]):
                         encoded_id = trans.security.encode_id(element.id)

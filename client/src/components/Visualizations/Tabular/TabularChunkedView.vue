@@ -88,7 +88,8 @@ function processChunk(chunk: TabularChunk) {
         parsedChunk = chunk.ck_data.trim().split("\n");
         parsedChunk = parsedChunk.map((line) => {
             try {
-                return parse(line, { delimiter: delimiter.value })[0];
+                const parsedLine = parse(line, { delimiter: delimiter.value })[0];
+                return parsedLine || [line];
             } catch (error) {
                 // Failing lines get passed through intact for row-level
                 // rendering/parsing.
@@ -180,8 +181,14 @@ onMounted(() => {
             </b-thead>
             <b-tbody>
                 <b-tr v-for="(row, index) in tabularData.rows" :key="index">
-                    <b-td v-for="(element, elementIndex) in row" :key="elementIndex" :class="columnStyle[elementIndex]">
+                    <b-td
+                        v-for="(element, elementIndex) in row.slice(0, -1)"
+                        :key="elementIndex"
+                        :class="columnStyle[elementIndex]">
                         {{ element }}
+                    </b-td>
+                    <b-td :class="columnStyle[row.length - 1]" :colspan="1 + columns.length - row.length">
+                        {{ row.slice(-1)[0] }}
                     </b-td>
                 </b-tr>
             </b-tbody>

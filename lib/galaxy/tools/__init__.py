@@ -2560,7 +2560,9 @@ class Tool(Dictifiable):
             history = history or trans.get_history()
             if history is None and job is not None:
                 history = self.history_manager.get_owned(job.history.id, trans.user, current_history=trans.history)
-            if history is None:
+            # We can show the tool form if the current user is anonymous and doesn't have a history
+            user = trans.get_user()
+            if history is None and user is not None:
                 raise exceptions.MessageException("History unavailable. Please specify a valid history id")
 
         # build request context
@@ -2581,12 +2583,6 @@ class Tool(Dictifiable):
 
         # create parameter object
         params = Params(kwd, sanitize=False)
-
-        # expand incoming parameters (parameters might trigger multiple tool executions,
-        # here we select the first execution only in order to resolve dynamic parameters)
-        expanded_incomings, _ = expand_meta_parameters(trans, self, params.__dict__)
-        if expanded_incomings:
-            params.__dict__ = expanded_incomings[0]
 
         # do param translation here, used by datasource tools
         if self.input_translator:
