@@ -69,6 +69,7 @@ from sqlalchemy import (
     inspect,
     Integer,
     join,
+    MetaData,
     not_,
     Numeric,
     or_,
@@ -215,6 +216,20 @@ else:
     _HasTable = object
 
 
+# Naming convention applied to database constraints and indexes.
+# All except "ix" are conventions used by PostgreSQL by default.
+# We keep the "ix" template consistent with historical Galaxy usage.
+#
+# NOTE: If editing, also update model.migrations.utils.DbObjectNames.
+NAMING_CONVENTION = {
+    "pk": "%(table_name)s_pkey",
+    "fk": "%(table_name)s_%(column_0_name)s_fkey",
+    "uq": "%(table_name)s_%(column_0_name)s_key",
+    "ck": "%(table_name)s_%(column_0_name)s_check",
+    "ix": "ix_%(table_name)s_%(column_0_name)s",
+}
+
+
 def get_uuid(uuid: Optional[Union[UUID, str]] = None) -> UUID:
     if isinstance(uuid, UUID):
         return uuid
@@ -225,8 +240,9 @@ def get_uuid(uuid: Optional[Union[UUID, str]] = None) -> UUID:
 
 class Base(_HasTable, metaclass=DeclarativeMeta):
     __abstract__ = True
+    metadata = MetaData(naming_convention=NAMING_CONVENTION)
+    mapper_registry.metadata = metadata
     registry = mapper_registry
-    metadata = mapper_registry.metadata
     __init__ = mapper_registry.constructor
 
     @classmethod
