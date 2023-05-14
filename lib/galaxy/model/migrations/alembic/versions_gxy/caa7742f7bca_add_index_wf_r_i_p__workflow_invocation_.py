@@ -7,6 +7,7 @@ Create Date: 2023-03-07 15:10:44.943542
 """
 from galaxy.model.migrations.util import (
     create_index,
+    DbObjectNames,
     drop_index,
 )
 
@@ -18,12 +19,12 @@ depends_on = None
 
 
 table_name = "workflow_request_input_parameters"
-columns = ["workflow_invocation_id"]
-index_name = "ix_workflow_request_input_parameters_workflow_invocation_id"
+column_name = "workflow_invocation_id"
+index_name = DbObjectNames.index(table_name, column_name)
 
 
 def upgrade():
-    create_index(index_name, table_name, columns)
+    create_index(index_name, table_name, [column_name])
 
 
 def downgrade():

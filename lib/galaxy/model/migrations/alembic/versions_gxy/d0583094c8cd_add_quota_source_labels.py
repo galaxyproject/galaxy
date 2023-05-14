@@ -18,6 +18,7 @@ from galaxy.model.migrations.util import (
     create_index,
     create_table,
     create_unique_constraint,
+    DbObjectNames,
     drop_column,
     drop_constraint,
     drop_index,
@@ -31,6 +32,10 @@ down_revision = "c39f1de47a04"
 branch_labels = None
 depends_on = None
 
+old_index_name = DbObjectNames.index("default_quota_association", "type")
+new_index_name = DbObjectNames.index("quota", "quota_source_label")
+unique_constraint_name = "uqsu_unique_label_per_user"  # leave unchanged
+
 
 def upgrade():
     with transaction():
@@ -43,17 +48,15 @@ def upgrade():
             # user had an index on disk_usage - does that make any sense? -John
             Column("disk_usage", Numeric(15, 0)),
         )
-        create_unique_constraint(
-            "uqsu_unique_label_per_user", "user_quota_source_usage", ["user_id", "quota_source_label"]
-        )
-        drop_index("ix_default_quota_association_type", "default_quota_association")
-        create_index("ix_quota_quota_source_label", "quota", ["quota_source_label"])
+        create_unique_constraint(unique_constraint_name, "user_quota_source_usage", ["user_id", "quota_source_label"])
+        drop_index(old_index_name, "default_quota_association")
+        create_index(new_index_name, "quota", ["quota_source_label"])
 
 
 def downgrade():
     with transaction():
-        drop_index("ix_quota_quota_source_label", "quota")
-        create_index("ix_default_quota_association_type", "default_quota_association", ["type"], unique=True)
-        drop_constraint("uqsu_unique_label_per_user", "user_quota_source_usage")
+        drop_index(new_index_name, "quota")
+        create_index(old_index_name, "default_quota_association", ["type"], unique=True)
+        drop_constraint(unique_constraint_name, "user_quota_source_usage")
         drop_table("user_quota_source_usage")
         drop_column("quota", "quota_source_label")

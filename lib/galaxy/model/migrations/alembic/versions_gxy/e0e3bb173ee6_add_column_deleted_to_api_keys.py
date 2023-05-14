@@ -12,6 +12,7 @@ from sqlalchemy import (
 
 from galaxy.model.migrations.util import (
     add_column,
+    DbObjectNames,
     drop_column,
     drop_index,
     transaction,
@@ -27,6 +28,7 @@ depends_on = None
 # database object names used in this revision
 table_name = "api_keys"
 column_name = "deleted"
+index_name = DbObjectNames.index(table_name, column_name)
 
 
 def upgrade():
@@ -35,5 +37,5 @@ def upgrade():
 
 def downgrade():
     with transaction():
-        drop_index("ix_api_keys_deleted", table_name)
+        drop_index(index_name, table_name)
         drop_column(table_name, column_name)
