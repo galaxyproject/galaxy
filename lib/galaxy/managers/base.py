@@ -395,7 +395,7 @@ class ModelManager(Generic[U]):
         If the filters include functional filters, this function will raise an exception as they might cause
         performance issues.
         """
-        # TODO: requires case sensitivity fix from https://github.com/galaxyproject/galaxy/pull/16036
+        self._handle_filters_case_sensitivity(filters)
         orm_filters, fn_filters = self._split_filters(filters)
         if fn_filters:
             raise exceptions.RequestParameterInvalidException("Counting with functional filters is not supported.")
