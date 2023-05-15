@@ -21,21 +21,21 @@ NAMING_CONVENTION = {
 }
 
 
-def foreign_key(table_name: str, column_names: Union[str, List]) -> str:
+def build_foreign_key_name(table_name: str, column_names: Union[str, List]) -> str:
     columns = _as_str(column_names)
     return f"{table_name}_{columns}_fkey"
 
 
-def unique_constraint(table_name: str, column_names: Union[str, List]) -> str:
+def build_unique_constraint_name(table_name: str, column_names: Union[str, List]) -> str:
     columns = _as_str(column_names)
     return f"{table_name}_{columns}_key"
 
 
-def check_constraint(table_name: str, column_name: str) -> str:
+def build_check_constraint_name(table_name: str, column_name: str) -> str:
     return f"{table_name}_{column_name}_check"
 
 
-def index(table_name: str, column_names: Union[str, List]) -> str:
+def build_index_name(table_name: str, column_names: Union[str, List]) -> str:
     columns = _as_str(column_names)
     return f"ix_{table_name}_{columns}"
 

@@ -10,7 +10,7 @@ from sqlalchemy import (
     Column,
 )
 
-from galaxy.model.database_object_names import index
+from galaxy.model.database_object_names import build_index_name
 from galaxy.model.migrations.util import (
     add_column,
     drop_column,
@@ -28,7 +28,7 @@ depends_on = None
 # database object names used in this revision
 table_name = "api_keys"
 column_name = "deleted"
-index_name = index(table_name, column_name)
+index_name = build_index_name(table_name, column_name)
 
 
 def upgrade():

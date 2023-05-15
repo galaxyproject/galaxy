@@ -13,7 +13,7 @@ from sqlalchemy import (
     String,
 )
 
-from galaxy.model.database_object_names import index
+from galaxy.model.database_object_names import build_index_name
 from galaxy.model.migrations.util import (
     add_column,
     create_index,
@@ -32,8 +32,8 @@ down_revision = "c39f1de47a04"
 branch_labels = None
 depends_on = None
 
-old_index_name = index("default_quota_association", "type")
-new_index_name = index("quota", "quota_source_label")
+old_index_name = build_index_name("default_quota_association", "type")
+new_index_name = build_index_name("quota", "quota_source_label")
 unique_constraint_name = "uqsu_unique_label_per_user"  # leave unchanged
 
 
