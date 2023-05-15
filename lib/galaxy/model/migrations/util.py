@@ -450,26 +450,3 @@ def transaction():
         except OperationalError:
             op.execute("ROLLBACK")
             raise
-
-
-class DbObjectNames:
-    """
-    Helper methods for generating names for database constraints and indexes.
-    This format is based on the naming convention specified in the galaxy.model module.
-    """
-
-    @staticmethod
-    def foreign_key(table_name, column_name):
-        return f"{table_name}_{column_name}_fkey"
-
-    @staticmethod
-    def unique_constraint(table_name, column_name):
-        return f"{table_name}_{column_name}_key"
-
-    @staticmethod
-    def check_constraint(table_name, column_name):
-        return f"{table_name}_{column_name}_check"
-
-    @staticmethod
-    def index(table_name, column_name):
-        return f"ix_{table_name}_{column_name}"

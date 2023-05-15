@@ -5,9 +5,9 @@ Revises: 3a2914d703ca
 Create Date: 2023-03-07 15:10:44.943542
 
 """
+from galaxy.model.database_object_names import index
 from galaxy.model.migrations.util import (
     create_index,
-    DbObjectNames,
     drop_index,
 )
 
@@ -20,7 +20,7 @@ depends_on = None
 
 table_name = "workflow_request_input_parameters"
 column_name = "workflow_invocation_id"
-index_name = DbObjectNames.index(table_name, column_name)
+index_name = index(table_name, column_name)
 
 
 def upgrade():

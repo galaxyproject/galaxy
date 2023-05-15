@@ -123,6 +123,7 @@ from galaxy.model.custom_types import (
     TrimmedString,
     UUIDType,
 )
+from galaxy.model.database_object_names import NAMING_CONVENTION
 from galaxy.model.item_attrs import (
     get_item_annotation_str,
     UsesAnnotations,
@@ -214,20 +215,6 @@ else:
     from sqlalchemy.orm.decl_api import DeclarativeMeta
 
     _HasTable = object
-
-
-# Naming convention applied to database constraints and indexes.
-# All except "ix" are conventions used by PostgreSQL by default.
-# We keep the "ix" template consistent with historical Galaxy usage.
-#
-# NOTE: If editing, also update model.migrations.utils.DbObjectNames.
-NAMING_CONVENTION = {
-    "pk": "%(table_name)s_pkey",
-    "fk": "%(table_name)s_%(column_0_name)s_fkey",
-    "uq": "%(table_name)s_%(column_0_name)s_key",
-    "ck": "%(table_name)s_%(column_0_name)s_check",
-    "ix": "ix_%(table_name)s_%(column_0_name)s",
-}
 
 
 def get_uuid(uuid: Optional[Union[UUID, str]] = None) -> UUID:
