@@ -10,7 +10,7 @@ History
 
 
 ---------------------
-22.1.0
+22.1.1 (2022-08-22)
 ---------------------
 
 * Initial standalone release of this package.
