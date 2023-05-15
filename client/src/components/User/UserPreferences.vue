@@ -88,7 +88,7 @@
         </ConfigProvider>
         <ConfigProvider v-slot="{ config }">
             <UserPreferredObjectStore
-                v-if="config && config.object_store_allows_id_selection"
+                v-if="config && config.object_store_allows_id_selection && currentUser"
                 :preferred-object-store-id="currentUser.preferred_object_store_id"
                 :user-id="userId">
             </UserPreferredObjectStore>

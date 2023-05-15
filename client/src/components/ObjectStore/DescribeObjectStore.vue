@@ -1,3 +1,29 @@
+<script setup lang="ts">
+import ObjectStoreRestrictionSpan from "./ObjectStoreRestrictionSpan.vue";
+import QuotaUsageBar from "@/components/User/DiskUsage/Quota/QuotaUsageBar.vue";
+import { QuotaSourceUsageProvider } from "@/components/User/DiskUsage/Quota/QuotaUsageProvider.js";
+import ObjectStoreBadges from "./ObjectStoreBadges.vue";
+import ConfigurationMarkdown from "./ConfigurationMarkdown.vue";
+import type { ConcreteObjectStoreModel } from "./types";
+
+import { computed } from "vue";
+
+interface Props {
+    storageInfo: ConcreteObjectStoreModel;
+    what: string;
+}
+
+const props = defineProps<Props>();
+
+const quotaSourceLabel = computed(() => props.storageInfo.quota?.source);
+const isPrivate = computed(() => props.storageInfo.private);
+const badges = computed(() => props.storageInfo.badges);
+
+defineExpose({
+    isPrivate,
+});
+</script>
+
 <template>
     <div>
         <div>
@@ -23,47 +49,6 @@
             <QuotaUsageBar v-else-if="quotaUsage" :quota-usage="quotaUsage" :embedded="true" />
         </QuotaSourceUsageProvider>
         <div v-else>Galaxy has no quota configured for this object store.</div>
-        <div v-html="descriptionRendered"></div>
+        <ConfigurationMarkdown v-if="storageInfo.description" :markdown="storageInfo.description" :admin="true" />
     </div>
 </template>
-
-<script>
-import ObjectStoreRestrictionSpan from "./ObjectStoreRestrictionSpan";
-import QuotaUsageBar from "components/User/DiskUsage/Quota/QuotaUsageBar";
-import { QuotaSourceUsageProvider } from "components/User/DiskUsage/Quota/QuotaUsageProvider";
-import ObjectStoreBadges from "./ObjectStoreBadges";
-import { adminMarkup } from "./adminConfig";
-
-export default {
-    components: {
-        ObjectStoreBadges,
-        ObjectStoreRestrictionSpan,
-        QuotaSourceUsageProvider,
-        QuotaUsageBar,
-    },
-    props: {
-        storageInfo: {
-            type: Object,
-            required: true,
-        },
-        what: {
-            type: String,
-            required: true,
-        },
-    },
-    computed: {
-        quotaSourceLabel() {
-            return this.storageInfo.quota?.source;
-        },
-        descriptionRendered() {
-            return adminMarkup(this.storageInfo.description);
-        },
-        isPrivate() {
-            return this.storageInfo.private;
-        },
-        badges() {
-            return this.storageInfo.badges;
-        },
-    },
-};
-</script>

@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed } from "vue";
-import { adminMarkup } from "./adminConfig";
+import ConfigurationMarkdown from "./ConfigurationMarkdown.vue";
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
 import type { components } from "@/schema";
 import "./badgeIcons";
@@ -62,7 +62,7 @@ const shrink = computed(() => {
 });
 
 const message = computed(() => {
-    return adminMarkup(props.badge.message);
+    return props.badge.message;
 });
 </script>
 
@@ -135,7 +135,7 @@ const message = computed(() => {
             placement="bottom"
             class="object-store-badge-popover">
             <p v-localize>{{ stockMessage }}</p>
-            <div v-html="message"></div>
+            <ConfigurationMarkdown v-if="message" :markdown="message" :admin="true" />
         </b-popover>
     </span>
 </template>
