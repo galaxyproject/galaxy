@@ -2,6 +2,12 @@
 Naming convention and helper functions for generating names of database
 constraints and indexes.
 """
+from typing import (
+    List,
+    Union,
+)
+
+from galaxy.util import listify
 
 # Naming convention applied to database constraints and indexes.
 # All except "ix" are conventions used by PostgreSQL by default.
@@ -15,17 +21,24 @@ NAMING_CONVENTION = {
 }
 
 
-def foreign_key(table_name, column_name):
-    return f"{table_name}_{column_name}_fkey"
+def foreign_key(table_name: str, column_names: Union[str, List]) -> str:
+    columns = _as_str(column_names)
+    return f"{table_name}_{columns}_fkey"
 
 
-def unique_constraint(table_name, column_name):
-    return f"{table_name}_{column_name}_key"
+def unique_constraint(table_name: str, column_names: Union[str, List]) -> str:
+    columns = _as_str(column_names)
+    return f"{table_name}_{columns}_key"
 
 
-def check_constraint(table_name, column_name):
+def check_constraint(table_name: str, column_name: str) -> str:
     return f"{table_name}_{column_name}_check"
 
 
-def index(table_name, column_name):
-    return f"ix_{table_name}_{column_name}"
+def index(table_name: str, column_names: Union[str, List]) -> str:
+    columns = _as_str(column_names)
+    return f"ix_{table_name}_{columns}"
+
+
+def _as_str(column_names: Union[str, List]) -> str:
+    return "_".join(listify(column_names))
