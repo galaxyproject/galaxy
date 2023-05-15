@@ -71,20 +71,24 @@ async function updateExports() {
     exportErrorMessage.value = null;
     try {
         existingExports.value = await getExportRecords(props.history.id);
+        if (mostUpToDateExport.value) {
+            const shouldWaitForTask =
+                mostUpToDateExport.value?.isPreparing &&
+                !isExportTaskRunning.value &&
+                !taskMonitorRequestFailed.value &&
+                !taskHasFailed.value;
+            if (shouldWaitForTask) {
+                waitForTask(mostUpToDateExport.value.taskUUID);
+            }
+            if (taskMonitorRequestFailed.value) {
+                exportErrorMessage.value = "The request to get the export progress failed. Please check back later.";
+            }
+            if (taskHasFailed.value) {
+                exportErrorMessage.value = "The history export request failed. Please try again later.";
+            }
+        }
     } catch (e) {
         exportErrorMessage.value = "The request to get your history exports records failed. Please check back later.";
-    }
-    if (mostUpToDateExport.value) {
-        const shouldWaitForTask = mostUpToDateExport.value?.isPreparing;
-        if (shouldWaitForTask) {
-            waitForTask(mostUpToDateExport.value.taskUUID);
-        }
-        if (taskMonitorRequestFailed.value) {
-            exportErrorMessage.value = "The request to get the export progress failed. Please check back later.";
-        }
-        if (taskHasFailed.value) {
-            exportErrorMessage.value = "The history export request failed. Please try again later.";
-        }
     }
 }
 
