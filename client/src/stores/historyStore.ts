@@ -271,8 +271,8 @@ export const useHistoryStore = defineStore("historyStore", () => {
         }
     }
 
-    async function unarchiveHistoryById(historyId: string) {
-        const history = await ArchiveServices.unarchiveHistory(historyId);
+    async function unarchiveHistoryById(historyId: string, force?: boolean) {
+        const history = await ArchiveServices.unarchiveHistory(historyId, force);
         setHistory(history as HistorySummary);
         return history;
     }

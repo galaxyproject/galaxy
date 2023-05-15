@@ -67,10 +67,6 @@ async function loadArchivedHistories() {
     isLoading.value = false;
 }
 
-function canRestore(history: ArchivedHistorySummary) {
-    return !history.purged;
-}
-
 function canImportCopy(history: ArchivedHistorySummary) {
     return history.export_record_data?.target_uri !== undefined;
 }
@@ -80,19 +76,22 @@ function onViewHistoryInCenterPanel(history: ArchivedHistorySummary) {
 }
 
 async function onRestoreHistory(history: ArchivedHistorySummary) {
-    const confirmed = await confirm(
-        localize(
-            "Are you sure you want to unarchive this history? This will move the history back to your active histories."
-        ),
-        {
-            title: localize(`Unarchive '${history.name}'?`),
-        }
-    );
+    const confirmTitle = localize(`Unarchive '${history.name}'?`);
+    const confirmMessage =
+        history.purged && history.export_record_data
+            ? localize(
+                  "Are you sure you want to restore this (purged) history? Please note that this will not restore the datasets associated with this history. If you want to fully recover it, you can import a copy from the export record instead."
+              )
+            : localize(
+                  "Are you sure you want to restore this history? This will move the history back to your active histories."
+              );
+    const confirmed = await confirm(confirmMessage, { title: confirmTitle });
     if (!confirmed) {
         return;
     }
     try {
-        await historyStore.unarchiveHistoryById(history.id);
+        const force = true;
+        await historyStore.unarchiveHistoryById(history.id, force);
         toast.success(localize(`History '${history.name}' has been restored.`), localize("History Restored"));
         return loadArchivedHistories();
     } catch (error) {
@@ -210,7 +209,6 @@ async function onImportCopy(history: ArchivedHistorySummary) {
                                 View
                             </b-button>
                             <b-button
-                                v-if="canRestore(history)"
                                 v-b-tooltip
                                 :title="localize('Unarchive this history and move it back to your active histories')"
                                 variant="link"
