@@ -2128,12 +2128,14 @@ class DirectoryModelExportStore(ModelExportStore):
         datasets = query.all()
         for dataset in datasets:
             dataset.annotation = get_item_annotation_str(sa_session, history.user, dataset)
-            add_dataset = (dataset.visible or include_hidden) and (not dataset.deleted or include_deleted)
-            if dataset.id in self.collection_datasets:
-                add_dataset = True
+            should_include_file = (dataset.visible or include_hidden) and (not dataset.deleted or include_deleted)
+            if not dataset.deleted and dataset.id in self.collection_datasets:
+                should_include_file = True
 
             if dataset not in self.included_datasets:
-                self.add_dataset(dataset, include_files=add_dataset)
+                if should_include_file:
+                    self._ensure_dataset_file_exists(dataset)
+                self.add_dataset(dataset, include_files=should_include_file)
 
     def export_library(
         self, library: model.Library, include_hidden: bool = False, include_deleted: bool = False
@@ -2153,8 +2155,8 @@ class DirectoryModelExportStore(ModelExportStore):
     ) -> None:
         for library_dataset in library_folder.datasets:
             ldda = library_dataset.library_dataset_dataset_association
-            add_dataset = (not ldda.visible or not include_hidden) and (not ldda.deleted or include_deleted)
-            self.add_dataset(ldda, add_dataset)
+            should_include_file = (not ldda.visible or not include_hidden) and (not ldda.deleted or include_deleted)
+            self.add_dataset(ldda, should_include_file)
         for folder in library_folder.folders:
             self.export_library_folder_contents(folder, include_hidden=include_hidden, include_deleted=include_deleted)
 
@@ -2214,6 +2216,16 @@ class DirectoryModelExportStore(ModelExportStore):
 
     def add_dataset(self, dataset: model.DatasetInstance, include_files: bool = True) -> None:
         self.included_datasets[dataset] = (dataset, include_files)
+
+    def _ensure_dataset_file_exists(self, dataset: model.DatasetInstance) -> None:
+        state = dataset.dataset.state
+        if state in [model.Dataset.states.OK] and not dataset.file_name:
+            log.error(
+                f"Dataset [{dataset.id}] does not exists on on object store [{dataset.dataset.object_store_id or 'None'}], while trying to export."
+            )
+            raise Exception(
+                f"Cannot export history dataset [{getattr(dataset, 'hid', '')}: {dataset.name}] with id {self.exported_key(dataset)}"
+            )
 
     def _finalize(self) -> None:
         export_directory = self.export_directory
@@ -2957,7 +2969,6 @@ def source_to_import_store(
                     target_path, import_options=import_options, app=app, user=galaxy_user
                 )
             else:
-                # TODO: rocrate.zip is not supported here...
                 raise Exception(f"Unknown model_store_format type encountered {model_store_format}")
 
     return model_import_store

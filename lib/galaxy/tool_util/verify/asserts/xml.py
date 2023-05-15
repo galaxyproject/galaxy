@@ -1,5 +1,8 @@
 import re
-from typing import Optional
+from typing import (
+    Optional,
+    Union,
+)
 
 from lxml.etree import XMLSyntaxError
 
@@ -11,7 +14,7 @@ from galaxy.util import (
 )
 
 
-def assert_is_valid_xml(output):
+def assert_is_valid_xml(output: str) -> None:
     """Simple assertion that just verifies the specified output
     is valid XML."""
     try:
@@ -20,7 +23,7 @@ def assert_is_valid_xml(output):
         raise AssertionError(f"Expected valid XML, but could not parse output. {unicodify(e)}")
 
 
-def assert_has_element_with_path(output, path, negate: bool = False):
+def assert_has_element_with_path(output: str, path: str, negate: Union[bool, str] = False) -> None:
     """Asserts the specified output has at least one XML element with a
     path matching the specified path argument. Valid paths are the
     simplified subsets of XPath implemented by lxml.etree;
@@ -29,64 +32,68 @@ def assert_has_element_with_path(output, path, negate: bool = False):
 
 
 def assert_has_n_elements_with_path(
-    output,
-    path,
-    n: Optional[int] = None,
-    delta: int = 0,
-    min: Optional[int] = None,
-    max: Optional[int] = None,
-    negate: bool = False,
-):
+    output: str,
+    path: str,
+    n: Optional[Union[int, str]] = None,
+    delta: Union[int, str] = 0,
+    min: Optional[Union[int, str]] = None,
+    max: Optional[Union[int, str]] = None,
+    negate: Union[bool, str] = False,
+) -> None:
     """Asserts the specified output has exactly n elements matching the
     path specified."""
     assert_xml_element(output, path, n=n, delta=delta, min=min, max=max, negate=negate)
 
 
-def assert_element_text_matches(output, path, expression, negate: bool = False):
+def assert_element_text_matches(output: str, path: str, expression: str, negate: Union[bool, str] = False) -> None:
     """Asserts the text of the first element matching the specified
     path matches the specified regular expression."""
     sub = {"tag": "has_text_matching", "attributes": {"expression": expression, "negate": negate}}
     assert_xml_element(output, path, asserts.verify_assertions, [sub])
 
 
-def assert_element_text_is(output, path, text, negate: bool = False):
+def assert_element_text_is(output: str, path: str, text: str, negate: Union[bool, str] = False) -> None:
     """Asserts the text of the first element matching the specified
     path matches exactly the specified text."""
     assert_element_text_matches(output, path, re.escape(text) + "$", negate=negate)
 
 
-def assert_attribute_matches(output, path, attribute, expression, negate: bool = False):
+def assert_attribute_matches(
+    output: str, path: str, attribute, expression: str, negate: Union[bool, str] = False
+) -> None:
     """Asserts the specified attribute of the first element matching
     the specified path matches the specified regular expression."""
     sub = {"tag": "has_text_matching", "attributes": {"expression": expression, "negate": negate}}
     assert_xml_element(output, path, asserts.verify_assertions, [sub], attribute=attribute)
 
 
-def assert_attribute_is(output, path, attribute, text, negate: bool = False):
+def assert_attribute_is(output: str, path: str, attribute: str, text, negate: Union[bool, str] = False) -> None:
     """Asserts the specified attribute of the first element matching
     the specified path matches exactly the specified text."""
     assert_attribute_matches(output, path, attribute, re.escape(text) + "$", negate=negate)
 
 
-def assert_element_text(output, path, verify_assertions_function, children, negate: bool = False):
+def assert_element_text(
+    output: str, path: str, verify_assertions_function, children, negate: Union[bool, str] = False
+) -> None:
     """Recursively checks the specified assertions against the text of
     the first element matching the specified path."""
     assert_xml_element(output, path, verify_assertions_function, children, negate=negate)
 
 
 def assert_xml_element(
-    output,
-    path,
+    output: str,
+    path: str,
     verify_assertions_function=None,
     children=None,
-    attribute=None,
-    all=False,
-    n: Optional[int] = None,
-    delta: int = 0,
-    min: Optional[int] = None,
-    max: Optional[int] = None,
-    negate: bool = False,
-):
+    attribute: Optional[str] = None,
+    all: Union[bool, str] = False,
+    n: Optional[Union[int, str]] = None,
+    delta: Union[int, str] = 0,
+    min: Optional[Union[int, str]] = None,
+    max: Optional[Union[int, str]] = None,
+    negate: Union[bool, str] = False,
+) -> None:
     """
     Check if path occurs in the xml. If n and delta or min and max are given
     also the number of occurences is checked.

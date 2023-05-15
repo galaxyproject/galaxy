@@ -2092,6 +2092,9 @@ class DataToolParameter(BaseDataToolParameter):
                     elif single_value["src"] == "ldda":
                         decoded_id = trans.security.decode_id(single_value["id"])
                         rval.append(trans.sa_session.query(LibraryDatasetDatasetAssociation).get(decoded_id))
+                    elif single_value["src"] == "dce":
+                        decoded_id = trans.security.decode_id(single_value["id"])
+                        rval.append(trans.sa_session.query(DatasetCollectionElement).get(decoded_id))
                     else:
                         raise ValueError(f"Unknown input source {single_value['src']} passed to job submission API.")
                 elif isinstance(
@@ -2127,6 +2130,9 @@ class DataToolParameter(BaseDataToolParameter):
             elif value["src"] == "hdca":
                 decoded_id = trans.security.decode_id(value["id"])
                 rval.append(trans.sa_session.query(HistoryDatasetCollectionAssociation).get(decoded_id))
+            elif value["src"] == "dce":
+                decoded_id = trans.security.decode_id(value["id"])
+                rval.append(trans.sa_session.query(DatasetCollectionElement).get(decoded_id))
             else:
                 raise ValueError(f"Unknown input source {value['src']} passed to job submission API.")
         elif str(value).startswith("__collection_reduce__|"):
@@ -2280,6 +2286,28 @@ class DataToolParameter(BaseDataToolParameter):
                 value["map_over_type"] = subcollection_type
             return list.append(value)
 
+        def append_dce(dce):
+            if dce.hda:
+                # well this isn't good, but what's the alternative ?
+                # we should be precise about what we're (re-)running here.
+                key = "hda"
+            else:
+                key = "hdca"
+            d["options"][key].append(
+                {
+                    "id": trans.security.encode_id(dce.id),
+                    "name": dce.element_identifier,
+                    "src": "dce",
+                    "tags": [],
+                    "keep": True,
+                }
+            )
+
+        # append DCE
+        if isinstance(other_values.get(self.name), DatasetCollectionElement):
+            dce = other_values[self.name]
+            append_dce(dce)
+
         # add datasets
         hda_list = util.listify(other_values.get(self.name))
         # Prefetch all at once, big list of visible, non-deleted datasets.
@@ -2299,6 +2327,8 @@ class DataToolParameter(BaseDataToolParameter):
                 else:
                     hda_state = "unavailable"
                 append(d["options"]["hda"], hda, f"({hda_state}) {hda.name}", "hda", True)
+            elif isinstance(hda, DatasetCollectionElement):
+                append_dce(hda)
 
         # add dataset collections
         dataset_collection_matcher = dataset_matcher_factory.dataset_collection_matcher(dataset_matcher)
@@ -2460,7 +2490,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         # append DCE
         if isinstance(other_values.get(self.name), DatasetCollectionElement):
             dce = other_values[self.name]
-            d["options"]["dce"].append(
+            d["options"]["hdca"].append(
                 {
                     "id": trans.security.encode_id(dce.id),
                     "hid": None,

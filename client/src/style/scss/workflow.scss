@@ -98,32 +98,6 @@
                 transform-origin: center;
                 position: relative;
             }
-            .ribbon {
-                .ribbon-outer {
-                    stroke: $brand-primary;
-                }
-                .ribbon-outer:active {
-                    stroke: $brand-success;
-                }
-                .ribbon-inner {
-                    stroke: $white;
-                }
-                .ribbon-inner:active {
-                    stroke: $brand-success;
-                }
-                .ribbon-inner-valid {
-                    stroke: $brand-success;
-                }
-                .ribbon-inner-invalid {
-                    stroke: $brand-warning;
-                }
-                &.dashed {
-                    stroke-dasharray: 5, 3;
-                }
-                &:hover .ribbon-outer {
-                    stroke: $brand-success;
-                }
-            }
             .base-terminal {
                 @extend .fa;
                 @extend .fa-circle;
@@ -278,14 +252,6 @@
             background: $white;
             opacity: 0.8;
             z-index: 10;
-        }
-        canvas {
-            position: absolute;
-            z-index: 10;
-        }
-        canvas.dragging {
-            position: absolute;
-            z-index: 1000;
         }
     }
 }

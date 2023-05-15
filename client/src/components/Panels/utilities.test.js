@@ -4,7 +4,7 @@ import {
     determineWidth,
     filterTools,
     filterToolSections,
-    normalizeTools,
+    flattenTools,
     searchToolsByKeys,
 } from "./utilities";
 
@@ -39,7 +39,7 @@ describe("test helpers in tool searching utilities and panel handling", () => {
             "__ZIP_COLLECTION__",
         ];
         let keys = { description: 1, name: 0 };
-        let results = searchToolsByKeys(normalizeTools(toolsList), keys, q);
+        let results = searchToolsByKeys(flattenTools(toolsList), keys, q);
         expect(results).toEqual(expectedResults);
 
         expectedResults = [
@@ -49,14 +49,14 @@ describe("test helpers in tool searching utilities and panel handling", () => {
             "__FILTER_EMPTY_DATASETS__",
         ];
         keys = { description: 0, name: 1 };
-        results = searchToolsByKeys(normalizeTools(toolsList), keys, q);
+        results = searchToolsByKeys(flattenTools(toolsList), keys, q);
         expect(results).toEqual(expectedResults);
 
         // whitespace precedes to ensure query.trim() works
         q = " filter empty datasets";
         expectedResults = ["__FILTER_EMPTY_DATASETS__"];
         keys = { description: 1, name: 2, combined: 0 };
-        results = searchToolsByKeys(normalizeTools(toolsList), keys, q);
+        results = searchToolsByKeys(flattenTools(toolsList), keys, q);
         expect(results).toEqual(expectedResults);
 
         const tempToolsList = [
@@ -78,7 +78,7 @@ describe("test helpers in tool searching utilities and panel handling", () => {
         q = "uMi tools extract ";
         expectedResults = ["toolshed.g2.bx.psu.edu/repos/iuc/umi_tools_extract/umi_tools_extract/1.1.2+galaxy2"];
         keys = { description: 1, name: 2, hyphenated: 0 };
-        results = searchToolsByKeys(normalizeTools(tempToolsList), keys, q);
+        results = searchToolsByKeys(flattenTools(tempToolsList), keys, q);
         expect(results).toEqual(expectedResults);
     });
 

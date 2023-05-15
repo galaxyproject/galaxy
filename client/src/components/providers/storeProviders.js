@@ -47,6 +47,7 @@ export const SimpleProviderMixin = {
             loading: this.loading,
             item: this.item,
             save: this.save,
+            result: this.item,
         });
     },
 };
@@ -127,6 +128,15 @@ export const JobProvider = {
     computed: {
         url() {
             return prependPath(`api/jobs/${this.id}?full=true`);
+        },
+    },
+};
+
+export const DatasetCollectionElementProvider = {
+    mixins: [SimpleProviderMixin],
+    computed: {
+        url() {
+            return prependPath(`api/dataset_collection_element/${this.id}`);
         },
     },
 };

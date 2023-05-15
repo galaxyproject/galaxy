@@ -262,6 +262,7 @@ history_panel:
       tag_area_button: '.details .stateless-tags .multiselect button'
       tag_area_input: '.details .stateless-tags .multiselect input'
       list_items: '.dataset-collection-panel .listing .content-item'
+      back_to_history: svg[data-description="back to history"]
 
   selectors:
     _: '#current-history-panel'
@@ -450,7 +451,7 @@ history_export:
 
 history_export_tasks:
   selectors:
-    direct_download: '.direct-download-btn'
+    direct_download: '.gen-direct-download-btn'
     file_source_tab: '.tab-export-to-file'
     remote_file_name_input: '#file-source-tab #name'
     toggle_options_link: '#toggle-options-link'
@@ -521,6 +522,11 @@ tool_form:
     parameter_checkbox: 'div.ui-form-element[id="form-element-${parameter}"] .ui-switch'
     parameter_input: 'div.ui-form-element[id="form-element-${parameter}"] .ui-input'
     parameter_textarea: 'div.ui-form-element[id="form-element-${parameter}"] textarea'
+    parameter_batch_dataset_collection:
+      type: xpath
+      selector: //div[@id='form-element-${parameter}']//i[contains(@class, 'fa-folder-o')]/parent::label
+    data_option_value: option[value="${item_id}"]
+
     repeat_insert: '[data-description="repeat insert"]'
     reference: '.formatted-reference'
     about: '.tool-footer'
@@ -700,7 +706,7 @@ workflow_editor:
         //div[@data-label='Remove Tags']//input
     tool_version_button: ".tool-versions"
     connector_for: "#connection-${sink_id}-${source_id}"
-    connector_invalid_for: "#connection-${sink_id}-${source_id} .ribbon-inner-invalid"
+    connector_invalid_for: "#connection-${sink_id}-${source_id} .connection.invalid"
     connector_destroy_callout: '.delete-terminal'
     save_button: '.editor-button-save'
     save_workflow_confirmation_button: '#save-workflow-confirmation .btn-primary'

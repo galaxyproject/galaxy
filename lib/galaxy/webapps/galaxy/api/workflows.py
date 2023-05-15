@@ -1499,7 +1499,7 @@ class FastAPIInvocations:
         self, trans, invocation_id: DecodedDatabaseIdField, merge_history_metadata: Optional[bool]
     ):
         export_options = BcoExportOptions(
-            galaxy_url=trans.request.base,
+            galaxy_url=trans.request.url_path,
             galaxy_version=VERSION,
             merge_history_metadata=merge_history_metadata or False,
         )

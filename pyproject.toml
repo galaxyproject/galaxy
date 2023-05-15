@@ -133,6 +133,7 @@ pytest-asyncio = "*"
 pytest-celery = "*"
 pytest-cov = "*"
 pytest-html = "*"
+pytest-httpserver = "*"
 python-irodsclient = "!=1.1.2"  # https://github.com/irods/python-irodsclient/issues/356
 pytest-json-report = "*"
 pytest-mock = "*"

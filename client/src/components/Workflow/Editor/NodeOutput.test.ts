@@ -10,6 +10,15 @@ import { terminalFactory } from "./modules/terminals";
 
 const localVue = getLocalVue();
 
+class ResizeObserver {
+    observe = jest.fn();
+    unobserve = jest.fn();
+    disconnect = jest.fn();
+}
+
+// eslint-disable-next-line compat/compat
+window.ResizeObserver = ResizeObserver;
+
 function propsForStep(step: Step) {
     return {
         output: step.outputs[0],

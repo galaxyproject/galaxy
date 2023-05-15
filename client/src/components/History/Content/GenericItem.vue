@@ -3,13 +3,13 @@
         <loading-span v-if="loading" message="Loading dataset" />
         <div v-else>
             <ContentItem
-                :id="item.hid"
+                :id="item.hid ?? item.element_index + 1"
                 add-highlight-btn
                 is-history-item
-                :item="item"
-                :name="item.name"
+                :item="item?.object || item"
+                :name="item.name || item.element_identifier"
                 :expand-dataset="expandDataset"
-                :is-dataset="item.history_content_type == 'dataset'"
+                :is-dataset="item.history_content_type == 'dataset' || item.element_type == 'hda'"
                 @update:expand-dataset="expandDataset = $event"
                 @view-collection="viewCollection = !viewCollection"
                 @delete="onDelete(item)"
@@ -17,7 +17,7 @@
                 @undelete="onUndelete(item)"
                 @unhide="onUnhide(item)" />
             <div v-if="viewCollection">
-                <GenericElement :dsc="item" />
+                <GenericElement :dsc="item?.object || item" />
             </div>
         </div>
     </component>
@@ -25,8 +25,9 @@
 
 <script>
 import LoadingSpan from "components/LoadingSpan";
-import { DatasetCollectionProvider, DatasetProvider } from "components/providers";
-import { deleteContent, updateContentFields } from "components/History/model/queries";
+import { DatasetCollectionProvider, DatasetProvider } from "@/components/providers";
+import { DatasetCollectionElementProvider } from "@/components/providers/storeProviders";
+import { deleteContent, updateContentFields } from "@/components/History/model/queries";
 import ContentItem from "./ContentItem";
 import GenericElement from "./GenericElement";
 import { mapActions } from "pinia";
@@ -34,6 +35,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 
 export default {
     components: {
+        DatasetCollectionElementProvider,
         ContentItem,
         GenericElement,
         DatasetProvider,
@@ -58,7 +60,16 @@ export default {
     },
     computed: {
         providerComponent() {
-            return this.itemSrc == "hda" ? "DatasetProvider" : "DatasetCollectionProvider";
+            switch (this.itemSrc) {
+                case "hda":
+                    return "DatasetProvider";
+                case "hdca":
+                    return "DatasetCollectionProvider";
+                case "dce":
+                    return "DatasetCollectionElementProvider";
+                default:
+                    throw Error(`Unknown element src ${this.itemSrc}`);
+            }
         },
     },
     methods: {

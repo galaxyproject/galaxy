@@ -133,7 +133,7 @@ const helpHtml = `<div>
         <dd>
             Shows published workflows.
         </dd>
-        <dt><code>is:shared</code></dt>
+        <dt><code>is:shared_with_me</code></dt>
         <dd>
             Shows workflows shared by another user directly with you.
         </dd>
