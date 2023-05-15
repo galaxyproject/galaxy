@@ -67,6 +67,19 @@ const hasOptions: ComputedRef<Boolean> = computed(() => {
 });
 
 /**
+ * Provides initial value if necessary
+ */
+const initialValue: ComputedRef<SelectValue> = computed(() => {
+    if (props.value === null && !props.optional && hasOptions.value) {
+        const v = formattedOptions.value[0];
+        if (v) {
+            return v.value;
+        }
+    }
+    return null;
+});
+
+/**
  * Configure selected label
  */
 const selectedLabel: ComputedRef<string> = computed(() => {
@@ -103,11 +116,8 @@ const currentValue = computed({
  * Ensures that an initial value is selected for non-optional inputs
  */
 function setInitialValue(): void {
-    if (props.value === null && !props.optional && hasOptions.value) {
-        const initialValue = formattedOptions.value[0];
-        if (initialValue) {
-            emit("input", initialValue.value);
-        }
+    if (initialValue.value) {
+        emit("input", initialValue.value);
     }
 }
 
