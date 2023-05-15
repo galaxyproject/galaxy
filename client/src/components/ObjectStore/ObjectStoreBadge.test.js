@@ -40,7 +40,7 @@ describe("ObjectStoreBadge", () => {
         expect(popoverText).toContain("less secure by the Galaxy administrator");
     });
 
-    it("should gracefully unspecified badge messages", async () => {
+    it("should gracefully handle unspecified badge messages", async () => {
         mountBadge({ type: "more_secure", message: null });
         const selector = ROOT_COMPONENT.object_store_details.badge_of_type({ type: "more_secure" }).selector;
         const iconEl = wrapper.find(selector);

@@ -6,7 +6,7 @@ interface Props {
     admin: boolean; // was the configuration specified by an admin
 }
 const props = defineProps<Props>();
-const markdownHtml = computed(() => markup(props.markdown || "", props.admin));
+const markdownHtml = computed(() => markup(props.markdown ?? "", props.admin));
 </script>
 <template>
     <!-- Disable v-html warning because we allow markdown generated HTML
