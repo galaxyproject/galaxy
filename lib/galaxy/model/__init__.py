@@ -69,6 +69,7 @@ from sqlalchemy import (
     inspect,
     Integer,
     join,
+    MetaData,
     not_,
     Numeric,
     or_,
@@ -122,6 +123,7 @@ from galaxy.model.custom_types import (
     TrimmedString,
     UUIDType,
 )
+from galaxy.model.database_object_names import NAMING_CONVENTION
 from galaxy.model.item_attrs import (
     get_item_annotation_str,
     UsesAnnotations,
@@ -225,8 +227,9 @@ def get_uuid(uuid: Optional[Union[UUID, str]] = None) -> UUID:
 
 class Base(_HasTable, metaclass=DeclarativeMeta):
     __abstract__ = True
+    metadata = MetaData(naming_convention=NAMING_CONVENTION)
+    mapper_registry.metadata = metadata
     registry = mapper_registry
-    metadata = mapper_registry.metadata
     __init__ = mapper_registry.constructor
 
     @classmethod
