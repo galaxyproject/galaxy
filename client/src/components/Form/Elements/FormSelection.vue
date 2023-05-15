@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import FormCheck from "./FormCheck";
 import FormRadio from "./FormRadio";
+import FormSelect from "./FormSelect";
 
 const $emit = defineEmits(["input"]);
 const props = defineProps({
@@ -15,6 +16,10 @@ const props = defineProps({
     display: {
         type: String,
         default: null,
+    },
+    optional: {
+        type: Boolean,
+        default: false,
     },
     options: {
         type: Array,
@@ -53,4 +58,5 @@ const currentOptions = computed(() => {
 <template>
     <form-check v-if="display === 'checkboxes'" v-model="currentValue" :options="currentOptions" />
     <form-radio v-else-if="display === 'radio'" v-model="currentValue" :options="currentOptions" />
+    <form-select v-else v-model="currentValue" :multiple="multiple" :optional="optional" :options="currentOptions" />
 </template>

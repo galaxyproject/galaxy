@@ -1131,9 +1131,9 @@ class NavigatesGalaxy(HasDriver):
             },
         )
         if quota_source_label:
-            self.select2_set_value("#quota_source_label", quota_source_label)
+            self.select_set_value("#quota_source_label", quota_source_label)
         if user:
-            self.select2_set_value("#in_users", user)
+            self.select_set_value("#in_users", user, multiple=True)
         quota_component.add_form_submit.wait_for_and_click()
 
     def select_dataset_from_lib_import_modal(self, filenames):
@@ -1990,6 +1990,20 @@ class NavigatesGalaxy(HasDriver):
 
         if annotation_area.is_absent or not annotation_area.is_displayed:
             annotation_icon.wait_for_and_click()
+
+    def select_set_value(self, container_selector_or_elem, value, multiple=False):
+        if hasattr(container_selector_or_elem, "selector"):
+            container_selector_or_elem = container_selector_or_elem.selector
+        if not hasattr(container_selector_or_elem, "find_element"):
+            container_elem = self.wait_for_selector(container_selector_or_elem)
+        else:
+            container_elem = container_selector_or_elem
+        container_elem.click()
+        text_input = container_elem.find_element(By.CSS_SELECTOR, "input[class='multiselect__input']")
+        text_input.send_keys(value)
+        self.send_enter(text_input)
+        if multiple:
+            self.send_escape(text_input)
 
     def select2_set_value(self, container_selector_or_elem, value, with_click=True, clear_value=False):
         # There are two hacky was to select things from the select2 widget -
