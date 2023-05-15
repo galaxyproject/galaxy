@@ -81,8 +81,14 @@ History
 * Bugfixes to work around & annotate expected tool test failures.
 
 ---------------------
-20.9.0.dev2
+20.9.0 (2020-10-28)
 ---------------------
+
+* First release from the 20.09 branch of Galaxy.
+
+--------------------------
+20.9.0.dev2 (2020-08-02)
+--------------------------
 
 * First release from the 20.09 branch of Galaxy.
 
