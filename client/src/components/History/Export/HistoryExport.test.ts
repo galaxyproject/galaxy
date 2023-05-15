@@ -13,6 +13,7 @@ import HistoryExport from "./HistoryExport.vue";
 import { getExportRecords } from "./services";
 import { setActivePinia } from "pinia";
 import { createTestingPinia } from "@pinia/testing";
+import { useHistoryStore, type HistorySummary } from "@/stores/historyStore";
 
 const localVue = getLocalVue(true);
 
@@ -42,16 +43,17 @@ const REMOTE_FILES_API_RESPONSE: FilesSourcePluginList = [
     },
 ];
 
-const pinia = createTestingPinia({
-    initialState: {
-        historyStore: {
-            getHistoryById: (historyId: string) => FAKE_HISTORY,
-        },
-    },
-});
-
 async function mountHistoryExport() {
+    const pinia = createTestingPinia();
     setActivePinia(pinia);
+    const historyStore = useHistoryStore(pinia);
+
+    // the mocking method described in the pinia docs does not work in vue2
+    // this is a work-around
+    jest.spyOn(historyStore, "getHistoryById").mockImplementation(
+        (_history_id: string) => FAKE_HISTORY as HistorySummary
+    );
+
     const wrapper = shallowMount(HistoryExport, {
         propsData: { historyId: FAKE_HISTORY_ID },
         localVue,
