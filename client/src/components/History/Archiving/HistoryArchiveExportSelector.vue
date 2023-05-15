@@ -189,7 +189,7 @@ function onArchiveHistoryWithExport() {
             :disabled="!canArchiveHistory"
             variant="primary"
             @click="onArchiveHistoryWithExport">
-            Delete and Archive history
+            Archive (and purge) history
         </b-button>
 
         <b-modal v-model="isExportDialogOpen" title="Export history to permanent storage" size="lg" hide-footer>

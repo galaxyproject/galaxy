@@ -66,7 +66,7 @@ async function onArchiveHistory(exportRecordId?: string) {
             <b v-else>{{ history.name }}</b>
         </h1>
 
-        <b-alert v-if="isHistoryAlreadyArchived" show variant="info">
+        <b-alert v-if="isHistoryAlreadyArchived" show variant="success">
             This history has been archived. You can access it from the
             <router-link :to="archivedHistoriesRoute">Archived Histories</router-link> section.
         </b-alert>
