@@ -273,7 +273,7 @@ Do not add space between elements connected by conditionals.
 >     <span v-if="conditional">
 >         condition met
 >     </span>
->
+> 
 >     <span v-else>
 >         condition not met
 >     </span>
@@ -289,7 +289,7 @@ Add space between non-connected elements.
 >     <span>
 >         First span.
 >     </span>
->
+> 
 >     <span>
 >         Second span.
 >     </span>
@@ -321,7 +321,7 @@ Add space between logical blocks of elements.
 >     <span v-else>
 >         condition 1 not met
 >     </span>
->
+> 
 >     <span v-if="otherConditional">
 >         condition 2 met
 >     </span>
