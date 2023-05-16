@@ -113,13 +113,7 @@ export default {
             this.$emit("onValidation", this.validation);
         },
         errors() {
-            this.resetError();
-            if (this.errors) {
-                const errorMessages = matchErrors(this.formIndex, this.errors);
-                for (const inputId in errorMessages) {
-                    this.setError(inputId, errorMessages[inputId]);
-                }
-            }
+            this.onErrors();
         },
         replaceParams() {
             this.onReplaceParams();
@@ -131,6 +125,8 @@ export default {
         this.formData = this.buildFormData();
         // emit back to parent, so that parent has submittable data
         this.$emit("onChange", this.formData);
+        // highlight initial errors
+        this.onErrors();
     },
     methods: {
         buildFormData() {
@@ -177,7 +173,15 @@ export default {
                 this.$emit("onChange", params, refreshOnChange);
             }
         },
-        getOffsetTop(element, padding = 100) {
+        onErrors() {
+            if (this.errors) {
+                const errorMessages = matchErrors(this.formIndex, this.errors);
+                for (const inputId in errorMessages) {
+                    this.setError(inputId, errorMessages[inputId]);
+                }
+            }
+        },
+        getOffsetTop(element, padding = 150) {
             let offsetTop = 0;
             while (element) {
                 offsetTop += element.offsetTop;
