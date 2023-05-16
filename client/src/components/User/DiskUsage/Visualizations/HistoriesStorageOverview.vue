@@ -3,7 +3,7 @@ import localize from "@/utils/localization";
 import type { DataValuePoint } from "./Charts";
 import { ref, onMounted } from "vue";
 import BarChart from "./Charts/BarChart.vue";
-import { bytesLabelFormatter, bytesValueFormatter } from "./Charts/utils";
+import { bytesLabelFormatter, bytesValueFormatter } from "./Charts/formatters";
 import { getAllHistoriesSizeSummary, type ItemSizeSummary, undeleteHistory, purgeHistory } from "./service";
 import RecoverableItemSizeTooltip from "./RecoverableItemSizeTooltip.vue";
 import SelectedItemActions from "./SelectedItemActions.vue";
