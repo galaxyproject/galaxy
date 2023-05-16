@@ -33,7 +33,7 @@ const context = computed(() => canvas.value?.getContext("2d") ?? null);
 let redraw = true;
 
 watch(
-    () => props.transform,
+    () => [props.transform, props.viewportBounds],
     () => (redraw = true),
     { deep: true }
 );
