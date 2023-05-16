@@ -5,8 +5,29 @@ import { computed, ref, watch, type Ref, onMounted } from "vue";
 import { Transform, type AxisAlignedBoundingBox } from "./modules/geometry";
 
 const lineGap = 10;
-const minorLandmarkFrequency = 10;
-const majorLandmarkFrequency = 20;
+
+const landmarkLines = [
+    {
+        condition: (zoom: number) => zoom > 0.15,
+        frequency: 10,
+        width: 1,
+    },
+    {
+        condition: (_zoom: number) => true,
+        frequency: 20,
+        width: 2,
+    },
+    {
+        condition: (zoom: number) => zoom <= 0.5,
+        frequency: 100,
+        width: 4,
+    },
+    {
+        condition: (zoom: number) => zoom <= 0.15,
+        frequency: 200,
+        width: 8,
+    },
+] as const;
 
 const props = defineProps<{
     viewportBounds: UseElementBoundingReturn;
@@ -63,6 +84,7 @@ function renderGrid(ctx: CanvasRenderingContext2D) {
         y: props.transform.y / zoom,
     } as const;
 
+    // standard lines
     if (zoom > 0.5) {
         ctx.strokeStyle = colors.grid;
         ctx.lineWidth = 1;
@@ -72,27 +94,19 @@ function renderGrid(ctx: CanvasRenderingContext2D) {
         ctx.stroke();
     }
 
-    if (zoom > 0.15) {
-        ctx.strokeStyle = colors.landmark;
-        ctx.lineWidth = 1;
+    // landmark lines
+    ctx.strokeStyle = colors.landmark;
 
-        const gap = lineGap * minorLandmarkFrequency;
+    landmarkLines.forEach((landmarkLine) => {
+        if (landmarkLine.condition(zoom)) {
+            ctx.lineWidth = landmarkLine.width;
+            const gap = lineGap * landmarkLine.frequency;
 
-        ctx.beginPath();
-        traceGrid(ctx, gap, pan, props.viewportBoundingBox);
-        ctx.stroke();
-    }
-
-    {
-        ctx.strokeStyle = colors.landmark;
-        ctx.lineWidth = 2;
-
-        const gap = lineGap * majorLandmarkFrequency;
-
-        ctx.beginPath();
-        traceGrid(ctx, gap, pan, props.viewportBoundingBox);
-        ctx.stroke();
-    }
+            ctx.beginPath();
+            traceGrid(ctx, gap, pan, props.viewportBoundingBox);
+            ctx.stroke();
+        }
+    });
 }
 
 /**
