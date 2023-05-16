@@ -43,6 +43,7 @@
                                 <FormDisplay
                                     :id="toolId"
                                     :inputs="formConfig.inputs"
+                                    :errors="formConfig.warnings || {}"
                                     :validation-scroll-to="validationScrollTo"
                                     @onChange="onChange"
                                     @onValidation="onValidation" />
