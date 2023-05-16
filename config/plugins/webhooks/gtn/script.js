@@ -130,7 +130,7 @@
 
                     const gtnToolElements = document
                         .getElementById("gtn-embed")
-                        .contentDocument.querySelectorAll("span[data-tool]");
+                        .contentDocument.querySelectorAll("span[data-tool],a[data-tool]");
 
                     // Buttonify
                     gtnToolElements.forEach(function (el) {
@@ -139,7 +139,7 @@
                             let target = e.target;
 
                             // Sometimes we get the i or the strong, not the parent.
-                            if (e.target.tagName.toLowerCase() !== "span") {
+                            if (e.target.tagName.toLowerCase() !== "span" && e.target.tagName.toLowerCase() !== "a") {
                                 target = e.target.parentElement;
                             }
 
@@ -156,7 +156,7 @@
 
                     const gtnWorkflowElements = document
                         .getElementById("gtn-embed")
-                        .contentDocument.querySelectorAll("span[data-workflow]");
+                        .contentDocument.querySelectorAll("span[data-workflow],a[data-workflow]");
 
                     // Buttonify
                     gtnWorkflowElements.forEach(function (el) {
@@ -165,7 +165,7 @@
                             let target = e.target;
 
                             // Sometimes we get the i or the strong, not the parent.
-                            if (e.target.tagName.toLowerCase() !== "span") {
+                            if (e.target.tagName.toLowerCase() !== "span" && e.target.tagName.toLowerCase() !== "a") {
                                 target = e.target.parentElement;
                             }
 
