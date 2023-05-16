@@ -23,7 +23,7 @@ const landmarkLines = [
         width: 4,
     },
     {
-        condition: (zoom: number) => zoom <= 0.15,
+        condition: (zoom: number) => zoom <= 0.2,
         frequency: 200,
         width: 8,
     },
