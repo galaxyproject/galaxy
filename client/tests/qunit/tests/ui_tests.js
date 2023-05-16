@@ -746,13 +746,13 @@ QUnit.test("select-content", function (assert) {
     assert.ok(select.button_type.value() == 0, "Initial mode selected by default.");
     select.model.set("data", {
         hda: [
-            { id: "id0", name: "name0", hid: "hid0" },
-            { id: "id1", name: "name1", hid: "hid1" },
+            { id: "id0", name: "name0", hid: "hid0", src: "hda" },
+            { id: "id1", name: "name1", hid: "hid1", src: "hda" },
         ],
         hdca: [
-            { id: "id2", name: "name2", hid: "hid2" },
-            { id: "id3", name: "name3", hid: "hid3" },
-            { id: "id4", name: "name4", hid: "hid4" },
+            { id: "id2", name: "name2", hid: "hid2", src: "hdca"  },
+            { id: "id3", name: "name3", hid: "hid3", src: "hdca"  },
+            { id: "id4", name: "name4", hid: "hid4", src: "hdca"  },
         ],
     });
 
@@ -845,30 +845,29 @@ QUnit.test("select-content", function (assert) {
     select.model.set("optional", false);
     assert.ok(select.fields[0].data[0].value != "__null__", "First option is not optional value");
 
-    select.model.set("value", { values: [{ id: "id1", src: "hda" }] });
+    select.model.set("value", { values: [{ id: "id1", name: "name1", src: "hda" }] });
     assert.ok(
-        JSON.stringify(select.value()) == '{"values":[{"id":"id1","name":"name1","hid":"hid1"}],"batch":false}',
+        JSON.stringify(select.value()) == '{"values":[{"id":"id1","src":"hda"}],"batch":false}',
         "Checking single value"
     );
-
     assert.ok(select.config[select.model.get("current")].src == "hda", "Matched dataset field");
     assert.ok(!select.config[select.model.get("current")].multiple, "Matched single select field");
     select.model.set("value", {
         values: [
-            { id: "id0", src: "hda" },
-            { id: "id1", src: "hda" },
+            { id: "id0", src: "hda", name: "name0" },
+            { id: "id1", src: "hda", name: "name1" },
         ],
     });
     assert.ok(select.config[select.model.get("current")].multiple, "Matched multiple field");
     assert.ok(
         JSON.stringify(select.value()) ==
-            '{"values":[{"id":"id0","name":"name0","hid":"hid0"},{"id":"id1","name":"name1","hid":"hid1"}],"batch":true}',
+            '{"values":[{"id":"id0","src":"hda"},{"id":"id1","src":"hda"}],"batch":true}',
         "Checking multiple values"
     );
-    select.model.set("value", { values: [{ id: "id2", src: "hdca" }] });
+    select.model.set("value", { values: [{ id: "id2", src: "hdca", name: "name2" }] });
     assert.ok(select.config[select.model.get("current")].src == "hdca", "Matched collection field");
     assert.ok(
-        JSON.stringify(select.value()) == '{"values":[{"id":"id2","name":"name2","hid":"hid2"}],"batch":true}',
+        JSON.stringify(select.value()) == '{"values":[{"id":"id2","src":"hdca"}],"batch":true}',
         "Checking collection value"
     );
 
