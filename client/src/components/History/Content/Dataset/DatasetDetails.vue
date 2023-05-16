@@ -19,13 +19,13 @@
                     </span>
                     <!-- Include Job Detail Provider and Dataset Error Details here -->
                     <JobDetailsProvider>
-                        <div v-if="toolStderr" class="info">
+                        <div class="info">
                             <span class="value">{{ toolStderr }}</span>
                         </div>
                     </JobDetailsProvider>
-                    <!-- <div v-if="result.misc_info" class="info">
+                    <div v-if="result.misc_info" class="info">
                         <span class="value">{{ result.misc_info }}</span>
-                    </div> -->
+                    </div>
                 </div>
                 <DatasetActions
                     :item="result"
