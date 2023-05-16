@@ -8,6 +8,7 @@ import { getHistoryContentsSizeSummary, type ItemSizeSummary, undeleteDataset, p
 import RecoverableItemSizeTooltip from "./RecoverableItemSizeTooltip.vue";
 import SelectedItemActions from "./SelectedItemActions.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import Heading from "@/components/Common/Heading.vue";
 import { useRouter } from "vue-router/composables";
 import { useToast } from "@/composables/toast";
 import { useConfirmDialog } from "@/composables/confirmDialog";
@@ -140,10 +141,8 @@ async function onPermanentlyDeleteDataset(datasetId: string) {
 <template>
     <div class="mx-3">
         <router-link :to="{ name: 'StorageDashboard' }">{{ localize("Back to Dashboard") }}</router-link>
-        <h2 class="text-center my-3">
-            <b>History Storage Overview</b>
-        </h2>
-        <p class="text-center">
+        <Heading h1 bold class="my-3"> History Storage Overview </Heading>
+        <p class="text-justify">
             Here you will find some Graphs displaying the storage taken by datasets in your history:
             <b>{{ props.historyId }}</b
             >. You can use these graphs to identify the datasets that take the most space in your history. You can also
@@ -151,7 +150,7 @@ async function onPermanentlyDeleteDataset(datasetId: string) {
             <router-link :to="{ name: 'HistoriesOverview' }"><b>Histories Storage Overview</b></router-link> page to see
             the storage taken by <b>all your histories</b>.
         </p>
-        <p class="text-center">
+        <p class="text-justify">
             Note: these graphs include <b>deleted datasets</b>. Remember that, even if you delete datasets, they still
             take up storage space. However, you can free up the storage space by permanently deleting them from the
             <i>Discarded Items</i> section of the

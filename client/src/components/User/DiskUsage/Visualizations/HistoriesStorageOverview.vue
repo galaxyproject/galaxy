@@ -8,6 +8,7 @@ import { getAllHistoriesSizeSummary, type ItemSizeSummary, undeleteHistory, purg
 import RecoverableItemSizeTooltip from "./RecoverableItemSizeTooltip.vue";
 import SelectedItemActions from "./SelectedItemActions.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import Heading from "@/components/Common/Heading.vue";
 import { useRouter } from "vue-router/composables";
 import { useToast } from "@/composables/toast";
 import { useConfirmDialog } from "@/composables/confirmDialog";
@@ -126,13 +127,11 @@ async function onPermanentlyDeleteHistory(historyId: string) {
 <template>
     <div class="mx-3">
         <router-link :to="{ name: 'StorageDashboard' }">{{ localize("Back to Dashboard") }}</router-link>
-        <h2 class="text-center my-3">
-            <b>Histories Storage Overview</b>
-        </h2>
-        <p class="text-center">
+        <Heading h1 bold class="my-3"> Histories Storage Overview </Heading>
+        <p class="text-justify">
             Here you can find various graphs displaying the storage size taken by <b>all your histories</b>.
         </p>
-        <p class="text-center">
+        <p class="text-justify">
             Note: these graphs include <b>deleted histories</b>. Remember that, even if you delete histories, they still
             take up storage space. However, you can free up the storage space by permanently deleting them from the
             <i>Discarded Items</i> section of the
