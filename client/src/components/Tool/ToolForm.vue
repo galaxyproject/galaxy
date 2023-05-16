@@ -329,14 +329,12 @@ export default {
                     const nJobs = jobResponse && jobResponse.jobs ? jobResponse.jobs.length : 0;
                     if (nJobs > 0) {
                         this.showForm = false;
-                        this.jobDef = jobDef;
-                        this.jobResponse = jobResponse;
-                        const response = {
-                            jobDef: this.jobDef,
-                            jobResponse: this.jobResponse,
-                            toolName: this.toolName,
-                        };
-                        this.saveLatestResponse(response);
+                        const toolName = this.toolName;
+                        this.saveLatestResponse({
+                            jobDef,
+                            jobResponse,
+                            toolName,
+                        });
                         changeRoute = prevRoute === this.$route.fullPath;
                     } else {
                         this.showError = true;
