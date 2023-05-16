@@ -17,7 +17,7 @@ export function useViewportBoundingBox(
     scale: Ref<number>,
     pan: Ref<{ x: number; y: number }>
 ) {
-    const { throttle } = useAnimationFrameThrottle();
+    const { throttle } = useAnimationFrameThrottle(100);
 
     const viewportBoundingBox = ref(new AxisAlignedBoundingBox());
     watch(

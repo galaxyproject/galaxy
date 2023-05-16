@@ -7,8 +7,10 @@
             class="canvas-content position-relative"
             @drop.prevent
             @dragover.prevent>
-            <!-- canvas-background is sibling of node-area because it has a different transform origin, so can't be parent of node-area -->
-            <div class="canvas-background" :style="canvasStyle" />
+            <AdaptiveGrid
+                :viewport-bounds="elementBounding"
+                :viewport-bounding-box="viewportBoundingBox"
+                :transform="transform" />
             <div class="node-area" :style="canvasStyle">
                 <WorkflowEdges
                     :transform="transform"
@@ -61,6 +63,7 @@ import type { OutputTerminals } from "./modules/terminals";
 import { assertDefined } from "@/utils/assertions";
 import { minZoom, maxZoom } from "./modules/zoomLevels";
 import { useViewportBoundingBox } from "./composables/viewportBoundingBox";
+import AdaptiveGrid from "./AdaptiveGrid.vue";
 
 const emit = defineEmits(["transform", "graph-offset", "onRemove", "scrollTo"]);
 const props = defineProps({

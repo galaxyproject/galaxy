@@ -31,7 +31,7 @@ function getCallbackGroup(priority: number): CallbackGroup {
         };
 
         callbackGroups.push(group);
-        callbackGroups.sort((a, b) => a.priority - b.priority);
+        callbackGroups.sort((a, b) => b.priority - a.priority);
 
         return group;
     }
