@@ -17,15 +17,15 @@ export class ExportParamsModel {
     }
 
     get includeFiles() {
-        return this._params?.include_files;
+        return Boolean(this._params?.include_files);
     }
 
     get includeDeleted() {
-        return this._params?.include_deleted;
+        return Boolean(this._params?.include_deleted);
     }
 
     get includeHidden() {
-        return this._params?.include_hidden;
+        return Boolean(this._params?.include_hidden);
     }
 
     public equals(otherExportParams?: ExportParamsModel) {

@@ -3,11 +3,12 @@ import { computed, onMounted, ref, watch } from "vue";
 import { BAlert, BCard, BButton, BCardText } from "bootstrap-vue";
 import { exportToFileSource, getExportRecords } from "@/components/History/Export/services";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-import ExportToFileSourceForm from "components/Common/ExportForm.vue";
+import ExportToFileSourceForm from "@/components/Common/ExportForm.vue";
 import { DEFAULT_EXPORT_PARAMS } from "@/composables/shortTermStorage";
 import type { ExportRecordModel } from "@/components/Common/models/exportRecordModel";
 import { useTaskMonitor } from "@/composables/taskMonitor";
 import type { HistorySummary } from "@/stores/historyStore";
+import IncludedBadge from "./IncludedBadge.vue";
 
 const {
     isRunning: isExportTaskRunning,
@@ -151,7 +152,13 @@ function onArchiveHistoryWithExport() {
                     <b-card-text>
                         <b>Exported {{ mostUpToDateExport.elapsedTime }}</b> on {{ mostUpToDateExport.date }}
                     </b-card-text>
-                    <b-card-text> <b>Destination:</b> {{ mostUpToDateExport.importUri }} </b-card-text>
+                    <b-card-text v-if="mostUpToDateExport.exportParams">
+                        <b>Contains datasets:</b>
+                        <IncludedBadge item-name="active" :included="mostUpToDateExport.exportParams.includeFiles" />
+                        <IncludedBadge item-name="hidden" :included="mostUpToDateExport.exportParams.includeHidden" />
+                        <IncludedBadge item-name="deleted" :included="mostUpToDateExport.exportParams.includeDeleted" />
+                    </b-card-text>
+                    <b-card-text> <b>Stored in:</b> {{ mostUpToDateExport.importUri }} </b-card-text>
                 </b-card>
             </b-alert>
         </div>
