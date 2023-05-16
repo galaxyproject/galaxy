@@ -8,7 +8,7 @@
                 variant="outline-info"
                 title="Switch to this history"
                 :disabled="currentHistory.id == history.id"
-                @click="setCurrentHistory(history)">
+                @click="setCurrentHistory(history.id)">
                 Switch to this history
             </b-button>
             <b-button v-else v-b-modal:copy-history-modal size="sm" variant="outline-info" title="Import this history">
