@@ -142,7 +142,7 @@ function onToggleVisible() {
         };
     } else {
         if (step.post_job_actions) {
-            const { [actionKey]: ignoreUnused, ...newPostJobActions } = step.post_job_actions;
+            const { [actionKey]: _unused, ...newPostJobActions } = step.post_job_actions;
             step.post_job_actions = newPostJobActions;
         } else {
             step.post_job_actions = {};
