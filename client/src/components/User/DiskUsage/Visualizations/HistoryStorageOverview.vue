@@ -4,7 +4,12 @@ import type { DataValuePoint } from "./Charts";
 import { ref, onMounted } from "vue";
 import BarChart from "./Charts/BarChart.vue";
 import { bytesLabelFormatter, bytesValueFormatter } from "./Charts/formatters";
-import { getHistoryContentsSizeSummary, type ItemSizeSummary, undeleteDataset, purgeDataset } from "./service";
+import {
+    fetchHistoryContentsSizeSummary,
+    type ItemSizeSummary,
+    undeleteDatasetById,
+    purgeDatasetById,
+} from "./service";
 import RecoverableItemSizeTooltip from "./RecoverableItemSizeTooltip.vue";
 import SelectedItemActions from "./SelectedItemActions.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -34,7 +39,7 @@ const numberOfDatasetsToDisplay = ref(numberOfDatasetsToDisplayOptions[0]);
 onMounted(async () => {
     isLoading.value = true;
     const limit = Math.max(...numberOfDatasetsToDisplayOptions);
-    const allDatasetsInHistorySizeSummary = await getHistoryContentsSizeSummary(props.historyId, limit);
+    const allDatasetsInHistorySizeSummary = await fetchHistoryContentsSizeSummary(props.historyId, limit);
     allDatasetsInHistorySizeSummary.forEach((dataset) => datasetsSizeSummaryMap.set(dataset.id, dataset));
 
     buildGraphsData();
@@ -99,7 +104,7 @@ async function onViewDataset(datasetId: string) {
 
 async function onUndeleteDataset(datasetId: string) {
     try {
-        const result = await undeleteDataset(props.historyId, datasetId);
+        const result = await undeleteDatasetById(props.historyId, datasetId);
         const dataset = datasetsSizeSummaryMap.get(datasetId);
         if (dataset && !result.deleted) {
             dataset.deleted = result.deleted;
@@ -126,7 +131,7 @@ async function onPermanentlyDeleteDataset(datasetId: string) {
         return;
     }
     try {
-        const result = await purgeDataset(props.historyId, datasetId);
+        const result = await purgeDatasetById(props.historyId, datasetId);
         const dataset = datasetsSizeSummaryMap.get(datasetId);
         if (dataset && result) {
             datasetsSizeSummaryMap.delete(datasetId);

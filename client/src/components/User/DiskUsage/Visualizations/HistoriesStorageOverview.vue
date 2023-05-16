@@ -4,7 +4,7 @@ import type { DataValuePoint } from "./Charts";
 import { ref, onMounted } from "vue";
 import BarChart from "./Charts/BarChart.vue";
 import { bytesLabelFormatter, bytesValueFormatter } from "./Charts/formatters";
-import { getAllHistoriesSizeSummary, type ItemSizeSummary, undeleteHistory, purgeHistory } from "./service";
+import { fetchAllHistoriesSizeSummary, type ItemSizeSummary, undeleteHistoryById, purgeHistoryById } from "./service";
 import RecoverableItemSizeTooltip from "./RecoverableItemSizeTooltip.vue";
 import SelectedItemActions from "./SelectedItemActions.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -26,7 +26,7 @@ const numberOfHistoriesToDisplay = ref(numberOfHistoriesToDisplayOptions[0]);
 
 onMounted(async () => {
     isLoading.value = true;
-    const allHistoriesSizeSummary = await getAllHistoriesSizeSummary();
+    const allHistoriesSizeSummary = await fetchAllHistoriesSizeSummary();
     allHistoriesSizeSummary.forEach((history) => historiesSizeSummaryMap.set(history.id, history));
 
     buildGraphsData();
@@ -85,7 +85,7 @@ function onViewHistory(historyId: string) {
 
 async function onUndeleteHistory(historyId: string) {
     try {
-        const result = await undeleteHistory(historyId);
+        const result = await undeleteHistoryById(historyId);
         const history = historiesSizeSummaryMap.get(historyId);
         if (history && !result.deleted) {
             history.deleted = result.deleted;
@@ -112,7 +112,7 @@ async function onPermanentlyDeleteHistory(historyId: string) {
         return;
     }
     try {
-        const result = await purgeHistory(historyId);
+        const result = await purgeHistoryById(historyId);
         const history = historiesSizeSummaryMap.get(historyId);
         if (history && result.purged) {
             historiesSizeSummaryMap.delete(historyId);
