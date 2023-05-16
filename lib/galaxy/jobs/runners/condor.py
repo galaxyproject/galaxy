@@ -211,7 +211,7 @@ class CondorJobRunner(AsynchronousJobRunner):
             if job_failed:
                 log.debug(f"({galaxy_id_tag}/{job_id}) job failed")
                 cjs.failed = True
-                self.work_queue.put((self.finish_job, cjs))
+                self.work_queue.put((self.fail_job, cjs))
                 continue
             cjs.runnning = job_running
             new_watched.append(cjs)
