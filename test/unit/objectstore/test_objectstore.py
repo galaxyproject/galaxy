@@ -9,6 +9,10 @@ import pytest
 
 from galaxy.exceptions import ObjectInvalid
 from galaxy.objectstore.azure_blob import AzureBlobObjectStore
+from galaxy.objectstore.caching import (
+    CacheTarget,
+    check_cache,
+)
 from galaxy.objectstore.cloud import Cloud
 from galaxy.objectstore.pithos import PithosObjectStore
 from galaxy.objectstore.s3 import S3ObjectStore
@@ -727,8 +731,9 @@ def test_config_parse_s3():
             assert object_store.is_secure is True
             assert object_store.conn_path == "/"
 
-            assert object_store.cache_size == 1000
-            assert object_store.staging_path == "database/object_store_cache"
+            cache_target = object_store.cache_target
+            assert cache_target.size == 1000
+            assert cache_target.path == "database/object_store_cache"
             assert object_store.extra_dirs["job_work"] == "database/job_working_directory_s3"
             assert object_store.extra_dirs["temp"] == "database/tmp_s3"
 
@@ -885,8 +890,9 @@ def test_config_parse_cloud():
             assert object_store.is_secure is True
             assert object_store.conn_path == "/"
 
-            assert object_store.cache_size == 1000.0
-            assert object_store.staging_path == "database/object_store_cache"
+            cache_target = object_store.cache_target
+            assert cache_target.size == 1000.0
+            assert cache_target.path == "database/object_store_cache"
             assert object_store.extra_dirs["job_work"] == "database/job_working_directory_cloud"
             assert object_store.extra_dirs["temp"] == "database/tmp_cloud"
 
@@ -951,8 +957,9 @@ def test_config_parse_cloud_noauth_for_aws():
             assert object_store.is_secure is True
             assert object_store.conn_path == "/"
 
-            assert object_store.cache_size == 1000.0
-            assert object_store.staging_path == "database/object_store_cache"
+            cache_target = object_store.cache_target
+            assert cache_target.size == 1000.0
+            assert cache_target.path == "database/object_store_cache"
             assert object_store.extra_dirs["job_work"] == "database/job_working_directory_cloud"
             assert object_store.extra_dirs["temp"] == "database/tmp_cloud"
 
@@ -1028,8 +1035,9 @@ def test_config_parse_azure():
             assert object_store.container_name == "unique_container_name"
             assert object_store.max_chunk_size == 250
 
-            assert object_store.cache_size == 100
-            assert object_store.staging_path == "database/object_store_cache"
+            cache_target = object_store.cache_target
+            assert cache_target.size == 100
+            assert cache_target.path == "database/object_store_cache"
             assert object_store.extra_dirs["job_work"] == "database/job_working_directory_azure"
             assert object_store.extra_dirs["temp"] == "database/tmp_azure"
 
@@ -1053,6 +1061,22 @@ def test_config_parse_azure():
 
             extra_dirs = as_dict["extra_dirs"]
             assert len(extra_dirs) == 2
+
+
+def test_check_cache_sanity(tmp_path):
+    # sanity check the caching code - create a 1 gig cache with a single file.
+    # when the cache is allowed to be 20% full the file will exist but when the
+    # cache is only allowed to be a very small fraction full headed toward zero
+    # the file will be deleted
+    cache_dir = tmp_path
+    path = cache_dir / "a_file_0"
+    path.write_text("this is an example file")
+    big_cache_target = CacheTarget(cache_dir, 1, 0.2)
+    check_cache(big_cache_target)
+    assert path.exists()
+    small_cache_target = CacheTarget(cache_dir, 1, 0.000000001)
+    check_cache(small_cache_target)
+    assert not path.exists()
 
 
 class MockDataset:

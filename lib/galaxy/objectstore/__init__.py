@@ -1432,29 +1432,6 @@ def local_extra_dirs(func):
     return wraps
 
 
-def convert_bytes(bytes):
-    """A helper function used for pretty printing disk usage."""
-    if bytes is None:
-        bytes = 0
-    bytes = float(bytes)
-
-    if bytes >= 1099511627776:
-        terabytes = bytes / 1099511627776
-        size = f"{terabytes:.2f}TB"
-    elif bytes >= 1073741824:
-        gigabytes = bytes / 1073741824
-        size = f"{gigabytes:.2f}GB"
-    elif bytes >= 1048576:
-        megabytes = bytes / 1048576
-        size = f"{megabytes:.2f}MB"
-    elif bytes >= 1024:
-        kilobytes = bytes / 1024
-        size = f"{kilobytes:.2f}KB"
-    else:
-        size = f"{bytes:.2f}b"
-    return size
-
-
 def config_to_dict(config):
     """Dict-ify the portion of a config object consumed by the ObjectStore class and its subclasses."""
     return {

@@ -28,9 +28,10 @@ from galaxy.util import (
 )
 from galaxy.util.path import safe_relpath
 from galaxy.util.sleeper import Sleeper
-from . import (
-    ConcreteObjectStore,
-    convert_bytes,
+from . import ConcreteObjectStore
+from .caching import (
+    CacheTarget,
+    check_cache,
 )
 
 NO_BLOBSERVICE_ERROR_MESSAGE = (
@@ -580,52 +581,16 @@ class AzureBlobObjectStore(ConcreteObjectStore):
     # Secret Methods #
     ##################
 
+    @property
+    def cache_target(self) -> CacheTarget:
+        return CacheTarget(
+            self.staging_path,
+            self.cache_size,
+            0.9,
+        )
+
     def __cache_monitor(self):
         time.sleep(2)  # Wait for things to load before starting the monitor
         while self.running:
-            total_size = 0
-            # Is this going to be too expensive of an operation to be done frequently?
-            file_list = []
-            for dirpath, _, filenames in os.walk(self.staging_path):
-                for filename in filenames:
-                    filepath = os.path.join(dirpath, filename)
-                    file_size = os.path.getsize(filepath)
-                    total_size += file_size
-                    # Get the time given file was last accessed
-                    last_access_time = time.localtime(os.stat(filepath)[7])
-                    # Compose a tuple of the access time and the file path
-                    file_tuple = last_access_time, filepath, file_size
-                    file_list.append(file_tuple)
-            # Sort the file list (based on access time)
-            file_list.sort()
-            # Initiate cleaning once within 10% of the defined cache size?
-            cache_limit = self.cache_size * 0.9
-            if total_size > cache_limit:
-                log.info(
-                    "Initiating cache cleaning: current cache size: %s; clean until smaller than: %s",
-                    convert_bytes(total_size),
-                    convert_bytes(cache_limit),
-                )
-                # How much to delete? If simply deleting up to the cache-10% limit,
-                # is likely to be deleting frequently and may run the risk of hitting
-                # the limit - maybe delete additional #%?
-                # For now, delete enough to leave at least 10% of the total cache free
-                delete_this_much = total_size - cache_limit
-                # Keep deleting datasets from file_list until deleted_amount does not
-                # exceed delete_this_much; start deleting from the front of the file list,
-                # which assumes the oldest files come first on the list.
-                deleted_amount = 0
-                for entry in enumerate(file_list):
-                    if deleted_amount < delete_this_much:
-                        deleted_amount += entry[2]
-                        os.remove(entry[1])
-                        # Debugging code for printing deleted files' stats
-                        # folder, file_name = os.path.split(f[1])
-                        # file_date = time.strftime("%m/%d/%y %H:%M:%S", f[0])
-                        # log.debug("%s. %-25s %s, size %s (deleted %s/%s)" \
-                        #     % (i, file_name, convert_bytes(f[2]), file_date, \
-                        #     convert_bytes(deleted_amount), convert_bytes(delete_this_much)))
-                    else:
-                        log.debug("Cache cleaning done. Total space freed: %s", convert_bytes(deleted_amount))
-
+            check_cache(self.cache_target)
             self.sleeper.sleep(30)  # Test cache size every 30 seconds?
