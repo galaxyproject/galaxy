@@ -35,8 +35,8 @@ export async function fetchHistoryContentsSizeSummary(historyId: string, limit =
         keys: itemSizeSummaryFields,
         limit,
         order: "size-dsc",
-        q: ["purged"],
-        qv: ["false"],
+        q: ["purged", "history_content_type"],
+        qv: ["false", "dataset"],
     });
     return response.data as unknown as ItemSizeSummary[];
 }
