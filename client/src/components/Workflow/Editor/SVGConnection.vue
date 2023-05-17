@@ -20,7 +20,6 @@ const props = defineProps({
 });
 
 const ribbonMargin = 4;
-const lineShift = 30;
 
 const curve = line().curve(curveBasis);
 
@@ -60,7 +59,7 @@ const inputPos = computed(() => {
     }
 });
 
-const position = computed(() => {
+const connectionPosition = computed(() => {
     if (inputPos.value && outputPos.value) {
         return {
             startX: outputPos.value.startX,
@@ -91,22 +90,77 @@ const connectionIsValid = computed(() => {
     return !connectionStore.invalidConnections[getConnectionId(props.connection)];
 });
 
-const offsets = computed(() => getLineOffsets(inputIsMappedOver.value, outputIsMappedOver.value));
+const lineOffsets = computed(() => getLineOffsets(inputIsMappedOver.value, outputIsMappedOver.value));
+
+// minimum line shift
+const baseLineShift = 15;
+
+// how much the x distance influences line shift
+const lineShiftGrowFactorX = 0.15;
+
+// how much the y distance influences line shift
+const lineShiftGrowFactorY = 0.08;
+
+const lineShiftX = computed(() => {
+    const position = connectionPosition.value;
+
+    if (!position) {
+        return baseLineShift;
+    }
+
+    const distanceX = Math.abs(position.endX - position.startX - baseLineShift);
+    const distanceY = Math.abs(position.endY - position.startY);
+
+    const forward = position.endX >= position.startX;
+
+    if (forward) {
+        const growX = distanceX * lineShiftGrowFactorX;
+        const growY = distanceY * lineShiftGrowFactorY;
+
+        return baseLineShift + growX + growY;
+    } else {
+        // reverse variant had reduced growth, but a higher base
+        const growX = distanceX * lineShiftGrowFactorX * 0.5;
+        const growY = distanceY * lineShiftGrowFactorY * 0.5;
+
+        return baseLineShift * 2 + growX + growY;
+    }
+});
 
 const paths = computed(() => {
-    if (!position.value || !offsets.value) {
+    const position = connectionPosition.value;
+    const offsets = lineOffsets.value;
+
+    if (!position || !offsets) {
         return [];
     }
 
-    const lines = [...Array(offsets.value.numOffsets).keys()].map((offsetIndex) => {
-        const startOffset = offsets.value.startOffsets[offsetIndex] || 0;
-        const endOffset = offsets.value.endOffsets[offsetIndex] || 0;
-        return [
-            [position.value!.startX, position.value!.startY + startOffset],
-            [position.value!.startX + lineShift, position.value!.startY + startOffset],
-            [position.value!.endX - lineShift, position.value!.endY + endOffset],
-            [position.value!.endX, position.value!.endY + endOffset],
-        ] as [number, number][];
+    const forward = position.endX >= position.startX;
+
+    const lines = [...Array(offsets.numOffsets).keys()].map((offsetIndex) => {
+        const startOffset = offsets.startOffsets[offsetIndex] || 0;
+        const endOffset = offsets.endOffsets[offsetIndex] || 0;
+
+        if (forward) {
+            return [
+                [position.startX, position.startY + startOffset],
+                [position.startX + lineShiftX.value, position.startY + startOffset],
+                [position.endX - lineShiftX.value, position.endY + endOffset],
+                [position.endX, position.endY + endOffset],
+            ] as [number, number][];
+        } else {
+            // reverse variant has two additional control points to smooth curve
+            const lineShiftY = (position.endY - position.startY) / 2;
+
+            return [
+                [position.startX, position.startY + startOffset],
+                [position.startX + lineShiftX.value, position.startY + startOffset],
+                [position.startX + lineShiftX.value, position.startY + lineShiftY + startOffset],
+                [position.endX - lineShiftX.value, position.endY - lineShiftY + endOffset],
+                [position.endX - lineShiftX.value, position.endY + endOffset],
+                [position.endX, position.endY + endOffset],
+            ] as [number, number][];
+        }
     });
 
     return lines.map((l) => curve(l)!);
@@ -135,23 +189,23 @@ const connectionClass = computed(() => {
 });
 
 function generateLineOffsets(inputIsMappedOver: boolean, outputIsMappedOver: boolean) {
-    const _offsets = [-2 * ribbonMargin, -ribbonMargin, 0, ribbonMargin, 2 * ribbonMargin];
+    const offsets = [-2 * ribbonMargin, -ribbonMargin, 0, ribbonMargin, 2 * ribbonMargin];
     let startOffsets = [0];
     let endOffsets = [0];
     let numOffsets = 1;
 
     if (outputIsMappedOver) {
-        startOffsets = _offsets;
-        numOffsets = _offsets.length;
+        startOffsets = offsets;
+        numOffsets = offsets.length;
     }
     if (inputIsMappedOver) {
-        endOffsets = _offsets;
-        numOffsets = _offsets.length;
+        endOffsets = offsets;
+        numOffsets = offsets.length;
     }
     return { numOffsets, startOffsets, endOffsets };
 }
 
-const lineOffsets = {
+const lineOffsetDictionary = {
     "false-false": generateLineOffsets(false, false),
     "true-false": generateLineOffsets(true, false),
     "false-true": generateLineOffsets(false, true),
@@ -159,7 +213,7 @@ const lineOffsets = {
 } as const;
 
 function getLineOffsets(inputIsMappedOver?: boolean, outputIsMappedOver?: boolean) {
-    return lineOffsets[`${inputIsMappedOver ?? false}-${outputIsMappedOver ?? false}`];
+    return lineOffsetDictionary[`${inputIsMappedOver ?? false}-${outputIsMappedOver ?? false}`];
 }
 
 function keyForIndex(index: number) {
