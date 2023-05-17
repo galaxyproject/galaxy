@@ -750,7 +750,7 @@ QUnit.test("select-content", function (assert) {
             { id: "id1", name: "name1", hid: "hid1", src: "hda" },
         ],
         hdca: [
-            { id: "id2", name: "name2", hid: "hid2", src: "hdca"  },
+            { id: "id2", name: "name2", hid: "hid2", src: "hdca", map_over_type: "map"  },
             { id: "id3", name: "name3", hid: "hid3", src: "hdca"  },
             { id: "id4", name: "name4", hid: "hid4", src: "hdca"  },
         ],
@@ -867,7 +867,7 @@ QUnit.test("select-content", function (assert) {
     select.model.set("value", { values: [{ id: "id2", src: "hdca", name: "name2" }] });
     assert.ok(select.config[select.model.get("current")].src == "hdca", "Matched collection field");
     assert.ok(
-        JSON.stringify(select.value()) == '{"values":[{"id":"id2","src":"hdca"}],"batch":true}',
+        JSON.stringify(select.value()) == '{"values":[{"id":"id2","src":"hdca","map_over_type":"map"}],"batch":true}',
         "Checking collection value"
     );
 
