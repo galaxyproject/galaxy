@@ -727,8 +727,9 @@ def test_config_parse_s3():
             assert object_store.is_secure is True
             assert object_store.conn_path == "/"
 
-            assert object_store.cache_size == 1000
-            assert object_store.staging_path == "database/object_store_cache"
+            cache_target = object_store.cache_target
+            assert cache_target.size == 1000
+            assert cache_target.path == "database/object_store_cache"
             assert object_store.extra_dirs["job_work"] == "database/job_working_directory_s3"
             assert object_store.extra_dirs["temp"] == "database/tmp_s3"
 
@@ -885,8 +886,9 @@ def test_config_parse_cloud():
             assert object_store.is_secure is True
             assert object_store.conn_path == "/"
 
-            assert object_store.cache_size == 1000.0
-            assert object_store.staging_path == "database/object_store_cache"
+            cache_target = object_store.cache_target
+            assert cache_target.size == 1000.0
+            assert cache_target.path == "database/object_store_cache"
             assert object_store.extra_dirs["job_work"] == "database/job_working_directory_cloud"
             assert object_store.extra_dirs["temp"] == "database/tmp_cloud"
 
@@ -951,8 +953,9 @@ def test_config_parse_cloud_noauth_for_aws():
             assert object_store.is_secure is True
             assert object_store.conn_path == "/"
 
-            assert object_store.cache_size == 1000.0
-            assert object_store.staging_path == "database/object_store_cache"
+            cache_target = object_store.cache_target
+            assert cache_target.size == 1000.0
+            assert cache_target.path == "database/object_store_cache"
             assert object_store.extra_dirs["job_work"] == "database/job_working_directory_cloud"
             assert object_store.extra_dirs["temp"] == "database/tmp_cloud"
 
@@ -1028,8 +1031,9 @@ def test_config_parse_azure():
             assert object_store.container_name == "unique_container_name"
             assert object_store.max_chunk_size == 250
 
-            assert object_store.cache_size == 100
-            assert object_store.staging_path == "database/object_store_cache"
+            cache_target = object_store.cache_target
+            assert cache_target.size == 100
+            assert cache_target.path == "database/object_store_cache"
             assert object_store.extra_dirs["job_work"] == "database/job_working_directory_azure"
             assert object_store.extra_dirs["temp"] == "database/tmp_azure"
 
