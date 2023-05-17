@@ -35,6 +35,7 @@ from galaxy.managers.tool_data import ToolDataImportManager
 from galaxy.metadata.set_metadata import set_metadata_portable
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.objectstore import BaseObjectStore
+from galaxy.objectstore.caching import check_caches
 from galaxy.schema.tasks import (
     ComputeDatasetHashTaskRequest,
     GenerateHistoryContentDownload,
@@ -406,3 +407,8 @@ def prune_history_audit_table(sa_session: galaxy_scoped_session):
 def cleanup_short_term_storage(storage_monitor: ShortTermStorageMonitor):
     """Cleanup short term storage."""
     storage_monitor.cleanup()
+
+
+@galaxy_task(action="prune object store cache directories")
+def clean_object_store_caches(object_store: BaseObjectStore):
+    check_caches(object_store.cache_targets())

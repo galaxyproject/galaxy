@@ -30,6 +30,11 @@ class CacheTarget(NamedTuple):
     limit: float  # cache limit as a percent
 
 
+def check_caches(targets: List[CacheTarget]):
+    for target in targets:
+        check_cache(target)
+
+
 def check_cache(cache_target: CacheTarget):
     """Run a step of the cache monitor."""
     total_size, file_list = _get_cache_size_files(cache_target.path)
@@ -103,23 +108,36 @@ def parse_caching_config_dict_from_xml(config_xml):
     if len(cache_els) > 0:
         c_xml = config_xml.findall("cache")[0]
         cache_size = float(c_xml.get("size", -1))
-
         staging_path = c_xml.get("path", None)
+        monitor = c_xml.get("monitor", "auto")
 
         cache_dict = {
             "size": cache_size,
             "path": staging_path,
+            "monitor": monitor,
         }
     else:
         cache_dict = {}
     return cache_dict
 
 
-def enable_cache_monitor(config, config_dict):
-    if getattr(config, "disable_process_management", False):
-        return True
-    return config_dict.get("enable_cache_monitor", True)
+def enable_cache_monitor(config, config_dict) -> Tuple[bool, int]:
+    cache_config_dict = config_dict.get("cache") or {}
+    default_interval = getattr(config, "object_store_cache_monitor_interval", 600)
+    interval = cache_config_dict.get("monitor_interval") or default_interval
 
+    if getattr(config, "disable_process_management", False):
+        return True, interval
+
+    if config_dict.get("enable_cache_monitor", False) is False:
+        return False, interval
+
+    default_cache_driver = getattr(config, "object_store_cache_monitor_driver", "auto")
+    monitor = cache_config_dict.get("monitor", default_cache_driver)
+    if monitor == "auto":
+        monitor = "celery" if getattr(config, "enable_celery_tasks", False) else "inprocess"
+
+    return monitor == "inprocess", interval
 
 
 class InProcessCacheMonitor:

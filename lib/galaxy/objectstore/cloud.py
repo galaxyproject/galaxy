@@ -87,7 +87,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
         bucket_dict = config_dict["bucket"]
         connection_dict = config_dict.get("connection", {})
         cache_dict = config_dict.get("cache") or {}
-        self.enable_cache_monitor = enable_cache_monitor(config, config_dict)
+        self.enable_cache_monitor, self.cache_monitor_interval = enable_cache_monitor(config, config_dict)
 
         self.provider = config_dict["provider"]
         self.credentials = config_dict["auth"]
@@ -125,7 +125,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
         if self.cache_size != -1 and self.enable_cache_monitor:
             # Convert GBs to bytes for comparison
             self.cache_size = self.cache_size * 1073741824
-            self.cache_monitor = InProcessCacheMonitor(self.cache_target, 30)
+            self.cache_monitor = InProcessCacheMonitor(self.cache_target, self.cache_monitor_interval)
 
     @staticmethod
     def _get_connection(provider, credentials):

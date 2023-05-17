@@ -99,7 +99,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         auth_dict = config_dict["auth"]
         container_dict = config_dict["container"]
         cache_dict = config_dict.get("cache") or {}
-        self.enable_cache_monitor = enable_cache_monitor(config, config_dict)
+        self.enable_cache_monitor, self.cache_monitor_interval = enable_cache_monitor(config, config_dict)
 
         self.account_name = auth_dict.get("account_name")
         self.account_key = auth_dict.get("account_key")
@@ -122,7 +122,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         if self.cache_size != -1 and self.enable_cache_monitor:
             # Convert GBs to bytes for comparison
             self.cache_size = self.cache_size * 1073741824
-            self.cache_monitor = InProcessCacheMonitor(self.cache_target, 30)
+            self.cache_monitor = InProcessCacheMonitor(self.cache_target, self.cache_monitor_interval)
 
     def to_dict(self):
         as_dict = super().to_dict()
