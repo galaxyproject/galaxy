@@ -88,7 +88,6 @@ function drawChart() {
     const chartWidth = props.width - yAxisWidth;
     const chartHeight = props.height;
     const chartXStart = yAxisWidth;
-    const minBarHeight = 10;
     const tickFontSize = 14;
 
     const svg = d3.select(barChart.value).append("svg").attr("width", props.width).attr("height", props.height);
@@ -112,7 +111,7 @@ function drawChart() {
 
     const yScale = d3
         .scaleLinear()
-        .range([chartHeight - xAxisHeight - minBarHeight, 0])
+        .range([chartHeight - xAxisHeight, 0])
         .domain([0, d3.max(data, (d) => d.value) || 0]);
 
     const yAxis = d3
@@ -127,7 +126,7 @@ function drawChart() {
 
     g.append("g")
         .attr("class", "axis")
-        .attr("transform", "translate(0," + (chartHeight - xAxisHeight - minBarHeight) + ")")
+        .attr("transform", "translate(0," + (chartHeight - xAxisHeight) + ")")
         .call(xAxis);
 
     g.append("g").attr("class", "axis").call(yAxis);
@@ -139,14 +138,12 @@ function drawChart() {
         .data(data)
         .enter()
         .append("rect")
-        .attr("class", "bar")
+        .classed("bar", true)
         .attr("x", (d) => xScale(d.id) || 0)
         .attr("y", (d) => yScale(d.value) - xAxisHeight)
         .attr("width", xScale.bandwidth())
-        .attr("height", (d) => chartHeight - yScale(d.value) + minBarHeight)
-        .attr("fill", (d) => entryColor(d))
-        .attr("stroke", "black")
-        .attr("stroke-width", 2);
+        .attr("height", (d) => chartHeight - yScale(d.value))
+        .attr("fill", (d) => entryColor(d));
 
     return bars;
 }
@@ -171,7 +168,7 @@ function createLegend() {
         .selectAll("g")
         .data(data)
         .join("g")
-        .attr("class", "legend-item")
+        .classed("legend-item", true)
         .attr("transform", (d, i) => `translate(0,${topMargin + i * entrySpacing})`);
 
     entries
@@ -202,14 +199,14 @@ function setupEvents() {
 
 function setupTooltipEvents() {
     chartBars.value
-        ?.on("mouseenter", (event, d) => {
+        ?.on("mouseenter", (event: MouseEvent, d) => {
             tooltipDataPoint.value = d;
             emit("show-tooltip", d, event.pageX, event.pageY);
         })
-        .on("mousemove", (event) => {
+        .on("mousemove", (event: MouseEvent) => {
             // Correct the page coordinates to compensate for scrolling offset
-            const correctedX = event.pageX - window.pageXOffset;
-            const correctedY = event.pageY - window.pageYOffset;
+            const correctedX = event.pageX - window.scrollX;
+            const correctedY = event.pageY - window.scrollY;
             setTooltipPosition(correctedX, correctedY);
         })
         .on("mouseleave", () => {
@@ -219,10 +216,13 @@ function setupTooltipEvents() {
 }
 
 function setupSelectionEvents() {
+    chartBars.value?.classed("clickable", true);
     chartBars.value?.on("click", (event, d) => {
         event.stopPropagation();
         toggleSelection(d);
     });
+
+    legendEntries.value?.classed("clickable", true);
     legendEntries.value?.on("click", (event, d) => {
         event.stopPropagation();
         toggleSelection(d);
@@ -267,10 +267,28 @@ function entryColor(d: DataValuePoint): string {
     return color(`${d.id}`);
 }
 
+const tooltipMargin = 40;
+
 function setTooltipPosition(mouseX: number, mouseY: number): void {
-    if (chartTooltip.value) {
-        chartTooltip.value.style.left = `${mouseX}px`;
-        chartTooltip.value.style.top = `${mouseY}px`;
+    const tooltip = chartTooltip.value;
+
+    if (tooltip) {
+        let x = mouseX;
+        let y = mouseY;
+
+        const width = tooltip.offsetWidth;
+        const height = tooltip.offsetHeight;
+
+        if (x + width + tooltipMargin > window.innerWidth) {
+            x = window.innerWidth - width - tooltipMargin;
+        }
+
+        if (y + height + tooltipMargin > window.innerHeight) {
+            y = window.innerHeight - height - tooltipMargin;
+        }
+
+        tooltip.style.left = `${x}px`;
+        tooltip.style.top = `${y}px`;
     }
 }
 </script>
@@ -307,7 +325,7 @@ function setTooltipPosition(mouseX: number, mouseY: number): void {
     </b-card>
 </template>
 
-<style lang="css" scoped>
+<style lang="scss" scoped>
 .chart-description {
     text-align: center;
     margin-bottom: 20px;
@@ -320,21 +338,35 @@ function setTooltipPosition(mouseX: number, mouseY: number): void {
 
 .bar-chart {
     float: right;
-}
 
-.bar {
-    cursor: pointer;
-}
+    &:deep(svg) {
+        overflow: visible;
+    }
 
-.legend-item {
-    font-size: 14px;
+    &:deep(.bar.clickable) {
+        cursor: pointer;
+    }
 }
 
 .legend {
     float: left;
     height: 400px;
-    overflow-x: hidden;
-    overflow-y: auto;
+
+    &:deep(svg) {
+        overflow: visible;
+    }
+
+    &:deep(.legend-item) {
+        font-size: 14px;
+
+        &.clickable {
+            cursor: pointer;
+
+            &:hover {
+                text-decoration: underline;
+            }
+        }
+    }
 }
 
 .chart-tooltip {
