@@ -1,6 +1,6 @@
 import { useAnimationFrame } from "./sensors/animationFrame";
 
-export function useAnimationFrameThrottle() {
+export function useAnimationFrameThrottle(animationFramePriority = 0) {
     let lastCallback: (() => void) | null = null;
 
     const throttle = (callback: () => void) => {
@@ -12,7 +12,7 @@ export function useAnimationFrameThrottle() {
             lastCallback();
             lastCallback = null;
         }
-    });
+    }, animationFramePriority);
 
     return {
         throttle,

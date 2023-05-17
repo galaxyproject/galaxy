@@ -1,16 +1,40 @@
 import { onScopeDispose } from "vue";
 
 type CallbackFunction = (timestamp: number) => void;
+interface CallbackGroup {
+    priority: number;
+    callbacks: CallbackFunction[];
+}
 
-const callbacks: CallbackFunction[] = [];
+const callbackGroups: CallbackGroup[] = [];
 let loopActive = false;
 
 function animationFrameLoop(timestamp: number) {
-    callbacks.forEach((callback) => {
-        callback(timestamp);
+    callbackGroups.forEach((group) => {
+        group.callbacks.forEach((callback) => {
+            callback(timestamp);
+        });
     });
 
     window.requestAnimationFrame(animationFrameLoop);
+}
+
+function getCallbackGroup(priority: number): CallbackGroup {
+    let group = callbackGroups.find((g) => g.priority === priority);
+
+    if (group) {
+        return group;
+    } else {
+        group = {
+            priority,
+            callbacks: [],
+        };
+
+        callbackGroups.push(group);
+        callbackGroups.sort((a, b) => b.priority - a.priority);
+
+        return group;
+    }
 }
 
 /**
@@ -18,10 +42,13 @@ function animationFrameLoop(timestamp: number) {
  * This can serve as a performance effective alternative for frequently firing events (eg, scroll events)
  * @see https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame
  * @param callback
+ * @param priority higher priority callbacks get called first
  * @returns a stop function, to remove the callback from the animation loop
  */
-export function useAnimationFrame(callback: CallbackFunction) {
-    callbacks.push(callback);
+export function useAnimationFrame(callback: CallbackFunction, priority = 0) {
+    const group = getCallbackGroup(priority);
+
+    group.callbacks.push(callback);
 
     if (!loopActive) {
         window.requestAnimationFrame(animationFrameLoop);
@@ -29,10 +56,10 @@ export function useAnimationFrame(callback: CallbackFunction) {
     }
 
     const stop = () => {
-        const index = callbacks.indexOf(callback);
+        const index = group.callbacks.indexOf(callback);
 
         if (index !== -1) {
-            callbacks.splice(index, 1);
+            group.callbacks.splice(index, 1);
         }
     };
 

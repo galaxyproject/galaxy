@@ -83,21 +83,6 @@
                 top: 0px;
                 overflow: hidden;
             }
-            .canvas-background {
-                @extend .rounded;
-                background: $workflow-editor-bg;
-                background-size: $workflow-editor-grid-size $workflow-editor-grid-size;
-                background-image: linear-gradient(to right, $workflow-editor-grid-color 1px, transparent 1px),
-                    linear-gradient(to bottom, $workflow-editor-grid-color 1px, transparent 1px);
-                // Set width and height to 10 times larger than canvas, so that we can zoom out and still see the grid
-                width: 1000%;
-                height: 1000%;
-                // Set the initial position to the center of the canvas, again so that we can zoom out and still see the grid in the top left direction
-                top: -500%;
-                left: -500%;
-                transform-origin: center;
-                position: relative;
-            }
             .base-terminal {
                 @extend .fa;
                 @extend .fa-circle;
