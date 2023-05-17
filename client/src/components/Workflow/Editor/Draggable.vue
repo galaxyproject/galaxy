@@ -5,6 +5,7 @@ import { useAnimationFrameSize } from "@/composables/sensors/animationFrameSize"
 import { useAnimationFrameThrottle } from "@/composables/throttle";
 import { useDraggable } from "./composables/useDraggable.js";
 import type { ZoomTransform } from "d3-zoom";
+import { useMagnetSnap } from "./Tools/magnetSnap";
 
 const props = defineProps({
     rootOffset: {
@@ -74,10 +75,22 @@ const onMove = (position: Position, event: DragEvent) => {
     });
 };
 
+const { snappedPosition } = useMagnetSnap();
+
 const onEnd = (position: Position, event: DragEvent) => {
     if (dragImg) {
         document.body.removeChild(dragImg);
     }
+
+    const newPosition = {
+        unscaled: { ...position, ...size },
+        x: (position.x - props.rootOffset.x - transform!.value.x) / transform!.value.k,
+        y: (position.y - props.rootOffset.y - transform!.value.y) / transform!.value.k,
+    };
+
+    const snapped = snappedPosition(newPosition);
+
+    emit("move", { ...newPosition, ...snapped }, event);
     emit("stop");
     emit("mouseup");
 };
