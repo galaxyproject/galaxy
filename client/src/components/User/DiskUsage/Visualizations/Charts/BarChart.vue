@@ -20,7 +20,7 @@ interface BarChartProps {
 const props = withDefaults(defineProps<BarChartProps>(), {
     title: "Bar Chart",
     description: undefined,
-    width: 700,
+    width: 720,
     height: 400,
     enableTooltips: true,
     enableSelection: false,
@@ -82,13 +82,14 @@ function clearChart() {
 const color = d3.scaleOrdinal(d3.schemeCategory10);
 
 function drawChart() {
-    const yAxisWidth = 50;
+    const yAxisWidth = 70;
     const xAxisHeight = 5;
     const data = props.data;
     const chartWidth = props.width - yAxisWidth;
     const chartHeight = props.height;
     const chartXStart = yAxisWidth;
     const minBarHeight = 10;
+    const tickFontSize = 14;
 
     const svg = d3.select(barChart.value).append("svg").attr("width", props.width).attr("height", props.height);
 
@@ -120,7 +121,9 @@ function drawChart() {
         .tickFormat(function (d) {
             return props.valueFormatter(d);
         })
-        .ticks(5);
+        .ticks(5)
+        .tickSizeInner(5)
+        .tickSizeOuter(0);
 
     g.append("g")
         .attr("class", "axis")
@@ -129,7 +132,7 @@ function drawChart() {
 
     g.append("g").attr("class", "axis").call(yAxis);
 
-    g.selectAll(".tick text").attr("class", "bar-tick-text");
+    g.selectAll(".tick text").style("font-size", `${tickFontSize}px`);
 
     const bars = g
         .selectAll(".bar")
@@ -321,10 +324,6 @@ function setTooltipPosition(mouseX: number, mouseY: number): void {
 
 .bar {
     cursor: pointer;
-}
-
-.bar-tick-text {
-    font-size: 14px;
 }
 
 .legend-item {
