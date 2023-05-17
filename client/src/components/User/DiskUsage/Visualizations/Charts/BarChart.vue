@@ -20,7 +20,7 @@ interface BarChartProps {
 const props = withDefaults(defineProps<BarChartProps>(), {
     title: "Bar Chart",
     description: undefined,
-    width: 600,
+    width: 700,
     height: 400,
     enableTooltips: true,
     enableSelection: false,
@@ -88,6 +88,7 @@ function drawChart() {
     const chartWidth = props.width - yAxisWidth;
     const chartHeight = props.height;
     const chartXStart = yAxisWidth;
+    const minBarHeight = 10;
 
     const svg = d3.select(barChart.value).append("svg").attr("width", props.width).attr("height", props.height);
 
@@ -110,7 +111,7 @@ function drawChart() {
 
     const yScale = d3
         .scaleLinear()
-        .range([chartHeight - xAxisHeight, 0])
+        .range([chartHeight - xAxisHeight - minBarHeight, 0])
         .domain([0, d3.max(data, (d) => d.value) || 0]);
 
     const yAxis = d3
@@ -123,7 +124,7 @@ function drawChart() {
 
     g.append("g")
         .attr("class", "axis")
-        .attr("transform", "translate(0," + (chartHeight - xAxisHeight) + ")")
+        .attr("transform", "translate(0," + (chartHeight - xAxisHeight - minBarHeight) + ")")
         .call(xAxis);
 
     g.append("g").attr("class", "axis").call(yAxis);
@@ -139,8 +140,10 @@ function drawChart() {
         .attr("x", (d) => xScale(d.id) || 0)
         .attr("y", (d) => yScale(d.value) - xAxisHeight)
         .attr("width", xScale.bandwidth())
-        .attr("height", (d) => chartHeight - yScale(d.value))
-        .attr("fill", (d) => entryColor(d));
+        .attr("height", (d) => chartHeight - yScale(d.value) + minBarHeight)
+        .attr("fill", (d) => entryColor(d))
+        .attr("stroke", "black")
+        .attr("stroke-width", 2);
 
     return bars;
 }
