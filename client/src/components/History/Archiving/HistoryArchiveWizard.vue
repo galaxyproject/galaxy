@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { BAlert, BCard, BButton, BTab, BTabs } from "bootstrap-vue";
+import { BAlert, BCard, BTab, BTabs } from "bootstrap-vue";
 import { useFileSources } from "@/composables/fileSources";
 import { faArchive } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { RouterLink } from "vue-router";
 import HistoryArchiveExportSelector from "@/components/History/Archiving/HistoryArchiveExportSelector.vue";
+import HistoryArchiveSimple from "@/components/History/Archiving/HistoryArchiveSimple.vue";
 import { useHistoryStore, type HistorySummary } from "@/stores/historyStore";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import { useToast } from "@/composables/toast";
@@ -76,30 +77,20 @@ async function onArchiveHistory(exportRecordId?: string) {
                 <router-link :to="archivedHistoriesRoute">Archived Histories</router-link> section.
             </b-alert>
 
-            <h2 class="h-md">How do you want to archive this history?</h2>
-            <b-card no-body class="mt-3">
-                <b-tabs pills card vertical lazy>
-                    <b-tab id="keep-storage-tab" title="Keep storage space" active>
-                        <p>
-                            If you want to remove the history from your <i>active histories</i> but keep it around for
-                            reference, you can move it to the
-                            <router-link :to="archivedHistoriesRoute">Archived Histories</router-link> section, by
-                            clicking the button below.
-                        </p>
-                        <p>
-                            You can undo this action at any time, and the history will be moved back to your
-                            <i>active histories</i>.
-                        </p>
-
-                        <b-button class="archive-history-btn mt-3" variant="primary" @click="onArchiveHistory()">
-                            Archive history
-                        </b-button>
-                    </b-tab>
-                    <b-tab v-if="hasWritableFileSources" id="free-storage-tab" title="Free storage space">
-                        <history-archive-export-selector :history="history" @onArchive="onArchiveHistory" />
-                    </b-tab>
-                </b-tabs>
-            </b-card>
+            <history-archive-simple v-if="!hasWritableFileSources" :history="history" @onArchive="onArchiveHistory" />
+            <div v-else>
+                <h2 class="h-md">How do you want to archive this history?</h2>
+                <b-card no-body class="mt-3">
+                    <b-tabs pills card vertical lazy>
+                        <b-tab id="keep-storage-tab" title="Keep storage space" active>
+                            <history-archive-simple :history="history" @onArchive="onArchiveHistory" />
+                        </b-tab>
+                        <b-tab v-if="hasWritableFileSources" id="free-storage-tab" title="Free storage space">
+                            <history-archive-export-selector :history="history" @onArchive="onArchiveHistory" />
+                        </b-tab>
+                    </b-tabs>
+                </b-card>
+            </div>
         </div>
     </div>
 </template>
