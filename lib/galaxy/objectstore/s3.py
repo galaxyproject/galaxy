@@ -25,6 +25,7 @@ from galaxy.exceptions import (
 )
 from galaxy.util import (
     directory_hash_id,
+    nice_size,
     string_as_bool,
     umask_fix_perms,
     unlink,
@@ -32,10 +33,7 @@ from galaxy.util import (
 )
 from galaxy.util.path import safe_relpath
 from galaxy.util.sleeper import Sleeper
-from . import (
-    ConcreteObjectStore,
-    convert_bytes,
-)
+from . import ConcreteObjectStore
 from .s3_multipart_upload import multipart_upload
 
 NO_BOTO_ERROR_MESSAGE = (
@@ -256,8 +254,8 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
             if total_size > cache_limit:
                 log.info(
                     "Initiating cache cleaning: current cache size: %s; clean until smaller than: %s",
-                    convert_bytes(total_size),
-                    convert_bytes(cache_limit),
+                    nice_size(total_size),
+                    nice_size(cache_limit),
                 )
                 # How much to delete? If simply deleting up to the cache-10% limit,
                 # is likely to be deleting frequently and may run the risk of hitting
@@ -297,7 +295,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
                 #     % (i, file_name, convert_bytes(f[2]), file_date, \
                 #     convert_bytes(deleted_amount), convert_bytes(delete_this_much)))
             else:
-                log.debug("Cache cleaning done. Total space freed: %s", convert_bytes(deleted_amount))
+                log.debug("Cache cleaning done. Total space freed: %s", nice_size(deleted_amount))
                 return
 
     def _get_bucket(self, bucket_name):
