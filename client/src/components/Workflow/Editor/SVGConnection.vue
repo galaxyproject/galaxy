@@ -99,7 +99,7 @@ const baseLineShift = 15;
 const lineShiftGrowFactorX = 0.15;
 
 // how much the y distance influences line shift
-const lineShiftGrowFactorY = 0.1;
+const lineShiftGrowFactorY = 0.08;
 
 const lineShiftX = computed(() => {
     const position = connectionPosition.value;
@@ -108,21 +108,19 @@ const lineShiftX = computed(() => {
         return baseLineShift;
     }
 
-    const distanceX = position.endX - position.startX;
+    const distanceX = Math.abs(position.endX - position.startX - baseLineShift);
     const distanceY = Math.abs(position.endY - position.startY);
-
-    const adjustedDistanceX = Math.max(distanceX - baseLineShift, 0);
 
     const forward = position.endX >= position.startX;
 
     if (forward) {
-        const growX = adjustedDistanceX * lineShiftGrowFactorX;
+        const growX = distanceX * lineShiftGrowFactorX;
         const growY = distanceY * lineShiftGrowFactorY;
 
         return baseLineShift + growX + growY;
     } else {
         // reverse variant had reduced growth, but a higher base
-        const growX = adjustedDistanceX * lineShiftGrowFactorX * 0.5;
+        const growX = distanceX * lineShiftGrowFactorX * 0.5;
         const growY = distanceY * lineShiftGrowFactorY * 0.5;
 
         return baseLineShift * 2 + growX + growY;
