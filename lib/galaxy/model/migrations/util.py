@@ -151,7 +151,7 @@ class DropIndex(DDLOperation):
         self.table_name = table_name
 
     def execute(self) -> None:
-        op.drop_index(self.index_name, self.table_name)
+        op.drop_index(self.index_name, table_name=self.table_name)
 
     def pre_execute_check(self) -> bool:
         return index_exists(self.index_name, self.table_name, False)
