@@ -92,9 +92,15 @@ const connectionIsValid = computed(() => {
 
 const lineOffsets = computed(() => getLineOffsets(inputIsMappedOver.value, outputIsMappedOver.value));
 
+// minimum line shift
 const baseLineShift = 15;
+
+// how much the x distance influences line shift
 const lineShiftGrowFactorX = 0.15;
+
+// how much the y distance influences line shift
 const lineShiftGrowFactorY = 0.1;
+
 const lineShiftX = computed(() => {
     const position = connectionPosition.value;
 
@@ -115,22 +121,12 @@ const lineShiftX = computed(() => {
 
         return baseLineShift + growX + growY;
     } else {
+        // reverse variant had reduced growth, but a higher base
         const growX = adjustedDistanceX * lineShiftGrowFactorX * 0.5;
         const growY = distanceY * lineShiftGrowFactorY * 0.5;
 
         return baseLineShift * 2 + growX + growY;
     }
-});
-
-const lineShiftY = computed(() => {
-    const position = connectionPosition.value;
-
-    if (!position) {
-        return 0;
-    }
-
-    const distanceY = position.endY - position.startY;
-    return distanceY / 2;
 });
 
 const paths = computed(() => {
@@ -155,11 +151,14 @@ const paths = computed(() => {
                 [position.endX, position.endY + endOffset],
             ] as [number, number][];
         } else {
+            // reverse variant has two additional control points to smooth curve
+            const lineShiftY = (position.endY - position.startY) / 2;
+
             return [
                 [position.startX, position.startY + startOffset],
                 [position.startX + lineShiftX.value, position.startY + startOffset],
-                [position.startX + lineShiftX.value, position.startY + lineShiftY.value + startOffset],
-                [position.endX - lineShiftX.value, position.endY - lineShiftY.value + endOffset],
+                [position.startX + lineShiftX.value, position.startY + lineShiftY + startOffset],
+                [position.endX - lineShiftX.value, position.endY - lineShiftY + endOffset],
                 [position.endX - lineShiftX.value, position.endY + endOffset],
                 [position.endX, position.endY + endOffset],
             ] as [number, number][];
