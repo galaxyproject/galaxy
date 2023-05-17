@@ -96,6 +96,7 @@ from sqlalchemy.orm import (
     registry,
     relationship,
 )
+from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.sql import exists
 from typing_extensions import Protocol
@@ -6211,6 +6212,14 @@ class HistoryDatasetCollectionAssociation(
     @property
     def job_source_id(self):
         return self.implicit_collection_jobs_id or self.job_id
+
+    def touch(self):
+        # cause an update to be emitted, so that e.g. update_time is incremented and triggers are notified
+        if getattr(self, "name", None):
+            # attribute to flag doesn't really matter as long as it's not null (and primary key also doesn't work)
+            flag_modified(self, "name")
+            if self.collection:
+                flag_modified(self.collection, "collection_type")
 
     def to_hda_representative(self, multiple=False):
         rval = []

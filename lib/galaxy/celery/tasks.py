@@ -133,6 +133,15 @@ def change_datatype(
     set_metadata(hda_manager, ldda_manager, sa_session, dataset_id, model_class)
 
 
+@galaxy_task(action="touch update_time of object")
+def touch(sa_session: galaxy_scoped_session, item_id: int, model_class: str = "HistoryDatasetCollectionAssociation"):
+    if model_class != "HistoryDatasetCollectionAssociation":
+        raise NotImplementedError(f"touch method not implemented for '{model_class}'")
+    item = sa_session.query(model.HistoryDatasetCollectionAssociation).filter_by(id=item_id).one()
+    item.touch()
+    sa_session.flush()
+
+
 @galaxy_task(action="set dataset association metadata")
 def set_metadata(
     hda_manager: HDAManager,

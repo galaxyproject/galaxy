@@ -12,7 +12,7 @@ from typing import (
     Union,
 )
 
-from celery import group
+from celery import chain
 from pydantic import (
     Extra,
     Field,
@@ -28,6 +28,7 @@ from galaxy.celery.tasks import (
     materialize as materialize_task,
     prepare_dataset_collection_download,
     prepare_history_content_download,
+    touch,
     write_history_content_to,
 )
 from galaxy.managers import (
@@ -1429,7 +1430,8 @@ class HistoryItemOperator:
                 if wrapped_task:
                     wrapped_tasks.append(wrapped_task)
             trans.sa_session.flush()
-            group(wrapped_tasks).delay()
+            # chain these for sequential execution. chord would be nice, but requires a non-RPC backend.
+            chain(*wrapped_tasks, touch.si(item_id=item.id, model_class="HistoryDatasetCollectionAssociation")).delay()
 
     def _change_item_datatype(
         self, item: HistoryDatasetAssociation, params: ChangeDatatypeOperationParams, trans: ProvidesHistoryContext
