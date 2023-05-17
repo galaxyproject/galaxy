@@ -1,7 +1,7 @@
 <template>
     <div id="workflow-canvas" class="unified-panel-body workflow-canvas">
         <ZoomControl :zoom-level="scale" :pan="transform" @onZoom="onZoom" @update:pan="panBy" />
-        <ToolPanel />
+        <ToolBar />
         <div
             id="canvas-container"
             ref="canvas"
@@ -65,7 +65,7 @@ import { assertDefined } from "@/utils/assertions";
 import { minZoom, maxZoom } from "./modules/zoomLevels";
 import { useViewportBoundingBox } from "./composables/viewportBoundingBox";
 import AdaptiveGrid from "./AdaptiveGrid.vue";
-import ToolPanel from "./Tools/ToolPanel.vue";
+import ToolBar from "./Tools/ToolBar.vue";
 
 const emit = defineEmits(["transform", "graph-offset", "onRemove", "scrollTo"]);
 const props = defineProps({
