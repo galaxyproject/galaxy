@@ -10,7 +10,9 @@
             </b-alert>
         </div>
         <b-tabs content-class="mt-3">
-            <b-tab @click="updateInfoMessage(newCollectionMessage + ' ' + noQuotaIncreaseMessage)">
+            <b-tab
+                title-link-class="collection-edit-change-genome-nav"
+                @click="updateInfoMessage(newCollectionMessage + ' ' + noQuotaIncreaseMessage)">
                 <template v-slot:title> <font-awesome-icon icon="table" /> &nbsp; {{ l("Database/Build") }}</template>
                 <db-key-provider v-slot="{ item, loading }">
                     <div v-if="loading"><b-spinner label="Loading Database/Builds..."></b-spinner></div>
@@ -24,13 +26,19 @@
                 </db-key-provider>
             </b-tab>
             <SuitableConvertersProvider :id="collection_id" v-slot="{ item }">
-                <b-tab v-if="item && item.length" @click="updateInfoMessage(newCollectionMessage)">
+                <b-tab
+                    v-if="item && item.length"
+                    title-link-class="collection-edit-convert-datatype-nav"
+                    @click="updateInfoMessage(newCollectionMessage)">
                     <template v-slot:title> <font-awesome-icon icon="cog" /> &nbsp; {{ l("Convert") }}</template>
                     <suitable-converters-tab :suitable-converters="item" @clicked-convert="clickedConvert" />
                 </b-tab>
             </SuitableConvertersProvider>
             <ConfigProvider v-slot="{ config }">
-                <b-tab v-if="config.enable_celery_tasks" @click="updateInfoMessage(expectWaitTimeMessage)">
+                <b-tab
+                    v-if="config.enable_celery_tasks"
+                    title-link-class="collection-edit-change-datatype-nav"
+                    @click="updateInfoMessage(expectWaitTimeMessage)">
                     <template v-slot:title>
                         <font-awesome-icon icon="database" /> &nbsp; {{ l("Datatypes") }}
                     </template>
