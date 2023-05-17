@@ -1071,18 +1071,10 @@ def test_check_cache_sanity(tmp_path):
     cache_dir = tmp_path
     path = cache_dir / "a_file_0"
     path.write_text("this is an example file")
-    big_cache_target = CacheTarget(
-        cache_dir,
-        1,
-        .2
-    )
+    big_cache_target = CacheTarget(cache_dir, 1, 0.2)
     check_cache(big_cache_target)
     assert path.exists()
-    small_cache_target = CacheTarget(
-        cache_dir,
-        1,
-        .000000001
-    )
+    small_cache_target = CacheTarget(cache_dir, 1, 0.000000001)
     check_cache(small_cache_target)
     assert not path.exists()
 
