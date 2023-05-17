@@ -485,12 +485,13 @@ const View = Backbone.View.extend({
         return v.history_content_type == "dataset_collection" ? "hdca" : "hda";
     },
 
-    /** Only utilize id and source when specifiying input value **/
+    /** Only utilize id, source and map_over_type when specifiying input value **/
     _pickValue: function (v) {
         if (v && v.values) {
-            v.values = v.values.map((v) => ({
-                id: v.id,
-                src: v.src,
+            v.values = v.values.map((entry) => ({
+                id: entry.id,
+                src: entry.src,
+                map_over_type: entry.map_over_type,
             }));
         }
         return v;
