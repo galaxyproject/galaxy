@@ -27,4 +27,4 @@ def upgrade():
 
 
 def downgrade():
-    drop_index(index_name, table_name, columns)
+    drop_index(index_name, table_name)

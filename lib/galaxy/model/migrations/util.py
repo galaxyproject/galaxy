@@ -25,9 +25,9 @@ def create_index(index_name, table_name, columns):
         op.create_index(index_name, table_name, columns)
 
 
-def drop_index(index_name, table_name, columns):
+def drop_index(index_name, table_name) -> None:
     if index_exists(index_name, table_name):
-        op.drop_index(index_name, table_name)
+        op.drop_index(index_name, table_name=table_name)
 
 
 def column_exists(table_name, column_name):
