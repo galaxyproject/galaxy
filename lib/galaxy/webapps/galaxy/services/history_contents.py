@@ -1429,7 +1429,6 @@ class HistoryItemOperator:
                 wrapped_task = self._change_item_datatype(dataset_instance, params, trans)
                 if wrapped_task:
                     wrapped_tasks.append(wrapped_task)
-            trans.sa_session.execute
             trans.sa_session.flush()
             # chain these for sequential execution. chord would be nice, but requires a non-RPC backend.
             chain(*wrapped_tasks, touch.si(item_id=item.id, model_class="HistoryDatasetCollectionAssociation")).delay()
