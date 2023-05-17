@@ -67,7 +67,7 @@ async function onArchiveHistory(exportRecordId?: string) {
             <b v-else>{{ history.name }}</b>
         </h1>
 
-        <b-alert v-if="isHistoryAlreadyArchived" show variant="success">
+        <b-alert v-if="isHistoryAlreadyArchived" id="history-archived-alert" show variant="success">
             This history has been archived. You can access it from the
             <router-link :to="archivedHistoriesRoute">Archived Histories</router-link> section.
         </b-alert>
@@ -81,7 +81,7 @@ async function onArchiveHistory(exportRecordId?: string) {
             <div v-else>
                 <h2 class="h-md">How do you want to archive this history?</h2>
                 <b-card no-body class="mt-3">
-                    <b-tabs pills card vertical lazy>
+                    <b-tabs pills card vertical lazy class="archival-option-tabs">
                         <b-tab id="keep-storage-tab" title="Keep storage space" active>
                             <history-archive-simple :history="history" @onArchive="onArchiveHistory" />
                         </b-tab>
