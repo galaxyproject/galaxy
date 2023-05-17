@@ -17,10 +17,12 @@ import Heading from "@/components/Common/Heading.vue";
 import { useRouter } from "vue-router/composables";
 import { useToast } from "@/composables/toast";
 import { useConfirmDialog } from "@/composables/confirmDialog";
+import { useHistoryStore } from "@/stores/historyStore";
 
 const router = useRouter();
 const { success: successToast, error: errorToast } = useToast();
 const { confirm } = useConfirmDialog();
+const { getHistoryNameById } = useHistoryStore();
 
 const props = defineProps({
     historyId: {
@@ -149,7 +151,7 @@ async function onPermanentlyDeleteDataset(datasetId: string) {
         <Heading h1 bold class="my-3"> History Storage Overview </Heading>
         <p class="text-justify">
             Here you will find some Graphs displaying the storage taken by datasets in your history:
-            <b>{{ props.historyId }}</b
+            <b>{{ getHistoryNameById(props.historyId) }}</b
             >. You can use these graphs to identify the datasets that take the most space in your history. You can also
             go to the
             <router-link :to="{ name: 'HistoriesOverview' }"><b>Histories Storage Overview</b></router-link> page to see
