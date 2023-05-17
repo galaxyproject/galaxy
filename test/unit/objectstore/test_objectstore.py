@@ -9,6 +9,10 @@ import pytest
 
 from galaxy.exceptions import ObjectInvalid
 from galaxy.objectstore.azure_blob import AzureBlobObjectStore
+from galaxy.objectstore.caching import (
+    CacheTarget,
+    check_cache,
+)
 from galaxy.objectstore.cloud import Cloud
 from galaxy.objectstore.pithos import PithosObjectStore
 from galaxy.objectstore.s3 import S3ObjectStore
@@ -1057,6 +1061,30 @@ def test_config_parse_azure():
 
             extra_dirs = as_dict["extra_dirs"]
             assert len(extra_dirs) == 2
+
+
+def test_check_cache_sanity(tmp_path):
+    # sanity check the caching code - create a 1 gig cache with a single file.
+    # when the cache is allowed to be 20% full the file will exist but when the
+    # cache is only allowed to be a very small fraction full headed toward zero
+    # the file will be deleted
+    cache_dir = tmp_path
+    path = cache_dir / "a_file_0"
+    path.write_text("this is an example file")
+    big_cache_target = CacheTarget(
+        cache_dir,
+        1,
+        .2
+    )
+    check_cache(big_cache_target)
+    assert path.exists()
+    small_cache_target = CacheTarget(
+        cache_dir,
+        1,
+        .000000001
+    )
+    check_cache(small_cache_target)
+    assert not path.exists()
 
 
 class MockDataset:
