@@ -14,7 +14,7 @@
     "rules": {
         // Standard rules
         "no-console": "off",
-        "no-unused-vars": ["error", { "args": "none", "varsIgnorePattern": "[iI]gnoreUnused.*" }],
+        "no-unused-vars": ["error", { "args": "none", "varsIgnorePattern": "_.+" }],
         "prefer-const": "error",
         "one-var": ["error", "never"],
         "curly": "error",
