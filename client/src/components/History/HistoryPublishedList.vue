@@ -57,7 +57,7 @@ const updateFilter = (newVal) => {
 };
 
 const onTagClick = (tag) => {
-    updateFilter(filters.setFilterValue(filterText.value, "tag", tag.label));
+    updateFilter(filters.setFilterValue(filterText.value, "tag", tag));
 };
 
 const load = async () => {
