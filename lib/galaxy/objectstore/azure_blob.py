@@ -5,9 +5,8 @@ Object Store plugin for the Microsoft Azure Block Blob Storage system
 import logging
 import os
 import shutil
-import threading
-import time
 from datetime import datetime
+from typing import Optional
 
 try:
     from azure.common import AzureHttpError
@@ -27,11 +26,10 @@ from galaxy.util import (
     unlink,
 )
 from galaxy.util.path import safe_relpath
-from galaxy.util.sleeper import Sleeper
 from . import ConcreteObjectStore
 from .caching import (
     CacheTarget,
-    check_cache,
+    InProcessCacheMonitor,
 )
 
 NO_BLOBSERVICE_ERROR_MESSAGE = (
@@ -93,6 +91,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
     Galaxy and Azure.
     """
 
+    cache_monitor: Optional[InProcessCacheMonitor] = None
     store_type = "azure_blob"
 
     def __init__(self, config, config_dict):
@@ -103,6 +102,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         auth_dict = config_dict["auth"]
         container_dict = config_dict["container"]
         cache_dict = config_dict["cache"]
+        self.enable_cache_monitor = config_dict.get("enable_cache_monitor", True)
 
         self.account_name = auth_dict.get("account_name")
         self.account_key = auth_dict.get("account_key")
@@ -122,14 +122,10 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         self._configure_connection()
 
         # Clean cache only if value is set in galaxy.ini
-        if self.cache_size != -1:
+        if self.cache_size != -1 and self.enable_cache_monitor:
             # Convert GBs to bytes for comparison
             self.cache_size = self.cache_size * 1073741824
-            # Helper for interruptable sleep
-            self.sleeper = Sleeper()
-            self.cache_monitor_thread = threading.Thread(target=self.__cache_monitor)
-            self.cache_monitor_thread.start()
-            log.info("Cache cleaner manager started")
+            self.cache_monitor = InProcessCacheMonitor(self.cache_target, 30)
 
     def to_dict(self):
         as_dict = super().to_dict()
@@ -577,10 +573,6 @@ class AzureBlobObjectStore(ConcreteObjectStore):
     def _get_store_usage_percent(self):
         return 0.0
 
-    ##################
-    # Secret Methods #
-    ##################
-
     @property
     def cache_target(self) -> CacheTarget:
         return CacheTarget(
@@ -589,8 +581,5 @@ class AzureBlobObjectStore(ConcreteObjectStore):
             0.9,
         )
 
-    def __cache_monitor(self):
-        time.sleep(2)  # Wait for things to load before starting the monitor
-        while self.running:
-            check_cache(self.cache_target)
-            self.sleeper.sleep(30)  # Test cache size every 30 seconds?
+    def shutdown(self):
+        self.cache_monitor and self.cache_monitor.shutdown()

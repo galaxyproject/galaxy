@@ -2,15 +2,18 @@
 """
 import logging
 import os
+import threading
 import time
 from typing import (
     List,
+    Optional,
     Tuple,
 )
 
 from typing_extensions import NamedTuple
 
 from galaxy.util import nice_size
+from galaxy.util.sleeper import Sleeper
 
 log = logging.getLogger(__name__)
 
@@ -93,3 +96,42 @@ def _get_cache_size_files(cache_path) -> Tuple[int, FileListT]:
             file_tuple = last_access_time, file_path, file_size
             file_list.append(file_tuple)
     return cache_size, file_list
+
+
+class InProcessCacheMonitor:
+    def __init__(self, cache_target: CacheTarget, interval: int = 30, initial_sleep: Optional[int] = 2):
+        # This Event object is initialized to False
+        # It is set to True in shutdown(), causing
+        # the cache monitor thread to return/terminate
+        self.stop_cache_monitor_event = threading.Event()
+        # Helper for interruptable sleep
+        self.sleeper = Sleeper()
+
+        self.cache_target = cache_target
+        self.interval = interval
+        self.initial_sleep = initial_sleep
+
+        self.cache_monitor_thread = threading.Thread(
+            target=self._cache_monitor,
+            name="CacheMonitorThread",
+        )
+        self.cache_monitor_thread.start()
+
+    def _cache_monitor(self):
+        if self.initial_sleep is not None:
+            time.sleep(
+                self.initial_sleep
+            )  # startup sleep hack - probably originally implemented to prevent contention at app startup
+        while not self.stop_cache_monitor_event.is_set():
+            check_cache(self.cache_target)
+            self.sleeper.sleep(self.interval)
+
+    def shutdown(self):
+        # Set the event object so the cache monitor thread terminates
+        self.stop_cache_monitor_event.set()
+
+        # wake up from sleeping
+        self.sleeper.wake()
+
+        # Wait for the cache monitor thread to join before ending
+        self.cache_monitor_thread.join(5)
