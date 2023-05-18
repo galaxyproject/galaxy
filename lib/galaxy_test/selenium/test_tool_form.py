@@ -115,6 +115,25 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         self._check_dataset_details_for_inttest_value(2)
 
     @selenium_test
+    def test_rerun_deleted_dataset(self):
+        # upload a first dataset that should not become selected on re-run
+        test_path = self.get_filename("1.tabular")
+        self.perform_upload(test_path)
+        self.history_panel_wait_for_hid_ok(1)
+        self.tool_open("column_param")
+        self.tool_form_execute()
+        self.history_panel_wait_for_hid_ok(2)
+        # delete source dataset and click re-run on resulting dataset
+        item = self.history_panel_item_component(hid=1)
+        item.delete_button.wait_for_and_click()
+        item = self.history_panel_item_component(hid=2)
+        item.title.wait_for_and_click()
+        item.rerun_button.wait_for_and_click()
+        # validate form error text
+        input_warning = self.components.tool_form.parameter_error(parameter="input1").wait_for_visible()
+        assert input_warning.text == "parameter 'input1': the previously selected dataset has been deleted. Using default: ''."
+
+    @selenium_test
     def test_rerun_dataset_collection_element(self):
         # upload a first dataset that should not become selected on re-run
         test_path = self.get_filename("1.fasta")
