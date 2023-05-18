@@ -2749,7 +2749,8 @@ class HistoryAudit(Base, RepresentById):
             .subquery()
         )
         q = cls.__table__.delete().where(tuple_(cls.history_id, cls.update_time).in_(select(not_latest_query)))
-        sa_session.execute(q)
+        with sa_session() as session, session.begin():
+            session.execute(q)
 
 
 class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable):
