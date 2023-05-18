@@ -115,6 +115,13 @@ def parse_caching_config_dict_from_xml(config_xml):
     return cache_dict
 
 
+def enable_cache_monitor(config, config_dict):
+    if getattr(config, "disable_process_management", False):
+        return True
+    return config_dict.get("enable_cache_monitor", True)
+
+
+
 class InProcessCacheMonitor:
     def __init__(self, cache_target: CacheTarget, interval: int = 30, initial_sleep: Optional[int] = 2):
         # This Event object is initialized to False

@@ -29,6 +29,7 @@ from galaxy.util.path import safe_relpath
 from . import ConcreteObjectStore
 from .caching import (
     CacheTarget,
+    enable_cache_monitor,
     InProcessCacheMonitor,
     parse_caching_config_dict_from_xml,
 )
@@ -98,7 +99,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         auth_dict = config_dict["auth"]
         container_dict = config_dict["container"]
         cache_dict = config_dict.get("cache") or {}
-        self.enable_cache_monitor = config_dict.get("enable_cache_monitor", True)
+        self.enable_cache_monitor = enable_cache_monitor(config, config_dict)
 
         self.account_name = auth_dict.get("account_name")
         self.account_key = auth_dict.get("account_key")

@@ -34,6 +34,7 @@ from galaxy.util.path import safe_relpath
 from . import ConcreteObjectStore
 from .caching import (
     CacheTarget,
+    enable_cache_monitor,
     InProcessCacheMonitor,
     parse_caching_config_dict_from_xml,
 )
@@ -130,7 +131,6 @@ class CloudConfigMixin:
                 "size": self.cache_size,
                 "path": self.staging_path,
             },
-            "enable_cache_monitor": False,
         }
 
 
@@ -154,7 +154,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         bucket_dict = config_dict["bucket"]
         connection_dict = config_dict.get("connection", {})
         cache_dict = config_dict.get("cache") or {}
-        self.enable_cache_monitor = config_dict.get("enable_cache_monitor", True)
+        self.enable_cache_monitor = enable_cache_monitor(config, config_dict)
 
         self.access_key = auth_dict.get("access_key")
         self.secret_key = auth_dict.get("secret_key")

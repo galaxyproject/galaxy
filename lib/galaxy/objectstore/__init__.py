@@ -1364,7 +1364,9 @@ def type_to_object_store_class(store: str, fsmon: bool = False) -> Tuple[Type[Ba
     return objectstore_class, objectstore_constructor_kwds
 
 
-def build_object_store_from_config(config, fsmon=False, config_xml=None, config_dict=None):
+def build_object_store_from_config(
+    config, fsmon=False, config_xml=None, config_dict=None, disable_process_management=False
+):
     """
     Invoke the appropriate object store.
 
@@ -1378,8 +1380,8 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None, config_
     from_object = "xml"
 
     if config is None and config_dict is not None and "config" in config_dict:
-        # Build a config object from to_dict of an ObjectStore.
-        config = Bunch(**config_dict["config"])
+        # Build an application config object from to_dict of an ObjectStore.
+        config = Bunch(disable_process_management=disable_process_management, **config_dict["config"])
     elif config is None:
         raise Exception(
             "build_object_store_from_config sent None as config parameter and one cannot be recovered from config_dict"

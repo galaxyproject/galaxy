@@ -24,6 +24,7 @@ from galaxy.util import (
 from . import ConcreteObjectStore
 from .caching import (
     CacheTarget,
+    enable_cache_monitor,
     InProcessCacheMonitor,
 )
 from .s3 import parse_config_xml
@@ -66,7 +67,6 @@ class CloudConfigMixin:
                 "size": self.cache_size,
                 "path": self.staging_path,
             },
-            "enable_cache_monitor": False,
         }
 
 
@@ -87,7 +87,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
         bucket_dict = config_dict["bucket"]
         connection_dict = config_dict.get("connection", {})
         cache_dict = config_dict.get("cache") or {}
-        self.enable_cache_monitor = config_dict.get("enable_cache_monitor", True)
+        self.enable_cache_monitor = enable_cache_monitor(config, config_dict)
 
         self.provider = config_dict["provider"]
         self.credentials = config_dict["auth"]
