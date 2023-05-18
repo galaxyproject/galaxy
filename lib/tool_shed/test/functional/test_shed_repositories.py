@@ -1,5 +1,11 @@
+import os
+import tempfile
+
+from galaxy.tool_util.parser import get_tool_source
+from galaxy.util.compression_utils import CompressedFile
 from galaxy.util.resources import resource_path
 from galaxy_test.base import api_asserts
+from tool_shed.test.base.populators import repo_tars
 from ..base.api import ShedApiTestCase
 
 COLUMN_MAKER_PATH = resource_path(__package__, "../test_data/column_maker/column_maker.tar")
@@ -101,3 +107,52 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         first_hit = results.hits[0]
         assert first_hit.repository.name == repository.name
         assert first_hit.repository.times_downloaded == 0
+
+    def test_repo_tars(self):
+        for index, repo_path in enumerate(repo_tars("column_maker")):
+            path = CompressedFile(repo_path).extract(tempfile.mkdtemp())
+            tool_xml_path = os.path.join(path, "column_maker.xml")
+            tool_source = get_tool_source(config_file=tool_xml_path)
+            tool_version = tool_source.parse_version()
+            if index == 0:
+                assert tool_version == "1.1.0"
+            elif index == 1:
+                assert tool_version == "1.2.0"
+            elif index == 2:
+                assert tool_version == "1.3.0"
+            else:
+                raise AssertionError("Wrong number of repo tars returned...")
+
+    def test_reset_on_simple_repository(self):
+        populator = self.populator
+        repository = populator.setup_test_data_repo("column_maker")
+        populator.assert_has_n_installable_revisions(repository, 3)
+        response = self.api_interactor.post(
+            "repositories/reset_metadata_on_repository", data={"repository_id": repository.id}
+        )
+        api_asserts.assert_status_code_is_ok(response)
+        populator.assert_has_n_installable_revisions(repository, 3)
+
+    def test_reset_with_uninstallable_revisions(self):
+        populator = self.populator
+        # setup a repository with 4 revisions but only 3 installable ones due to no version change in a tool
+        repository = populator.setup_test_data_repo("column_maker_with_download_gaps")
+        populator.assert_has_n_installable_revisions(repository, 3)
+        response = self.api_interactor.post(
+            "repositories/reset_metadata_on_repository", data={"repository_id": repository.id}
+        )
+        api_asserts.assert_status_code_is_ok(response)
+        populator.assert_has_n_installable_revisions(repository, 3)
+
+    def test_reset_all(self):
+        populator = self.populator
+        repository = populator.setup_test_data_repo("column_maker_with_download_gaps")
+        populator.assert_has_n_installable_revisions(repository, 3)
+        # reseting one at a time or resetting everything via the web controllers works...
+        # reseting all at once via the API does not work - it breaks the repository
+        response = self.api_interactor.post(
+            "repositories/reset_metadata_on_repositories",
+            data={"payload": "can not be empty because bug in controller"},
+        )
+        api_asserts.assert_status_code_is_ok(response)
+        populator.assert_has_n_installable_revisions(repository, 3)
