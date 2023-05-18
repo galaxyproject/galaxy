@@ -42,7 +42,7 @@
                 <StatelessTags
                     :value="row.item.tags"
                     :disabled="row.item.deleted || published"
-                    @input="onTags"
+                    @input="(tags) => onTags(tags, row.index)"
                     @tag-click="onTagClick" />
             </template>
             <template v-slot:cell(published)="row">
