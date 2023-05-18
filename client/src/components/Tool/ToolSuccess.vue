@@ -8,7 +8,7 @@ import ToolRecommendation from "../ToolRecommendation.vue";
 import ToolSuccessMessage from "./ToolSuccessMessage.vue";
 import Webhook from "@/components/Common/Webhook.vue";
 
-const { config } = useConfig();
+const { config } = useConfig(true);
 const jobStore = useJobStore();
 const router = useRouter();
 
