@@ -43,12 +43,11 @@
                                 <FormDisplay
                                     :id="toolId"
                                     :inputs="formConfig.inputs"
-                                    :errors="formConfig.warnings || {}"
+                                    :errors="toolErrors"
                                     :validation-scroll-to="validationScrollTo"
                                     @onChange="onChange"
                                     @onValidation="onValidation" />
                             </div>
-
                             <div
                                 v-if="emailAllowed(config, user) || remapAllowed || reuseAllowed(user)"
                                 class="mt-2 mb-4">
@@ -193,6 +192,11 @@ export default {
             // not re-rendered when versions change.
             const { id, version } = this.formConfig;
             return id.endsWith(version) ? id : `${id}/${version}`;
+        },
+        toolErrors() {
+            const errors = this.formConfig.errors ?? {};
+            const warnings = this.formConfig.warnings ?? {};
+            return { ...errors, ...warnings };
         },
         tooltip() {
             return `Run tool: ${this.formConfig.name} (${this.formConfig.version})`;
