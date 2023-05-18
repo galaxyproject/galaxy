@@ -1,5 +1,7 @@
 import Workflows from "../Workflow/WorkflowList";
 import { mount } from "@vue/test-utils";
+import { useUserTags } from "composables/user";
+import { computed } from "vue";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { getLocalVue } from "tests/jest/helpers";
@@ -7,9 +9,17 @@ import flushPromises from "flush-promises";
 import { parseISO, formatDistanceToNow } from "date-fns";
 import { PiniaVuePlugin } from "pinia";
 import { createTestingPinia } from "@pinia/testing";
+import Tag from "../TagsMultiselect/Tag";
 
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);
+
+const autocompleteTags = ["#named_user_tags", "abc", "my_tag"];
+jest.mock("composables/user");
+useUserTags.mockReturnValue({
+    userTags: computed(() => autocompleteTags),
+    addLocalTag: jest.fn(),
+});
 
 jest.mock("app");
 
@@ -152,7 +162,7 @@ describe("WorkflowList.vue", () => {
         });
 
         it("update filter when a tag is clicked", async () => {
-            const tags = wrapper.findAll("tbody > tr .tag-name").wrappers;
+            const tags = wrapper.findAllComponents(Tag).wrappers;
             expect(tags.length).toBe(2);
             tags[0].trigger("click");
             flushPromises();
@@ -160,7 +170,7 @@ describe("WorkflowList.vue", () => {
         });
 
         it("update filter when a tag is clicked only happens on first click", async () => {
-            const tags = wrapper.findAll("tbody > tr .tag-name").wrappers;
+            const tags = wrapper.findAllComponents(Tag).wrappers;
             expect(tags.length).toBe(2);
             tags[0].trigger("click");
             tags[0].trigger("click");
