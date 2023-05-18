@@ -39,9 +39,8 @@
                     @toggleDetails="row.toggleDetails" />
             </template>
             <template v-slot:cell(tags)="row">
-                <Tags
-                    :index="row.index"
-                    :tags="row.item.tags"
+                <StatelessTags
+                    :value="row.item.tags"
                     :disabled="row.item.deleted || published"
                     @input="onTags"
                     @tag-click="onTagClick" />
@@ -205,7 +204,7 @@ export default {
     },
     computed: {
         dataProviderParameters() {
-            const extraParams = { search: this.effectiveFilter, skip_step_counts: true };
+            const extraParams = { search: this.normalizeTag(this.effectiveFilter), skip_step_counts: true };
             if (this.published) {
                 extraParams.show_published = true;
                 extraParams.show_shared = false;
@@ -286,6 +285,9 @@ export default {
         },
         onRestore: function (id) {
             this.refresh();
+        },
+        normalizeTag: function (tag) {
+            return tag.replace(/(tag:')#/g, "$1name:");
         },
     },
 };
