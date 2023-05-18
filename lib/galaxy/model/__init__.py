@@ -3733,8 +3733,8 @@ class Dataset(Base, StorableObject, Serializable):
         # serialize Dataset objects only for jobs that can actually modify these models.
         assert serialization_options.serialize_dataset_objects
 
-        def to_int(n):
-            return int(n) if n is not None else 0
+        def to_int(n) -> Optional[int]:
+            return int(n) if n is not None else None
 
         rval = dict_for(
             self,
