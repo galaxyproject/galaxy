@@ -131,7 +131,10 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         item.rerun_button.wait_for_and_click()
         # validate form error text
         input_warning = self.components.tool_form.parameter_error(parameter="input1").wait_for_visible()
-        assert input_warning.text == "parameter 'input1': the previously selected dataset has been deleted. Using default: ''."
+        assert (
+            input_warning.text
+            == "parameter 'input1': the previously selected dataset has been deleted. Using default: ''."
+        )
 
     @selenium_test
     def test_rerun_dataset_collection_element(self):
