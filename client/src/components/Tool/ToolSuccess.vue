@@ -36,10 +36,4 @@ onMounted(() => {
         <Webhook type="tool" :tool-id="jobDef.tool_id" />
         <ToolRecommendation v-if="showRecommendation" :tool-id="jobDef.tool_id" />
     </section>
-    <section v-else>
-        <b-alert v-localize show variant="info">
-            The last job details are not available anymore, but you can obtain this information by accessing the
-            corresponding history items.
-        </b-alert>
-    </section>
 </template>
