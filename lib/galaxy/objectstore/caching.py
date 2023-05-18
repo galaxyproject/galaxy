@@ -98,6 +98,23 @@ def _get_cache_size_files(cache_path) -> Tuple[int, FileListT]:
     return cache_size, file_list
 
 
+def parse_caching_config_dict_from_xml(config_xml):
+    cache_els = config_xml.findall("cache")
+    if len(cache_els) > 0:
+        c_xml = config_xml.findall("cache")[0]
+        cache_size = float(c_xml.get("size", -1))
+
+        staging_path = c_xml.get("path", None)
+
+        cache_dict = {
+            "size": cache_size,
+            "path": staging_path,
+        }
+    else:
+        cache_dict = {}
+    return cache_dict
+
+
 class InProcessCacheMonitor:
     def __init__(self, cache_target: CacheTarget, interval: int = 30, initial_sleep: Optional[int] = 2):
         # This Event object is initialized to False

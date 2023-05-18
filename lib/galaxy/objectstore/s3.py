@@ -35,6 +35,7 @@ from . import ConcreteObjectStore
 from .caching import (
     CacheTarget,
     InProcessCacheMonitor,
+    parse_caching_config_dict_from_xml,
 )
 from .s3_multipart_upload import multipart_upload
 
@@ -70,19 +71,7 @@ def parse_config_xml(config_xml):
         is_secure = string_as_bool(cn_xml.get("is_secure", "True"))
         conn_path = cn_xml.get("conn_path", "/")
 
-        cache_els = config_xml.findall("cache")
-        if len(cache_els) > 0:
-            c_xml = config_xml.findall("cache")[0]
-            cache_size = float(c_xml.get("size", -1))
-
-            staging_path = c_xml.get("path", None)
-
-            cache_dict = {
-                "size": cache_size,
-                "path": staging_path,
-            }
-        else:
-            cache_dict = {}
+        cache_dict = parse_caching_config_dict_from_xml(config_xml)
 
         tag, attrs = "extra_dir", ("type", "path")
         extra_dirs = config_xml.findall(tag)
