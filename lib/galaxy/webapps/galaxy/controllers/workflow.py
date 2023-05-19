@@ -225,7 +225,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         return self.published_list_grid(trans, **kwargs)
 
     @web.expose
-    def display_by_username_and_slug(self, trans, username, slug, format="html"):
+    def display_by_username_and_slug(self, trans, username, slug, format="html", **kwargs):
         """
         Display workflow based on a username and slug. Format can be html, json, or json-download.
         """
