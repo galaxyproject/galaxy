@@ -5,14 +5,12 @@ import { mergeObjectListsById } from "@/utils/utils";
 import { loadBroadcastsFromServer } from "@/stores/services/broadcasts.service";
 
 type BroadcastNotificationResponse = components["schemas"]["BroadcastNotificationResponse"];
-type BroadcastNotificationListResponse = components["schemas"]["BroadcastNotificationListResponse"];
 
 export const useBroadcastsStore = defineStore(
     "broadcastsStore",
     () => {
-        const broadcasts = ref<BroadcastNotificationListResponse>([]);
+        const broadcasts = ref<BroadcastNotificationResponse[]>([]);
 
-        const pollId = ref<any>(null);
         const loadingBroadcasts = ref<boolean>(false);
         const seenBroadcasts = ref<{ id: string; seen_time: string }[]>([]);
 
@@ -21,7 +19,6 @@ export const useBroadcastsStore = defineStore(
         });
 
         async function loadBroadcasts() {
-            stopPollingBroadcasts();
             loadingBroadcasts.value = true;
             await loadBroadcastsFromServer()
                 .then((data) => {
@@ -32,13 +29,8 @@ export const useBroadcastsStore = defineStore(
                 });
         }
 
-        async function startPollingBroadcasts() {
-            await loadBroadcasts();
-            pollId.value = setTimeout(() => startPollingBroadcasts(), 60000);
-        }
-
-        function stopPollingBroadcasts() {
-            pollId.value = clearTimeout(pollId.value);
+        function updateBroadcasts(broadcastList: BroadcastNotificationResponse[]) {
+            broadcasts.value = mergeObjectListsById(broadcasts.value, broadcastList, "create_time", "desc");
         }
 
         function markBroadcastSeen(broadcast: BroadcastNotificationResponse) {
@@ -64,7 +56,8 @@ export const useBroadcastsStore = defineStore(
             loadingBroadcasts,
             notSeenBroadcasts,
             markBroadcastSeen,
-            startPollingBroadcasts,
+            loadBroadcasts,
+            updateBroadcasts,
         };
     },
     {

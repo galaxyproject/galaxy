@@ -7,6 +7,7 @@ import {
     loadNotificationsStatus,
     updateBatchNotificationsOnServer,
 } from "@/stores/services/notifications.service";
+import { useBroadcastsStore } from "./broadcastsStore";
 
 type UserNotificationListResponse = components["schemas"]["UserNotificationListResponse"];
 type UserNotificationsBatchUpdateRequest = components["schemas"]["UserNotificationsBatchUpdateRequest"];
@@ -14,12 +15,14 @@ type UserNotificationsBatchUpdateRequest = components["schemas"]["UserNotificati
 const STATUS_POLLING_DELAY = 5000;
 
 export const useNotificationsStore = defineStore("notificationsStore", () => {
+    const broadcastsStore = useBroadcastsStore();
+
     const totalUnreadCount = ref<number>(0);
     const notifications = ref<UserNotificationListResponse>([]);
 
     const pollId = ref<any>(null);
     const loadingNotifications = ref<boolean>(false);
-    const lastNotificationPoll = ref<Date | null>(null);
+    const lastNotificationUpdate = ref<Date | null>(null);
 
     const unreadNotifications = computed(() => notifications.value.filter((n) => !n.seen_time));
     const favoriteNotifications = computed(() => notifications.value.filter((item) => item.favorite));
@@ -32,23 +35,29 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
 
     async function getNotificationStatus() {
         stopPollingNotifications();
-        if (!lastNotificationPoll.value) {
-            loadingNotifications.value = true;
-            await loadNotifications();
-            lastNotificationPoll.value = new Date();
-        } else {
-            await loadNotificationsStatus(lastNotificationPoll.value).then((data) => {
-                totalUnreadCount.value = data.total_unread_count;
-                notifications.value = mergeObjectListsById(
-                    notifications.value,
-                    data.notifications,
-                    "create_time",
-                    "desc"
-                );
-                lastNotificationPoll.value = new Date();
-            });
+        try {
+            if (!lastNotificationUpdate.value) {
+                loadingNotifications.value = true;
+                await broadcastsStore.loadBroadcasts();
+                await loadNotifications();
+            } else {
+                await loadNotificationsStatus(lastNotificationUpdate.value).then((data) => {
+                    totalUnreadCount.value = data.total_unread_count;
+                    notifications.value = mergeObjectListsById(
+                        notifications.value,
+                        data.notifications,
+                        "create_time",
+                        "desc"
+                    );
+                    broadcastsStore.updateBroadcasts(data.broadcasts);
+                });
+            }
+            lastNotificationUpdate.value = new Date();
+        } catch (e) {
+            console.error(e);
+        } finally {
+            loadingNotifications.value = false;
         }
-        loadingNotifications.value = false;
     }
 
     async function startPollingNotifications() {
