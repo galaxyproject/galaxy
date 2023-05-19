@@ -16,6 +16,7 @@ TEST_DATA_DIRECTORY = os.path.join(SCRIPT_DIR, os.pardir, os.pardir, "test-data"
 class TestStructuredDataset(integration_util.IntegrationTestCase):
     require_admin_user = True
     dataset_populator: DatasetPopulator
+    history_id: str
 
     def setUp(self):
         super().setUp()
