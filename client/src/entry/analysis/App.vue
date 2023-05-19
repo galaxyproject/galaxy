@@ -63,7 +63,6 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { setToastComponentRef } from "composables/toast";
 import { setConfirmDialogComponentRef } from "composables/confirmDialog";
 import { setGlobalUploadModal } from "composables/globalUploadModal";
-import { useBroadcastsStore } from "@/stores/broadcastsStore";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import BroadcastsOverlay from "@/components/Broadcasts/BroadcastsOverlay.vue";
 
@@ -86,9 +85,6 @@ export default {
 
         const notificationsStore = useNotificationsStore();
         notificationsStore.startPollingNotifications();
-
-        const broadcastStore = useBroadcastsStore();
-        broadcastStore.startPollingBroadcasts();
 
         const toastRef = ref(null);
         setToastComponentRef(toastRef);
