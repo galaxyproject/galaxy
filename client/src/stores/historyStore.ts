@@ -19,11 +19,12 @@ import { useUserLocalStorage } from "@/composables/userLocalStorage";
 
 export type HistorySummary = components["schemas"]["HistorySummary"];
 
-const PAGINATION_LENGTH = 7;
+const PAGINATION_LENGTH = 10;
 const isLoadingHistory = new Set();
 
 export const useHistoryStore = defineStore("historyStore", () => {
     const historiesLoading = ref(false);
+    const historiesOffset = ref(0);
     const pinnedHistories = useUserLocalStorage<{ id: string }[]>("history-store-pinned-histories", []);
     const storedCurrentHistoryId = ref<string | null>(null);
     const storedFilterTexts = ref<{ [key: string]: string }>({});
@@ -31,10 +32,6 @@ export const useHistoryStore = defineStore("historyStore", () => {
 
     const histories = computed(() => {
         return Object.values(storedHistories.value).sort(sortByObjectProp("name"));
-    });
-
-    const historiesOffset = computed(() => {
-        return histories.value.length;
     });
 
     const getTotalHistoryCount = computed(async () => {
@@ -48,8 +45,9 @@ export const useHistoryStore = defineStore("historyStore", () => {
 
     const currentHistory = computed(() => {
         if (storedCurrentHistoryId.value !== null) {
-            return storedHistories.value[storedCurrentHistoryId.value];
+            return getHistoryById.value(storedCurrentHistoryId.value);
         }
+        return null;
     });
 
     const currentHistoryId = computed(() => {
@@ -186,21 +184,36 @@ export const useHistoryStore = defineStore("historyStore", () => {
         const history = await getCurrentHistoryFromServer();
         selectHistory(history as HistorySummary);
     }
-
-    async function loadHistories(paginate: boolean = true) {
+        
+    /** TODO:
+     * not handling filters with pagination for now
+     * "pausing" pagination at the existing offset if a filter exists
+     */
+    async function loadHistories(paginate = true, queryString?: string) {
         if (!historiesLoading.value) {
-            if (paginate && historiesOffset.value >= (await getTotalHistoryCount.value)) {
-                return;
+            let limit: number | null = null;
+            if (!queryString) {
+                if (paginate) {
+                    const totalCount = await getTotalHistoryCount.value;
+                    if (historiesOffset.value >= totalCount) {
+                        return;
+                    }
+                    limit = PAGINATION_LENGTH;
+                } else {
+                    historiesOffset.value = 0;
+                }
             }
             setHistoriesLoading(true);
-            const limit = paginate ? PAGINATION_LENGTH : null;
-            const offset = paginate ? historiesOffset.value : 0;
-            await getHistoryList(offset, limit)
-                .then((histories) => setHistories(histories))
+            const offset = queryString ? 0 : historiesOffset.value;
+            await getHistoryList(offset, limit, queryString)
+                .then((histories) => {
+                    setHistories(histories);
+                    if (paginate && !queryString && historiesOffset.value == offset) {
+                        historiesOffset.value += histories.length;
+                    }
+                })
                 .catch((error) => console.warn(error))
-                .finally(() => {
-                    setHistoriesLoading(false);
-                });
+                .finally(() => setHistoriesLoading(false));
         }
     }
 

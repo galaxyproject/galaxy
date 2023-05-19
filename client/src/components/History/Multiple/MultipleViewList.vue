@@ -3,16 +3,14 @@ import { computed, ref, type Ref } from "vue";
 //@ts-ignore missing typedefs
 import VirtualList from "vue-virtual-scroll-list";
 import MultipleViewItem from "./MultipleViewItem.vue";
-import { useHistoryStore, type HistorySummary } from "@/stores/historyStore";
-import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
+import type { HistorySummary } from "@/stores/historyStore";
 import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
-
-const historyStore = useHistoryStore();
 
 const props = withDefaults(
     defineProps<{
         histories: HistorySummary[];
+        selectedHistories: { id: string }[];
         filter?: string;
     }>(),
     {
@@ -30,21 +28,6 @@ useAnimationFrameResizeObserver(scrollContainer, ({ clientSize, scrollSize }) =>
 
 const scrolledLeft = computed(() => !isScrollable.value || arrived.left);
 const scrolledRight = computed(() => !isScrollable.value || arrived.right);
-
-const selectedHistories = computed(() => historyStore.pinnedHistories);
-
-if (!selectedHistories.value.length ?? props.histories.length > 0) {
-    historyStore.pinHistory(props.histories[0]!.id);
-}
-
-function addHistoriesToList(histories: HistorySummary[]) {
-    histories.forEach((history) => {
-        const historyExists = selectedHistories.value.find((h) => h.id === history.id);
-        if (!historyExists) {
-            historyStore.pinHistory(history.id);
-        }
-    });
-}
 </script>
 
 <template>
@@ -65,18 +48,10 @@ function addHistoriesToList(histories: HistorySummary[]) {
             </virtual-list>
 
             <div
-                v-b-modal.select-histories-modal
-                class="history-picker text-primary d-flex m-3 p-5 align-items-center text-nowrap">
+                class="history-picker text-primary d-flex m-3 p-5 align-items-center text-nowrap"
+                @click.stop="$emit('update:show-modal', true)">
                 Select histories
             </div>
-
-            <SelectorModal
-                id="select-histories-modal"
-                :multiple="true"
-                :histories="histories"
-                :additional-options="['center', 'set-current']"
-                title="Select histories"
-                @selectHistories="addHistoriesToList" />
         </div>
     </div>
 </template>
@@ -85,6 +60,7 @@ function addHistoriesToList(histories: HistorySummary[]) {
 .list-container {
     .history-picker {
         border: dotted lightgray;
+        cursor: pointer;
     }
 
     position: relative;

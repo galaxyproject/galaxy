@@ -13,17 +13,23 @@ import {
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import UtcDate from "@/components/UtcDate.vue";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch, type PropType, type Ref } from "vue";
-import { useFilterObjectArray } from "@/composables/filter";
 import localize from "@/utils/localization";
 import Heading from "@/components/Common/Heading.vue";
 import type { HistorySummary } from "@/stores/historyStore";
 import { useRouter } from "vue-router/composables";
 import { useHistoryStore } from "@/stores/historyStore";
+import Filtering, { contains, expandNameTag } from "@/utils/filtering";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faColumns, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
 import { faListAlt } from "@fortawesome/free-regular-svg-icons";
 import { useInfiniteScroll } from "@vueuse/core";
+
+const validFilters = {
+    name: contains("name"),
+    tag: contains("tags", "tag", expandNameTag),
+};
+const HistoryFilters = new Filtering(validFilters, false);
 
 type AdditionalOptions = "set-current" | "multi" | "center";
 
@@ -31,14 +37,13 @@ const props = defineProps({
     multiple: { type: Boolean, default: false },
     title: { type: String, default: "Switch to history" },
     histories: { type: Array as PropType<HistorySummary[]>, default: () => [] },
-    perPage: { type: Number, default: 8 },
     additionalOptions: { type: Array as PropType<AdditionalOptions[]>, default: () => [] },
     showModal: { type: Boolean, default: false },
 });
 
 const emit = defineEmits<{
     (e: "selectHistory", history: HistorySummary): void;
-    (e: "selectHistories", histories: HistorySummary[]): void;
+    (e: "selectHistories", histories: { id: string }[]): void;
     (e: "update:show-modal", showModal: boolean): void;
 }>();
 
@@ -51,10 +56,17 @@ const propShowModal = computed({
     },
 });
 
+const historyStore = useHistoryStore();
+const pinnedHistories: Ref<{ id: string }[]> = computed(() => historyStore.pinnedHistories);
+const selectedHistories: Ref<{ id: string }[]> = ref([]);
+
 onMounted(async () => {
     await nextTick();
     scrollableDiv.value = document.querySelector(".history-selector-modal .modal-body");
     useInfiniteScroll(scrollableDiv.value, loadMore);
+    if (props.multiple) {
+        selectedHistories.value = [...pinnedHistories.value];
+    }
 });
 
 onUnmounted(() => {
@@ -66,11 +78,20 @@ onUnmounted(() => {
 library.add(faColumns, faSignInAlt, faListAlt);
 
 const filter = ref("");
-const currentPage = ref(1);
 const busy = ref(false);
 const allLoaded = ref(false);
 const modal: Ref<BModal | null> = ref(null);
 const scrollableDiv: Ref<HTMLElement | null> = ref(null);
+
+watch(
+    () => filter.value,
+    async () => {
+        await loadMore();
+    },
+    {
+        immediate: true,
+    }
+);
 
 // reactive proxy for props.histories, as the prop is not
 // always guaranteed to be reactive for some strange reason.
@@ -86,30 +107,41 @@ watch(
     }
 );
 
-const filtered = useFilterObjectArray(historiesProxy, filter, ["name", "tags", "annotation"]);
+const { currentHistoryId } = storeToRefs(useHistoryStore());
 
-watch(
-    () => filtered.value,
-    () => {
-        filtered.value.sort((a, b) => (a.update_time < b.update_time ? 1 : -1));
-
-        const highestPage = Math.ceil(filtered.value.length / props.perPage);
-
-        if (highestPage < currentPage.value) {
-            currentPage.value = highestPage;
-        }
+const filtered: Ref<HistorySummary[]> = computed(() => {
+    let filteredHistories: HistorySummary[] = [];
+    if (!filter.value) {
+        filteredHistories = historiesProxy.value;
+    } else {
+        const filters = HistoryFilters.getFiltersForText(filter.value);
+        filteredHistories = historiesProxy.value.filter((history) => {
+            if (!HistoryFilters.testFilters(filters, history)) {
+                return false;
+            }
+            return true;
+        });
     }
-);
-
-const selectedHistories: Ref<HistorySummary[]> = ref([]);
+    return filteredHistories.sort((a, b) => {
+        if (a.id == currentHistoryId.value) {
+            return -1;
+        } else if (b.id == currentHistoryId.value) {
+            return 1;
+        } else if (a.update_time < b.update_time) {
+            return 1;
+        } else {
+            return -1;
+        }
+    });
+});
 
 function historyClicked(history: HistorySummary) {
     if (props.multiple) {
-        const index = selectedHistories.value.indexOf(history);
+        const index = selectedHistories.value.findIndex((item) => item.id == history.id);
         if (index !== -1) {
             selectedHistories.value.splice(index, 1);
         } else {
-            selectedHistories.value.push(history);
+            selectedHistories.value.push({ id: history.id });
         }
     } else {
         emit("selectHistory", history);
@@ -118,14 +150,14 @@ function historyClicked(history: HistorySummary) {
 }
 
 function selectHistories() {
+    // set value of pinned histories in store
     emit("selectHistories", selectedHistories.value);
-    selectedHistories.value = [];
+    // set local value equal to updated value from store
+    selectedHistories.value = pinnedHistories.value;
     modal.value?.hide();
 }
 
 const router = useRouter();
-const historyStore = useHistoryStore();
-const { currentHistoryId } = storeToRefs(useHistoryStore());
 
 function setCurrentHistory(history: HistorySummary) {
     historyStore.setCurrentHistory(history.id);
@@ -143,16 +175,22 @@ function openInMulti(history: HistorySummary) {
     modal.value?.hide();
 }
 
+/**
+ * For active filter:
+ * - Problem: How do you assess all items for that filter have been loaded?
+ *
+ */
 async function loadMore() {
-    if (!allLoaded.value) {
+    if (filter.value || (!busy.value && !allLoaded.value)) {
         busy.value = true;
-        await historyStore.loadHistories();
-        busy.value = false;
+        const queryString = filter.value && HistoryFilters.getQueryString(filter.value);
+        await historyStore.loadHistories(true, queryString);
         await historyStore.getTotalHistoryCount.then((count) => {
             if (count <= filtered.value.length) {
                 allLoaded.value = true;
             }
         });
+        busy.value = false;
     }
 }
 </script>
@@ -174,14 +212,14 @@ async function loadMore() {
                 <b-form-input v-model="filter" type="search" debounce="400" :placeholder="localize('Search Filter')" />
             </b-form-group>
 
-            <b-list-group>
+            <b-list-group v-if="propShowModal">
                 <b-list-group-item
                     v-for="history in filtered"
                     :key="history.id"
                     :data-pk="history.id"
                     button
                     :class="{ current: history.id === currentHistoryId }"
-                    :active="selectedHistories.includes(history)"
+                    :active="selectedHistories.some((h) => h.id === history.id)"
                     @click="() => historyClicked(history)">
                     <div class="d-flex justify-content-between align-items-center">
                         <Heading h3 inline bold size="text">

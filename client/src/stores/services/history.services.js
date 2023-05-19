@@ -112,15 +112,16 @@ export async function setCurrentHistoryOnServer(historyId) {
  * @param {Number | null} limit
  * @return {Promise.<Array>} list of histories
  */
-export async function getHistoryList(offset = 0, limit = null) {
-    const url = "api/histories";
-    const paginatedParams = {
-        view: "summary",
-        offset: offset,
-        limit: limit,
-        order: "update_time",
-    };
-    const response = await axios.get(prependPath(url), { params: paginatedParams });
+export async function getHistoryList(offset = 0, limit = null, queryString = "") {
+    const params = `view=summary&order=update_time&offset=${offset}`;
+    let url = `api/histories?${params}`;
+    if (limit !== null) {
+        url += `&limit=${limit}`;
+    }
+    if (queryString !== "") {
+        url += `&${queryString}`;
+    }
+    const response = await axios.get(prependPath(url));
     return doResponse(response);
 }
 
