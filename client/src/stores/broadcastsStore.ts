@@ -1,21 +1,22 @@
-import { computed, ref } from "vue";
+import Vue, { computed, ref } from "vue";
 import { defineStore } from "pinia";
 import type { components } from "@/schema";
 import { mergeObjectListsById } from "@/utils/utils";
 import { loadBroadcastsFromServer } from "@/stores/services/broadcasts.service";
 
-type BroadcastNotificationResponse = components["schemas"]["BroadcastNotificationResponse"];
+export type BroadcastNotification = components["schemas"]["BroadcastNotificationResponse"];
+type Expirable = Pick<BroadcastNotification, "expiration_time">;
 
 export const useBroadcastsStore = defineStore(
     "broadcastsStore",
     () => {
-        const broadcasts = ref<BroadcastNotificationResponse[]>([]);
+        const broadcasts = ref<BroadcastNotification[]>([]);
 
         const loadingBroadcasts = ref<boolean>(false);
-        const seenBroadcasts = ref<{ id: string; seen_time: string }[]>([]);
+        const dismissedBroadcasts = ref<{ [key: string]: Expirable }>({});
 
-        const notSeenBroadcasts = computed(() => {
-            return broadcasts.value.filter((b) => !seenBroadcasts.value.find((s) => s.id === b.id));
+        const activeBroadcasts = computed(() => {
+            return broadcasts.value.filter((b) => !dismissedBroadcasts.value[b.id]);
         });
 
         async function loadBroadcasts() {
@@ -29,40 +30,48 @@ export const useBroadcastsStore = defineStore(
                 });
         }
 
-        function updateBroadcasts(broadcastList: BroadcastNotificationResponse[]) {
-            broadcasts.value = mergeObjectListsById(broadcasts.value, broadcastList, "create_time", "desc");
+        function updateBroadcasts(broadcastList: BroadcastNotification[]) {
+            broadcasts.value = mergeObjectListsById(broadcasts.value, broadcastList, "create_time", "desc").filter(
+                (b) => !hasExpired(b.expiration_time)
+            );
         }
 
-        function markBroadcastSeen(broadcast: BroadcastNotificationResponse) {
-            seenBroadcasts.value.push({ id: broadcast.id, seen_time: broadcast.create_time });
+        function dismissBroadcast(broadcast: BroadcastNotification) {
+            Vue.set(dismissedBroadcasts.value, broadcast.id, { expiration_time: broadcast.expiration_time });
         }
 
-        function clearOldSeenBroadcasts() {
-            const oneMonthAgo = new Date();
-            oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-            const seenBroadcastsCopy = [...seenBroadcasts.value];
-            for (const seenBroadcast of seenBroadcastsCopy) {
-                if (new Date(seenBroadcast.seen_time) < oneMonthAgo) {
-                    seenBroadcasts.value = seenBroadcasts.value.filter((b) => b.id !== seenBroadcast.id);
+        function hasExpired(expirationTimeStr?: string) {
+            if (!expirationTimeStr) {
+                return false;
+            }
+            const expirationTime = new Date(`${expirationTimeStr}Z`);
+            const now = new Date();
+            return now > expirationTime;
+        }
+
+        function clearExpiredDismissedBroadcasts() {
+            for (const key in dismissedBroadcasts.value) {
+                if (hasExpired(dismissedBroadcasts.value[key]?.expiration_time)) {
+                    delete dismissedBroadcasts.value[key];
                 }
             }
         }
 
-        clearOldSeenBroadcasts();
+        clearExpiredDismissedBroadcasts();
 
         return {
             broadcasts,
-            seenBroadcasts,
+            dismissedBroadcasts,
             loadingBroadcasts,
-            notSeenBroadcasts,
-            markBroadcastSeen,
+            activeBroadcasts,
+            dismissBroadcast,
             loadBroadcasts,
             updateBroadcasts,
         };
     },
     {
         persist: {
-            paths: ["seenBroadcasts"],
+            paths: ["dismissedBroadcasts"],
         },
     }
 );

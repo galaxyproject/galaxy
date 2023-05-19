@@ -2,10 +2,9 @@
 import Vue from "vue";
 import { storeToRefs } from "pinia";
 import BootstrapVue from "bootstrap-vue";
-import type { components } from "@/schema";
 import { useRouter } from "vue-router/composables";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { useBroadcastsStore } from "@/stores/broadcastsStore";
+import { useBroadcastsStore, type BroadcastNotification } from "@/stores/broadcastsStore";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faInfoCircle, faTimes, faScrewdriver } from "@fortawesome/free-solid-svg-icons";
 
@@ -17,11 +16,9 @@ library.add(faScrewdriver, faInfoCircle, faTimes);
 const router = useRouter();
 
 const broadcastsStore = useBroadcastsStore();
-const { notSeenBroadcasts } = storeToRefs(useBroadcastsStore());
+const { activeBroadcasts } = storeToRefs(useBroadcastsStore());
 
-type BroadcastNotificationResponse = components["schemas"]["BroadcastNotificationResponse"];
-
-function getBroadcastVariant(item: BroadcastNotificationResponse) {
+function getBroadcastVariant(item: BroadcastNotification) {
     switch (item.variant) {
         case "urgent":
             return "danger";
@@ -30,20 +27,20 @@ function getBroadcastVariant(item: BroadcastNotificationResponse) {
     }
 }
 
-function onActionClick(item: BroadcastNotificationResponse, link: string) {
+function onActionClick(item: BroadcastNotification, link: string) {
     if (link.startsWith("/")) {
         router.push(link);
     } else {
         window.open(link, "_blank");
     }
-    broadcastsStore.markBroadcastSeen(item);
+    broadcastsStore.dismissBroadcast(item);
 }
 </script>
 
 <template>
-    <div v-if="notSeenBroadcasts.length > 0">
+    <div v-if="activeBroadcasts.length > 0">
         <div
-            v-for="broadcast in notSeenBroadcasts"
+            v-for="broadcast in activeBroadcasts"
             :key="broadcast.id"
             :class="{ 'urgent-broadcast': broadcast.variant === 'urgent' }">
             <div class="broadcast-banner">
@@ -68,7 +65,7 @@ function onActionClick(item: BroadcastNotificationResponse, link: string) {
                         </BButton>
                     </div>
                 </div>
-                <BButton variant="light" title="Close" @click="broadcastsStore.markBroadcastSeen(broadcast)">
+                <BButton variant="light" title="Close" @click="broadcastsStore.dismissBroadcast(broadcast)">
                     <FontAwesomeIcon icon="times" />
                 </BButton>
             </div>
