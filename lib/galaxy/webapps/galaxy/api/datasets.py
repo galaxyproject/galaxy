@@ -338,6 +338,10 @@ class FastAPIDatasets:
         response_class=GalaxyFileResponse,
         operation_id="datasets__get_metadata_file",
     )
+    @router.head(
+        "/api/datasets/{history_content_id}/metadata_file",
+        summary="Check if metadata file can be downloaded.",
+    )
     def get_metadata_file_datasets(
         self,
         trans=DependsOnTrans,
