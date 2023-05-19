@@ -1074,6 +1074,13 @@ class BaseDatasetPopulator(BasePopulator):
         assert "id" in role, role
         return role["id"]
 
+    def total_disk_usage(self) -> float:
+        response = self._get("users/current")
+        response.raise_for_status()
+        user_object = response.json()
+        assert "total_disk_usage" in user_object
+        return user_object["total_disk_usage"]
+
     def create_role(self, user_ids: list, description: Optional[str] = None) -> dict:
         using_requirement("admin")
         payload = {
