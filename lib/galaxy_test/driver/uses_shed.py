@@ -6,6 +6,7 @@ import tempfile
 from typing import ClassVar
 
 from galaxy.app import UniverseApplication
+from galaxy.model.base import transaction
 from galaxy_test.base.populators import DEFAULT_TIMEOUT
 from galaxy_test.base.uses_shed_api import UsesShedApi
 from galaxy_test.driver.driver_util import (
@@ -97,4 +98,5 @@ class UsesShed(UsesShedApi):
         ]
         for item in models_to_delete:
             model.context.query(item).delete()
-        model.context.flush()
+        with transaction(model.context):
+            model.context.commit()
