@@ -1,8 +1,8 @@
 /**
  * Visualizer interface for h5web (https://github.com/silx-kit/h5web)
- * 
+ *
  * This relies on Galaxy being able to serve files using the
- * h5grove protocol (https://silx-kit.github.io/h5grove/). 
+ * h5grove protocol (https://silx-kit.github.io/h5grove/).
  * This provides efficient access to the contents of the
  * HDF5 file and avoids having to read the whole file at any
  * point.
@@ -12,6 +12,12 @@ import './styles.css';
 import React, { StrictMode } from 'react'
 import {render as reactRender} from 'react-dom'
 import {App, H5GroveProvider} from '@h5web/app'
+
+/* This will be part of the charts/viz standard lib in 23.1 */
+const slashCleanup = /(\/)+/g;
+function prefixedDownloadUrl(root, path) {
+    return `${root}/${path}`.replace(slashCleanup, "/");
+}
 
 function MyApp(props) {
     return (
@@ -30,12 +36,12 @@ window.bundleEntries.load = function (options) {
     var dataset = options.dataset;
     var settings = options.chart.settings;
     var explorer = settings.get('explorer');
-    var url = window.location.origin + "/api/datasets/" + dataset.id + "/content";
+    var url = window.location.origin + prefixedDownloadUrl(options.root, "/api/datasets/" + dataset.id + "/content");
     reactRender(
-      <MyApp 
-        url={url} 
-        name={dataset.name} 
-        filepath={dataset.file_name} 
+      <MyApp
+        url={url}
+        name={dataset.name}
+        filepath={dataset.file_name}
         explorer={explorer}
       />,
       document.getElementById(options.target)
