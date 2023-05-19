@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
-import { BAlert, BCard, BButton, BCardText } from "bootstrap-vue";
+import { BAlert, BButton, BFormCheckbox, BModal } from "bootstrap-vue";
 import { exportToFileSource, getExportRecords } from "@/components/History/Export/services";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import ExportToFileSourceForm from "@/components/Common/ExportForm.vue";
 import { DEFAULT_EXPORT_PARAMS } from "@/composables/shortTermStorage";
-import type { ExportRecordModel } from "@/components/Common/models/exportRecordModel";
+import type { ExportRecord } from "@/components/Common/models/exportRecordModel";
 import { useTaskMonitor } from "@/composables/taskMonitor";
 import type { HistorySummary } from "@/stores/historyStore";
-import IncludedBadge from "./IncludedBadge.vue";
+import ExportRecordCard from "./ExportRecordCard.vue";
 
 const {
     isRunning: isExportTaskRunning,
@@ -27,7 +27,7 @@ const emit = defineEmits<{
     (e: "onArchive", exportRecordId: string): void;
 }>();
 
-const existingExports = ref<ExportRecordModel[]>([]);
+const existingExports = ref<ExportRecord[]>([]);
 const isLoading = ref(true);
 const isExportingRecord = ref(false);
 const isExportDialogOpen = ref(false);
@@ -148,22 +148,11 @@ function onArchiveHistoryWithExport() {
                     This export record will be associated with your archived history so you can recover it later by
                     importing it.
                 </p>
-                <b-card class="mt-3">
-                    <b-card-text>
-                        <b>Exported {{ mostUpToDateExport.elapsedTime }}</b> on {{ mostUpToDateExport.date }}
-                    </b-card-text>
-                    <b-card-text v-if="mostUpToDateExport.exportParams">
-                        <b>Contains datasets:</b>
-                        <IncludedBadge item-name="active" :included="mostUpToDateExport.exportParams.includeFiles" />
-                        <IncludedBadge item-name="hidden" :included="mostUpToDateExport.exportParams.includeHidden" />
-                        <IncludedBadge item-name="deleted" :included="mostUpToDateExport.exportParams.includeDeleted" />
-                    </b-card-text>
-                    <b-card-text> <b>Stored in:</b> {{ mostUpToDateExport.importUri }} </b-card-text>
-                </b-card>
+                <ExportRecordCard id="export-record-ready" class="mt-3" :export-record="mostUpToDateExport" />
             </b-alert>
         </div>
         <div v-else>
-            <b-alert v-if="isExportingRecord" show variant="info">
+            <b-alert v-if="isExportingRecord" id="generating-export-record-alert" show variant="info">
                 <loading-span message="Generating export record. This may take a while..." />
             </b-alert>
             <b-alert v-else show variant="info">
@@ -175,7 +164,7 @@ function onArchiveHistoryWithExport() {
                 </p>
                 <p>Use the button below to create a new export record before archiving the history.</p>
                 <b-button
-                    class="export-history-btn"
+                    id="create-export-record-btn"
                     :disabled="!canCreateExportRecord"
                     variant="primary"
                     @click="onCreateExportRecord">
@@ -188,7 +177,7 @@ function onArchiveHistoryWithExport() {
             archive it using the checkbox below. No worries, you will be able to recover the history later by importing
             it from the export record above.
         </p>
-        <b-form-checkbox v-model="isDeleteContentsConfirmed" class="my-3">
+        <b-form-checkbox id="confirm-delete-checkbox" v-model="isDeleteContentsConfirmed" class="my-3">
             <b>I am aware that the contents of the original history will be permanently deleted.</b>
         </b-form-checkbox>
         <b-alert show variant="warning">
@@ -196,7 +185,8 @@ function onArchiveHistoryWithExport() {
             by importing it as a new copy from the export record.
         </b-alert>
         <b-button
-            class="archive-history-btn mt-3"
+            id="archive-history-btn"
+            class="mt-3"
             :disabled="!canArchiveHistory"
             variant="primary"
             @click="onArchiveHistoryWithExport">
