@@ -207,10 +207,7 @@ class ToolShedMetadataGenerator(BaseMetadataGenerator):
                         found = True
                         break
                 if not found:
-                    error_message = (
-                        "Ignoring repository dependency definition for tool shed %s, name %s, owner %s, "
-                        % (toolshed, name, owner)
-                    )
+                    error_message = f"Ignoring repository dependency definition for tool shed {toolshed}, name {name}, owner {owner}, "
                     error_message += (
                         f"changeset revision {changeset_revision} because the changeset revision is invalid.  "
                     )
@@ -220,10 +217,7 @@ class ToolShedMetadataGenerator(BaseMetadataGenerator):
         else:
             # Repository dependencies are currently supported within a single tool shed.
             error_message = "Repository dependencies are currently supported only within the same tool shed.  Ignoring "
-            error_message += (
-                "repository dependency definition  for tool shed %s, name %s, owner %s, changeset revision %s.  "
-                % (toolshed, name, owner, changeset_revision)
-            )
+            error_message += f"repository dependency definition  for tool shed {toolshed}, name {name}, owner {owner}, changeset revision {changeset_revision}.  "
             log.debug(error_message)
             is_valid = False
             return repository_dependency_tup, is_valid, error_message

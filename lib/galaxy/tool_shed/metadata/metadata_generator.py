@@ -1009,10 +1009,7 @@ class GalaxyMetadataGenerator(BaseMetadataGenerator):
                 # if an installed repository cannot be found.  This may not be ideal because the tool
                 # shed may have simply been inaccessible when metadata was being generated for the
                 # installed tool shed repository.
-                error_message = (
-                    "Ignoring invalid repository dependency definition for tool shed %s, name %s, owner %s, "
-                    % (toolshed, name, owner)
-                )
+                error_message = f"Ignoring invalid repository dependency definition for tool shed {toolshed}, name {name}, owner {owner}, "
                 error_message += f"changeset revision {changeset_revision}."
                 log.debug(error_message)
                 is_valid = False
