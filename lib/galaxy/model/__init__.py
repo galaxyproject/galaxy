@@ -912,8 +912,8 @@ WHERE user_id = :user_id and quota_source_label = :label
                 self.disk_usage = func.coalesce(self.table.c.disk_usage, 0) + amount
             else:
                 # else would work on newer sqlite - 3.24.0
-                sa_session = object_session(self)
-                if "sqlite" in sa_session.bind.dialect.name:
+                engine = object_session(self).bind
+                if "sqlite" in engine.dialect.name:
                     # hacky alternative for older sqlite
                     statement = """
 WITH new (user_id, quota_source_label) AS ( VALUES(:user_id, :label) )
@@ -935,7 +935,8 @@ ON CONFLICT
                     "amount": int(amount),
                     "label": quota_source_label,
                 }
-                sa_session.execute(statement, params)
+                with engine.connect() as conn, conn.begin():
+                    conn.execute(statement, params)
 
     @property
     def nice_total_disk_usage(self):
