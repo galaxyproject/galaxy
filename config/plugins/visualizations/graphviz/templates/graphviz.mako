@@ -10,9 +10,8 @@
         root = h.url_for( '/' )
     %>
 
-    <script type="text/javascript" src="/static/scripts/libs/jquery/jquery.js"></script>
-
     ${h.stylesheet_link( root + 'static/plugins/visualizations/graphviz/static/css/style.css' )}
+    ${h.javascript_link( root + 'static/plugins/visualizations/graphviz/static/js/jquery.min.js' )}
     ${h.javascript_link( root + 'static/plugins/visualizations/graphviz/static/js/cytoscape.min.js' )}
     ${h.javascript_link( root + 'static/plugins/visualizations/graphviz/static/js/collapse.js' )}
     ${h.javascript_link( root + 'static/plugins/visualizations/graphviz/static/js/toolPanelFunctions.js' )}
