@@ -1809,7 +1809,12 @@ class Tool(Dictifiable):
                 # If the tool provides a `validate_input` hook, call it.
                 validate_input = self.get_hook("validate_input")
                 if validate_input:
-                    validate_input(request_context, errors, params, self.inputs)
+                    # hooks are so terrible ... this is specifically for https://github.com/galaxyproject/tools-devteam/blob/main/tool_collections/gops/basecoverage/operation_filter.py
+                    legacy_non_dce_params = {
+                        k: v.hda if isinstance(v, model.DatasetCollectionElement) and v.hda else v
+                        for k, v in params.items()
+                    }
+                    validate_input(request_context, errors, legacy_non_dce_params, self.inputs)
             all_errors.append(errors)
             all_params.append(params)
         unset_dataset_matcher_factory(request_context)
