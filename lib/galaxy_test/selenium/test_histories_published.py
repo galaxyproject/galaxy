@@ -37,13 +37,19 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
     def test_published_histories_tag_click(self):
         self._login()
         self.navigate_to_published_histories()
+        self.sleep_for(self.wait_types.UX_RENDER)
         present_histories = self.get_present_histories()
+        clicked = False
         for row in present_histories:
             his = row.find_elements(By.TAG_NAME, "td")[0]
             if self.history3_name in his.text:
-                row.find_elements(By.TAG_NAME, "td")[3].find_elements(By.CSS_SELECTOR, ".tag span")[0].click()
+                row.find_elements(By.TAG_NAME, "td")[3].find_elements(By.CSS_SELECTOR, ".tag")[0].click()
+                clicked = True
                 break
-        self.sleep_for(self.wait_types.UX_RENDER)
+        assert clicked
+        text = self.components.published_histories.search_input.wait_for_value()
+        if text == "":
+            raise AssertionError("Failed to update search filter on tag click")
         self.assert_histories_present([self.history3_name, self.history1_name])
 
     @selenium_test
