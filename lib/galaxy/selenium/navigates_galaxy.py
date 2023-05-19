@@ -1355,7 +1355,7 @@ class NavigatesGalaxy(HasDriver):
     def workflow_index_tag_elements(self, workflow_index=0):
         workflow_row_element = self.workflow_index_table_row(workflow_index)
         tag_display = workflow_row_element.find_element(By.CSS_SELECTOR, ".stateless-tags")
-        tag_spans = tag_display.find_elements(By.CSS_SELECTOR, ".tag-name")
+        tag_spans = tag_display.find_elements(By.CSS_SELECTOR, ".tag")
         return tag_spans
 
     @retry_during_transitions
