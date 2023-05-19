@@ -172,6 +172,8 @@ export interface paths {
     "/api/datasets/{history_content_id}/metadata_file": {
         /** Returns the metadata file associated with this history item. */
         get: operations["datasets__get_metadata_file"];
+        /** Check if metadata file can be downloaded. */
+        head: operations["get_metadata_file_datasets_api_datasets__history_content_id__metadata_file_head"];
     };
     "/api/datatypes": {
         /**
@@ -8614,6 +8616,37 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: never;
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_metadata_file_datasets_api_datasets__history_content_id__metadata_file_head: {
+        /** Check if metadata file can be downloaded. */
+        parameters: {
+            /** @description The name of the metadata file to retrieve. */
+            query: {
+                metadata_file: string;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the dataset. */
+            path: {
+                history_content_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
             /** @description Validation Error */
             422: {
                 content: {
