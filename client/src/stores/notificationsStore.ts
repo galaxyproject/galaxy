@@ -11,6 +11,8 @@ import {
 type UserNotificationListResponse = components["schemas"]["UserNotificationListResponse"];
 type UserNotificationsBatchUpdateRequest = components["schemas"]["UserNotificationsBatchUpdateRequest"];
 
+const STATUS_POLLING_DELAY = 5000;
+
 export const useNotificationsStore = defineStore("notificationsStore", () => {
     const totalUnreadCount = ref<number>(0);
     const notifications = ref<UserNotificationListResponse>([]);
@@ -51,7 +53,7 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
 
     async function startPollingNotifications() {
         await getNotificationStatus();
-        pollId.value = setTimeout(() => startPollingNotifications(), 1000);
+        pollId.value = setTimeout(() => startPollingNotifications(), STATUS_POLLING_DELAY);
     }
 
     function stopPollingNotifications() {
