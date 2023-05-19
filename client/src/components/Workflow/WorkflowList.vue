@@ -40,6 +40,7 @@
             </template>
             <template v-slot:cell(tags)="row">
                 <StatelessTags
+                    clickable
                     :value="row.item.tags"
                     :disabled="row.item.deleted || published"
                     @input="(tags) => onTags(tags, row.index)"
@@ -89,7 +90,7 @@ import _l from "utils/localization";
 import { Services } from "./services";
 import { getAppRoot } from "onload/loadConfig";
 import { storedWorkflowsProvider } from "components/providers/StoredWorkflowsProvider";
-import StatelessTags from "components/TagsMultiselect/StatelessTags";
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import WorkflowDropdown from "./WorkflowDropdown";
 import UtcDate from "components/UtcDate";
 import { getGalaxyInstance } from "app";
