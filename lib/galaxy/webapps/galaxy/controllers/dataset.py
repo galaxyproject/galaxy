@@ -561,7 +561,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         return
 
     @web.expose
-    def display_by_username_and_slug(self, trans, username, slug, filename=None, preview=True):
+    def display_by_username_and_slug(self, trans, username, slug, filename=None, preview=True, **kwargs):
         """Display dataset by username and slug; because datasets do not yet have slugs, the slug is the dataset's id."""
         dataset = self._check_dataset(trans, slug)
         if not isinstance(dataset, trans.app.model.DatasetInstance):

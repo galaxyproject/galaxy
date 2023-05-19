@@ -473,7 +473,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         }
 
     @web.expose
-    def display_by_username_and_slug(self, trans, username, slug):
+    def display_by_username_and_slug(self, trans, username, slug, **kwargs):
         """
         Display history based on a username and slug.
         """
