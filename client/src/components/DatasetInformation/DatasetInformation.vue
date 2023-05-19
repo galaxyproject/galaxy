@@ -77,7 +77,7 @@
 </template>
 
 <script>
-import { bytesToString } from "utils/utils";
+import Utils from "utils/utils";
 import UtcDate from "components/UtcDate";
 import DecodedId from "../DecodedId";
 import { DatasetProvider } from "components/providers";
@@ -100,10 +100,10 @@ export default {
     },
     methods: {
         bytesToString(raw_size) {
-            return bytesToString(raw_size, false);
+            return Utils.bytesToString(raw_size);
         },
         prefixedUrl(url) {
-            return window.options.root.replace(/\/$/, '') + url;
+            return window.options?.root.replace(/\/$/, "") + url;
         },
     },
 };
