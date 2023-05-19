@@ -650,6 +650,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                                         file_name=source,
                                         create=True,
                                     )
+                        # Don't trust serialized file size
+                        dataset_instance.dataset.file_size = None
                         dataset_instance.dataset.set_total_size()  # update the filesize record in the database
 
                     if dataset_instance.deleted:
