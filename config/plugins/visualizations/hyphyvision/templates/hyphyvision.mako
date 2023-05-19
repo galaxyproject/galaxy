@@ -1,5 +1,5 @@
 <%
-  app_root = "/static/plugins/visualizations/hyphyvision/static/"
+  app_root = h.url_for("/static/plugins/visualizations/hyphyvision/static/")
 %>
 
 <html lang="en">
