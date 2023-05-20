@@ -5730,7 +5730,10 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
                     WHERE library_folder.id = parent_folders_of.folder_id)
             """
         ).execution_options(autocommit=True)
-        ret = object_session(self).execute(sql, {"library_dataset_id": ldda.library_dataset_id, "ldda_id": ldda.id})
+
+        with object_session(self).bind.connect() as conn, conn.begin():
+            ret = conn.execute(sql, {"library_dataset_id": ldda.library_dataset_id, "ldda_id": ldda.id})
+
         if ret.rowcount < 1:
             log.warning(f"Attempt to updated parent folder times failed: {ret.rowcount} records updated.")
 
