@@ -45,7 +45,7 @@
                             <b-spinner v-if="historiesLoading" small />
                             <span>Fetching histories from server</span>
                         </div>
-                        <span v-else>You have {{ histories.length }} histories.</span>
+                        <span v-else>You have {{ totalHistoryCount }} histories.</span>
                     </b-dropdown-text>
 
                     <b-dropdown-item
@@ -201,6 +201,7 @@ export default {
     },
     computed: {
         ...mapState(useUserStore, ["isAnonymous"]),
+        ...mapState(useHistoryStore, ["totalHistoryCount"]),
     },
     methods: {
         ...mapActions(useHistoryStore, ["createNewHistory", "deleteHistory", "secureHistory", "setCurrentHistory"]),

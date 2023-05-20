@@ -28,8 +28,9 @@ import { useInfiniteScroll } from "@vueuse/core";
 const validFilters = {
     name: contains("name"),
     tag: contains("tags", "tag", expandNameTag),
+    annotation: contains("annotation"),
 };
-const HistoryFilters = new Filtering(validFilters, false);
+const HistoriesFilters = new Filtering(validFilters, false);
 
 type AdditionalOptions = "set-current" | "multi" | "center";
 
@@ -56,14 +57,24 @@ const propShowModal = computed({
     },
 });
 
-const historyStore = useHistoryStore();
-const pinnedHistories: Ref<{ id: string }[]> = computed(() => historyStore.pinnedHistories);
 const selectedHistories: Ref<{ id: string }[]> = ref([]);
+const filter = ref("");
+const busy = ref(false);
+const modal: Ref<BModal | null> = ref(null);
+const scrollableDiv: Ref<HTMLElement | null> = ref(null);
+
+const historyStore = useHistoryStore();
+
+const pinnedHistories: Ref<{ id: string }[]> = computed(() => historyStore.pinnedHistories);
+const totalHistoryCount = computed(() => historyStore.totalHistoryCount);
+const hasNoResults = computed(() => filter.value && filtered.value.length == 0);
+const validFilter = computed(() => filter.value && filter.value.length > 2);
+const allLoaded = computed(() => totalHistoryCount.value <= filtered.value.length);
 
 onMounted(async () => {
     await nextTick();
     scrollableDiv.value = document.querySelector(".history-selector-modal .modal-body");
-    useInfiniteScroll(scrollableDiv.value, loadMore);
+    useInfiniteScroll(scrollableDiv.value, () => loadMore());
     if (props.multiple) {
         selectedHistories.value = [...pinnedHistories.value];
     }
@@ -77,19 +88,12 @@ onUnmounted(() => {
 // @ts-ignore bad library types
 library.add(faColumns, faSignInAlt, faListAlt);
 
-const filter = ref("");
-const busy = ref(false);
-const allLoaded = ref(false);
-const modal: Ref<BModal | null> = ref(null);
-const scrollableDiv: Ref<HTMLElement | null> = ref(null);
-
 watch(
     () => filter.value,
-    async () => {
-        await loadMore();
-    },
-    {
-        immediate: true,
+    async (newVal, oldVal) => {
+        if (newVal !== "" && validFilter.value && newVal !== oldVal) {
+            await loadMore(true);
+        }
     }
 );
 
@@ -114,9 +118,9 @@ const filtered: Ref<HistorySummary[]> = computed(() => {
     if (!filter.value) {
         filteredHistories = historiesProxy.value;
     } else {
-        const filters = HistoryFilters.getFiltersForText(filter.value);
+        const filters = HistoriesFilters.getFiltersForText(filter.value);
         filteredHistories = historiesProxy.value.filter((history) => {
-            if (!HistoryFilters.testFilters(filters, history)) {
+            if (!HistoriesFilters.testFilters(filters, history)) {
                 return false;
             }
             return true;
@@ -175,21 +179,14 @@ function openInMulti(history: HistorySummary) {
     modal.value?.hide();
 }
 
-/**
- * For active filter:
- * - Problem: How do you assess all items for that filter have been loaded?
- *
+/** Loads (paginates) for more histories
+ * @param noScroll When set to true, we pass the filter as queryString to loadHistories()
  */
-async function loadMore() {
-    if (filter.value || (!busy.value && !allLoaded.value)) {
+async function loadMore(noScroll = false) {
+    if (!busy.value && (noScroll || (!noScroll && !filter.value && !allLoaded.value))) {
         busy.value = true;
-        const queryString = filter.value && HistoryFilters.getQueryString(filter.value);
+        const queryString = filter.value && HistoriesFilters.getQueryString(filter.value);
         await historyStore.loadHistories(true, queryString);
-        await historyStore.getTotalHistoryCount.then((count) => {
-            if (count <= filtered.value.length) {
-                allLoaded.value = true;
-            }
-        });
         busy.value = false;
     }
 }
@@ -212,6 +209,8 @@ async function loadMore() {
                 <b-form-input v-model="filter" type="search" debounce="400" :placeholder="localize('Search Filter')" />
             </b-form-group>
 
+            <b-badge v-if="filter && !validFilter" class="alert-danger w-100">Search string too short!</b-badge>
+            <b-alert v-else-if="!busy && hasNoResults" variant="danger" show>No histories found.</b-alert>
             <b-list-group v-if="propShowModal">
                 <b-list-group-item
                     v-for="history in filtered"
@@ -283,12 +282,18 @@ async function loadMore() {
                     </div>
                 </b-list-group-item>
                 <div>
-                    <div v-if="allLoaded" class="list-end my-2">- All histories loaded -</div>
+                    <div v-if="allLoaded || filter !== ''" class="list-end my-2">
+                        <span v-if="filtered.length == 1">- {{ filtered.length }} history loaded -</span>
+                        <span v-else-if="filtered.length > 1">- All {{ filtered.length }} histories loaded -</span>
+                    </div>
                     <b-overlay :show="busy" opacity="0.5" />
                 </div>
             </b-list-group>
 
             <template v-slot:modal-footer>
+                <div v-if="!allLoaded" class="mr-auto">
+                    <i>Showing {{ filtered.length }} out of {{ totalHistoryCount }} histories</i>
+                </div>
                 <b-button
                     v-if="multiple"
                     v-localize

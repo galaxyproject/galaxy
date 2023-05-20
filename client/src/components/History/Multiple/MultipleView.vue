@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, type Ref } from "vue";
+import { computed, ref, onMounted, watchEffect, type Ref, type WatchStopHandle } from "vue";
 import { storeToRefs } from "pinia";
 import localize from "@/utils/localization";
 import { useUserStore } from "@/stores/userStore";
@@ -17,18 +17,33 @@ const showSelectModal = ref(false);
 library.add(faTimes);
 
 const { currentUser } = storeToRefs(useUserStore());
-const { histories, historiesLoading, currentHistory } = storeToRefs(useHistoryStore());
+const { histories, currentHistory } = storeToRefs(useHistoryStore());
 
 const historyStore = useHistoryStore();
-onMounted(() => {
-    historyStore.loadPinnedHistories();
-});
-
 const selectedHistories: Ref<{ id: string }[]> = computed(() => historyStore.pinnedHistories);
 
-if (!selectedHistories.value.length ?? histories.value.length > 0) {
-    historyStore.pinHistory(histories.value[0]!.id);
-}
+const noHistoriesInView = computed(() => !selectedHistories.value.length && histories.value.length > 0);
+
+const loadingPinnedHistories = ref(true);
+const stopStoreWatcher: Ref<WatchStopHandle | null> = ref(null);
+onMounted(async () => {
+    loadingPinnedHistories.value = true;
+    stopStoreWatcher.value = watchEffect(() => {
+        if (noHistoriesInView.value == true) {
+            console.log("WATCH: ", histories.value.length);
+            historyStore.pinHistory(histories.value[0]!.id);
+            if (stopStoreWatcher.value) {
+                stopStoreWatcher.value();
+            }
+        }
+    });
+    await Promise.all(
+        selectedHistories.value.map(async ({ id }) => {
+            await historyStore.loadHistoryById(id);
+        })
+    );
+    loadingPinnedHistories.value = false;
+});
 
 function addHistoriesToList(histories: { id: string }[]) {
     // Unpin histories that are already pinned but not in the incoming list
@@ -55,7 +70,7 @@ function updateFilter(newFilter: string) {
 
 <template>
     <div v-if="currentUser">
-        <b-alert v-if="historiesLoading" class="m-2" variant="info" show>
+        <b-alert v-if="loadingPinnedHistories" class="m-2" variant="info" show>
             <LoadingSpan message="Loading Histories" />
         </b-alert>
         <div v-else-if="histories.length" class="multi-history-panel d-flex flex-column h-100">
@@ -90,7 +105,7 @@ function updateFilter(newFilter: string) {
             :histories="histories"
             :additional-options="['center', 'set-current']"
             :show-modal.sync="showSelectModal"
-            title="Select histories"
+            title="Select/Deselect histories"
             @selectHistories="addHistoriesToList" />
     </div>
 </template>

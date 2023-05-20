@@ -130,6 +130,8 @@ export async function getHistoryList(offset = 0, limit = null, queryString = "")
  * @return {Promise.<Number>} number of histories
  */
 export async function getHistoryCount() {
+    // This url is temp. for this PR, waiting on:
+    // https://github.com/galaxyproject/galaxy/pull/16075
     const url = "api/histories/count";
     const response = await axios.get(prependPath(url));
     return doResponse(response);
