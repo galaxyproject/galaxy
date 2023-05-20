@@ -8531,11 +8531,15 @@ export interface operations {
             /** @description If non-null, get the specified filename from the extra files for this dataset. */
             /** @description The file extension when downloading the display data. Use the value `data` to let the server infer it from the data type. */
             /** @description The query parameter 'raw' should be considered experimental and may be dropped at some point in the future without warning. Generally, data should be processed by its datatype prior to display. */
+            /** @description Set this for datatypes that allow chunked display through the display_data method to enable chunking. This specifies a byte offset into the target dataset's display. */
+            /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes. */
             query?: {
                 preview?: boolean;
                 filename?: string;
                 to_ext?: string;
                 raw?: boolean;
+                offset?: number;
+                ck_size?: number;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -8567,11 +8571,15 @@ export interface operations {
             /** @description If non-null, get the specified filename from the extra files for this dataset. */
             /** @description The file extension when downloading the display data. Use the value `data` to let the server infer it from the data type. */
             /** @description The query parameter 'raw' should be considered experimental and may be dropped at some point in the future without warning. Generally, data should be processed by its datatype prior to display. */
+            /** @description Set this for datatypes that allow chunked display through the display_data method to enable chunking. This specifies a byte offset into the target dataset's display. */
+            /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes. */
             query?: {
                 preview?: boolean;
                 filename?: string;
                 to_ext?: string;
                 raw?: boolean;
+                offset?: number;
+                ck_size?: number;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -10705,11 +10713,15 @@ export interface operations {
             /** @description If non-null, get the specified filename from the extra files for this dataset. */
             /** @description The file extension when downloading the display data. Use the value `data` to let the server infer it from the data type. */
             /** @description The query parameter 'raw' should be considered experimental and may be dropped at some point in the future without warning. Generally, data should be processed by its datatype prior to display. */
+            /** @description Set this for datatypes that allow chunked display through the display_data method to enable chunking. This specifies a byte offset into the target dataset's display. */
+            /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes. */
             query?: {
                 preview?: boolean;
                 filename?: string;
                 to_ext?: string;
                 raw?: boolean;
+                offset?: number;
+                ck_size?: number;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -10743,11 +10755,15 @@ export interface operations {
             /** @description If non-null, get the specified filename from the extra files for this dataset. */
             /** @description The file extension when downloading the display data. Use the value `data` to let the server infer it from the data type. */
             /** @description The query parameter 'raw' should be considered experimental and may be dropped at some point in the future without warning. Generally, data should be processed by its datatype prior to display. */
+            /** @description Set this for datatypes that allow chunked display through the display_data method to enable chunking. This specifies a byte offset into the target dataset's display. */
+            /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes. */
             query?: {
                 preview?: boolean;
                 filename?: string;
                 to_ext?: string;
                 raw?: boolean;
+                offset?: number;
+                ck_size?: number;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {

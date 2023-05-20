@@ -617,7 +617,8 @@ class BamNative(CompressedArchive, _BamOrSam):
         if not offset == -1:
             try:
                 with pysam.AlignmentFile(dataset.file_name, "rb", check_sq=False) as bamfile:
-                    ck_size = 300  # 300 lines
+                    if ck_size is None:
+                        ck_size = 300  # 300 lines
                     if offset == 0:
                         offset = bamfile.tell()
                         ck_lines = bamfile.text.strip().replace("\t", " ").splitlines()  # type: ignore[attr-defined]
@@ -627,7 +628,7 @@ class BamNative(CompressedArchive, _BamOrSam):
                     for line_number, alignment in enumerate(bamfile, len(ck_lines)):
                         # return only Header lines if 'header_line_count' exceeds 'ck_size'
                         # FIXME: Can be problematic if bam has million lines of header
-                        if line_number > ck_size:
+                        if line_number >= ck_size:
                             break
 
                         offset = bamfile.tell()
