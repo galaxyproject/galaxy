@@ -8,9 +8,8 @@ import os
 import os.path
 import shutil
 import subprocess
-import threading
-import time
 from datetime import datetime
+from typing import Optional
 
 from galaxy.exceptions import (
     ObjectInvalid,
@@ -22,11 +21,10 @@ from galaxy.util import (
     umask_fix_perms,
     unlink,
 )
-from galaxy.util.sleeper import Sleeper
 from . import ConcreteObjectStore
 from .caching import (
     CacheTarget,
-    check_cache,
+    InProcessCacheMonitor,
 )
 from .s3 import parse_config_xml
 
@@ -79,6 +77,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
     Galaxy and the cloud storage.
     """
 
+    cache_monitor: Optional[InProcessCacheMonitor] = None
     store_type = "cloud"
 
     def __init__(self, config, config_dict):
@@ -126,11 +125,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
         if self.cache_size != -1 and self.enable_cache_monitor:
             # Convert GBs to bytes for comparison
             self.cache_size = self.cache_size * 1073741824
-            # Helper for interruptable sleep
-            self.sleeper = Sleeper()
-            self.cache_monitor_thread = threading.Thread(target=self.__cache_monitor)
-            self.cache_monitor_thread.start()
-            log.info("Cache cleaner manager started")
+            self.cache_monitor = InProcessCacheMonitor(self.cache_target, 30)
 
     @staticmethod
     def _get_connection(provider, credentials):
@@ -258,12 +253,6 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
             self.cache_size,
             0.9,
         )
-
-    def __cache_monitor(self):
-        time.sleep(2)  # Wait for things to load before starting the monitor
-        while self.running:
-            check_cache(self.cache_target)
-            self.sleeper.sleep(30)  # Test cache size every 30 seconds?
 
     def _get_bucket(self, bucket_name):
         try:
@@ -699,9 +688,4 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
         return 0.0
 
     def shutdown(self):
-        self.running = False
-        thread = getattr(self, "cache_monitor_thread", None)
-        if thread:
-            log.debug("Shutting down thread")
-            self.sleeper.wake()
-            thread.join(5)
+        self.cache_monitor and self.cache_monitor.shutdown()

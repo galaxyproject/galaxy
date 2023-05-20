@@ -6,9 +6,9 @@ import multiprocessing
 import os
 import shutil
 import subprocess
-import threading
 import time
 from datetime import datetime
+from typing import Optional
 
 try:
     # Imports are done this way to allow objectstore code to be used outside of Galaxy.
@@ -31,11 +31,10 @@ from galaxy.util import (
     which,
 )
 from galaxy.util.path import safe_relpath
-from galaxy.util.sleeper import Sleeper
 from . import ConcreteObjectStore
 from .caching import (
     CacheTarget,
-    check_cache,
+    InProcessCacheMonitor,
 )
 from .s3_multipart_upload import multipart_upload
 
@@ -147,10 +146,12 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
     Galaxy and S3.
     """
 
+    cache_monitor: Optional[InProcessCacheMonitor] = None
     store_type = "aws_s3"
 
     def __init__(self, config, config_dict):
         super().__init__(config, config_dict)
+        self.cache_monitor = None
 
         self.transfer_progress = 0
 
@@ -211,11 +212,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         if self.cache_size != -1 and self.enable_cache_monitor:
             # Convert GBs to bytes for comparison
             self.cache_size = self.cache_size * 1073741824
-            # Helper for interruptable sleep
-            self.sleeper = Sleeper()
-            self.cache_monitor_thread = threading.Thread(target=self.__cache_monitor)
-            self.cache_monitor_thread.start()
-            log.info("Cache cleaner manager started")
+            self.cache_monitor = InProcessCacheMonitor(self.cache_target, 30)
 
     def _configure_connection(self):
         log.debug("Configuring S3 Connection")
@@ -241,12 +238,6 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
             self.cache_size,
             0.9,
         )
-
-    def __cache_monitor(self):
-        time.sleep(2)  # Wait for things to load before starting the monitor
-        while self.running:
-            check_cache(self.cache_target)
-            self.sleeper.sleep(30)  # Test cache size every 30 seconds?
 
     def _get_bucket(self, bucket_name):
         """Sometimes a handle to a bucket is not established right away so try
@@ -716,12 +707,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         return 0.0
 
     def shutdown(self):
-        self.running = False
-        thread = getattr(self, "cache_monitor_thread", None)
-        if thread:
-            log.debug("Shutting down thread")
-            self.sleeper.wake()
-            thread.join(5)
+        self.cache_monitor and self.cache_monitor.shutdown()
 
 
 class GenericS3ObjectStore(S3ObjectStore):

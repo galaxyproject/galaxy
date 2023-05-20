@@ -1,4 +1,5 @@
 import os
+import time
 from tempfile import (
     mkdtemp,
     mkstemp,
@@ -12,6 +13,7 @@ from galaxy.objectstore.azure_blob import AzureBlobObjectStore
 from galaxy.objectstore.caching import (
     CacheTarget,
     check_cache,
+    InProcessCacheMonitor,
 )
 from galaxy.objectstore.cloud import Cloud
 from galaxy.objectstore.pithos import PithosObjectStore
@@ -1061,6 +1063,28 @@ def test_config_parse_azure():
 
             extra_dirs = as_dict["extra_dirs"]
             assert len(extra_dirs) == 2
+
+
+def test_cache_monitor_thread(tmp_path):
+    cache_dir = tmp_path
+    path = cache_dir / "a_file_0"
+    path.write_text("this is an example file")
+
+    cache_target = CacheTarget(cache_dir, 1, 0.000000001)
+    monitor = InProcessCacheMonitor(cache_target, 30, 0)
+
+    path_cleaned = False
+    for _ in range(100):
+        time.sleep(0.1)
+        path_cleaned = not path.exists()
+        if path_cleaned:
+            break
+    monitor.shutdown()
+    assert path_cleaned
+
+    # just verify things cleaned up okay also
+    assert not monitor.cache_monitor_thread.is_alive()
+    assert monitor.stop_cache_monitor_event.is_set()
 
 
 def test_check_cache_sanity(tmp_path):
