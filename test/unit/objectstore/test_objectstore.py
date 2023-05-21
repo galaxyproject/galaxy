@@ -600,22 +600,22 @@ def test_hiercachical_backend_must_share_quota_source():
 # Unit testing the cloud and advanced infrastructure object stores is difficult, but
 # we can at least stub out initializing and test the configuration of these things from
 # XML and dicts.
-class UnitializedPithosObjectStore(PithosObjectStore):
+class UninitializedPithosObjectStore(PithosObjectStore):
     def _initialize(self):
         pass
 
 
-class UnitializeS3ObjectStore(S3ObjectStore):
+class UninitializedS3ObjectStore(S3ObjectStore):
     def _initialize(self):
         pass
 
 
-class UnitializedAzureBlobObjectStore(AzureBlobObjectStore):
+class UninitializedAzureBlobObjectStore(AzureBlobObjectStore):
     def _initialize(self):
         pass
 
 
-class UnitializedCloudObjectStore(Cloud):
+class UninitializedCloudObjectStore(Cloud):
     def _initialize(self):
         pass
 
@@ -650,7 +650,7 @@ extra_dirs:
 
 def test_config_parse_pithos():
     for config_str in [PITHOS_TEST_CONFIG, PITHOS_TEST_CONFIG_YAML]:
-        with TestConfig(config_str, clazz=UnitializedPithosObjectStore) as (directory, object_store):
+        with TestConfig(config_str, clazz=UninitializedPithosObjectStore) as (directory, object_store):
             configured_config_dict = object_store.config_dict
             _assert_has_keys(configured_config_dict, ["auth", "container", "extra_dirs"])
 
@@ -719,7 +719,7 @@ extra_dirs:
 
 def test_config_parse_s3():
     for config_str in [S3_TEST_CONFIG, S3_TEST_CONFIG_YAML]:
-        with TestConfig(config_str, clazz=UnitializeS3ObjectStore) as (directory, object_store):
+        with TestConfig(config_str, clazz=UninitializedS3ObjectStore) as (directory, object_store):
             assert object_store.private
             assert object_store.access_key == "access_moo"
             assert object_store.secret_key == "secret_cow"
@@ -797,7 +797,7 @@ extra_dirs:
 
 def test_config_parse_s3_with_default_cache():
     for config_str in [S3_DEFAULT_CACHE_TEST_CONFIG, S3_DEFAULT_CACHE_TEST_CONFIG_YAML]:
-        with TestConfig(config_str, clazz=UnitializeS3ObjectStore) as (directory, object_store):
+        with TestConfig(config_str, clazz=UninitializedS3ObjectStore) as (directory, object_store):
             assert object_store.cache_size == -1
             assert object_store.staging_path == directory.global_config.object_store_cache_path
 
@@ -917,7 +917,7 @@ def test_config_parse_cloud():
             path = os.path.join(tmpdir, "gcp.config")
             open(path, "w").write("some_gcp_config")
             config_str = config_str.replace("gcp.config", path)
-        with TestConfig(config_str, clazz=UnitializedCloudObjectStore) as (directory, object_store):
+        with TestConfig(config_str, clazz=UninitializedCloudObjectStore) as (directory, object_store):
             assert object_store.bucket_name == "unique_bucket_name_all_lowercase"
             assert object_store.use_rr is False
 
@@ -984,7 +984,7 @@ CLOUD_AWS_NO_AUTH_TEST_CONFIG = """<object_store type="cloud" provider="aws">
 
 def test_config_parse_cloud_noauth_for_aws():
     for config_str in [CLOUD_AWS_NO_AUTH_TEST_CONFIG]:
-        with TestConfig(config_str, clazz=UnitializedCloudObjectStore) as (directory, object_store):
+        with TestConfig(config_str, clazz=UninitializedCloudObjectStore) as (directory, object_store):
             assert object_store.bucket_name == "unique_bucket_name_all_lowercase"
             assert object_store.use_rr is False
 
@@ -1042,7 +1042,7 @@ CLOUD_AWS_NO_CACHE_TEST_CONFIG = """<object_store type="cloud" provider="aws">
 
 def test_config_parse_cloud_no_cache_for_aws():
     for config_str in [CLOUD_AWS_NO_CACHE_TEST_CONFIG]:
-        with TestConfig(config_str, clazz=UnitializedCloudObjectStore) as (directory, object_store):
+        with TestConfig(config_str, clazz=UninitializedCloudObjectStore) as (directory, object_store):
             assert object_store.staging_path == directory.global_config.object_store_cache_path
             assert object_store.cache_size == -1
 
@@ -1081,7 +1081,7 @@ extra_dirs:
 
 def test_config_parse_azure():
     for config_str in [AZURE_BLOB_TEST_CONFIG, AZURE_BLOB_TEST_CONFIG_YAML]:
-        with TestConfig(config_str, clazz=UnitializedAzureBlobObjectStore) as (directory, object_store):
+        with TestConfig(config_str, clazz=UninitializedAzureBlobObjectStore) as (directory, object_store):
             assert object_store.account_name == "azureact"
             assert object_store.account_key == "password123"
 
@@ -1183,7 +1183,7 @@ extra_dirs:
 
 def test_config_parse_azure_no_cache():
     for config_str in [AZURE_BLOB_NO_CACHE_TEST_CONFIG, AZURE_BLOB_NO_CACHE_TEST_CONFIG_YAML]:
-        with TestConfig(config_str, clazz=UnitializedAzureBlobObjectStore) as (directory, object_store):
+        with TestConfig(config_str, clazz=UninitializedAzureBlobObjectStore) as (directory, object_store):
             assert object_store.cache_size == -1
             assert object_store.staging_path == directory.global_config.object_store_cache_path
 
