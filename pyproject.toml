@@ -173,6 +173,6 @@ relative-imports-order = "closest-to-furthest"
 # Don't check pyupgrade rules on tool scripts, which may use different Python versions
 "test/functional/tools/*" = ["UP"]
 "tools/*" = ["UP"]
-
-[tool.ruff.pyupgrade]
-keep-runtime-typing = true  # https://github.com/charliermarsh/ruff/issues/1617
+# Don't check some pyupgrade rules on generated files
+"lib/galaxy/schema/bco/*" = ["UP006", "UP007"]
+"lib/galaxy/schema/drs/*" = ["UP006", "UP007"]
