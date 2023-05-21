@@ -27,7 +27,7 @@ except ImportError:
 
 from galaxy.util import unicodify
 from .util import (
-    get_file_from_conda_package,
+    get_files_from_conda_package,
     MULLED_SOCKET_TIMEOUT,
     split_container_name,
 )
@@ -110,15 +110,16 @@ def get_test_from_anaconda(url: str) -> Optional[Dict[str, Any]]:
     """
     Given the URL of an anaconda tarball, return tests
     """
-    name, content = get_file_from_conda_package(
+    content_dict = get_files_from_conda_package(
         url, ["info/recipe/meta.yaml", "info/recipe/meta.yaml.template", "info/recipe/run_test.sh"]
     )
-    if name and content and name.startswith("info/recipe/meta.yaml"):
+    content = content_dict.get("info/recipe/meta.yaml", content_dict.get("info/recipe/meta.yaml.template"))
+    if content:
         package_tests = get_commands_from_yaml(content)
         if package_tests:
             return package_tests
-    if name and content and name == "info/recipe/run_test.sh":
-        return get_run_test(unicodify(content))
+    if "info/recipe/run_test.sh" in content_dict:
+        return get_run_test(unicodify(content_dict["info/recipe/run_test.sh"]))
     return None
 
 
