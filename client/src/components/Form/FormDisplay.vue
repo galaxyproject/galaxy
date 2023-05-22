@@ -17,7 +17,7 @@
 <script>
 import Vue from "vue";
 import FormInputs from "./FormInputs";
-import { visitInputs, validateInputs, matchErrors } from "./utilities";
+import { visitInputs, validateInputs, matchInputs } from "./utilities";
 export default {
     components: {
         FormInputs,
@@ -185,7 +185,7 @@ export default {
         onErrors() {
             this.resetErrors();
             if (this.errors) {
-                const errorMessages = matchErrors(this.formIndex, this.errors);
+                const errorMessages = matchInputs(this.formIndex, this.errors);
                 for (const inputId in errorMessages) {
                     this.setError(inputId, errorMessages[inputId]);
                 }
@@ -193,7 +193,7 @@ export default {
         },
         onWarnings() {
             if (this.warnings) {
-                const warningMessages = matchErrors(this.formIndex, this.warnings);
+                const warningMessages = matchInputs(this.formIndex, this.warnings);
                 for (const inputId in warningMessages) {
                     this.setWarning(inputId, warningMessages[inputId]);
                 }
