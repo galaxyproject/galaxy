@@ -8,7 +8,7 @@
             :size="size"
             role="button"
             @click="onDownload(config)">
-            Download
+            Generate
             <font-awesome-icon v-if="waiting" icon="spinner" spin />
             <font-awesome-icon v-else icon="download" />
         </b-button>
@@ -82,7 +82,7 @@ export default {
         },
         onDownload(config) {
             if (!config.enable_celery_tasks) {
-                window.location.assign(withPrefix(this.fallbackUrl));
+                window.open(withPrefix(this.fallbackUrl));
             } else {
                 this.waiting = true;
                 axios
