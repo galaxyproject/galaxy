@@ -178,11 +178,12 @@ export default {
             const params = this.buildFormData();
             if (JSON.stringify(params) != JSON.stringify(this.formData)) {
                 this.formData = params;
-                this.resetError();
+                this.resetErrors();
                 this.$emit("onChange", params, refreshOnChange);
             }
         },
         onErrors() {
+            this.resetErrors();
             if (this.errors) {
                 const errorMessages = matchErrors(this.formIndex, this.errors);
                 for (const inputId in errorMessages) {
@@ -234,7 +235,7 @@ export default {
                 input.warning = message;
             }
         },
-        resetError() {
+        resetErrors() {
             Object.values(this.formIndex).forEach((input) => {
                 input.error = null;
             });
