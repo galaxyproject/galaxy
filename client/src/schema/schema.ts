@@ -7246,13 +7246,39 @@ export interface components {
         };
         /**
          * UpdateHistoryContentsPayload
-         * @description Contains arbitrary property values that will be updated for a particular history item.
+         * @description Can contain arbitrary/dynamic fields that will be updated for a particular history item.
          * @example {
          *   "annotation": "Test",
          *   "visible": false
          * }
          */
-        UpdateHistoryContentsPayload: Record<string, never>;
+        UpdateHistoryContentsPayload: {
+            /**
+             * Annotation
+             * @description A user-defined annotation for this item.
+             */
+            annotation?: string;
+            /**
+             * Deleted
+             * @description Whether this item is marked as deleted.
+             */
+            deleted?: boolean;
+            /**
+             * Name
+             * @description The new name of the item.
+             */
+            name?: string;
+            /**
+             * Tags
+             * @description A list of tags to add to this item.
+             */
+            tags?: components["schemas"]["TagCollection"];
+            /**
+             * Visible
+             * @description Whether this item is visible in the history.
+             */
+            visible?: boolean;
+        };
         /**
          * UpdateLibraryFolderPayload
          * @description Base model definition with common configuration used by all derived models.

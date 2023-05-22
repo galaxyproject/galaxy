@@ -804,7 +804,9 @@ class FastAPIHistoryContents:
         payload: UpdateHistoryContentsPayload = Body(...),
     ) -> AnyHistoryContentItem:
         """Updates the values for the history content item with the given ``ID``."""
-        return self.service.update(trans, history_id, id, payload.dict(), serialization_params, contents_type=type)
+        return self.service.update(
+            trans, history_id, id, payload.dict(exclude_unset=True), serialization_params, contents_type=type
+        )
 
     @router.put(
         "/api/histories/{history_id}/contents/{id}",
@@ -822,7 +824,9 @@ class FastAPIHistoryContents:
         payload: UpdateHistoryContentsPayload = Body(...),
     ) -> AnyHistoryContentItem:
         """Updates the values for the history content item with the given ``ID``."""
-        return self.service.update(trans, history_id, id, payload.dict(), serialization_params, contents_type=type)
+        return self.service.update(
+            trans, history_id, id, payload.dict(exclude_unset=True), serialization_params, contents_type=type
+        )
 
     @router.delete(
         "/api/histories/{history_id}/contents/{type}s/{id}",

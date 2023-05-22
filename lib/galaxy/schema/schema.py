@@ -981,7 +981,33 @@ class HistoryContentBulkOperationResult(Model):
 
 
 class UpdateHistoryContentsPayload(HistoryBase):
-    """Contains arbitrary property values that will be updated for a particular history item."""
+    """Can contain arbitrary/dynamic fields that will be updated for a particular history item."""
+
+    name: Optional[str] = Field(
+        None,
+        title="Name",
+        description="The new name of the item.",
+    )
+    deleted: Optional[bool] = Field(
+        None,
+        title="Deleted",
+        description="Whether this item is marked as deleted.",
+    )
+    visible: Optional[bool] = Field(
+        None,
+        title="Visible",
+        description="Whether this item is visible in the history.",
+    )
+    annotation: Optional[str] = Field(
+        None,
+        title="Annotation",
+        description="A user-defined annotation for this item.",
+    )
+    tags: Optional[TagCollection] = Field(
+        None,
+        title="Tags",
+        description="A list of tags to add to this item.",
+    )
 
     class Config:
         schema_extra = {
