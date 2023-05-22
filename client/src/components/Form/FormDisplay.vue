@@ -71,6 +71,10 @@ export default {
             type: Object,
             default: null,
         },
+        warnings: {
+            type: Object,
+            default: null,
+        },
         workflowBuildingMode: {
             type: Boolean,
             default: false,
@@ -118,6 +122,9 @@ export default {
         replaceParams() {
             this.onReplaceParams();
         },
+        warnings() {
+            this.onWarnings();
+        },
     },
     created() {
         this.onCloneInputs();
@@ -125,6 +132,8 @@ export default {
         this.formData = this.buildFormData();
         // emit back to parent, so that parent has submittable data
         this.$emit("onChange", this.formData);
+        // highlight initial warnings
+        this.onWarnings();
         // highlight initial errors
         this.onErrors();
     },
@@ -181,6 +190,14 @@ export default {
                 }
             }
         },
+        onWarnings() {
+            if (this.warnings) {
+                const warningMessages = matchErrors(this.formIndex, this.warnings);
+                for (const inputId in warningMessages) {
+                    this.setWarning(inputId, warningMessages[inputId]);
+                }
+            }
+        },
         getOffsetTop(element, padding = 150) {
             let offsetTop = 0;
             while (element) {
@@ -209,6 +226,12 @@ export default {
             const input = this.formIndex[inputId];
             if (input) {
                 input.error = message;
+            }
+        },
+        setWarning(inputId, message) {
+            const input = this.formIndex[inputId];
+            if (input) {
+                input.warning = message;
             }
         },
         resetError() {

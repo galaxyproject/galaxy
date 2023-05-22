@@ -43,8 +43,9 @@
                                 <FormDisplay
                                     :id="toolId"
                                     :inputs="formConfig.inputs"
-                                    :errors="toolErrors"
+                                    :errors="formConfig.errors"
                                     :validation-scroll-to="validationScrollTo"
+                                    :warnings="formConfig.warnings"
                                     @onChange="onChange"
                                     @onValidation="onValidation" />
                             </div>
@@ -192,11 +193,6 @@ export default {
             // not re-rendered when versions change.
             const { id, version } = this.formConfig;
             return id.endsWith(version) ? id : `${id}/${version}`;
-        },
-        toolErrors() {
-            const errors = this.formConfig.errors ?? {};
-            const warnings = this.formConfig.warnings ?? {};
-            return { ...errors, ...warnings };
         },
         tooltip() {
             return `Run tool: ${this.formConfig.name} (${this.formConfig.version})`;

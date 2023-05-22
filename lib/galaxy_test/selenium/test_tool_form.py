@@ -121,6 +121,7 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         self.perform_upload(test_path)
         self.history_panel_wait_for_hid_ok(1)
         self.tool_open("column_param")
+        self.select2_set_value("#col", "3")
         self.tool_form_execute()
         self.history_panel_wait_for_hid_ok(2)
         # delete source dataset and click re-run on resulting dataset
@@ -134,6 +135,11 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         assert (
             input_warning.text
             == "parameter 'input1': the previously selected dataset has been deleted. Using default: ''."
+        )
+        input_warning = self.components.tool_form.parameter_error(parameter="col").wait_for_visible()
+        assert (
+            input_warning.text
+            == "parameter 'col': an invalid option ('3') was selected (valid options: 1)"
         )
 
     @selenium_test
