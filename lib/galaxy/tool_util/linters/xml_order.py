@@ -14,6 +14,7 @@ TAG_ORDER = [
     "xrefs",
     "parallelism",
     "requirements",
+    "required_files",
     "code",
     "stdio",
     "version_command",
