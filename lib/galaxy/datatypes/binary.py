@@ -86,11 +86,11 @@ from . import (
     dataproviders,
 )
 
-#Optional dependency to enable better metadata support in FITS datatype
+# Optional dependency to enable better metadata support in FITS datatype
 try:
     from astropy.io import fits
 except ModuleNotFoundError:
-    #If astropy cannot be found FITS datatype will work with minimal metadata support
+    # If astropy cannot be found FITS datatype will work with minimal metadata support
     pass
 
 if TYPE_CHECKING:
@@ -4357,7 +4357,16 @@ class FITS(Binary):
             with fits.open(dataset.file_name) as hdul:
                 dataset.metadata.HDUs = []
                 for i in range(len(hdul)):
-                    dataset.metadata.HDUs.append(hdul[i].__class__.__name__)
+                    dataset.metadata.HDUs.append(" ".join(
+                            filter(None, [
+                                    str(i),
+                                    hdul[i].__class__.__name__,
+                                    hdul[i].name,
+                                    str(hdul[i]._summary()[4])
+                                ]
+                            )
+                        )
+                    )
         except Exception as e:
             log.warning("%s, set_meta Exception: %s", self, e)
 
