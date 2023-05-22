@@ -8,6 +8,16 @@ import { setActivePinia } from "pinia";
 import { useHistoryStore, type HistorySummary } from "@/stores/historyStore";
 import HistoryArchiveWizard from "./HistoryArchiveWizard.vue";
 
+jest.mock("@/composables/config", () => ({
+    useConfig: jest.fn(() => ({
+        config: {
+            value: {
+                enable_celery_tasks: true,
+            },
+        },
+    })),
+}));
+
 const localVue = getLocalVue(true);
 
 const TEST_HISTORY_ID = "test-history-id";
@@ -67,7 +77,7 @@ describe("HistoryArchiveWizard.vue", () => {
         expect(optionTabs.exists()).toBe(false);
     });
 
-    it("should render both archival modes when writeable file sources are available", async () => {
+    it("should render both archival modes when writeable file sources and celery tasks are available", async () => {
         axiosMock.onGet(REMOTE_FILES_API_ENDPOINT).reply(200, [
             {
                 id: "test-posix-source",

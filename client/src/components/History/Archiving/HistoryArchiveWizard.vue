@@ -10,11 +10,13 @@ import HistoryArchiveExportSelector from "@/components/History/Archiving/History
 import HistoryArchiveSimple from "@/components/History/Archiving/HistoryArchiveSimple.vue";
 import { useHistoryStore, type HistorySummary } from "@/stores/historyStore";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import { useConfig } from "@/composables/config";
 import { useToast } from "@/composables/toast";
 
 library.add(faArchive);
 
 const historyStore = useHistoryStore();
+const { config } = useConfig(true);
 const toast = useToast();
 
 const { hasWritable: hasWritableFileSources } = useFileSources();
@@ -40,6 +42,10 @@ const history = computed<HistorySummary | null>(() => {
 
 const isHistoryAlreadyArchived = computed(() => {
     return history.value?.archived;
+});
+
+const canFreeStorage = computed(() => {
+    return hasWritableFileSources.value && config.value.enable_celery_tasks;
 });
 
 const archivedHistoriesRoute = "/histories/archived";
@@ -77,20 +83,20 @@ async function onArchiveHistory(exportRecordId?: string) {
                 <router-link :to="archivedHistoriesRoute">Archived Histories</router-link> section.
             </b-alert>
 
-            <history-archive-simple v-if="!hasWritableFileSources" :history="history" @onArchive="onArchiveHistory" />
-            <div v-else>
+            <div v-if="canFreeStorage">
                 <h2 class="h-md">How do you want to archive this history?</h2>
                 <b-card no-body class="mt-3">
                     <b-tabs pills card vertical lazy class="archival-option-tabs">
                         <b-tab id="keep-storage-tab" title="Keep storage space" active>
                             <history-archive-simple :history="history" @onArchive="onArchiveHistory" />
                         </b-tab>
-                        <b-tab v-if="hasWritableFileSources" id="free-storage-tab" title="Free storage space">
+                        <b-tab id="free-storage-tab" title="Free storage space">
                             <history-archive-export-selector :history="history" @onArchive="onArchiveHistory" />
                         </b-tab>
                     </b-tabs>
                 </b-card>
             </div>
+            <history-archive-simple v-else :history="history" @onArchive="onArchiveHistory" />
         </div>
     </div>
 </template>
