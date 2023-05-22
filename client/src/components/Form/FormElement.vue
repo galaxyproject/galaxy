@@ -178,7 +178,7 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
         :class="{ alert: hasAlert, 'alert-info': hasAlert }">
         <div v-if="hasAlert" class="ui-form-error">
             <FontAwesomeIcon class="mr-1" icon="fa-exclamation" />
-            <span class="ui-form-error-text" v-html="props.warning || props.error" />
+            <span class="ui-form-error-text" v-html="props.error || props.warning" />
         </div>
 
         <div class="ui-form-title">
