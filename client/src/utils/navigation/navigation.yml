@@ -312,15 +312,13 @@ edit_dataset_attributes:
 edit_collection_attributes:
   selectors:
     alert_info: 'div.alert-info'
-    database_genome_tab:
-      type: xpath
-      selector: '//a[contains(text(), "Database/Build")]'
-    datatypes_tab:
-      type: xpath
-      selector: '//a[contains(text(), "Datatypes")]'
+    database_genome_tab: '.collection-edit-change-genome-nav'
+    datatypes_tab: '.collection-edit-change-datatype-nav'
     data_value:
       type: xpath
       selector: '//span[contains(text(), "${data_change}")]'
+    genome_select_search: ".database-dropdown input.multiselect__input"
+    datatype_select_search: '.datatype-dropdown input.multiselect__input'
     save_dbkey_btn: '.save-dbkey-edit'
     save_datatype_btn: '.save-datatype-edit'
 
