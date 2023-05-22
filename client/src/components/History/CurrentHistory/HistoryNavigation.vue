@@ -104,6 +104,14 @@
                         <span v-localize>Extract Workflow</span>
                     </b-dropdown-item>
 
+                    <b-dropdown-item
+                        :disabled="isAnonymous"
+                        :title="userTitle('Display Workflow Invocations')"
+                        @click="$router.push(`/histories/${history.id}/invocations`)">
+                        <Icon fixed-width icon="sitemap" class="fa-rotate-270 mr-1" />
+                        <span v-localize>Show Invocations</span>
+                    </b-dropdown-item>
+
                     <b-dropdown-divider></b-dropdown-divider>
 
                     <b-dropdown-item
