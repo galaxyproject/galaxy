@@ -42,6 +42,9 @@ from galaxy.webapps.base.controller import (
 )
 from galaxy.webapps.galaxy.api import depends
 
+import logging
+log = logging.getLogger(__name__)
+
 
 def format_bool(b):
     if b:
@@ -451,8 +454,8 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
                     {
                         "name": "content_format",
                         "label": "Content Format",
-                        "type": "hidden",
                         "value": "markdown",
+                        "hidden": True,
                     },
                     {
                         "name": "content",
