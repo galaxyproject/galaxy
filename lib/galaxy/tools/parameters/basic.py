@@ -2493,7 +2493,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             d["options"]["hdca"].append(
                 {
                     "id": trans.security.encode_id(dce.id),
-                    "hid": None,
+                    "hid": -1,
                     "name": dce.element_identifier,
                     "src": "dce",
                     "tags": [],
