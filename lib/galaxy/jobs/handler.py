@@ -426,7 +426,10 @@ class JobHandlerQueue(Monitors):
                 )
                 .subquery()
             )
-            rank = func.rank().over(partition_by=model.Job.table.c.user_id, order_by=model.Job.table.c.id).label("rank")
+            coalesce_exp = func.coalesce(
+                model.Job.table.c.user_id, model.Job.table.c.session_id
+            )  # accommodate jobs by anonymous users
+            rank = func.rank().over(partition_by=coalesce_exp, order_by=model.Job.table.c.id).label("rank")
             job_filter_conditions = (
                 (model.Job.state == model.Job.states.NEW),
                 (model.Job.handler == self.app.config.server_name),
