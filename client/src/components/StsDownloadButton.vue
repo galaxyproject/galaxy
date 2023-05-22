@@ -5,8 +5,10 @@
             v-b-tooltip.hover.bottom
             :title="title"
             :variant="variant"
+            :size="size"
             role="button"
             @click="onDownload(config)">
+            Download
             <font-awesome-icon v-if="waiting" icon="spinner" spin />
             <font-awesome-icon v-else icon="download" />
         </b-button>
@@ -56,6 +58,10 @@ export default {
         variant: {
             type: String,
             default: null,
+        },
+        size: {
+            type: String,
+            default: "md",
         },
     },
     data() {
