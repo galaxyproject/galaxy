@@ -1151,6 +1151,24 @@ mapping:
           Shown in warning box to users that were not activated yet.
           In use only if activation_grace_period is set.
 
+      default_paired_list_filter_name:
+        type: str
+        default: "full_names"
+        desc: |
+          Name of filter set
+
+      default_paired_list_forward_filter:
+        type: str
+        default: "forward"
+        desc: |
+          Forward filter
+
+      default_paired_list_reverse_filter:
+        type: str
+        default: "reverse"
+        desc: |
+          Reverse filter
+
       password_expiration_period:
         type: int
         default: 0

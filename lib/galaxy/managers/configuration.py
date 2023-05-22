@@ -207,6 +207,9 @@ class ConfigSerializer(base.ModelSerializer):
             "tool_training_recommendations": _use_config,
             "tool_training_recommendations_link": _use_config,
             "tool_training_recommendations_api_url": _use_config,
+            "default_paired_list_filter_name": _use_config,
+            "default_paired_list_forward_filter": _use_config,
+            "default_paired_list_reverse_filter": _use_config,
         }
 
 

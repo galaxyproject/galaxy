@@ -419,6 +419,7 @@ import { Splitpanes, Pane } from "splitpanes";
 import draggable from "vuedraggable";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import { getGalaxyInstance } from "app";
 
 Vue.use(BootstrapVue);
 export default {
@@ -432,6 +433,7 @@ export default {
     mixins: [mixin],
     data: function () {
         return {
+            config: getGalaxyInstance().config,
             state: "build", //error, duplicates
             dragToChangeTitle: _l("Drag to change"),
             chooseFilterTitle: _l("Choose from common filters"),
@@ -631,7 +633,18 @@ export default {
             }
         },
         initialFiltersSet: function () {
-            this.changeFilters("illumina");
+            let initialFilter = this.config.default_paired_list_filter_name
+                ? this.config.default_paired_list_filter_name
+                : this.DEFAULT_FILTERS;
+            if (this.config.default_paired_list_filter_name) {
+                //add initialFilter to commonFilters
+                this.commonFilters[initialFilter] = [];
+
+                // add the default filter to the list of common filters
+                this.commonFilters[initialFilter].push(this.config.default_paired_list_forward_filter);
+                this.commonFilters[initialFilter].push(this.config.default_paired_list_reverse_filter);
+            }
+            this.changeFilters(initialFilter);
         },
         /** add ids to dataset objs in initial list if none */
         _ensureElementIds: function () {

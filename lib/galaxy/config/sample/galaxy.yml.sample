@@ -1103,6 +1103,15 @@ galaxy:
   # only if activation_grace_period is set.
   #inactivity_box_content: Your account has not been activated yet.  Feel free to browse around and see what's available, but you won't be able to upload data or run jobs until you have verified your email address.
 
+  # Name of filter set
+  #default_paired_list_filter_name: full_names
+
+  # Forward filter
+  #default_paired_list_forward_filter: forward
+
+  # Reverse filter
+  #default_paired_list_reverse_filter: reverse
+
   # Password expiration period (in days). Users are required to change
   # their password every x days. Users will be redirected to the change
   # password screen when they log in after their password expires. Enter
