@@ -130,14 +130,33 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         item = self.history_panel_item_component(hid=2)
         item.title.wait_for_and_click()
         item.rerun_button.wait_for_and_click()
-        # validate form error text
-        input_warning = self.components.tool_form.parameter_error(parameter="input1").wait_for_visible()
+        # validate initial warnings
+        error_input1 = self.components.tool_form.parameter_error(parameter="input1").wait_for_visible()
+        error_col = self.components.tool_form.parameter_error(parameter="col").wait_for_visible()
         assert (
-            input_warning.text
+            error_input1.text
             == "parameter 'input1': the previously selected dataset has been deleted. Using default: ''."
         )
-        input_warning = self.components.tool_form.parameter_error(parameter="col").wait_for_visible()
-        assert input_warning.text == "parameter 'col': an invalid option ('3') was selected (valid options: 1)"
+        assert error_col.text == "parameter 'col': an invalid option ('3') was selected (valid options: 1)"
+        # validate errors when inputs are missing
+        self.components.tool_form.parameter_batch_dataset_collection(parameter="input1").wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        error_input1 = self.components.tool_form.parameter_error(parameter="input1").wait_for_visible()
+        error_col = self.components.tool_form.parameter_error(parameter="col").wait_for_visible()
+        error_col_names = self.components.tool_form.parameter_error(parameter="col_names").wait_for_visible()
+        assert error_input1.text == "Please provide a value for this option."
+        assert error_col.text == "parameter 'col': an invalid option (None) was selected, please verify"
+        assert error_col_names.text == "parameter 'col_names': an invalid option (None) was selected, please verify"
+        # validate warnings when inputs are restored
+        self.components.tool_form.parameter_data_input_single(parameter="input1").wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        error_input1 = self.components.tool_form.parameter_error(parameter="input1").wait_for_visible()
+        error_col = self.components.tool_form.parameter_error(parameter="col").wait_for_visible()
+        assert (
+            error_input1.text
+            == "parameter 'input1': the previously selected dataset has been deleted. Using default: ''."
+        )
+        assert error_col.text == "parameter 'col': an invalid option ('3') was selected (valid options: 1)"
 
     @selenium_test
     def test_rerun_dataset_collection_element(self):

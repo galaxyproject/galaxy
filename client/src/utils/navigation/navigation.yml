@@ -494,6 +494,9 @@ tool_form:
     parameter_checkbox: 'div.ui-form-element[id="form-element-${parameter}"] .ui-switch'
     parameter_input: 'div.ui-form-element[id="form-element-${parameter}"] .ui-input'
     parameter_textarea: 'div.ui-form-element[id="form-element-${parameter}"] textarea'
+    parameter_data_input_single:
+      type: xpath
+      selector: //div[@id='form-element-${parameter}']//i[contains(@class, 'fa-file-o')]/parent::label
     parameter_batch_dataset_collection:
       type: xpath
       selector: //div[@id='form-element-${parameter}']//i[contains(@class, 'fa-folder-o')]/parent::label
