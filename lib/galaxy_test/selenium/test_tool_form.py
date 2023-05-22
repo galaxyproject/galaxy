@@ -137,10 +137,7 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
             == "parameter 'input1': the previously selected dataset has been deleted. Using default: ''."
         )
         input_warning = self.components.tool_form.parameter_error(parameter="col").wait_for_visible()
-        assert (
-            input_warning.text
-            == "parameter 'col': an invalid option ('3') was selected (valid options: 1)"
-        )
+        assert input_warning.text == "parameter 'col': an invalid option ('3') was selected (valid options: 1)"
 
     @selenium_test
     def test_rerun_dataset_collection_element(self):
