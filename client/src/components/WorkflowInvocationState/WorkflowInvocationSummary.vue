@@ -2,11 +2,7 @@
     <div class="mb-3 workflow-invocation-state-component">
         <div v-if="invocationAndJobTerminal">
             <span>
-                <b-button
-                    v-b-tooltip.hover
-                    size="sm"
-                    class="invocation-report-link"
-                    :href="invocationLink">
+                <b-button v-b-tooltip.hover size="sm" class="invocation-report-link" :href="invocationLink">
                     View Report
                 </b-button>
                 <b-button

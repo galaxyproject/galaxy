@@ -10,7 +10,7 @@
                     :download-endpoint="downloadEndpoint"
                     size="sm"
                     title="Generate PDF">
-                    </sts-download-button>
+                </sts-download-button>
                 <b-button
                     v-if="!readOnly"
                     v-b-tooltip.hover
@@ -23,12 +23,14 @@
                     <font-awesome-icon icon="edit" />
                 </b-button>
                 <h1 class="float-right align-middle mr-2 mt-1 h-md">Galaxy {{ markdownConfig.model_class }}</h1>
-                <span class="float-left font-weight-light ">
-                    <h1 class="text-break align-middle">Title: {{ markdownConfig.title || markdownConfig.model_class }}</h1>
+                <span class="float-left font-weight-light">
+                    <h1 class="text-break align-middle">
+                        Title: {{ markdownConfig.title || markdownConfig.model_class }}
+                    </h1>
                 </span>
             </div>
             <b-badge variant="info" class="w-100 rounded mb-3 white-space-normal">
-                <div class="float-left m-1 text-break">Created by {{ markdownConfig.username }} with Galaxy {{ version }} on {{ time }}</div>
+                <div class="float-left m-1 text-break">Generated with Galaxy {{ version }} on {{ time }}</div>
                 <div class="float-right m-1">Identifier: {{ markdownConfig.id }}</div>
             </b-badge>
             <div>

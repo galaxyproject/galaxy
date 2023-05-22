@@ -171,9 +171,6 @@ describe("InvocationsList.vue", () => {
             expect(columns.at(3).text()).toBe(
                 formatDistanceToNow(parseISO(`${mockInvocationData.create_time}Z`), { addSuffix: true })
             );
-            // expect(columns.at(4).text()).toBe(
-            //     formatDistanceToNow(parseISO(`${mockInvocationData.update_time}Z`), { addSuffix: true })
-            // );
             expect(columns.at(4).text()).toBe("scheduled");
             expect(columns.at(5).text()).toBe("");
         });
