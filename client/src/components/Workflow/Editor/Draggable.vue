@@ -5,7 +5,7 @@ import { useAnimationFrameSize } from "@/composables/sensors/animationFrameSize"
 import { useAnimationFrameThrottle } from "@/composables/throttle";
 import { useDraggable } from "./composables/useDraggable.js";
 import type { ZoomTransform } from "d3-zoom";
-import { useMagnetSnap } from "./Tools/magnetSnap";
+import { useWorkflowEditorToolbarStore } from "@/stores/workflowEditorToolbarStore";
 
 const props = defineProps({
     rootOffset: {
@@ -38,7 +38,7 @@ type Position = { x: number; y: number };
 
 const { throttle } = useAnimationFrameThrottle();
 
-const onStart = (position: Position, event: DragEvent) => {
+const onStart = (_position: Position, event: DragEvent) => {
     emit("start");
     emit("mousedown", event);
     if (event.type == "dragstart") {
@@ -59,6 +59,8 @@ const onStart = (position: Position, event: DragEvent) => {
     }
 };
 
+const { getSnappedPosition } = useWorkflowEditorToolbarStore();
+
 const onMove = (position: Position, event: DragEvent) => {
     if (event.type == "drag" && event.x == 0 && event.y == 0) {
         // the last drag event has no coordinate ... this is obviously a hack!
@@ -71,26 +73,15 @@ const onMove = (position: Position, event: DragEvent) => {
             x: (position.x - props.rootOffset.x - transform!.value.x) / transform!.value.k,
             y: (position.y - props.rootOffset.y - transform!.value.y) / transform!.value.k,
         };
-        emit("move", newPosition, event);
+        emit("move", getSnappedPosition(newPosition), event);
     });
 };
 
-const { snappedPosition } = useMagnetSnap();
-
-const onEnd = (position: Position, event: DragEvent) => {
+const onEnd = (_position: Position, _event: DragEvent) => {
     if (dragImg) {
         document.body.removeChild(dragImg);
     }
 
-    const newPosition = {
-        unscaled: { ...position, ...size },
-        x: (position.x - props.rootOffset.x - transform!.value.x) / transform!.value.k,
-        y: (position.y - props.rootOffset.y - transform!.value.y) / transform!.value.k,
-    };
-
-    const snapped = snappedPosition(newPosition);
-
-    emit("move", { ...newPosition, ...snapped }, event);
     emit("stop");
     emit("mouseup");
 };

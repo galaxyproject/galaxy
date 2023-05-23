@@ -3,16 +3,17 @@ import { BButton } from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { gxDuotoneMagnet } from "./icons";
-import { useMagnetSnap } from "./magnetSnap";
+import { useWorkflowEditorToolbarStore } from "@/stores/workflowEditorToolbarStore";
+import { toRefs } from "vue";
 
 library.add(gxDuotoneMagnet);
 
-const { active: magnetActive } = useMagnetSnap();
+const { snapActive } = toRefs(useWorkflowEditorToolbarStore());
 </script>
 
 <template>
     <div class="tool-panel">
-        <b-button :pressed.sync="magnetActive" :variant="magnetActive ? 'info' : 'secondary'">
+        <b-button :pressed.sync="snapActive" :variant="snapActive ? 'info' : 'secondary'">
             <FontAwesomeIcon :icon="['gxd', 'magnet']" size="2x" />
         </b-button>
     </div>
