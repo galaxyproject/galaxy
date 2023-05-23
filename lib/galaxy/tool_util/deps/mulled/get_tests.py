@@ -12,6 +12,7 @@ from glob import glob
 from typing import (
     Any,
     Dict,
+    List,
     Optional,
 )
 
@@ -26,6 +27,7 @@ except ImportError:
     UndefinedError = Exception  # type: ignore[assignment,misc]
 
 from galaxy.util import unicodify
+from galaxy.util.commands import argv_to_str
 from .util import (
     get_files_from_conda_package,
     MULLED_SOCKET_TIMEOUT,
@@ -66,6 +68,7 @@ def get_commands_from_yaml(yaml_content: bytes) -> Optional[Dict[str, Any]]:
         return None
 
     # need to know what scripting languages are needed to run the container
+    package_tests["import_lang"] = "python -c"  # python by default
     try:
         requirements = list(meta_yaml["requirements"]["run"])
     except (KeyError, TypeError):
@@ -77,8 +80,6 @@ def get_commands_from_yaml(yaml_content: bytes) -> Optional[Dict[str, Any]]:
                 break
             # elif ... :
             # other languages if necessary ... hopefully python and perl should suffice though
-        else:  # python by default
-            package_tests["import_lang"] = "python -c"
     return package_tests
 
 
@@ -260,6 +261,15 @@ def main_test_search(
     return {"container": container}
 
 
+def import_test_to_command_list(import_lang: str, import_: str) -> List[str]:
+    if import_lang == "python -c":
+        return ["python", "-c", f"import {import_}"]
+    elif import_lang == "perl -e":
+        return ["perl", "-e", f"use {import_}"]
+    else:
+        raise ValueError(f"Unsupported import_lang '{import_lang}'")
+
+
 def hashed_test_search(
     container, recipes_path=None, deep=False, anaconda_channel="bioconda", github_repo="bioconda/bioconda-recipes"
 ):
@@ -294,7 +304,8 @@ def hashed_test_search(
     for container in containers:
         tests = main_test_search(container, recipes_path, deep, anaconda_channel, github_repo)
         package_tests["commands"] += tests.get("commands", [])  # not a very nice solution but probably the simplest
+        # Given that this could be a mix of Python and Perl packages, translate imports to commands
         for imp in tests.get("imports", []):
-            package_tests["imports"].append(f"{tests['import_lang']} 'import {imp}'")
+            package_tests["commands"].append(argv_to_str(import_test_to_command_list(tests["import_lang"], imp)))
 
     return package_tests
