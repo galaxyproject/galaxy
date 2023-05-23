@@ -15,7 +15,7 @@ export function useCurrentUser(noFetch: boolean | Ref<boolean> = false, fetchOnc
     const currentUser = computed(() => userStore.currentUser);
     const currentFavorites = computed(() => userStore.currentFavorites);
     onMounted(() => {
-        if (!unref(noFetch) && !(Object.keys(currentUser).length > 0) && unref(fetchOnce)) {
+        if (!unref(noFetch) && !(Object.keys(currentUser).length > 0 && unref(fetchOnce))) {
             userStore.loadUser();
         }
     });
