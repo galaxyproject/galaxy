@@ -1,10 +1,11 @@
 import { defineStore } from "pinia";
 import type { XYPosition } from "./workflowEditorStateStore";
-import { computed, ref } from "vue";
+import { computed } from "vue";
+import { useLocalStorage } from "@vueuse/core";
 
 export const useWorkflowEditorToolbarStore = defineStore("workflowEditorToolbarStore", () => {
     const snapDistance = 10;
-    const snapActive = ref(false);
+    const snapActive = useLocalStorage("workflow-editor-toolbar-snap-active", false);
 
     const getSnappedPosition = computed(() => <T extends XYPosition>(position: T) => {
         if (snapActive.value) {
