@@ -17,7 +17,7 @@
 <script>
 import Vue from "vue";
 import FormInputs from "./FormInputs";
-import { visitInputs, validateInputs, matchErrors } from "./utilities";
+import { visitInputs, validateInputs, matchInputs } from "./utilities";
 export default {
     components: {
         FormInputs,
@@ -71,6 +71,10 @@ export default {
             type: Object,
             default: null,
         },
+        warnings: {
+            type: Object,
+            default: null,
+        },
         workflowBuildingMode: {
             type: Boolean,
             default: false,
@@ -113,16 +117,13 @@ export default {
             this.$emit("onValidation", this.validation);
         },
         errors() {
-            this.resetError();
-            if (this.errors) {
-                const errorMessages = matchErrors(this.formIndex, this.errors);
-                for (const inputId in errorMessages) {
-                    this.setError(inputId, errorMessages[inputId]);
-                }
-            }
+            this.onErrors();
         },
         replaceParams() {
             this.onReplaceParams();
+        },
+        warnings() {
+            this.onWarnings();
         },
     },
     created() {
@@ -131,6 +132,10 @@ export default {
         this.formData = this.buildFormData();
         // emit back to parent, so that parent has submittable data
         this.$emit("onChange", this.formData);
+        // highlight initial warnings
+        this.onWarnings();
+        // highlight initial errors
+        this.onErrors();
     },
     methods: {
         buildFormData() {
@@ -173,11 +178,28 @@ export default {
             const params = this.buildFormData();
             if (JSON.stringify(params) != JSON.stringify(this.formData)) {
                 this.formData = params;
-                this.resetError();
+                this.resetErrors();
                 this.$emit("onChange", params, refreshOnChange);
             }
         },
-        getOffsetTop(element, padding = 100) {
+        onErrors() {
+            this.resetErrors();
+            if (this.errors) {
+                const errorMessages = matchInputs(this.formIndex, this.errors);
+                for (const inputId in errorMessages) {
+                    this.setError(inputId, errorMessages[inputId]);
+                }
+            }
+        },
+        onWarnings() {
+            if (this.warnings) {
+                const warningMessages = matchInputs(this.formIndex, this.warnings);
+                for (const inputId in warningMessages) {
+                    this.setWarning(inputId, warningMessages[inputId]);
+                }
+            }
+        },
+        getOffsetTop(element, padding = 150) {
             let offsetTop = 0;
             while (element) {
                 offsetTop += element.offsetTop;
@@ -207,7 +229,13 @@ export default {
                 input.error = message;
             }
         },
-        resetError() {
+        setWarning(inputId, message) {
+            const input = this.formIndex[inputId];
+            if (input) {
+                input.warning = message;
+            }
+        },
+        resetErrors() {
             Object.values(this.formIndex).forEach((input) => {
                 input.error = null;
             });
