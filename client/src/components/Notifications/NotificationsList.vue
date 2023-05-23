@@ -3,19 +3,19 @@ import { storeToRefs } from "pinia";
 import Vue, { computed, ref } from "vue";
 import BootstrapVue from "bootstrap-vue";
 import type { components } from "@/schema";
-import UtcDate from "@/components/UtcDate.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import AsyncButton from "@/components/Common/AsyncButton.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useNotificationsStore } from "@/stores/notificationsStore";
-import { faCircle, faInbox, faRetweet } from "@fortawesome/free-solid-svg-icons";
+import { faCircle, faHourglassHalf } from "@fortawesome/free-solid-svg-icons";
+import MessageNotification from "@/components/Notifications/Categories/MessageNotification.vue";
 import NotificationsPreferences from "@/components/User/Notifications/NotificationsPreferences.vue";
+import SharedItemNotification from "@/components/Notifications/Categories/SharedItemNotification.vue";
 
 Vue.use(BootstrapVue);
 
 // @ts-ignore
-library.add(faCircle, faInbox, faRetweet);
+library.add(faCircle, faHourglassHalf);
 
 type UserNotificationResponse = components["schemas"]["UserNotificationResponse"];
 
@@ -45,28 +45,6 @@ function filterNotifications(notification: UserNotificationResponse) {
     } else {
         return true;
     }
-}
-
-function getNotificationVariant(item: UserNotificationResponse) {
-    switch (item.variant) {
-        case "urgent":
-            return "danger";
-        default:
-            return item.variant;
-    }
-}
-
-function getNotificationIcon(item: UserNotificationResponse) {
-    switch (item.category) {
-        case "new_shared_item":
-            return ["fas", "fa-retweet"];
-        default:
-            return ["fas", "fa-inbox"];
-    }
-}
-
-async function updateNotification(item: UserNotificationResponse, changes: any) {
-    await notificationsStore.updateBatchNotification({ notification_ids: [item.id], changes });
 }
 
 async function updateNotifications(changes: any) {
@@ -173,7 +151,7 @@ function togglePreferences() {
                     :key="item.id"
                     class="my-2"
                     :class="!item.seen_time ? 'border-dark' : ''">
-                    <BRow class="align-items-center" no-gutters>
+                    <BRow align-h="start" align-v="center">
                         <BCol cols="auto">
                             <BButtonGroup>
                                 <FontAwesomeIcon
@@ -186,39 +164,8 @@ function togglePreferences() {
                                     @change="selectOrDeselectNotification([item])" />
                             </BButtonGroup>
                         </BCol>
-                        <BCol cols="2">
-                            <FontAwesomeIcon
-                                :class="`text-${getNotificationVariant(item)}`"
-                                :icon="getNotificationIcon(item)" />
-                            {{ item.content.subject }}
-                        </BCol>
-                        <BCol cols="6">
-                            {{ item.content.message }}
-                        </BCol>
-                        <BCol cols="2">
-                            <UtcDate :date="item.create_time" mode="elapsed" />
-                        </BCol>
-                        <BCol>
-                            <BRow align-h="end">
-                                <BInputGroup>
-                                    <AsyncButton
-                                        v-if="!item.seen_time"
-                                        icon="check"
-                                        :action="() => updateNotification(item, { seen: true })" />
-                                    <AsyncButton
-                                        v-if="item.favorite"
-                                        icon="star"
-                                        :action="() => updateNotification(item, { favorite: false })" />
-                                    <AsyncButton
-                                        v-else
-                                        icon="fa-regular fa-star"
-                                        :action="() => updateNotification(item, { favorite: true })" />
-                                    <AsyncButton
-                                        icon="trash"
-                                        :action="() => updateNotification(item, { deleted: true })" />
-                                </BInputGroup>
-                            </BRow>
-                        </BCol>
+                        <SharedItemNotification v-if="item.category === 'new_shared_item'" :notification="item" />
+                        <MessageNotification v-else :notification="item" />
                     </BRow>
                 </BCard>
             </TransitionGroup>
