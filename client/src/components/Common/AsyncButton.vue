@@ -9,6 +9,11 @@ const props = defineProps({
         type: String,
         required: true,
     },
+    title: {
+        type: String,
+        required: false,
+        default: "",
+    },
     action: {
         type: Function,
         required: true,
@@ -16,7 +21,7 @@ const props = defineProps({
     size: {
         type: String,
         required: false,
-        default: "sm",
+        default: "md",
     },
     variant: {
         type: String,
@@ -33,7 +38,13 @@ async function onClick() {
 </script>
 
 <template>
-    <BButton :size="size" :variant="variant" :disabled="loading" @click="onClick">
+    <BButton
+        v-b-tooltip.hover="!title"
+        :title="title"
+        :size="size"
+        :variant="variant"
+        :disabled="loading"
+        @click="onClick">
         <span v-if="loading" class="loading-icon fa fa-spinner fa-spin" title="loading"></span>
         <FontAwesomeIcon v-else :icon="props.icon" @click="onClick" />
         <slot></slot>
