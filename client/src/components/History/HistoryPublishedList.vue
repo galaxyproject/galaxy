@@ -1,6 +1,6 @@
 <script setup>
 import UtcDate from "components/UtcDate";
-import Tags from "components/Common/Tags";
+import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import { computed, ref, watch } from "vue";
 import Heading from "components/Common/Heading";
 import LoadingSpan from "components/LoadingSpan";
@@ -57,7 +57,7 @@ const updateFilter = (newVal) => {
 };
 
 const onTagClick = (tag) => {
-    updateFilter(filters.setFilterValue(filterText.value, "tag", tag.label));
+    updateFilter(filters.setFilterValue(filterText.value, "tag", tag));
 };
 
 const load = async () => {
@@ -207,11 +207,12 @@ watch([filterText, sortBy, sortDesc], () => {
                     </router-link>
                 </template>
                 <template v-slot:cell(tags)="row">
-                    <Tags
-                        :index="row.index"
-                        :tags="row.item.tags"
-                        @tag-click="onTagClick"
-                        @input="onTagsUpdate($event, row)" />
+                    <StatelessTags
+                        clickable
+                        :value="row.item.tags"
+                        :disabled="row.item.deleted"
+                        @input="(tags) => onTagsUpdate(tags, row)"
+                        @tag-click="onTagClick" />
                 </template>
 
                 <template v-slot:cell(update_time)="data">

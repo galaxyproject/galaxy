@@ -39,11 +39,11 @@
                     @toggleDetails="row.toggleDetails" />
             </template>
             <template v-slot:cell(tags)="row">
-                <Tags
-                    :index="row.index"
-                    :tags="row.item.tags"
+                <StatelessTags
+                    clickable
+                    :value="row.item.tags"
                     :disabled="row.item.deleted || published"
-                    @input="onTags"
+                    @input="(tags) => onTags(tags, row.index)"
                     @tag-click="onTagClick" />
             </template>
             <template v-slot:cell(published)="row">
@@ -90,7 +90,7 @@ import _l from "utils/localization";
 import { Services } from "./services";
 import { getAppRoot } from "onload/loadConfig";
 import { storedWorkflowsProvider } from "components/providers/StoredWorkflowsProvider";
-import Tags from "components/Common/Tags";
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import WorkflowDropdown from "./WorkflowDropdown";
 import UtcDate from "components/UtcDate";
 import { getGalaxyInstance } from "app";
@@ -161,7 +161,7 @@ const PUBLISHED_FIELDS = [NAME_FIELD, TAGS_FIELD, UPDATED_FIELD, OWNER_FIELD];
 export default {
     components: {
         UtcDate,
-        Tags,
+        StatelessTags,
         WorkflowDropdown,
         WorkflowBookmark,
         WorkflowIndexActions,
@@ -205,7 +205,7 @@ export default {
     },
     computed: {
         dataProviderParameters() {
-            const extraParams = { search: this.effectiveFilter, skip_step_counts: true };
+            const extraParams = { search: this.normalizeTag(this.effectiveFilter), skip_step_counts: true };
             if (this.published) {
                 extraParams.show_published = true;
                 extraParams.show_shared = false;
@@ -266,9 +266,10 @@ export default {
                 .catch((error) => {
                     this.onError(error);
                 });
+            this.$emit("input", workflow.tags);
         },
         onTagClick: function (tag) {
-            this.appendTagFilter("tag", tag.text);
+            this.appendTagFilter("tag", tag);
         },
         onAdd: function (workflow) {
             if (this.currentPage == 1) {
@@ -285,6 +286,9 @@ export default {
         },
         onRestore: function (id) {
             this.refresh();
+        },
+        normalizeTag: function (tag) {
+            return tag.replace(/(tag:')#/g, "$1name:");
         },
     },
 };
