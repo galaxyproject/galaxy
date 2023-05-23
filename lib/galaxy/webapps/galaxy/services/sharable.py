@@ -110,13 +110,12 @@ class ShareableService:
     def share_with_users(self, trans, id: DecodedDatabaseIdField, payload: ShareWithPayload) -> ShareWithStatus:
         item = self._get_item_by_id(trans, id)
         users, errors = self._get_users(trans, payload.user_ids)
-        extra = self._share_with_options(trans, item, users, errors, payload.share_option)
+        extra, users_to_notify = self._share_with_options(trans, item, users, errors, payload.share_option)
         base_status = self._get_sharing_status(trans, item)
         status = ShareWithStatus.construct(**base_status.dict())
         status.extra = extra
         status.errors.extend(errors)
-        # TODO send only to new users
-        self._send_notification_to_users(item, users, status)
+        self._send_notification_to_users(users_to_notify, item, status)
         return status
 
     def _share_with_options(
@@ -127,11 +126,12 @@ class ShareableService:
         errors: Set[str],
         share_option: Optional[SharingOptions] = None,
     ):
+        new_users = None
         extra = self.manager.get_sharing_extra_information(trans, item, users, errors, share_option)
         if not extra or extra.can_share:
-            self.manager.update_current_sharing_with_users(item, users)
+            _, new_users, _ = self.manager.update_current_sharing_with_users(item, users)
             extra = None
-        return extra
+        return extra, new_users
 
     def _get_item_by_id(self, trans, id: DecodedDatabaseIdField):
         class_name = self.manager.model_class.__name__
@@ -172,9 +172,9 @@ class ShareableService:
 
         return send_to_users, send_to_err
 
-    def _send_notification_to_users(self, item: SharableItem, users: Set[User], status: ShareWithStatus):
-        if self.notification_manager.notifications_enabled and not status.errors and users:
-            request = SharedItemNotificationFactory.build_notification_request(item, users, status)
+    def _send_notification_to_users(self, users_to_notify: Set[User], item: SharableItem, status: ShareWithStatus):
+        if self.notification_manager.notifications_enabled and not status.errors and users_to_notify:
+            request = SharedItemNotificationFactory.build_notification_request(item, users_to_notify, status)
             self.notification_manager.send_notification_to_recipients(request)
 
 
@@ -190,10 +190,9 @@ class SharedItemNotificationFactory:
 
     @staticmethod
     def build_notification_request(
-        item: SharableItem, users: Set[User], status: ShareWithStatus
+        item: SharableItem, users_to_notify: Set[User], status: ShareWithStatus
     ) -> NotificationCreateRequest:
-        # TODO: Skip if already shared?
-        user_ids = [user.id for user in users]
+        user_ids = [user.id for user in users_to_notify]
         request = NotificationCreateRequest(
             recipients=NotificationRecipients.construct(user_ids=user_ids),
             notification=NotificationCreateData(

@@ -280,7 +280,7 @@ class SharableModelManager(
 
         if flush:
             self.session().flush()
-        return current_shares
+        return current_shares, needs_adding, needs_removing
 
     # .... slugs
     # slugs are human readable strings often used to link to sharable resources (replacing ids)
@@ -511,7 +511,7 @@ class SharableModelDeserializer(
         """
         unencoded_ids = [self.app.security.decode_id(id_) for id_ in val]
         new_users_shared_with = set(self.manager.user_manager.by_ids(unencoded_ids))
-        current_shares = self.manager.update_current_sharing_with_users(item, new_users_shared_with)
+        current_shares, _, _ = self.manager.update_current_sharing_with_users(item, new_users_shared_with)
         # TODO: or should this return the list of ids?
         return current_shares
 
