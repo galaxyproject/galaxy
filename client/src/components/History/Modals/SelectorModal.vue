@@ -15,6 +15,7 @@ import UtcDate from "@/components/UtcDate.vue";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch, type PropType, type Ref } from "vue";
 import localize from "@/utils/localization";
 import Heading from "@/components/Common/Heading.vue";
+import ScrollToTopButton from "@/components/ToolsList/ScrollToTopButton.vue";
 import type { HistorySummary } from "@/stores/historyStore";
 import { useRouter } from "vue-router/composables";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -24,6 +25,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faColumns, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
 import { faListAlt } from "@fortawesome/free-regular-svg-icons";
 import { useInfiniteScroll } from "@vueuse/core";
+import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
 
 const validFilters = {
     name: contains("name"),
@@ -48,6 +50,8 @@ const emit = defineEmits<{
     (e: "update:show-modal", showModal: boolean): void;
 }>();
 
+library.add(faColumns, faSignInAlt, faListAlt);
+
 const propShowModal = computed({
     get: () => {
         return props.showModal;
@@ -64,12 +68,13 @@ const modal: Ref<BModal | null> = ref(null);
 const scrollableDiv: Ref<HTMLElement | null> = ref(null);
 
 const historyStore = useHistoryStore();
+const { currentHistoryId, totalHistoryCount } = storeToRefs(useHistoryStore());
 
 const pinnedHistories: Ref<{ id: string }[]> = computed(() => historyStore.pinnedHistories);
-const totalHistoryCount = computed(() => historyStore.totalHistoryCount);
 const hasNoResults = computed(() => filter.value && filtered.value.length == 0);
 const validFilter = computed(() => filter.value && filter.value.length > 2);
 const allLoaded = computed(() => totalHistoryCount.value <= filtered.value.length);
+const scrollTop = computed(() => useAnimationFrameScroll(scrollableDiv).scrollTop);
 
 onMounted(async () => {
     await nextTick();
@@ -84,9 +89,6 @@ onUnmounted(() => {
     // Remove the infinite scrolling behavior
     useInfiniteScroll(scrollableDiv.value, () => {});
 });
-
-// @ts-ignore bad library types
-library.add(faColumns, faSignInAlt, faListAlt);
 
 watch(
     () => filter.value,
@@ -110,8 +112,6 @@ watch(
         immediate: true,
     }
 );
-
-const { currentHistoryId } = storeToRefs(useHistoryStore());
 
 const filtered: Ref<HistorySummary[]> = computed(() => {
     let filteredHistories: HistorySummary[] = [];
@@ -176,11 +176,12 @@ function setCenterPanelHistory(history: HistorySummary) {
 function openInMulti(history: HistorySummary) {
     router.push("/histories/view_multiple");
     historyStore.pinHistory(history.id);
+    historyStore.loadHistoryById(history.id);
     modal.value?.hide();
 }
 
 /** Loads (paginates) for more histories
- * @param noScroll When set to true, we pass the filter as queryString to loadHistories()
+ * @param noScroll If true, we are not scrolling and will load _all_ items for current filter
  */
 async function loadMore(noScroll = false) {
     if (!busy.value && (noScroll || (!noScroll && !filter.value && !allLoaded.value))) {
@@ -188,6 +189,12 @@ async function loadMore(noScroll = false) {
         const queryString = filter.value && HistoriesFilters.getQueryString(filter.value);
         await historyStore.loadHistories(true, queryString);
         busy.value = false;
+    }
+}
+
+function scrollToTop() {
+    if (scrollableDiv.value) {
+        scrollableDiv.value.scrollTo({ top: 0, behavior: "smooth" });
     }
 }
 </script>
@@ -211,7 +218,7 @@ async function loadMore(noScroll = false) {
 
             <b-badge v-if="filter && !validFilter" class="alert-danger w-100">Search string too short!</b-badge>
             <b-alert v-else-if="!busy && hasNoResults" variant="danger" show>No histories found.</b-alert>
-            <b-list-group v-if="propShowModal">
+            <b-list-group>
                 <b-list-group-item
                     v-for="history in filtered"
                     :key="history.id"
@@ -303,6 +310,7 @@ async function loadMore(noScroll = false) {
                     Add Selected
                 </b-button>
                 <span v-else v-localize> Click a history to switch to it </span>
+                <ScrollToTopButton :offset="scrollTop.value" @click="scrollToTop" />
             </template>
         </b-modal>
     </div>

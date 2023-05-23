@@ -19,7 +19,7 @@ import { useUserLocalStorage } from "@/composables/userLocalStorage";
 
 export type HistorySummary = components["schemas"]["HistorySummary"];
 
-const PAGINATION_LENGTH = 10;
+const PAGINATION_LIMIT = 10;
 const isLoadingHistory = new Set();
 
 export const useHistoryStore = defineStore("historyStore", () => {
@@ -206,7 +206,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
     async function loadTotalHistoryCount() {
         await getHistoryCount().then((count) => (totalHistoryCount.value = count));
     }
-
+    
     /** TODO:
      * - not handling filters with pagination for now
      *   "pausing" pagination at the existing offset if a filter exists
@@ -222,13 +222,10 @@ export const useHistoryStore = defineStore("historyStore", () => {
                         setHistoriesLoading(false);
                         return;
                     }
-                    limit = PAGINATION_LENGTH;
+                    limit = PAGINATION_LIMIT;
                 } else {
                     historiesOffset.value = 0;
                 }
-                limit = PAGINATION_LENGTH;
-            } else {
-                historiesOffset.value = 0;
             }
             const offset = queryString ? 0 : historiesOffset.value;
             await getHistoryList(offset, limit, queryString)
