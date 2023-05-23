@@ -4564,7 +4564,7 @@ export interface components {
              * Changeset revision number
              * @description The linearized 0-based index of the changeset on the tool shed (0, 1, 2,...)
              */
-            ctx_rev: string;
+            ctx_rev?: string;
             /** Deleted */
             deleted: boolean;
             /** Dist To Shed */
