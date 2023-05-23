@@ -30,8 +30,8 @@ from selenium.webdriver.support.wait import WebDriverWait
 from galaxy.navigation.components import Target
 from .axe_results import (
     AxeResults,
-    RealAxeResults,
     NullAxeResults,
+    RealAxeResults,
 )
 
 UNSPECIFIED_TIMEOUT = object()
