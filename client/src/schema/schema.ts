@@ -4539,12 +4539,12 @@ export interface components {
              * Latest installed revision
              * @description Most recent version available on the tool shed
              */
-            latest_installable_revision: string;
+            latest_installable_revision?: string;
             /**
              * Repository deprecated
              * @description Repository has been depreciated on the tool shed
              */
-            repository_deprecated: string;
+            repository_deprecated?: string;
             /** Revision Update */
             revision_update: string;
             /** Revision Upgrade */
