@@ -63,10 +63,12 @@ const editing = ref(false);
 
 function onOpen() {
     editing.value = true;
+    multiselectElement.value?.$el.setAttribute("aria-expanded", "true");
 }
 
 function onClose() {
     editing.value = false;
+    multiselectElement.value?.$el.setAttribute("aria-expanded", "false");
 }
 
 const multiselectElement: Ref<Multiselect | null> = ref(null);
@@ -124,6 +126,7 @@ function onTagClicked(tag: string) {
             :multiple="true"
             :taggable="true"
             :close-on-select="false"
+            aria-expanded="false"
             @tag="onAddTag"
             @input="onInput"
             @open="onOpen"
