@@ -170,6 +170,6 @@ describe("History center panel View", () => {
         expect(importButton.exists()).toBe(false);
 
         // instead we have an alert
-        expect(wrapper.find("[data-description='history is purged']").text()).toBe("This history has been purged.");
+        expect(wrapper.find("[data-description='history state info']").text()).toBe("This history has been purged.");
     });
 });

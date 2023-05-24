@@ -1,8 +1,7 @@
 <template>
     <div v-if="currentUser && history" class="d-flex flex-column h-100">
-        <b-alert v-if="history.archived" variant="warning" show>This history has been archived.</b-alert>
-        <b-alert v-if="history.purged" variant="info" show data-description="history is purged">
-            This history has been purged.
+        <b-alert v-if="showHistoryStateInfo" variant="info" show data-description="history state info">
+            {{ historyStateInfoMessage }}
         </b-alert>
         <div v-else class="flex-row flex-grow-0 pb-3">
             <b-button
@@ -77,10 +76,23 @@ export default {
             return this.currentUser.id == this.history.user_id;
         },
         isSetAsCurrentDisabled() {
-            return this.currentHistory.id == this.history.id || this.history.archived || this.history.purged;
+            return this.currentHistory?.id == this.history?.id || this.history.archived || this.history.purged;
         },
         canEditHistory() {
             return this.userOwnsHistory && !this.history.archived && !this.history.purged;
+        },
+        showHistoryStateInfo() {
+            return this.history.archived || this.history.purged;
+        },
+        historyStateInfoMessage() {
+            if (this.history.archived && this.history.purged) {
+                return "This history has been archived and purged.";
+            } else if (this.history.archived) {
+                return "This history has been archived.";
+            } else if (this.history.purged) {
+                return "This history has been purged.";
+            }
+            return "";
         },
     },
     created() {
