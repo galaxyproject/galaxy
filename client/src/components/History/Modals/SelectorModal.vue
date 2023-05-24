@@ -15,9 +15,10 @@ import UtcDate from "@/components/UtcDate.vue";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch, type PropType, type Ref } from "vue";
 import localize from "@/utils/localization";
 import Heading from "@/components/Common/Heading.vue";
-import type { HistorySummary } from "@/stores/historyStore";
+import type { components } from "@/schema";
 import { useRouter } from "vue-router/composables";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
 import Filtering, { contains, expandNameTag } from "@/utils/filtering";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -33,6 +34,8 @@ const validFilters = {
 const HistoriesFilters = new Filtering(validFilters, false);
 
 type AdditionalOptions = "set-current" | "multi" | "center";
+type HistorySummary = components["schemas"]["HistorySummary"];
+type HistoryDetailed = components["schemas"]["HistoryDetailed"];
 
 const props = defineProps({
     multiple: { type: Boolean, default: false },
@@ -67,6 +70,7 @@ const scrollableDiv: Ref<HTMLElement | null> = ref(null);
 
 const historyStore = useHistoryStore();
 const { currentHistoryId, totalHistoryCount } = storeToRefs(useHistoryStore());
+const { currentUser } = storeToRefs(useUserStore());
 
 const pinnedHistories: Ref<{ id: string }[]> = computed(() => historyStore.pinnedHistories);
 const hasNoResults = computed(() => filter.value && filtered.value.length == 0);
@@ -101,9 +105,9 @@ watch(
 // TODO: Re investigate when upgrading to vue3
 const historiesProxy: Ref<HistorySummary[]> = ref([]);
 watch(
-    () => props.histories,
+    () => props.histories as HistoryDetailed[],
     (h) => {
-        historiesProxy.value = h;
+        historiesProxy.value = h.filter((h) => !h.user_id || h.user_id === currentUser.value?.id);
     },
     {
         immediate: true,
@@ -192,7 +196,7 @@ async function loadMore(noScroll = false) {
 
 <template>
     <div>
-        <b-modal ref="modal" v-model="propShowModal" v-bind="$attrs" v-on="$listeners">
+        <b-modal ref="modal" v-model="propShowModal" class="history-selector-modal" v-bind="$attrs" v-on="$listeners">
             <template v-slot:modal-title>
                 <Heading h2 inline size="sm">{{ localize(title) }}</Heading>
             </template>
@@ -314,7 +318,7 @@ async function loadMore(noScroll = false) {
 <style lang="scss">
 @import "theme/blue.scss";
 
-.modal-open .modal {
+.history-selector-modal .modal-open .modal {
     overflow-y: hidden;
 }
 
