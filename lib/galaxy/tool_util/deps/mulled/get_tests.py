@@ -130,7 +130,7 @@ def find_anaconda_versions(name, anaconda_channel="bioconda"):
     """
     r = requests.get(f"https://anaconda.org/{anaconda_channel}/{name}/files", timeout=MULLED_SOCKET_TIMEOUT)
     urls = []
-    for line in r.text.split("\n"):
+    for line in r.text.splitlines():
         if "download/linux" in line:
             urls.append(line.split('"')[1])
     return urls
@@ -271,22 +271,24 @@ def import_test_to_command_list(import_lang: str, import_: str) -> List[str]:
 
 
 def hashed_test_search(
-    container, recipes_path=None, deep=False, anaconda_channel="bioconda", github_repo="bioconda/bioconda-recipes"
-):
+    container: str, recipes_path=None, deep=False, anaconda_channel="bioconda", github_repo="bioconda/bioconda-recipes"
+) -> Dict[str, Any]:
     """
     Get test for hashed containers
     """
-    package_tests = {"commands": [], "imports": [], "container": container, "import_lang": "python -c"}
+    package_tests: Dict[str, Any] = {"commands": [], "imports": [], "container": container, "import_lang": "python -c"}
 
-    githubpage = requests.get(
+    response = requests.get(
         f"https://raw.githubusercontent.com/BioContainers/multi-package-containers/master/combinations/{container}.tsv",
         timeout=MULLED_SOCKET_TIMEOUT,
     )
-    if githubpage.status_code == 200:
-        packages = githubpage.text.split(",")  # get names of packages from github
-        packages = [package.split("=") for package in packages]
-    else:
-        packages = []
+    response.raise_for_status()
+    for line in response.text.splitlines():
+        if not line.startswith("#"):
+            break
+    concatenated_targets = line.split("\t")[0]
+    targets = concatenated_targets.split(",")
+    packages = [target.split("=") for target in targets]
 
     containers = []
     for package in packages:
