@@ -165,19 +165,11 @@ async function onImportCopy(history: ArchivedHistorySummary) {
                                 :title="localize('This history is public.')">
                                 {{ localize("Published") }}
                             </b-badge>
-
                             <b-badge
-                                v-if="history.purged"
+                                v-if="!history.purged"
                                 v-b-tooltip
                                 pill
-                                :title="
-                                    localize(
-                                        'The contents of this history have been purged, you may recover them by importing a copy of this history.'
-                                    )
-                                ">
-                                {{ localize("Contents unavailable") }}
-                            </b-badge>
-                            <b-badge v-else v-b-tooltip pill :title="localize('Amount of items in history')">
+                                :title="localize('Amount of items in history')">
                                 {{ history.count }} {{ localize("items") }}
                             </b-badge>
                             <b-badge
@@ -186,7 +178,7 @@ async function onImportCopy(history: ArchivedHistorySummary) {
                                 pill
                                 :title="
                                     localize(
-                                        'This history has an associated export record containing a snapshot of the history.'
+                                        'This history has an associated export record containing a snapshot of the history that can be used to import a copy of the history.'
                                     )
                                 ">
                                 {{ localize("Snapshot available") }}
