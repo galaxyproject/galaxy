@@ -2,6 +2,7 @@
 """
 from unittest import mock
 
+import pytest
 import sqlalchemy
 from sqlalchemy import true
 
@@ -938,6 +939,41 @@ class TestHistoryFilters(BaseTestCase):
         found = self.history_manager.list(filters=filters, offset=-1)
         assert found == deleted_and_annotated
 
-    # TODO: eq, ge, le
-    # def test_ratings( self ):
-    #     pass
+    def test_count(self):
+        user2 = self.user_manager.create(**user2_data)
+        history1 = self.history_manager.create(name="history1", user=user2)
+        history2 = self.history_manager.create(name="history2", user=user2)
+        history3 = self.history_manager.create(name="history3", user=user2)
+        history4 = self.history_manager.create(name="history4", user=user2)
+
+        self.history_manager.delete(history1)
+        self.history_manager.delete(history2)
+        self.history_manager.delete(history3)
+
+        test_annotation = "testing"
+        history2.add_item_annotation(self.trans.sa_session, user2, history2, test_annotation)
+        self.trans.sa_session.flush()
+        history3.add_item_annotation(self.trans.sa_session, user2, history3, test_annotation)
+        self.trans.sa_session.flush()
+        history3.add_item_annotation(self.trans.sa_session, user2, history4, test_annotation)
+        self.trans.sa_session.flush()
+
+        all_histories = [history1, history2, history3, history4]
+        deleted = [history1, history2, history3]
+
+        assert self.history_manager.count() == len(all_histories), "having no filters should count all histories"
+        filters = [model.History.deleted == true()]
+        assert self.history_manager.count(filters=filters) == len(deleted), "counting with orm filters should work"
+
+        raw_annotation_fn_filter = ("annotation", "has", test_annotation)
+        # functional filtering is not supported
+        with pytest.raises(exceptions.RequestParameterInvalidException) as exc_info:
+            filters = self.filter_parser.parse_filters([raw_annotation_fn_filter])
+            self.history_manager.count(filters=filters)
+            assert "not supported" in str(exc_info)
+
+        raw_deleted_orm_filter = ("deleted", "eq", "True")
+        with pytest.raises(exceptions.RequestParameterInvalidException) as exc_info:
+            filters = self.filter_parser.parse_filters([raw_deleted_orm_filter, raw_annotation_fn_filter])
+            self.history_manager.count(filters=filters)
+            assert "not supported" in str(exc_info)
