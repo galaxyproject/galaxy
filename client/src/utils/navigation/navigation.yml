@@ -724,6 +724,7 @@ workflow_editor:
 
 workflow_show:
   selectors:
+    _: '.workflow-display'
     title: '[data-description="workflow name"]'
     import_link: '[data-description="workflow import"]'
 

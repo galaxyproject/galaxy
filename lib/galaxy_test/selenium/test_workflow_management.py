@@ -52,8 +52,14 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
         # assert EXAMPLE_WORKFLOW_URL_1 in title_element.text
         self.workflow_index_click_option("View")
         workflow_show = self.components.workflow_show
-        title_item = self.components.workflow_show.title.wait_for_visible()
-        assert "TestWorkflow1" in title_item.text
+
+        @retry_assertion_during_transitions
+        def check_title():
+            title_item = self.components.workflow_show.title.wait_for_visible()
+            assert "TestWorkflow1" in title_item.text
+
+        check_title()
+        workflow_show._.assert_no_axe_violations_with_impact_of_at_least("moderate")
         import_link = workflow_show.import_link.wait_for_visible()
         assert "Import Workflow" in import_link.get_attribute("title")
         self.screenshot("workflow_manage_view")
