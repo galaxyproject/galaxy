@@ -1159,6 +1159,14 @@ class NavigatesGalaxy(HasDriver):
         self.libraries_index_search_for(name)
         self.libraries_index_table_elements()[0].find_element(By.CSS_SELECTOR, "td a").click()
 
+    def page_open_with_name(self, name, screenshot_name):
+        self.home()
+        self.navigate_to_pages()
+        self.click_grid_popup_option(name, "View")
+        if screenshot_name:
+            self.sleep_for(self.wait_types.UX_RENDER)
+            self.screenshot(screenshot_name)
+
     @retry_during_transitions
     def libraries_index_table_elements(self):
         container = self.components.libraries._.wait_for_visible()
