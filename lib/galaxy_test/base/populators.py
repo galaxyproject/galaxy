@@ -476,10 +476,11 @@ class BaseDatasetPopulator(BasePopulator):
         details = self.get_history_dataset_details(history_id, dataset=output)
         return details
 
-    def tag_dataset(self, history_id, hda_id, tags):
+    def tag_dataset(self, history_id, hda_id, tags, raise_on_error=True):
         url = f"histories/{history_id}/contents/{hda_id}"
         response = self._put(url, {"tags": tags}, json=True)
-        response.raise_for_status()
+        if raise_on_error:
+            response.raise_for_status()
         return response.json()
 
     def create_from_store_raw(self, payload: Dict[str, Any]) -> Response:

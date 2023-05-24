@@ -788,3 +788,15 @@ class TestDatasetsApi(ApiTestCase):
         output = self.dataset_populator.fetch_hda(history_id, item)
         dataset_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=output, assert_ok=True)
         assert "display_application/" in dataset_details["display_apps"][0]["links"][0]["href"]
+
+    def test_cannot_update_datatype_on_immutable_history(self, history_id):
+        hda_id = self.dataset_populator.new_dataset(history_id)["id"]
+        self.dataset_populator.wait_for_history_jobs(history_id)
+
+        # once we purge the history, it becomes immutable
+        self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+
+        # now we can't update the datatype
+        response = self._put(f"histories/{history_id}/contents/{hda_id}", data={"datatype": "tabular"}, json=True)
+        self._assert_status_code_is(response, 403)
+        assert response.json()["err_msg"] == "History is immutable"
