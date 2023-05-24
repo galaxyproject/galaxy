@@ -72,7 +72,7 @@ async function submit(ev: SubmitEvent) {
 </script>
 
 <template>
-    <b-form class="mt-4" @submit="submit">
+    <b-form class="mt-4 workflow-import-file" @submit="submit">
         <h2 class="h-sm">Import from a Galaxy workflow export URL or a workflow file</h2>
         <b-form-group label="Archived Workflow URL">
             <b-form-input
