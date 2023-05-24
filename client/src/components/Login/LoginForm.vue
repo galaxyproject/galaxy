@@ -19,21 +19,27 @@
                             <b-card-body>
                                 <div>
                                     <!-- standard internal galaxy login -->
-                                    <b-form-group :label="labelNameAddress">
+                                    <b-form-group :label="labelNameAddress" label-for="login-form-name">
                                         <b-form-input
                                             v-if="!connectExternalProvider"
+                                            id="login-form-name"
                                             v-model="login"
                                             name="login"
                                             type="text" />
                                         <b-form-input
                                             v-else
+                                            id="login-form-name"
                                             disabled
                                             :value="connectExternalEmail"
                                             name="login"
                                             type="text" />
                                     </b-form-group>
-                                    <b-form-group :label="labelPassword">
-                                        <b-form-input v-model="password" name="password" type="password" />
+                                    <b-form-group :label="labelPassword" label-for="login-form-password">
+                                        <b-form-input
+                                            id="login-form-password"
+                                            v-model="password"
+                                            name="password"
+                                            type="password" />
                                         <b-form-text>
                                             <span v-localize>Forgot password?</span>
                                             <a

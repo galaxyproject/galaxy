@@ -592,10 +592,10 @@ class NavigatesGalaxy(HasDriver):
             "login": email,
             "password": password,
         }
-        form = self.wait_for_visible(self.navigation.login.selectors.form)
-        self.fill(form, login_info)
+        login = self.components.login
+        self.fill(login.form.wait_for_visible(), login_info)
         self.snapshot("logging-in")
-        self.wait_for_and_click(self.navigation.login.selectors.submit)
+        login.submit.wait_for_and_click()
         self.snapshot("login-submitted")
 
     def register(self, email=None, password=None, username=None, confirm=None, assert_valid=True):
@@ -610,10 +610,11 @@ class NavigatesGalaxy(HasDriver):
 
         self.home()
         self.components.masthead.register_or_login.wait_for_and_click()
-        self.wait_for_and_click(self.navigation.registration.selectors.toggle)
-        form = self.wait_for_visible(self.navigation.registration.selectors.form)
+        registration = self.components.registration
+        registration.toggle.wait_for_and_click()
+        form = registration.form.wait_for_visible()
         self.fill(form, dict(email=email, password=password, username=username, confirm=confirm))
-        self.wait_for_and_click(self.navigation.registration.selectors.submit)
+        registration.submit.wait_for_and_click()
         if assert_valid is False:
             self.assert_error_message()
         elif assert_valid:
