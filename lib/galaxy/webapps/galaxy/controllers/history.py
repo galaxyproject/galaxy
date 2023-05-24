@@ -533,6 +533,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 )
             return {"title": "Change default dataset permissions for history '%s'" % history.name, "inputs": inputs}
         else:
+            self.history_manager.error_unless_mutable(history)
             permissions = {}
             for action_key, action in trans.app.model.Dataset.permitted_actions.items():
                 in_roles = payload.get(action_key) or []
@@ -569,6 +570,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             trans.app.security_agent.permitted_actions.DATASET_ACCESS: [private_role],
         }
         for history in histories:
+            self.history_manager.error_unless_mutable(history)
             # Set default role for history to private
             trans.app.security_agent.history_set_default_permissions(history, private_permissions)
             # Set private role for all datasets
@@ -668,7 +670,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     @web.require_login("set history's accessible flag")
     def set_accessible_async(self, trans, id=None, accessible=False):
         """Set history's importable attribute and slug."""
-        history = self.history_manager.get_owned(self.decode_id(id), trans.user, current_history=trans.history)
+        history = self.history_manager.get_mutable(self.decode_id(id), trans.user, current_history=trans.history)
         # Only set if importable value would change; this prevents a change in the update_time unless attribute really changed.
         importable = accessible in ["True", "true", "t", "T"]
         if history and history.importable != importable:
@@ -690,7 +692,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         id = listify(id)
         histories = []
         for history_id in id:
-            history = self.history_manager.get_owned(
+            history = self.history_manager.get_mutable(
                 self.decode_id(history_id), trans.user, current_history=trans.history
             )
             if history and history.user_id == user.id:
@@ -748,7 +750,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     def set_as_current(self, trans, id):
         """Change the current user's current history to one with `id`."""
         try:
-            history = self.history_manager.get_owned(self.decode_id(id), trans.user, current_history=trans.history)
+            history = self.history_manager.get_mutable(self.decode_id(id), trans.user, current_history=trans.history)
             trans.set_history(history)
             return self.history_data(trans, history)
         except exceptions.MessageException as msg_exc:

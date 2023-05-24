@@ -695,6 +695,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             try:
                 manager = self.dataset_manager_by_type[dataset.src]
                 dataset_instance = manager.get_owned(dataset.id, trans.user)
+                manager.error_unless_mutable(dataset_instance.history)
                 if dataset.src == DatasetSourceType.hda:
                     self.hda_manager.error_if_uploading(dataset_instance)
                 if payload.purge:

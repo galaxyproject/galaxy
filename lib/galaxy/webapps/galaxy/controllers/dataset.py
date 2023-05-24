@@ -825,6 +825,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         try:
             id = self.decode_id(dataset_id)
             hda = self.hda_manager.get_owned(id, trans.user, current_history=trans.history)
+            self.hda_manager.error_unless_mutable(hda.history)
             hda.mark_deleted()
             hda.clear_associated_files()
             trans.log_event(f"Dataset id {str(id)} marked as deleted")
@@ -844,6 +845,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         try:
             id = self.decode_id(dataset_id)
             item = self.hda_manager.get_owned(id, trans.user, current_history=trans.history)
+            self.hda_manager.error_unless_mutable(item.history)
             self.hda_manager.undelete(item)
             trans.log_event(f"Dataset id {str(id)} has been undeleted")
         except Exception:
@@ -858,6 +860,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         try:
             id = self.decode_id(dataset_id)
             item = self.hda_manager.get_owned(id, trans.user, current_history=trans.history)
+            self.hda_manager.error_unless_mutable(item.history)
             item.mark_unhidden()
             trans.sa_session.flush()
             trans.log_event(f"Dataset id {str(id)} has been unhidden")
