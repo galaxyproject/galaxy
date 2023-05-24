@@ -429,7 +429,7 @@ export default {
             }
         },
         onError(error) {
-            Toast.error(error);
+            Toast.error(`${error}`);
         },
         updateFilterVal(newFilter, newVal) {
             this.filterText = FilterClass.setFilterValue(this.filterText, newFilter, newVal);
