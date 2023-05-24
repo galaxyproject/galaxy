@@ -697,7 +697,6 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             export_record = self.history_export_manager.get_task_export_by_id(archive_export_id)
             self._ensure_export_record_can_be_associated_with_history_archival(history_id, export_record)
             # After this point, the export record is valid and can be associated with the history archival
-        history = self.manager.archive_history(history, archive_export_id=archive_export_id)
         purge_history = payload.purge_history if payload else False
         if purge_history:
             if archive_export_id is None:
@@ -705,6 +704,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
                     "Cannot purge history without an export record. A valid archive_export_id is required."
                 )
             self.manager.purge(history)
+        history = self.manager.archive_history(history, archive_export_id=archive_export_id)
         return self._serialize_archived_history(trans, history)
 
     def _ensure_export_record_can_be_associated_with_history_archival(
