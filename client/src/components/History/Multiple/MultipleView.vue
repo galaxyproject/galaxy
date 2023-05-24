@@ -30,7 +30,6 @@ onMounted(async () => {
     loadingPinnedHistories.value = true;
     stopStoreWatcher.value = watchEffect(() => {
         if (noHistoriesInView.value == true) {
-            console.log("WATCH: ", histories.value.length);
             historyStore.pinHistory(histories.value[0]!.id);
             if (stopStoreWatcher.value) {
                 stopStoreWatcher.value();

@@ -131,7 +131,6 @@ class FastAPIHistories:
             trans, serialization_params, filter_query_params, deleted_only=deleted, all_histories=all
         )
 
-    # THIS IS JUST A DUMMY ROUTE FOR WIP testing
     @router.get(
         "/api/histories/count",
         summary="Returns number of histories for the current user.",

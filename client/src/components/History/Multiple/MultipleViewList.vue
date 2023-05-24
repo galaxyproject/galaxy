@@ -34,11 +34,11 @@ const scrolledRight = computed(() => !isScrollable.value || arrived.right);
     <div class="list-container h-100" :class="{ 'scrolled-left': scrolledLeft, 'scrolled-right': scrolledRight }">
         <div ref="scrollContainer" class="d-flex h-100 w-auto overflow-auto">
             <virtual-list
-                v-if="selectedHistories.length"
-                :estimate-size="selectedHistories.length"
+                v-if="props.selectedHistories.length"
+                :estimate-size="props.selectedHistories.length"
                 :data-key="'id'"
                 :data-component="MultipleViewItem"
-                :data-sources="selectedHistories"
+                :data-sources="props.selectedHistories"
                 :direction="'horizontal'"
                 :extra-props="{ filter }"
                 :item-style="{ width: '15rem' }"

@@ -79,13 +79,19 @@ describe("History SelectorModal.vue", () => {
     it("paginates the histories", async () => {
         await mountWith(PROPS_FOR_MODAL);
 
-        const displayedRows = wrapper.findAllComponents(BListGroupItem).wrappers;
+        let displayedRows = wrapper.findAllComponents(BListGroupItem).wrappers;
         expect(displayedRows.length).toBe(10);
+        expect(wrapper.find(".load-more-hist-button").exists()).toBe(true);
+
         getUpdatedAxiosMock();
         await historyStore.loadHistories();
-        expect(historyStore.histories.length).toBe(15);
-        expect(historyStore.historiesOffset).toBe(15);
+        await wrapper.setProps({
+            histories: historyStore.histories,
+        });
 
+        displayedRows = wrapper.findAllComponents(BListGroupItem).wrappers;
+        expect(displayedRows.length).toBe(15);
+        expect(wrapper.find(".load-more-hist-button").exists()).toBe(false);
         axiosMock.restore();
     });
 

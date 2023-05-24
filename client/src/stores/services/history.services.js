@@ -108,8 +108,9 @@ export async function setCurrentHistoryOnServer(historyId) {
 
 /**
  * Get list of histories from server and return them.
- * @param {Number} offset
- * @param {Number | null} limit
+ * @param {Number} offset to start from (default = 0)
+ * @param {Number | null} limit of histories to load (default = null; in which case no limit)
+ * @param {String} queryString to append to url in the form `q=filter&qv=val&q=...`
  * @return {Promise.<Array>} list of histories
  */
 export async function getHistoryList(offset = 0, limit = null, queryString = "") {
@@ -126,7 +127,7 @@ export async function getHistoryList(offset = 0, limit = null, queryString = "")
 }
 
 /**
- * Get number of histories from server and return them.
+ * Get number of histories for current user from server and return them.
  * @return {Promise.<Number>} number of histories
  */
 export async function getHistoryCount() {

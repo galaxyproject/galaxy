@@ -15,17 +15,15 @@ import UtcDate from "@/components/UtcDate.vue";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch, type PropType, type Ref } from "vue";
 import localize from "@/utils/localization";
 import Heading from "@/components/Common/Heading.vue";
-import ScrollToTopButton from "@/components/ToolsList/ScrollToTopButton.vue";
 import type { HistorySummary } from "@/stores/historyStore";
 import { useRouter } from "vue-router/composables";
 import { useHistoryStore } from "@/stores/historyStore";
 import Filtering, { contains, expandNameTag } from "@/utils/filtering";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faColumns, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
+import { faColumns, faSignInAlt, faArrowDown } from "@fortawesome/free-solid-svg-icons";
 import { faListAlt } from "@fortawesome/free-regular-svg-icons";
 import { useInfiniteScroll } from "@vueuse/core";
-import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
 
 const validFilters = {
     name: contains("name"),
@@ -50,7 +48,7 @@ const emit = defineEmits<{
     (e: "update:show-modal", showModal: boolean): void;
 }>();
 
-library.add(faColumns, faSignInAlt, faListAlt);
+library.add(faColumns, faSignInAlt, faListAlt, faArrowDown);
 
 const propShowModal = computed({
     get: () => {
@@ -74,11 +72,10 @@ const pinnedHistories: Ref<{ id: string }[]> = computed(() => historyStore.pinne
 const hasNoResults = computed(() => filter.value && filtered.value.length == 0);
 const validFilter = computed(() => filter.value && filter.value.length > 2);
 const allLoaded = computed(() => totalHistoryCount.value <= filtered.value.length);
-const scrollTop = computed(() => useAnimationFrameScroll(scrollableDiv).scrollTop);
 
 onMounted(async () => {
     await nextTick();
-    scrollableDiv.value = document.querySelector(".history-selector-modal .modal-body");
+    scrollableDiv.value = document.querySelector(".history-selector-modal-list");
     useInfiniteScroll(scrollableDiv.value, () => loadMore());
     if (props.multiple) {
         selectedHistories.value = [...pinnedHistories.value];
@@ -191,23 +188,11 @@ async function loadMore(noScroll = false) {
         busy.value = false;
     }
 }
-
-function scrollToTop() {
-    if (scrollableDiv.value) {
-        scrollableDiv.value.scrollTo({ top: 0, behavior: "smooth" });
-    }
-}
 </script>
 
 <template>
     <div>
-        <b-modal
-            ref="modal"
-            v-model="propShowModal"
-            v-bind="$attrs"
-            scrollable
-            content-class="history-selector-modal"
-            v-on="$listeners">
+        <b-modal ref="modal" v-model="propShowModal" v-bind="$attrs" v-on="$listeners">
             <template v-slot:modal-title>
                 <Heading h2 inline size="sm">{{ localize(title) }}</Heading>
             </template>
@@ -216,90 +201,101 @@ function scrollToTop() {
                 <b-form-input v-model="filter" type="search" debounce="400" :placeholder="localize('Search Filter')" />
             </b-form-group>
 
-            <b-badge v-if="filter && !validFilter" class="alert-danger w-100">Search string too short!</b-badge>
-            <b-alert v-else-if="!busy && hasNoResults" variant="danger" show>No histories found.</b-alert>
-            <b-list-group>
-                <b-list-group-item
-                    v-for="history in filtered"
-                    :key="history.id"
-                    :data-pk="history.id"
-                    button
-                    :class="{ current: history.id === currentHistoryId }"
-                    :active="selectedHistories.some((h) => h.id === history.id)"
-                    @click="() => historyClicked(history)">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <Heading h3 inline bold size="text">
-                            {{ history.name }}
-                            <i v-if="history.id === currentHistoryId">(Current)</i>
-                        </Heading>
+            <div class="history-selector-modal-list">
+                <b-badge v-if="filter && !validFilter" class="alert-danger w-100">Search string too short!</b-badge>
+                <b-alert v-else-if="!busy && hasNoResults" variant="danger" show>No histories found.</b-alert>
+                <b-list-group>
+                    <b-list-group-item
+                        v-for="history in filtered"
+                        :key="history.id"
+                        :data-pk="history.id"
+                        button
+                        :class="{ current: history.id === currentHistoryId }"
+                        :active="selectedHistories.some((h) => h.id === history.id)"
+                        @click="() => historyClicked(history)">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <Heading h3 inline bold size="text">
+                                {{ history.name }}
+                                <i v-if="history.id === currentHistoryId">(Current)</i>
+                            </Heading>
 
-                        <div class="d-flex align-items-center flex-gapx-1">
-                            <b-badge v-b-tooltip pill :title="localize('Amount of items in history')">
-                                {{ history.count }} {{ localize("items") }}
-                            </b-badge>
-                            <b-badge v-b-tooltip pill :title="localize('Last edited')">
-                                <UtcDate :date="history.update_time" mode="elapsed" />
-                            </b-badge>
+                            <div class="d-flex align-items-center flex-gapx-1">
+                                <b-badge v-b-tooltip pill :title="localize('Amount of items in history')">
+                                    {{ history.count }} {{ localize("items") }}
+                                </b-badge>
+                                <b-badge v-b-tooltip pill :title="localize('Last edited')">
+                                    <UtcDate :date="history.update_time" mode="elapsed" />
+                                </b-badge>
+                            </div>
                         </div>
+
+                        <p v-if="history.annotation" class="my-1">{{ history.annotation }}</p>
+
+                        <StatelessTags
+                            v-if="history.tags.length > 0"
+                            class="my-1"
+                            :value="history.tags"
+                            :disabled="true"
+                            :max-visible-tags="10" />
+
+                        <div
+                            v-if="props.additionalOptions.length > 0"
+                            class="d-flex justify-content-end align-items-center mt-1">
+                            <b-button-group>
+                                <b-button
+                                    v-if="props.additionalOptions.includes('set-current')"
+                                    v-b-tooltip
+                                    :title="localize('Set as current history')"
+                                    variant="link"
+                                    class="p-0 px-1"
+                                    @click.stop="() => setCurrentHistory(history)">
+                                    <FontAwesomeIcon icon="fa-sign-in-alt" />
+                                </b-button>
+
+                                <b-button
+                                    v-if="props.additionalOptions.includes('multi')"
+                                    v-b-tooltip
+                                    :title="localize('Open in multi-view')"
+                                    variant="link"
+                                    class="p-0 px-1"
+                                    @click.stop="() => openInMulti(history)">
+                                    <FontAwesomeIcon icon="fa-columns" />
+                                </b-button>
+
+                                <b-button
+                                    v-if="props.additionalOptions.includes('center')"
+                                    v-b-tooltip
+                                    :title="localize('Open in center panel')"
+                                    variant="link"
+                                    class="p-0 px-1"
+                                    @click.stop="() => setCenterPanelHistory(history)">
+                                    <FontAwesomeIcon icon="far fa-list-alt" />
+                                </b-button>
+                            </b-button-group>
+                        </div>
+                    </b-list-group-item>
+                    <div>
+                        <div v-if="allLoaded || filter !== ''" class="list-end my-2">
+                            <span v-if="filtered.length == 1">- {{ filtered.length }} history loaded -</span>
+                            <span v-else-if="filtered.length > 1">- All {{ filtered.length }} histories loaded -</span>
+                        </div>
+                        <b-overlay :show="busy" opacity="0.5" />
                     </div>
-
-                    <p v-if="history.annotation" class="my-1">{{ history.annotation }}</p>
-
-                    <StatelessTags
-                        v-if="history.tags.length > 0"
-                        class="my-1"
-                        :value="history.tags"
-                        :disabled="true"
-                        :max-visible-tags="10" />
-
-                    <div
-                        v-if="props.additionalOptions.length > 0"
-                        class="d-flex justify-content-end align-items-center mt-1">
-                        <b-button-group>
-                            <b-button
-                                v-if="props.additionalOptions.includes('set-current')"
-                                v-b-tooltip
-                                :title="localize('Set as current history')"
-                                variant="link"
-                                class="p-0 px-1"
-                                @click.stop="() => setCurrentHistory(history)">
-                                <FontAwesomeIcon icon="fa-sign-in-alt" />
-                            </b-button>
-
-                            <b-button
-                                v-if="props.additionalOptions.includes('multi')"
-                                v-b-tooltip
-                                :title="localize('Open in multi-view')"
-                                variant="link"
-                                class="p-0 px-1"
-                                @click.stop="() => openInMulti(history)">
-                                <FontAwesomeIcon icon="fa-columns" />
-                            </b-button>
-
-                            <b-button
-                                v-if="props.additionalOptions.includes('center')"
-                                v-b-tooltip
-                                :title="localize('Open in center panel')"
-                                variant="link"
-                                class="p-0 px-1"
-                                @click.stop="() => setCenterPanelHistory(history)">
-                                <FontAwesomeIcon icon="far fa-list-alt" />
-                            </b-button>
-                        </b-button-group>
-                    </div>
-                </b-list-group-item>
-                <div>
-                    <div v-if="allLoaded || filter !== ''" class="list-end my-2">
-                        <span v-if="filtered.length == 1">- {{ filtered.length }} history loaded -</span>
-                        <span v-else-if="filtered.length > 1">- All {{ filtered.length }} histories loaded -</span>
-                    </div>
-                    <b-overlay :show="busy" opacity="0.5" />
-                </div>
-            </b-list-group>
+                </b-list-group>
+            </div>
 
             <template v-slot:modal-footer>
                 <div v-if="!allLoaded" class="mr-auto">
-                    <i>Showing {{ filtered.length }} out of {{ totalHistoryCount }} histories</i>
+                    <i>Loaded {{ filtered.length }} out of {{ totalHistoryCount }} histories</i>
+                    <b-button
+                        v-b-tooltip.noninteractive.hover
+                        class="load-more-hist-button"
+                        size="sm"
+                        title="Load More"
+                        variant="link"
+                        @click="loadMore()">
+                        <FontAwesomeIcon icon="fa-arrow-down" />
+                    </b-button>
                 </div>
                 <b-button
                     v-if="multiple"
@@ -310,7 +306,6 @@ function scrollToTop() {
                     Add Selected
                 </b-button>
                 <span v-else v-localize> Click a history to switch to it </span>
-                <ScrollToTopButton :offset="scrollTop.value" @click="scrollToTop" />
             </template>
         </b-modal>
     </div>
@@ -319,7 +314,14 @@ function scrollToTop() {
 <style lang="scss">
 @import "theme/blue.scss";
 
-.history-selector-modal {
+.modal-open .modal {
+    overflow-y: hidden;
+}
+
+.history-selector-modal-list {
+    overflow-x: hidden;
+    overflow-y: auto;
+    max-height: 65vh;
     .list-group {
         .list-group-item {
             border-radius: 0;
