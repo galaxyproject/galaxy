@@ -79,7 +79,7 @@ export async function archiveHistoryById(
 const unarchiveHistory = fetcher
     .path("/api/histories/{history_id}/archive/restore")
     .method("put")
-    // @ts-ignore: workaround for https://github.com/ajaishankar/openapi-typescript-fetch/pull/55
+    // @ts-ignore: workaround for optional query parameters in PUT. More info here https://github.com/ajaishankar/openapi-typescript-fetch/pull/55
     .create({ force: undefined });
 
 /**
