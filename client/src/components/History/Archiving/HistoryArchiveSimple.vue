@@ -15,6 +15,10 @@ function onArchiveHistory() {
             can move it to the <b>Archived Histories</b> section, by clicking the button below.
         </p>
         <p>
+            This is particularly useful if you have a lot of histories and want to keep the list of
+            <i>active</i> histories short or if you publish a history and want to avoid accidental changes to it.
+        </p>
+        <p>
             You can undo this action at any time, and the history will be moved back to your
             <i>active</i> histories.
         </p>
