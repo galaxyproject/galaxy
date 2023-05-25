@@ -71,11 +71,11 @@ export function matchCase(input, value) {
     return -1;
 }
 
-/** Match server validation response to highlight errors
+/** Match server validation response to highlight inputs
  * @param{dict}   index     - Index of input elements
- * @param{dict}   response  - Nested dictionary with error messages
+ * @param{dict}   response  - Nested dictionary with error/warning messages
  */
-export function matchErrors(index, response) {
+export function matchInputs(index, response) {
     var result = {};
     function search(id, head) {
         if (typeof head === "string") {

@@ -29,6 +29,7 @@ interface FormElementProps {
     refreshOnChange?: boolean;
     help?: string;
     error?: string;
+    warning?: string;
     backbonejs?: boolean;
     disabled?: boolean;
     attributes?: FormParameterAttributes;
@@ -121,7 +122,7 @@ function onConnect() {
 
 const isHidden = computed(() => attrs.value["hidden"]);
 const elementId = computed(() => `form-element-${props.id}`);
-const hasError = computed(() => Boolean(props.error));
+const hasAlert = computed(() => Boolean(props.error || props.warning));
 const showPreview = computed(() => (collapsed.value && attrs.value["collapsible_preview"]) || props.disabled);
 const showField = computed(() => !collapsed.value && !props.disabled);
 
@@ -175,10 +176,10 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
         v-show="!isHidden"
         :id="elementId"
         class="ui-form-element section-row"
-        :class="{ alert: hasError, 'alert-info': hasError }">
-        <div v-if="hasError" class="ui-form-error">
+        :class="{ alert: hasAlert, 'alert-info': hasAlert }">
+        <div v-if="hasAlert" class="ui-form-error">
             <FontAwesomeIcon class="mr-1" icon="fa-exclamation" />
-            <span class="ui-form-error-text" v-html="props.error" />
+            <span class="ui-form-error-text" v-html="props.error || props.warning" />
         </div>
 
         <div class="ui-form-title">

@@ -46,6 +46,7 @@ from galaxy.managers import (
 from galaxy.managers.job_connections import JobConnectionsManager
 from galaxy.schema import ValueFilterQueryParams
 from galaxy.structured_app import MinimalManagerApp
+from galaxy.util import listify
 from .base import (
     parse_bool,
     raise_filter_err,
@@ -558,7 +559,8 @@ class HistoryContentsFilters(
 
             if attr == "related":
                 if op == "eq":
-                    return sql.column("hid").in_(json.loads(val))
+                    # unclear if multiple related values make sense, maybe this should be `.eq_` instead
+                    return sql.column("hid").in_(listify(json.loads(val)))
                 raise_filter_err(attr, op, val, "bad op in filter")
 
             if attr == "type_id":
