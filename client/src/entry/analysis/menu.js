@@ -231,10 +231,6 @@ export function fetchMenu(options = {}) {
                     title: _l("Workflow Invocations"),
                     url: "/workflows/invocations",
                 },
-                {
-                    title: _l("Notifications"),
-                    url: "/notifications",
-                },
             ],
         };
         if (Galaxy.config.visualizations_visible) {
@@ -247,6 +243,12 @@ export function fetchMenu(options = {}) {
             userTab.menu.push({
                 title: _l("Active InteractiveTools"),
                 url: "/interactivetool_entry_points/list",
+            });
+        }
+        if (Galaxy.config.enable_notification_system) {
+            userTab.menu.push({
+                title: _l("Notifications"),
+                url: "/notifications",
             });
         }
         userTab.menu.push({ divider: true });

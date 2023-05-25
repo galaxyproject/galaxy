@@ -80,9 +80,6 @@ export default {
 
         userStore.loadUser();
 
-        const notificationsStore = useNotificationsStore();
-        notificationsStore.startPollingNotifications();
-
         const toastRef = ref(null);
         setToastComponentRef(toastRef);
 
@@ -140,6 +137,9 @@ export default {
         this.Galaxy.currHistoryPanel = new HistoryPanelProxy();
         this.Galaxy.modal = new Modal.View();
         this.Galaxy.frame = this.windowManager;
+        if (this.Galaxy.config.enable_notification_system) {
+            this.startNotificationsPolling();
+        }
     },
     created() {
         window.onbeforeunload = () => {
@@ -149,6 +149,10 @@ export default {
         };
     },
     methods: {
+        startNotificationsPolling() {
+            const notificationsStore = useNotificationsStore();
+            notificationsStore.startPollingNotifications();
+        },
         openUrl(urlObj) {
             if (!urlObj.target) {
                 this.$router.push(urlObj.url);

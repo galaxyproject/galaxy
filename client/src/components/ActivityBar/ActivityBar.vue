@@ -4,8 +4,10 @@ import UploadItem from "./Items/UploadItem.vue";
 import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import ActivityItem from "./ActivityItem";
+import { useConfig } from "@/composables/config";
 import NotificationsBell from "@/components/NotificationsBell.vue";
 
+const { config } = useConfig();
 const userStore = useUserStore();
 
 function sidebarIsActive(menuKey) {
@@ -42,7 +44,7 @@ function onToggleSidebar(toggle) {
                     to="/visualizations" />
             </b-nav>
             <b-nav vertical class="flex-nowrap p-1">
-                <NotificationsBell tooltip-placement="right" />
+                <NotificationsBell v-if="config.enable_notification_system" tooltip-placement="right" />
                 <ActivityItem
                     id="activity-settings"
                     icon="cog"
