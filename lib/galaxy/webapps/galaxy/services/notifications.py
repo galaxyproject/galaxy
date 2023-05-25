@@ -44,6 +44,7 @@ class NotificationService(ServiceBase):
         self, sender_context: ProvidesUserContext, payload: NotificationCreateRequest
     ) -> NotificationCreatedResponse:
         """Sends a notification to a list of recipients (users, groups or roles)."""
+        self.notification_manager.ensure_notifications_enabled()
         self._ensure_user_can_send_notifications(sender_context)
         notification, recipient_user_count = self.notification_manager.send_notification_to_recipients(payload)
         return NotificationCreatedResponse(
@@ -57,6 +58,7 @@ class NotificationService(ServiceBase):
 
         Broadcasted notifications are a special type of notification are accessible by every user.
         """
+        self.notification_manager.ensure_notifications_enabled()
         self._ensure_user_can_broadcast_notifications(sender_context)
         notification = self.notification_manager.create_broadcast_notification(payload)
         return NotificationCreatedResponse(
@@ -68,6 +70,7 @@ class NotificationService(ServiceBase):
 
         If the user is **anonymous**, only the `broadcasted notifications` will be returned.
         """
+        self.notification_manager.ensure_notifications_enabled()
         total_unread_count = 0
         broadcasts = self._get_all_broadcasted(since)
         user_notifications = []
@@ -87,6 +90,7 @@ class NotificationService(ServiceBase):
 
         **Anonymous** users cannot receive personal notifications.
         """
+        self.notification_manager.ensure_notifications_enabled()
         if user_context.anonymous:
             return UserNotificationListResponse(__root__=[])
         user_notifications = self._get_user_notifications(user_context, limit, offset)
@@ -98,6 +102,7 @@ class NotificationService(ServiceBase):
         """Gets a single `broadcasted` notification by ID.
         Admin users can access inactive notifications (scheduled or recently expired).
         """
+        self.notification_manager.ensure_notifications_enabled()
         active_only = not user_context.user_is_admin
         try:
             broadcasted_notification = self.notification_manager.get_broadcasted_notification(
@@ -110,12 +115,14 @@ class NotificationService(ServiceBase):
     def get_all_broadcasted_notifications(self, user_context: ProvidesUserContext) -> BroadcastNotificationListResponse:
         """Gets all the `broadcasted` notifications currently published.
         Admin users will also get inactive notifications (scheduled or recently expired)."""
+        self.notification_manager.ensure_notifications_enabled()
         active_only = not user_context.user_is_admin
         broadcasted_notifications = self._get_all_broadcasted(active_only=active_only)
         return BroadcastNotificationListResponse(__root__=broadcasted_notifications)
 
     def get_user_notification(self, user: User, notification_id: int) -> UserNotificationResponse:
         """Gets the information of the notification received by the user with the given ID."""
+        self.notification_manager.ensure_notifications_enabled()
         try:
             notification = self.notification_manager.get_user_notification(user, notification_id)
             return UserNotificationResponse.from_orm(notification)
@@ -126,6 +133,7 @@ class NotificationService(ServiceBase):
         self, user_context: ProvidesUserContext, notification_id: int, request: UserNotificationUpdateRequest
     ):
         """Updates a single notification received by the user with the requested values."""
+        self.notification_manager.ensure_notifications_enabled()
         updated_response = self.update_user_notifications(user_context, set([notification_id]), request)
         if not updated_response.updated_count:
             self._raise_notification_not_found(notification_id)
@@ -134,6 +142,7 @@ class NotificationService(ServiceBase):
         self, user_context: ProvidesUserContext, notification_id: int, request: NotificationBroadcastUpdateRequest
     ):
         """Updates a single notification received by the user with the requested values."""
+        self.notification_manager.ensure_notifications_enabled()
         self._ensure_user_can_update_broadcasted_notifications(user_context)
         self._ensure_there_are_changes(request)
         updated_count = self.notification_manager.update_broadcasted_notification(notification_id, request)
@@ -144,6 +153,7 @@ class NotificationService(ServiceBase):
         self, user_context: ProvidesUserContext, notification_ids: Set[int], request: UserNotificationUpdateRequest
     ) -> NotificationsBatchUpdateResponse:
         """Updates a batch of notifications received by the user with the requested values."""
+        self.notification_manager.ensure_notifications_enabled()
         self._ensure_user_can_update_notifications(user_context)
         self._ensure_there_are_changes(request)
         updated_count = self.notification_manager.update_user_notifications(
@@ -153,6 +163,7 @@ class NotificationService(ServiceBase):
 
     def get_user_notification_preferences(self, user_context: ProvidesUserContext) -> UserNotificationPreferences:
         """Gets the user's current notification preferences."""
+        self.notification_manager.ensure_notifications_enabled()
         user = self.get_authenticated_user(user_context)
         return self.notification_manager.get_user_notification_preferences(user)
 
@@ -160,6 +171,7 @@ class NotificationService(ServiceBase):
         self, user_context: ProvidesUserContext, request: UpdateUserNotificationPreferencesRequest
     ) -> UserNotificationPreferences:
         """Updates the user's notification preferences with the requested changes."""
+        self.notification_manager.ensure_notifications_enabled()
         user = self.get_authenticated_user(user_context)
         return self.notification_manager.update_user_notification_preferences(user, request)
 

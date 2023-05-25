@@ -22,7 +22,10 @@ from sqlalchemy.sql import Select
 from typing_extensions import Protocol
 
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.exceptions import ObjectNotFound
+from galaxy.exceptions import (
+    ConfigDoesNotAllowException,
+    ObjectNotFound,
+)
 from galaxy.model import (
     GroupRoleAssociation,
     Notification,
@@ -102,12 +105,15 @@ class NotificationManager:
             Notification.expiration_time > self._now,
         )
 
+    def ensure_notifications_enabled(self):
+        if not self.notifications_enabled:
+            raise ConfigDoesNotAllowException("Notifications are disabled in this Galaxy.")
+
     def send_notification_to_recipients(self, request: NotificationCreateRequest) -> Tuple[Optional[Notification], int]:
         """
         Creates a new notification and associates it with all the recipient users.
         """
-        if not self.notifications_enabled:
-            return None, 0
+        self.ensure_notifications_enabled()
         recipient_users = self.recipient_resolver.resolve(request.recipients)
         notifications_sent = len(recipient_users)
         with self.sa_session.begin():
@@ -134,8 +140,7 @@ class NotificationManager:
 
         This kind of notification is not explicitly associated with any specific user but it is accessible by all users.
         """
-        if not self.notifications_enabled:
-            return None
+        self.ensure_notifications_enabled()
         with self.sa_session.begin():
             notification = self._create_notification_model(request)
             self.sa_session.add(notification)
