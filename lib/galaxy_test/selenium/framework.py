@@ -1,6 +1,7 @@
 """Basis for Selenium test framework."""
 
 import datetime
+import errno
 import json
 import os
 import traceback
@@ -166,6 +167,20 @@ def dump_test_information(self, name_prefix):
                 write_file(f"{log_type}.log.verbose.json", json.dumps(full_log, indent=True))
             except Exception:
                 continue
+
+        try_symlink(target_directory, os.path.join(GALAXY_TEST_ERRORS_DIRECTORY, "latest"))
+
+
+def try_symlink(file1, file2):
+    try:
+        try:
+            os.symlink(file1, file2)
+        except OSError as e:
+            if e.errno == errno.EEXIST:
+                os.remove(file2)
+                os.symlink(file1, file2)
+    except Exception:
+        pass
 
 
 def selenium_test(f):
