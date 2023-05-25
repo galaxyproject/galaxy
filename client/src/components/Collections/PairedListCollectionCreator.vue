@@ -262,9 +262,13 @@
                                                 aria-haspopup="true"
                                                 aria-expanded="false"></button>
                                             <div class="dropdown-menu">
-                                                <a class="dropdown-item" @click="changeFilters('illumina')">_1</a>
-                                                <a class="dropdown-item" @click="changeFilters('Rs')">_R1</a>
-                                                <a class="dropdown-item" @click="changeFilters('dot12s')">.1.fastq</a>
+                                                <a
+                                                    class="dropdown-item"
+                                                    v-for="(value, key) in commonFilters"
+                                                    :key="key"
+                                                    @click="changeFilters(key)">
+                                                    {{ value[0] }}
+                                                </a>
                                             </div>
                                         </div>
                                     </div>
@@ -314,10 +318,14 @@
                                                 data-toggle="dropdown"
                                                 aria-haspopup="true"
                                                 aria-expanded="false"></button>
-                                            <div class="dropdown-menu">
-                                                <a class="dropdown-item" @click="changeFilters('illumina')">_2</a>
-                                                <a class="dropdown-item" @click="changeFilters('Rs')">_R2</a>
-                                                <a class="dropdown-item" @click="changeFilters('dot12s')">.2.fastq</a>
+                                                <div class="dropdown-menu">
+                                                <a
+                                                    class="dropdown-item"
+                                                    v-for="(value, key) in commonFilters"
+                                                    :key="key"
+                                                    @click="changeFilters(key)">
+                                                    {{ value[1] }}
+                                                </a>
                                             </div>
                                         </div>
                                     </div>
@@ -644,6 +652,7 @@ export default {
                 this.commonFilters[initialFilter].push(this.config.default_paired_list_forward_filter);
                 this.commonFilters[initialFilter].push(this.config.default_paired_list_reverse_filter);
             }
+
             this.changeFilters(initialFilter);
         },
         /** add ids to dataset objs in initial list if none */
