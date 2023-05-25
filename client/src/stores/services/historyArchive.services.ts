@@ -5,12 +5,7 @@ export type ArchivedHistorySummary = components["schemas"]["ArchivedHistorySumma
 export type ArchivedHistoryDetailed = components["schemas"]["ArchivedHistoryDetailed"];
 export type AsyncTaskResultSummary = components["schemas"]["AsyncTaskResultSummary"];
 
-const _getArchivedHistories = fetcher.path("/api/histories/archived").method("get").create();
-const _archiveHistory = fetcher.path("/api/histories/{history_id}/archive").method("post").create();
-const _unarchiveHistory = fetcher.path("/api/histories/{history_id}/archive/restore").method("put").create();
-const _reimportHistoryFromStoreAsync = fetcher.path("/api/histories/from_store_async").method("post").create();
-
-type GetArchivedHistoriesParams = FetchArgType<typeof _getArchivedHistories>;
+type GetArchivedHistoriesParams = FetchArgType<typeof getArchivedHistories>;
 type SerializationOptions = Pick<GetArchivedHistoriesParams, "view" | "keys">;
 
 interface FilterOptions {
@@ -36,14 +31,16 @@ interface ArchivedHistoriesResult {
 
 const DEFAULT_PAGE_SIZE = 10;
 
+const getArchivedHistories = fetcher.path("/api/histories/archived").method("get").create();
+
 /**
  * Get a list of archived histories.
  */
-export async function getArchivedHistories(
+export async function fetchArchivedHistories(
     options: GetArchivedHistoriesOptions = {}
 ): Promise<ArchivedHistoriesResult> {
     const params = optionsToApiParams(options);
-    const { data, headers } = await _getArchivedHistories(params);
+    const { data, headers } = await getArchivedHistories(params);
     const totalMatches = parseInt(headers.get("total_matches") ?? "0");
     if (params.view === "detailed") {
         return {
@@ -57,6 +54,8 @@ export async function getArchivedHistories(
     };
 }
 
+const archiveHistory = fetcher.path("/api/histories/{history_id}/archive").method("post").create();
+
 /**
  * Archive a history.
  * @param historyId The history to archive
@@ -64,12 +63,12 @@ export async function getArchivedHistories(
  * @param purgeHistory Whether to purge the history after archiving. Can only be used in combination with an archive export record.
  * @returns The archived history summary.
  */
-export async function archiveHistory(
+export async function archiveHistoryById(
     historyId: string,
     archiveExportId?: string,
     purgeHistory?: boolean
 ): Promise<ArchivedHistorySummary> {
-    const { data } = await _archiveHistory({
+    const { data } = await archiveHistory({
         history_id: historyId,
         archive_export_id: archiveExportId,
         purge_history: purgeHistory,
@@ -77,16 +76,24 @@ export async function archiveHistory(
     return data as ArchivedHistorySummary;
 }
 
+const unarchiveHistory = fetcher
+    .path("/api/histories/{history_id}/archive/restore")
+    .method("put")
+    // @ts-ignore: workaround for https://github.com/ajaishankar/openapi-typescript-fetch/pull/55
+    .create({ force: undefined });
+
 /**
  * Unarchive/restore a history.
  * @param historyId The history to unarchive.
  * @param force Whether to force un-archiving for purged histories.
  * @returns The restored history summary.
  */
-export async function unarchiveHistory(historyId: string, force?: boolean): Promise<ArchivedHistorySummary> {
-    const { data } = await _unarchiveHistory({ history_id: historyId, force });
+export async function unarchiveHistoryById(historyId: string, force?: boolean): Promise<ArchivedHistorySummary> {
+    const { data } = await unarchiveHistory({ history_id: historyId, force });
     return data as ArchivedHistorySummary;
 }
+
+const reimportHistoryFromStore = fetcher.path("/api/histories/from_store_async").method("post").create();
 
 /**
  * Reimport an archived history as a new copy from the associated export record.
@@ -100,7 +107,7 @@ export async function reimportHistoryFromExportRecordAsync(
     if (!archivedHistory.export_record_data) {
         throw new Error("The archived history does not have an associated export record.");
     }
-    const { data } = await _reimportHistoryFromStoreAsync({
+    const { data } = await reimportHistoryFromStore({
         model_store_format: archivedHistory.export_record_data.model_store_format,
         store_content_uri: archivedHistory.export_record_data.target_uri,
     });

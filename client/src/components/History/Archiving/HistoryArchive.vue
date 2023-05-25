@@ -55,7 +55,7 @@ async function updateSearchQuery(query: string) {
 
 async function loadArchivedHistories() {
     isLoading.value = true;
-    const result = await ArchiveServices.getArchivedHistories({
+    const result = await ArchiveServices.fetchArchivedHistories({
         query: searchText.value,
         currentPage: currentPage.value,
         pageSize: perPage.value,

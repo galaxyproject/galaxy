@@ -256,7 +256,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     async function archiveHistoryById(historyId: string, archiveExportId?: string, purgeHistory = false) {
-        const history = await ArchiveServices.archiveHistory(historyId, archiveExportId, purgeHistory);
+        const history = await ArchiveServices.archiveHistoryById(historyId, archiveExportId, purgeHistory);
         setHistory(history as HistorySummary);
         if (!history.archived) {
             return;
@@ -272,7 +272,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     async function unarchiveHistoryById(historyId: string, force?: boolean) {
-        const history = await ArchiveServices.unarchiveHistory(historyId, force);
+        const history = await ArchiveServices.unarchiveHistoryById(historyId, force);
         setHistory(history as HistorySummary);
         return history;
     }
