@@ -21,7 +21,6 @@ import {
 
 Vue.use(BootstrapVue);
 
-// @ts-ignore
 library.add(faExclamationCircle);
 
 defineProps({

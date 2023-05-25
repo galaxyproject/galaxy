@@ -10,7 +10,6 @@ import { faInfoCircle, faTimes, faScrewdriver } from "@fortawesome/free-solid-sv
 
 Vue.use(BootstrapVue);
 
-// @ts-ignore
 library.add(faScrewdriver, faInfoCircle, faTimes);
 
 const router = useRouter();
@@ -46,7 +45,8 @@ function onActionClick(item: BroadcastNotification, link: string) {
             <div class="broadcast-banner">
                 <FontAwesomeIcon
                     class="mx-2"
-                    size="xl"
+                    fade
+                    size="2xl"
                     :class="`text-${getBroadcastVariant(broadcast)}`"
                     :icon="faInfoCircle" />
                 <div class="d-flex align-items-center">
@@ -87,12 +87,13 @@ function onActionClick(item: BroadcastNotification, link: string) {
     height: 6rem;
     color: white;
     display: flex;
+    z-index: 9999;
     padding: 0 1rem;
     position: fixed;
     align-items: center;
     backdrop-filter: blur(0.2rem);
     justify-content: space-between;
-    background-color: rgb(0, 0, 0, 0.6);
+    background-color: rgb(0, 0, 0, 0.7);
     box-shadow: 0 0 1rem 0 rgba(0, 0, 0, 0.5);
 }
 </style>
