@@ -352,6 +352,61 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
             }
             self.dataset_populator.import_history(import_data)
 
+    def test_immutable_history_update_fails(self):
+        history_id = self._create_history("TestHistoryForImmutability")["id"]
+
+        # we can update the name as usual
+        self._update(history_id, {"name": "Immutable Name"})
+        show_response = self._show(history_id)
+        assert show_response["name"] == "Immutable Name"
+
+        # once we purge the history, it becomes immutable
+        self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+
+        # we cannot update the name anymore
+        response = self._update(history_id, {"name": "New Name"})
+        self._assert_status_code_is(response, 403)
+        assert response.json()["err_msg"] == "History is immutable"
+        show_response = self._show(history_id)
+        assert show_response["name"] == "Immutable Name"
+
+    def test_immutable_history_cannot_add_datasets(self):
+        history_id = self._create_history("TestHistoryForAddImmutability")["id"]
+
+        # we add a dataset
+        self.dataset_populator.new_dataset(history_id, content="TestContents")
+
+        # once we purge the history, it becomes immutable
+        self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+
+        # we cannot add another dataset
+        with self.assertRaisesRegex(AssertionError, "History is immutable"):
+            self.dataset_populator.new_dataset(history_id, content="TestContents")
+
+    def test_cannot_modify_tags_on_immutable_history(self):
+        history_id = self._create_history("TestHistoryForTagImmutability")["id"]
+        hda = self.dataset_populator.new_dataset(history_id, content="TestContents")
+
+        # we add a tag
+        self._update(history_id, {"tags": ["FirstTag"]})
+
+        # once we purge the history, it becomes immutable
+        self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+
+        # we cannot add another tag
+        response = self._update(history_id, {"tags": ["SecondTag"]})
+        self._assert_status_code_is(response, 403)
+        assert response.json()["err_msg"] == "History is immutable"
+
+        # we cannot remove the tag
+        response = self._update(history_id, {"tags": []})
+        self._assert_status_code_is(response, 403)
+        assert response.json()["err_msg"] == "History is immutable"
+
+        # we cannot add a tag to the dataset
+        response = self.dataset_populator.tag_dataset(history_id, hda["id"], ["DatasetTag"], raise_on_error=False)
+        assert response["err_msg"] == "History is immutable"
+
 
 class ImportExportTests(BaseHistories):
     task_based: ClassVar[bool]

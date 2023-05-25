@@ -177,6 +177,11 @@ class ItemOwnershipException(MessageException):
     err_code = error_codes_by_name["USER_DOES_NOT_OWN_ITEM"]
 
 
+class ItemImmutableException(MessageException):
+    status_code = 403
+    err_code = error_codes_by_name["ITEM_IS_IMMUTABLE"]
+
+
 class ConfigDoesNotAllowException(MessageException):
     status_code = 403
     err_code = error_codes_by_name["CONFIG_DOES_NOT_ALLOW"]

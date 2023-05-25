@@ -498,6 +498,8 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             else:
                 raise exceptions.RequestParameterInvalidException("Must run conversion on either hdca or hda.")
 
+        self.history_manager.error_unless_mutable(target_history)
+
         # Make the target datatype available to the converter
         params["__target_datatype__"] = target_type
         vars = converter.handle_input(trans, params, history=target_history)

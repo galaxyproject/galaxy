@@ -6484,6 +6484,18 @@ input_c:
         finally:
             shutil.rmtree(workflow_directory)
 
+    def test_cannot_run_workflow_on_immutable_history(self) -> None:
+        with self.dataset_populator.test_history() as history_id:
+            # once we purge the history, it becomes immutable
+            self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+
+            with self.assertRaisesRegex(AssertionError, "History is immutable"):
+                self.workflow_populator.run_workflow(
+                    WORKFLOW_INPUTS_AS_OUTPUTS,
+                    test_data={"input1": "hello world", "text_input": {"value": "A text variable", "type": "raw"}},
+                    history_id=history_id,
+                )
+
     def _invoke_paused_workflow(self, history_id):
         workflow = self.workflow_populator.load_workflow_from_resource("test_workflow_pause")
         workflow_id = self.workflow_populator.create_workflow(workflow)

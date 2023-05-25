@@ -388,7 +388,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             any values that were different from the original and, therefore, updated
         """
         # TODO: PUT /api/histories/{encoded_history_id} payload = { rating: rating } (w/ no security checks)
-        history = self.manager.get_owned(history_id, trans.user, current_history=trans.history)
+        history = self.manager.get_mutable(history_id, trans.user, current_history=trans.history)
         self.deserializer.deserialize(history, payload, user=trans.user, trans=trans)
         return self._serialize_history(trans, history, serialization_params)
 
@@ -406,7 +406,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         You can purge a history, removing all it's datasets from disk (if unshared),
         by passing in ``purge=True`` in the url.
         """
-        history = self.manager.get_owned(history_id, trans.user, current_history=trans.history)
+        history = self.manager.get_mutable(history_id, trans.user, current_history=trans.history)
         if purge:
             self.manager.purge(history)
         else:
@@ -427,7 +427,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
 
         :returns:   the undeleted history
         """
-        history = self.manager.get_owned(history_id, trans.user, current_history=trans.history)
+        history = self.manager.get_mutable(history_id, trans.user, current_history=trans.history)
         self.manager.undelete(history)
         return self._serialize_history(trans, history, serialization_params)
 

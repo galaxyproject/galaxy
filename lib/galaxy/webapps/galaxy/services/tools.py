@@ -133,7 +133,7 @@ class ToolsService(ServiceBase):
         history_id = payload.get("history_id")
         if history_id:
             history_id = trans.security.decode_id(history_id) if isinstance(history_id, str) else history_id
-            target_history = self.history_manager.get_owned(history_id, trans.user, current_history=trans.history)
+            target_history = self.history_manager.get_mutable(history_id, trans.user, current_history=trans.history)
         else:
             target_history = None
 

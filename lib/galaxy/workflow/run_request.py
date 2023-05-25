@@ -253,7 +253,7 @@ def _get_target_history(
             history_name = history_param
     if history_id:
         history_manager = trans.app.history_manager
-        target_history = history_manager.get_owned(
+        target_history = history_manager.get_mutable(
             trans.security.decode_id(history_id), trans.user, current_history=trans.history
         )
     else:
