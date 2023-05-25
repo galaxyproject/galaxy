@@ -1153,19 +1153,22 @@ mapping:
 
       default_paired_list_filter_name:
         type: str
-        default: "full_names"
+        default: ""
+        required: false
         desc: |
           Name of filter set
 
       default_paired_list_forward_filter:
         type: str
-        default: "forward"
+        default: ""
+        required: false
         desc: |
           Forward filter
 
       default_paired_list_reverse_filter:
         type: str
-        default: "reverse"
+        default: ""
+        required: false
         desc: |
           Reverse filter
 

@@ -1610,7 +1610,7 @@
 
 :Description:
     Name of filter set
-:Default: ``full_names``
+:Default: ``""``
 :Type: str
 
 
@@ -1620,7 +1620,7 @@
 
 :Description:
     Forward filter
-:Default: ``forward``
+:Default: ``""``
 :Type: str
 
 
@@ -1630,7 +1630,7 @@
 
 :Description:
     Reverse filter
-:Default: ``reverse``
+:Default: ``""``
 :Type: str
 
 
