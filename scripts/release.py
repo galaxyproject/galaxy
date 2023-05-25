@@ -428,6 +428,17 @@ def get_next_devN_version(galaxy_root) -> Version:
     return Version(f"{root_version.major}.{minor_version}.dev{dev_version}")
 
 
+def is_merge_required(base_branch: str, new_branch: str, galaxy_root: pathlib.Path):
+    subprocess.run(["git", "checkout", new_branch], cwd=galaxy_root).check_returncode()
+    process = subprocess.run(
+        ["git", "merge", "--no-commit", "--no-ff", base_branch], cwd=galaxy_root, capture_output=False
+    )
+    subprocess.run(["git", "merge", "--abort"], cwd=galaxy_root)
+    if process.returncode == 0:
+        return False
+    return True
+
+
 @click.command("Create a new point release")
 @click.option("--galaxy-root", type=click.Path(exists=True, file_okay=False, resolve_path=True, path_type=pathlib.Path))
 @click.option("--new-version", type=ClickVersion(), help="Specify new release version. Must be valid PEP 440 version")
@@ -467,6 +478,20 @@ def main(
     click.echo(f"Current Galaxy version is {root_version}, will create new version {new_version}")
     if not no_confirm:
         click.confirm("Does this look correct?", abort=True)
+    base_branch = current_branch = get_current_branch(galaxy_root)
+    newer_branches = get_branches(galaxy_root, new_version, base_branch)
+    click.echo("Making sure that merging forward will result in clean merges")
+    merge_required = False
+    for new_branch in newer_branches:
+        merge_required = is_merge_required(base_branch=current_branch, new_branch=new_branch, galaxy_root=galaxy_root)
+        if merge_required:
+            msg = f"Merge conflicts occurred while attempting to merge branch {current_branch} into {new_branch}. You should resolve conflicts and try again."
+            if no_confirm:
+                raise Exception(msg)
+            click.echo(msg)
+            if click.confirm("Continue anyway ?", abort=True):
+                break
+    subprocess.run(["git", "checkout", base_branch], cwd=galaxy_root)
     modified_paths = [set_root_version(galaxy_root, new_version)]
     # read packages and find prs that affect a package
     packages: List[Package] = []
@@ -520,8 +545,6 @@ def main(
     subprocess.run(["git", "commit", "-m", f"Start work on {dev_version}"])
     # merge changes into newer branches
     # special care needs to be taken for changelog files
-    base_branch = get_current_branch(galaxy_root)
-    newer_branches = get_branches(galaxy_root, new_version, base_branch)
     if not no_confirm and newer_branches:
         click.confirm(f"Merge branch '{base_branch}' into {', '.join(newer_branches)} ?", abort=True)
     for new_branch in newer_branches:
