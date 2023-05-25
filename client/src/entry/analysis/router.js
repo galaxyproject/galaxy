@@ -90,6 +90,12 @@ function redirectLoggedIn() {
     }
 }
 
+function redirectIf(condition, path) {
+    if (condition) {
+        return path;
+    }
+}
+
 // produces the client router
 export function getRouter(Galaxy) {
     const router = new VueRouter({
@@ -397,6 +403,7 @@ export function getRouter(Galaxy) {
                     {
                         path: "notifications",
                         component: NotificationsList,
+                        redirect: redirectIf(!Galaxy.config.enable_notification_system, "/") || redirectAnon(),
                     },
                     {
                         path: "visualizations",

@@ -8,17 +8,20 @@ import { convertDropData } from "@/stores/activitySetup.js";
 import { useEventStore } from "@/stores/eventStore";
 import ContextMenu from "@/components/Common/ContextMenu.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
-import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
+import { useConfig } from "@/composables/config";
 import ActivityItem from "./ActivityItem.vue";
-import ActivitySettings from "./ActivitySettings.vue";
 import UploadItem from "./Items/UploadItem.vue";
+import ActivitySettings from "./ActivitySettings.vue";
 import WorkflowBox from "@/components/Panels/WorkflowBox.vue";
+import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
 import NotificationsBell from "@/components/NotificationsBell.vue";
 
-const activityStore = useActivityStore();
-const eventStore = useEventStore();
+const { config } = useConfig();
+
 const route = useRoute();
 const userStore = useUserStore();
+const eventStore = useEventStore();
+const activityStore = useActivityStore();
 
 // sync built-in activities with cached activities
 activityStore.sync();
@@ -177,7 +180,7 @@ function toggleContextMenu(evt) {
                 </draggable>
             </b-nav>
             <b-nav vertical class="flex-nowrap p-1">
-                <NotificationsBell tooltip-placement="right" />
+                <NotificationsBell v-if="config.enable_notification_system" tooltip-placement="right" />
                 <ActivityItem
                     id="activity-settings"
                     icon="cog"

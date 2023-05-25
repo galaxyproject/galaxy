@@ -3,6 +3,7 @@ import Vue, { computed, ref } from "vue";
 import BootstrapVue from "bootstrap-vue";
 import type { components } from "@/schema";
 import { Toast } from "@/composables/toast";
+import { useConfig } from "@/composables/config";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import AsyncButton from "@/components/Common/AsyncButton.vue";
@@ -31,6 +32,8 @@ defineProps({
 });
 
 type UserNotificationPreferences = components["schemas"]["UserNotificationPreferences"];
+
+const { config } = useConfig();
 
 const loading = ref(false);
 const errorMessage = ref<string | null>(null);
@@ -74,14 +77,19 @@ async function onTogglePushNotifications() {
     pushNotificationsGranted.value = await togglePushNotifications();
 }
 
-getNotificationsPreferences();
+if (config.value.enable_notification_system) {
+    getNotificationsPreferences();
+}
 </script>
 
 <template>
     <section class="notifications-preferences">
         <h1 v-localize :class="headerSize">Manage notifications preferences</h1>
 
-        <span v-localize class="mb-2"> You can manage notifications channels and preferences here. </span>
+        <span v-if="config.enable_notification_system" v-localize class="mb-2">
+            You can manage notifications channels and preferences here.
+        </span>
+        <span v-else v-localize class="mb-2"> You can manage push notifications preferences here. </span>
 
         <BAlert v-if="errorMessage" show dismissible fade variant="warning" @dismissed="errorMessage = null">
             {{ errorMessage }}
@@ -91,7 +99,7 @@ getNotificationsPreferences();
             <LoadingSpan message="Loading notifications preferences" />
         </BAlert>
 
-        <BRow v-else-if="!loading && notificationsPreferences" class="mx-1">
+        <BRow v-else-if="!loading && config.enable_notification_system && notificationsPreferences" class="mx-1">
             <BCol v-for="category in categories" :key="category">
                 <BCard class="my-2">
                     <BRow align-h="between" align-v="center">
@@ -162,7 +170,7 @@ getNotificationsPreferences();
             </BAlert>
         </BRow>
 
-        <BRow v-if="!loading" class="m-1" align-h="center">
+        <BRow v-if="!loading && config.enable_notification_system" class="m-1" align-h="center">
             <AsyncButton :action="updateNotificationsPreferences" icon="save" variant="primary" size="md">
                 <span v-localize>Save</span>
             </AsyncButton>
