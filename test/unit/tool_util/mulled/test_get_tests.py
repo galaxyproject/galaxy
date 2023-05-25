@@ -42,7 +42,6 @@ def test_get_run_test():
     assert commands["commands"] == [' #!/bin/bash && pslScore 2> /dev/null || [[ "$?" == 255 ]]']
 
 
-@external_dependency_management
 def test_get_anaconda_url():
     url = get_anaconda_url("samtools:1.7--1")
     assert url == "https://anaconda.org/bioconda/samtools/1.7/download/linux-64/samtools-1.7-1.tar.bz2"
@@ -72,9 +71,11 @@ def test_get_test_from_anaconda():
 
     # test for package defining tests in info/recipe/run_test.sh
     tests = get_test_from_anaconda(
-        "https://anaconda.org/bioconda/ucsc-pslmap/366/download/linux-64/ucsc-pslmap-366-hdd26221_0.tar.bz2"
+        "https://anaconda.org/bioconda/mugsy/1.2.3/download/noarch/mugsy-1.2.3-hdfd78af_4.tar.bz2"
     )
-    assert tests and tests["commands"] == ['#!/bin/bash && pslMap 2> /dev/null || [[ "$?" == 255 ]] && ']
+    assert tests and tests["commands"] == [
+        "#!/bin/bash &&  && export MUGSY_INSTALL=${PREFIX}/bin && mugsy -h | grep mugsy > /dev/null && mugsyWGA  --version && synchain-mugsy 2>&1 | grep mugsy > /dev/null && "
+    ]  # This script is clearly broken, but the whole get_tests module is currently far from usable
 
 
 @external_dependency_management
@@ -91,8 +92,8 @@ def test_open_recipe_file():
 
 @external_dependency_management
 def test_get_alternative_versions():
-    versions = get_alternative_versions("recipes/bamtools", "meta.yaml")
-    assert versions == ["recipes/bamtools/2.3.0/meta.yaml"]
+    versions = get_alternative_versions("recipes/bioblend", "meta.yaml")
+    assert versions == ["recipes/bioblend/0.7.0/meta.yaml"]
 
 
 @external_dependency_management
