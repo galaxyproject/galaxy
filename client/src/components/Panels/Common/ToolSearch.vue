@@ -25,8 +25,6 @@
             <b-form-datalist id="sectionSelect" :options="sectionNames"></b-form-datalist>
             <small class="mt-1">Filter by id:</small>
             <b-form-input v-model="filterSettings['id']" size="sm" placeholder="any id" />
-            <small class="mt-1">Filter by repository name:</small>
-            <b-form-input v-model="filterSettings['repository']" size="sm" placeholder="any repository" />
             <small class="mt-1">Filter by repository owner:</small>
             <b-form-input v-model="filterSettings['owner']" size="sm" placeholder="any owner" />
             <small class="mt-1">Filter by help text:</small>
@@ -75,13 +73,6 @@
                             </dd>
                             <dt><code>id</code></dt>
                             <dd>The tool id (taken from its XML)</dd>
-                            <dt><code>repository</code></dt>
-                            <dd>
-                                Some tools have been installed from
-                                <a href="https://toolshed.g2.bx.psu.edu/" target="_blank">ToolShed</a>
-                                repos. This <i>repository</i> filter allows you to search for tools from a specific
-                                repository.
-                            </dd>
                             <dt><code>owner</code></dt>
                             <dd>
                                 For the tools that have been installed from the

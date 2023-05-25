@@ -81,10 +81,6 @@ export default {
             type: String,
             default: "",
         },
-        repository: {
-            type: String,
-            default: "",
-        },
         owner: {
             type: String,
             default: "",

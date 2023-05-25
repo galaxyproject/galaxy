@@ -15,7 +15,6 @@
             :help="item.help"
             :local="item.target === 'galaxy_main'"
             :link="item.link"
-            :repository="item.tool_shed_repository && item.tool_shed_repository.name"
             :owner="item.tool_shed_repository && item.tool_shed_repository.owner"
             :workflow-compatible="item.is_workflow_compatible"
             :version="item.version"
