@@ -11,7 +11,6 @@ import NotificationActions from "@/components/Notifications/NotificationActions.
 
 Vue.use(BootstrapVue);
 
-// @ts-ignore
 library.add(faExternalLinkAlt, faRetweet);
 
 type UserNotificationResponse = components["schemas"]["UserNotificationResponse"];

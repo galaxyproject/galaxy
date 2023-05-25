@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { parseISO } from "date-fns";
+import { formatDistanceToNow, parseISO } from "date-fns";
 import Vue, { type PropType } from "vue";
 import BootstrapVue from "bootstrap-vue";
 import type { components } from "@/schema";
@@ -12,7 +12,6 @@ import { useNotificationsStore } from "@/stores/notificationsStore";
 
 Vue.use(BootstrapVue);
 
-// @ts-ignore
 library.add(faHourglassHalf);
 
 type UserNotificationResponse = components["schemas"]["UserNotificationResponse"];
@@ -34,26 +33,8 @@ function getNotificationExpirationTitle(notification: UserNotificationResponse) 
     if (notification.favorite) {
         return "This notification will not be deleted automatically because it is marked as favorite";
     } else if (notification.expiration_time) {
-        let calcDiff = "";
         const expirationTime = parseISO(notification.expiration_time);
-        const now = new Date();
-        const diff = expirationTime.getTime() - now.getTime();
-        const diffInMinutes = Math.round(diff / 1000 / 60);
-        if (diffInMinutes < 60) {
-            calcDiff = `${diffInMinutes} minutes`;
-        } else {
-            const diffInHours = Math.round(diffInMinutes / 60);
-            if (diffInHours < 24) {
-                calcDiff = `${diffInHours} hours`;
-            } else {
-                const diffInDays = Math.round(diffInHours / 24);
-                calcDiff = `${diffInDays} days`;
-            }
-        }
-
-        return `This notification will be deleted in ${calcDiff}`;
-    } else {
-        return "This notification will be deleted automatically";
+        return `This notification will be deleted ${formatDistanceToNow(expirationTime, { addSuffix: true })}`;
     }
 }
 </script>
@@ -61,14 +42,18 @@ function getNotificationExpirationTitle(notification: UserNotificationResponse) 
 <template>
     <BCol>
         <BRow align-h="end" align-v="center">
-            <UtcDate :date="notification.create_time" mode="elapsed" />
+            <UtcDate class="mx-2" :date="notification.create_time" mode="elapsed" />
             <BInputGroup>
                 <AsyncButton
                     v-if="!notification.seen_time"
                     title="Mark as read"
                     icon="check"
                     :action="() => updateNotification(notification, { seen: true })" />
-                <BButton v-else v-b-tooltip.hover variant="link" :title="getNotificationExpirationTitle(notification)">
+                <BButton
+                    v-else-if="notification.expiration_time"
+                    v-b-tooltip.hover
+                    variant="link"
+                    :title="getNotificationExpirationTitle(notification)">
                     <FontAwesomeIcon icon="hourglass-half" />
                 </BButton>
                 <AsyncButton

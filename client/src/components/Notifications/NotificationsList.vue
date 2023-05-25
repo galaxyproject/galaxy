@@ -14,7 +14,6 @@ import SharedItemNotification from "@/components/Notifications/Categories/Shared
 
 Vue.use(BootstrapVue);
 
-// @ts-ignore
 library.add(faCircle, faHourglassHalf);
 
 type UserNotificationResponse = components["schemas"]["UserNotificationResponse"];
@@ -144,12 +143,12 @@ function togglePreferences() {
                 No matching notifications with current filters.
             </BAlert>
 
-            <TransitionGroup key="hhs" name="notifications-list" tag="div">
+            <TransitionGroup name="notifications-list" tag="div">
                 <BCard
                     v-for="item in filteredNotifications"
                     v-show="filteredNotifications.length > 0"
                     :key="item.id"
-                    class="my-2"
+                    class="my-2 notification-card"
                     :class="!item.seen_time ? 'border-dark' : ''">
                     <BRow align-h="start" align-v="center">
                         <BCol cols="auto">
