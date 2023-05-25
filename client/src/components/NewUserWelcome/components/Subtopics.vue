@@ -4,9 +4,12 @@
             <h1 class="text-center my-3">{{ title | localize }}</h1>
             <h2 class="text-center my-3 h-sm">{{ intro | localize }}</h2>
         </header>
-        <b-row class="justify-content-md-center mb-3">
+        <b-row class="justify-content-md-center mb-3" :data-new-user-welcome-topic-title="title">
             <b-card-group v-for="(subject, idx) in topics" :key="idx">
-                <b-card class="text-center m-2 border-0" body-class="d-flex flex-column">
+                <b-card
+                    class="text-center m-2 border-0 new-user-welcome-subtopic"
+                    body-class="d-flex flex-column"
+                    :data-new-user-welcome-subtopic-title="subject.title">
                     <b-card-img
                         class="section-header mb-3"
                         height="50h"
@@ -19,7 +22,7 @@
                 </b-card>
             </b-card-group>
         </b-row>
-        <b-button class="mt-auto" variant="primary" role="link" @click="$emit('back')">
+        <b-button class="mt-auto new-user-welcome-return" variant="primary" role="link" @click="$emit('back')">
             <span class="fa fa-caret-left mr-1" />
             <span>Return</span>
         </b-button>

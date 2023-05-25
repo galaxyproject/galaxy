@@ -997,6 +997,16 @@ upload:
     file_dialog_ok: '.file-dialog-modal-ok'
     paste_new: .upload-paste
 
+new_user_welcome:
+  selectors:
+    _: .new-user-welcome
+    topics: .new-user-welcome-topic
+    topic_button: '.new-user-welcome-topic[data-new-user-welcome-topic-title="${title}"] button'
+    subtopics: .new-user-welcome-subtopic
+    subtopic_button: '.new-user-welcome-subtopic[data-new-user-welcome-subtopic-title="${title}"] button'
+    slides: .new-user-welcome-slides
+    back: .new-user-welcome-return
+
 rule_builder:
   selectors:
     _: '.rule-collection-creator'
