@@ -611,7 +611,7 @@ def create_point_release(
         merge_and_resolve_branches(galaxy_root, current_branch, new_branch, packages)
         current_branch = new_branch
     references = [release_tag, base_branch] + newer_branches
-    if not no_confirm or click.confirm(f"Push {','.join(references)} to upstream '{upstream}' ?", abort=True):
+    if no_confirm or click.confirm(f"Push {','.join(references)} to upstream '{upstream}' ?", abort=True):
         push_references(references=references, upstream=upstream)
 
 
