@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { formatDistanceToNow, parseISO } from "date-fns";
-import Vue, { type PropType } from "vue";
-import BootstrapVue from "bootstrap-vue";
+import { BInputGroup, BCol, BRow, BButton } from "bootstrap-vue";
 import type { components } from "@/schema";
 import UtcDate from "@/components/UtcDate.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -10,31 +9,31 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faHourglassHalf } from "@fortawesome/free-solid-svg-icons";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 
-Vue.use(BootstrapVue);
-
 library.add(faHourglassHalf);
 
-type UserNotificationResponse = components["schemas"]["UserNotificationResponse"];
+type UserNotification = components["schemas"]["UserNotificationResponse"];
+type NotificationChanges = components["schemas"]["UserNotificationUpdateRequest"];
 
-defineProps({
-    notification: {
-        type: Object as PropType<UserNotificationResponse>,
-        required: true,
-    },
-});
+interface Props {
+    notification: UserNotification;
+}
+
+defineProps<Props>();
 
 const notificationsStore = useNotificationsStore();
 
-async function updateNotification(notification: UserNotificationResponse, changes: any) {
+async function updateNotification(notification: UserNotification, changes: NotificationChanges) {
     await notificationsStore.updateBatchNotification({ notification_ids: [notification.id], changes });
 }
 
-function getNotificationExpirationTitle(notification: UserNotificationResponse) {
+function getNotificationExpirationTitle(notification: UserNotification) {
     if (notification.favorite) {
         return "This notification will not be deleted automatically because it is marked as favorite";
     } else if (notification.expiration_time) {
         const expirationTime = parseISO(notification.expiration_time);
-        return `This notification will be deleted ${formatDistanceToNow(expirationTime, { addSuffix: true })}`;
+        return `This notification will be automatically deleted ${formatDistanceToNow(expirationTime, {
+            addSuffix: true,
+        })}`;
     }
 }
 </script>

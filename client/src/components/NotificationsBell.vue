@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import Vue from "vue";
 import { storeToRefs } from "pinia";
-import BootstrapVue from "bootstrap-vue";
+import { BNavItem } from "bootstrap-vue";
 import { useRouter } from "vue-router/composables";
 import Popper from "components/Popper/Popper.vue";
 import { faBell } from "@fortawesome/free-solid-svg-icons";
@@ -9,9 +8,6 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 
-Vue.use(BootstrapVue);
-
-//@ts-ignore
 library.add(faBell);
 
 defineProps({

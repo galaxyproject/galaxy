@@ -1,25 +1,27 @@
 <script setup lang="ts">
-import BootstrapVue from "bootstrap-vue";
+import { BCol, BRow } from "bootstrap-vue";
 import type { components } from "@/schema";
-import Vue, { computed, type PropType } from "vue";
+import { computed } from "vue";
 import Heading from "@/components/Common/Heading.vue";
 import { faInbox } from "@fortawesome/free-solid-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import NotificationActions from "@/components/Notifications/NotificationActions.vue";
 
-Vue.use(BootstrapVue);
-
 library.add(faInbox);
 
-type UserNotificationResponse = components["schemas"]["UserNotificationResponse"];
+type UserNotification = components["schemas"]["UserNotificationResponse"];
 
-const props = defineProps({
-    notification: {
-        type: Object as PropType<UserNotificationResponse>,
-        required: true,
-    },
-});
+interface MessageNotification extends UserNotification {
+    category: "message";
+    content: components["schemas"]["MessageNotificationContent"];
+}
+
+interface Props {
+    notification: MessageNotification;
+}
+
+const props = defineProps<Props>();
 
 const notificationVariant = computed(() => {
     switch (props.notification.variant) {
