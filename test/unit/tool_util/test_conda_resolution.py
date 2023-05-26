@@ -3,7 +3,9 @@ import tempfile
 
 from galaxy.tool_util.deps import DependencyManager
 from galaxy.tool_util.deps.conda_util import (
+    best_search_result,
     CondaContext,
+    CondaTarget,
     install_conda,
     installed_conda_targets,
 )
@@ -65,3 +67,27 @@ def test_against_conda_prefix_regression() -> None:
         assert dependency.shell_commands() is not None  # install should not fail anymore
         installed_targets = list(installed_conda_targets(conda_context))
         assert len(installed_targets) > 0
+
+
+@external_dependency_management
+def test_best_search_result(tmp_path) -> None:
+    conda_context = CondaContext(
+        conda_prefix=os.path.join(tmp_path, "_conda"),
+        ensure_channels=DEFAULT_ENSURE_CHANNELS,
+        condarc_override=os.path.join(tmp_path, "_condarc"),
+    )
+    install_conda(conda_context)
+    (hit, exact) = best_search_result(CondaTarget("samtools"), conda_context)
+    assert hit is not None
+    assert hit["name"] == "samtools"
+    assert exact is True
+    (hit, exact) = best_search_result(CondaTarget("samtools", version="1.3.1"), conda_context)
+    assert hit is not None
+    assert hit["name"] == "samtools"
+    assert hit["version"] == "1.3.1"
+    assert exact is True
+    # Search non-existent version
+    (hit, exact) = best_search_result(CondaTarget("samtools", version="1.16"), conda_context)
+    assert hit is not None
+    assert hit["name"] == "samtools"
+    assert exact is False

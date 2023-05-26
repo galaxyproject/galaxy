@@ -559,6 +559,8 @@ def best_search_result(
 
     Return ``None`` if no results match.
     """
+    # Cannot specify the version here (i.e. conda_target.package_specifier)
+    # because if the version is not found, the exec_search() call would fail.
     search_args = [conda_target.package]
     try:
         res = conda_context.exec_search(search_args, json=True, offline=offline, platform=platform)
