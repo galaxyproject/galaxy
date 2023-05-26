@@ -1,0 +1,32 @@
+[
+    {
+      "cpuModel": "Intel Xeon E5-2670 v2 (Ivy Bridge/Sandy Bridge)",
+      "tdp": 115,
+      "coreCount": 10,
+      "source": "https://www.techpowerup.com/cpu-specs/xeon-e5-2670-v2.c1665"
+    },
+    {
+      "cpuModel": "Intel Xeon E5-2676 v3 (Haswell)",
+      "tdp": 120,
+      "coreCount": 12,
+      "source": "https://www.techpowerup.com/cpu-specs/xeon-e5-2676-v3.c2885"
+    },
+    {
+      "cpuModel": "Intel Xeon E5-2686 v4 (Broadwell)",
+      "tdp": 145,
+      "coreCount": 18,
+      "source": "https://en.wikichip.org/wiki/intel/xeon_e5/e5-2686_v4"
+    },
+    {
+      "cpuModel": "Intel Xeon 8259CL (Cascade Lake)",
+      "tdp": 210,
+      "coreCount": 24,
+      "source": "https://www.cpubenchmark.net/cpu.php?cpu=Intel+Xeon+Platinum+8259CL+%40+2.50GHz&id=3671"
+    },
+    {
+      "cpuModel": "Intel Xeon Platinum 8175M",
+      "tdp": 240,
+      "coreCount": 24,
+      "source": "https://en.wikichip.org/wiki/intel/xeon_platinum/8175m"
+    }
+]
