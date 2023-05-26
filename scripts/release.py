@@ -291,11 +291,11 @@ def update_package_history(package: Package, new_version: Version):
 
 def build_package(package: Package):
     click.echo(f"Running make clean for package {package.name}")
-    subprocess.run(["make", "clean"], cwd=package.path)
+    subprocess.run(["make", "clean"], cwd=package.path).check_returncode()
     click.echo(f"running make dist for package {package.name}")
-    subprocess.run(["make", "dist"], cwd=package.path)
+    subprocess.run(["make", "dist"], cwd=package.path).check_returncode()
     click.echo(f"running make lint-dist for package {package.name}")
-    subprocess.run(["make", "lint-dist"], cwd=package.path)
+    subprocess.run(["make", "lint-dist"], cwd=package.path).check_returncode()
 
 
 def upload_package(package: Package, repository: str = "testpypi"):
