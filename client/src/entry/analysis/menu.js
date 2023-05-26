@@ -248,7 +248,7 @@ export function fetchMenu(options = {}) {
         if (Galaxy.config.enable_notification_system) {
             userTab.menu.push({
                 title: _l("Notifications"),
-                url: "/notifications",
+                url: "/user/notifications",
             });
         }
         userTab.menu.push({ divider: true });

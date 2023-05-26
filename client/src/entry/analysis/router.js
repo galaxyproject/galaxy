@@ -369,11 +369,6 @@ export function getRouter(Galaxy) {
                         redirect: redirectAnon(),
                     },
                     {
-                        path: "user/notifications",
-                        component: NotificationsPreferences,
-                        redirect: redirectAnon(),
-                    },
-                    {
                         path: "user/cloud_auth",
                         component: CloudAuth,
                         redirect: redirectAnon(),
@@ -384,15 +379,20 @@ export function getRouter(Galaxy) {
                         redirect: redirectAnon(),
                     },
                     {
+                        path: "user/notifications",
+                        component: NotificationsList,
+                        redirect: redirectIf(!Galaxy.config.enable_notification_system, "/") || redirectAnon(),
+                    },
+                    {
+                        path: "user/notifications/preferences",
+                        component: NotificationsPreferences,
+                        redirect: redirectAnon(),
+                    },
+                    {
                         path: "user/:formId",
                         component: UserPreferencesForm,
                         props: true,
                         redirect: redirectAnon(),
-                    },
-                    {
-                        path: "notifications",
-                        component: NotificationsList,
-                        redirect: redirectIf(!Galaxy.config.enable_notification_system, "/") || redirectAnon(),
                     },
                     {
                         path: "visualizations",

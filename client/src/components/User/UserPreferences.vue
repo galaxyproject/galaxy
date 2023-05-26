@@ -40,7 +40,7 @@
             icon="fa-bell"
             title="Manage Notifications"
             description="Manage your notification settings."
-            to="/user/notifications" />
+            to="/user/notifications/preferences" />
         <user-preferences-element
             id="edit-preferences-cloud-auth"
             icon="fa-cloud"

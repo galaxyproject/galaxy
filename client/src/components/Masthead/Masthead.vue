@@ -12,7 +12,7 @@ import { useConfig } from "@/composables/config";
 import { useRoute } from "vue-router/composables";
 import { useUserStore } from "@/stores/userStore";
 import { useEntryPointStore } from "stores/entryPointStore";
-import NotificationsBell from "@/components/NotificationsBell.vue";
+import NotificationsBell from "@/components/Notifications/NotificationsBell.vue";
 
 const { showActivityBar } = storeToRefs(useUserStore());
 

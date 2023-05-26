@@ -5,7 +5,7 @@ import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import ActivityItem from "./ActivityItem";
 import { useConfig } from "@/composables/config";
-import NotificationsBell from "@/components/NotificationsBell.vue";
+import NotificationsBell from "@/components/Notifications/NotificationsBell.vue";
 
 const { config } = useConfig();
 const userStore = useUserStore();

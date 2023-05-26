@@ -62,7 +62,7 @@ import { setToastComponentRef } from "composables/toast";
 import { setConfirmDialogComponentRef } from "composables/confirmDialog";
 import { setGlobalUploadModal } from "composables/globalUploadModal";
 import { useNotificationsStore } from "@/stores/notificationsStore";
-import BroadcastsOverlay from "@/components/Broadcasts/BroadcastsOverlay.vue";
+import BroadcastsOverlay from "@/components/Notifications/Broadcasts/BroadcastsOverlay.vue";
 
 export default {
     components: {
