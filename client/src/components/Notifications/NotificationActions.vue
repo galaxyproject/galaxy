@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { components } from "@/schema";
 import UtcDate from "@/components/UtcDate.vue";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -8,11 +7,9 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BInputGroup, BCol, BRow, BButton } from "bootstrap-vue";
 import { faHourglassHalf } from "@fortawesome/free-solid-svg-icons";
 import { useNotificationsStore } from "@/stores/notificationsStore";
+import type { UserNotification } from "@/components/Notifications";
 
 library.add(faHourglassHalf);
-
-type UserNotification = components["schemas"]["UserNotificationResponse"];
-type NotificationChanges = components["schemas"]["UserNotificationUpdateRequest"];
 
 interface Props {
     notification: UserNotification;
@@ -21,10 +18,6 @@ interface Props {
 defineProps<Props>();
 
 const notificationsStore = useNotificationsStore();
-
-async function updateNotification(notification: UserNotification, changes: NotificationChanges) {
-    await notificationsStore.updateBatchNotification({ notification_ids: [notification.id], changes });
-}
 
 function getNotificationExpirationTitle(notification: UserNotification) {
     if (notification.favorite) {
@@ -47,7 +40,7 @@ function getNotificationExpirationTitle(notification: UserNotification) {
                     v-if="!notification.seen_time"
                     title="Mark as read"
                     icon="check"
-                    :action="() => updateNotification(notification, { seen: true })" />
+                    :action="() => notificationsStore.updateNotification(notification, { seen: true })" />
                 <BButton
                     v-else-if="notification.expiration_time"
                     v-b-tooltip.hover
@@ -59,16 +52,16 @@ function getNotificationExpirationTitle(notification: UserNotification) {
                     v-if="notification.favorite"
                     title="Remove from favorites"
                     icon="star"
-                    :action="() => updateNotification(notification, { favorite: false })" />
+                    :action="() => notificationsStore.updateNotification(notification, { favorite: false })" />
                 <AsyncButton
                     v-else
                     title="Add to favorites"
                     icon="fa-regular fa-star"
-                    :action="() => updateNotification(notification, { favorite: true })" />
+                    :action="() => notificationsStore.updateNotification(notification, { favorite: true })" />
                 <AsyncButton
                     icon="trash"
                     title="Delete"
-                    :action="() => updateNotification(notification, { deleted: true })" />
+                    :action="() => notificationsStore.updateNotification(notification, { deleted: true })" />
             </BInputGroup>
         </BRow>
     </BCol>

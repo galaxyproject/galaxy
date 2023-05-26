@@ -1,25 +1,21 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { BCol, BRow } from "bootstrap-vue";
-import type { components } from "@/schema";
 import Heading from "@/components/Common/Heading.vue";
 import { faInbox } from "@fortawesome/free-solid-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import NotificationActions from "@/components/Notifications/NotificationActions.vue";
+import type { MessageNotification } from "@/components/Notifications";
+import { useMarkdown } from "@/composables/markdown";
 
 library.add(faInbox);
-
-type UserNotification = components["schemas"]["UserNotificationResponse"];
-
-interface MessageNotification extends UserNotification {
-    category: "message";
-    content: components["schemas"]["MessageNotificationContent"];
-}
 
 interface Props {
     notification: MessageNotification;
 }
+
+const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
 const props = defineProps<Props>();
 
@@ -43,7 +39,7 @@ const notificationVariant = computed(() => {
             <NotificationActions :notification="notification" />
         </BRow>
         <BRow>
-            {{ notification.content.message }}
+            <span v-html="renderMarkdown(notification.content.message)" />
         </BRow>
     </BCol>
 </template>

@@ -1,20 +1,17 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
-import type { components } from "@/schema";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import { faCircle, faHourglassHalf } from "@fortawesome/free-solid-svg-icons";
-import MessageNotification from "@/components/Notifications/Categories/MessageNotification.vue";
 import NotificationsPreferences from "@/components/User/Notifications/NotificationsPreferences.vue";
-import SharedItemNotification from "@/components/Notifications/Categories/SharedItemNotification.vue";
+import NotificationItem from "@/components/Notifications/NotificationItem.vue";
 import { BAlert, BRow, BCol, BFormCheckbox, BButton, BButtonGroup, BCard, BCollapse } from "bootstrap-vue";
+import type { UserNotification } from "@/components/Notifications";
 
 library.add(faCircle, faHourglassHalf);
-
-type UserNotificationResponse = components["schemas"]["UserNotificationResponse"];
 
 const notificationsStore = useNotificationsStore();
 const { notifications, loadingNotifications } = storeToRefs(notificationsStore);
@@ -32,7 +29,7 @@ const allSelected = computed(
     () => haveSelected.value && selectedNotificationIds.value.length === notifications.value.length
 );
 
-function filterNotifications(notification: UserNotificationResponse) {
+function filterNotifications(notification: UserNotification) {
     if (showUnread.value && showFavorites.value) {
         return !notification.seen_time && notification.favorite;
     } else if (showUnread.value) {
@@ -49,7 +46,7 @@ async function updateNotifications(changes: any) {
     selectedNotificationIds.value = [];
 }
 
-function selectOrDeselectNotification(items: UserNotificationResponse[]) {
+function selectOrDeselectNotification(items: UserNotification[]) {
     const ids = items.map((item) => item.id);
     const selectedIds = selectedNotificationIds.value;
     const newSelectedIds = selectedIds.filter((id) => !ids.includes(id));
@@ -161,8 +158,7 @@ function togglePreferences() {
                                     @change="selectOrDeselectNotification([item])" />
                             </BButtonGroup>
                         </BCol>
-                        <SharedItemNotification v-if="item.category === 'new_shared_item'" :notification="item" />
-                        <MessageNotification v-else :notification="item" />
+                        <NotificationItem :notification="item" />
                     </BRow>
                 </BCard>
             </TransitionGroup>

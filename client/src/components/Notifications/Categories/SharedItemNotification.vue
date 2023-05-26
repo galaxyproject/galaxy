@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import type { components } from "@/schema";
 import { BCol, BRow, BLink } from "bootstrap-vue";
 import Heading from "@/components/Common/Heading.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -8,15 +7,9 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import { faExternalLinkAlt, faRetweet } from "@fortawesome/free-solid-svg-icons";
 import NotificationActions from "@/components/Notifications/NotificationActions.vue";
+import type { SharedItemNotification } from "@/components/Notifications";
 
 library.add(faExternalLinkAlt, faRetweet);
-
-type UserNotification = components["schemas"]["UserNotificationResponse"];
-
-interface SharedItemNotification extends UserNotification {
-    category: "new_shared_item";
-    content: components["schemas"]["NewSharedItemNotificationContent"];
-}
 
 interface Props {
     notification: SharedItemNotification;
@@ -49,7 +42,7 @@ const notificationVariant = computed(() => {
 });
 
 function onClick(link: string) {
-    notificationsStore.updateBatchNotification({ notification_ids: [props.notification.id], changes: { seen: true } });
+    notificationsStore.updateNotification(props.notification, { seen: true });
     window.open(link, "_blank");
 }
 </script>
