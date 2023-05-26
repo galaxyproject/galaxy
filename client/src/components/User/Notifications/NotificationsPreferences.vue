@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import Vue, { computed, ref } from "vue";
-import BootstrapVue from "bootstrap-vue";
+import { computed, ref } from "vue";
+import { BAlert, BCol, BRow, BCard, BButton, BCollapse, BFormCheckbox } from "bootstrap-vue";
 import type { components } from "@/schema";
 import { Toast } from "@/composables/toast";
 import { useConfig } from "@/composables/config";
@@ -18,8 +18,6 @@ import {
     getNotificationsPreferencesFromServer,
     updateNotificationsPreferencesOnServer,
 } from "@/components/User/Notifications/model/services";
-
-Vue.use(BootstrapVue);
 
 library.add(faExclamationCircle);
 
@@ -106,7 +104,7 @@ if (config.value.enable_notification_system) {
                             <span v-localize>{{ capitalizeWords(category) }}</span>
                         </BCol>
                         <BCol cols="auto">
-                            <BCheckbox
+                            <BFormCheckbox
                                 v-model="notificationsPreferences[category].enabled"
                                 v-b-tooltip.hover
                                 :title="

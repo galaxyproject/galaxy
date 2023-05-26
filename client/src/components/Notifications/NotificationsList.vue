@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import Vue, { computed, ref } from "vue";
-import BootstrapVue from "bootstrap-vue";
+import { computed, ref } from "vue";
+import { BAlert, BRow, BCol, BFormCheckbox, BButton, BButtonGroup, BCard, BCollapse } from "bootstrap-vue";
 import type { components } from "@/schema";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -11,8 +11,6 @@ import { faCircle, faHourglassHalf } from "@fortawesome/free-solid-svg-icons";
 import MessageNotification from "@/components/Notifications/Categories/MessageNotification.vue";
 import NotificationsPreferences from "@/components/User/Notifications/NotificationsPreferences.vue";
 import SharedItemNotification from "@/components/Notifications/Categories/SharedItemNotification.vue";
-
-Vue.use(BootstrapVue);
 
 library.add(faCircle, faHourglassHalf);
 
@@ -93,7 +91,7 @@ function togglePreferences() {
             <BCard class="mb-2">
                 <BRow class="align-items-center" no-gutters>
                     <BCol cols="1">
-                        <BCheckbox
+                        <BFormCheckbox
                             :checked="allSelected"
                             :indeterminate="
                                 selectedNotificationIds.length > 0 &&
@@ -101,7 +99,7 @@ function togglePreferences() {
                             "
                             @change="selectOrDeselectNotification(notifications)">
                             {{ haveSelected ? `${selectedNotificationIds.length} selected` : "Select all" }}
-                        </BCheckbox>
+                        </BFormCheckbox>
                     </BCol>
                     <BCol v-if="haveSelected">
                         <BButton size="sm" variant="outline-primary" @click="updateNotifications({ seen: true })">
@@ -158,7 +156,7 @@ function togglePreferences() {
                                     size="sm"
                                     class="unread-status position-absolute align-self-center mr-1"
                                     icon="circle" />
-                                <BCheckbox
+                                <BFormCheckbox
                                     :checked="selectedNotificationIds.includes(item.id)"
                                     @change="selectOrDeselectNotification([item])" />
                             </BButtonGroup>

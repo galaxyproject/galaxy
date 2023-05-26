@@ -25,13 +25,14 @@ export interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+    title: undefined,
     icon: "question",
     isActive: false,
-    options: null,
+    options: undefined,
     progressPercentage: 0,
-    progressStatus: null,
-    to: null,
-    tooltip: null,
+    progressStatus: undefined,
+    to: undefined,
+    tooltip: undefined,
     tooltipPlacement: "right",
 });
 

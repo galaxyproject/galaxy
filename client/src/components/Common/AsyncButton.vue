@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { BButton } from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 const loading = ref(false);

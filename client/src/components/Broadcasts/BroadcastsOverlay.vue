@@ -1,16 +1,13 @@
 <script setup lang="ts">
-import Vue from "vue";
 import { storeToRefs } from "pinia";
-import BootstrapVue from "bootstrap-vue";
+import { BButton } from "bootstrap-vue";
 import { useRouter } from "vue-router/composables";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { useBroadcastsStore, type BroadcastNotification } from "@/stores/broadcastsStore";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faInfoCircle, faTimes, faScrewdriver } from "@fortawesome/free-solid-svg-icons";
+import { faInfoCircle, faTimes } from "@fortawesome/free-solid-svg-icons";
 
-Vue.use(BootstrapVue);
-
-library.add(faScrewdriver, faInfoCircle, faTimes);
+library.add(faInfoCircle, faTimes);
 
 const router = useRouter();
 

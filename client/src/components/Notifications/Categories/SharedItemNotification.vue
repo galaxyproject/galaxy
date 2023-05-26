@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import BootstrapVue from "bootstrap-vue";
+import { BCol, BRow, BLink } from "bootstrap-vue";
 import type { components } from "@/schema";
-import Vue, { computed, type PropType } from "vue";
+import { computed } from "vue";
 import Heading from "@/components/Common/Heading.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -9,18 +9,20 @@ import { useNotificationsStore } from "@/stores/notificationsStore";
 import { faExternalLinkAlt, faRetweet } from "@fortawesome/free-solid-svg-icons";
 import NotificationActions from "@/components/Notifications/NotificationActions.vue";
 
-Vue.use(BootstrapVue);
-
 library.add(faExternalLinkAlt, faRetweet);
 
-type UserNotificationResponse = components["schemas"]["UserNotificationResponse"];
+type UserNotification = components["schemas"]["UserNotificationResponse"];
 
-const props = defineProps({
-    notification: {
-        type: Object as PropType<UserNotificationResponse>,
-        required: true,
-    },
-});
+interface SharedItemNotification extends UserNotification {
+    category: "new_shared_item";
+    content: components["schemas"]["NewSharedItemNotificationContent"];
+}
+
+interface Props {
+    notification: SharedItemNotification;
+}
+
+const props = defineProps<Props>();
 
 const notificationsStore = useNotificationsStore();
 
@@ -28,7 +30,7 @@ function capitalizeFirstLetter(string: string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
-const content = computed(() => props.notification.content as components["schemas"]["NewSharedItemNotificationContent"]);
+const content = computed(() => props.notification.content);
 
 const sharedItemType = computed(() => {
     if (content.value.item_type) {
@@ -64,16 +66,16 @@ function onClick(link: string) {
         <BRow>
             <p class="m-0">
                 <span>The user</span>
-                <em>{{ content.owner_name }}</em>
-                <span>shared the</span>
-                <span
+                <b>{{ content.owner_name }}</b>
+                <span>shared </span>
+                <b-link
                     v-b-tooltip.bottom
                     :title="`View ${content.item_type} in new tab`"
-                    class="text-primary cursor-pointer"
+                    class="text-primary"
                     @click="onClick(content.slug)">
                     {{ content.item_name }}
                     <FontAwesomeIcon icon="external-link-alt" />
-                </span>
+                </b-link>
                 <em>{{ content.item_type }}</em>
                 <span> with you.</span>
             </p>
