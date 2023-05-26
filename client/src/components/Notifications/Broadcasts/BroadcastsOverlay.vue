@@ -2,10 +2,12 @@
 import { storeToRefs } from "pinia";
 import { BButton } from "bootstrap-vue";
 import { useRouter } from "vue-router/composables";
+import { useMarkdown } from "@/composables/markdown";
+import Heading from "@/components/Common/Heading.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { useBroadcastsStore, type BroadcastNotification } from "@/stores/broadcastsStore";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faInfoCircle, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { useBroadcastsStore, type BroadcastNotification } from "@/stores/broadcastsStore";
 
 library.add(faInfoCircle, faTimes);
 
@@ -13,6 +15,7 @@ const router = useRouter();
 
 const broadcastsStore = useBroadcastsStore();
 const { activeBroadcasts } = storeToRefs(useBroadcastsStore());
+const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
 function getBroadcastVariant(item: BroadcastNotification) {
     switch (item.variant) {
@@ -39,33 +42,47 @@ function onActionClick(item: BroadcastNotification, link: string) {
             v-for="broadcast in activeBroadcasts"
             :key="broadcast.id"
             :class="{ 'urgent-broadcast': broadcast.variant === 'urgent' }">
-            <div class="broadcast-banner">
-                <FontAwesomeIcon
-                    class="mx-2"
-                    fade
-                    size="2xl"
-                    :class="`text-${getBroadcastVariant(broadcast)}`"
-                    :icon="faInfoCircle" />
-                <div class="d-flex align-items-center">
-                    <span>
-                        {{ broadcast.content.message }}
-                    </span>
-                    <div v-if="broadcast.content.action_links">
-                        <BButton
-                            v-for="actionLink in broadcast.content.action_links"
-                            :key="actionLink.action_name"
-                            class="mx-2"
-                            :title="actionLink.action_name"
-                            variant="primary"
-                            @click="onActionClick(broadcast, actionLink.link)">
-                            {{ actionLink.action_name }}
-                        </BButton>
-                    </div>
-                </div>
-                <BButton variant="light" title="Close" @click="broadcastsStore.dismissBroadcast(broadcast)">
-                    <FontAwesomeIcon icon="times" />
-                </BButton>
-            </div>
+            <BRow align-v="center" class="broadcast-banner m-0">
+                <BCol cols="auto">
+                    <FontAwesomeIcon
+                        class="mx-2"
+                        fade
+                        size="2xl"
+                        :class="`text-${getBroadcastVariant(broadcast)}`"
+                        :icon="faInfoCircle" />
+                </BCol>
+                <BCol>
+                    <BRow align-v="center">
+                        <Heading size="md" bold>
+                            {{ broadcast.content.subject }}
+                        </Heading>
+                    </BRow>
+                    <BRow align-v="center">
+                        <span class="broadcast-message" v-html="renderMarkdown(broadcast.content.message)" />
+                    </BRow>
+                    <BRow>
+                        <div v-if="broadcast.content.action_links">
+                            <BButton
+                                v-for="actionLink in broadcast.content.action_links"
+                                :key="actionLink.action_name"
+                                :title="actionLink.action_name"
+                                variant="primary"
+                                @click="onActionClick(broadcast, actionLink.link)">
+                                {{ actionLink.action_name }}
+                            </BButton>
+                        </div>
+                    </BRow>
+                </BCol>
+                <BCol cols="auto" align-self="start" class="p-0">
+                    <BButton
+                        variant="light"
+                        class="align-items-center d-flex"
+                        @click="broadcastsStore.dismissBroadcast(broadcast)">
+                        <FontAwesomeIcon class="mx-1" icon="times" />
+                        Dismiss
+                    </BButton>
+                </BCol>
+            </BRow>
         </div>
     </div>
 </template>
@@ -78,19 +95,24 @@ function onActionClick(item: BroadcastNotification, link: string) {
     position: fixed;
     background-color: rgb(0, 0, 0, 0.6);
 }
+
 .broadcast-banner {
     bottom: 0;
     width: 100%;
-    height: 6rem;
     color: white;
     display: flex;
     z-index: 9999;
-    padding: 0 1rem;
+    padding: 1rem;
     position: fixed;
+    min-height: 6rem;
     align-items: center;
     backdrop-filter: blur(0.2rem);
     justify-content: space-between;
     background-color: rgb(0, 0, 0, 0.7);
     box-shadow: 0 0 1rem 0 rgba(0, 0, 0, 0.5);
+
+    .broadcast-message {
+        font-size: large;
+    }
 }
 </style>
