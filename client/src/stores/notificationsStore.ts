@@ -8,8 +8,9 @@ import {
     updateBatchNotificationsOnServer,
 } from "@/stores/services/notifications.service";
 import { useBroadcastsStore } from "./broadcastsStore";
+import type { UserNotification } from "@/components/Notifications";
 
-type UserNotificationListResponse = components["schemas"]["UserNotificationListResponse"];
+type NotificationChanges = components["schemas"]["UserNotificationUpdateRequest"];
 type UserNotificationsBatchUpdateRequest = components["schemas"]["UserNotificationsBatchUpdateRequest"];
 
 const STATUS_POLLING_DELAY = 5000;
@@ -18,7 +19,7 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
     const broadcastsStore = useBroadcastsStore();
 
     const totalUnreadCount = ref<number>(0);
-    const notifications = ref<UserNotificationListResponse>([]);
+    const notifications = ref<UserNotification[]>([]);
 
     const pollId = ref<any>(null);
     const loadingNotifications = ref<boolean>(false);
@@ -77,12 +78,17 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
         await startPollingNotifications();
     }
 
+    async function updateNotification(notification: UserNotification, changes: NotificationChanges) {
+        return updateBatchNotification({ notification_ids: [notification.id], changes });
+    }
+
     return {
         notifications,
         totalUnreadCount,
         unreadNotifications,
         loadingNotifications,
         favoriteNotifications,
+        updateNotification,
         updateBatchNotification,
         startPollingNotifications,
     };
