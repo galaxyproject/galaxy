@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { BCol, BRow } from "bootstrap-vue";
 import type { components } from "@/schema";
-import { computed } from "vue";
 import Heading from "@/components/Common/Heading.vue";
 import { faInbox } from "@fortawesome/free-solid-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
