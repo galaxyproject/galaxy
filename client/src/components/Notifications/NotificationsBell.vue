@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 import { BNavItem } from "bootstrap-vue";
-import { useRouter } from "vue-router/composables";
 import Popper from "components/Popper/Popper.vue";
+import { useRouter } from "vue-router/composables";
 import { faBell } from "@fortawesome/free-solid-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";

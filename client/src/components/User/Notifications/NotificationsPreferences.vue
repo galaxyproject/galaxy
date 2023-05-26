@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { BAlert, BCol, BRow, BCard, BButton, BCollapse, BFormCheckbox } from "bootstrap-vue";
+import { computed, ref, watch } from "vue";
 import type { components } from "@/schema";
 import { Toast } from "@/composables/toast";
 import { useConfig } from "@/composables/config";
@@ -9,6 +8,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import AsyncButton from "@/components/Common/AsyncButton.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
+import { BAlert, BCol, BRow, BCard, BButton, BFormCheckbox } from "bootstrap-vue";
 import {
     browserSupportsPushNotifications,
     pushNotificationsEnabled,
@@ -30,13 +30,22 @@ defineProps({
 
 type UserNotificationPreferences = components["schemas"]["UserNotificationPreferences"];
 
-const { config } = useConfig();
+const { config } = useConfig(true);
 
 const loading = ref(false);
 const errorMessage = ref<string | null>(null);
 const pushNotificationsGranted = ref(pushNotificationsEnabled());
-const categories = computed(() => Object.keys(notificationsPreferences.value));
 const notificationsPreferences = ref<UserNotificationPreferences["preferences"]>({});
+
+const categories = computed(() => Object.keys(notificationsPreferences.value));
+const showPreferences = computed(() => {
+    return !loading.value && config.value.enable_notification_system && notificationsPreferences.value;
+});
+
+const categoryDescriptionMap = {
+    message: "You will receive notifications when someone sends you a message.",
+    new_shared_item: "You will receive notifications when someone shares an item with you.",
+};
 
 async function getNotificationsPreferences() {
     loading.value = true;
@@ -74,9 +83,15 @@ async function onTogglePushNotifications() {
     pushNotificationsGranted.value = await togglePushNotifications();
 }
 
-if (config.value.enable_notification_system) {
-    getNotificationsPreferences();
-}
+watch(
+    () => config.value.enable_notification_system,
+    () => {
+        if (config.value.enable_notification_system) {
+            getNotificationsPreferences();
+        }
+    },
+    { immediate: true }
+);
 </script>
 
 <template>
@@ -96,14 +111,21 @@ if (config.value.enable_notification_system) {
             <LoadingSpan message="Loading notifications preferences" />
         </BAlert>
 
-        <BRow v-else-if="!loading && config.enable_notification_system && notificationsPreferences" class="mx-1">
+        <BRow v-else-if="showPreferences" class="mx-1">
             <BCol v-for="category in categories" :key="category">
-                <BCard class="my-2">
+                <BCard class="my-2 px-2">
                     <BRow align-h="between" align-v="center">
-                        <BCol cols="auto">
-                            <span v-localize>{{ capitalizeWords(category) }}</span>
+                        <BCol cols="auto" class="mx-2">
+                            <BRow>
+                                <span v-localize class="category-title">{{ capitalizeWords(category) }}</span>
+                            </BRow>
+                            <BRow v-if="categoryDescriptionMap[category]">
+                                <span v-localize class="category-description">
+                                    {{ categoryDescriptionMap[category] }}
+                                </span>
+                            </BRow>
                         </BCol>
-                        <BCol cols="auto">
+                        <BCol cols="auto" class="p-0">
                             <BFormCheckbox
                                 v-model="notificationsPreferences[category].enabled"
                                 v-b-tooltip.hover
@@ -115,28 +137,24 @@ if (config.value.enable_notification_system) {
                                 switch />
                         </BCol>
                     </BRow>
-                    <BCollapse v-model="notificationsPreferences[category].enabled">
-                        <BRow class="p-2">
-                            <BCol
-                                v-for="channel in Object.keys(notificationsPreferences[category].channels)"
-                                :key="channel"
-                                class="d-flex align-items-center">
-                                <BFormCheckbox
-                                    v-model="notificationsPreferences[category].channels[channel]"
-                                    v-localize>
-                                    {{ capitalizeWords(channel) }}
-                                </BFormCheckbox>
-                                <BButton
-                                    v-if="channel === 'push'"
-                                    v-b-tooltip.hover
-                                    variant="link"
-                                    class="mx-2"
-                                    title="Push notifications need to be enabled">
-                                    <FontAwesomeIcon icon="exclamation-circle" />
-                                </BButton>
-                            </BCol>
-                        </BRow>
-                    </BCollapse>
+                    <BRow class="p-2">
+                        <BCol
+                            v-for="channel in Object.keys(notificationsPreferences[category].channels)"
+                            :key="channel"
+                            class="d-flex align-items-center">
+                            <BFormCheckbox
+                                v-model="notificationsPreferences[category].channels[channel]"
+                                v-localize
+                                :disabled="!notificationsPreferences[category].enabled">
+                                {{ capitalizeWords(channel) }}
+                            </BFormCheckbox>
+                            <FontAwesomeIcon
+                                v-if="channel === 'push'"
+                                v-b-tooltip.hover="'Push notifications need to be enabled'"
+                                class="mx-2"
+                                icon="exclamation-circle" />
+                        </BCol>
+                    </BRow>
                 </BCard>
             </BCol>
         </BRow>
@@ -174,3 +192,14 @@ if (config.value.enable_notification_system) {
         </BRow>
     </section>
 </template>
+
+<style scoped lang="scss">
+.category-title {
+    font-weight: bold;
+}
+
+.category-description {
+    font-size: 0.8rem;
+    font-style: italic;
+}
+</style>

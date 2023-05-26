@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
-import { BAlert, BRow, BCol, BFormCheckbox, BButton, BButtonGroup, BCard, BCollapse } from "bootstrap-vue";
 import type { components } from "@/schema";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -11,6 +10,7 @@ import { faCircle, faHourglassHalf } from "@fortawesome/free-solid-svg-icons";
 import MessageNotification from "@/components/Notifications/Categories/MessageNotification.vue";
 import NotificationsPreferences from "@/components/User/Notifications/NotificationsPreferences.vue";
 import SharedItemNotification from "@/components/Notifications/Categories/SharedItemNotification.vue";
+import { BAlert, BRow, BCol, BFormCheckbox, BButton, BButtonGroup, BCard, BCollapse } from "bootstrap-vue";
 
 library.add(faCircle, faHourglassHalf);
 
@@ -77,7 +77,7 @@ function togglePreferences() {
 
         <BCollapse v-model="preferencesOpen">
             <BCard class="m-2">
-                <NotificationsPreferences header-size="h-md" />
+                <NotificationsPreferences v-if="preferencesOpen" header-size="h-md" />
             </BCard>
         </BCollapse>
 
