@@ -786,6 +786,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         return val
 
     def _process_config(self, kwargs: Dict[str, Any]) -> None:
+        self._check_database_connection_strings()
         # Backwards compatibility for names used in too many places to fix
         self.datatypes_config = self.datatypes_config_file
         self.tool_configs = self.tool_config_file
@@ -1194,6 +1195,29 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                 _load_theme(file_path, self.themes_by_host[host])
         else:
             _load_theme(self.themes_config_file, self.themes)
+
+    def _check_database_connection_strings(self):
+        """
+        Verify connection URI strings in galaxy's configuration are parseable with urllib.
+        """
+
+        def try_parsing(value, name):
+            try:
+                urlparse(value)
+            except ValueError as e:
+                msg = f"The `{name}` configuration property cannot be parsed as a connection URI."
+                if "Invalid IPv6 URL" in str(e):
+                    msg += (
+                        "\nBesides an invalid IPv6 format, this may be caused by a bracket character in the `netloc` part of "
+                        "the URI (most likely, the password). In this case, you should percent-encode that character: for `[` "
+                        "use `%5B`, for `]` use `%5D`. For example, if your URI is `postgresql://user:pass[word@host/db`, "
+                        "change it to `postgresql://user:pass%5Bword@host/db`. "
+                    )
+                raise ConfigurationError(msg) from e
+
+        try_parsing(self.database_connection, "database_connection")
+        try_parsing(self.install_database_connection, "install_database_connection")
+        try_parsing(self.amqp_internal_connection, "amqp_internal_connection")
 
     def _configure_dataset_storage(self):
         # The default for `file_path` has changed in 20.05; we may need to fall back to the old default
