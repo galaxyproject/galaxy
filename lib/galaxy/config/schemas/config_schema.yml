@@ -974,6 +974,23 @@ mapping:
           Configuration file for the object store
           If this is set and exists, it overrides any other objectstore settings.
 
+      object_store_cache_path:
+        type: str
+        default: object_store_cache
+        path_resolves_to: cache_dir
+        required: false
+        desc: |
+          Default cache path for caching object stores if cache not configured for
+          that object store entry.
+
+      object_store_cache_size:
+        type: int
+        default: -1
+        required: false
+        desc: |
+          Default cache size for caching object stores if cache not configured for
+          that object store entry.
+
       object_store_store_by:
         type: str
         required: false

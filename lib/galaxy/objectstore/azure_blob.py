@@ -30,6 +30,7 @@ from . import ConcreteObjectStore
 from .caching import (
     CacheTarget,
     InProcessCacheMonitor,
+    parse_caching_config_dict_from_xml,
 )
 
 NO_BLOBSERVICE_ERROR_MESSAGE = (
@@ -51,9 +52,7 @@ def parse_config_xml(config_xml):
         container_name = container_xml.get("name")
         max_chunk_size = int(container_xml.get("max_chunk_size", 250))  # currently unused
 
-        c_xml = config_xml.findall("cache")[0]
-        cache_size = float(c_xml.get("size", -1))
-        staging_path = c_xml.get("path", None)
+        cache_dict = parse_caching_config_dict_from_xml(config_xml)
 
         tag, attrs = "extra_dir", ("type", "path")
         extra_dirs = config_xml.findall(tag)
@@ -71,10 +70,7 @@ def parse_config_xml(config_xml):
                 "name": container_name,
                 "max_chunk_size": max_chunk_size,
             },
-            "cache": {
-                "size": cache_size,
-                "path": staging_path,
-            },
+            "cache": cache_dict,
             "extra_dirs": extra_dirs,
             "private": ConcreteObjectStore.parse_private_from_config_xml(config_xml),
         }
@@ -101,7 +97,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
 
         auth_dict = config_dict["auth"]
         container_dict = config_dict["container"]
-        cache_dict = config_dict["cache"]
+        cache_dict = config_dict.get("cache") or {}
         self.enable_cache_monitor = config_dict.get("enable_cache_monitor", True)
 
         self.account_name = auth_dict.get("account_name")
@@ -110,7 +106,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         self.container_name = container_dict.get("name")
         self.max_chunk_size = container_dict.get("max_chunk_size", 250)  # currently unused
 
-        self.cache_size = cache_dict.get("size", -1)
+        self.cache_size = cache_dict.get("size") or self.config.object_store_cache_size
         self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
 
         self._initialize()
