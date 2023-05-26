@@ -60,6 +60,14 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
         check_name()
 
     @selenium_test
+    def test_workflow_index_accessibility(self):
+        self.workflow_index_open()
+        index_table = self.components.workflows.workflow_table
+        # The selenium_test decorator will check for critical axe violations,
+        # this test will be more rigorous but test only a specific component.
+        index_table.assert_no_axe_violations_with_impact_of_at_least("critical")
+
+    @selenium_test
     def test_download(self):
         self.workflow_index_open()
         self._workflow_import_from_url()

@@ -16,15 +16,16 @@ TEST_DATA_DIRECTORY = os.path.join(SCRIPT_DIR, os.pardir, os.pardir, "test-data"
 class TestStructuredDataset(integration_util.IntegrationTestCase):
     require_admin_user = True
     dataset_populator: DatasetPopulator
+    test_history_id: str
 
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
-        self.history_id = self.dataset_populator.new_history()
+        self.test_history_id = self.dataset_populator.new_history()
 
     def test_fail_on_nonbinary(self):
         dataset = self.dataset_populator.new_dataset(
-            self.history_id, "file://%s/random-file" % TEST_DATA_DIRECTORY, file_type="txt", wait=True
+            self.test_history_id, "file://%s/random-file" % TEST_DATA_DIRECTORY, file_type="txt", wait=True
         )
         dataset_id = dataset["dataset_id"]
         response = self._get(f"datasets/{dataset_id}/content/meta")
@@ -32,7 +33,7 @@ class TestStructuredDataset(integration_util.IntegrationTestCase):
 
     def test_api_meta(self):
         dataset = self.dataset_populator.new_dataset(
-            self.history_id, "file://%s/chopper.h5" % TEST_DATA_DIRECTORY, file_type="h5", wait=True
+            self.test_history_id, "file://%s/chopper.h5" % TEST_DATA_DIRECTORY, file_type="h5", wait=True
         )
         dataset_id = dataset["dataset_id"]
         response = self._get(f"datasets/{dataset_id}/content/meta")
@@ -42,7 +43,7 @@ class TestStructuredDataset(integration_util.IntegrationTestCase):
 
     def test_api_attr(self):
         dataset = self.dataset_populator.new_dataset(
-            self.history_id, "file://%s/chopper.h5" % TEST_DATA_DIRECTORY, file_type="h5", wait=True
+            self.test_history_id, "file://%s/chopper.h5" % TEST_DATA_DIRECTORY, file_type="h5", wait=True
         )
         dataset_id = dataset["dataset_id"]
         response = self._get(f"datasets/{dataset_id}/content/attr")
@@ -52,7 +53,7 @@ class TestStructuredDataset(integration_util.IntegrationTestCase):
 
     def test_api_stats(self):
         dataset = self.dataset_populator.new_dataset(
-            self.history_id, "file://%s/chopper.h5" % TEST_DATA_DIRECTORY, file_type="h5", wait=True
+            self.test_history_id, "file://%s/chopper.h5" % TEST_DATA_DIRECTORY, file_type="h5", wait=True
         )
         dataset_id = dataset["dataset_id"]
         response = self._get(f"datasets/{dataset_id}/content/stats?path=%2Fentry%2Fdata%2Fdata")
@@ -62,7 +63,7 @@ class TestStructuredDataset(integration_util.IntegrationTestCase):
 
     def test_api_data(self):
         dataset = self.dataset_populator.new_dataset(
-            self.history_id, "file://%s/chopper.h5" % TEST_DATA_DIRECTORY, file_type="h5", wait=True
+            self.test_history_id, "file://%s/chopper.h5" % TEST_DATA_DIRECTORY, file_type="h5", wait=True
         )
         dataset_id = dataset["dataset_id"]
         response = self._get(f"datasets/{dataset_id}/content/data?path=%2Fentry%2Fdata%2Fdata")
