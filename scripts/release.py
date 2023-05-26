@@ -439,27 +439,70 @@ def is_merge_required(base_branch: str, new_branch: str, galaxy_root: pathlib.Pa
     return True
 
 
-@click.command("Create a new point release")
-@click.option("--galaxy-root", type=click.Path(exists=True, file_okay=False, resolve_path=True, path_type=pathlib.Path))
+@click.group(help="Subcommands of this script can create new releases and build and upload package artifacts")
+def cli():
+    pass
+
+
+def group_options(*options):
+    def wrapper(function):
+        for option in reversed(options):
+            function = option(function)
+        return function
+
+    return wrapper
+
+
+galaxy_root_option = click.option(
+    "--galaxy-root", type=click.Path(exists=True, file_okay=False, resolve_path=True, path_type=pathlib.Path)
+)
+package_repository_option = click.option(
+    "--package_repository",
+    type=str,
+    default="testpypi",
+    help="Select target registry to upload packages to. Set to 'pypi' to upload to main pypi repository.",
+)
+packages_option = click.option(
+    "--packages", "package_subset", multiple=True, type=str, default=None, help="Restrict build to specified packages"
+)
+no_confirm_option = click.option("--no-confirm", type=bool, is_flag=True, default=False)
+
+
+@group_options(galaxy_root_option, package_repository_option, packages_option, no_confirm_option)
+@cli.command("build-and-upload", help="Build and upload packages")
+def build_and_upload(
+    galaxy_root: pathlib.Path,
+    package_subset: List[str],
+    package_repository: str,
+    no_confirm: bool,
+):
+    packages: List[Package] = []
+    for package_path in get_sorted_package_paths(galaxy_root):
+        if package_subset and package_path.name not in package_subset:
+            continue
+        package = read_package(package_path)
+        packages.append(package)
+    for package in packages:
+        click.echo(f"Building package {package}")
+        build_package(package)
+    if no_confirm or click.confirm(f"Upload packages to {package_repository} ?"):
+        for package in packages:
+            click.echo(f"Uploading package {package}")
+            upload_package(package, repository=package_repository)
+
+
+@cli.command("create-release", help="Create a new point release")
+@group_options(galaxy_root_option)
 @click.option("--new-version", type=ClickVersion(), help="Specify new release version. Must be valid PEP 440 version")
 @click.option(
     "--last-commit",
     type=str,
     help="Specify commit or tag that was used for the last package release. This is used to find the changelog for packages.",
 )
-@click.option("--build-packages", type=bool, is_flag=True, default=False)
+@click.option("--build-packages", type=bool, is_flag=True, default=True)
 @click.option("--upload-packages", type=bool, is_flag=True, default=False)
-@click.option(
-    "--package_repository",
-    type=str,
-    default="testpypi",
-    help="Select target registry to upload packages to. Set to 'pypi' to upload to main pypi repository.",
-)
-@click.option(
-    "--packages", "package_subset", multiple=True, type=str, default=None, help="Restrict build to specified packages"
-)
-@click.option("--no-confirm", type=bool, is_flag=True, default=False)
-def main(
+@group_options(package_repository_option, packages_option, no_confirm_option)
+def create_point_release(
     galaxy_root: pathlib.Path,
     new_version: Version,
     build_packages: bool,
@@ -518,7 +561,11 @@ def main(
         cmd = ["git", "diff"]
         cmd.extend([str(p) for p in modified_paths])
         subprocess.run(cmd, cwd=galaxy_root)
-    if build_packages and upload_packages and (no_confirm or click.confirm(f"Upload packages to {package_repository}")):
+    if (
+        build_packages
+        and upload_packages
+        and (no_confirm or click.confirm(f"Upload packages to {package_repository} ?"))
+    ):
         for package in packages:
             upload_package(package, repository=package_repository)
     # stage changes, commit and tag
@@ -553,4 +600,4 @@ def main(
 
 
 if __name__ == "__main__":
-    main()
+    cli()
