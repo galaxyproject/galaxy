@@ -39,6 +39,7 @@ g = Github(os.environ.get("GITHUB_AUTH"))
 PROJECT_OWNER = "galaxyproject"
 PROJECT_NAME = "galaxy"
 REPO = f"{PROJECT_OWNER}/{PROJECT_NAME}"
+DEFAULT_UPSTREAM_URL = f"https://github.com/{REPO}.git"
 
 HISTORY_TEMPLATE = """History
 -------
@@ -439,6 +440,11 @@ def is_merge_required(base_branch: str, new_branch: str, galaxy_root: pathlib.Pa
     return True
 
 
+def push_references(references: List[str], upstream: str = "https://github.com/galaxyproject/galaxy.git"):
+    for reference in references:
+        subprocess.run(["git", "push", upstream, reference]).check_returncode()
+
+
 @click.group(help="Subcommands of this script can create new releases and build and upload package artifacts")
 def cli():
     pass
@@ -501,6 +507,7 @@ def build_and_upload(
 )
 @click.option("--build-packages", type=bool, is_flag=True, default=True)
 @click.option("--upload-packages", type=bool, is_flag=True, default=False)
+@click.option("--upstream", type=str, default=DEFAULT_UPSTREAM_URL)
 @group_options(package_repository_option, packages_option, no_confirm_option)
 def create_point_release(
     galaxy_root: pathlib.Path,
@@ -511,6 +518,7 @@ def create_point_release(
     upload_packages: bool,
     package_repository: str,
     no_confirm: bool,
+    upstream: str,
 ):
     # Update version.py
     if not is_git_clean(galaxy_root):
@@ -533,6 +541,7 @@ def create_point_release(
                 raise Exception(msg)
             click.echo(msg)
             if click.confirm("Continue anyway ?", abort=True):
+                current_branch = new_branch
                 break
     subprocess.run(["git", "checkout", base_branch], cwd=galaxy_root)
     modified_paths = [set_root_version(galaxy_root, new_version)]
@@ -573,11 +582,13 @@ def create_point_release(
         click.confirm("Stage and commit changes ?", abort=True)
     cmd = ["git", "add"]
     cmd.extend(changed_paths)
+    release_tag = f"v{new_version}"
     subprocess.run(cmd, cwd=galaxy_root)
     subprocess.run(["git", "commit", "-m" f"Create version {new_version}"])
     if not no_confirm:
-        click.confirm(f"Create git tag 'v{new_version}' ?", abort=True)
-    subprocess.run(["git", "tag", f"v{new_version}"])
+        click.confirm(f"Create git tag '{release_tag}'?", abort=True)
+
+    subprocess.run(["git", "tag", release_tag])
     dev_version = get_next_devN_version(galaxy_root)
     version_py = set_root_version(galaxy_root, dev_version)
     modified_paths = [version_py]
@@ -594,9 +605,14 @@ def create_point_release(
     # special care needs to be taken for changelog files
     if not no_confirm and newer_branches:
         click.confirm(f"Merge branch '{base_branch}' into {', '.join(newer_branches)} ?", abort=True)
+    current_branch = base_branch
     for new_branch in newer_branches:
         click.echo(f"Merging {base_branch} into {new_branch}")
-        merge_and_resolve_branches(galaxy_root, base_branch, new_branch, packages)
+        merge_and_resolve_branches(galaxy_root, current_branch, new_branch, packages)
+        current_branch = new_branch
+    references = [release_tag, base_branch] + newer_branches
+    if not no_confirm or click.confirm(f"Push {','.join(references)} to upstream '{upstream}' ?", abort=True):
+        push_references(references=references, upstream=upstream)
 
 
 if __name__ == "__main__":
