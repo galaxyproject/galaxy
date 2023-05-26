@@ -21,7 +21,7 @@ const router = useRouter();
 const { totalUnreadCount } = storeToRefs(useNotificationsStore());
 
 function onClick() {
-    router.push("/notifications");
+    router.push("/user/notifications");
 }
 </script>
 

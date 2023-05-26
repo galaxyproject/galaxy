@@ -14,7 +14,7 @@ import UploadItem from "./Items/UploadItem.vue";
 import ActivitySettings from "./ActivitySettings.vue";
 import WorkflowBox from "@/components/Panels/WorkflowBox.vue";
 import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
-import NotificationsBell from "@/components/NotificationsBell.vue";
+import NotificationsBell from "@/components/Notifications/NotificationsBell.vue";
 
 const { config } = useConfig();
 
