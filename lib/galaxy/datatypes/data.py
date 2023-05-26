@@ -132,6 +132,8 @@ def get_params_and_input_name(
             params[value.name] = deps[value.name]
         elif value.type == "data":
             input_name = key
+        elif value.optional:
+            params[value.name] = None
 
     # add potentially required/common internal tool parameters e.g. '__job_resource'
     if target_context:
