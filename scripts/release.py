@@ -300,7 +300,10 @@ def build_package(package: Package):
 
 def upload_package(package: Package, repository: str = "testpypi"):
     click.echo(f"uploading package {package.name} to {repository}")
-    subprocess.run(["twine", "upload", "--repository", repository], cwd=package.path).check_returncode()
+    subprocess.run(
+        ["twine", "upload", "--repository", repository] + list(package.path.joinpath("dist").glob("*")),
+        cwd=package.path,
+    ).check_returncode()
 
 
 def get_root_version(galaxy_root: pathlib.Path) -> str:
