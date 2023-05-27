@@ -20,7 +20,7 @@ export interface CarbonEmissionsProps {
     };
     jobRuntime: number;
     coresAllocated: number;
-    memoryAllocated: number;
+    memoryAllocated?: number;
 }
 
 const props = withDefaults(defineProps<CarbonEmissionsProps>(), {
@@ -38,7 +38,7 @@ const carbonEmissions = computed(() => {
     const runtime = props.jobRuntime / (60 * 60); // Convert to hours
     const memoryAllocated = props.memoryAllocated / 1024; // Convert to gibibyte
     const tdpPerCore = cpu.tdp / cpu.coreCount;
-    const normalizedTdpPerCore = tdpPerCore * props.jobRuntime;
+    const normalizedTdpPerCore = tdpPerCore * props.coresAllocated;
 
     // Power needed in Watt
     const powerNeededCpu = powerUsageEffectiveness * normalizedTdpPerCore;
