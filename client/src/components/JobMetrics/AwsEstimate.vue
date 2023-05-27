@@ -5,60 +5,55 @@ import ec2 from "./ec2.json";
 export interface AwsEstimateProps {
     jobRuntime: number;
     coresAllocated: number;
-    memoryAllocated: number;
+    memoryAllocated?: number;
 }
 
-const props = withDefaults(defineProps<AwsEstimateProps>(), {
-    memoryAllocated: 0.5,
-});
+const props = defineProps<AwsEstimateProps>();
 
 const computedAwsEstimate = computed(() => {
-    const aws: Record<string, any> = {};
-
     const { coresAllocated, jobRuntime, memoryAllocated } = props;
 
-    aws.seconds = jobRuntime;
-    aws.vcpus = coresAllocated;
-    aws.memory = memoryAllocated;
-
-    if (aws.memory) {
-        aws.memory /= 1024;
-    } else {
-        // if memory was not specified, assign the smallest amount (we judge based on CPU-count only)
-        aws.memory = 0.5;
-    }
-
-    // Estimate EC2 instance. Data is already sorted
-    aws.instance = ec2.find((ec) => {
-        return ec.mem >= aws.memory && ec.vcpus >= aws.vcpus;
-    });
-
-    if (!aws.instance) {
+    if (coresAllocated <= 0 || jobRuntime <= 0) {
         return;
     }
 
-    aws.price = ((aws.seconds * aws.instance.price) / 3600).toFixed(2);
+    const adjustedMemoryAllocated = memoryAllocated ? memoryAllocated / 1024 : 0.5;
 
-    return aws;
+    // Estimate EC2 instance. Data is already sorted
+    const ec2Instance = ec2.find((ec) => {
+        return ec.mem >= adjustedMemoryAllocated && ec.vcpus >= coresAllocated;
+    });
+
+    if (!ec2Instance) {
+        return;
+    }
+
+    return {
+       seconds: jobRuntime,
+       vcpus: coresAllocated,
+       memory: adjustedMemoryAllocated,
+       price: ((jobRuntime * ec2Instance.price) / 3600).toFixed(2),
+       instance: ec2Instance
+    };
 });
 </script>
 
 <template>
-    <div v-if="computedAwsEstimate" class="aws mt-4">
+    <div v-if="computedAwsEstimate" id="aws-estimate" class="mt-4">
         <h3>AWS estimate</h3>
 
-        <strong>{{ computedAwsEstimate.price }} USD</strong>
+        <strong id="aws-cost">{{ computedAwsEstimate.price }} USD</strong>
 
         <br />
 
-        This job requested {{ computedAwsEstimate.vcpus }} core{{ computedAwsEstimate.vcpus > 1 ? "s" : "" }} and
-        {{ computedAwsEstimate.memory.toFixed(3) }} GiB of memory. Given this information, the smallest EC2 machine we
-        could find is:
+        This job requested {{ computedAwsEstimate.vcpus }} core(s) and
+        {{ computedAwsEstimate.memory.toFixed(3) }} GiB of memory. Given this
+        information, the smallest EC2 machine we could find is:
 
-        <span id="aws_name">{{ computedAwsEstimate.instance.name }}</span>
-        (<span id="aws_mem">{{ computedAwsEstimate.instance.mem }}</span> GB /
-        <span id="aws_vcpus">{{ computedAwsEstimate.instance.vcpus }}</span> vCPUs /
-        <span v-for="cpu in computedAwsEstimate.instance.cpu" id="aws_cpu" :key="cpu">{{ cpu }}</span
+        <span id="aws-name">{{ computedAwsEstimate.instance.name }}</span>
+        (<span id="aws-mem">{{ computedAwsEstimate.instance.mem }}</span> GB /
+        <span id="aws-vcpus">{{ computedAwsEstimate.instance.vcpus }}</span> vCPUs /
+        <span id="aws-cpu">{{ computedAwsEstimate.instance.cpu.join(", ") }}</span
         >). This instance is priced at {{ computedAwsEstimate.instance.price }} USD/hour.
 
         <br />
