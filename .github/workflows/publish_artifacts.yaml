@@ -1,0 +1,25 @@
+name: Publish release artifacts
+on:
+    release:
+      types: [released, prereleased]
+jobs:
+  build-and-publish:
+    if: github.repository_owner == 'mvdbeek'
+    name: build-and-publish
+    runs-on: ubuntu-latest
+    strategy:
+        matrix:
+            python-version: ['3.7']
+    steps:
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/checkout@v3
+      - name: Install script dependencies
+        run: pip install build click docutils packaging PyGithub requests twine
+      - name: Build and publish
+        run: |
+          python scripts/release.py build-and-upload --no-confirm --package_repository ${{ github.event_name == 'prereleased' && 'test' || 'pypi' }}
+        env:
+            TWINE_USERNAME: __token__
+            TWINE_PASSWORD: ${{ github.event_name == 'prereleased' && secrets.PYPI_TEST_TOKEN || secrets.PYPI_MAIN_TOKEN }}
