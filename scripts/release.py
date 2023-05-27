@@ -460,7 +460,9 @@ def group_options(*options):
 
 
 galaxy_root_option = click.option(
-    "--galaxy-root", type=click.Path(exists=True, file_okay=False, resolve_path=True, path_type=pathlib.Path)
+    "--galaxy-root",
+    type=click.Path(exists=True, file_okay=False, resolve_path=True, path_type=pathlib.Path),
+    default=".",
 )
 package_repository_option = click.option(
     "--package_repository",
