@@ -6,18 +6,20 @@ import { useJobMetricsStore } from "@/stores/jobMetricsStore";
 import { computed, unref } from "vue";
 
 export interface JobMetricsProps {
-    jobId: string;
-    datasetId: string;
-    shouldShowAwsEstimate: boolean;
-    datasetType?: string;
     datasetFilesize?: number;
+    datasetId?: string;
+    datasetType?: string;
     includeTitle?: boolean;
+    jobId: string;
+    shouldShowAwsEstimate?: boolean;
 }
 
 const props = withDefaults(defineProps<JobMetricsProps>(), {
-    datasetType: "hda",
     datasetFilesize: 0,
+    datasetId: "",
+    datasetType: "hda",
     includeTitle: true,
+    shouldShowAwsEstimate: false
 });
 
 const jobMetricsStore = useJobMetricsStore();
