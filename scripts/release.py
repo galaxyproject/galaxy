@@ -510,7 +510,7 @@ def build_and_upload(
     type=str,
     help="Specify commit or tag that was used for the last package release. This is used to find the changelog for packages.",
 )
-@click.option("--build-packages", type=bool, is_flag=True, default=True)
+@click.option("--build-packages/--no-build-packages", type=bool, is_flag=True, default=True)
 @click.option("--upload-packages", type=bool, is_flag=True, default=False)
 @click.option("--upstream", type=str, default=DEFAULT_UPSTREAM_URL)
 @group_options(package_repository_option, packages_option, no_confirm_option)
