@@ -165,6 +165,9 @@ const greenAlgorithmsUrl = "https://www.green-algorithms.org/";
 pre {
     font-weight: bold;
     white-space: pre-line;
+    border-left: 4px solid lightgray;
+    border-radius: 4px;
+    padding-left: 1rem;
 }
 
 section {
