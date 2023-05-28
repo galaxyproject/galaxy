@@ -4,13 +4,6 @@ import { getLocalVue } from "tests/jest/helpers";
 import AwsEstimate from "./AwsEstimate";
 import { mount } from "@vue/test-utils";
 
-// Ignore all axios calls, data is mocked locally -- just say "OKAY!"
-jest.mock("axios", () => ({
-    get: async () => {
-        return { response: { status: 200 } };
-    },
-}));
-
 const localVue = getLocalVue();
 
 describe("JobMetrics/AwsEstimate.vue", () => {
@@ -43,7 +36,6 @@ describe("JobMetrics/AwsEstimate.vue", () => {
                 },
             });
 
-            // Wait for axios and rendering.
             await flushPromises();
 
             if (wrapper.find("#aws-estimate").exists()) {

@@ -14,18 +14,16 @@ const dictionary = [
     },
     {
         term: "Carbon Intensity",
-        definition:
-            "A measure of how much greenhouse gases are emitted when producing per unit of electricity produced.",
+        definition: "The amount greenhouse gases emitted per unit of electricity produced.",
     },
     {
         term: "AWS EC2",
-        definition:
-            "An Amazon service which allows users to rent virtual computers upon which users can deploy their own web services.",
+        definition: "An Amazon service allowing users to rent virtual computers and deploy their own web services.",
     },
     {
         term: "CO2e",
         definition:
-            "CO2e represents other types of greenhouse gases the have similar global warming potential as a metric unit amount of CO2 itself.",
+            "Other types of greenhouse gases that have similar global warming potential as a metric unit amount of CO2 itself.",
     },
 ];
 
@@ -62,23 +60,21 @@ const greenAlgorithmsUrl = "https://www.green-algorithms.org/";
                 to it (in MB). Additionally, we require information about the CPU model of the server that ran the job.
                 In particular, we consider the CPU
                 <Abbreviation :explanation="'Thermal Design Power'">TDP</Abbreviation>, its core count and the number of
-                those cores allocated to the job. For the CPU, we assume a real usage factor of 1.0, meaning that it is
-                assumed that 100% percent of each allocated core's resources are used. Given that CPU specifications can
-                vary greatly and that we cannot always assume this information is provided we two approaches:
+                those cores allocated to the job. We assume a real core usage factor of 1.0, meaning that that 100% of
+                each allocated core's resources are used. Given that CPU specifications can vary greatly and that we
+                cannot always assume this information is provided, we have two approaches:
             </p>
 
             <p>
-                1. In the case that we know the CPU specifications from the server, we proceed as normal.
+                1. In the case that the server's CPU specifications are known, we proceed as normal.
                 <br />
-                2. When the CPU information isn't provided, we estimate a server configuration given the job's metrics
-                and match this to comparable general purpose
+                2. When no information is provided, we estimate the server's configuration by matching your job's CPU
+                and/or memory usage to a comparable general purpose
                 <Abbreviation :explanation="'Amazon Web Services Elastic Compute Cloud'">AWS EC2</Abbreviation>
-                instance that could have run your job. We interpolate the memory and core count allocated to the job,
-                using step linear interpolation, to map the job metrics to an EC2 instance. EC2 was chosen as it is a
-                common service which provides numerous server configuration types, so we can cover many real-world
-                server configurations.
+                instance. EC2 was chosen because its service provides numerous server configurations allowing us to
+                cover more real-world situations.
                 <ExternalLink :href="'https://aws.amazon.com/ec2/instance-types/'">
-                    (Read here to find further information about general purpose EC2).
+                    (Click here to read further about general purpose EC2 machines).
                 </ExternalLink>
             </p>
 
@@ -86,7 +82,7 @@ const greenAlgorithmsUrl = "https://www.green-algorithms.org/";
                 Once we have the information needed, we calculate the power usage of the CPU and memory in watts. For
                 each component, the respective power usage is the product of the amount of allocated resources, a
                 <Abbreviation :explanation="'Power Usage Effectiveness'">PUE</Abbreviation> value and a power usage
-                factor. For CPUs power usage factor is the (TDP normalized to TDP-per-core) and for memory we use an
+                factor. For CPUs power usage factor is the TDP (normalized to TDP-per-core) and for memory we use an
                 average memory power draw constant of 0.375 W/GiB.
             </p>
 
@@ -96,11 +92,13 @@ const greenAlgorithmsUrl = "https://www.green-algorithms.org/";
                 normalized_tdp_per_core = tdp_per_core * cores_allocated_to_job
 
                 power_needed_cpu = pue * normalized_tdp_per_core
-                power_needed_memory = pue * memory_allocated_in_gibibyte * memory_power_used
+                power_needed_memory = pue * memory_allocated_in_gibibyte * memory_power_usage_constant
                 total_power_needed = power_needed_cpu + power_needed_memory
             </pre>
 
-            <p>The power usage is then converted into energy usage (in kWh) by factoring in job runtime (in hours):</p>
+            <p>
+                The power usage is then converted into energy usage (in kWh) by factoring in the job runtime (in hours):
+            </p>
 
             <pre>
               energy_needed_cpu = runtime * power_needed_cpu / 1000
@@ -109,8 +107,8 @@ const greenAlgorithmsUrl = "https://www.green-algorithms.org/";
             </pre>
 
             <p>
-                Finally we convert the energy usage into estimated carbon emissions (metric unit CO2e) by multiplying
-                the carbon intensity of the server location.
+                Finally, we convert the energy usage into estimated carbon emissions (in metric units CO2e) by
+                multiplying the carbon intensity of the server location.
             </p>
 
             <pre>
