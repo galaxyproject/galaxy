@@ -16,7 +16,7 @@ const testServerInstance = {
 };
 
 describe("CarbonEmissions/CarbonEmissions.vue", () => {
-    it("correctly calculated carbon emissions.", async () => {
+    it("correctly calculates carbon emissions.", async () => {
         const wrapper = mount(CarbonEmissions, {
             propsData: {
                 estimatedServerInstance: testServerInstance,
