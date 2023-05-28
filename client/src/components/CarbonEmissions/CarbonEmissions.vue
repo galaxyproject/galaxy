@@ -2,7 +2,6 @@
 import BarChart from "./BarChart.vue";
 import CarbonEmissionsCard from "./CarbonEmissionCard.vue";
 import { computed } from "vue";
-import cpuReferenceData from "./cpu_tdp.json";
 import { faQuestionCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import Heading from "@/components/Common/Heading.vue";
@@ -14,43 +13,42 @@ library.add(faQuestionCircle);
 export interface CarbonEmissionsProps {
     estimatedServerInstance: {
         name: string;
-        cpuModel: string[];
-        coreCount: number;
-        memory: number;
+        cpuInfo: {
+          modelName: string;
+          totalAvailableCores: number;
+          tdp: number;
+        }
     };
-    jobRuntime: number;
+    jobRuntimeInSeconds: number;
     coresAllocated: number;
-    memoryAllocated?: number;
+    memoryAllocatedInMebibyte?: number;
 }
 
 const props = withDefaults(defineProps<CarbonEmissionsProps>(), {
-    memoryAllocated: 0,
+    memoryAllocatedInMebibyte: 0,
 });
 
 const carbonEmissions = computed(() => {
-    const cpu = cpuReferenceData.find(({ cpuModel }) => props.estimatedServerInstance.cpuModel.includes(cpuModel));
-    if (!cpu) {
-        return;
-    }
-
     const powerUsageEffectiveness = carbonEmissionsConstants.worldwidePowerUsageEffectiveness;
     const memoryPowerUsed = carbonEmissionsConstants.memoryPowerUsage;
-    const runtime = props.jobRuntime / (60 * 60); // Convert to hours
-    const memoryAllocated = props.memoryAllocated / 1024; // Convert to gibibyte
-    const tdpPerCore = cpu.tdp / cpu.coreCount;
-    const normalizedTdpPerCore = tdpPerCore * props.coresAllocated;
+    const runtimeInHours = props.jobRuntimeInSeconds / (60 * 60); // Convert to hours
+    const memoryAllocatedInGibibyte = props.memoryAllocatedInMebibyte / 1024; // Convert to gibibyte
+
+    const cpuInfo = props.estimatedServerInstance.cpuInfo;
+    const tdpPerCore = cpuInfo.tdp / cpuInfo.totalAvailableCores;
+    const normalizedTdpPerCore = tdpPerCore * runtimeInHours;
 
     // Power needed in Watt
     const powerNeededCpu = powerUsageEffectiveness * normalizedTdpPerCore;
-    const powerNeededMemory = powerUsageEffectiveness * memoryAllocated * memoryPowerUsed;
+    const powerNeededMemory = powerUsageEffectiveness * memoryAllocatedInGibibyte * memoryPowerUsed;
     const totalPowerNeeded = powerNeededCpu + powerNeededMemory;
 
     // Energy needed. Convert kWh to kW
-    const energyNeededCPU = (runtime * powerNeededCpu) / 1000;
-    const energyNeededMemory = (runtime * powerNeededMemory) / 1000;
-    const totalEnergyNeeded = (runtime * totalPowerNeeded) / 1000;
+    const energyNeededCPU = (runtimeInHours * powerNeededCpu) / 1000;
+    const energyNeededMemory = (runtimeInHours * powerNeededMemory) / 1000;
+    const totalEnergyNeeded = (runtimeInHours * totalPowerNeeded) / 1000;
 
-    // Carbon emissions (carbonIntensity is in grams/kWh so emissions results are in grams of CO2)
+    // Carbon emissions (carbon intensity is in grams/kWh so emissions results are in grams of CO2)
     const carbonIntensity = carbonEmissionsConstants.worldwideCarbonIntensity;
     const cpuCarbonEmissions = energyNeededCPU * carbonIntensity;
     const memoryCarbonEmissions = energyNeededMemory * carbonIntensity;
@@ -160,7 +158,7 @@ const carbonEmissionsComparisons = computed(() => {
 });
 
 const canShowMemory = computed(() => {
-    return props.memoryAllocated && props.memoryAllocated !== 0;
+    return props.memoryAllocatedInMebibyte && props.memoryAllocatedInMebibyte !== 0;
 });
 
 const barChartData = computed(() => {
@@ -320,7 +318,7 @@ function getEnergyNeededText(energyNeededInKiloWattHours: number) {
                             <td id="cpu-carbon-emissions">
                                 {{ getCarbonEmissionsText(carbonEmissions.cpuCarbonEmissions) }}
                             </td>
-                            <td id="cpu-energy-used">{{ getEnergyNeededText(carbonEmissions.energyNeededCPU) }}</td>
+                            <td id="cpu-energy-usage">{{ getEnergyNeededText(carbonEmissions.energyNeededCPU) }}</td>
                         </tr>
 
                         <tr v-if="canShowMemory">
