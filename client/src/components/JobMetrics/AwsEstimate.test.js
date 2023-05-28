@@ -18,9 +18,9 @@ describe("JobMetrics/AwsEstimate.vue", () => {
         const wrapper = mount(AwsEstimate, {
             propsData: {
                 jobId: "0",
-                jobRuntime: 0,
+                jobRuntimeInSeconds: 0,
                 coresAllocated: -999,
-                memoryAllocated: -999,
+                memoryAllocatedInMebibyte: -999,
             },
             localVue,
         });
@@ -37,9 +37,9 @@ describe("JobMetrics/AwsEstimate.vue", () => {
                 localVue,
                 propsData: {
                     jobId: JOB_ID,
-                    jobRuntime: Number(seconds),
+                    jobRuntimeInSeconds: Number(seconds),
                     coresAllocated: Number(cores),
-                    memoryAllocated: Number(memory),
+                    memoryAllocatedInMebibyte: Number(memory),
                 },
             });
 
