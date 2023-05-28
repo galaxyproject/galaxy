@@ -4,7 +4,7 @@ on:
       types: [released, prereleased]
 jobs:
   build-and-publish:
-    if: github.repository_owner == 'mvdbeek'
+    if: github.repository_owner == 'galaxyproject'
     name: build-and-publish
     runs-on: ubuntu-latest
     strategy:
