@@ -1,5 +1,4 @@
 <script setup>
-import Citation from "../Citation/Citation.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
 import Heading from "@/components/Common/Heading.vue";
 import Abbreviation from "@/components/Abbreviation.vue";
