@@ -20,7 +20,7 @@ const props = withDefaults(defineProps<JobMetricsProps>(), {
     datasetId: "",
     datasetType: "hda",
     includeTitle: true,
-    shouldShowAwsEstimate: false
+    shouldShowAwsEstimate: false,
 });
 
 const jobMetricsStore = useJobMetricsStore();
@@ -67,7 +67,7 @@ const pluginsSortedByPluginType = computed(() => {
     return Object.keys(jobMetricsGroupedByPluginType.value).sort();
 });
 
-const jobRuntime = computed(() => {
+const jobRuntimeInSeconds = computed(() => {
     const runtime = getMetricByName("runtime_seconds");
 
     return runtime ? parseInt(runtime) : undefined;
@@ -79,7 +79,7 @@ const coresAllocated = computed(() => {
     return coreCount ? parseInt(coreCount) : undefined;
 });
 
-const memoryAllocated = computed(() => {
+const memoryAllocatedInMebibyte = computed(() => {
     const memoryUsage = getMetricByName("galaxy_memory_mb");
 
     return memoryUsage ? parseInt(memoryUsage) : undefined;
@@ -91,17 +91,17 @@ const estimatedServerInstance = computed(() => {
         return;
     }
 
-    const memory = unref(memoryAllocated);
+    const memory = unref(memoryAllocatedInMebibyte);
     const adjustedMemory = memory ? memory / 1024 : 0;
 
     const serverInstance = ec2.find((ec) => {
-      if (adjustedMemory === 0) {
-        // Exclude memory from search criteria
-        return ec2.find((ec) => ec.vcpus >= cores);
-      }
+        if (adjustedMemory === 0) {
+            // Exclude memory from search criteria
+            return ec2.find((ec) => ec.vcpus >= cores);
+        }
 
-      // Search by all criteria
-      return ec.mem >= adjustedMemory && ec.vcpus >= cores
+        // Search by all criteria
+        return ec.mem >= adjustedMemory && ec.vcpus >= cores;
     });
 
     if (!serverInstance) {
@@ -116,10 +116,10 @@ const estimatedServerInstance = computed(() => {
     return {
         name: serverInstance.name,
         cpuInfo: {
-          modelName: cpu.cpuModel,
-          totalAvailableCores: cpu.coreCount,
-          tdp: cpu.tdp
-        }
+            modelName: cpu.cpuModel,
+            totalAvailableCores: cpu.coreCount,
+            tdp: cpu.tdp,
+        },
     };
 });
 </script>
@@ -144,17 +144,17 @@ const estimatedServerInstance = computed(() => {
         </div>
 
         <AwsEstimate
-            v-if="jobRuntime && coresAllocated"
+            v-if="jobRuntimeInSeconds && coresAllocated"
             :should-show-aws-estimate="shouldShowAwsEstimate"
-            :job-runtime="jobRuntime"
+            :job-runtime-in-seconds="jobRuntimeInSeconds"
             :cores-allocated="coresAllocated"
-            :memory-allocated="memoryAllocated" />
+            :memory-allocated-in-mebibyte="memoryAllocatedInMebibyte" />
 
         <CarbonEmissions
-            v-if="estimatedServerInstance && jobRuntime && coresAllocated"
+            v-if="estimatedServerInstance && jobRuntimeInSeconds && coresAllocated"
             :estimated-server-instance="estimatedServerInstance"
-            :job-runtime-in-seconds="jobRuntime"
+            :job-runtime-in-seconds="jobRuntimeInSeconds"
             :cores-allocated="coresAllocated"
-            :memory-allocated-in-mebibyte="memoryAllocated" />
+            :memory-allocated-in-mebibyte="memoryAllocatedInMebibyte" />
     </div>
 </template>

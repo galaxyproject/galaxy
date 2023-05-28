@@ -3,21 +3,21 @@ import { computed } from "vue";
 import ec2 from "./ec2.json";
 
 export interface AwsEstimateProps {
-    jobRuntime: number;
+    jobRuntimeInSeconds: number;
     coresAllocated: number;
-    memoryAllocated?: number;
+    memoryAllocatedInMebibyte?: number;
 }
 
 const props = defineProps<AwsEstimateProps>();
 
 const computedAwsEstimate = computed(() => {
-    const { coresAllocated, jobRuntime, memoryAllocated } = props;
+    const { coresAllocated, jobRuntimeInSeconds, memoryAllocatedInMebibyte } = props;
 
-    if (coresAllocated <= 0 || jobRuntime <= 0) {
+    if (coresAllocated <= 0 || jobRuntimeInSeconds <= 0) {
         return;
     }
 
-    const adjustedMemoryAllocated = memoryAllocated ? memoryAllocated / 1024 : 0.5;
+    const adjustedMemoryAllocated = memoryAllocatedInMebibyte ? memoryAllocatedInMebibyte / 1024 : 0.5;
 
     // Estimate EC2 instance. Data is already sorted
     const ec2Instance = ec2.find((ec) => {
@@ -29,11 +29,11 @@ const computedAwsEstimate = computed(() => {
     }
 
     return {
-       seconds: jobRuntime,
-       vcpus: coresAllocated,
-       memory: adjustedMemoryAllocated,
-       price: ((jobRuntime * ec2Instance.price) / 3600).toFixed(2),
-       instance: ec2Instance
+        seconds: jobRuntimeInSeconds,
+        vcpus: coresAllocated,
+        memory: adjustedMemoryAllocated,
+        price: ((jobRuntimeInSeconds * ec2Instance.price) / 3600).toFixed(2),
+        instance: ec2Instance,
     };
 });
 </script>
@@ -46,9 +46,8 @@ const computedAwsEstimate = computed(() => {
 
         <br />
 
-        This job requested {{ computedAwsEstimate.vcpus }} core(s) and
-        {{ computedAwsEstimate.memory.toFixed(3) }} GiB of memory. Given this
-        information, the smallest EC2 machine we could find is:
+        This job requested {{ computedAwsEstimate.vcpus }} core(s) and {{ computedAwsEstimate.memory.toFixed(3) }} GiB
+        of memory. Given this information, the smallest EC2 machine we could find is:
 
         <span id="aws-name">{{ computedAwsEstimate.instance.name }}</span>
         (<span id="aws-mem">{{ computedAwsEstimate.instance.mem }}</span> GB /

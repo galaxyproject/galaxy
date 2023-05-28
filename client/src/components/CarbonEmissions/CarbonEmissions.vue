@@ -14,10 +14,10 @@ export interface CarbonEmissionsProps {
     estimatedServerInstance: {
         name: string;
         cpuInfo: {
-          modelName: string;
-          totalAvailableCores: number;
-          tdp: number;
-        }
+            modelName: string;
+            totalAvailableCores: number;
+            tdp: number;
+        };
     };
     jobRuntimeInSeconds: number;
     coresAllocated: number;
