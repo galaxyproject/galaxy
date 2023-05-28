@@ -19,7 +19,8 @@ jobs:
         run: pip install build click docutils packaging PyGithub requests twine
       - name: Build and publish
         run: |
-          python scripts/release.py build-and-upload --no-confirm --package_repository ${{ github.event.release.prerelease && 'test' || 'pypi' }}
+          python scripts/release.py build-and-upload --no-confirm
         env:
             TWINE_USERNAME: __token__
             TWINE_PASSWORD: ${{ github.event.release.prerelease && secrets.PYPI_TEST_TOKEN || secrets.PYPI_MAIN_TOKEN }}
+            TWINE_REPOSITORY_URL: ${{ github.event.release.prerelease && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}

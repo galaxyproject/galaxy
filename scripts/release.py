@@ -298,10 +298,10 @@ def build_package(package: Package):
     subprocess.run(["make", "lint-dist"], cwd=package.path).check_returncode()
 
 
-def upload_package(package: Package, repository: str = "testpypi"):
-    click.echo(f"uploading package {package.name} to {repository}")
+def upload_package(package: Package):
+    click.echo(f"uploading package {package.name}")
     subprocess.run(
-        ["twine", "upload", "--repository", repository] + list(package.path.joinpath("dist").glob("*")),
+        ["twine", "upload"] + list(package.path.joinpath("dist").glob("*")),
         cwd=package.path,
     ).check_returncode()
 
@@ -467,24 +467,17 @@ galaxy_root_option = click.option(
     type=click.Path(exists=True, file_okay=False, resolve_path=True, path_type=pathlib.Path),
     default=".",
 )
-package_repository_option = click.option(
-    "--package_repository",
-    type=str,
-    default="testpypi",
-    help="Select target registry to upload packages to. Set to 'pypi' to upload to main pypi repository.",
-)
 packages_option = click.option(
     "--packages", "package_subset", multiple=True, type=str, default=None, help="Restrict build to specified packages"
 )
 no_confirm_option = click.option("--no-confirm", type=bool, is_flag=True, default=False)
 
 
-@group_options(galaxy_root_option, package_repository_option, packages_option, no_confirm_option)
+@group_options(galaxy_root_option, packages_option, no_confirm_option)
 @cli.command("build-and-upload", help="Build and upload packages")
 def build_and_upload(
     galaxy_root: pathlib.Path,
     package_subset: List[str],
-    package_repository: str,
     no_confirm: bool,
 ):
     packages: List[Package] = []
@@ -496,10 +489,10 @@ def build_and_upload(
     for package in packages:
         click.echo(f"Building package {package}")
         build_package(package)
-    if no_confirm or click.confirm(f"Upload packages to {package_repository} ?"):
+    if no_confirm or click.confirm("Upload packages ?"):
         for package in packages:
             click.echo(f"Uploading package {package}")
-            upload_package(package, repository=package_repository)
+            upload_package(package)
 
 
 @cli.command("create-release", help="Create a new point release")
@@ -513,7 +506,7 @@ def build_and_upload(
 @click.option("--build-packages/--no-build-packages", type=bool, is_flag=True, default=True)
 @click.option("--upload-packages", type=bool, is_flag=True, default=False)
 @click.option("--upstream", type=str, default=DEFAULT_UPSTREAM_URL)
-@group_options(package_repository_option, packages_option, no_confirm_option)
+@group_options(packages_option, no_confirm_option)
 def create_point_release(
     galaxy_root: pathlib.Path,
     new_version: Version,
@@ -521,7 +514,6 @@ def create_point_release(
     last_commit: Optional[str],
     package_subset: List[str],
     upload_packages: bool,
-    package_repository: str,
     no_confirm: bool,
     upstream: str,
 ):
@@ -575,13 +567,9 @@ def create_point_release(
         cmd = ["git", "diff"]
         cmd.extend([str(p) for p in modified_paths])
         subprocess.run(cmd, cwd=galaxy_root)
-    if (
-        build_packages
-        and upload_packages
-        and (no_confirm or click.confirm(f"Upload packages to {package_repository} ?"))
-    ):
+    if build_packages and upload_packages and (no_confirm or click.confirm("Upload packages to ?")):
         for package in packages:
-            upload_package(package, repository=package_repository)
+            upload_package(package)
     # stage changes, commit and tag
     if not no_confirm:
         click.confirm("Stage and commit changes ?", abort=True)
