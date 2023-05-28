@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AwsEstimate from "./AwsEstimate.vue";
 import CarbonEmissions from "@/components/CarbonEmissions/CarbonEmissions.vue";
+import cpuReferenceData from "@/components/CarbonEmissions/cpu_tdp.json";
 import ec2 from "./ec2.json";
 import { useJobMetricsStore } from "@/stores/jobMetricsStore";
 import { computed, unref } from "vue";
@@ -90,26 +91,35 @@ const estimatedServerInstance = computed(() => {
         return;
     }
 
-    let serverInstance: (typeof ec2)[number] | undefined;
-
     const memory = unref(memoryAllocated);
     const adjustedMemory = memory ? memory / 1024 : 0;
 
-    if (adjustedMemory === 0) {
-        serverInstance = ec2.find((ec) => ec.vcpus >= cores);
-    } else {
-        serverInstance = ec2.find((ec) => ec.mem >= adjustedMemory && ec.vcpus >= cores);
-    }
+    const serverInstance = ec2.find((ec) => {
+      if (adjustedMemory === 0) {
+        // Exclude memory from search criteria
+        return ec2.find((ec) => ec.vcpus >= cores);
+      }
+
+      // Search by all criteria
+      return ec.mem >= adjustedMemory && ec.vcpus >= cores
+    });
 
     if (!serverInstance) {
         return;
     }
 
+    const cpu = cpuReferenceData.find(({ cpuModel }) => serverInstance.cpu.includes(cpuModel));
+    if (!cpu) {
+        return;
+    }
+
     return {
         name: serverInstance.name,
-        cpuModel: serverInstance.cpu,
-        coreCount: serverInstance.vcpus,
-        memory: serverInstance.mem,
+        cpuInfo: {
+          modelName: cpu.cpuModel,
+          totalAvailableCores: cpu.coreCount,
+          tdp: cpu.tdp
+        }
     };
 });
 </script>
@@ -143,8 +153,8 @@ const estimatedServerInstance = computed(() => {
         <CarbonEmissions
             v-if="estimatedServerInstance && jobRuntime && coresAllocated"
             :estimated-server-instance="estimatedServerInstance"
-            :job-runtime="jobRuntime"
+            :job-runtime-in-seconds="jobRuntime"
             :cores-allocated="coresAllocated"
-            :memory-allocated="memoryAllocated" />
+            :memory-allocated-in-mebibyte="memoryAllocated" />
     </div>
 </template>
