@@ -1,3 +1,5 @@
+from collections import UserDict
+
 from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
     DataToolParameter,
@@ -18,6 +20,28 @@ from galaxy.tools.wrappers import (
 )
 
 PARAMS_UNWRAPPED = object()
+
+
+class LegacyUnprefixedDict(UserDict):
+    """
+    It used to be valid to access members of conditionals without specifying the conditional.
+    This dict provides a fallback when dict lookup fails using those old rules
+    """
+
+    def __init__(self, dict=None, /, **kwargs):
+        self._legacy_cache_data = {}
+        super().__init__(dict, **kwargs)
+
+    def __getitem__(self, key):
+        if key not in self.data:
+            if key in self._legacy_cache_data:
+                return self._legacy_cache_data[key]
+        return super().__getitem__(key)
+
+    def __contains__(self, key: object) -> bool:
+        if super().__contains__(key):
+            return True
+        return key in self._legacy_mapping
 
 
 def copy_identifiers(source, destination):
@@ -131,4 +155,4 @@ def make_list_copy(from_list):
     return new_list
 
 
-__all__ = ("WrappedParameters", "make_dict_copy")
+__all__ = ("LegacyUnprefixedDict", "WrappedParameters", "make_dict_copy")

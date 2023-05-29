@@ -30,7 +30,10 @@ from galaxy.tools.parameters.basic import (
     DataToolParameter,
     RuntimeValue,
 )
-from galaxy.tools.parameters.wrapped import WrappedParameters
+from galaxy.tools.parameters.wrapped import (
+    LegacyUnprefixedDict,
+    WrappedParameters,
+)
 from galaxy.util import ExecutionTimer
 from galaxy.util.template import fill_template
 
@@ -101,7 +104,7 @@ class DefaultToolAction(ToolAction):
         """
         if current_user_roles is None:
             current_user_roles = trans.get_current_user_roles()
-        input_datasets = {}
+        input_datasets = LegacyUnprefixedDict()
         all_permissions: Dict[str, Set[str]] = {}
 
         def record_permission(action, role_id):
@@ -160,7 +163,11 @@ class DefaultToolAction(ToolAction):
                         if i == 0:
                             # Allow copying metadata to output, first item will be source.
                             input_datasets[prefixed_name] = processed_dataset
+                            input_datasets.set_legacy_alias(new_key=prefixed_name, old_key=prefix + input.name)
                         input_datasets[prefixed_name + str(i + 1)] = processed_dataset
+                        input_datasets.set_legacy_alias(
+                            new_key=prefixed_name + str(i + 1), old_key=prefix + input.name + str(i + 1)
+                        )
                         conversions = []
                         for conversion_name, conversion_extensions, conversion_datatypes in input.conversions:
                             new_data = process_dataset(input_datasets[prefixed_name + str(i + 1)], conversion_datatypes)
@@ -168,6 +175,10 @@ class DefaultToolAction(ToolAction):
                                 input_datasets[
                                     prefixed_name[: -len(input.name)] + conversion_name + str(i + 1)
                                 ] = new_data
+                                input_datasets.set_legacy_alias(
+                                    new_key=prefixed_name[: -len(input.name)] + conversion_name + str(i + 1),
+                                    old_key=prefix + conversion_name + str(i + 1),
+                                )
                                 conversions.append((conversion_name, new_data))
                             else:
                                 raise Exception(
@@ -189,6 +200,7 @@ class DefaultToolAction(ToolAction):
                                 ] = conversion_data.id  # a more robust way to determine JSONable value is desired
                 else:
                     input_datasets[prefixed_name] = process_dataset(value)
+                    input_datasets.set_legacy_alias(new_key=prefixed_name, old_key=prefix + input.name)
                     conversions = []
                     for conversion_name, conversion_extensions, conversion_datatypes in input.conversions:
                         new_data = process_dataset(input_datasets[prefixed_name], conversion_datatypes)
@@ -248,6 +260,9 @@ class DefaultToolAction(ToolAction):
                         if processed_dataset is not v:
                             processed_dataset_dict[v] = processed_dataset
                     input_datasets[prefixed_name + str(i + 1)] = processed_dataset or v
+                    input_datasets.set_legacy_alias(
+                        new_key=prefixed_name + str(i + 1), old_key=prefix + input.name + str(i + 1)
+                    )
                 if conversion_required:
                     collection_type_description = (
                         trans.app.dataset_collection_manager.collection_type_descriptions.for_collection_type(
@@ -269,12 +284,13 @@ class DefaultToolAction(ToolAction):
         return input_datasets, all_permissions
 
     def collect_input_dataset_collections(self, tool, param_values):
-        def append_to_key(the_dict, key, value):
+        def append_to_key(the_dict: LegacyUnprefixedDict, key, legacy_key, value):
             if key not in the_dict:
                 the_dict[key] = []
+            the_dict.set_legacy_alias(new_key=key, old_key=legacy_key)
             the_dict[key].append(value)
 
-        input_dataset_collections: Dict[str, str] = {}
+        input_dataset_collections = LegacyUnprefixedDict()
 
         def visitor(input, value, prefix, parent=None, prefixed_name=None, **kwargs):
             if isinstance(input, DataToolParameter):
@@ -285,7 +301,7 @@ class DefaultToolAction(ToolAction):
                     if isinstance(value, model.HistoryDatasetCollectionAssociation) or isinstance(
                         value, model.DatasetCollectionElement
                     ):
-                        append_to_key(input_dataset_collections, prefixed_name, (value, True))
+                        append_to_key(input_dataset_collections, prefixed_name, prefix + input.name, (value, True))
                         target_dict = parent
                         if not target_dict:
                             target_dict = param_values
@@ -306,7 +322,7 @@ class DefaultToolAction(ToolAction):
                             target_dict[input.name] = []
                         target_dict[input.name].extend(dataset_instances)
             elif isinstance(input, DataCollectionToolParameter):
-                append_to_key(input_dataset_collections, prefixed_name, (value, False))
+                append_to_key(input_dataset_collections, prefixed_name, prefix + input.name, (value, False))
 
         tool.visit_inputs(param_values, visitor)
         return input_dataset_collections
@@ -440,7 +456,8 @@ class DefaultToolAction(ToolAction):
         wrapped_params = self._wrapped_params(trans, tool, incoming, inp_data)
 
         out_data: Dict[str, "DatasetInstance"] = {}
-        input_collections = {k: v[0][0] for k, v in inp_dataset_collections.items()}
+        input_collections = LegacyUnprefixedDict({k: v[0][0] for k, v in inp_dataset_collections.items()})
+        input_collections._legacy_mapping = inp_dataset_collections._legacy_mapping
         output_collections = OutputCollections(
             trans,
             history,
