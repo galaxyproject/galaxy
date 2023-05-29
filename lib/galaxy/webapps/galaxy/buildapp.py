@@ -766,26 +766,6 @@ def populate_api_routes(webapp, app):
         "update_step", "/steps/{step_id}", action="update_invocation_step", conditions=dict(method=["PUT"])
     )
 
-    # ======================================
-    # ====== DISPLAY APPLICATIONS API ======
-    # ======================================
-
-    webapp.mapper.connect(
-        "index",
-        "/api/display_applications",
-        controller="display_applications",
-        action="index",
-        conditions=dict(method=["GET"]),
-    )
-
-    webapp.mapper.connect(
-        "reload",
-        "/api/display_applications/reload",
-        controller="display_applications",
-        action="reload",
-        conditions=dict(method=["POST"]),
-    )
-
     # ================================
     # ===== USERS API =====
     # ================================
