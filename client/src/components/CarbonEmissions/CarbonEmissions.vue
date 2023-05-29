@@ -167,16 +167,22 @@ const barChartData = computed(() => {
         return;
     }
 
-    const labels = ["CPU"];
-    const data = [getPercentage(values.cpuCarbonEmissions, values.totalCarbonEmissions)];
+    const data = [
+        {
+            name: "CPU",
+            value: getPercentage(values.cpuCarbonEmissions, values.totalCarbonEmissions),
+        },
+    ];
 
     const canShowMemory = carbonEmissions.value?.memoryCarbonEmissions !== 0;
     if (canShowMemory) {
-        labels.push("Memory");
-        data.push(getPercentage(values.memoryCarbonEmissions, values.totalCarbonEmissions));
+        data.push({
+            name: "Memory",
+            value: 20,
+        });
     }
 
-    return { labels, data };
+    return data;
 });
 
 function prettyPrintValue({
@@ -284,21 +290,10 @@ function getEnergyNeededText(energyNeededInKiloWattHours: number) {
             </div>
 
             <div class="usage-ratios">
-                <div class="graph">
+                <div v-if="barChartData" class="graph">
                     <h3>Resource Usage Ratio</h3>
 
-                    <BarChart
-                        v-if="barChartData"
-                        :data="{
-                            labels: barChartData?.labels,
-                            datasets: [
-                                {
-                                    label: 'Usage Ratio',
-                                    backgroundColor: ['#41B883'],
-                                    data: barChartData.data,
-                                },
-                            ],
-                        }" />
+                    <BarChart :data="barChartData" />
                 </div>
 
                 <table class="tabletip info_data_table mt-5">
@@ -362,8 +357,6 @@ function getEnergyNeededText(energyNeededInKiloWattHours: number) {
 
 <style scoped>
 .graph {
-    height: 20vh;
-    width: 15vw;
     text-align: center;
     margin: 0 auto;
 }
