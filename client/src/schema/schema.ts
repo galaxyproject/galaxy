@@ -242,6 +242,20 @@ export interface paths {
          */
         get: operations["types_and_mapping_api_datatypes_types_and_mapping_get"];
     };
+    "/api/display_applications": {
+        /**
+         * Returns the list of display applications.
+         * @description Returns the list of display applications.
+         */
+        get: operations["display_applications_index_api_display_applications_get"];
+    };
+    "/api/display_applications/reload": {
+        /**
+         * Reloads the list of display applications.
+         * @description Reloads the list of display applications.
+         */
+        post: operations["display_applications_reload_api_display_applications_reload_post"];
+    };
     "/api/drs_download/{object_id}": {
         /** Download */
         get: operations["download_api_drs_download__object_id__get"];
@@ -2951,6 +2965,19 @@ export interface components {
              */
             links: components["schemas"]["Hyperlink"][];
         };
+        /** DisplayApplication */
+        DisplayApplication: {
+            /** Filename */
+            filename_: string;
+            /** Id */
+            id: string;
+            /** Links */
+            links: components["schemas"]["Link"][];
+            /** Name */
+            name: string;
+            /** Version */
+            version: string;
+        };
         /**
          * ElementsFromType
          * @description An enumeration.
@@ -5644,6 +5671,11 @@ export interface components {
              */
             url: string;
         };
+        /** Link */
+        Link: {
+            /** Name */
+            name: string;
+        };
         /**
          * MaterializeDatasetInstanceAPIRequest
          * @description Base model definition with common configuration used by all derived models.
@@ -6394,6 +6426,15 @@ export interface components {
          * @default []
          */
         QuotaSummaryList: components["schemas"]["QuotaSummary"][];
+        /** ReloadFeedback */
+        ReloadFeedback: {
+            /** Failed */
+            failed: string[];
+            /** Message */
+            message: string;
+            /** Reloaded */
+            reloaded: string[];
+        };
         /**
          * RemoteFilesDisableMode
          * @description An enumeration.
@@ -8841,6 +8882,53 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["DatatypesCombinedMap"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    display_applications_index_api_display_applications_get: {
+        /**
+         * Returns the list of display applications.
+         * @description Returns the list of display applications.
+         */
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["DisplayApplication"][];
+                };
+            };
+        };
+    };
+    display_applications_reload_api_display_applications_reload_post: {
+        /**
+         * Reloads the list of display applications.
+         * @description Reloads the list of display applications.
+         */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    [key: string]: string[] | undefined;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["ReloadFeedback"];
                 };
             };
             /** @description Validation Error */
