@@ -81,7 +81,14 @@ const carbonEmissionsComparisons = computed(() => {
         treeYear,
     } = carbonEmissionsConstants;
 
-    const gasolineConsumed = {
+    type CarbonComparison = {
+        heading: string;
+        explanation: string;
+        value: string;
+        icon: InstanceType<typeof CarbonEmissionsCard>["$props"]["icon"];
+    };
+
+    const gasolineConsumed: CarbonComparison = {
         heading: "Gasoline consumed",
         explanation: "The amount of gasoline consumed running this job",
         value: prettyPrintValue({
@@ -90,10 +97,10 @@ const carbonEmissionsComparisons = computed(() => {
             threshold: 1e-1,
             unit: "l",
         }),
-        icon: "GasolineSVG" as const,
+        icon: "gasPump",
     };
 
-    const drivingInEU = {
+    const drivingInEU: CarbonComparison = {
         heading: "Distance driven in EU",
         explanation: "Distance driven in km in the EU",
         value: prettyPrintValue({
@@ -101,10 +108,10 @@ const carbonEmissionsComparisons = computed(() => {
             threshold: 1e-1,
             unit: "km",
         }),
-        icon: "CarSVG" as const,
+        icon: "car",
     };
 
-    const drivingInUS = {
+    const drivingInUS: CarbonComparison = {
         heading: "Distance driven in US",
         explanation: "Distance driven in km in the US",
         value: prettyPrintValue({
@@ -113,10 +120,10 @@ const carbonEmissionsComparisons = computed(() => {
             threshold: 1e-1,
             unit: "mile(s)",
         }),
-        icon: "CarSVG" as const,
+        icon: "car",
     };
 
-    const incandescentLampsSwitchedToLEDs = {
+    const incandescentLampsSwitchedToLEDs: CarbonComparison = {
         heading: "LEDs running for a year",
         explanation:
             "Amount of CO2e you could have saved had you switched incandescent lights to LEDs and run them for a year",
@@ -124,27 +131,27 @@ const carbonEmissionsComparisons = computed(() => {
             value: parseFloat((totalCarbonEmissions / (ledCarbonEmissionSavings * 1e6)).toFixed(3)),
             threshold: 1e-3,
         }),
-        icon: "LightbulbSVG" as const,
+        icon: "lightbulb",
     };
 
-    const smartphonesCharged = {
+    const smartphonesCharged: CarbonComparison = {
         heading: "Phones charged",
         explanation: "The amount of smartphone(s) you could have charged with the energy consumed by this job",
         value: prettyPrintValue({
             value: parseFloat((totalCarbonEmissions / (smartphonesChargedCarbonEmissions * 1e6)).toFixed(2)),
             threshold: 1e-1 * 5, // at least one smartphone charged to 50%
         }),
-        icon: "SmartphoneSVG" as const,
+        icon: "mobilePhone",
     };
 
-    const treeMonths = {
+    const treeMonths: CarbonComparison = {
         heading: "Tree months",
         explanation: "Amount of time it would take a tree to sequester the carbon emissions from this job",
         value: prettyPrintValue({
             value: Math.round((totalCarbonEmissions / treeYear) * 12),
             threshold: 1e-1 * 5, // at least half of a month
         }),
-        icon: "TreeSVG" as const,
+        icon: "tree",
     };
 
     return [
@@ -271,13 +278,13 @@ function getEnergyNeededText(energyNeededInKiloWattHours: number) {
                     :value="getCarbonEmissionsText(carbonEmissions.totalCarbonEmissions)"
                     :explanation="'Amount of GHGs with a similar global warming effect as CO2'"
                     :heading="'Carbon Emissions'"
-                    :icon="'SmogSVG'" />
+                    :icon="'smog'" />
 
                 <CarbonEmissionsCard
                     :value="getEnergyNeededText(carbonEmissions.totalEnergyNeeded)"
                     :explanation="'Total energy usage per hour'"
                     :heading="'Energy Usage'"
-                    :icon="'LightningSVG'" />
+                    :icon="'bolt'" />
 
                 <!-- Carbon Emission Comparison -->
                 <CarbonEmissionsCard
