@@ -122,7 +122,7 @@ describe("WorkflowList.vue", () => {
             expect(columns.at(2).text()).toBe(
                 formatDistanceToNow(parseISO(`${mockWorkflowsData[0].update_time}Z`), { addSuffix: true })
             );
-            expect(row.find(".fa-globe").exists()).toBe(true);
+            expect(row.find(".sharing-indicator-published").exists()).toBe(true);
 
             // test expand summary button for longer annotations
             const annotationHead = sampleLongAnnotation.substr(0, 75);
@@ -172,7 +172,7 @@ describe("WorkflowList.vue", () => {
         it("update filter when published icon is clicked", async () => {
             const rows = wrapper.findAll("tbody > tr").wrappers;
             const row = rows[0];
-            row.find(".fa-globe").trigger("click");
+            row.find(".sharing-indicator-published").trigger("click");
             flushPromises();
             expect(wrapper.vm.filter).toBe("is:published");
         });
