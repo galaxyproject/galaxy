@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import BarChart from "./BarChart.vue";
 import CarbonEmissionsCard from "./CarbonEmissionCard.vue";
-import { computed } from "vue";
+import { computed, unref } from "vue";
 import { faQuestionCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import Heading from "@/components/Common/Heading.vue";
@@ -168,6 +168,10 @@ const canShowMemory = computed(() => {
     return props.memoryAllocatedInMebibyte && props.memoryAllocatedInMebibyte !== 0;
 });
 
+const canShowMoreThanOneMetric = computed(() => {
+    return unref(canShowMemory);
+});
+
 const barChartData = computed(() => {
     const values = carbonEmissions.value;
     if (!values) {
@@ -297,13 +301,11 @@ function getEnergyNeededText(energyNeededInKiloWattHours: number) {
             </div>
 
             <div class="usage-ratios">
-                <div v-if="barChartData" class="graph">
-                    <h3>Resource Usage Ratio</h3>
+                <h3>Resource Usage Ratio</h3>
 
-                    <BarChart :data="barChartData" />
-                </div>
+                <BarChart v-if="barChartData && canShowMoreThanOneMetric" :data="barChartData" />
 
-                <table class="tabletip info_data_table mt-5">
+                <table class="tabletip info_data_table mt-4">
                     <caption>
                         * Carbon emission and energy usage ratios per component.
                     </caption>
@@ -363,9 +365,11 @@ function getEnergyNeededText(energyNeededInKiloWattHours: number) {
 </template>
 
 <style scoped>
-.graph {
-    text-align: center;
-    margin: 0 auto;
+.usage-ratios {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    align-self: center;
 }
 
 .carbon-emission-values {
