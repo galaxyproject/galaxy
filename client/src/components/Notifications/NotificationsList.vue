@@ -82,7 +82,9 @@ function togglePreferences() {
             <LoadingSpan message="Loading notifications" />
         </BAlert>
 
-        <BAlert v-else-if="notifications.length === 0" show variant="info"> No notifications to show. </BAlert>
+        <BAlert v-else-if="notifications.length === 0" id="no-notifications" show variant="info">
+            No notifications to show.
+        </BAlert>
 
         <div v-else class="mx-1">
             <BCard class="mb-2">
@@ -113,6 +115,7 @@ function togglePreferences() {
                             <span class="mx-2"> Filters: </span>
                             <BButtonGroup>
                                 <BButton
+                                    id="show-unread-filter"
                                     size="sm"
                                     :pressed="showUnread"
                                     variant="outline-primary"
@@ -121,6 +124,7 @@ function togglePreferences() {
                                     Unread
                                 </BButton>
                                 <BButton
+                                    id="show-favorites-filter"
                                     size="sm"
                                     :pressed="showFavorites"
                                     variant="outline-primary"
