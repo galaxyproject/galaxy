@@ -1,14 +1,33 @@
 import logging
 from typing import (
-    Any,
-    Dict,
     List,
+    Optional,
 )
+
+from pydantic import BaseModel
 
 from galaxy.datatypes.registry import Registry
 from galaxy.structured_app import StructuredApp
 
 log = logging.getLogger(__name__)
+
+
+class Link(BaseModel):
+    name: str
+
+
+class DisplayApplication(BaseModel):
+    id: str
+    name: str
+    version: str
+    filename_: str
+    links: List[Link]
+
+
+class ReloadFeedback(BaseModel):
+    message: str
+    reloaded: List[Optional[str]]
+    failed: List[Optional[str]]
 
 
 class DisplayApplicationsManager:
@@ -21,7 +40,7 @@ class DisplayApplicationsManager:
     def datatypes_registry(self) -> Registry:
         return self._app.datatypes_registry
 
-    def index(self) -> List[Any]:
+    def index(self) -> List[DisplayApplication]:
         """
         Returns the list of display applications.
 
@@ -31,17 +50,17 @@ class DisplayApplicationsManager:
         rval = []
         for display_app in self.datatypes_registry.display_applications.values():
             rval.append(
-                {
-                    "id": display_app.id,
-                    "name": display_app.name,
-                    "version": display_app.version,
-                    "filename_": display_app._filename,
-                    "links": [{"name": link.name} for link in display_app.links.values()],
-                }
+                DisplayApplication(
+                    id=display_app.id,
+                    name=display_app.name,
+                    version=display_app.version,
+                    filename_=display_app._filename,
+                    links=[Link(name=link.name) for link in display_app.links.values()],
+                )
             )
         return rval
 
-    def reload(self, ids: List[str]) -> Dict[str, Any]:
+    def reload(self, ids: List[str]) -> ReloadFeedback:
         """
         Reloads the list of display applications.
 
@@ -66,4 +85,4 @@ class DisplayApplicationsManager:
             message = "You need to request at least one display application to reload."
         else:
             message = 'Reloaded %i requested display applications ("%s").' % (len(reloaded), '", "'.join(reloaded))
-        return {"message": message, "reloaded": reloaded, "failed": failed}
+        return ReloadFeedback(message=message, reloaded=reloaded, failed=failed)

@@ -1916,6 +1916,10 @@ class NavigatesGalaxy(HasDriver):
         element = self.components._.messages["warning"]
         return self.assert_message(element, contains=contains)
 
+    def assert_success_message(self, contains=None):
+        element = self.components._.messages["done"]
+        return self.assert_message(element, contains=contains)
+
     def assert_message(self, element, contains=None):
         if contains is not None:
             if type(element) == list:

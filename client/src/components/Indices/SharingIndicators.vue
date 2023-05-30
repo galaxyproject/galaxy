@@ -6,7 +6,7 @@
             class="sharing-indicator-published"
             size="sm"
             variant="link"
-            :title="'Search more published workflows' | localize"
+            :title="'Search more published items' | localize"
             @click.prevent="$emit('filter', 'is:published')">
             <Icon fixed-width icon="globe" />
         </b-button>
@@ -16,7 +16,7 @@
             class="sharing-indicator-shared"
             size="sm"
             variant="link"
-            :title="'Search more workflows shared with me' | localize"
+            :title="'Search more items shared with me' | localize"
             @click.prevent="$emit('filter', 'is:shared_with_me')">
             <Icon fixed-width icon="share-alt" />
         </b-button>

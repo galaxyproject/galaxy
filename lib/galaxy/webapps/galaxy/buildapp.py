@@ -238,6 +238,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/histories/list")
     webapp.add_client_route("/histories/import")
     webapp.add_client_route("/histories/{history_id}/export")
+    webapp.add_client_route("/histories/{history_id}/invocations")
     webapp.add_client_route("/histories/list_published")
     webapp.add_client_route("/histories/list_shared")
     webapp.add_client_route("/histories/rename")
@@ -764,26 +765,6 @@ def populate_api_routes(webapp, app):
     connect_invocation_endpoint("show_step", "/steps/{step_id}", action="invocation_step")
     connect_invocation_endpoint(
         "update_step", "/steps/{step_id}", action="update_invocation_step", conditions=dict(method=["PUT"])
-    )
-
-    # ======================================
-    # ====== DISPLAY APPLICATIONS API ======
-    # ======================================
-
-    webapp.mapper.connect(
-        "index",
-        "/api/display_applications",
-        controller="display_applications",
-        action="index",
-        conditions=dict(method=["GET"]),
-    )
-
-    webapp.mapper.connect(
-        "reload",
-        "/api/display_applications/reload",
-        controller="display_applications",
-        action="reload",
-        conditions=dict(method=["POST"]),
     )
 
     # ================================
