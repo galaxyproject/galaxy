@@ -1,7 +1,7 @@
-<script setup>
+<script setup lang="ts">
 import ExternalLink from "@/components/ExternalLink.vue";
 import Heading from "@/components/Common/Heading.vue";
-import Abbreviation from "@/components/Abbreviation.vue";
+import Abbreviation from "@/components/Common/Abbreviation.vue";
 
 const dictionary = [
     {
@@ -37,8 +37,6 @@ const greenAlgorithmsUrl = "https://www.green-algorithms.org/";
     <article class="mt-4">
         <header>
             <Heading h1 separator bold size="h-lg">Carbon Emissions Calculations</Heading>
-
-            <Citation class="formatted-reference" :citation="greenAlgorithmsCitation" prefix="-" />
 
             <p>
                 Our calculations are based off of the work of the

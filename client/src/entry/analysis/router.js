@@ -18,7 +18,7 @@ import StorageDashboardRoutes from "entry/analysis/routes/storageDashboardRoutes
 
 // child components
 import AboutGalaxy from "components/AboutGalaxy.vue";
-import CarbonEmissionsCalculations from "components/CarbonEmissions/CarbonEmissionsCalculations.vue";
+import CarbonEmissionsCalculations from "components/JobMetrics/CarbonEmissions/CarbonEmissionsCalculations";
 import Citations from "components/Citation/Citations";
 import ClientError from "components/ClientError";
 import CollectionEditView from "components/Collections/common/CollectionEditView";
