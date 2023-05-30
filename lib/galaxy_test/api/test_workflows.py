@@ -5245,6 +5245,49 @@ fastq_input:
             assert name == "fastq1 suffix", name
 
     @skip_without_tool("mapper2")
+    def test_run_rename_based_on_input_conditional_legacy_pja_reference(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs(
+                """
+class: GalaxyWorkflow
+inputs:
+  fasta_input: data
+  fastq_input: data
+steps:
+  mapping:
+    tool_id: mapper2
+    state:
+      fastq_input:
+        fastq_input_selector: single
+        fastq_input1:
+          $link: fastq_input
+      reference:
+        $link: fasta_input
+    outputs:
+      out_file1:
+        # The fully prefixed variant test in "test_run_rename_based_on_input_conditional" should be preferred,
+        # but we don't want to break old workflow renaming actions
+        rename: "#{fastq_input1 | basename} suffix"
+""",
+                test_data="""
+fasta_input:
+  value: 1.fasta
+  type: File
+  name: fasta1
+  file_type: fasta
+fastq_input:
+  value: 1.fastqsanger
+  type: File
+  name: fastq1
+  file_type: fastqsanger
+""",
+                history_id=history_id,
+            )
+            content = self.dataset_populator.get_history_dataset_details(history_id, wait=True, assert_ok=True)
+            name = content["name"]
+            assert name == "fastq1 suffix", name
+
+    @skip_without_tool("mapper2")
     def test_run_rename_based_on_input_collection(self):
         with self.dataset_populator.test_history() as history_id:
             self._run_jobs(
