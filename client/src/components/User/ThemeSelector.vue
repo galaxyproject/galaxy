@@ -33,7 +33,7 @@ watch(
 </script>
 
 <template>
-    <b-card :show="show" class="overflow-auto">
+    <b-card :show="show" class="mr-3 overflow-auto">
         <b-form-radio-group v-model="currentValue">
             <b-form-radio
                 v-for="(themeDetails, theme, index) in config.themes"
