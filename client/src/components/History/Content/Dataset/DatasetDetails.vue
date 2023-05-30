@@ -18,14 +18,16 @@
                         }}</b-link>
                     </span>
                     <!-- Include Job Detail Provider and Dataset Error Details here -->
-                    <JobDetailsProvider>
-                        <div class="info">
-                            <span class="value">{{ toolStderr }}</span>
-                        </div>
+                    <JobDetailsProvider
+                        v-slot="{ result: jobDetails, loading }"
+                        :job-id="result.creating_job" >
+                            <div v-if="!loading && jobDetails.tool_stderr" class="info">
+                                <span class="value">{{ jobDetails.tool_stderr }}</span>
+                            </div>
+                            <div v-else-if="result.misc_info" class="info">
+                                <span class="value">{{ result.misc_info }}</span>
+                            </div>
                     </JobDetailsProvider>
-                    <div v-if="result.misc_info" class="info">
-                        <span class="value">{{ result.misc_info }}</span>
-                    </div>
                 </div>
                 <DatasetActions
                     :item="result"
