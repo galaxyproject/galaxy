@@ -42,9 +42,6 @@ from galaxy.webapps.base.controller import (
 )
 from galaxy.webapps.galaxy.api import depends
 
-import logging
-log = logging.getLogger(__name__)
-
 
 def format_bool(b):
     if b:
