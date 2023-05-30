@@ -22,7 +22,9 @@ const props = defineProps<CarbonEmissionsCardProps>();
     </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
+@import "scss/theme/blue.scss";
+
 .usage {
     display: flex;
     flex-direction: column;
@@ -31,13 +33,11 @@ const props = defineProps<CarbonEmissionsCardProps>();
     gap: 0.5rem;
     height: 7rem;
     border-radius: 12px;
-    box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
-    transition: all 0.3s ease-in-out;
+    border: 1px solid $brand-secondary;
 }
 
 .usage:hover {
-    background-color: rgba(0, 0, 0, 0.09);
-    box-shadow: none;
+    cursor: help;
 }
 
 .value {
@@ -47,10 +47,10 @@ const props = defineProps<CarbonEmissionsCardProps>();
 }
 
 #heading {
-    font-size: 1.25rem;
+    font-size: 1rem;
 }
 
 #total-emissions {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
 }
 </style>

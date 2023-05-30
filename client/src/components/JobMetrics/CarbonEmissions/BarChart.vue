@@ -51,18 +51,8 @@ onMounted(() => {
         .attr("y", (d) => y(d.value))
         .attr("width", x.bandwidth())
         .attr("height", (d) => height - y(d.value))
-        .attr("fill", "#41B883")
-        .on("mouseover", mouseOver)
-        .on("mouseout", mouseOut);
+        .attr("fill", "#41B883");
 });
-
-function mouseOver(this: any) {
-    d3.select(this).transition().duration(300).attr("opacity", ".5").attr("fill", "red");
-}
-
-function mouseOut(this: any) {
-    d3.select(this).transition().duration(300).attr("fill", "#41B883").attr("opacity", "1");
-}
 </script>
 
 <template>
