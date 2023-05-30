@@ -28,7 +28,7 @@ class TestDisplayApplicationsApi(ApiTestCase):
         all_ids = [display_app["id"] for display_app in display_apps]
         input_ids = self._get_half_random_items(all_ids)
         payload = {"ids": input_ids}
-        response = self._post("display_applications/reload", payload, admin=True)
+        response = self._post("display_applications/reload", payload, admin=True, json=True)
         self._assert_status_code_is(response, 200)
         reloaded = response.json()["reloaded"]
         assert len(reloaded) == len(input_ids)
@@ -38,7 +38,7 @@ class TestDisplayApplicationsApi(ApiTestCase):
     def test_reload_unknown_returns_as_failed(self):
         unknown_id = "unknown"
         payload = {"ids": [unknown_id]}
-        response = self._post("display_applications/reload", payload, admin=True)
+        response = self._post("display_applications/reload", payload, admin=True, json=True)
         self._assert_status_code_is(response, 200)
         reloaded = response.json()["reloaded"]
         failed = response.json()["failed"]
