@@ -118,18 +118,16 @@ class TestRemoteFilesIntegration(ConfiguresRemoteFilesIntegrationTestCase):
 
         assert os.path.exists(os.path.join(self.library_dir, "a"))
 
-    def test_fetch_from_drs(self, celery_worker):
-        # This test needs an additional worker because the md5 hashing task must run in parallel
-        # with the data_fetch task. Otherwise, the data_fetch task runs first, and polls the DRS
-        # endpoint, which in turn dispatches the md5 task and returns a 204 Try Later. The data_fetch
-        # task dutifully tries again but the md5 task still hasn't run, so the drs endpoint dispatches
-        # another md5 ask and so on till the DRS fetch task eventually times out. Once the data_fetch
-        # task exits, all the md5 tasks run. Multiple workers prevent this from happening.
+    def test_fetch_from_drs(self):
         CONTENT = "a\n"
         history_id = self.dataset_populator.new_history()
 
         def create_drs_object():
             hda = self.dataset_populator.new_dataset(history_id, content=CONTENT, wait=True)
+            # Force the md5 hash to be evaluated. Otherwise, the DRS endpoint will attempt to dispatch an md5
+            # task and returns a 204 Try Later. This will cause a timeout in a test environment without multiple
+            # celery workers, so we forcibly compute the hash.
+            self.dataset_populator.compute_hash(hda["id"])
             drs_id = hda["drs_id"]
             components = urlparse(self.url)
             netloc = components.netloc
