@@ -91,7 +91,7 @@ export default {
             return !this.item.purged && ["ok", "failed_metadata", "error"].includes(this.item.state);
         },
         showError() {
-            return this.item.state == "error";
+            return this.item.state == "error" || this.item.state == "failed_metadata";
         },
         showInfo() {
             return this.item.state != "noPermission";
