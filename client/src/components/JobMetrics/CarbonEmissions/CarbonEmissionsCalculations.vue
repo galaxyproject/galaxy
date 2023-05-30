@@ -36,7 +36,7 @@ const greenAlgorithmsUrl = "https://www.green-algorithms.org/";
 <template>
     <article class="mt-4">
         <header>
-            <Heading h1 separator bold size="h-lg">Carbon Emissions Calculations</Heading>
+            <Heading h1 separator bold size="lg">Carbon Emissions Calculations</Heading>
 
             <p>
                 Our calculations are based off of the work of the
