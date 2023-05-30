@@ -3,6 +3,7 @@ import { useCurrentTheme } from "@/composables/user";
 import { useConfig } from "@/composables/config";
 import { computed, watch, ref } from "vue";
 import { withPrefix } from "@/utils/redirect";
+import Activities from "@/components/ActivityBar/activities.js";
 import Multiselect from "vue-multiselect";
 
 const { currentTheme, setCurrentTheme } = useCurrentTheme();
@@ -11,33 +12,6 @@ const { config, isLoaded } = useConfig();
 const show = ref(false);
 const enableActivityBar = ref(false);
 const currentValue = ref([]);
-
-const formattedOptions = [
-    {
-        icon: "fa-upload",
-        label: "Upload",
-        value: "upload",
-        description: "Allows users to upload data and observe progress",
-    },
-    {
-        icon: "fa-upload",
-        label: "Workflow",
-        value: "workflow",
-        description: "Access the workflow panel to search and execute workflows",
-    },
-    {
-        icon: "fa-wrench",
-        label: "Tools",
-        value: "tools",
-        description: "Access the workflow panel to search and execute workflows",
-    },
-    {
-        icon: "fa-upload",
-        label: "Invocations",
-        value: "invocation",
-        description: "Access the workflow panel to search and execute workflows",
-    },
-];
 
 watch(
     () => isLoaded.value,
@@ -55,20 +29,22 @@ watch(
             v-model="currentValue"
             :allow-empty="true"
             :close-on-select="false"
-            :options="formattedOptions"
+            :options="Activities.filter((a) => a.optional)"
             :multiple="true"
             placeholder="Select activity"
             select-label="Click to select"
-            track-by="value"
-            label="label">
+            track-by="id"
+            label="title">
             <template slot="option" slot-scope="{ option }">
                 <div>
-                    <icon :icon="option.icon" />
-                    {{ option.label }}
+                    <small>
+                        <icon class="mr-1" :icon="option.icon" />
+                        <span class="font-weight-bold">{{ option.title || "No title available" }}</span>
+                    </small>
                 </div>
                 <div>
                     <small>
-                        {{ option.description }}
+                        {{ option.description || "No description available" }}
                     </small>
                 </div>
             </template>

@@ -3,8 +3,8 @@ import { useUserStore } from "@/stores/userStore";
 import UploadItem from "./Items/UploadItem.vue";
 import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
-import ActivityItem from "./ActivityItem";
-
+import ActivityItem from "./ActivityItem.vue";
+import Activities from "./activities.js";
 const userStore = useUserStore();
 
 function sidebarIsActive(menuKey) {
@@ -34,11 +34,12 @@ function onToggleSidebar(toggle) {
                     tooltip="Chain tools into workflows"
                     to="/workflows/list" />
                 <ActivityItem
-                    id="activity-visualization"
-                    icon="chart-bar"
-                    title="Visualize"
-                    tooltip="Visualize datasets"
-                    to="/visualizations" />
+                    v-for="activity in Activities.filter((a) => !!a.to)"
+                    :id="`activity-${activity.id}`"
+                    :icon="activity.icon"
+                    :title="activity.title"
+                    :tooltip="activity.tooltip"
+                    :to="activity.to" />
             </b-nav>
             <b-nav vertical class="flex-nowrap p-1">
                 <ActivityItem
