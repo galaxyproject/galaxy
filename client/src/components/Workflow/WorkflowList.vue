@@ -186,6 +186,7 @@ export default {
             // Render the published workflows version of this grid.
             type: Boolean,
             default: false,
+        },
         query: {
             type: String,
             required: false,

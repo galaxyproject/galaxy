@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref, type Ref } from "vue";
 import { useRouter } from "vue-router/composables";
-import DelayedInput from "@/components/Common/DelayedInput.vue";
 import _l from "@/utils/localization";
 import { createWorkflowQuery } from "@/components/Panels/utilities";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { faAngleDoubleUp, faAngleDoubleDown } from "@fortawesome/free-solid-svg-icons";
+import { library } from "@fortawesome/fontawesome-svg-core";
 
 const router = useRouter();
 
@@ -15,20 +17,9 @@ type FilterSettings = {
     deleted?: boolean;
 };
 
-const emit = defineEmits<{
-    (e: "onQuery", query: string): void;
-    (e: "update:show-advanced", showAdvanced: boolean): void;
-}>();
+// @ts-ignore bad library types
+library.add(faAngleDoubleUp, faAngleDoubleDown);
 
-const props = defineProps({
-    enableAdvanced: { type: Boolean, default: false },
-    loading: { type: Boolean, default: false },
-    placeholder: { type: String, default: _l("search workflows") },
-    query: { type: String, default: null },
-    showAdvanced: { type: Boolean, default: false },
-});
-
-const favorites = ["#favs", "#favorites", "#favourites"];
 const options = [
     { text: "Yes", value: true },
     { text: "No", value: false },
@@ -36,21 +27,12 @@ const options = [
 
 const filterSettings: Ref<FilterSettings> = ref({
     published: false,
-    shared: false,
+    shared_with_me: false,
     deleted: false,
 });
 
-function checkQuery(q: string) {
-    filterSettings.value.name = q;
-    if (favorites.includes(q)) {
-        emit("onQuery", "#favorites");
-    } else {
-        emit("onQuery", q);
-    }
-}
-function onToggle(toggleAdvanced: boolean) {
-    emit("update:show-advanced", toggleAdvanced);
-}
+const showAdvanced = ref(true);
+
 function onSearch() {
     const query = createWorkflowQuery(filterSettings.value);
     const path = "/workflows/list";
@@ -60,22 +42,23 @@ function onSearch() {
 </script>
 <template>
     <div>
-        <small v-if="props.showAdvanced">Filter by name:</small>
-        <DelayedInput
-            :class="!props.showAdvanced && 'mb-3'"
-            :query="props.query"
-            :delay="100"
-            :loading="props.loading"
-            :show-advanced="props.showAdvanced"
-            :enable-advanced="props.enableAdvanced"
-            :placeholder="props.showAdvanced ? 'any name' : props.placeholder"
-            @change="checkQuery"
-            @onToggle="onToggle" />
+        <b-button
+            class="upload-button"
+            size="sm"
+            :pressed="showAdvanced"
+            :variant="showAdvanced ? 'info' : 'secondary'"
+            @click="showAdvanced = !showAdvanced">
+            <FontAwesomeIcon v-if="!showAdvanced" icon="angle-double-down" />
+            <FontAwesomeIcon v-else icon="angle-double-up" />
+            Search for Workflows
+        </b-button>
         <div
-            v-if="props.showAdvanced"
+            v-if="showAdvanced"
             description="advanced workflow filters"
             @keyup.enter="onSearch"
-            @keyup.esc="onToggle(false)">
+            @keyup.esc="showAdvanced = false">
+            <small class="mt-1">Filter by name:</small>
+            <b-form-input v-model="filterSettings.name" size="sm" placeholder="any name" />
             <small class="mt-1">Filter by tag:</small>
             <b-form-input v-model="filterSettings.tag" size="sm" placeholder="any tag" />
             <small>Published:</small>
@@ -110,7 +93,7 @@ function onSearch() {
                     <icon icon="search" />
                     <span>{{ _l("Search") }}</span>
                 </b-button>
-                <b-button size="sm" @click="onToggle(false)">
+                <b-button size="sm" @click="showAdvanced = false">
                     <icon icon="redo" />
                     <span>{{ _l("Cancel") }}</span>
                 </b-button>
