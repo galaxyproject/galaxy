@@ -23,12 +23,12 @@ PARAMS_UNWRAPPED = object()
 
 
 class LegacyUnprefixedDict(UserDict):
-    """
-    It used to be valid to access members of conditionals without specifying the conditional.
-    This dict provides a fallback when dict lookup fails using those old rules
-    """
+    """Track and provide access to prefixed and unprefixed tool parameter values."""
 
-    def __init__(self, dict=None, /, **kwargs):
+    # It used to be valid to access members of conditionals without specifying the conditional.
+    # This dict provides a fallback when dict lookup fails using those old rules
+
+    def __init__(self, dict=None, **kwargs):
         self._legacy_cache_data = {}
         super().__init__(dict, **kwargs)
 
