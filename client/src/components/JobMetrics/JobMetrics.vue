@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AwsEstimate from "./AwsEstimate.vue";
-import CarbonEmissions from "@/components/CarbonEmissions/CarbonEmissions.vue";
-import cpuReferenceData from "@/components/CarbonEmissions/cpu_tdp.json";
+import CarbonEmissions from "./CarbonEmissions/CarbonEmissions.vue";
+import cpuReferenceData from "./CarbonEmissions/cpu_tdp.json";
 import ec2 from "./ec2.json";
 import { useJobMetricsStore } from "@/stores/jobMetricsStore";
 import { computed, unref } from "vue";
