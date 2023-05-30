@@ -407,6 +407,7 @@ collection_builders:
     clear_filters: "a.clear-filters-link"
     forward_datasets: ".forward-column .column-datasets"
     reverse_datasets: ".reverse-column .column-datasets"
+    name: "input.collection-name"
 
 histories:
   labels:

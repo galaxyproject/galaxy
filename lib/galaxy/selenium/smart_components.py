@@ -125,3 +125,6 @@ class SmartTarget:
     def assert_no_axe_violations_with_impact_of_at_least(self, impact: Impact) -> None:
         self.wait_for_visible()
         self.axe_eval().assert_no_violations_with_impact_of_at_least(impact)
+
+    def __str__(self):
+        return f"SmartTarget[_target={self._target}]"
