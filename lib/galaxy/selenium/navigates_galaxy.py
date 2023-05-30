@@ -1775,8 +1775,17 @@ class NavigatesGalaxy(HasDriver):
         return item_component.details.is_displayed
 
     def collection_builder_set_name(self, name):
-        name_element = self.wait_for_selector_visible("input.collection-name")
-        name_element.send_keys(name)
+        # small sleep here seems to be needed in the case of the
+        # collection builder even though we wait for the component
+        # to be clickable - which should make it enabled and should
+        # allow send_keys to work. The send_keys occasionally doesn't
+        # result in the name being filled out in the UI without this.
+        self.sleep_for(WAIT_TYPES.UX_RENDER)
+        self._wait_for_input_text_component_and_fill(self.components.collection_builders.name, name)
+
+    def _wait_for_input_text_component_and_fill(self, component, text):
+        target_element = component.wait_for_clickable()
+        target_element.send_keys(text)
 
     def collection_builder_hide_originals(self):
         self.wait_for_and_click_selector("input.hide-originals")
