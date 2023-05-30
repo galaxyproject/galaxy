@@ -9,7 +9,6 @@ class TreeDict(UserDict):
 
     def __init__(self, dict=None, **kwargs):
         self._parent_data = None
-        self._child_data = {}
         super().__init__(dict, **kwargs)
 
     def __setitem__(self, key: Any, item: Any) -> None:
@@ -19,6 +18,11 @@ class TreeDict(UserDict):
             d.update(item)
             item = d
         if self._parent_data is not None:
-            if key not in self._parent_data:
+            if (
+                key not in self._parent_data
+                or key == "input"
+                and key in self._parent_data
+                and callable(self._parent_data[key])
+            ):
                 self._parent_data[key] = item
         return super().__setitem__(key, item)

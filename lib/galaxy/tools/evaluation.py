@@ -59,7 +59,10 @@ from galaxy.util import (
     safe_makedirs,
     unicodify,
 )
-from galaxy.util.template import fill_template
+from galaxy.util.template import (
+    fill_template,
+    InputNotFoundSyntaxError,
+)
 from galaxy.work.context import WorkRequestContext
 
 log = logging.getLogger(__name__)
@@ -184,7 +187,9 @@ class ToolEvaluator:
         param_dict = self.param_dict
 
         def input():
-            raise SyntaxError("Unbound variable input.")  # Don't let $input hang Python evaluation process.
+            raise InputNotFoundSyntaxError(
+                "Unbound variable 'input'."
+            )  # Don't let $input hang Python evaluation process.
 
         param_dict["input"] = input
         param_dict["__datatypes_config__"] = param_dict["GALAXY_DATATYPES_CONF_FILE"] = os.path.join(

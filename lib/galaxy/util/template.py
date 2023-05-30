@@ -19,6 +19,10 @@ myfixes = [f for f in myfixes if not f.startswith("libpasteurize")]
 refactoring_tool = RefactoringTool(myfixes, {"print_function": True})
 
 
+class InputNotFoundSyntaxError(SyntaxError):
+    pass
+
+
 class FixedModuleCodeCompiler(Compiler):
     module_code = None
 
@@ -81,7 +85,7 @@ def fill_template(
     t = klass(searchList=[context])
     try:
         return unicodify(t, log_exception=False)
-    except NotFound as e:
+    except (NotFound, InputNotFoundSyntaxError) as e:
         if first_exception is None:
             first_exception = e
         tb = e.__traceback__
