@@ -2425,7 +2425,7 @@ class InstalledToolShedRepository(Model):
     owner: str = Field(title="Owner", description="Owner of repository")
     deleted: bool
     # This should be an int... but it would break backward compatiblity. Probably switch it at some point anyway?
-    ctx_rev: str = Field(
+    ctx_rev: Optional[str] = Field(
         title="Changeset revision number",
         description="The linearized 0-based index of the changeset on the tool shed (0, 1, 2,...)",
     )
