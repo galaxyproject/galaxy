@@ -178,7 +178,7 @@ const barChartData = computed(() => {
     if (canShowMemory) {
         data.push({
             name: "Memory",
-            value: 20,
+            value: getPercentage(values.memoryCarbonEmissions, values.totalCarbonEmissions),
         });
     }
 
@@ -196,10 +196,10 @@ function prettyPrintValue({
     convertValue?: (input: number) => number;
 }) {
     if (value < threshold) {
-        return `≤ ${threshold}` + `${unit ? ` ${unit}` : ""}`;
+        return `≤ ${threshold}  ${unit ?? ""}`;
     }
 
-    return `${value}` + `${unit ? ` ${unit}` : ""}`;
+    return `${value} ${unit ?? ""}`;
 }
 
 function getPercentage(value: number, total: number) {
