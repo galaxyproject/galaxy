@@ -1,5 +1,6 @@
-<script setup>
+<script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import type { PropType } from "vue";
 
 let element = "h1";
 let sizeClass = "h-lg";
@@ -14,14 +15,13 @@ const props = defineProps({
     bold: Boolean,
     separator: Boolean,
     inline: Boolean,
-    // acceptable sizes are "xl", "lg", "md", "sm", and "text"
-    size: String,
+    size: String as PropType<"xl" | "lg" | "md" | "sm" | "text">,
     icon: String,
 });
 
 // apply heading element
 for (const key of ["h1", "h2", "h3", "h4", "h5", "h6"]) {
-    if (props[key]) {
+    if (props[key as keyof typeof props.size]) {
         element = key;
         break;
     }
