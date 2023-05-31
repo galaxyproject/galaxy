@@ -14,7 +14,7 @@ const props = defineProps<CarbonEmissionsCardProps>();
 const shouldShowInfo = ref(false);
 
 function toggleInfo() {
-  shouldShowInfo.value = !shouldShowInfo.value
+    shouldShowInfo.value = !shouldShowInfo.value;
 }
 </script>
 
@@ -34,7 +34,7 @@ function toggleInfo() {
 @import "scss/theme/blue.scss";
 
 button {
-  padding: 0.5rem;
+    padding: 0.5rem;
     display: flex;
     flex-direction: column;
     align-items: center;
