@@ -4,12 +4,10 @@
 
 export const Activities = [
     {
-        id: "invocation",
-        title: "Invocations",
-        description: "Access the workflow panel to search and execute workflows",
-        icon: "fa-play",
-        to: "/workflows/invocations",
-        optional: true,
+        id: "upload",
+        title: "Upload",
+        description: "Allows users to upload data and observe progress",
+        icon: "fa-upload",
     },
     {
         id: "tools",
@@ -18,10 +16,11 @@ export const Activities = [
         icon: "fa-wrench",
     },
     {
-        id: "upload",
-        title: "Upload",
-        description: "Allows users to upload data and observe progress",
-        icon: "fa-upload",
+        id: "workflow",
+        title: "Workflow",
+        description: "Access the workflow panel to search and execute workflows",
+        icon: "fa-sitemap",
+        optional: true,
     },
     {
         id: "visualizations",
@@ -42,7 +41,7 @@ export const Activities = [
         optional: true,
     },
     {
-        id: "histories",
+        id: "datasets",
         title: "Datasets",
         description: "All my datasets",
         icon: "wrench",
@@ -51,10 +50,11 @@ export const Activities = [
         optional: true,
     },
     {
-        id: "workflow",
-        title: "Workflow",
+        id: "invocation",
+        title: "Invocations",
         description: "Access the workflow panel to search and execute workflows",
-        icon: "fa-sitemap",
+        icon: "fa-play",
+        to: "/workflows/invocations",
         optional: true,
     },
 ];

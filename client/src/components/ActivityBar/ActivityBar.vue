@@ -1,11 +1,21 @@
 <script setup>
+import { computed, ref } from "vue";
 import { useUserStore } from "@/stores/userStore";
 import UploadItem from "./Items/UploadItem.vue";
 import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import ActivityItem from "./ActivityItem.vue";
 import Activities from "./activities.js";
+import draggable from "vuedraggable";
+
 const userStore = useUserStore();
+
+const currentActivities = computed({
+    get: () => Activities,
+    set: (newOrder) => {
+        console.log(newOrder);
+    },
+});
 
 function sidebarIsActive(menuKey) {
     return userStore.toggledSideBar === menuKey;
@@ -19,27 +29,34 @@ function onToggleSidebar(toggle) {
     <div class="d-flex">
         <div class="activity-bar d-flex flex-column">
             <b-nav vertical class="flex-nowrap p-1 h-100 vertical-overflow">
-                <upload-item />
-                <ActivityItem
-                    id="activity-tools"
-                    icon="wrench"
-                    title="Tools"
-                    tooltip="Search and run tools"
-                    :is-active="sidebarIsActive('search')"
-                    @click="onToggleSidebar('search')" />
-                <ActivityItem
-                    id="activity-workflow"
-                    title="Workflow"
-                    icon="sitemap"
-                    tooltip="Chain tools into workflows"
-                    to="/workflows/list" />
-                <ActivityItem
-                    v-for="activity in Activities.filter((a) => !!a.to)"
-                    :id="`activity-${activity.id}`"
-                    :icon="activity.icon"
-                    :title="activity.title"
-                    :tooltip="activity.tooltip"
-                    :to="activity.to" />
+                <draggable v-model="currentActivities">
+                    <div v-for="activity in currentActivities">
+                        <upload-item v-if="activity.id === 'upload'" />
+                        <ActivityItem
+                            v-if="activity.id === 'tools'"
+                            id="activity-tools"
+                            icon="wrench"
+                            title="Tools"
+                            tooltip="Search and run tools"
+                            :is-active="sidebarIsActive('search')"
+                            @click="onToggleSidebar('search')" />
+                        <ActivityItem
+                            v-if="activity.id === 'workflow'"
+                            id="activity-workflow"
+                            title="Workflow"
+                            icon="sitemap"
+                            tooltip="Chain tools into workflows"
+                            to="/workflows/list" />
+                        <ActivityItem
+                            v-if="activity.to"
+                            :key="activity.id"
+                            :id="`activity-${activity.id}`"
+                            :title="activity.title"
+                            :icon="activity.icon"
+                            :tooltip="activity.tooltip"
+                            :to="activity.to" />
+                    </div>
+                </draggable>
             </b-nav>
             <b-nav vertical class="flex-nowrap p-1">
                 <ActivityItem
@@ -61,7 +78,6 @@ function onToggleSidebar(toggle) {
 
 .activity-bar {
     background: $panel-bg-color;
-    width: 4rem;
 }
 
 .activity-bar::-webkit-scrollbar {

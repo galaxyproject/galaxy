@@ -19,6 +19,7 @@
   "homepage": "https://github.com/galaxyproject/galaxy#readme",
   "dependencies": {
     "@galaxyproject/galaxy-client": "^23.0.0",
-    "cpy-cli": "^4.2.0"
+    "cpy-cli": "^4.2.0",
+    "vuedraggable": "^2.24.3"
   }
 }

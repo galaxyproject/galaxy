@@ -109,14 +109,12 @@ function onClick(): void {
 
 .nav-title {
     @extend .nav-item;
-    margin-top: 0.7rem;
-    margin-bottom: 0.3rem;
-    line-height: 0rem;
+    max-width: 7rem;
+    margin-top: 0.5rem;
     font-size: 0.7rem;
 }
 
 .nav-options {
-    max-height: 20rem;
     overflow-x: hidden;
     overflow-y: auto;
 }
