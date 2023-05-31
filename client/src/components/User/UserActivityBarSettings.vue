@@ -30,7 +30,7 @@ watch(
 </script>
 
 <template>
-    <b-card :show="show" class="mr-3">
+    <b-card :show="show" class="user-activity-bar-settings mr-3">
         <b-form-checkbox v-model="enableActivityBar" switch>
             <b>Enable Activity Bar</b>
         </b-form-checkbox>
@@ -43,13 +43,14 @@ watch(
             :multiple="true"
             placeholder="Select activity"
             select-label="Click to select"
+            deselect-label=""
             track-by="id"
             label="title">
-            <template slot="option" slot-scope="{ option }">
+            <template slot="option" slot-scope="{ option }" width="100">
                 <div>
                     <small>
                         <icon class="mr-1" :icon="option.icon" />
-                        <span class="font-weight-bold">{{ option.title || "No title available" }}</span>
+                        <div class="font-weight-bold">{{ option.title || "No title available" }}</div>
                     </small>
                 </div>
                 <div>
@@ -61,3 +62,15 @@ watch(
         </multiselect>
     </b-card>
 </template>
+
+<style lang="scss">
+@import "theme/blue.scss";
+.user-activity-bar-settings {
+    > .multiselect__content-wrapper {
+        max-width: 100px !important;
+        > .multiselect__content {
+            max-width: 100px !important;
+        }
+    }
+}
+</style>
