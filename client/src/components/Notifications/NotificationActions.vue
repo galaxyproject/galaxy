@@ -32,17 +32,19 @@ function getNotificationExpirationTitle(notification: UserNotification) {
 </script>
 
 <template>
-    <BCol>
+    <BCol v-if="notification">
         <BRow align-h="end" align-v="center">
             <UtcDate class="mx-2" :date="notification.create_time" mode="elapsed" />
             <BInputGroup>
                 <AsyncButton
                     v-if="!notification.seen_time"
+                    id="mark-as-read-button"
                     title="Mark as read"
                     icon="check"
                     :action="() => notificationsStore.updateNotification(notification, { seen: true })" />
                 <BButton
                     v-else-if="notification.expiration_time"
+                    id="expiration-time-button"
                     v-b-tooltip.hover
                     variant="link"
                     :title="getNotificationExpirationTitle(notification)">
@@ -50,15 +52,18 @@ function getNotificationExpirationTitle(notification: UserNotification) {
                 </BButton>
                 <AsyncButton
                     v-if="notification.favorite"
+                    id="remove-from-favorites-button"
                     title="Remove from favorites"
                     icon="star"
                     :action="() => notificationsStore.updateNotification(notification, { favorite: false })" />
                 <AsyncButton
                     v-else
+                    id="add-to-favorites-button"
                     title="Add to favorites"
                     icon="fa-regular fa-star"
                     :action="() => notificationsStore.updateNotification(notification, { favorite: true })" />
                 <AsyncButton
+                    id="delete-button"
                     icon="trash"
                     title="Delete"
                     :action="() => notificationsStore.updateNotification(notification, { deleted: true })" />
