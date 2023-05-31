@@ -10,8 +10,8 @@ export const barrelOfOilCarbonEmissions = 0.43;
 // source: (in grams) https://www.epa.gov/energy/greenhouse-gases-equivalencies-calculator-calculations-and-references#gasoline
 export const gasolineCarbonEmissions = 8887;
 
-// source  (in metric tons) https://www.epa.gov/energy/greenhouse-gases-equivalencies-calculator-calculations-and-references#lights
-export const ledCarbonEmissionSavings = 2.64e-2;
+// source  (in kWh) https://www.epa.gov/energy/greenhouse-gases-equivalencies-calculator-calculations-and-references#lights
+export const lightbulbEnergyUsage = 43 / 1000;
 
 // source: (in W/GB) http://dl.acm.org/citation.cfm?doid=3076113.3076117 and https://www.tomshardware.com/uk/reviews/intel-core-i7-5960x-haswell-e-cpu,3918-13.html
 export const memoryPowerUsage = 0.3725;
