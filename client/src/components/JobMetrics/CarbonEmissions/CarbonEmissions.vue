@@ -36,7 +36,7 @@ const carbonEmissions = computed(() => {
 
     const cpuInfo = props.estimatedServerInstance.cpuInfo;
     const tdpPerCore = cpuInfo.tdp / cpuInfo.totalAvailableCores;
-    const normalizedTdpPerCore = tdpPerCore * runtimeInHours;
+    const normalizedTdpPerCore = tdpPerCore * props.coresAllocated;
 
     // Power needed in Watt
     const powerNeededCpu = powerUsageEffectiveness * normalizedTdpPerCore;
