@@ -17,7 +17,11 @@
         "allowJs": true,
         "checkJs": false,
         "allowSyntheticDefaultImports": true,
-        "noUncheckedIndexedAccess": true
+        "noUncheckedIndexedAccess": true,
+
+        // Necessary for now, was previously the default setting
+        // See more at https://github.com/vuejs/tsconfig#migrating-from-typescript--50
+        "resolvePackageJsonExports": false
     },
     "vueCompilerOptions": {
         "target": 2.7
