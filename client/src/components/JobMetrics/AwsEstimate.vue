@@ -1,11 +1,23 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import ec2 from "./ec2.json";
 
 export interface AwsEstimateProps {
     jobRuntimeInSeconds: number;
     coresAllocated: number;
     memoryAllocatedInMebibyte?: number;
+    ec2Instances: {
+        name: string;
+        mem: number;
+        price: number;
+        priceUnit: string;
+        vCpuCount: number;
+        cpu: {
+            cpuModel: string;
+            tdp: number;
+            coreCount: number;
+            source: string;
+        }[];
+    }[];
 }
 
 const props = defineProps<AwsEstimateProps>();
@@ -20,8 +32,8 @@ const computedAwsEstimate = computed(() => {
     const adjustedMemoryAllocated = memoryAllocatedInMebibyte ? memoryAllocatedInMebibyte / 1024 : 0.5;
 
     // Estimate EC2 instance. Data is already sorted
-    const ec2Instance = ec2.find((ec) => {
-        return ec.mem >= adjustedMemoryAllocated && ec.vcpus >= coresAllocated;
+    const ec2Instance = props.ec2Instances.find((ec) => {
+        return ec.mem >= adjustedMemoryAllocated && ec.vCpuCount >= coresAllocated;
     });
 
     if (!ec2Instance) {
@@ -30,7 +42,7 @@ const computedAwsEstimate = computed(() => {
 
     return {
         seconds: jobRuntimeInSeconds,
-        vcpus: coresAllocated,
+        requestedVCpuCount: coresAllocated,
         memory: adjustedMemoryAllocated,
         price: ((jobRuntimeInSeconds * ec2Instance.price) / 3600).toFixed(2),
         instance: ec2Instance,
@@ -46,13 +58,14 @@ const computedAwsEstimate = computed(() => {
 
         <br />
 
-        This job requested {{ computedAwsEstimate.vcpus }} core(s) and {{ computedAwsEstimate.memory.toFixed(3) }} GiB
-        of memory. Given this information, the smallest EC2 machine we could find is:
+        This job requested {{ computedAwsEstimate.requestedVCpuCount }} core(s) and
+        {{ computedAwsEstimate.memory.toFixed(3) }} GiB of memory. Given this information, the smallest EC2 machine we
+        could find is:
 
         <span id="aws-name">{{ computedAwsEstimate.instance.name }}</span>
         (<span id="aws-mem">{{ computedAwsEstimate.instance.mem }}</span> GB /
-        <span id="aws-vcpus">{{ computedAwsEstimate.instance.vcpus }}</span> vCPUs /
-        <span id="aws-cpu">{{ computedAwsEstimate.instance.cpu.join(", ") }}</span
+        <span id="aws-vcpus">{{ computedAwsEstimate.instance.vCpuCount }}</span> vCPUs /
+        <span id="aws-cpu">{{ computedAwsEstimate.instance.cpu.map(({ cpuModel }) => cpuModel).join(", ") }}</span
         >). This instance is priced at {{ computedAwsEstimate.instance.price }} USD/hour.
 
         <br />
