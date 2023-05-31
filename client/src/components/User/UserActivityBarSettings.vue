@@ -1,17 +1,27 @@
 <script setup>
 import { useCurrentTheme } from "@/composables/user";
 import { useConfig } from "@/composables/config";
+import { useUserStore } from "@/stores/userStore";
 import { computed, watch, ref } from "vue";
 import { withPrefix } from "@/utils/redirect";
 import Activities from "@/components/ActivityBar/activities.js";
 import Multiselect from "vue-multiselect";
 
+const userStore = useUserStore();
 const { currentTheme, setCurrentTheme } = useCurrentTheme();
 const { config, isLoaded } = useConfig();
 
 const show = ref(false);
-const enableActivityBar = ref(false);
 const currentValue = ref([]);
+
+const enableActivityBar = computed({
+    get: () => {
+        return userStore.showActivityBar;
+    },
+    set: () => {
+        userStore.toggleActivityBar();
+    },
+});
 
 watch(
     () => isLoaded.value,
