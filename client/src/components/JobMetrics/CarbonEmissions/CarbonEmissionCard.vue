@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from "vue";
 import CarbonEmissionsIcon from "./CarbonEmissionsIcon.vue";
 
 export interface CarbonEmissionsCardProps {
@@ -9,35 +10,43 @@ export interface CarbonEmissionsCardProps {
 }
 
 const props = defineProps<CarbonEmissionsCardProps>();
+
+const shouldShowInfo = ref(false);
+
+function toggleInfo() {
+  shouldShowInfo.value = !shouldShowInfo.value
+}
 </script>
 
 <template>
-    <div v-b-tooltip.hover :title="props.explanation" class="usage">
+    <button v-b-tooltip.hover :title="props.explanation" @click="toggleInfo">
         <div id="heading">{{ props.heading }}</div>
 
         <div class="value">
             <CarbonEmissionsIcon :icon="props.icon" />
             <span id="total-emissions">{{ props.value }}</span>
         </div>
-    </div>
+        <span v-if="shouldShowInfo">{{ props.explanation }}</span>
+    </button>
 </template>
 
 <style lang="scss" scoped>
 @import "scss/theme/blue.scss";
 
-.usage {
+button {
+  padding: 0.5rem;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    background-color: #fff;
     gap: 0.5rem;
-    height: 7rem;
     border-radius: 12px;
     border: 1px solid $brand-secondary;
 }
 
-.usage:hover {
-    cursor: help;
+button:hover {
+    background-color: $brand-secondary;
 }
 
 .value {
