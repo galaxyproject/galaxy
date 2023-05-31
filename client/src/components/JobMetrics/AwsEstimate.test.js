@@ -1,4 +1,4 @@
-import ec2 from "./ec2.json";
+import { ec2Instances } from "./awsEc2ReferenceData.js";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 import AwsEstimate from "./AwsEstimate";
@@ -14,6 +14,7 @@ describe("JobMetrics/AwsEstimate.vue", () => {
                 jobRuntimeInSeconds: 0,
                 coresAllocated: -999,
                 memoryAllocatedInMebibyte: -999,
+                ec2Instances,
             },
             localVue,
         });
@@ -33,6 +34,7 @@ describe("JobMetrics/AwsEstimate.vue", () => {
                     jobRuntimeInSeconds: Number(seconds),
                     coresAllocated: Number(cores),
                     memoryAllocatedInMebibyte: Number(memory),
+                    ec2Instances,
                 },
             });
 
@@ -41,7 +43,7 @@ describe("JobMetrics/AwsEstimate.vue", () => {
             if (wrapper.find("#aws-estimate").exists()) {
                 return {
                     cost: wrapper.find("#aws-cost").text(),
-                    vcpus: wrapper.find("#aws-vcpus").text(),
+                    vCpuCount: wrapper.find("#aws-vcpus").text(),
                     cpu: wrapper.find("#aws-cpu").text(),
                     mem: wrapper.find("#aws-mem").text(),
                     name: wrapper.find("#aws-name").text(),
@@ -52,10 +54,10 @@ describe("JobMetrics/AwsEstimate.vue", () => {
         };
 
         const assertAwsInstance = (estimates) => {
-            const instance = ec2.find((instance) => estimates.name === instance.name);
+            const instance = ec2Instances.find((instance) => estimates.name === instance.name);
             expect(estimates.mem).toBe(instance.mem.toString());
-            expect(estimates.vcpus).toBe(instance.vcpus.toString());
-            expect(estimates.cpu).toBe(instance.cpu.join(", "));
+            expect(estimates.vCpuCount).toBe(instance.vCpuCount.toString());
+            expect(estimates.cpu).toBe(instance.cpu.map(({ cpuModel }) => cpuModel).join(", "));
         };
 
         const estimates_small = await deriveRenderedAwsEstimate("1.0000000", "9.0000000", "2048.0000000");
