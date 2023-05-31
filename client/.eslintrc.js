@@ -1,64 +1,68 @@
+const baseRules = {
+    // Standard rules
+    "no-console": "off",
+    "no-unused-vars": ["error", { args: "none", varsIgnorePattern: "_.+" }],
+    "prefer-const": "error",
+    "one-var": ["error", "never"],
+    curly: "error",
+    "no-throw-literal": "error",
+
+    "vue/valid-v-slot": "error",
+    "vue/v-slot-style": ["error", { atComponent: "v-slot", default: "v-slot", named: "longform" }],
+
+    // Downgrade the severity of some rules to warnings as a transition measure.
+    // For example, vue/multi-word-component names is considered an error,
+    // but that kind of refactoring is best done slowly, one bit at a time
+    // as those components are touched.
+    "vue/multi-word-component-names": "warn",
+    "vue/prop-name-casing": "warn",
+    "vue/require-prop-types": "warn",
+    "vue/require-default-prop": "warn",
+    "vue/no-v-html": "warn",
+
+    // Increase the severity of some rules to errors
+    "vue/attributes-order": "error",
+    "vue/order-in-components": "error",
+
+    // Prettier compromises/workarounds -- mostly #wontfix?
+    "vue/html-indent": "off",
+    "vue/max-attributes-per-line": "off",
+    "vue/html-self-closing": "off",
+    "vue/singleline-html-element-content-newline": "off",
+    "vue/multiline-html-element-content-newline": "off",
+    "vue/html-closing-bracket-newline": "off",
+    "vue/html-closing-bracket-spacing": "off",
+
+    // Accessibility rules
+    "vuejs-accessibility/alt-text": "error",
+    "vuejs-accessibility/anchor-has-content": "warn",
+    "vuejs-accessibility/click-events-have-key-events": "warn",
+    "vuejs-accessibility/form-control-has-label": "warn",
+    "vuejs-accessibility/heading-has-content": "error",
+    "vuejs-accessibility/iframe-has-title": "error",
+    "vuejs-accessibility/label-has-for": "warn",
+    "vuejs-accessibility/mouse-events-have-key-events": "warn",
+    "vuejs-accessibility/no-autofocus": "error",
+    "vuejs-accessibility/no-static-element-interactions": "warn",
+    "vuejs-accessibility/tabindex-no-positive": "error",
+};
+
+const baseExtends = [
+    "eslint:recommended",
+    "plugin:compat/recommended",
+    "plugin:vue/recommended",
+    "plugin:vuejs-accessibility/recommended",
+];
+
 module.exports = {
     root: true,
-    extends: [
-        "eslint:recommended",
-        "plugin:compat/recommended",
-        "plugin:vue/recommended",
-        "plugin:vuejs-accessibility/recommended",
-    ],
+    extends: baseExtends,
     env: {
         browser: true,
         node: true,
         es6: true,
     },
-    rules: {
-        // Standard rules
-        "no-console": "off",
-        "no-unused-vars": ["error", { args: "none", varsIgnorePattern: "_.+" }],
-        "prefer-const": "error",
-        "one-var": ["error", "never"],
-        curly: "error",
-        "no-throw-literal": "error",
-
-        "vue/valid-v-slot": "error",
-        "vue/v-slot-style": ["error", { atComponent: "v-slot", default: "v-slot", named: "longform" }],
-
-        // Downgrade the severity of some rules to warnings as a transition measure.
-        // For example, vue/multi-word-component names is considered an error,
-        // but that kind of refactoring is best done slowly, one bit at a time
-        // as those components are touched.
-        "vue/multi-word-component-names": "warn",
-        "vue/prop-name-casing": "warn",
-        "vue/require-prop-types": "warn",
-        "vue/require-default-prop": "warn",
-        "vue/no-v-html": "warn",
-
-        // Increase the severity of some rules to errors
-        "vue/attributes-order": "error",
-        "vue/order-in-components": "error",
-
-        // Prettier compromises/workarounds -- mostly #wontfix?
-        "vue/html-indent": "off",
-        "vue/max-attributes-per-line": "off",
-        "vue/html-self-closing": "off",
-        "vue/singleline-html-element-content-newline": "off",
-        "vue/multiline-html-element-content-newline": "off",
-        "vue/html-closing-bracket-newline": "off",
-        "vue/html-closing-bracket-spacing": "off",
-
-        // Accessibility rules
-        "vuejs-accessibility/alt-text": "error",
-        "vuejs-accessibility/anchor-has-content": "warn",
-        "vuejs-accessibility/click-events-have-key-events": "warn",
-        "vuejs-accessibility/form-control-has-label": "warn",
-        "vuejs-accessibility/heading-has-content": "error",
-        "vuejs-accessibility/iframe-has-title": "error",
-        "vuejs-accessibility/label-has-for": "warn",
-        "vuejs-accessibility/mouse-events-have-key-events": "warn",
-        "vuejs-accessibility/no-autofocus": "error",
-        "vuejs-accessibility/no-static-element-interactions": "warn",
-        "vuejs-accessibility/tabindex-no-positive": "error",
-    },
+    rules: baseRules,
     ignorePatterns: ["dist", "src/libs", "src/nls", "src/legacy"],
     overrides: [
         {
@@ -80,14 +84,12 @@ module.exports = {
         {
             files: ["**/*.ts", "**/*.tsx"],
             extends: [
-                "eslint:recommended",
-                "plugin:vue/recommended",
-                "plugin:compat/recommended",
-                "plugin:vuejs-accessibility/recommended",
+                ...baseExtends,
                 "plugin:@typescript-eslint/eslint-recommended",
                 "plugin:@typescript-eslint/recommended",
             ],
             rules: {
+                ...baseRules,
                 "@typescript-eslint/no-throw-literal": "error",
             },
             parser: "@typescript-eslint/parser",
