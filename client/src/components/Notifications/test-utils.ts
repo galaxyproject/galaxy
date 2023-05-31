@@ -21,7 +21,7 @@ export function generateRandomVariant() {
     return variants[randomIndex] as NotificationVariants;
 }
 
-export const generateMessageNotification = (): MessageNotification => {
+export function generateMessageNotification(): MessageNotification {
     return {
         id: "notification-" + Math.floor(Math.random() * 1000000),
         source: "admin",
@@ -40,9 +40,9 @@ export const generateMessageNotification = (): MessageNotification => {
         favorite: Math.random() > 0.5,
         deleted: false,
     };
-};
+}
 
-export const generateNewSharedItemNotification = (): SharedItemNotification => {
+export function generateNewSharedItemNotification(): SharedItemNotification {
     return {
         id: "notification-" + Math.floor(Math.random() * 1000000),
         source: "galaxy_sharing_system",
@@ -63,7 +63,7 @@ export const generateNewSharedItemNotification = (): SharedItemNotification => {
         favorite: Math.random() > 0.5,
         deleted: false,
     };
-};
+}
 
 export function generateNotificationsList(n: number) {
     if (n <= 2) {
