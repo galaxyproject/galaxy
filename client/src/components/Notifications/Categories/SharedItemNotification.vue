@@ -57,7 +57,7 @@ function onClick(link: string) {
             <NotificationActions :notification="notification" />
         </BRow>
         <BRow>
-            <p class="m-0">
+            <p id="notification-message" class="m-0">
                 <span>The user</span>
                 <b>{{ content.owner_name }}</b>
                 <span>shared </span>
