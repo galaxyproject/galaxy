@@ -4357,16 +4357,9 @@ class FITS(Binary):
             with fits.open(dataset.file_name) as hdul:
                 dataset.metadata.HDUs = []
                 for i in range(len(hdul)):
-                    dataset.metadata.HDUs.append(" ".join(
-                            filter(None, [
-                                    str(i),
-                                    hdul[i].__class__.__name__,
-                                    hdul[i].name,
-                                    str(hdul[i]._summary()[4])
-                                ]
-                            )
-                        )
-                    )
+                    dataset.metadata.HDUs.append(' '.join(filter(None, [
+                        str(i), hdul[i].__class__.__name__, hdul[i].name, str(hdul[i]._summary()[4])
+                    ])))
         except Exception as e:
             log.warning("%s, set_meta Exception: %s", self, e)
 
