@@ -8,7 +8,7 @@ export type State = {
 };
 
 export type States = {
-    [key in keyof typeof STATES]: State;
+    [_key in keyof typeof STATES]: State;
 };
 
 export interface HelpText {
