@@ -37,6 +37,12 @@ const config3 = [
     },
 ];
 
+/**
+  Data sourced from official AWS EC2 docs:
+
+  1. General purpose instances {@link https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/general-purpose-instances.html}
+  2. All instance types {@link https://aws.amazon.com/ec2/instance-types/}
+*/
 export const ec2Instances = [
     {
         name: "t2.nano",
