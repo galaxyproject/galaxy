@@ -39,7 +39,7 @@ const notificationVariant = computed(() => {
             <NotificationActions :notification="notification" />
         </BRow>
         <BRow>
-            <span v-html="renderMarkdown(notification.content.message)" />
+            <span id="notification-message" v-html="renderMarkdown(notification.content.message)" />
         </BRow>
     </BCol>
 </template>
