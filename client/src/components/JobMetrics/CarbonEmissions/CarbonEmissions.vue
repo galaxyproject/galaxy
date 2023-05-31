@@ -43,7 +43,7 @@ const carbonEmissions = computed(() => {
     const powerNeededMemory = powerUsageEffectiveness * memoryAllocatedInGibibyte * memoryPowerUsed;
     const totalPowerNeeded = powerNeededCpu + powerNeededMemory;
 
-    // Energy needed. Convert kWh to kW
+    // Energy needed. Convert Watt to kWh
     const energyNeededCPU = (runtimeInHours * powerNeededCpu) / 1000;
     const energyNeededMemory = (runtimeInHours * powerNeededMemory) / 1000;
     const totalEnergyNeeded = (runtimeInHours * totalPowerNeeded) / 1000;
@@ -70,13 +70,13 @@ const carbonEmissionsComparisons = computed(() => {
         return;
     }
 
-    const { totalCarbonEmissions } = carbonEmissions.value;
+    const { totalCarbonEmissions, totalEnergyNeeded } = carbonEmissions.value;
 
     const {
         averagePassengerCarEmissionsEU,
         averagePassengerCarEmissionsUS,
         gasolineCarbonEmissions,
-        ledCarbonEmissionSavings,
+        lightbulbEnergyUsage,
         smartphonesChargedCarbonEmissions,
         treeYear,
     } = carbonEmissionsConstants;
@@ -123,13 +123,13 @@ const carbonEmissionsComparisons = computed(() => {
         icon: "car",
     };
 
-    const incandescentLampsSwitchedToLEDs: CarbonComparison = {
-        heading: "LEDs running for a year",
+    const lightbulbsRunning: CarbonComparison = {
+        heading: "Light bulbs running",
         explanation:
-            "Amount of CO2e you could have saved had you switched incandescent lights to LEDs and run them for a year",
+            "The amount of incandescent light bulbs you could have powered given your job's energy usage",
         value: prettyPrintValue({
-            value: parseFloat((totalCarbonEmissions / (ledCarbonEmissionSavings * 1e6)).toFixed(3)),
-            threshold: 1e-3,
+            value: parseFloat((totalEnergyNeeded / lightbulbEnergyUsage).toFixed(3)),
+            threshold: 1,
         }),
         icon: "lightbulb",
     };
@@ -158,7 +158,7 @@ const carbonEmissionsComparisons = computed(() => {
         gasolineConsumed,
         drivingInEU,
         drivingInUS,
-        incandescentLampsSwitchedToLEDs,
+        lightbulbsRunning,
         smartphonesCharged,
         treeMonths,
     ];
