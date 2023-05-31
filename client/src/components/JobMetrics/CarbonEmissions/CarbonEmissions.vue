@@ -125,8 +125,7 @@ const carbonEmissionsComparisons = computed(() => {
 
     const lightbulbsRunning: CarbonComparison = {
         heading: "Light bulbs running",
-        explanation:
-            "The amount of incandescent light bulbs you could have powered given your job's energy usage",
+        explanation: "The amount of incandescent light bulbs you could have powered given your job's energy usage",
         value: prettyPrintValue({
             value: parseFloat((totalEnergyNeeded / lightbulbEnergyUsage).toFixed(3)),
             threshold: 1,
@@ -136,7 +135,7 @@ const carbonEmissionsComparisons = computed(() => {
 
     const smartphonesCharged: CarbonComparison = {
         heading: "Phones charged",
-        explanation: "The amount of smartphone(s) you could have charged with the energy consumed by this job",
+        explanation: "How many smartphones you could have charged given your job's energy usage",
         value: prettyPrintValue({
             value: parseFloat((totalCarbonEmissions / (smartphonesChargedCarbonEmissions * 1e6)).toFixed(2)),
             threshold: 1e-1 * 5, // at least one smartphone charged to 50%
@@ -146,7 +145,7 @@ const carbonEmissionsComparisons = computed(() => {
 
     const treeMonths: CarbonComparison = {
         heading: "Tree months",
-        explanation: "Amount of time it would take a tree to sequester the carbon emissions from this job",
+        explanation: "How long it would take a tree to sequester the carbon emissions from your job",
         value: prettyPrintValue({
             value: Math.round((totalCarbonEmissions / treeYear) * 12),
             threshold: 1e-1 * 5, // at least half of a month
@@ -154,14 +153,7 @@ const carbonEmissionsComparisons = computed(() => {
         icon: "tree",
     };
 
-    return [
-        gasolineConsumed,
-        drivingInEU,
-        drivingInUS,
-        lightbulbsRunning,
-        smartphonesCharged,
-        treeMonths,
-    ];
+    return [gasolineConsumed, drivingInEU, drivingInUS, lightbulbsRunning, smartphonesCharged, treeMonths];
 });
 
 const canShowMemory = computed(() => {
