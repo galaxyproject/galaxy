@@ -62,7 +62,7 @@
     "ignorePatterns": ["dist", "src/libs", "src/nls", "src/legacy"],
     "overrides": [
         {
-            "files": ["**/*.test.js", "**/*.test.ts"],
+            "files": ["**/*.test.js", "**/*.test.ts", "**/tests/jest/**"],
             "env": {
                 "jest": true
             }
