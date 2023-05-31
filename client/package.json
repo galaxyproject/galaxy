@@ -128,8 +128,8 @@
     "test": "yarn run jest",
     "jest": "jest --config tests/jest/jest.config.js",
     "jest-watch": "jest --config tests/jest/jest.config.js --watch",
-    "eslint-precommit": "eslint -c .eslintrc.json --quiet --ext .js,.vue,.ts src tests/jest/standalone",
-    "eslint": "eslint -c .eslintrc.json --ext .js,.vue,.ts src tests/jest/standalone"
+    "eslint-precommit": "eslint -c .eslintrc.js --quiet --ext .js,.vue,.ts src tests/jest/standalone",
+    "eslint": "eslint -c .eslintrc.js --ext .js,.vue,.ts src tests/jest/standalone"
   },
   "devDependencies": {
     "@babel/core": "^7.20.12",

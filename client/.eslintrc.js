@@ -1,27 +1,27 @@
-{
-    "root": true,
-    "extends": [
+module.exports = {
+    root: true,
+    extends: [
         "eslint:recommended",
         "plugin:compat/recommended",
         "plugin:vue/recommended",
-        "plugin:vuejs-accessibility/recommended"
+        "plugin:vuejs-accessibility/recommended",
     ],
-    "env": {
-        "browser": true,
-        "node": true,
-        "es6": true
+    env: {
+        browser: true,
+        node: true,
+        es6: true,
     },
-    "rules": {
+    rules: {
         // Standard rules
         "no-console": "off",
-        "no-unused-vars": ["error", { "args": "none", "varsIgnorePattern": "_.+" }],
+        "no-unused-vars": ["error", { args: "none", varsIgnorePattern: "_.+" }],
         "prefer-const": "error",
         "one-var": ["error", "never"],
-        "curly": "error",
+        curly: "error",
         "no-throw-literal": "error",
 
         "vue/valid-v-slot": "error",
-        "vue/v-slot-style": ["error", { "atComponent": "v-slot", "default": "v-slot", "named": "longform" }],
+        "vue/v-slot-style": ["error", { atComponent: "v-slot", default: "v-slot", named: "longform" }],
 
         // Downgrade the severity of some rules to warnings as a transition measure.
         // For example, vue/multi-word-component names is considered an error,
@@ -57,48 +57,48 @@
         "vuejs-accessibility/mouse-events-have-key-events": "warn",
         "vuejs-accessibility/no-autofocus": "error",
         "vuejs-accessibility/no-static-element-interactions": "warn",
-        "vuejs-accessibility/tabindex-no-positive": "error"
+        "vuejs-accessibility/tabindex-no-positive": "error",
     },
-    "ignorePatterns": ["dist", "src/libs", "src/nls", "src/legacy"],
-    "overrides": [
+    ignorePatterns: ["dist", "src/libs", "src/nls", "src/legacy"],
+    overrides: [
         {
-            "files": ["**/*.test.js", "**/*.test.ts", "**/tests/jest/**"],
-            "env": {
-                "jest": true
-            }
+            files: ["**/*.test.js", "**/*.test.ts", "**/tests/jest/**"],
+            env: {
+                jest: true,
+            },
         },
         {
-            "files": ["**/*.vue"],
-            "parser": "vue-eslint-parser",
-            "parserOptions": {
-                "parser": {
-                    "js": "espree",
-                    "ts": "@typescript-eslint/parser"
-                }
-            }
+            files: ["**/*.vue"],
+            parser: "vue-eslint-parser",
+            parserOptions: {
+                parser: {
+                    js: "espree",
+                    ts: "@typescript-eslint/parser",
+                },
+            },
         },
         {
-            "files": ["**/*.ts", "**/*.tsx"],
-            "extends": [
+            files: ["**/*.ts", "**/*.tsx"],
+            extends: [
                 "eslint:recommended",
                 "plugin:vue/recommended",
                 "plugin:compat/recommended",
                 "plugin:vuejs-accessibility/recommended",
                 "plugin:@typescript-eslint/eslint-recommended",
-                "plugin:@typescript-eslint/recommended"
+                "plugin:@typescript-eslint/recommended",
             ],
-            "rules": {
-                "@typescript-eslint/no-throw-literal": "error"
+            rules: {
+                "@typescript-eslint/no-throw-literal": "error",
             },
-            "parser": "@typescript-eslint/parser",
-            "parserOptions": {
-                "ecmaFeatures": { "jsx": true },
-                "ecmaVersion": 2020,
-                "sourceType": "module",
-                "extraFileExtensions": [".vue"],
-                "project": "./tsconfig.json"
+            parser: "@typescript-eslint/parser",
+            parserOptions: {
+                ecmaFeatures: { jsx: true },
+                ecmaVersion: 2020,
+                sourceType: "module",
+                extraFileExtensions: [".vue"],
+                project: "./tsconfig.json",
             },
-            "plugins": ["@typescript-eslint"]
-        }
-    ]
-}
+            plugins: ["@typescript-eslint"],
+        },
+    ],
+};
