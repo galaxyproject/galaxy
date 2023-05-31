@@ -63,6 +63,7 @@ from galaxy.util.template import (
     fill_template,
     InputNotFoundSyntaxError,
 )
+from galaxy.util.tree_dict import TreeDict
 from galaxy.work.context import WorkRequestContext
 
 log = logging.getLogger(__name__)
@@ -184,7 +185,7 @@ class ToolEvaluator:
         compute_environment = self.compute_environment
         job_working_directory = compute_environment.working_directory()
 
-        param_dict = self.param_dict
+        param_dict = TreeDict(self.param_dict)
 
         def input():
             raise InputNotFoundSyntaxError(

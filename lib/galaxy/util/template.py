@@ -82,6 +82,9 @@ def fill_template(
                 python_template_version=python_template_version,
             )
         raise first_exception or e
+    if isinstance(context, TreeDict):
+        # Re-establish injected top level keys, which might have been modified (e.g. HDA replaced with DatasetFilenameWrapper)
+        context = TreeDict(context.data)
     t = klass(searchList=[context])
     try:
         return unicodify(t, log_exception=False)
@@ -89,14 +92,21 @@ def fill_template(
         if first_exception is None:
             first_exception = e
         tb = e.__traceback__
-        var_not_found = e.args[0].split("'")[1]
-        # Could be an unprefixed variable. We'll try again with a TreeDict instance.
-        d = TreeDict()
-        d.update(context)
-        if var_not_found in d:
-            context = d
-        if retry > 0:
-            if var_not_found in context:
+        if retry > 0 and python_template_version.release[0] < 3:
+            last_stack = traceback.extract_tb(tb)[-1]
+            if last_stack.name == "<listcomp>" and last_stack.lineno:
+                # On python 3 list, dict and set comprehensions as well as generator expressions
+                # have their own local scope, which prevents accessing frame variables in cheetah.
+                # We can work around this by replacing `$var` with `var`, but we only do this for
+                # list comprehensions, as this has never worked for dict or set comprehensions or
+                # generator expressions in Cheetah.
+                var_not_found = e.args[0].split("'")[1]
+                replace_str = f'VFFSL(SL,"{var_not_found}",True)'
+                lineno = last_stack.lineno - 1
+                module_code = t._CHEETAH_generatedModuleCode.splitlines()
+                module_code[lineno] = module_code[lineno].replace(replace_str, var_not_found)
+                module_code = "\n".join(module_code)
+                compiler_class = create_compiler_class(module_code)
                 return fill_template(
                     template_text=template_text,
                     context=context,
@@ -105,28 +115,6 @@ def fill_template(
                     first_exception=first_exception,
                     python_template_version=python_template_version,
                 )
-            if python_template_version.release[0] < 3:
-                last_stack = traceback.extract_tb(tb)[-1]
-                if last_stack.name == "<listcomp>" and last_stack.lineno:
-                    # On python 3 list, dict and set comprehensions as well as generator expressions
-                    # have their own local scope, which prevents accessing frame variables in cheetah.
-                    # We can work around this by replacing `$var` with `var`, but we only do this for
-                    # list comprehensions, as this has never worked for dict or set comprehensions or
-                    # generator expressions in Cheetah.
-                    replace_str = f'VFFSL(SL,"{var_not_found}",True)'
-                    lineno = last_stack.lineno - 1
-                    module_code = t._CHEETAH_generatedModuleCode.splitlines()
-                    module_code[lineno] = module_code[lineno].replace(replace_str, var_not_found)
-                    module_code = "\n".join(module_code)
-                    compiler_class = create_compiler_class(module_code)
-                    return fill_template(
-                        template_text=template_text,
-                        context=context,
-                        retry=retry - 1,
-                        compiler_class=compiler_class,
-                        first_exception=first_exception,
-                        python_template_version=python_template_version,
-                    )
         raise first_exception or e
     except Exception as e:
         if first_exception is None:
