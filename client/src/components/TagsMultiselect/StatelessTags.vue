@@ -124,6 +124,7 @@ function onTagClicked(tag: string) {
             :multiple="true"
             :taggable="true"
             :close-on-select="false"
+            :aria-expanded="editing ? 'true' : 'false'"
             @tag="onAddTag"
             @input="onInput"
             @open="onOpen"

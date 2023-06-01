@@ -3,7 +3,7 @@
 
 <template>
     <div>
-        <nav class="d-flex justify-content-between mx-3 my-2">
+        <nav class="d-flex justify-content-between mx-3 my-2" aria-label="current history management">
             <h2 class="m-1 h-sm">History</h2>
             <b-button-group>
                 <b-button
