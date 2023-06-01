@@ -35,11 +35,6 @@ export const useHistoryStore = defineStore("historyStore", () => {
         return Object.values(storedHistories.value).sort(sortByObjectProp("name"));
     });
 
-    const getTotalHistoryCount = computed(async () => {
-        const count = await getHistoryCount();
-        return count;
-    });
-
     const getFirstHistoryId = computed(() => {
         return histories.value[0]?.id ?? null;
     });
@@ -173,7 +168,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         const filteredHistoryIds = historyIds.filter((id) => !excludedIds.includes(id));
         return filteredHistoryIds[0];
     }
-    
+
     async function deleteHistory(historyId: string, purge: boolean) {
         const deletedHistory = (await deleteHistoryById(historyId, purge)) as HistorySummary;
         const nextAvailableHistoryId = getNextAvailableHistoryId([deletedHistory.id]);
@@ -193,7 +188,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
 
     /**
      * This function handles the cases where a history has been created
-     * or removed (to set pagination offset and updated history count)
+     * or removed (to set pagination offset and fetch updated history count)
      *
      * @param count How many histories have been added/removed
      * @param reduction Whether it is a reduction or addition (default)
@@ -206,7 +201,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
     async function loadTotalHistoryCount() {
         await getHistoryCount().then((count) => (totalHistoryCount.value = count));
     }
-    
+
     /** TODO:
      * - not handling filters with pagination for now
      *   "pausing" pagination at the existing offset if a filter exists
@@ -229,10 +224,10 @@ export const useHistoryStore = defineStore("historyStore", () => {
             }
             const offset = queryString ? 0 : historiesOffset.value;
             await getHistoryList(offset, limit, queryString)
-                .then((histories) => {
+                .then(async (histories) => {
                     setHistories(histories);
                     if (paginate && !queryString && historiesOffset.value == offset) {
-                        historiesOffset.value += histories.length;
+                        await handleTotalCountChange(histories.length);
                     }
                 })
                 .catch((error) => console.warn(error))
@@ -242,13 +237,13 @@ export const useHistoryStore = defineStore("historyStore", () => {
 
     async function loadHistoryById(historyId: string) {
         if (!isLoadingHistory.has(historyId)) {
+            isLoadingHistory.add(historyId);
             await getHistoryByIdFromServer(historyId)
                 .then((history) => setHistory(history as HistorySummary))
                 .catch((error: Error) => console.warn(error))
                 .finally(() => {
                     isLoadingHistory.delete(historyId);
                 });
-            isLoadingHistory.add(historyId);
         }
     }
 

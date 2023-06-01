@@ -36,11 +36,6 @@ onMounted(async () => {
             }
         }
     });
-    await Promise.all(
-        selectedHistories.value.map(async ({ id }) => {
-            await historyStore.loadHistoryById(id);
-        })
-    );
     loadingPinnedHistories.value = false;
 });
 
