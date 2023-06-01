@@ -1,14 +1,14 @@
 // source: (in gCO2/km) from http://www.sciencedirect.com/science/article/pii/S1352231018307295 and https://www.gov.uk/government/publications/greenhouse-gas-reporting-conversion-factors-2019
 export const averagePassengerCarEmissionsEU = 175.0;
 
-// source: (in gCO2/km) from https://www.epa.gov/greenvehicles/greenhouse-gas-emissions-typical-passenger-vehicle
-export const averagePassengerCarEmissionsUS = 251.0;
+// source: (in gCO2/mile) from https://www.epa.gov/greenvehicles/greenhouse-gas-emissions-typical-passenger-vehicle
+export const averagePassengerCarEmissionsUS = 400.0;
 
 // source: (in metric tons) https://www.epa.gov/energy/greenhouse-gases-equivalencies-calculator-calculations-and-references#oil
 export const barrelOfOilCarbonEmissions = 0.43;
 
 // source: (in grams) https://www.epa.gov/energy/greenhouse-gases-equivalencies-calculator-calculations-and-references#gasoline
-export const gasolineCarbonEmissions = 8887;
+export const gasolineCarbonEmissionsPerGallon = 8887;
 
 // source  (in kWh) https://www.epa.gov/energy/greenhouse-gases-equivalencies-calculator-calculations-and-references#lights
 export const lightbulbEnergyUsage = 43 / 1000;
