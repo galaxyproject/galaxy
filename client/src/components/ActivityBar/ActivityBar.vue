@@ -1,4 +1,5 @@
 <script setup>
+import { storeToRefs } from "pinia";
 import { useUserStore } from "@/stores/userStore";
 import UploadItem from "./Items/UploadItem.vue";
 import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
@@ -9,6 +10,7 @@ import NotificationsBell from "@/components/Notifications/NotificationsBell.vue"
 
 const { config } = useConfig();
 const userStore = useUserStore();
+const { isAnonymous } = storeToRefs(userStore);
 
 function sidebarIsActive(menuKey) {
     return userStore.toggledSideBar === menuKey;
@@ -44,7 +46,7 @@ function onToggleSidebar(toggle) {
                     to="/visualizations" />
             </b-nav>
             <b-nav vertical class="flex-nowrap p-1">
-                <NotificationsBell v-if="config.enable_notification_system" tooltip-placement="right" />
+                <NotificationsBell v-if="!isAnonymous && config.enable_notification_system" tooltip-placement="right" />
                 <ActivityItem
                     id="activity-settings"
                     icon="cog"
