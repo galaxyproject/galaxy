@@ -37,7 +37,7 @@ function draggableClone(options) {
                     @end="isDragging = false"
                     chosenClass="chosen-class"
                     dragClass="drag-class"
-                    ghostClass="ghost-class">
+                    ghostClass="chosen-class">
                     <div v-for="activity in activityOrder">
                         <b-nav-item v-show="isDragging" class="position-relative mb-1">
                             <span class="position-relative">
@@ -144,9 +144,5 @@ function draggableClone(options) {
 
 .drag-class {
     opacity: 0;
-}
-
-.ghost-class {
-    @extend .chosen-class;
 }
 </style>
