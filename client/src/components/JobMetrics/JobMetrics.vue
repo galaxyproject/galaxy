@@ -7,7 +7,7 @@ import { computed, ref, unref } from "vue";
 const props = defineProps({
     jobId: {
         type: String,
-        required: true,
+        default: null,
     },
     datasetFilesize: {
         type: Number,

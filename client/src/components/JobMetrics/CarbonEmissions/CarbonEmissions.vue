@@ -114,7 +114,7 @@ const carbonEmissionsComparisons = computed(() => {
 
     const drivingInUS: CarbonComparison = {
         heading: "Distance driven in US",
-        explanation: "Distance driven in km in the US",
+        explanation: "Distance driven in miles in the US",
         value: prettyPrintValue({
             // Multiply by 1.609 to convert km to miles
             value: parseFloat((totalCarbonEmissions / averagePassengerCarEmissionsUS / 1.609).toFixed(2)),

@@ -4,7 +4,7 @@ import { mount } from "@vue/test-utils";
 
 const localVue = getLocalVue();
 
-const oneGibibyeMemoryInMebibyte = 1024;
+const oneGibibyteMemoryInMebibyte = 1024;
 const oneHourInSeconds = 3600;
 const testServerInstance = {
     name: "some-server-name",
@@ -22,7 +22,7 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
                 estimatedServerInstance: testServerInstance,
                 jobRuntimeInSeconds: oneHourInSeconds,
                 coresAllocated: 1,
-                memoryAllocatedInMebibyte: oneGibibyeMemoryInMebibyte,
+                memoryAllocatedInMebibyte: oneGibibyteMemoryInMebibyte,
             },
             localVue,
         });

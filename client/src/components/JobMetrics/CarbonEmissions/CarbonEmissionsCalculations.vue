@@ -63,18 +63,19 @@ const greenAlgorithmsUrl = "https://www.green-algorithms.org/";
                 cannot always assume this information is provided, we have two approaches:
             </p>
 
-            <p>
-                1. In the case that the server's CPU specifications are known, we proceed as normal.
-                <br />
-                2. When no information is provided, we estimate the server's configuration by matching your job's CPU
-                and/or memory usage to a comparable general purpose
-                <Abbreviation :explanation="'Amazon Web Services Elastic Compute Cloud'">AWS EC2</Abbreviation>
-                instance. EC2 was chosen because its service provides numerous server configurations allowing us to
-                cover more real-world situations.
-                <ExternalLink :href="'https://aws.amazon.com/ec2/instance-types/'">
-                    (Click here to read further about general purpose EC2 machines).
-                </ExternalLink>
-            </p>
+            <ol>
+                <li>In the case that the server's CPU specifications are known, we proceed as normal.</li>
+                <li>
+                    When no information is provided, we estimate the server's configuration by matching your job's CPU
+                    and/or memory usage to a comparable general purpose
+                    <Abbreviation :explanation="'Amazon Web Services Elastic Compute Cloud'">AWS EC2</Abbreviation>
+                    instance. EC2 was chosen because its service provides numerous server configurations allowing us to
+                    cover more real-world situations.
+                    <ExternalLink :href="'https://aws.amazon.com/ec2/instance-types/'">
+                        (Click here to read further about general purpose EC2 machines)
+                    </ExternalLink>
+                </li>
+            </ol>
 
             <p>
                 Once we have the information needed, we calculate the power usage of the CPU and memory in watts. For
@@ -121,9 +122,8 @@ const greenAlgorithmsUrl = "https://www.green-algorithms.org/";
 
             <p>
                 We compare the total carbon emissions of your job (per metric unit of CO2e) with
-                <ExternalLink :href="epaCalculationsUrl">
-                    carbon emission estimates calculated by the EPA. </ExternalLink
-                >. When calculating the equivalent distance driven, we use the same reference values from the Green
+                <ExternalLink :href="epaCalculationsUrl">carbon emission estimates calculated by the EPA</ExternalLink>.
+                When calculating the equivalent distance driven, we use the same reference values from the Green
                 Algorithms Project's "Carbon emissions Calculator" tool.
             </p>
 

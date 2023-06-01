@@ -20,33 +20,13 @@ const props = defineProps<{
 </script>
 
 <template>
-    <div v-if="props.icon === 'car'">
-        <FontAwesomeIcon class="icon" icon="fa-car" />
-    </div>
-
-    <div v-else-if="props.icon === 'gasPump'">
-        <FontAwesomeIcon class="icon" icon="fa-gas-pump" />
-    </div>
-
-    <div v-else-if="props.icon === 'lightbulb'">
-        <FontAwesomeIcon class="icon" icon="fa-lightbulb" />
-    </div>
-
-    <div v-else-if="props.icon === 'bolt'">
-        <FontAwesomeIcon class="icon" icon="fa-bolt" />
-    </div>
-
-    <div v-else-if="props.icon === 'mobilePhone'">
-        <FontAwesomeIcon class="icon" icon="fa-mobile" />
-    </div>
-
-    <div v-else-if="props.icon === 'smog'">
-        <FontAwesomeIcon class="icon" icon="fa-smog" />
-    </div>
-
-    <div v-else-if="props.icon === 'tree'">
-        <FontAwesomeIcon class="icon" icon="fa-tree" />
-    </div>
+    <FontAwesomeIcon v-if="props.icon === 'car'" class="icon" icon="fa-car" />
+    <FontAwesomeIcon v-else-if="props.icon === 'gasPump'" class="icon" icon="fa-gas-pump" />
+    <FontAwesomeIcon v-else-if="props.icon === 'lightbulb'" class="icon" icon="fa-lightbulb" />
+    <FontAwesomeIcon v-else-if="props.icon === 'bolt'" class="icon" icon="fa-bolt" />
+    <FontAwesomeIcon v-else-if="props.icon === 'mobilePhone'" class="icon" icon="fa-mobile" />
+    <FontAwesomeIcon v-else-if="props.icon === 'smog'" class="icon" icon="fa-smog" />
+    <FontAwesomeIcon v-else-if="props.icon === 'tree'" class="icon" icon="fa-tree" />
 </template>
 
 <style scoped>
