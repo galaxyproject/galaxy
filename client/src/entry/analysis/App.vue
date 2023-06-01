@@ -1,25 +1,29 @@
 <script setup lang="ts">
-import Alert from "@/components/Alert.vue";
-import Modal from "@/mvc/ui/ui-modal";
-import Masthead from "components/Masthead/Masthead.vue";
-import { getGalaxyInstance } from "@/app";
-import { getAppRoot } from "@/onload";
-import { HistoryPanelProxy } from "@/components/History/adapters/HistoryPanelProxy";
-import { fetchMenu } from "@/entry/analysis/menu";
-import { WindowManager } from "@/layout/window-manager";
-import { withPrefix } from "@/utils/redirect";
-import Toast from "@/components/Toast";
-import ConfirmDialog from "@/components/ConfirmDialog";
-import UploadModal from "@/components/Upload/UploadModal.vue";
 import { ref, computed, watch, onMounted } from "vue";
 import { storeToRefs } from "pinia";
-import { useUserStore } from "@/stores/userStore";
-import { useHistoryStore } from "@/stores/historyStore";
-import { setToastComponentRef } from "@/composables/toast";
+import { useRoute, useRouter } from "vue-router/composables";
+
 import { setConfirmDialogComponentRef } from "@/composables/confirmDialog";
 import { setGlobalUploadModal } from "@/composables/globalUploadModal";
-import { useRoute, useRouter } from "vue-router/composables";
+import { setToastComponentRef } from "@/composables/toast";
 import { useConfig } from "@/composables/config";
+import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
+import { WindowManager } from "@/layout/window-manager";
+import { withPrefix } from "@/utils/redirect";
+
+import { HistoryPanelProxy } from "@/components/History/adapters/HistoryPanelProxy";
+import Toast from "@/components/Toast";
+import UploadModal from "@/components/Upload/UploadModal.vue";
+import Alert from "@/components/Alert.vue";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import Masthead from "components/Masthead/Masthead.vue";
+
+import { getGalaxyInstance } from "@/app";
+import { fetchMenu } from "@/entry/analysis/menu";
+import { getAppRoot } from "@/onload";
+import Modal from "@/mvc/ui/ui-modal";
+
 
 const userStore = useUserStore();
 const router = useRouter();
