@@ -154,7 +154,7 @@ const carbonEmissionsComparisons = computed(() => {
         icon: "tree",
     };
 
-    return [gasolineConsumed, drivingInEU, drivingInUS, lightbulbsRunning, smartphonesCharged, treeMonths];
+    return [drivingInEU, drivingInUS, gasolineConsumed, lightbulbsRunning, smartphonesCharged, treeMonths];
 });
 
 const canShowMemory = computed(() => {
