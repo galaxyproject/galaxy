@@ -4369,8 +4369,13 @@ class FITS(Binary):
     file_ext = "fits"
 
     MetadataElement(
-        name="HDUs", default=['FITS File HDUs'], desc="Header Data Units", param=metadata.ListParameter, readonly=True,
-        visible=True, no_value=()
+        name="HDUs",
+        default=["FITS File HDUs"],
+        desc="Header Data Units",
+        param=metadata.ListParameter,
+        readonly=True,
+        visible=True,
+        no_value=(),
     )
 
     def __init__(self, **kwd):
@@ -4405,9 +4410,11 @@ class FITS(Binary):
             with fits.open(dataset.file_name) as hdul:
                 dataset.metadata.HDUs = []
                 for i in range(len(hdul)):
-                    dataset.metadata.HDUs.append(' '.join(filter(None, [
-                        str(i), hdul[i].__class__.__name__, hdul[i].name, str(hdul[i]._summary()[4])
-                    ])))
+                    dataset.metadata.HDUs.append(
+                        " ".join(
+                            filter(None, [str(i), hdul[i].__class__.__name__, hdul[i].name, str(hdul[i]._summary()[4])])
+                        )
+                    )
         except Exception as e:
             log.warning("%s, set_meta Exception: %s", self, e)
 
