@@ -3546,7 +3546,7 @@ class MongoDBArchive(CompressedArchive):
             if dataset and tarfile.is_tarfile(dataset.file_name):
                 with tarfile.open(dataset.file_name, "r") as temptar:
                     metrics_file = next(
-                        filter(lambda x: x.startswith('mongo_db/diagnostic.data/metrics'), temptar.getnames()), None
+                        filter(lambda x: x.startswith("mongo_db/diagnostic.data/metrics"), temptar.getnames()), None
                     )
 
                     if metrics_file:
@@ -3559,7 +3559,7 @@ class MongoDBArchive(CompressedArchive):
 
                             if version_match:
                                 dataset.metadata.version = util.unicodify(
-                                    version_match.group(1).decode('utf-8')
+                                    version_match.group(1).decode("utf-8")
                                 ).strip()
         except Exception as e:
             log.warning("%s,(CompressedArchive set_meta Exception: %s", self, util.unicodify(e))
