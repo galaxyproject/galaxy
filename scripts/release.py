@@ -1,5 +1,4 @@
 import datetime
-import os
 import pathlib
 import re
 import subprocess
@@ -18,6 +17,7 @@ import click
 from bootstrap_history import (
     _pr_to_labels,
     _text_target,
+    github_client,
     strip_release,
 )
 from click.core import (
@@ -29,13 +29,10 @@ from docutils import (
     utils,
 )
 from docutils.parsers.rst import Parser
-from github import (
-    Github,
-    PullRequest,
-)
+from github import PullRequest
 from packaging.version import Version
 
-g = Github(os.environ.get("GITHUB_AUTH"))
+g = github_client()
 PROJECT_OWNER = "galaxyproject"
 PROJECT_NAME = "galaxy"
 REPO = f"{PROJECT_OWNER}/{PROJECT_NAME}"
