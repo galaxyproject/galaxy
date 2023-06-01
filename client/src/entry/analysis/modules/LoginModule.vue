@@ -1,5 +1,24 @@
+<script setup lang="ts">
+import { computed } from "vue";
+import { useConfig } from "@/composables/config";
+import { useRoute } from "vue-router/composables";
+import { getGalaxyInstance } from "@/app";
+import LoginIndex from "@/components/Login/LoginIndex.vue";
+import ChangePassword from "@/components/Login/ChangePassword.vue";
+
+const { config, isLoaded } = useConfig();
+const route = useRoute();
+
+const hasToken = computed(() => {
+    return route.query.token || route.query.expired_user;
+});
+
+const sessionCsrfToken = computed(() => {
+    return getGalaxyInstance().session_csrf_token;
+});
+</script>
 <template>
-    <div class="overflow-auto m-3">
+    <div v-if="isLoaded" class="overflow-auto m-3">
         <ChangePassword
             v-if="hasToken"
             :expired-user="$route.query.expired_user"
@@ -21,27 +40,3 @@
             :welcome-url="config.welcome_url" />
     </div>
 </template>
-
-<script>
-import { getGalaxyInstance } from "app";
-import LoginIndex from "components/Login/LoginIndex";
-import ChangePassword from "components/Login/ChangePassword";
-
-export default {
-    components: {
-        ChangePassword,
-        LoginIndex,
-    },
-    computed: {
-        config() {
-            return getGalaxyInstance().config;
-        },
-        hasToken() {
-            return this.$route.query.token || this.$route.query.expired_user;
-        },
-        sessionCsrfToken() {
-            return getGalaxyInstance().session_csrf_token;
-        },
-    },
-};
-</script>

@@ -2,7 +2,7 @@ import StorageManager from "@/components/User/DiskUsage/Management/StorageManage
 import StorageDashboard from "@/components/User/DiskUsage/StorageDashboard.vue";
 import HistoriesStorageOverview from "@/components/User/DiskUsage/Visualizations/HistoriesStorageOverview.vue";
 import HistoryStorageOverview from "@/components/User/DiskUsage/Visualizations/HistoryStorageOverview.vue";
-import Base from "@/entry/analysis/modules/Base.vue";
+import Base from "@/entry/analysis/modules/BaseModule.vue";
 
 export default [
     {
