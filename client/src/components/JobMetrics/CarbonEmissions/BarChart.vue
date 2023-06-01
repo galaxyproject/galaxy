@@ -1,12 +1,18 @@
 <script setup lang="ts">
-import { onMounted } from "vue";
+import { onMounted, ref, watch } from "vue";
 import * as d3 from "d3";
 
 const props = defineProps<{
     data: { name: string; value: number }[];
 }>();
 
-onMounted(() => {
+const barChart = ref<HTMLDivElement | null>(null);
+
+function clearChart() {
+    d3.select(barChart.value).selectAll("*").remove();
+}
+
+function drawChart() {
     const { data } = props;
 
     const margin = { top: 30, right: 30, bottom: 30, left: 30 };
@@ -15,7 +21,7 @@ onMounted(() => {
 
     // Create graph SVG
     const svg = d3
-        .select("#graph-container")
+        .select(barChart.value)
         .append("svg")
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
@@ -52,9 +58,24 @@ onMounted(() => {
         .attr("width", x.bandwidth())
         .attr("height", (d) => height - y(d.value))
         .attr("fill", "#41B883");
+}
+
+onMounted(() => {
+    drawChart();
 });
+
+watch(
+    () => props.data,
+    () => {
+        clearChart();
+        drawChart();
+    },
+    {
+        deep: true,
+    }
+);
 </script>
 
 <template>
-    <div id="graph-container" />
+    <div ref="barChart" />
 </template>
