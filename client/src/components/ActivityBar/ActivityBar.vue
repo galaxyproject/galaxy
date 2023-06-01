@@ -22,13 +22,13 @@ function onToggleSidebar(toggle) {
 watch(activityOrder, () => {
     console.log(activityOrder);
 });
-function draggableClone(options) {
+function disableDragging(options) {
     console.log(options);
     return {};
 }
 </script>
 <template>
-    <div class="d-flex">
+    <div :class="{ 'd-flex': true, 'popper-disabled': isDragging }">
         <div class="activity-bar d-flex flex-column no-highlight">
             <b-nav vertical class="flex-nowrap p-1 h-100 vertical-overflow">
                 <draggable
@@ -39,15 +39,7 @@ function draggableClone(options) {
                     dragClass="drag-class"
                     ghostClass="chosen-class">
                     <div v-for="activity in activityOrder">
-                        <b-nav-item v-show="isDragging" class="position-relative mb-1">
-                            <span class="position-relative">
-                                <div class="nav-icon">
-                                    <Icon :icon="activity.icon" />
-                                </div>
-                                <div class="nav-title">{{ activity.title }}</div>
-                            </span>
-                        </b-nav-item>
-                        <div v-show="!isDragging">
+                        <div>
                             <upload-item v-if="activity.id === 'upload'" />
                             <ActivityItem
                                 v-if="activity.id === 'tools'"
@@ -56,6 +48,7 @@ function draggableClone(options) {
                                 title="Tools"
                                 tooltip="Search and run tools"
                                 :is-active="sidebarIsActive('search')"
+                                :is-dragging="isDragging"
                                 @click="onToggleSidebar('search')" />
                             <ActivityItem
                                 v-if="activity.id === 'workflow'"
@@ -63,7 +56,8 @@ function draggableClone(options) {
                                 title="Workflow"
                                 icon="sitemap"
                                 tooltip="Chain tools into workflows"
-                                to="/workflows/list" />
+                                to="/workflows/list"
+                                :is-dragging="isDragging" />
                             <ActivityItem
                                 v-if="activity.to"
                                 :key="activity.id"
@@ -71,7 +65,8 @@ function draggableClone(options) {
                                 :title="activity.title"
                                 :icon="activity.icon"
                                 :tooltip="activity.tooltip"
-                                :to="activity.to" />
+                                :to="activity.to"
+                                :is-dragging="isDragging" />
                         </div>
                     </div>
                 </draggable>
@@ -115,26 +110,6 @@ function draggableClone(options) {
 .vertical-overflow {
     overflow-y: auto;
     overflow-x: hidden;
-}
-
-/** redundant styles */
-.nav-item {
-    display: flex;
-    align-items: center;
-    align-content: center;
-    justify-content: center;
-}
-
-.nav-icon {
-    @extend .nav-item;
-    font-size: 1rem;
-}
-
-.nav-title {
-    @extend .nav-item;
-    max-width: 7rem;
-    margin-top: 0.5rem;
-    font-size: 0.7rem;
 }
 
 .chosen-class {

@@ -14,6 +14,7 @@ export interface Props {
     title: string;
     icon?: string;
     isActive?: boolean;
+    isDragging?: boolean;
     tooltip?: string;
     progressPercentage?: number;
     progressStatus?: string;
@@ -24,6 +25,7 @@ export interface Props {
 const props = withDefaults(defineProps<Props>(), {
     icon: "question",
     isActive: false,
+    isDragging: false,
     options: null,
     progressPercentage: 0,
     progressStatus: null,
@@ -44,7 +46,13 @@ function onClick(): void {
 </script>
 
 <template>
-    <Popper reference-is="span" popper-is="span" placement="right">
+    <Popper
+        reference-is="span"
+        popper-is="span"
+        placement="right"
+        :disabled="isDragging"
+        :show="!isDragging"
+        :class="{ 'popper-disabled': isDragging }">
         <template v-slot:reference>
             <b-nav-item
                 :id="id"
@@ -133,5 +141,11 @@ function onClick(): void {
     -ms-transition: none;
     -o-transition: none;
     transition: none;
+}
+
+.popper-disabled {
+    .popper-element {
+        display: none;
+    }
 }
 </style>
