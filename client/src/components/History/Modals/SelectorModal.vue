@@ -116,7 +116,7 @@ watch(
 
 const filtered: Ref<HistorySummary[]> = computed(() => {
     let filteredHistories: HistorySummary[] = [];
-    if (!filter.value) {
+    if (!validFilter.value) {
         filteredHistories = historiesProxy.value;
     } else {
         const filters = HistoriesFilters.getFiltersForText(filter.value);
