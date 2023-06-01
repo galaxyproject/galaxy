@@ -25,7 +25,7 @@ const userStore = useUserStore();
 const router = useRouter();
 const route = useRoute();
 
-const { config, isLoaded } = useConfig();
+const { config } = useConfig();
 const { currentTheme } = storeToRefs(userStore);
 const { currentHistory } = storeToRefs(useHistoryStore());
 
@@ -56,7 +56,7 @@ const showMasthead = computed(() => {
 });
 
 const theme = computed(() => {
-    if (isLoaded && config?.value?.themes) {
+    if (config?.value?.themes) {
         const themeKeys = Object.keys(config.value.themes);
         if (themeKeys.length > 0) {
             if (currentTheme.value && themeKeys.includes(currentTheme.value)) {
