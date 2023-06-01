@@ -3,6 +3,7 @@
     "compilerOptions": {
         "target": "es2016",
         "module": "es2020",
+        "verbatimModuleSyntax": false,
 
         "baseUrl": ".",
         "paths": {
