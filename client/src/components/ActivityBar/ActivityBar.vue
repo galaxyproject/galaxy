@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useUserStore } from "@/stores/userStore";
 import UploadItem from "./Items/UploadItem.vue";
 import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
@@ -9,13 +9,8 @@ import Activities from "./activities.js";
 import draggable from "vuedraggable";
 
 const userStore = useUserStore();
-
-const currentActivities = computed({
-    get: () => Activities,
-    set: (newOrder) => {
-        console.log(newOrder);
-    },
-});
+const activityOrder = ref(Activities.slice());
+const isDragging = ref(false);
 
 function sidebarIsActive(menuKey) {
     return userStore.toggledSideBar === menuKey;
@@ -24,37 +19,58 @@ function sidebarIsActive(menuKey) {
 function onToggleSidebar(toggle) {
     userStore.toggleSideBar(toggle);
 }
+watch(activityOrder, () => {
+    console.log(activityOrder);
+});
+function draggableClone(options) {
+    console.log(options);
+    return {};
+}
 </script>
 <template>
     <div class="d-flex">
-        <div class="activity-bar d-flex flex-column">
+        <div class="activity-bar d-flex flex-column no-highlight">
             <b-nav vertical class="flex-nowrap p-1 h-100 vertical-overflow">
-                <draggable v-model="currentActivities">
-                    <div v-for="activity in currentActivities">
-                        <upload-item v-if="activity.id === 'upload'" />
-                        <ActivityItem
-                            v-if="activity.id === 'tools'"
-                            id="activity-tools"
-                            icon="wrench"
-                            title="Tools"
-                            tooltip="Search and run tools"
-                            :is-active="sidebarIsActive('search')"
-                            @click="onToggleSidebar('search')" />
-                        <ActivityItem
-                            v-if="activity.id === 'workflow'"
-                            id="activity-workflow"
-                            title="Workflow"
-                            icon="sitemap"
-                            tooltip="Chain tools into workflows"
-                            to="/workflows/list" />
-                        <ActivityItem
-                            v-if="activity.to"
-                            :key="activity.id"
-                            :id="`activity-${activity.id}`"
-                            :title="activity.title"
-                            :icon="activity.icon"
-                            :tooltip="activity.tooltip"
-                            :to="activity.to" />
+                <draggable
+                    :list="activityOrder"
+                    @start="isDragging = true"
+                    @end="isDragging = false"
+                    dragClass="drag-class">
+                    <div v-for="activity in activityOrder">
+                        <b-nav-item v-if="isDragging" class="position-relative mb-1">
+                            <span class="position-relative">
+                                <div class="nav-icon">
+                                    <Icon :icon="activity.icon" />
+                                </div>
+                                <div class="nav-title">{{ activity.title }}</div>
+                            </span>
+                        </b-nav-item>
+                        <div v-else>
+                            <upload-item v-if="activity.id === 'upload'" />
+                            <ActivityItem
+                                v-if="activity.id === 'tools'"
+                                id="activity-tools"
+                                icon="wrench"
+                                title="Tools"
+                                tooltip="Search and run tools"
+                                :is-active="sidebarIsActive('search')"
+                                @click="onToggleSidebar('search')" />
+                            <ActivityItem
+                                v-if="activity.id === 'workflow'"
+                                id="activity-workflow"
+                                title="Workflow"
+                                icon="sitemap"
+                                tooltip="Chain tools into workflows"
+                                to="/workflows/list" />
+                            <ActivityItem
+                                v-if="activity.to"
+                                :key="activity.id"
+                                :id="`activity-${activity.id}`"
+                                :title="activity.title"
+                                :icon="activity.icon"
+                                :tooltip="activity.tooltip"
+                                :to="activity.to" />
+                        </div>
                     </div>
                 </draggable>
             </b-nav>
@@ -97,5 +113,28 @@ function onToggleSidebar(toggle) {
 .vertical-overflow {
     overflow-y: auto;
     overflow-x: hidden;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    align-content: center;
+    justify-content: center;
+}
+
+.nav-icon {
+    @extend .nav-item;
+    font-size: 1rem;
+}
+
+.nav-title {
+    @extend .nav-item;
+    max-width: 7rem;
+    margin-top: 0.5rem;
+    font-size: 0.7rem;
+}
+
+.drag-class {
+    background: red;
 }
 </style>
