@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-export interface AwsEstimateProps {
+const props = defineProps<{
     jobRuntimeInSeconds: number;
     coresAllocated: number;
     memoryAllocatedInMebibyte?: number;
@@ -18,9 +18,7 @@ export interface AwsEstimateProps {
             source: string;
         }[];
     }[];
-}
-
-const props = defineProps<AwsEstimateProps>();
+}>();
 
 const computedAwsEstimate = computed(() => {
     const { coresAllocated, jobRuntimeInSeconds, memoryAllocatedInMebibyte } = props;

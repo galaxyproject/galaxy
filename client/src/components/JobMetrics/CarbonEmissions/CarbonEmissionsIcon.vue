@@ -14,11 +14,9 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 
 library.add(faBolt, faCar, faGasPump, faLightbulb, faMobile, faSmog, faTree, faTruck);
 
-export interface CarbonEmissionsIconProps {
+const props = defineProps<{
     icon: "bolt" | "car" | "gasPump" | "lightbulb" | "mobilePhone" | "smog" | "tree";
-}
-
-const props = defineProps<CarbonEmissionsIconProps>();
+}>();
 </script>
 
 <template>
