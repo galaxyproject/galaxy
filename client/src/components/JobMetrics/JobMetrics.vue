@@ -4,21 +4,31 @@ import CarbonEmissions from "./CarbonEmissions/CarbonEmissions.vue";
 import { useJobMetricsStore } from "@/stores/jobMetricsStore";
 import { computed, ref, unref } from "vue";
 
-export interface JobMetricsProps {
-    datasetFilesize?: number;
-    datasetId?: string;
-    datasetType?: string;
-    includeTitle?: boolean;
-    jobId: string;
-    shouldShowAwsEstimate?: boolean;
-}
-
-const props = withDefaults(defineProps<JobMetricsProps>(), {
-    datasetFilesize: 0,
-    datasetId: "",
-    datasetType: "hda",
-    includeTitle: true,
-    shouldShowAwsEstimate: false,
+const props = defineProps({
+    jobId: {
+        type: String,
+        required: true,
+    },
+    datasetFilesize: {
+        type: Number,
+        default: 0,
+    },
+    datasetId: {
+        type: String,
+        default: "",
+    },
+    datasetType: {
+        type: String,
+        default: "hda",
+    },
+    includeTitle: {
+        type: Boolean,
+        default: true,
+    },
+    shouldShowAwsEstimate: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const jobMetricsStore = useJobMetricsStore();

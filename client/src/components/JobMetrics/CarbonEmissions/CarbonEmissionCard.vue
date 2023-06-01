@@ -2,14 +2,12 @@
 import { ref } from "vue";
 import CarbonEmissionsIcon from "./CarbonEmissionsIcon.vue";
 
-export interface CarbonEmissionsCardProps {
+const props = defineProps<{
     heading: string;
     explanation: string;
     value: string | number;
     icon: InstanceType<typeof CarbonEmissionsIcon>["$props"]["icon"];
-}
-
-const props = defineProps<CarbonEmissionsCardProps>();
+}>();
 
 const shouldShowInfo = ref(false);
 

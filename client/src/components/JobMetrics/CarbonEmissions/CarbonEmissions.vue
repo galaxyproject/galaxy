@@ -10,7 +10,7 @@ import * as carbonEmissionsConstants from "./carbonEmissionConstants.js";
 
 library.add(faQuestionCircle);
 
-export interface CarbonEmissionsProps {
+interface CarbonEmissionsProps {
     estimatedServerInstance: {
         name: string;
         cpuInfo: {
