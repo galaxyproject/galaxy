@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import CarbonEmissionsIcon from "./CarbonEmissionsIcon.vue";
+import type { GetComponentPropTypes } from "types/utilityTypes";
 
 const props = defineProps<{
     heading: string;
     explanation: string;
     value: string | number;
-    icon: InstanceType<typeof CarbonEmissionsIcon>["$props"]["icon"];
+    icon: GetComponentPropTypes<typeof CarbonEmissionsIcon>["icon"];
 }>();
 
 const shouldShowInfo = ref(false);
