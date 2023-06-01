@@ -3551,12 +3551,13 @@ class MongoDBArchive(CompressedArchive):
 
                         md_version_file = temptar.extractfile(metrics_file)
 
-                        vchunk = md_version_file.read(500)
+                        if md_version_file:
+                            vchunk = md_version_file.read(500)
 
-                        version_match = re.match(b".*version\x00\x06\x00\x00\x00([0-9.]+).*", vchunk)
+                            version_match = re.match(b".*version\x00\x06\x00\x00\x00([0-9.]+).*", vchunk)
 
-                        if version_match:
-                            dataset.metadata.version = util.unicodify(version_match.group(1).decode('utf-8')).strip()
+                            if version_match:
+                                dataset.metadata.version = util.unicodify(version_match.group(1).decode('utf-8')).strip()
         except Exception as e:
             log.warning("%s,(CompressedArchive set_meta Exception: %s", self, util.unicodify(e))
 
