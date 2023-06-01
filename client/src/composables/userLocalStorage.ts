@@ -1,6 +1,6 @@
-import { ref, watch, type Ref, computed, customRef } from "vue";
+import { ref, computed, customRef } from "vue";
 import { useHashedUserId } from "./hashedUserId";
-import { useLocalStorage, type RemovableRef, resolveUnref } from "@vueuse/core";
+import { useLocalStorage } from "@vueuse/core";
 
 /**
  * Local storage composable specific to current user.

@@ -83,7 +83,7 @@
                 :root-offset="rootOffset"
                 :scroll="scroll"
                 :scale="scale"
-                :parentNode="elHtml"
+                :parent-node="elHtml"
                 @onChange="onChange" />
             <div v-if="showRule" class="rule" />
             <node-output
@@ -99,7 +99,7 @@
                 :scroll="scroll"
                 :scale="scale"
                 :datatypes-mapper="datatypesMapper"
-                :parentNode="elHtml"
+                :parent-node="elHtml"
                 @onDragConnector="onDragConnector"
                 @stopDragging="onStopDragging"
                 @onChange="onChange" />

@@ -49,18 +49,18 @@ const modal: Ref<BModal | null> = ref(null);
 // reactive proxy for props.histories, as the prop is not
 // always guaranteed to be reactive for some strange reason.
 // TODO: Re investigate when upgrading to vue3
-const histories: Ref<HistorySummary[]> = ref([]);
+const historiesProxy: Ref<HistorySummary[]> = ref([]);
 watch(
     () => props.histories,
     (h) => {
-        histories.value = h;
+        historiesProxy.value = h;
     },
     {
         immediate: true,
     }
 );
 
-const filtered = useFilterObjectArray(histories, filter, ["name", "tags", "annotation"]);
+const filtered = useFilterObjectArray(historiesProxy, filter, ["name", "tags", "annotation"]);
 
 watch(
     () => filtered.value,
