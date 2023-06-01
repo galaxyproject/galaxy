@@ -76,7 +76,7 @@ const carbonEmissionsComparisons = computed(() => {
     const {
         averagePassengerCarEmissionsEU,
         averagePassengerCarEmissionsUS,
-        gasolineCarbonEmissions,
+        gasolineCarbonEmissionsPerGallon,
         lightbulbEnergyUsage,
         smartphonesChargedCarbonEmissions,
         treeYear,
@@ -94,7 +94,7 @@ const carbonEmissionsComparisons = computed(() => {
         explanation: "The amount of gasoline consumed running this job",
         value: prettyPrintValue({
             // Multiply by 3.785 to convert gallons to litres
-            value: parseFloat((totalCarbonEmissions / gasolineCarbonEmissions).toFixed(2)),
+            value: parseFloat((totalCarbonEmissions / (gasolineCarbonEmissionsPerGallon * 3.785)).toFixed(2)),
             threshold: 1e-1,
             unit: "l",
         }),
@@ -116,8 +116,7 @@ const carbonEmissionsComparisons = computed(() => {
         heading: "Distance driven in US",
         explanation: "Distance driven in miles in the US",
         value: prettyPrintValue({
-            // Multiply by 1.609 to convert km to miles
-            value: parseFloat((totalCarbonEmissions / averagePassengerCarEmissionsUS / 1.609).toFixed(2)),
+            value: parseFloat((totalCarbonEmissions / averagePassengerCarEmissionsUS).toFixed(2)),
             threshold: 1e-1,
             unit: "mile(s)",
         }),
@@ -126,7 +125,8 @@ const carbonEmissionsComparisons = computed(() => {
 
     const lightbulbsRunning: CarbonComparison = {
         heading: "Light bulbs running",
-        explanation: "The amount of incandescent light bulbs you could have powered given your job's energy usage",
+        explanation:
+            "The amount of incandescent light bulbs you could have powered for one hour given your job's energy usage",
         value: prettyPrintValue({
             value: parseFloat((totalEnergyNeeded / lightbulbEnergyUsage).toFixed(3)),
             threshold: 1,
