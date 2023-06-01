@@ -7,6 +7,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import Heading from "@/components/Common/Heading.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import * as carbonEmissionsConstants from "./carbonEmissionConstants.js";
+import type { GetComponentPropTypes } from "types/utilityTypes";
 
 library.add(faQuestionCircle);
 
@@ -85,7 +86,7 @@ const carbonEmissionsComparisons = computed(() => {
         heading: string;
         explanation: string;
         value: string;
-        icon: InstanceType<typeof CarbonEmissionsCard>["$props"]["icon"];
+        icon: GetComponentPropTypes<typeof CarbonEmissionsCard>["icon"];
     };
 
     const gasolineConsumed: CarbonComparison = {
