@@ -9,7 +9,7 @@ import { fetchMenu } from "@/entry/analysis/menu";
 import { WindowManager } from "@/layout/window-manager";
 import { withPrefix } from "@/utils/redirect";
 import Toast from "@/components/Toast";
-import ConfirmDialog from "@/components/ConfirmDialog.vue";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import UploadModal from "@/components/Upload/UploadModal.vue";
 import { ref, computed, watch, onMounted } from "vue";
 import { storeToRefs } from "pinia";
@@ -31,18 +31,20 @@ const { currentHistory } = storeToRefs(useHistoryStore());
 
 userStore.loadUser();
 
+// Configure application toast
 const toastRef = ref(null);
 setToastComponentRef(toastRef);
 
+// Configure application confirmation
 const confirmation = ref(null);
 const confirmDialogRef = ref(null);
 setConfirmDialogComponentRef(confirmDialogRef);
 
+// Configure uploadModal
 const uploadModal = ref(null);
 setGlobalUploadModal(uploadModal);
 
 const windowManager = new WindowManager();
-
 const resendUrl = `${getAppRoot()}user/resend_verification`;
 
 const tabs = computed(() => {
@@ -50,19 +52,19 @@ const tabs = computed(() => {
 });
 
 const showMasthead = computed(() => {
-    const masthead = route.query.hide_masthead;
-    if (masthead !== undefined) {
-        return masthead.toLowerCase() != "true";
-    }
-    return true;
+    return route.query.hide_masthead !== "true";
 });
 
 const theme = computed(() => {
-    const themeKeys = Object.keys(config.value.themes);
-    if (themeKeys.length > 0) {
-        const foundTheme = themeKeys.includes(currentTheme.value);
-        const selectedTheme = foundTheme ? currentTheme.value : themeKeys[0];
-        return config.value.themes[selectedTheme];
+    if (isLoaded && config?.value?.themes) {
+        const themeKeys = Object.keys(config.value.themes);
+        if (themeKeys.length > 0) {
+            if (currentTheme.value && themeKeys.includes(currentTheme.value)) {
+                return config.value.themes[currentTheme.value];
+            } else {
+                return config.value.themes[themeKeys[0]!];
+            }
+        }
     }
     return null;
 });
@@ -73,7 +75,8 @@ const windowTab = computed(() => {
 
 watch(confirmation, () => {
     console.debug("App - Confirmation before route change: ", confirmation.value);
-    router.confirmation = confirmation.value;
+    // We patch a confirmation value, see router-push.js
+    (router as any).confirmation = confirmation.value;
 });
 
 watch(currentHistory, () => {
@@ -96,14 +99,14 @@ function openUrl(urlObj: any) {
         if (urlObj.target == "_blank") {
             window.open(url);
         } else {
-            window.location = url;
+            window.location.href = url;
         }
     }
 }
 
 // created
 window.onbeforeunload = () => {
-    if (confirmation || windowManager.beforeUnload()) {
+    if (confirmation.value || windowManager.beforeUnload()) {
         return "Are you sure you want to leave the page?";
     }
 };
