@@ -1,3 +1,114 @@
+<script setup lang="ts">
+import Alert from "@/components/Alert.vue";
+import Modal from "@/mvc/ui/ui-modal";
+import Masthead from "components/Masthead/Masthead.vue";
+import { getGalaxyInstance } from "@/app";
+import { getAppRoot } from "@/onload";
+import { HistoryPanelProxy } from "@/components/History/adapters/HistoryPanelProxy";
+import { fetchMenu } from "@/entry/analysis/menu";
+import { WindowManager } from "@/layout/window-manager";
+import { withPrefix } from "@/utils/redirect";
+import Toast from "@/components/Toast";
+import ConfirmDialog from "@/components/ConfirmDialog.vue";
+import UploadModal from "@/components/Upload/UploadModal.vue";
+import { ref, computed, watch, onMounted } from "vue";
+import { storeToRefs } from "pinia";
+import { useUserStore } from "@/stores/userStore";
+import { useHistoryStore } from "@/stores/historyStore";
+import { setToastComponentRef } from "@/composables/toast";
+import { setConfirmDialogComponentRef } from "@/composables/confirmDialog";
+import { setGlobalUploadModal } from "@/composables/globalUploadModal";
+import { useRoute, useRouter } from "vue-router/composables";
+import { useConfig } from "@/composables/config";
+
+const userStore = useUserStore();
+const router = useRouter();
+const route = useRoute();
+
+const { config, isLoaded } = useConfig();
+const { currentTheme } = storeToRefs(userStore);
+const { currentHistory } = storeToRefs(useHistoryStore());
+
+userStore.loadUser();
+
+const toastRef = ref(null);
+setToastComponentRef(toastRef);
+
+const confirmation = ref(null);
+const confirmDialogRef = ref(null);
+setConfirmDialogComponentRef(confirmDialogRef);
+
+const uploadModal = ref(null);
+setGlobalUploadModal(uploadModal);
+
+const windowManager = new WindowManager();
+
+const resendUrl = `${getAppRoot()}user/resend_verification`;
+
+const tabs = computed(() => {
+    return fetchMenu(config.value);
+});
+
+const showMasthead = computed(() => {
+    const masthead = route.query.hide_masthead;
+    if (masthead !== undefined) {
+        return masthead.toLowerCase() != "true";
+    }
+    return true;
+});
+
+const theme = computed(() => {
+    const themeKeys = Object.keys(config.value.themes);
+    if (themeKeys.length > 0) {
+        const foundTheme = themeKeys.includes(currentTheme.value);
+        const selectedTheme = foundTheme ? currentTheme.value : themeKeys[0];
+        return config.value.themes[selectedTheme];
+    }
+    return null;
+});
+
+const windowTab = computed(() => {
+    return windowManager.getTab();
+});
+
+watch(confirmation, () => {
+    console.debug("App - Confirmation before route change: ", confirmation.value);
+    router.confirmation = confirmation.value;
+});
+
+watch(currentHistory, () => {
+    const Galaxy = getGalaxyInstance();
+    Galaxy.currHistoryPanel.syncCurrentHistoryModel(currentHistory.value);
+});
+
+onMounted(() => {
+    const Galaxy = getGalaxyInstance();
+    Galaxy.currHistoryPanel = new HistoryPanelProxy();
+    Galaxy.modal = new Modal.View();
+    Galaxy.frame = windowManager;
+});
+
+function openUrl(urlObj: any) {
+    if (!urlObj.target) {
+        router.push(urlObj.url);
+    } else {
+        const url = withPrefix(urlObj.url);
+        if (urlObj.target == "_blank") {
+            window.open(url);
+        } else {
+            window.location = url;
+        }
+    }
+}
+
+// created
+window.onbeforeunload = () => {
+    if (confirmation || windowManager.beforeUnload()) {
+        return "Are you sure you want to leave the page?";
+    }
+};
+</script>
+
 <template>
     <div id="app" :style="theme">
         <div id="everything">
@@ -40,124 +151,6 @@
         <UploadModal ref="uploadModal" />
     </div>
 </template>
-<script>
-import Alert from "@/components/Alert.vue";
-import Modal from "mvc/ui/ui-modal";
-import Masthead from "components/Masthead/Masthead.vue";
-import { getGalaxyInstance } from "app";
-import { getAppRoot } from "onload";
-import { HistoryPanelProxy } from "components/History/adapters/HistoryPanelProxy";
-import { fetchMenu } from "entry/analysis/menu";
-import { WindowManager } from "layout/window-manager";
-import { withPrefix } from "utils/redirect";
-import Toast from "components/Toast";
-import ConfirmDialog from "components/ConfirmDialog";
-import UploadModal from "components/Upload/UploadModal.vue";
-import { ref } from "vue";
-import { storeToRefs } from "pinia";
-import { useUserStore } from "@/stores/userStore";
-import { useHistoryStore } from "@/stores/historyStore";
-import { setToastComponentRef } from "composables/toast";
-import { setConfirmDialogComponentRef } from "composables/confirmDialog";
-import { setGlobalUploadModal } from "composables/globalUploadModal";
-
-export default {
-    components: {
-        Alert,
-        Masthead,
-        Toast,
-        ConfirmDialog,
-        UploadModal,
-    },
-    setup() {
-        const userStore = useUserStore();
-        const { currentTheme } = storeToRefs(userStore);
-        const { currentHistory } = storeToRefs(useHistoryStore());
-
-        userStore.loadUser();
-
-        const toastRef = ref(null);
-        setToastComponentRef(toastRef);
-
-        const confirmDialogRef = ref(null);
-        setConfirmDialogComponentRef(confirmDialogRef);
-
-        const uploadModal = ref(null);
-        setGlobalUploadModal(uploadModal);
-
-        return { toastRef, confirmDialogRef, uploadModal, currentTheme, currentHistory };
-    },
-    data() {
-        return {
-            config: getGalaxyInstance().config,
-            confirmation: null,
-            resendUrl: `${getAppRoot()}user/resend_verification`,
-            windowManager: new WindowManager(),
-        };
-    },
-    computed: {
-        tabs() {
-            return fetchMenu(this.config);
-        },
-        showMasthead() {
-            const masthead = this.$route.query.hide_masthead;
-            if (masthead !== undefined) {
-                return masthead.toLowerCase() != "true";
-            }
-            return true;
-        },
-        theme() {
-            const themeKeys = Object.keys(this.config.themes);
-            if (themeKeys.length > 0) {
-                const foundTheme = themeKeys.includes(this.currentTheme);
-                const selectedTheme = foundTheme ? this.currentTheme : themeKeys[0];
-                return this.config.themes[selectedTheme];
-            }
-            return null;
-        },
-        windowTab() {
-            return this.windowManager.getTab();
-        },
-    },
-    watch: {
-        confirmation() {
-            console.debug("App - Confirmation before route change: ", this.confirmation);
-            this.$router.confirmation = this.confirmation;
-        },
-        currentHistory() {
-            this.Galaxy.currHistoryPanel.syncCurrentHistoryModel(this.currentHistory);
-        },
-    },
-    mounted() {
-        this.Galaxy = getGalaxyInstance();
-        this.Galaxy.currHistoryPanel = new HistoryPanelProxy();
-        this.Galaxy.modal = new Modal.View();
-        this.Galaxy.frame = this.windowManager;
-    },
-    created() {
-        window.onbeforeunload = () => {
-            if (this.confirmation || this.windowManager.beforeUnload()) {
-                return "Are you sure you want to leave the page?";
-            }
-        };
-    },
-    methods: {
-        openUrl(urlObj) {
-            if (!urlObj.target) {
-                this.$router.push(urlObj.url);
-            } else {
-                const url = withPrefix(urlObj.url);
-                if (urlObj.target == "_blank") {
-                    window.open(url);
-                } else {
-                    window.location = url;
-                }
-            }
-        },
-    },
-};
-</script>
-
 <style lang="scss">
 @import "custom_theme_variables.scss";
 </style>
