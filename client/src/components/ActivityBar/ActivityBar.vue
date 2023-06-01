@@ -1,4 +1,5 @@
 <script setup>
+import { storeToRefs } from "pinia";
 import draggable from "vuedraggable";
 import { ref } from "vue";
 import { useUserStore } from "@/stores/userStore";
@@ -22,6 +23,7 @@ const route = useRoute();
 const userStore = useUserStore();
 const eventStore = useEventStore();
 const activityStore = useActivityStore();
+const { isAnonymous } = storeToRefs(userStore);
 
 // sync built-in activities with cached activities
 activityStore.sync();
@@ -180,7 +182,7 @@ function toggleContextMenu(evt) {
                 </draggable>
             </b-nav>
             <b-nav vertical class="flex-nowrap p-1">
-                <NotificationsBell v-if="config.enable_notification_system" tooltip-placement="right" />
+                <NotificationsBell v-if="!isAnonymous && config.enable_notification_system" tooltip-placement="right" />
                 <ActivityItem
                     id="activity-settings"
                     icon="cog"
