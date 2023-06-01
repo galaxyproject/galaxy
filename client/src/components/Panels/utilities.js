@@ -138,15 +138,27 @@ export function removeDisabledTools(tools) {
     });
 }
 
+function isToolObject(tool) {
+    // toolbox overhaul with typing will simplify this dramatically...
+    // Right now, our shorthand is that tools have no 'text', and don't match
+    // the model_class of the section/label.
+    if (!tool.text && tool.model_class !== "ToolSectionLabel" && tool.model_class !== "ToolSection") {
+        return true;
+    }
+    return false;
+}
+
 function flattenToolsSection(section) {
     const flattenTools = [];
     if (section.elems) {
         section.elems.forEach((tool) => {
-            if (!tool.text) {
+            if (isToolObject(tool)) {
                 flattenTools.push(tool);
             }
         });
-    } else if (!section.text) {
+    } else if (isToolObject(section)) {
+        // This might be a top-level section-less tool and not actually a
+        // section.
         flattenTools.push(section);
     }
     return flattenTools;
