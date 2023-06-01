@@ -929,6 +929,7 @@ ON CONFLICT
     ON constraint uqsu_unique_label_per_user
     DO UPDATE SET disk_usage = user_quota_source_usage.disk_usage + :amount
 """
+                statement = text(statement)
                 params = {
                     "user_id": self.id,
                     "amount": int(amount),
