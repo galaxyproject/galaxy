@@ -50,9 +50,7 @@ function onClick(): void {
         reference-is="span"
         popper-is="span"
         placement="right"
-        :disabled="isDragging"
-        :show="!isDragging"
-        :class="{ 'popper-disabled': isDragging }">
+        :disabled="isDragging">
         <template v-slot:reference>
             <b-nav-item
                 :id="id"

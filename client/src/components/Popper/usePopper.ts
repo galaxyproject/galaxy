@@ -33,6 +33,7 @@ export function usePopperjs(
                 trigger: MaybeRef<Trigger | undefined>;
                 delayOnMouseover: MaybeRef<number | undefined>;
                 delayOnMouseout: MaybeRef<number | undefined>;
+                disabled: MaybeRef<boolean | undefined>;
                 forceShow: MaybeRef<boolean | undefined>;
             }
     >
@@ -131,6 +132,17 @@ export function usePopperjs(
                 return;
             }
             visible.value = false;
+        }
+    );
+
+    watch(
+        () => unref(options?.disabled),
+        () => {
+            if (unref(options?.disabled)) {
+                doOff();
+            } else {
+                doOn();
+            }
         }
     );
 

@@ -39,35 +39,33 @@ function disableDragging(options) {
                     dragClass="drag-class"
                     ghostClass="chosen-class">
                     <div v-for="activity in activityOrder">
-                        <div>
-                            <upload-item v-if="activity.id === 'upload'" />
-                            <ActivityItem
-                                v-if="activity.id === 'tools'"
-                                id="activity-tools"
-                                icon="wrench"
-                                title="Tools"
-                                tooltip="Search and run tools"
-                                :is-active="sidebarIsActive('search')"
-                                :is-dragging="isDragging"
-                                @click="onToggleSidebar('search')" />
-                            <ActivityItem
-                                v-if="activity.id === 'workflow'"
-                                id="activity-workflow"
-                                title="Workflow"
-                                icon="sitemap"
-                                tooltip="Chain tools into workflows"
-                                to="/workflows/list"
-                                :is-dragging="isDragging" />
-                            <ActivityItem
-                                v-if="activity.to"
-                                :key="activity.id"
-                                :id="`activity-${activity.id}`"
-                                :title="activity.title"
-                                :icon="activity.icon"
-                                :tooltip="activity.tooltip"
-                                :to="activity.to"
-                                :is-dragging="isDragging" />
-                        </div>
+                        <upload-item v-if="activity.id === 'upload'" />
+                        <ActivityItem
+                            v-if="activity.id === 'tools'"
+                            id="activity-tools"
+                            icon="wrench"
+                            title="Tools"
+                            tooltip="Search and run tools"
+                            :is-active="sidebarIsActive('search')"
+                            :is-dragging="isDragging"
+                            @click="onToggleSidebar('search')" />
+                        <ActivityItem
+                            v-if="activity.id === 'workflow'"
+                            id="activity-workflow"
+                            title="Workflow"
+                            icon="sitemap"
+                            tooltip="Chain tools into workflows"
+                            to="/workflows/list"
+                            :is-dragging="isDragging" />
+                        <ActivityItem
+                            v-if="activity.to"
+                            :key="activity.id"
+                            :id="`activity-${activity.id}`"
+                            :title="activity.title"
+                            :icon="activity.icon"
+                            :tooltip="activity.tooltip"
+                            :to="activity.to"
+                            :is-dragging="isDragging" />
                     </div>
                 </draggable>
             </b-nav>

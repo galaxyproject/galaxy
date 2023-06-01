@@ -69,6 +69,7 @@ export default defineComponent({
             ...props,
             trigger: toRef(props, "trigger"),
             forceShow: toRef(props, "forceShow"),
+            disabled: toRef(props, "disabled"),
             delayOnMouseover: toRef(props, "delayOnMouseover"),
             delayOnMouseout: toRef(props, "delayOnMouseout"),
             onShow: () => emit("show"),
