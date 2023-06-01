@@ -19,25 +19,24 @@ function sidebarIsActive(menuKey) {
 function onToggleSidebar(toggle) {
     userStore.toggleSideBar(toggle);
 }
+
 watch(activityOrder, () => {
     console.log(activityOrder);
 });
-function disableDragging(options) {
-    console.log(options);
-    return {};
-}
+
 </script>
 <template>
-    <div :class="{ 'd-flex': true, 'popper-disabled': isDragging }">
+    <div class="d-flex">
         <div class="activity-bar d-flex flex-column no-highlight">
             <b-nav vertical class="flex-nowrap p-1 h-100 vertical-overflow">
                 <draggable
                     :list="activityOrder"
+                    :class="{ 'activity-popper-disabled': isDragging }"
                     @start="isDragging = true"
                     @end="isDragging = false"
-                    chosenClass="chosen-class"
-                    dragClass="drag-class"
-                    ghostClass="chosen-class">
+                    chosenClass="activity-chosen-class"
+                    dragClass="activity-drag-class"
+                    ghostClass="activity-chosen-class">
                     <div v-for="activity in activityOrder">
                         <upload-item v-if="activity.id === 'upload'" />
                         <ActivityItem
@@ -47,7 +46,6 @@ function disableDragging(options) {
                             title="Tools"
                             tooltip="Search and run tools"
                             :is-active="sidebarIsActive('search')"
-                            :is-dragging="isDragging"
                             @click="onToggleSidebar('search')" />
                         <ActivityItem
                             v-if="activity.id === 'workflow'"
@@ -55,8 +53,7 @@ function disableDragging(options) {
                             title="Workflow"
                             icon="sitemap"
                             tooltip="Chain tools into workflows"
-                            to="/workflows/list"
-                            :is-dragging="isDragging" />
+                            to="/workflows/list" />
                         <ActivityItem
                             v-if="activity.to"
                             :key="activity.id"
@@ -64,8 +61,7 @@ function disableDragging(options) {
                             :title="activity.title"
                             :icon="activity.icon"
                             :tooltip="activity.tooltip"
-                            :to="activity.to"
-                            :is-dragging="isDragging" />
+                            :to="activity.to" />
                     </div>
                 </draggable>
             </b-nav>
@@ -84,7 +80,7 @@ function disableDragging(options) {
     </div>
 </template>
 
-<style scoped lang="scss">
+<style lang="scss">
 @import "theme/blue.scss";
 
 .activity-bar {
@@ -93,6 +89,21 @@ function disableDragging(options) {
 
 .activity-bar::-webkit-scrollbar {
     display: none;
+}
+
+.activity-chosen-class {
+    background: $brand-toggle;
+    border-radius: $border-radius-extralarge;
+}
+
+.activity-drag-class {
+    opacity: 0;
+}
+
+.activity-popper-disabled {
+    .popper-element {
+        display: none;
+    }
 }
 
 .panels-enter-active,
@@ -108,14 +119,5 @@ function disableDragging(options) {
 .vertical-overflow {
     overflow-y: auto;
     overflow-x: hidden;
-}
-
-.chosen-class {
-    background: $brand-toggle;
-    border-radius: $border-radius-extralarge;
-}
-
-.drag-class {
-    opacity: 0;
 }
 </style>
