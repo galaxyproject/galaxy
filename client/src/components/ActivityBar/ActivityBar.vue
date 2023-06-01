@@ -35,9 +35,11 @@ function draggableClone(options) {
                     :list="activityOrder"
                     @start="isDragging = true"
                     @end="isDragging = false"
-                    dragClass="drag-class">
+                    chosenClass="chosen-class"
+                    dragClass="drag-class"
+                    ghostClass="ghost-class">
                     <div v-for="activity in activityOrder">
-                        <b-nav-item v-if="isDragging" class="position-relative mb-1">
+                        <b-nav-item v-show="isDragging" class="position-relative mb-1">
                             <span class="position-relative">
                                 <div class="nav-icon">
                                     <Icon :icon="activity.icon" />
@@ -45,7 +47,7 @@ function draggableClone(options) {
                                 <div class="nav-title">{{ activity.title }}</div>
                             </span>
                         </b-nav-item>
-                        <div v-else>
+                        <div v-show="!isDragging">
                             <upload-item v-if="activity.id === 'upload'" />
                             <ActivityItem
                                 v-if="activity.id === 'tools'"
@@ -115,6 +117,7 @@ function draggableClone(options) {
     overflow-x: hidden;
 }
 
+/** redundant styles */
 .nav-item {
     display: flex;
     align-items: center;
@@ -134,7 +137,16 @@ function draggableClone(options) {
     font-size: 0.7rem;
 }
 
+.chosen-class {
+    background: $brand-toggle;
+    border-radius: $border-radius-extralarge;
+}
+
 .drag-class {
-    background: red;
+    opacity: 0;
+}
+
+.ghost-class {
+    @extend .chosen-class;
 }
 </style>
