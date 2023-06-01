@@ -297,7 +297,8 @@ def hashed_test_search(
         r.raise_for_status()
         p = "-".join(package)
         for line in r.text.split("\n"):
-            if p in line:
+            # include only linux-64 builds since that is hardcoded in get_anaconda_url and the only target for container builds
+            if p in line and "linux-64" in line:
                 build = line.split(p)[1].split(".tar.bz2")[0]
                 if build == "":
                     containers.append(f"{package[0]}:{package[1]}")
