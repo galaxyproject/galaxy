@@ -260,13 +260,9 @@ export default {
                     { multiple: true }
                 );
             } else {
-                this.ftp.show(
-                    new Vue({
-                        //TODO add back parameters
-                        el: "#FormFTP",
-                        render: (h) => h(FormFTP),
-                    }).$mount("#FormFTP").$el
-                );
+                const vueDiv = document.createElement("div");
+                document.body.appendChild(vueDiv);
+                this.ftp.show(this.mountFtpComponentFromJs(vueDiv));
             }
         },
         /** Create a new file */
@@ -353,6 +349,39 @@ export default {
         },
         getRequestUrl: function (items, history_id) {
             return `${getAppRoot()}api/tools/fetch`;
+        },
+        mountFtpComponentFromJs: function(targetDom) {
+            return new Vue({
+                el: "upload-ftp",  //TODO rename
+                render: (h) =>
+                    h(FormFTP, {
+                        props: this.buildFtpComponentProps(),
+                    })
+            }).$mount(targetDom).$el;
+        },
+        buildFtpComponentProps: function() {
+            return {
+                options: {
+                    ftp_upload_site: this.ftpUploadSite,
+                    upload_box: this.uploadbox, //TODO rename
+                    onchange: function () {},
+                    onadd: function (uploadBox, ftp_file) {
+                        return uploadBox.add([
+                            {
+                                mode: "ftp",
+                                name: ftp_file.path,
+                                size: ftp_file.size,
+                                path: ftp_file.path,
+                                uri: ftp_file.uri,
+                            },
+                        ]);
+                    },                
+                    onremove: function (thisCollection, model_index) {
+                        return thisCollection.remove(model_index);
+                    },
+                },
+                collection: this.collection,
+            };
         },
     },
 };

@@ -1,3 +1,4 @@
+//TODO deprecate file
 /** This renders the content of the ftp popup **/
 import _ from "underscore";
 import $ from "jquery";
