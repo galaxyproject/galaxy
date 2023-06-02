@@ -187,12 +187,6 @@ class ToolEvaluator:
 
         param_dict = TreeDict(self.param_dict)
 
-        def input():
-            raise InputNotFoundSyntaxError(
-                "Unbound variable 'input'."
-            )  # Don't let $input hang Python evaluation process.
-
-        param_dict["input"] = input
         param_dict["__datatypes_config__"] = param_dict["GALAXY_DATATYPES_CONF_FILE"] = os.path.join(
             job_working_directory, "registry.xml"
         )
@@ -214,6 +208,15 @@ class ToolEvaluator:
         self.__sanitize_param_dict(param_dict)
         # Parameters added after this line are not sanitized
         self.__populate_non_job_params(param_dict)
+
+        if "input" not in param_dict:
+
+            def input():
+                raise InputNotFoundSyntaxError(
+                    "Unbound variable 'input'."
+                )  # Don't let $input hang Python evaluation process.
+
+            param_dict["input"] = input
 
         # Return the dictionary of parameters
         return param_dict

@@ -34,12 +34,14 @@ class TreeDict(UserDict):
             _item._parent_data = self
             _item.update(item)
             item = _item
-        if self._parent_data is not None and key != "__current_case__":
+        current_parent_data = self._parent_data
+        while current_parent_data is not None and key != "__current_case__":
             if (
-                key not in self._parent_data
+                key not in current_parent_data
                 or key == "input"
-                and key in self._parent_data
-                and callable(self._parent_data[key])
+                and key in current_parent_data
+                and callable(current_parent_data[key])
             ):
-                self._parent_data._injected_data[key] = item
+                current_parent_data._injected_data[key] = item
+            current_parent_data = current_parent_data._parent_data
         return super().__setitem__(key, item)
