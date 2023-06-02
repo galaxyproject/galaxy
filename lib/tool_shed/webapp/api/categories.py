@@ -11,6 +11,7 @@ from galaxy import (
     util,
     web,
 )
+from galaxy.model.base import transaction
 from galaxy.web import (
     expose_api,
     expose_api_anonymous_and_sessionless,
@@ -57,7 +58,8 @@ class CategoriesController(BaseAPIController):
                 # Create the category
                 category = self.app.model.Category(name=name, description=description)
                 trans.sa_session.add(category)
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
                 category_dict = category.to_dict(view="element", value_mapper=self.__get_value_mapper(trans))
                 category_dict["message"] = f"Category '{str(category.name)}' has been created"
                 category_dict["url"] = web.url_for(

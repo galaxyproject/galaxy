@@ -10,6 +10,7 @@ from galaxy import (
     util,
     web,
 )
+from galaxy.model.base import transaction
 from galaxy.webapps.base.controller import (
     BaseAPIController,
     HTTPBadRequest,
@@ -213,7 +214,8 @@ class RepositoryRevisionsController(BaseAPIController):
                 repository_metadata.changeset_revision,
             )
             trans.sa_session.add(repository_metadata)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             trans.sa_session.refresh(repository_metadata)
         repository_metadata_dict = repository_metadata.to_dict(
             view="element", value_mapper=self.__get_value_mapper(trans)
