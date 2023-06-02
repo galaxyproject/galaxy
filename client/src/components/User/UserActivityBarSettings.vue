@@ -1,20 +1,15 @@
-<script setup>
-import { useCurrentTheme } from "@/composables/user";
-import { useConfig } from "@/composables/config";
+<script setup lang="ts">
+import { computed, ref, type WritableComputedRef, type Ref } from "vue";
 import { useUserStore } from "@/stores/userStore";
-import { computed, watch, ref } from "vue";
-import { withPrefix } from "@/utils/redirect";
 import Activities from "@/components/ActivityBar/activities.js";
 import Multiselect from "vue-multiselect";
 
 const userStore = useUserStore();
-const { currentTheme, setCurrentTheme } = useCurrentTheme();
-const { config, isLoaded } = useConfig();
 
-const show = ref(false);
-const currentValue = ref([]);
+const show: Ref<Boolean> = ref(false);
+const currentValue: Ref<Array<String>> = ref([]);
 
-const enableActivityBar = computed({
+const enableActivityBar: WritableComputedRef<Boolean> = computed({
     get: () => {
         return userStore.showActivityBar;
     },
@@ -22,11 +17,6 @@ const enableActivityBar = computed({
         userStore.toggleActivityBar();
     },
 });
-
-watch(
-    () => isLoaded.value,
-    () => {}
-);
 </script>
 
 <template>
