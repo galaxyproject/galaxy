@@ -98,7 +98,7 @@ function onChange() {
 }
 
 .activity-chosen-class {
-    background: $brand-toggle;
+    background: $brand-secondary;
     border-radius: $border-radius-extralarge;
 }
 
