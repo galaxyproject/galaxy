@@ -421,19 +421,23 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
         errors: List[StorageItemCleanupError] = []
         dataset_ids_to_remove: Set[int] = set()
 
-        with self.hda_manager.session().begin():
-            for hda_id in item_ids:
-                try:
-                    hda: model.HistoryDatasetAssociation = self.hda_manager.get_owned(hda_id, user)
-                    hda.deleted = True
-                    quota_amount = int(hda.quota_amount(user))
-                    hda.purge_usage_from_quota(user, hda.dataset.quota_source_info)
-                    hda.purged = True
-                    dataset_ids_to_remove.add(hda.dataset.id)
-                    success_item_count += 1
-                    total_free_bytes += quota_amount
-                except BaseException as e:
-                    errors.append(StorageItemCleanupError(item_id=hda_id, error=str(e)))
+        for hda_id in item_ids:
+            try:
+                hda: model.HistoryDatasetAssociation = self.hda_manager.get_owned(hda_id, user)
+                hda.deleted = True
+                quota_amount = int(hda.quota_amount(user))
+                hda.purge_usage_from_quota(user, hda.dataset.quota_source_info)
+                hda.purged = True
+                dataset_ids_to_remove.add(hda.dataset.id)
+                success_item_count += 1
+                total_free_bytes += quota_amount
+            except BaseException as e:
+                errors.append(StorageItemCleanupError(item_id=hda_id, error=str(e)))
+
+        if success_item_count:
+            session = self.hda_manager.session()
+            with transaction(session):
+                session.commit()
 
         self._request_full_delete_all(dataset_ids_to_remove)
 
