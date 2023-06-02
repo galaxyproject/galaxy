@@ -51,7 +51,7 @@ function onClick(): void {
                 class="position-relative mb-1"
                 :class="{ 'nav-item-active': isActive }"
                 :aria-label="title | l"
-                @mouseup="onClick">
+                @click="onClick">
                 <span v-if="progressStatus" class="progress">
                     <div
                         class="progress-bar notransition"
