@@ -14,7 +14,7 @@ repos:
         types: [file]
         types_or: [javascript, jsx, ts, tsx, vue]
         additional_dependencies:
-          - prettier@2.8.3 # Workaround. See https://github.com/pre-commit/mirrors-prettier/issues/29
+          - prettier@2.8.8 # Workaround. See https://github.com/pre-commit/mirrors-prettier/issues/29
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.3.0  # Use the ref you want to point at
     hooks:
