@@ -154,39 +154,3 @@ onMounted(() => {
         label="label" />
     <b-alert v-else v-localize variant="warning" show> No options available. </b-alert>
 </template>
-
-<style lang="scss">
-@import "theme/blue.scss";
-.form-select {
-    > .multiselect__content-wrapper {
-        > .multiselect__content {
-            > .multiselect__element {
-                > .multiselect__option {
-                    font-size: $font-size-base;
-                }
-            }
-        }
-    }
-    > .multiselect__tags {
-        border: $border-default;
-    }
-}
-.form-select-single {
-    > .multiselect__content-wrapper {
-        > .multiselect__content {
-            > .multiselect__element {
-                > .multiselect__option--selected {
-                    background: $brand-primary;
-                    color: $brand-light;
-                }
-            }
-        }
-    }
-    > .multiselect__tags {
-        min-height: 0;
-        > .multiselect__single {
-            font-size: $font-size-base;
-        }
-    }
-}
-</style>

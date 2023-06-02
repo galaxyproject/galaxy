@@ -64,20 +64,3 @@ watch(
         </multiselect>
     </b-card>
 </template>
-
-<style lang="scss">
-@import "theme/blue.scss";
-.user-activity-bar-settings {
-    .multiselect {
-        > .multiselect__content-wrapper {
-            > .multiselect__content {
-                > .multiselect__element {
-                    > .multiselect__option {
-                        white-space: normal;
-                    }
-                }
-            }
-        }
-    }
-}
-</style>
