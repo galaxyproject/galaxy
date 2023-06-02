@@ -5,6 +5,8 @@ from typing import (
     Optional,
 )
 
+from boltons.iterutils import remap
+
 
 class TreeDict(UserDict):
     """
@@ -15,6 +17,18 @@ class TreeDict(UserDict):
         self._parent_data: Optional[TreeDict] = None
         self._injected_data = {}
         super().__init__(dict, **kwargs)
+
+    def clean_copy(self):
+        """
+        Copy without injected data.
+        """
+
+        def strip_tree_dict(path, key, value):
+            if isinstance(value, TreeDict):
+                value = value.data
+            return key, value
+
+        return remap(self.data, strip_tree_dict)
 
     def __getitem__(self, key: Any) -> Any:
         if key in self.data:

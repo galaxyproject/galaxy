@@ -209,17 +209,17 @@ class ToolEvaluator:
         # Parameters added after this line are not sanitized
         self.__populate_non_job_params(param_dict)
 
-        if "input" not in param_dict:
+        if "input" not in param_dict.data:
 
             def input():
                 raise InputNotFoundSyntaxError(
                     "Unbound variable 'input'."
                 )  # Don't let $input hang Python evaluation process.
 
-            param_dict["input"] = input
+            param_dict.data["input"] = input
 
-        # Return the dictionary of parameters
-        return param_dict
+        # Return the dictionary of parameters without injected parameters
+        return param_dict.clean_copy()
 
     def _materialize_objects(
         self, deferred_objects: Dict[str, DeferrableObjectsT], job_working_directory: str
