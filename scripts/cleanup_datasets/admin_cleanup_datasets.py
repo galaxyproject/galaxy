@@ -64,6 +64,7 @@ from cleanup_datasets import CleanupDatasetsApplication  # noqa: I100
 import galaxy.config
 import galaxy.model.mapping
 import galaxy.util
+from galaxy.model.base import transaction
 from galaxy.util.script import (
     app_properties_from_args,
     populate_config_args,
@@ -255,7 +256,9 @@ def administrative_delete_datasets(
                     hda.deleted = True
                     app.sa_session.add(hda)
                     print("Marked HistoryDatasetAssociation id %d as " "deleted" % hda.id)
-                app.sa_session.flush()
+                session = app.sa_session()
+                with transaction(session):
+                    session.commit()
 
     emailtemplate = Template(filename=template_file)
     for email, dataset_list in user_notifications.items():
