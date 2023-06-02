@@ -9,7 +9,9 @@ import Activities from "./activities.js";
 import draggable from "vuedraggable";
 
 const userStore = useUserStore();
-const activityOrder = ref(Activities.slice());
+
+// TODO: get state from store
+const activities = ref(Activities.slice());
 const isDragging = ref(false);
 
 function sidebarIsActive(menuKey) {
@@ -20,24 +22,28 @@ function onToggleSidebar(toggle) {
     userStore.toggleSideBar(toggle);
 }
 
-watch(activityOrder, () => {
-    console.log(activityOrder);
-});
+function onChange() {
+    // TODO: push state to store
+    const newOrder = activities.value.map((a) => a.id);
+    console.log(newOrder);
+}
 </script>
+
 <template>
     <div class="d-flex">
         <div class="activity-bar d-flex flex-column no-highlight">
             <b-nav vertical class="flex-nowrap p-1 h-100 vertical-overflow">
                 <draggable
-                    :list="activityOrder"
+                    :list="activities"
                     :class="{ 'activity-popper-disabled': isDragging }"
                     :force-fallback="true"
                     chosen-class="activity-chosen-class"
                     drag-class="activity-drag-class"
                     ghost-class="activity-chosen-class"
+                    @change="onChange"
                     @start="isDragging = true"
                     @end="isDragging = false">
-                    <div v-for="activity in activityOrder">
+                    <div v-for="activity in activities">
                         <upload-item v-if="activity.id === 'upload'" />
                         <ActivityItem
                             v-if="activity.id === 'tools'"
