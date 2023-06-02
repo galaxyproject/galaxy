@@ -23,7 +23,6 @@ function onToggleSidebar(toggle) {
 watch(activityOrder, () => {
     console.log(activityOrder);
 });
-
 </script>
 <template>
     <div class="d-flex">
@@ -32,11 +31,12 @@ watch(activityOrder, () => {
                 <draggable
                     :list="activityOrder"
                     :class="{ 'activity-popper-disabled': isDragging }"
+                    :force-fallback="true"
+                    chosen-class="activity-chosen-class"
+                    drag-class="activity-drag-class"
+                    ghost-class="activity-chosen-class"
                     @start="isDragging = true"
-                    @end="isDragging = false"
-                    chosenClass="activity-chosen-class"
-                    dragClass="activity-drag-class"
-                    ghostClass="activity-chosen-class">
+                    @end="isDragging = false">
                     <div v-for="activity in activityOrder">
                         <upload-item v-if="activity.id === 'upload'" />
                         <ActivityItem
@@ -97,7 +97,7 @@ watch(activityOrder, () => {
 }
 
 .activity-drag-class {
-    opacity: 0;
+    display: none;
 }
 
 .activity-popper-disabled {
