@@ -1,11 +1,21 @@
 from collections import UserDict
-from collections.abc import MutableMapping
+from collections.abc import (
+    ItemsView,
+    MutableMapping,
+)
 from typing import (
     Any,
     Optional,
 )
 
 from boltons.iterutils import remap
+
+
+def enter(path, key, value):
+    if isinstance(value, MutableMapping):
+        return value.__class__(), ItemsView(value)
+    else:
+        return value, False
 
 
 class TreeDict(UserDict):
@@ -28,7 +38,7 @@ class TreeDict(UserDict):
                 value = value.data
             return key, value
 
-        return remap(self.data, strip_tree_dict)
+        return remap(self.data, strip_tree_dict, enter=enter)
 
     def __getitem__(self, key: Any) -> Any:
         if key in self.data:
