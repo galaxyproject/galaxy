@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import Multiselect from "vue-multiselect";
+import { useMultiselect } from "@/composables/useMultiselect";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTags, faCheck, faTimes, faPlus } from "@fortawesome/free-solid-svg-icons";
@@ -59,15 +60,7 @@ function onDelete(tag: string) {
     emit("input", val);
 }
 
-const editing = ref(false);
-
-function onOpen() {
-    editing.value = true;
-}
-
-function onClose() {
-    editing.value = false;
-}
+const { editing, ariaExpanded, onOpen, onClose } = useMultiselect();
 
 const multiselectElement: Ref<Multiselect | null> = ref(null);
 
@@ -124,7 +117,7 @@ function onTagClicked(tag: string) {
             :multiple="true"
             :taggable="true"
             :close-on-select="false"
-            :aria-expanded="editing ? 'true' : 'false'"
+            :aria-expanded="ariaExpanded"
             @tag="onAddTag"
             @input="onInput"
             @open="onOpen"
