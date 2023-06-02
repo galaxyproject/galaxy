@@ -17,8 +17,9 @@ import LibraryRoutes from "entry/analysis/routes/library-routes";
 import StorageDashboardRoutes from "entry/analysis/routes/storageDashboardRoutes";
 
 // child components
-import Citations from "components/Citation/Citations";
 import AboutGalaxy from "components/AboutGalaxy.vue";
+import CarbonEmissionsCalculations from "components/JobMetrics/CarbonEmissions/CarbonEmissionsCalculations";
+import Citations from "components/Citation/Citations";
 import ClientError from "components/ClientError";
 import CollectionEditView from "components/Collections/common/CollectionEditView";
 import CustomBuilds from "components/User/CustomBuilds";
@@ -153,6 +154,10 @@ export function getRouter(Galaxy) {
                     {
                         path: "about",
                         component: AboutGalaxy,
+                    },
+                    {
+                        path: "carbon_emissions_calculations",
+                        component: CarbonEmissionsCalculations,
                     },
                     {
                         path: "custom_builds",
