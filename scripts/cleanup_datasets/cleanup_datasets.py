@@ -26,6 +26,7 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 import galaxy.config
 from galaxy.datatypes.registry import Registry
 from galaxy.exceptions import ObjectNotFound
+from galaxy.model.base import transaction
 from galaxy.model.mapping import init_models_from_config
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.util import unicodify
@@ -238,7 +239,9 @@ def delete_userless_histories(app, cutoff_time, info_only=False, force_retry=Fal
             log.info("Deleting history id %d", history.id)
             history.deleted = True
             app.sa_session.add(history)
-            app.sa_session.flush()
+            session = app.sa_session()
+            with transaction(session):
+                session.commit()
         history_count += 1
     stop = time.time()
     log.info("Deleted %d histories", history_count)
@@ -287,7 +290,9 @@ def purge_histories(app, cutoff_time, remove_from_disk, info_only=False, force_r
             log.info("Purging history id %d", history.id)
             history.purged = True
             app.sa_session.add(history)
-            app.sa_session.flush()
+            session = app.sa_session()
+            with transaction(session):
+                session.commit()
         else:
             log.info("History id %d will be purged (without 'info_only' mode)", history.id)
         history_count += 1
@@ -325,7 +330,9 @@ def purge_libraries(app, cutoff_time, remove_from_disk, info_only=False, force_r
             log.info("Purging library id %d", library.id)
             library.purged = True
             app.sa_session.add(library)
-            app.sa_session.flush()
+            session = app.sa_session()
+            with transaction(session):
+                session.commit()
         library_count += 1
     stop = time.time()
     log.info("# Purged %d libraries .", library_count)
@@ -433,7 +440,9 @@ def delete_datasets(app, cutoff_time, remove_from_disk, info_only=False, force_r
         ld.purged = True
         app.sa_session.add(ld)
         log.info("Marked LibraryDataset id %d as purged", ld.id)
-        app.sa_session.flush()
+        session = app.sa_session()
+        with transaction(session):
+            session.commit()
     # Add all datasets associated with Histories to our list
     dataset_ids.extend([row.id for row in app.sa_session.execute(history_dataset_ids_query)])
     # Process each of the Dataset objects
@@ -516,7 +525,9 @@ def _purge_dataset_instance(dataset_instance, app, remove_from_disk, info_only=F
         dataset_instance.mark_deleted()
         dataset_instance.clear_associated_files()
         app.sa_session.add(dataset_instance)
-        app.sa_session.flush()
+        session = app.sa_session()
+        with transaction(session):
+            session.commit()
         app.sa_session.refresh(dataset_instance.dataset)
     else:
         log.info(
@@ -552,6 +563,7 @@ def _delete_dataset(dataset, app, remove_from_disk, info_only=False, is_deletabl
     if not is_deletable and not _dataset_is_deletable(dataset):
         log.info("This Dataset (%d) is not deletable, associated Metadata Files will not be removed.\n", dataset.id)
     else:
+        session = app.sa_session()
         # Mark all associated MetadataFiles as deleted and purged and remove them from disk
         metadata_files = []
         # lets create a list of metadata files, then perform actions on them
@@ -593,22 +605,26 @@ def _delete_dataset(dataset, app, remove_from_disk, info_only=False, is_deletabl
                         )
                     metadata_file.purged = True
                     app.sa_session.add(metadata_file)
-                    app.sa_session.flush()
+                    with transaction(session):
+                        session.commit()
                 metadata_file.deleted = True
                 app.sa_session.add(metadata_file)
-                app.sa_session.flush()
+                with transaction(session):
+                    session.commit()
             log.info(metadata_file.file_name)
         if not info_only:
             log.info("Deleting dataset id %d", dataset.id)
             dataset.deleted = True
             app.sa_session.add(dataset)
-            app.sa_session.flush()
+            with transaction(session):
+                session.commit()
         else:
             log.info("Dataset %d will be deleted (without 'info_only' mode)", dataset.id)
 
 
 def _purge_dataset(app, dataset, remove_from_disk, info_only=False):
     if dataset.deleted:
+        session = app.sa_session()
         try:
             if dataset.purgable and _dataset_is_deletable(dataset):
                 if not info_only:
@@ -634,7 +650,8 @@ def _purge_dataset(app, dataset, remove_from_disk, info_only=False):
                     log.info("Purging dataset id %d", dataset.id)
                     dataset.purged = True
                     app.sa_session.add(dataset)
-                    app.sa_session.flush()
+                    with transaction(session):
+                        session.commit()
                 else:
                     log.info("Dataset %d will be purged (without 'info_only' mode)", dataset.id)
             else:
@@ -648,7 +665,8 @@ def _purge_dataset(app, dataset, remove_from_disk, info_only=False):
             log.error("Purging dataset id %d", dataset.id)
             dataset.purged = True
             app.sa_session.add(dataset)
-            app.sa_session.flush()
+            with transaction(session):
+                session.commit()
         except ObjectNotFound:
             log.error("Dataset %d cannot be found in the object store", dataset.id)
         except Exception as exc:
@@ -673,7 +691,9 @@ def _purge_folder(folder, app, remove_from_disk, info_only=False):
         log.info("Purging folder id %s", folder.id)
         folder.purged = True
         app.sa_session.add(folder)
-        app.sa_session.flush()
+        session = app.sa_session()
+        with transaction(session):
+            session.commit()
 
 
 class CleanupDatasetsApplication:
