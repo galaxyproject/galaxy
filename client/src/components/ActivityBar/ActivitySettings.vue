@@ -6,7 +6,7 @@ const activities = ref(Activities.slice().filter((a) => !!a.to));
 </script>
 
 <template>
-    <div>
+    <div class="activity-settings m-3">
         <div class="font-weight-bold my-2">Select Activities:</div>
         <div class="overflow-auto" style="max-height: 20rem">
             <div v-for="option in activities">
@@ -31,42 +31,4 @@ const activities = ref(Activities.slice().filter((a) => !!a.to));
 
 <style lang="scss">
 @import "theme/blue.scss";
-
-.activity-bar {
-    background: $panel-bg-color;
-}
-
-.activity-bar::-webkit-scrollbar {
-    display: none;
-}
-
-.activity-chosen-class {
-    background: $brand-secondary;
-    border-radius: $border-radius-extralarge;
-}
-
-.activity-drag-class {
-    display: none;
-}
-
-.activity-popper-disabled {
-    .popper-element {
-        display: none;
-    }
-}
-
-.panels-enter-active,
-.panels-leave-active {
-    transition: all 0.3s;
-}
-
-.panels-enter,
-.panels-leave-to {
-    transform: translateX(-100%);
-}
-
-.vertical-overflow {
-    overflow-y: auto;
-    overflow-x: hidden;
-}
 </style>

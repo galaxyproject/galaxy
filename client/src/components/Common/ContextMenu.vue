@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Popper from "@/components/Popper/Popper.vue";
 import { computed, ref, watch, type Ref } from "vue";
 
 interface Position {
@@ -31,10 +32,10 @@ watch(
 
 <template>
     <div v-if="visible">
-        <div class="context-overlay" @click="emit('hide')" />
-        <b-card class="context-menu" :style="placeContextMenu">
+        <Popper placement="right" class="context-menu" :style="placeContextMenu" :forceShow="true">
             <slot />
-        </b-card>
+        </Popper>
+        <div class="context-overlay" @click="emit('hide')" />
     </div>
 </template>
 
@@ -44,9 +45,6 @@ watch(
 .context-menu {
     position: fixed;
     z-index: 11;
-    background: $white;
-    border-radius: $border-radius-base;
-    box-shadow: 0 $border-radius-base $border-radius-large $brand-dark;
 }
 
 .context-overlay {
