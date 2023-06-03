@@ -43,16 +43,18 @@ watch(
 
 .context-menu {
     position: fixed;
-    background: $panel-bg-color;
     z-index: 11;
+    background: $white;
+    border-radius: $border-radius-base;
+    box-shadow: 0 $border-radius-base $border-radius-large $brand-dark;
 }
 
 .context-overlay {
     position: fixed;
+    z-index: 10;
     left: 0;
     top: 0;
     height: 100%;
     width: 100%;
-    z-index: 10;
 }
 </style>

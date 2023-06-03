@@ -8,7 +8,7 @@ const activities = ref(Activities.slice().filter((a) => !!a.to));
 <template>
     <div>
         <div class="font-weight-bold my-2">Select Activities:</div>
-        <div class="overflow-auto" style="max-height: 10rem">
+        <div class="overflow-auto" style="max-height: 20rem">
             <div v-for="option in activities">
                 <div class="d-flex my-2">
                     <div>

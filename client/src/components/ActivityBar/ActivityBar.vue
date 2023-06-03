@@ -100,9 +100,9 @@ function hideContextMenu() {
         <FlexPanel v-if="sidebarIsActive('search')" key="search" side="left" :collapsible="false">
             <ToolBox />
         </FlexPanel>
-        <context-menu :visible="contextMenuVisible" :x="contextMenuX" :y="contextMenuY" @hide="hideContextMenu">
-            <activity-settings />
-        </context-menu>
+        <ContextMenu :visible="contextMenuVisible" :x="contextMenuX" :y="contextMenuY" @hide="hideContextMenu">
+            <ActivitySettings />
+        </ContextMenu>
     </div>
 </template>
 
