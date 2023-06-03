@@ -33,13 +33,15 @@ watch(
 <template>
     <div v-if="visible">
         <Popper placement="right" class="context-menu" :style="placeContextMenu" :forceShow="true" :no-arrow="true">
-            <slot />
+            <div class="context-menu-slot">
+                <slot />
+            </div>
         </Popper>
-        <div class="context-overlay" @click="emit('hide')" />
+        <div class="context-menu-overlay" @click="emit('hide')" />
     </div>
 </template>
 
-<style scoped lang="scss">
+<style lang="scss">
 @import "theme/blue.scss";
 
 .context-menu {
@@ -47,12 +49,23 @@ watch(
     z-index: 11;
 }
 
-.context-overlay {
+.context-menu-overlay {
     position: fixed;
     z-index: 10;
     left: 0;
     top: 0;
     height: 100%;
     width: 100%;
+}
+
+.context-menu-slot {
+    background: $brand-dark;
+    border-radius: $border-radius-base;
+    width: 20rem;
+}
+
+.context-menu-slot .custom-checkbox .custom-control-input:checked ~ .custom-control-label::before {
+    background-color: $brand-dark;
+    border-color: $white;
 }
 </style>
