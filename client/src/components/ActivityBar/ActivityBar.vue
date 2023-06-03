@@ -1,14 +1,19 @@
 <script setup>
+import draggable from "vuedraggable";
 import { computed, ref, watch } from "vue";
 import { useUserStore } from "@/stores/userStore";
-import UploadItem from "./Items/UploadItem.vue";
-import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
+import ContextMenu from "@/components/Common/ContextMenu.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
+import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
 import ActivityItem from "./ActivityItem.vue";
 import Activities from "./activities.js";
-import draggable from "vuedraggable";
+import UploadItem from "./Items/UploadItem.vue";
 
 const userStore = useUserStore();
+
+const contextMenuVisible = ref(false);
+const contextMenuX = ref(0);
+const contextMenuY = ref(0);
 
 // TODO: get state from store
 const activities = ref(Activities.slice());
@@ -27,10 +32,21 @@ function onChange() {
     const newOrder = activities.value.map((a) => a.id);
     console.log(newOrder);
 }
+
+function showContextMenu(evt) {
+    evt.preventDefault();
+    contextMenuVisible.value = true;
+    contextMenuX.value = evt.x;
+    contextMenuY.value = evt.y;
+}
+
+function hideContextMenu() {
+    contextMenuVisible.value = false;
+}
 </script>
 
 <template>
-    <div class="d-flex">
+    <div class="d-flex" @contextmenu="showContextMenu">
         <div class="activity-bar d-flex flex-column no-highlight">
             <b-nav vertical class="flex-nowrap p-1 h-100 vertical-overflow">
                 <draggable
@@ -83,6 +99,9 @@ function onChange() {
         <FlexPanel v-if="sidebarIsActive('search')" key="search" side="left" :collapsible="false">
             <ToolBox />
         </FlexPanel>
+        <context-menu :visible="contextMenuVisible" :x="contextMenuX" :y="contextMenuY" @hide="hideContextMenu">
+            Some Context
+        </context-menu>
     </div>
 </template>
 

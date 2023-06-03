@@ -35,11 +35,13 @@ const emit = defineEmits<{
     (e: "click"): void;
 }>();
 
-function onClick(): void {
-    if (props.to) {
-        router.push(props.to);
+function onClick(evt: MouseEvent): void {
+    if (!evt.ctrlKey) {
+        if (props.to) {
+            router.push(props.to);
+        }
+        emit("click");
     }
-    emit("click");
 }
 </script>
 

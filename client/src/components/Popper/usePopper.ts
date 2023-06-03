@@ -189,6 +189,8 @@ export function usePopperjs(
                 on(popperRef.value!, "mouseover", doMouseover);
                 on(referenceRef.value!, "mouseout", doMouseout);
                 on(popperRef.value!, "mouseout", doMouseout);
+                on(referenceRef.value!, "mousedown", doMouseout);
+                on(popperRef.value!, "mousedown", doMouseout);
                 break;
             }
 
@@ -219,6 +221,8 @@ export function usePopperjs(
         off(popperRef.value!, "mouseover", doMouseover);
         off(referenceRef.value!, "mouseout", doMouseout);
         off(popperRef.value!, "mouseout", doMouseout);
+        off(referenceRef.value!, "mousedown", doMouseout);
+        off(popperRef.value!, "mousedown", doMouseout);
 
         off(referenceRef.value!, "focus", doOpen);
         off(popperRef.value!, "focus", doOpen);
