@@ -6,6 +6,7 @@ import ContextMenu from "@/components/Common/ContextMenu.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
 import ActivityItem from "./ActivityItem.vue";
+import ActivitySettings from "./ActivitySettings.vue";
 import Activities from "./activities.js";
 import UploadItem from "./Items/UploadItem.vue";
 
@@ -100,7 +101,7 @@ function hideContextMenu() {
             <ToolBox />
         </FlexPanel>
         <context-menu :visible="contextMenuVisible" :x="contextMenuX" :y="contextMenuY" @hide="hideContextMenu">
-            Some Context
+            <activity-settings />
         </context-menu>
     </div>
 </template>
