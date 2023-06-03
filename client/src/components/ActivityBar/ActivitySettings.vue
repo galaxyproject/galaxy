@@ -12,7 +12,7 @@ const activities = ref(Activities.slice().filter((a) => !!a.to));
             <div v-for="option in activities">
                 <div class="activity-item p-2">
                     <b-form-checkbox>
-                        <div>
+                        <small>
                             <div>
                                 <icon class="mr-1" :icon="option.icon" />
                                 <span class="font-weight-bold">{{ option.title || "No title available" }}</span>
@@ -20,7 +20,7 @@ const activities = ref(Activities.slice().filter((a) => !!a.to));
                             <div>
                                 {{ option.description || "No description available" }}
                             </div>
-                        </div>
+                        </small>
                     </b-form-checkbox>
                 </div>
             </div>
