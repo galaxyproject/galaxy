@@ -95,7 +95,8 @@ describe("PageDropdown.vue", () => {
         });
     });
 
-    describe("clicking page deletion", () => {
+    describe("clicking page deletion on owned page", () => {
+        const pinia = createPinia();
         let confirmRequest: boolean;
 
         async function mountAndDelete() {
@@ -106,9 +107,13 @@ describe("PageDropdown.vue", () => {
             wrapper = shallowMount(PageDropdown, {
                 propsData,
                 localVue,
-                pinia: createTestingPinia(),
+                pinia: pinia,
             });
-            wrapper.vm.onDelete();
+            const userStore = useUserStore();
+            userStore.currentUser = { email: "my@email", id: "1", tags_used: [] };
+            wrapper.find(".page-dropdown").trigger("click");
+            await wrapper.vm.$nextTick();
+            wrapper.find(".dropdown-item-delete").trigger("click");
             await flushPromises();
         }
 
@@ -123,7 +128,6 @@ describe("PageDropdown.vue", () => {
 
         it("should fire deletion API request upon confirmation", async () => {
             mockFetcher.path("/api/pages/{id}").method("delete").mock({ status: 204 });
-            console.log(wrapper.html());
             await mountAndDelete();
             const emitted = wrapper.emitted();
             expect(emitted["onRemove"][0][0]).toEqual("page1235");

@@ -71,7 +71,7 @@ function onDelete() {
                 <span class="fa fa-share-alt fa-fw mr-1" />
                 <span>Control sharing</span>
             </a>
-            <a v-if="!readOnly" class="dropdown-item" href="#" @click.prevent="onDelete">
+            <a v-if="!readOnly" class="dropdown-item dropdown-item-delete" href="#" @click.prevent="onDelete">
                 <span class="fa fa-trash fa-fw mr-1" />
                 <span>Delete</span>
             </a>
