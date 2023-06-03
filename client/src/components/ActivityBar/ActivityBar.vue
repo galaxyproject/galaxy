@@ -34,20 +34,20 @@ function onChange() {
     console.log(newOrder);
 }
 
-function showContextMenu(evt) {
-    evt.preventDefault();
-    contextMenuVisible.value = true;
-    contextMenuX.value = evt.x;
-    contextMenuY.value = evt.y;
-}
-
-function hideContextMenu() {
-    contextMenuVisible.value = false;
+function toggleContextMenu(evt) {
+    if (evt && !contextMenuVisible.value) {
+        evt.preventDefault();
+        contextMenuVisible.value = true;
+        contextMenuX.value = evt.x;
+        contextMenuY.value = evt.y;
+    } else {
+        contextMenuVisible.value = false;
+    }
 }
 </script>
 
 <template>
-    <div class="d-flex" @contextmenu="showContextMenu">
+    <div class="d-flex" @contextmenu="toggleContextMenu">
         <div class="activity-bar d-flex flex-column no-highlight">
             <b-nav vertical class="flex-nowrap p-1 h-100 vertical-overflow">
                 <draggable
@@ -100,7 +100,7 @@ function hideContextMenu() {
         <FlexPanel v-if="sidebarIsActive('search')" key="search" side="left" :collapsible="false">
             <ToolBox />
         </FlexPanel>
-        <ContextMenu :visible="contextMenuVisible" :x="contextMenuX" :y="contextMenuY" @hide="hideContextMenu">
+        <ContextMenu :visible="contextMenuVisible" :x="contextMenuX" :y="contextMenuY" @hide="toggleContextMenu">
             <ActivitySettings />
         </ContextMenu>
     </div>

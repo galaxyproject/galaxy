@@ -32,7 +32,7 @@ watch(
 
 <template>
     <div v-if="visible">
-        <Popper placement="right" class="context-menu" :style="placeContextMenu" :forceShow="true">
+        <Popper placement="right" class="context-menu" :style="placeContextMenu" :forceShow="true" :no-arrow="true">
             <slot />
         </Popper>
         <div class="context-overlay" @click="emit('hide')" />

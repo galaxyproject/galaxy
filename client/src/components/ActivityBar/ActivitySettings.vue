@@ -6,13 +6,13 @@ const activities = ref(Activities.slice().filter((a) => !!a.to));
 </script>
 
 <template>
-    <div class="activity-settings m-3">
-        <div class="font-weight-bold my-2">Select Activities:</div>
-        <div class="overflow-auto" style="max-height: 20rem">
+    <div class="activity-settings rounded p-3">
+        <div class="font-weight-bold">Select Activities:</div>
+        <div class="activity-settings-content overflow-auto">
             <div v-for="option in activities">
                 <div class="d-flex my-2">
                     <div>
-                        <b-form-checkbox switch />
+                        <b-form-checkbox />
                     </div>
                     <div>
                         <div>
@@ -31,4 +31,13 @@ const activities = ref(Activities.slice().filter((a) => !!a.to));
 
 <style lang="scss">
 @import "theme/blue.scss";
+
+.activity-settings {
+    background: $brand-dark;
+    width: 20rem;
+}
+
+.activity-settings-content {
+    max-height: 20rem;
+}
 </style>

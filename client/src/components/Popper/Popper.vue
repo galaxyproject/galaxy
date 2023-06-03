@@ -4,7 +4,7 @@
             <slot name="reference" />
         </component>
         <component :is="popperIs" v-show="visible" v-bind="popperProps" ref="popper" class="popper-element mt-1">
-            <div class="popper-arrow" data-popper-arrow />
+            <div v-if="!noArrow" class="popper-arrow" data-popper-arrow />
             <slot />
         </component>
     </div>
@@ -46,7 +46,14 @@ export default defineComponent({
         referenceProps: {
             type: Object,
         },
-        disabled: Boolean,
+        disabled: {
+            type: Boolean,
+            default: false,
+        },
+        noArrow: {
+            type: Boolean,
+            default: false,
+        },
     },
 
     emits: [
