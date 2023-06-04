@@ -4,7 +4,7 @@
 
 export const Activities = [
     {
-        description: "Opens a data dialog, allowing uploads from URL or disk.",
+        description: "Opens a data dialog, allowing uploads from URL, pasted content or disk.",
         icon: "upload",
         id: "upload",
         mutable: false,
@@ -26,18 +26,18 @@ export const Activities = [
         visible: true,
     },
     {
-        description: "Displays the workflow panel to search and access all available workflows.",
+        description: "Displays a panel to search and access available workflows.",
         icon: "sitemap",
         id: "workflow",
         mutable: false,
         optional: true,
         title: "Workflow",
-        to: null,
+        to: "/workflows/list",
         tooltip: "Download from URL or upload files from disk",
         visible: true,
     },
     {
-        description: "Shows to the list of available visualizations.",
+        description: "Displays the list of available visualizations.",
         icon: "chart-bar",
         id: "visualizations",
         mutable: false,
@@ -48,7 +48,7 @@ export const Activities = [
         visible: true,
     },
     {
-        description: "Shows all of your histories in the center panel.",
+        description: "Displays the list of all histories.",
         icon: "fa-hdd",
         id: "histories",
         mutable: false,
@@ -59,7 +59,7 @@ export const Activities = [
         visible: true,
     },
     {
-        description: "Displays all of your datasets across all histories in the center panel.",
+        description: "Displays all of your datasets across all histories.",
         icon: "fa-folder",
         id: "datasets",
         mutable: false,
