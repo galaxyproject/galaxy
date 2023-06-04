@@ -154,7 +154,7 @@ async function importVersionFromUrl(url: string, isRunFormRedirect = false) {
 </script>
 
 <template>
-    <div>
+    <div class="workflow-import-trs-id">
         <b-card v-if="!isAnonymous" title="GA4GH Tool Registry Server (TRS) Workflow Import">
             <div>
                 <b>TRS Server:</b>
@@ -169,7 +169,7 @@ async function importVersionFromUrl(url: string, isRunFormRedirect = false) {
             </b-alert>
             <div v-else>
                 <div class="my-3">
-                    <b-form-group label="TRS ID:" label-class="font-weight-bold">
+                    <b-form-group label="TRS ID:" label-for="trs-id-input" label-class="font-weight-bold">
                         <b-form-input id="trs-id-input" v-model="toolId" debounce="500" />
                     </b-form-group>
                 </div>

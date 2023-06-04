@@ -562,6 +562,13 @@ workflows:
     dropdown: '[data-workflow-dropdown*="${id}"]'
     run_button: '[data-workflow-run*="${id}"]'
     bookmark_link: '.workflow-bookmark-link'
+    import_file: '.workflow-import-file'
+    import_trs_search: '.workflow-import-trs-search'
+    import_trs_id: '.workflow-import-trs-id'
+    import_file_link: '.workflow-import-file-link'
+    import_trs_search_link: '.workflow-import-trs-search-link'
+    import_trs_id_link: '.workflow-import-trs-id-link'
+
     workflow_with_name:
       type: xpath
       selector: '//span[@class="workflow-dropdown-name" and text() = "${workflow_name}"]'
@@ -718,6 +725,7 @@ workflow_editor:
 
 workflow_show:
   selectors:
+    _: '.workflow-display'
     title: '[data-description="workflow name"]'
     import_link: '[data-description="workflow import"]'
 

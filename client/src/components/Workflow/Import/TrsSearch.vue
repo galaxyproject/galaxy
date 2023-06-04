@@ -118,7 +118,7 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
 </script>
 
 <template>
-    <b-card title="GA4GH Tool Registry Server (TRS) Workflow Search">
+    <b-card class="workflow-import-trs-search" title="GA4GH Tool Registry Server (TRS) Workflow Search">
         <b-alert :show="hasErrorMessage" variant="danger">{{ errorMessage }}</b-alert>
 
         <div class="mb-3">
@@ -147,7 +147,7 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
                         :title="searchHelp">
                         <icon icon="question" />
                     </b-button>
-                    <b-button size="sm" data-description="show deleted filter toggle" @click="query = ''">
+                    <b-button size="sm" title="clear search" @click="query = ''">
                         <icon icon="times" />
                     </b-button>
                 </b-input-group-append>

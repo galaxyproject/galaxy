@@ -46,7 +46,7 @@ onMounted(async () => {
 </script>
 
 <template>
-    <b-card body-class="p-0">
+    <b-card body-class="p-0" class="workflow-display">
         <b-card-header v-if="!embedded">
             <span class="float-right">
                 <b-button
