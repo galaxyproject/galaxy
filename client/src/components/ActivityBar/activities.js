@@ -48,6 +48,33 @@ export const Activities = [
         to: "/workflows/invocations",
         optional: true,
     },
+    {
+        id: "histories1",
+        title: "Histories",
+        description: "Shows all of your histories in the center panel.",
+        icon: "fa-hdd",
+        tooltip: "Show all histories",
+        to: "/histories/list",
+        optional: true,
+    },
+    {
+        id: "datasets1",
+        title: "Datasets",
+        description: "Displays all of your datasets across all histories in the center panel.",
+        icon: "fa-folder",
+        tooltip: "Show all datasets",
+        to: "/datasets/list",
+        optional: true,
+    },
+    {
+        id: "invocation1",
+        title: "Invocations",
+        description: "Displays all workflow invocations.",
+        icon: "fa-list",
+        tooltip: "Show all invocations",
+        to: "/workflows/invocations",
+        optional: true,
+    },
 ];
 
 export default Activities;

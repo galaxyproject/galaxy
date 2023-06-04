@@ -6,8 +6,7 @@ const activities = ref(Activities.slice().filter((a) => !!a.to));
 </script>
 
 <template>
-    <div class="activity-settings rounded p-3">
-        <div class="font-weight-bold">Select Activities:</div>
+    <div class="activity-settings rounded p-3 no-highlight">
         <div class="activity-settings-content overflow-auto">
             <div v-for="option in activities">
                 <div class="activity-item p-2">
@@ -32,7 +31,7 @@ const activities = ref(Activities.slice().filter((a) => !!a.to));
 @import "theme/blue.scss";
 
 .activity-settings-content {
-    max-height: 20rem;
+    height: 20rem;
 }
 
 .activity-item:hover {

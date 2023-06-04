@@ -32,7 +32,7 @@ watch(
 
 <template>
     <div v-if="visible">
-        <Popper placement="right" class="context-menu" :style="placeContextMenu" :forceShow="true" :no-arrow="true">
+        <Popper placement="right" class="context-menu" :style="placeContextMenu" :forceShow="true" :dark-mode="false">
             <div class="context-menu-slot">
                 <slot />
             </div>
@@ -59,13 +59,6 @@ watch(
 }
 
 .context-menu-slot {
-    background: $brand-dark;
-    border-radius: $border-radius-base;
     width: 20rem;
-}
-
-.context-menu-slot .custom-checkbox .custom-control-input:checked ~ .custom-control-label::before {
-    background-color: $brand-dark;
-    border-color: $white;
 }
 </style>
