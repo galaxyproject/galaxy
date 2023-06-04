@@ -59,7 +59,7 @@
         <user-preferences-element
             icon="fa-th-list"
             title="Manage Activity Bar"
-            description="Add or remove items from the activity bar"
+            description="Click here to show or hide the activity bar."
             badge="New!"
             @click="toggleActivityBar = !toggleActivityBar">
             <b-collapse v-model="toggleActivityBar">
