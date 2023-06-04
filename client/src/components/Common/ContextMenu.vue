@@ -57,8 +57,4 @@ watch(
     height: 100%;
     width: 100%;
 }
-
-.context-menu-slot {
-    width: 20rem;
-}
 </style>

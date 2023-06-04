@@ -30,6 +30,10 @@ const activities = ref(Activities.slice().filter((a) => !!a.to));
 <style lang="scss">
 @import "theme/blue.scss";
 
+.activity-settings {
+    width: 20rem;
+}
+
 .activity-settings-content {
     height: 20rem;
 }
