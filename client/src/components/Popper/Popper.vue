@@ -56,10 +56,6 @@ export default defineComponent({
             type: Boolean,
             default: false,
         },
-        noArrow: {
-            type: Boolean,
-            default: false,
-        },
         darkMode: {
             type: Boolean,
             default: true,
