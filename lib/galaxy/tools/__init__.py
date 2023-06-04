@@ -2576,7 +2576,7 @@ class Tool(Dictifiable):
 
         # load job parameters into incoming
         tool_message = ""
-        tool_warnings = ""
+        tool_warnings = None
         if job:
             try:
                 job_params = job.get_param_values(self.app, ignore_errors=True)
