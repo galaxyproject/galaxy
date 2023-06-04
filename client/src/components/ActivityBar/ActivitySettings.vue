@@ -9,9 +9,9 @@ const activities = ref(activityStore.getAll());
 <template>
     <div class="activity-settings rounded p-3 no-highlight">
         <div class="activity-settings-content overflow-auto">
-            <div v-for="activity in activities">
+            <div v-for="activity in activities" :key="activity.id">
                 <div class="p-2">
-                    <b-form-checkbox :disabled="!activity.optional" v-model="activity.visible">
+                    <b-form-checkbox v-model="activity.visible" :disabled="!activity.optional">
                         <small class="cursor-pointer">
                             <div>
                                 <icon class="mr-1" :icon="activity.icon" />

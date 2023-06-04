@@ -1,6 +1,6 @@
 <script setup>
 import draggable from "vuedraggable";
-import { computed, ref, watch } from "vue";
+import { ref } from "vue";
 import { useUserStore } from "@/stores/userStore";
 import { useActivityStore } from "@/stores/activityStore";
 import ContextMenu from "@/components/Common/ContextMenu.vue";
@@ -58,7 +58,7 @@ function toggleContextMenu(evt) {
                     @change="onChange"
                     @start="isDragging = true"
                     @end="isDragging = false">
-                    <div v-for="activity in activities">
+                    <div v-for="activity in activities" :key="activity.id">
                         <div v-if="activity.visible">
                             <upload-item
                                 v-if="activity.id === 'upload'"
@@ -76,7 +76,6 @@ function toggleContextMenu(evt) {
                                 @click="onToggleSidebar('search')" />
                             <ActivityItem
                                 v-if="activity.to"
-                                :key="activity.id"
                                 :id="`activity-${activity.id}`"
                                 :title="activity.title"
                                 :icon="activity.icon"

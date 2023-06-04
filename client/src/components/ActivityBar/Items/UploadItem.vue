@@ -17,7 +17,7 @@ export interface Props {
     tooltip: string;
 }
 
-const props = defineProps<Props>();
+defineProps<Props>();
 
 const status: Ref<string> = ref("success");
 const percentage: Ref<number> = ref(0);

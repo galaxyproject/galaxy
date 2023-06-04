@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Popper from "@/components/Popper/Popper.vue";
-import { computed, ref, watch, type Ref } from "vue";
+import { ref, watch, type Ref } from "vue";
 
 interface Position {
     left: string;
