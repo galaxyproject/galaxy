@@ -33,13 +33,14 @@ export const useActivityStore = defineStore(
         }
 
         return {
+            activities,
             getAll,
             saveAll,
         };
     },
     {
         persist: {
-            paths: ["getAll"],
+            paths: ["activities"],
         },
     }
 );
