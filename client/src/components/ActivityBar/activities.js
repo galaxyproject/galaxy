@@ -1,5 +1,5 @@
 /**
- * Contains build in activities
+ * List of built-in activities
  */
 
 export const Activities = [
@@ -30,7 +30,7 @@ export const Activities = [
         icon: "sitemap",
         id: "workflow",
         mutable: false,
-        optional: false,
+        optional: true,
         title: "Workflow",
         to: null,
         tooltip: "Download from URL or upload files from disk",
