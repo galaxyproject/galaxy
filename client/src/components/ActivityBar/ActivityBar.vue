@@ -59,30 +59,32 @@ function toggleContextMenu(evt) {
                     @start="isDragging = true"
                     @end="isDragging = false">
                     <div v-for="activity in activities">
-                        <upload-item v-if="activity.id === 'upload'" />
-                        <ActivityItem
-                            v-if="activity.id === 'tools'"
-                            id="activity-tools"
-                            icon="wrench"
-                            title="Tools"
-                            tooltip="Search and run tools"
-                            :is-active="sidebarIsActive('search')"
-                            @click="onToggleSidebar('search')" />
-                        <ActivityItem
-                            v-if="activity.id === 'workflow'"
-                            id="activity-workflow"
-                            title="Workflow"
-                            icon="sitemap"
-                            tooltip="Chain tools into workflows"
-                            to="/workflows/list" />
-                        <ActivityItem
-                            v-if="activity.to"
-                            :key="activity.id"
-                            :id="`activity-${activity.id}`"
-                            :title="activity.title"
-                            :icon="activity.icon"
-                            :tooltip="activity.tooltip"
-                            :to="activity.to" />
+                        <div v-if="activity.visible">
+                            <upload-item v-if="activity.id === 'upload'" />
+                            <ActivityItem
+                                v-if="activity.id === 'tools'"
+                                id="activity-tools"
+                                icon="wrench"
+                                title="Tools"
+                                tooltip="Search and run tools"
+                                :is-active="sidebarIsActive('search')"
+                                @click="onToggleSidebar('search')" />
+                            <ActivityItem
+                                v-if="activity.id === 'workflow'"
+                                id="activity-workflow"
+                                title="Workflow"
+                                icon="sitemap"
+                                tooltip="Chain tools into workflows"
+                                to="/workflows/list" />
+                            <ActivityItem
+                                v-if="activity.to"
+                                :key="activity.id"
+                                :id="`activity-${activity.id}`"
+                                :title="activity.title"
+                                :icon="activity.icon"
+                                :tooltip="activity.tooltip"
+                                :to="activity.to" />
+                        </div>
                     </div>
                 </draggable>
             </b-nav>

@@ -8,20 +8,21 @@ import { defineStore } from "pinia";
 import Activities from "@/components/ActivityBar/activities";
 
 interface Activity {
-    id: string;
-    title: string;
     description: string;
+    id: string;
     icon: string;
-    tooltip: string;
-    to: string;
-    optional: boolean;
     mutable: boolean;
+    optional: boolean;
+    title: string;
+    to: string | null;
+    tooltip: string;
+    visible: boolean;
 }
 
 export const useActivityStore = defineStore(
     "activityStore",
     () => {
-        const activities: Ref<Array<Activity>> = ref([]);
+        const activities: Ref<Array<Activity>> = ref(Activities);
 
         function getAll() {
             return activities.value;
@@ -38,7 +39,7 @@ export const useActivityStore = defineStore(
     },
     {
         persist: {
-            paths: ["activities"],
+            paths: ["getAll"],
         },
     }
 );
