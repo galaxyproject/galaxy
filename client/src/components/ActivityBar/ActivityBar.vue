@@ -108,6 +108,7 @@ function toggleContextMenu(evt) {
 
 .activity-bar {
     background: $panel-bg-color;
+    border-right: $border-default;
 }
 
 .activity-bar::-webkit-scrollbar {
