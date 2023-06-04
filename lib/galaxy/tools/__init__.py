@@ -10,6 +10,7 @@ import re
 import tarfile
 import tempfile
 import threading
+from collections.abc import MutableMapping
 from pathlib import Path
 from typing import (
     cast,
@@ -2846,7 +2847,7 @@ class OutputParameterJSONTool(Tool):
     def _prepare_json_param_dict(self, param_dict):
         rval = {}
         for key, value in param_dict.items():
-            if isinstance(value, dict):
+            if isinstance(value, MutableMapping):
                 rval[key] = self._prepare_json_param_dict(value)
             elif isinstance(value, list):
                 rval[key] = self._prepare_json_list(value)

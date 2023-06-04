@@ -59,7 +59,11 @@ from galaxy.util import (
     safe_makedirs,
     unicodify,
 )
-from galaxy.util.template import fill_template
+from galaxy.util.template import (
+    fill_template,
+    InputNotFoundSyntaxError,
+)
+from galaxy.util.tree_dict import TreeDict
 from galaxy.work.context import WorkRequestContext
 
 log = logging.getLogger(__name__)
@@ -181,12 +185,8 @@ class ToolEvaluator:
         compute_environment = self.compute_environment
         job_working_directory = compute_environment.working_directory()
 
-        param_dict = self.param_dict
+        param_dict = TreeDict(self.param_dict)
 
-        def input():
-            raise SyntaxError("Unbound variable input.")  # Don't let $input hang Python evaluation process.
-
-        param_dict["input"] = input
         param_dict["__datatypes_config__"] = param_dict["GALAXY_DATATYPES_CONF_FILE"] = os.path.join(
             job_working_directory, "registry.xml"
         )
@@ -209,8 +209,17 @@ class ToolEvaluator:
         # Parameters added after this line are not sanitized
         self.__populate_non_job_params(param_dict)
 
-        # Return the dictionary of parameters
-        return param_dict
+        if "input" not in param_dict.data:
+
+            def input():
+                raise InputNotFoundSyntaxError(
+                    "Unbound variable 'input'."
+                )  # Don't let $input hang Python evaluation process.
+
+            param_dict.data["input"] = input
+
+        # Return the dictionary of parameters without injected parameters
+        return param_dict.clean_copy()
 
     def _materialize_objects(
         self, deferred_objects: Dict[str, DeferrableObjectsT], job_working_directory: str

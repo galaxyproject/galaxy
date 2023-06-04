@@ -30,7 +30,10 @@ from galaxy.tools.parameters.basic import (
     DataToolParameter,
     RuntimeValue,
 )
-from galaxy.tools.parameters.wrapped import WrappedParameters
+from galaxy.tools.parameters.wrapped import (
+    LegacyUnprefixedDict,
+    WrappedParameters,
+)
 from galaxy.util import ExecutionTimer
 from galaxy.util.template import fill_template
 
@@ -101,7 +104,7 @@ class DefaultToolAction(ToolAction):
         """
         if current_user_roles is None:
             current_user_roles = trans.get_current_user_roles()
-        input_datasets = {}
+        input_datasets = LegacyUnprefixedDict()
         all_permissions: Dict[str, Set[str]] = {}
 
         def record_permission(action, role_id):
@@ -109,7 +112,7 @@ class DefaultToolAction(ToolAction):
                 all_permissions[action] = set()
             all_permissions[action].add(role_id)
 
-        def visitor(input, value, prefix, parent=None, **kwargs):
+        def visitor(input, value, prefix, prefixed_name: str, parent=None, **kwargs):
             def process_dataset(data, formats=None):
                 if not data or isinstance(data, RuntimeValue):
                     return None
@@ -125,7 +128,7 @@ class DefaultToolAction(ToolAction):
                     else:
                         data = data.get_converted_dataset(trans, target_ext, target_context=parent, history=history)
 
-                input_name = prefix + input.name
+                input_name = prefixed_name
                 # Checked security of whole collection all at once if mapping over this input, else
                 # fetch dataset details for this input from the database.
                 if collection_info and collection_info.is_mapped_over(input_name):
@@ -159,50 +162,59 @@ class DefaultToolAction(ToolAction):
                         processed_dataset = process_dataset(v)
                         if i == 0:
                             # Allow copying metadata to output, first item will be source.
-                            input_datasets[prefix + input.name] = processed_dataset
-                        input_datasets[prefix + input.name + str(i + 1)] = processed_dataset
+                            input_datasets[prefixed_name] = processed_dataset
+                            input_datasets.set_legacy_alias(new_key=prefixed_name, old_key=prefix + input.name)
+                        input_datasets[prefixed_name + str(i + 1)] = processed_dataset
+                        input_datasets.set_legacy_alias(
+                            new_key=prefixed_name + str(i + 1), old_key=prefix + input.name + str(i + 1)
+                        )
                         conversions = []
                         for conversion_name, conversion_extensions, conversion_datatypes in input.conversions:
-                            new_data = process_dataset(
-                                input_datasets[prefix + input.name + str(i + 1)], conversion_datatypes
-                            )
+                            new_data = process_dataset(input_datasets[prefixed_name + str(i + 1)], conversion_datatypes)
                             if not new_data or new_data.datatype.matches_any(conversion_datatypes):
-                                input_datasets[prefix + conversion_name + str(i + 1)] = new_data
+                                input_datasets[
+                                    prefixed_name[: -len(input.name)] + conversion_name + str(i + 1)
+                                ] = new_data
+                                input_datasets.set_legacy_alias(
+                                    new_key=prefixed_name[: -len(input.name)] + conversion_name + str(i + 1),
+                                    old_key=prefix + conversion_name + str(i + 1),
+                                )
                                 conversions.append((conversion_name, new_data))
                             else:
                                 raise Exception(
-                                    f"A path for explicit datatype conversion has not been found: {input_datasets[prefix + input.name + str(i + 1)].extension} --/--> {conversion_extensions}"
+                                    f"A path for explicit datatype conversion has not been found: {input_datasets[prefixed_name + str(i + 1)].extension} --/--> {conversion_extensions}"
                                 )
                         if parent:
-                            parent[input.name][i] = input_datasets[prefix + input.name + str(i + 1)]
+                            parent[input.name][i] = input_datasets[prefixed_name + str(i + 1)]
                             for conversion_name, conversion_data in conversions:
                                 # allow explicit conversion to be stored in job_parameter table
                                 parent[conversion_name][
                                     i
                                 ] = conversion_data.id  # a more robust way to determine JSONable value is desired
                         else:
-                            param_values[input.name][i] = input_datasets[prefix + input.name + str(i + 1)]
+                            param_values[input.name][i] = input_datasets[prefixed_name + str(i + 1)]
                             for conversion_name, conversion_data in conversions:
                                 # allow explicit conversion to be stored in job_parameter table
                                 param_values[conversion_name][
                                     i
                                 ] = conversion_data.id  # a more robust way to determine JSONable value is desired
                 else:
-                    input_datasets[prefix + input.name] = process_dataset(value)
+                    input_datasets[prefixed_name] = process_dataset(value)
+                    input_datasets.set_legacy_alias(new_key=prefixed_name, old_key=prefix + input.name)
                     conversions = []
                     for conversion_name, conversion_extensions, conversion_datatypes in input.conversions:
-                        new_data = process_dataset(input_datasets[prefix + input.name], conversion_datatypes)
+                        new_data = process_dataset(input_datasets[prefixed_name], conversion_datatypes)
                         if not new_data or new_data.datatype.matches_any(conversion_datatypes):
                             input_datasets[prefix + conversion_name] = new_data
                             conversions.append((conversion_name, new_data))
                         else:
                             raise Exception(
-                                f"A path for explicit datatype conversion has not been found: {input_datasets[prefix + input.name].extension} --/--> {conversion_extensions}"
+                                f"A path for explicit datatype conversion has not been found: {input_datasets[prefixed_name].extension} --/--> {conversion_extensions}"
                             )
                     target_dict = parent
                     if not target_dict:
                         target_dict = param_values
-                    target_dict[input.name] = input_datasets[prefix + input.name]
+                    target_dict[input.name] = input_datasets[prefixed_name]
                     for conversion_name, conversion_data in conversions:
                         # allow explicit conversion to be stored in job_parameter table
                         target_dict[
@@ -247,7 +259,10 @@ class DefaultToolAction(ToolAction):
                         processed_dataset = process_dataset(v)
                         if processed_dataset is not v:
                             processed_dataset_dict[v] = processed_dataset
-                    input_datasets[prefix + input.name + str(i + 1)] = processed_dataset or v
+                    input_datasets[prefixed_name + str(i + 1)] = processed_dataset or v
+                    input_datasets.set_legacy_alias(
+                        new_key=prefixed_name + str(i + 1), old_key=prefix + input.name + str(i + 1)
+                    )
                 if conversion_required:
                     collection_type_description = (
                         trans.app.dataset_collection_manager.collection_type_descriptions.for_collection_type(
@@ -269,12 +284,13 @@ class DefaultToolAction(ToolAction):
         return input_datasets, all_permissions
 
     def collect_input_dataset_collections(self, tool, param_values):
-        def append_to_key(the_dict, key, value):
+        def append_to_key(the_dict: LegacyUnprefixedDict, key, legacy_key, value):
             if key not in the_dict:
                 the_dict[key] = []
+            the_dict.set_legacy_alias(new_key=key, old_key=legacy_key)
             the_dict[key].append(value)
 
-        input_dataset_collections: Dict[str, str] = {}
+        input_dataset_collections = LegacyUnprefixedDict()
 
         def visitor(input, value, prefix, parent=None, prefixed_name=None, **kwargs):
             if isinstance(input, DataToolParameter):
@@ -285,7 +301,7 @@ class DefaultToolAction(ToolAction):
                     if isinstance(value, model.HistoryDatasetCollectionAssociation) or isinstance(
                         value, model.DatasetCollectionElement
                     ):
-                        append_to_key(input_dataset_collections, prefixed_name, (value, True))
+                        append_to_key(input_dataset_collections, prefixed_name, prefix + input.name, (value, True))
                         target_dict = parent
                         if not target_dict:
                             target_dict = param_values
@@ -306,7 +322,7 @@ class DefaultToolAction(ToolAction):
                             target_dict[input.name] = []
                         target_dict[input.name].extend(dataset_instances)
             elif isinstance(input, DataCollectionToolParameter):
-                append_to_key(input_dataset_collections, prefix + input.name, (value, False))
+                append_to_key(input_dataset_collections, prefixed_name, prefix + input.name, (value, False))
 
         tool.visit_inputs(param_values, visitor)
         return input_dataset_collections
@@ -441,7 +457,8 @@ class DefaultToolAction(ToolAction):
         wrapped_params = self._wrapped_params(trans, tool, incoming, inp_data)
 
         out_data: Dict[str, "DatasetInstance"] = {}
-        input_collections = {k: v[0][0] for k, v in inp_dataset_collections.items()}
+        input_collections = LegacyUnprefixedDict({k: v[0][0] for k, v in inp_dataset_collections.items()})
+        input_collections._legacy_mapping = inp_dataset_collections._legacy_mapping
         output_collections = OutputCollections(
             trans,
             history,
