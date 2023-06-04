@@ -1,8 +1,14 @@
 <script setup>
 import { computed, ref, watch } from "vue";
+import { useActivityStore } from "@/stores/activityStore";
+
+const activityStore = useActivityStore();
+
 import Activities from "./activities.js";
 
-const activities = ref(Activities.slice().filter((a) => !!a.to));
+activityStore.saveAll(Activities);
+
+const activities = ref(activityStore.getAll.slice().filter((a) => !!a.to));
 </script>
 
 <template>
