@@ -2306,13 +2306,14 @@ class ToolShedRepositoryChangeset(ToolShedRepository):
 
 
 class InstalledRepositoryToolShedStatus(Model):
-    # See https://github.com/galaxyproject/galaxy/issues/10453
-    latest_installable_revision: str = Field(
+    # See https://github.com/galaxyproject/galaxy/issues/10453 , bad booleans
+    # See https://github.com/galaxyproject/galaxy/issues/16135 , optional fields
+    latest_installable_revision: Optional[str] = Field(
         title="Latest installed revision", description="Most recent version available on the tool shed"
     )
     revision_update: str
     revision_upgrade: Optional[str]
-    repository_deprecated: str = Field(
+    repository_deprecated: Optional[str] = Field(
         title="Repository deprecated", description="Repository has been depreciated on the tool shed"
     )
 
