@@ -2,22 +2,22 @@
 import draggable from "vuedraggable";
 import { computed, ref, watch } from "vue";
 import { useUserStore } from "@/stores/userStore";
+import { useActivityStore } from "@/stores/activityStore";
 import ContextMenu from "@/components/Common/ContextMenu.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
 import ActivityItem from "./ActivityItem.vue";
 import ActivitySettings from "./ActivitySettings.vue";
-import Activities from "./activities.js";
 import UploadItem from "./Items/UploadItem.vue";
 
+const activityStore = useActivityStore();
 const userStore = useUserStore();
 
 const contextMenuVisible = ref(false);
 const contextMenuX = ref(0);
 const contextMenuY = ref(0);
 
-// TODO: get state from store
-const activities = ref(Activities.slice());
+const activities = ref(activityStore.getAll());
 const isDragging = ref(false);
 
 function sidebarIsActive(menuKey) {
@@ -29,9 +29,7 @@ function onToggleSidebar(toggle) {
 }
 
 function onChange() {
-    // TODO: push state to store
-    const newOrder = activities.value.map((a) => a.id);
-    console.log(newOrder);
+    activityStore.saveAll(activities);
 }
 
 function toggleContextMenu(evt) {

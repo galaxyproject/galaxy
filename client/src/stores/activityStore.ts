@@ -2,8 +2,10 @@
  * Stores the Activity Bar state
  */
 
+import { ref, type Ref } from "vue";
 import { defineStore } from "pinia";
-import Vue from "vue";
+
+import Activities from "@/components/ActivityBar/activities";
 
 interface Activity {
     id: string;
@@ -16,18 +18,27 @@ interface Activity {
     mutable: boolean;
 }
 
-export const useActivityStore = defineStore("activityStore", {
-    state: () => ({
-        activities: [] as Array<Activity>,
-    }),
-    getters: {
-        getAll: (state: any) => {
-            return state.activities;
-        },
+export const useActivityStore = defineStore(
+    "activityStore",
+    () => {
+        const activities: Ref<Array<Activity>> = ref([]);
+
+        function getAll() {
+            return activities.value;
+        }
+
+        function saveAll(newActivities: Array<Activity>) {
+            activities.value = newActivities;
+        }
+
+        return {
+            getAll,
+            saveAll,
+        };
     },
-    actions: {
-        saveAll(newActivities: Array<Activity>) {
-            this.activities = newActivities;
+    {
+        persist: {
+            paths: ["activities"],
         },
-    },
-});
+    }
+);

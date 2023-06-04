@@ -4,11 +4,12 @@ import { useActivityStore } from "@/stores/activityStore";
 
 const activityStore = useActivityStore();
 
-import Activities from "./activities.js";
-
-activityStore.saveAll(Activities);
-
-const activities = ref(activityStore.getAll.slice().filter((a) => !!a.to));
+const activities = ref(
+    activityStore
+        .getAll()
+        .slice()
+        .filter((a) => !!a.to)
+);
 </script>
 
 <template>
