@@ -36,42 +36,41 @@ const emit = defineEmits<{
 }>();
 
 function onClick(evt: MouseEvent): void {
-    if (!evt.ctrlKey) {
-        if (props.to) {
-            router.push(props.to);
-        }
-        emit("click");
+    if (props.to) {
+        router.push(props.to);
     }
+    emit("click");
 }
 </script>
 
 <template>
     <Popper reference-is="span" popper-is="span" placement="right">
         <template v-slot:reference>
-            <b-nav-item
-                :id="id"
-                class="position-relative mb-1"
-                :class="{ 'nav-item-active': isActive }"
-                :aria-label="title | l"
-                @click="onClick">
-                <span v-if="progressStatus" class="progress">
-                    <div
-                        class="progress-bar notransition"
-                        :class="{
-                            'bg-danger': progressStatus === 'danger',
-                            'bg-success': progressStatus === 'success',
-                        }"
-                        :style="{
-                            width: `${Math.round(progressPercentage)}%`,
-                        }" />
-                </span>
-                <span class="position-relative">
-                    <div class="nav-icon">
-                        <Icon :icon="icon" />
-                    </div>
-                    <div class="nav-title">{{ title }}</div>
-                </span>
-            </b-nav-item>
+            <div @click="onClick">
+                <b-nav-item
+                    :id="id"
+                    class="position-relative mb-1"
+                    :class="{ 'nav-item-active': isActive }"
+                    :aria-label="title | l">
+                    <span v-if="progressStatus" class="progress">
+                        <div
+                            class="progress-bar notransition"
+                            :class="{
+                                'bg-danger': progressStatus === 'danger',
+                                'bg-success': progressStatus === 'success',
+                            }"
+                            :style="{
+                                width: `${Math.round(progressPercentage)}%`,
+                            }" />
+                    </span>
+                    <span class="position-relative">
+                        <div class="nav-icon">
+                            <Icon :icon="icon" />
+                        </div>
+                        <div class="nav-title">{{ title }}</div>
+                    </span>
+                </b-nav-item>
+            </div>
         </template>
         <div class="px-2 py-1">
             <small v-if="tooltip">{{ tooltip | l }}</small>
