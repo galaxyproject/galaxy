@@ -5,7 +5,6 @@ import { useUserStore } from "@/stores/userStore";
 const userStore = useUserStore();
 
 const show: Ref<Boolean> = ref(false);
-const currentValue: Ref<Array<String>> = ref([]);
 
 const enableActivityBar: WritableComputedRef<Boolean> = computed({
     get: () => {

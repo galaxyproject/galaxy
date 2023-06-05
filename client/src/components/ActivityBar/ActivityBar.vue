@@ -63,15 +63,15 @@ function toggleContextMenu(evt) {
                             <upload-item
                                 v-if="activity.id === 'upload'"
                                 :id="`activity-${activity.id}`"
-                                :icon="activity.icon"
                                 :key="activity.id"
+                                :icon="activity.icon"
                                 :title="activity.title"
                                 :tooltip="activity.tooltip" />
                             <ActivityItem
                                 v-if="activity.id === 'tools'"
                                 :id="`activity-${activity.id}`"
-                                :icon="activity.icon"
                                 :key="activity.id"
+                                :icon="activity.icon"
                                 :title="activity.title"
                                 :tooltip="activity.tooltip"
                                 :is-active="sidebarIsActive('search')"
