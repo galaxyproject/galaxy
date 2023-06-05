@@ -243,7 +243,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         k8s_service_obj = service_object_dict(self.runner_params, k8s_job_name, self.__get_k8s_service_spec(ajs))
 
         k8s_ingress_obj = ingress_object_dict(self.runner_params, k8s_job_name, self.__get_k8s_ingress_spec(ajs))
-        # pretty print the objects for debugging
         log.trace(f"Kubernetes service object: {json.dumps(k8s_service_obj, indent=4)}")
         log.trace(f"Kubernetes ingress object: {json.dumps(k8s_ingress_obj, indent=4)}")
         # We avoid creating service and ingress if they already exist (e.g. when Galaxy is restarted or resubmitting a job)
@@ -549,6 +548,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             # command line execution, separated by ;, which is what Galaxy does
             # to assemble the command.
             "command": [ajs.job_wrapper.shell],
+            # Make sure that the exit code is propagated to k8s, so k8s knows why the tool failed (e.g. OOM)
             "args": ["-c", f"{ajs.job_file}; exit $(cat {ajs.exit_code_file})"],
             "workingDir": ajs.job_wrapper.working_directory,
             "volumeMounts": deduplicate_entries(mounts),
@@ -762,7 +762,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             if succeeded > 0 or job_state == model.Job.states.STOPPED:
                 job_state.running = False
                 self.mark_as_finished(job_state)
-                log.debug("Job succeeded")
+                log.debug(f"Job id: {job_state.job_id} with k8s id: {job.name} succeeded")
                 return None
             elif active > 0 and failed < max_pod_retries + 1:
                 if not job_state.running:
@@ -1076,8 +1076,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             # Legacy job, were getting a merged output - assume it is mostly tool output.
             tool_stderr = job_stderr
             job_stderr = None
-
-        # END Get STDOUT and STDERR from the job and tool to be stored in the database #
 
         # full status empty leaves the UI without stderr/stdout
         full_status = {"stderr": tool_stderr, "stdout": tool_stdout}
