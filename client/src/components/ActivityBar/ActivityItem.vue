@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useRouter } from "vue-router/composables";
-import Popper from "components/Popper/Popper.vue";
+import Popper from "@/components/Popper/Popper.vue";
+import TextShort from "@/components/Common/TextShort.vue";
 
 const router = useRouter();
 
@@ -67,7 +68,7 @@ function onClick(evt: MouseEvent): void {
                         <div class="nav-icon">
                             <Icon :icon="icon" />
                         </div>
-                        <div class="nav-title text-break">{{ title }}</div>
+                        <TextShort :text="title" class="nav-title" />
                     </span>
                 </b-nav-item>
             </div>
