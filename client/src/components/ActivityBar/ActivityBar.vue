@@ -58,18 +58,20 @@ function toggleContextMenu(evt) {
                     @change="onChange"
                     @start="isDragging = true"
                     @end="isDragging = false">
-                    <div v-for="activity in activities" :key="activity.id">
+                    <div v-for="(activity, activityIndex) in activities" :key="activityIndex">
                         <div v-if="activity.visible">
                             <upload-item
                                 v-if="activity.id === 'upload'"
                                 :id="`activity-${activity.id}`"
                                 :icon="activity.icon"
+                                :key="activity.id"
                                 :title="activity.title"
                                 :tooltip="activity.tooltip" />
                             <ActivityItem
                                 v-if="activity.id === 'tools'"
                                 :id="`activity-${activity.id}`"
                                 :icon="activity.icon"
+                                :key="activity.id"
                                 :title="activity.title"
                                 :tooltip="activity.tooltip"
                                 :is-active="sidebarIsActive('search')"
@@ -77,6 +79,7 @@ function toggleContextMenu(evt) {
                             <ActivityItem
                                 v-if="activity.to"
                                 :id="`activity-${activity.id}`"
+                                :key="activity.id"
                                 :title="activity.title"
                                 :icon="activity.icon"
                                 :tooltip="activity.tooltip"
