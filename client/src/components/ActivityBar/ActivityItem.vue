@@ -108,7 +108,7 @@ function onClick(evt: MouseEvent): void {
 
 .nav-title {
     @extend .nav-item;
-    max-width: 7rem;
+    width: 3rem;
     margin-top: 0.5rem;
     font-size: 0.7rem;
 }
