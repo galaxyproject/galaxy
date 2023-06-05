@@ -7,23 +7,23 @@ import { ref, type Ref } from "vue";
 import { defineStore } from "pinia";
 
 export const useEventStore = defineStore("eventStore", () => {
-    const dragEvent: Ref<{} | null> = ref(null);
+    const dragData: Ref<{} | null> = ref(null);
 
-    function clearDragEvent() {
-        dragEvent.value = null;
+    function clearDragData() {
+        dragData.value = null;
     }
 
-    function getDragEvent() {
-        return dragEvent.value;
+    function getDragData() {
+        return dragData.value;
     }
 
-    function setDragEvent(data: {}) {
-        dragEvent.value = data;
+    function setDragData(data: {}) {
+        dragData.value = data;
     }
 
     return {
-        clearDragEvent,
-        getDragEvent,
-        setDragEvent,
+        clearDragData,
+        getDragData,
+        setDragData,
     };
 });

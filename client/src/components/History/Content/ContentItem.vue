@@ -208,7 +208,7 @@ export default {
         },
     },
     methods: {
-        ...mapActions(useEventStore, ["setDragEvent"]),
+        ...mapActions(useEventStore, ["setDragData"]),
         onKeyDown(event) {
             if (!event.target.classList.contains("content-item")) {
                 return;
@@ -237,7 +237,7 @@ export default {
             }
         },
         onDragStart(evt) {
-            this.setDragEvent(this.item);
+            this.setDragData(this.item);
             evt.dataTransfer.dropEffect = "move";
             evt.dataTransfer.effectAllowed = "move";
             evt.dataTransfer.setData("text", JSON.stringify([this.item]));

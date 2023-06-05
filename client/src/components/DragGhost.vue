@@ -14,7 +14,7 @@ const eventStore = useEventStore();
     <span id="drag-ghost" class="py-2 px-3 rounded">
         <font-awesome-icon icon="paper-plane" class="mr-1" />
         <span class="font-weight-bold">
-            {{ eventStore.getDragEvent()?.name }}
+            {{ eventStore.getDragData()?.name }}
         </span>
     </span>
 </template>

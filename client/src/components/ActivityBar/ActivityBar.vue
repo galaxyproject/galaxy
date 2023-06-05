@@ -73,7 +73,7 @@ function onDragOver(evt) {
 
 function onDragEnter(evt) {
     dragTarget.value = evt.target;
-    dragItem.value = convertDropData(eventStore.getDragEvent());
+    dragItem.value = convertDropData(eventStore.getDragData());
 }
 
 function onDragLeave(evt) {
