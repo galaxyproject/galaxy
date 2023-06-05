@@ -120,6 +120,19 @@ export function convertDropData(data) {
             visible: true,
         };
     }
+    if (data.model_class === "StoredWorkflow") {
+        return {
+            description: data.description,
+            icon: "fa-play",
+            id: `workflow-${data.id}`,
+            mutable: true,
+            optional: true,
+            title: data.name,
+            tooltip: data.name,
+            to: `/workflows/run?id=${data.id}`,
+            visible: true,
+        };
+    }
 }
 
 export default Activities;

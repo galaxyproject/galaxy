@@ -208,7 +208,7 @@ export default {
         },
     },
     methods: {
-        ...mapActions(useEventStore, ["setDragData"]),
+        ...mapActions(useEventStore, ["clearDragData", "setDragData"]),
         onKeyDown(event) {
             if (!event.target.classList.contains("content-item")) {
                 return;
@@ -243,6 +243,9 @@ export default {
             evt.dataTransfer.setData("text", JSON.stringify([this.item]));
             const elem = document.getElementById("drag-ghost");
             evt.dataTransfer.setDragImage(elem, 0, 0);
+        },
+        onDragEnd: function () {
+            this.clearDragData();
         },
         onEdit() {
             this.$router.push(this.itemUrls.edit);
