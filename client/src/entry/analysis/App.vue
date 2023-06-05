@@ -38,10 +38,12 @@
         <Toast ref="toastRef" />
         <ConfirmDialog ref="confirmDialogRef" />
         <UploadModal ref="uploadModal" />
+        <DragGhost />
     </div>
 </template>
 <script>
 import Alert from "@/components/Alert.vue";
+import DragGhost from "@/components/DragGhost.vue";
 import Modal from "mvc/ui/ui-modal";
 import Masthead from "components/Masthead/Masthead.vue";
 import { getGalaxyInstance } from "app";
@@ -64,6 +66,7 @@ import { setGlobalUploadModal } from "composables/globalUploadModal";
 export default {
     components: {
         Alert,
+        DragGhost,
         Masthead,
         Toast,
         ConfirmDialog,

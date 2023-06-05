@@ -237,10 +237,12 @@ export default {
             }
         },
         onDragStart(evt) {
+            this.setDragEvent(this.item);
             evt.dataTransfer.dropEffect = "move";
             evt.dataTransfer.effectAllowed = "move";
             evt.dataTransfer.setData("text", JSON.stringify([this.item]));
-            this.setDragEvent(this.item);
+            const elem = document.getElementById("drag-ghost");
+            evt.dataTransfer.setDragImage(elem, 0, 0);
         },
         onEdit() {
             this.$router.push(this.itemUrls.edit);

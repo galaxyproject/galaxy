@@ -83,21 +83,13 @@ function onDragLeave(evt) {
         activities.value = activitiesTemp;
     }
 }
-
-function onDrop(evt) {
-    let data;
-    try {
-        data = JSON.parse(evt.dataTransfer.getData("text"))[0];
-    } catch (error) {
-        // this was not a valid object for this dropzone, ignore
-    }
-}
 </script>
 
 <template>
     <div
         class="d-flex"
         @contextmenu="toggleContextMenu"
+        @drop.prevent="onChange"
         @dragover.prevent="onDragOver"
         @dragenter.prevent="onDragEnter"
         @dragleave.prevent="onDragLeave">
