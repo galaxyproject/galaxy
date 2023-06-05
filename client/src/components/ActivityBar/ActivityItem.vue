@@ -47,9 +47,8 @@ function onClick(evt: MouseEvent): void {
 <template>
     <Popper reference-is="span" popper-is="span" placement="right">
         <template v-slot:reference>
-            <div @click="onClick">
+            <div :id="id" class="activity-item" @click="onClick">
                 <b-nav-item
-                    :id="id"
                     class="position-relative my-1 p-2"
                     :class="{ 'nav-item-active': isActive }"
                     :aria-label="title | l">

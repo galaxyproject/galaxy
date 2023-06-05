@@ -40,7 +40,7 @@ export const useActivityStore = defineStore(
     },
     {
         persist: {
-            paths: ["activities"],
+            //paths: ["activities"],
         },
     }
 );

@@ -19,6 +19,7 @@ const contextMenuX = ref(0);
 const contextMenuY = ref(0);
 
 const activities = ref(activityStore.getAll());
+const dragTarget = ref(null);
 const isDragging = ref(false);
 
 function sidebarIsActive(menuKey) {
@@ -43,10 +44,60 @@ function toggleContextMenu(evt) {
         contextMenuVisible.value = false;
     }
 }
+
+function onDragOver(evt) {
+    const target = evt.target.closest(".activity-item");
+    console.log(evt.dataTransfer.getData("text"));
+    if (target) {
+        const targetId = target.id;
+        const placeholder = {
+            description: "description",
+            icon: "star",
+            id: "placeholder",
+            mutable: false,
+            optional: false,
+            title: "Placeholder",
+            to: "nowhere",
+            tooltip: "",
+            visible: true,
+        };
+        const targetIndex = activities.value.findIndex((a) => `activity-${a.id}` === targetId);
+        if (targetIndex !== -1) {
+            const activitiesTemp = activities.value.filter((a) => a.id !== "placeholder");
+            activitiesTemp.splice(targetIndex, 0, placeholder);
+            activities.value = activitiesTemp.slice();
+        }
+    }
+}
+
+function onDragEnter(evt) {
+    dragTarget.value = evt.target;
+}
+
+function onDragLeave(evt) {
+    if (dragTarget.value == evt.target) {
+        const activitiesTemp = activities.value.filter((a) => a.id !== "placeholder");
+        activities.value = activitiesTemp.slice();
+    }
+}
+
+function onDrop(evt) {
+    let data;
+    try {
+        data = JSON.parse(evt.dataTransfer.getData("text"))[0];
+    } catch (error) {
+        // this was not a valid object for this dropzone, ignore
+    }
+}
 </script>
 
 <template>
-    <div class="d-flex" @contextmenu="toggleContextMenu">
+    <div
+        class="d-flex"
+        @contextmenu="toggleContextMenu"
+        @dragover.prevent="onDragOver"
+        @dragenter.prevent="onDragEnter"
+        @dragleave.prevent="onDragLeave">
         <div class="activity-bar d-flex flex-column no-highlight">
             <b-nav vertical class="flex-nowrap p-1 h-100 vertical-overflow">
                 <draggable
