@@ -26,6 +26,7 @@ DEFAULT_SELENIUM_REMOTE_HOST = "127.0.0.1"
 DEFAULT_WINDOW_WIDTH = 1280
 DEFAULT_WINDOW_HEIGHT = 1000
 VALID_LOCAL_BROWSERS = ["CHROME", "FIREFOX"]
+PYVIRTUALDISPLAY_UNAVAILABLE_MESSAGE = "pyvirtualdisplay must be installed to run this test configuration and is not, install with 'pip install pyvirtualdisplay'"
 
 
 class ConfiguredDriver:
@@ -130,6 +131,8 @@ def is_virtual_display_available():
 
 def virtual_display_if_enabled(enabled):
     if enabled:
+        if Display is None:
+            raise Exception(PYVIRTUALDISPLAY_UNAVAILABLE_MESSAGE)
         display = Display(visible=0, size=(800, 600))
         display.start()
         return display

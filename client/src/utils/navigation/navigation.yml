@@ -329,6 +329,13 @@ edit_dataset_attributes:
         type: xpath
         selector: '//li[normalize-space() = "${dbkey_text}"]'
 
+edit_dataset_attributes:
+  selectors:
+    _: '[aria-labelledby="dataset-attributes-heading"]'
+    name_input: '[aria-labelledby="dataset-attributes-heading"] input#name'
+    info_input: '[aria-labelledby="dataset-attributes-heading"] input#info'
+    annotation_input: '[aria-labelledby="dataset-attributes-heading"] input#info'
+
 edit_collection_attributes:
   selectors:
     alert_info: 'div.alert-info'

@@ -1,4 +1,5 @@
 from galaxy.selenium.navigates_galaxy import edit_details
+from galaxy.selenium.axe_results import FORMS_VIOLATIONS
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
@@ -168,6 +169,19 @@ class TestHistoryPanel(SeleniumTestCase):
         self.sleep_for(self.wait_types.UX_TRANSITION)
         self.wait_for_selector_clickable(self.history_panel_item_selector(hid=1))
         assert not self.history_panel_item_showing_details(hid=1)
+
+    @selenium_test
+    def test_history_dataset_rename(self):
+        self.perform_upload(self.get_filename("1.txt"))
+        self.wait_for_history()
+        hid = 1
+        self.history_panel_wait_for_hid_ok(hid)
+        self.history_panel_item_edit(hid=hid)
+        name_component = self.components.edit_dataset_attributes.name_input
+        assert name_component.wait_for_value() == "1.txt"
+        self.components.edit_dataset_attributes._.assert_no_axe_violations_with_impact_of_at_least(
+            "critical", excludes=FORMS_VIOLATIONS
+        )
 
     @retry_assertion_during_transitions
     def assert_name_changed(self):

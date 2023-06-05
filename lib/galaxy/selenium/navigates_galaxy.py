@@ -1686,6 +1686,11 @@ class NavigatesGalaxy(HasDriver):
         self.wait_for_and_click(dataset_selector)
         self.history_panel_wait_for_hid_state(1, "ok", multi_history_panel=True)
 
+    def history_panel_item_edit(self, hid):
+        item = self.history_panel_item_component(hid=hid)
+        item.edit_button.wait_for_and_click()
+        self.components.edit_dataset_attributes._.wait_for_visible()
+
     def history_panel_item_view_dataset_details(self, hid):
         item = self.history_panel_item_component(hid=hid)
         item.dataset_operations.wait_for_visible()

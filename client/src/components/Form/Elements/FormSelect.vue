@@ -2,6 +2,7 @@
 import { computed, onMounted, watch, type ComputedRef } from "vue";
 import Multiselect from "vue-multiselect";
 import { useMultiselect } from "@/composables/useMultiselect";
+import { v4 as uuidv4 } from "uuid";
 
 type SelectValue = string | null;
 const { ariaExpanded, onOpen, onClose } = useMultiselect();
@@ -137,11 +138,14 @@ watch(
 onMounted(() => {
     setInitialValue();
 });
+
+const uniqueId = uuidv4();
 </script>
 
 <template>
     <multiselect
         v-if="hasOptions"
+        :id="uniqueId"
         v-model="currentValue"
         :allow-empty="true"
         :class="['form-select', cls]"
