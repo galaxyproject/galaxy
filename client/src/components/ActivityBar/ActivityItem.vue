@@ -49,7 +49,7 @@ function onClick(evt: MouseEvent): void {
             <div @click="onClick">
                 <b-nav-item
                     :id="id"
-                    class="position-relative mb-1"
+                    class="position-relative my-1 p-2"
                     :class="{ 'nav-item-active': isActive }"
                     :aria-label="title | l">
                     <span v-if="progressStatus" class="progress">
@@ -67,7 +67,7 @@ function onClick(evt: MouseEvent): void {
                         <div class="nav-icon">
                             <Icon :icon="icon" />
                         </div>
-                        <div class="nav-title">{{ title }}</div>
+                        <div class="nav-title text-break">{{ title }}</div>
                     </span>
                 </b-nav-item>
             </div>
@@ -89,6 +89,11 @@ function onClick(evt: MouseEvent): void {
 <style scoped lang="scss">
 @import "theme/blue.scss";
 
+.nav-icon {
+    @extend .nav-item;
+    font-size: 1rem;
+}
+
 .nav-item {
     display: flex;
     align-items: center;
@@ -101,21 +106,20 @@ function onClick(evt: MouseEvent): void {
     background: $gray-300;
 }
 
-.nav-icon {
-    @extend .nav-item;
-    font-size: 1rem;
-}
-
-.nav-title {
-    @extend .nav-item;
-    width: 3rem;
-    margin-top: 0.5rem;
-    font-size: 0.7rem;
+.nav-link {
+    padding: 0;
 }
 
 .nav-options {
     overflow-x: hidden;
     overflow-y: auto;
+}
+
+.nav-title {
+    @extend .nav-item;
+    width: 4rem;
+    margin-top: 0.5rem;
+    font-size: 0.7rem;
 }
 
 .progress {
