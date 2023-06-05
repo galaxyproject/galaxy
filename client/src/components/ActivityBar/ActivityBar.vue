@@ -17,13 +17,19 @@ const activityStore = useActivityStore();
 const eventStore = useEventStore();
 const userStore = useUserStore();
 
+// activities from store
+const activities = ref(activityStore.getAll());
+
+// context menu references
 const contextMenuVisible = ref(false);
 const contextMenuX = ref(0);
 const contextMenuY = ref(0);
 
-const activities = ref(activityStore.getAll());
+// drag references
 const dragTarget = ref(null);
-const dragId = ref(null);
+const dragItem = ref(null);
+
+// drag state
 const isDragging = ref(false);
 
 function sidebarIsActive(menuKey) {
@@ -51,27 +57,30 @@ function toggleContextMenu(evt) {
 
 function onDragOver(evt) {
     const target = evt.target.closest(".activity-item");
-    const activityData = convertDropData(eventStore.getDragEvent());
-    if (target && activityData) {
-        dragId.value = activityData.id;
+    if (target && dragItem.value) {
         const targetId = target.id;
         const targetIndex = activities.value.findIndex((a) => `activity-${a.id}` === targetId);
         if (targetIndex !== -1) {
-            const activitiesTemp = activities.value.filter((a) => a.id !== dragId.value);
-            activitiesTemp.splice(targetIndex, 0, activityData);
-            activities.value = activitiesTemp.slice();
+            const dragId = dragItem.value.id;
+            if (activities.value[targetIndex].id !== dragId) {
+                const activitiesTemp = activities.value.filter((a) => a.id !== dragId);
+                activitiesTemp.splice(targetIndex, 0, dragItem.value);
+                activities.value = activitiesTemp;
+            }
         }
     }
 }
 
 function onDragEnter(evt) {
     dragTarget.value = evt.target;
+    dragItem.value = convertDropData(eventStore.getDragEvent());
 }
 
 function onDragLeave(evt) {
     if (dragTarget.value == evt.target) {
-        const activitiesTemp = activities.value.filter((a) => a.id !== dragId.value);
-        activities.value = activitiesTemp.slice();
+        const dragId = dragItem.value.id;
+        const activitiesTemp = activities.value.filter((a) => a.id !== dragId);
+        activities.value = activitiesTemp;
     }
 }
 

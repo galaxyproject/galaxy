@@ -94,7 +94,6 @@ export const Activities = [
 ];
 
 export function convertDropData(data) {
-    console.log(data);
     if (data.history_content_type === "dataset") {
         return {
             description: data.name,
