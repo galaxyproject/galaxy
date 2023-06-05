@@ -93,4 +93,34 @@ export const Activities = [
     },
 ];
 
+export function convertDropData(data) {
+    console.log(data);
+    if (data.history_content_type === "dataset") {
+        return {
+            description: data.name,
+            icon: "fa-folder",
+            id: `dataset-${data.id}`,
+            mutable: true,
+            optional: true,
+            title: data.name,
+            tooltip: "A dataset from your history",
+            to: "/datasets/list",
+            visible: true,
+        };
+    }
+    if (data.history_content_type === "dataset_collection") {
+        return {
+            description: data.name,
+            icon: "fa-folder",
+            id: `collection-${data.id}`,
+            mutable: true,
+            optional: true,
+            title: data.name,
+            tooltip: "A collection from your history",
+            to: "/datasets/list",
+            visible: true,
+        };
+    }
+}
+
 export default Activities;

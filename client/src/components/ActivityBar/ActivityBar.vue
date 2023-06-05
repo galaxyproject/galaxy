@@ -9,6 +9,7 @@ import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
 import ActivityItem from "./ActivityItem.vue";
 import ActivitySettings from "./ActivitySettings.vue";
+import { convertDropData } from "./activities.js";
 import UploadItem from "./Items/UploadItem.vue";
 import WorkflowBox from "@/components/Panels/WorkflowBox.vue";
 
@@ -22,6 +23,7 @@ const contextMenuY = ref(0);
 
 const activities = ref(activityStore.getAll());
 const dragTarget = ref(null);
+const dragId = ref(null);
 const isDragging = ref(false);
 
 function sidebarIsActive(menuKey) {
@@ -49,24 +51,14 @@ function toggleContextMenu(evt) {
 
 function onDragOver(evt) {
     const target = evt.target.closest(".activity-item");
-    console.log(eventStore.getDragEvent());
-    if (target) {
+    const activityData = convertDropData(eventStore.getDragEvent());
+    if (target && activityData) {
+        dragId.value = activityData.id;
         const targetId = target.id;
-        const placeholder = {
-            description: "description",
-            icon: "star",
-            id: "placeholder",
-            mutable: false,
-            optional: false,
-            title: "Placeholder",
-            to: "nowhere",
-            tooltip: "",
-            visible: true,
-        };
         const targetIndex = activities.value.findIndex((a) => `activity-${a.id}` === targetId);
         if (targetIndex !== -1) {
-            const activitiesTemp = activities.value.filter((a) => a.id !== "placeholder");
-            activitiesTemp.splice(targetIndex, 0, placeholder);
+            const activitiesTemp = activities.value.filter((a) => a.id !== dragId.value);
+            activitiesTemp.splice(targetIndex, 0, activityData);
             activities.value = activitiesTemp.slice();
         }
     }
@@ -78,7 +70,7 @@ function onDragEnter(evt) {
 
 function onDragLeave(evt) {
     if (dragTarget.value == evt.target) {
-        const activitiesTemp = activities.value.filter((a) => a.id !== "placeholder");
+        const activitiesTemp = activities.value.filter((a) => a.id !== dragId.value);
         activities.value = activitiesTemp.slice();
     }
 }
