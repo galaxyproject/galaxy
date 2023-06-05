@@ -1,14 +1,12 @@
 import os
 
-import pytest
-
 from galaxy.tool_util.deps.mulled.get_tests import main_test_search
 from galaxy.tool_util.deps.mulled.mulled_update_singularity_containers import (
     docker_to_singularity,
     get_list_from_file,
     singularity_container_test,
 )
-from galaxy.util import which
+from galaxy.util.unittest_utils import skip_unless_executable
 from ..util import external_dependency_management
 
 
@@ -26,14 +24,14 @@ def test_get_list_from_file(tmp_path) -> None:
 
 
 @external_dependency_management
-@pytest.mark.skipif(not which("singularity"), reason="requires singularity but singularity not on PATH")
+@skip_unless_executable("singularity")
 def test_docker_to_singularity(tmp_path) -> None:
     docker_to_singularity("abundancebin:1.0.1--0", "singularity", tmp_path, no_sudo=True)
     assert tmp_path.joinpath("abundancebin:1.0.1--0").exists()
 
 
 @external_dependency_management
-@pytest.mark.skipif(not which("singularity"), reason="requires singularity but singularity not on PATH")
+@skip_unless_executable("singularity")
 def test_singularity_container_test(tmp_path) -> None:
     containers = [
         "pybigwig:0.3.22--py36h54a71a5_0",  # test Python imports

@@ -487,9 +487,9 @@ class CondaDependency(Dependency):
         self.cache_path = cache_path
         self.environment_path = cache_path
 
-    def build_environment(self):
+    def build_environment(self) -> None:
         env_path, exit_code = build_isolated_environment(
-            CondaTarget(self.name, self.version),
+            CondaTarget(self.name, version=self.version),
             conda_context=self.conda_context,
             path=self.environment_path,
             copy=self.conda_context.copy_dependencies,

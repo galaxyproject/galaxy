@@ -24,8 +24,11 @@ import pytest
 from galaxy.app import UniverseApplication
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util import safe_makedirs
-from galaxy.util.commands import which
 from galaxy.util.unittest import TestCase
+from galaxy.util.unittest_utils import (
+    _identity,
+    skip_unless_executable,
+)
 from galaxy_test.base.api import (
     UsesApiTestCaseMixin,
     UsesCeleryTasks,
@@ -41,10 +44,6 @@ AMQP_URL = os.environ.get("GALAXY_TEST_AMQP_URL", None)
 POSTGRES_CONFIGURED = "postgres" in os.environ.get("GALAXY_TEST_DBURI", "")
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 VAULT_CONF = os.path.join(SCRIPT_DIRECTORY, "vault_conf.yml")
-
-
-def _identity(func):
-    return func
 
 
 def skip_if_jenkins(cls):
@@ -64,12 +63,6 @@ def skip_unless_postgres():
     if POSTGRES_CONFIGURED:
         return _identity
     return pytest.mark.skip("GALAXY_TEST_DBURI does not point to postgres database, required for this test.")
-
-
-def skip_unless_executable(executable):
-    if which(executable):
-        return _identity
-    return pytest.mark.skip(f"PATH doesn't contain executable {executable}")
 
 
 def skip_unless_docker():
