@@ -15,8 +15,8 @@
 <script>
 import { mapActions } from "pinia";
 import { useHistoryStore } from "@/stores/historyStore";
-import short from "components/directives/v-short";
-import DetailsLayout from "components/History/Layout/DetailsLayout";
+import short from "@/components/plugins/short.js";
+import DetailsLayout from "@/components/History/Layout/DetailsLayout.vue";
 
 export default {
     components: {
