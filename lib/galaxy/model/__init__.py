@@ -2972,6 +2972,25 @@ class GenomeIndexToolData(Base, RepresentById):  # TODO: params arg is lost
     user: Mapped[Optional["User"]] = relationship()
 
 
+class ChatExchange(Base, RepresentById):
+
+    __tablename__ = "chat_exchange"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("galaxy_user.id"), index=True)
+    user = relationship("User", back_populates="chat_exchanges")
+
+
+class ChatExchangeMessage(Base, RepresentById):
+    __tablename__ = "chat_exchange_message"
+
+    id = Column(Integer, primary_key=True)
+    chat_exchange_id = Column(Integer, ForeignKey("chat_exchange.id"), index=True)
+    create_time = Column(DateTime, default=now)
+    message = Column(Text)
+    exchange = relationship("ChatExchange", back_populates="messages")
+
+
 class Group(Base, Dictifiable, RepresentById):
     __tablename__ = "galaxy_group"
 
