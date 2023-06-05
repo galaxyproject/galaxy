@@ -3,6 +3,7 @@ import draggable from "vuedraggable";
 import { ref } from "vue";
 import { useUserStore } from "@/stores/userStore";
 import { useActivityStore } from "@/stores/activityStore";
+import { useEventStore } from "@/stores/eventStore";
 import ContextMenu from "@/components/Common/ContextMenu.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
@@ -12,6 +13,7 @@ import UploadItem from "./Items/UploadItem.vue";
 import WorkflowBox from "@/components/Panels/WorkflowBox.vue";
 
 const activityStore = useActivityStore();
+const eventStore = useEventStore();
 const userStore = useUserStore();
 
 const contextMenuVisible = ref(false);
@@ -47,7 +49,7 @@ function toggleContextMenu(evt) {
 
 function onDragOver(evt) {
     const target = evt.target.closest(".activity-item");
-    console.log(evt.dataTransfer.getData("text"));
+    console.log(eventStore.getDragEvent());
     if (target) {
         const targetId = target.id;
         const placeholder = {

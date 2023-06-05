@@ -112,6 +112,8 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faArrowCircleUp, faArrowCircleDown, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
 import { useEntryPointStore } from "stores/entryPointStore";
+import { useEventStore } from "stores/eventStore";
+import { mapActions } from "pinia";
 
 library.add(faArrowCircleUp, faArrowCircleDown, faCheckCircle);
 export default {
@@ -206,6 +208,7 @@ export default {
         },
     },
     methods: {
+        ...mapActions(useEventStore, ["setDragEvent"]),
         onKeyDown(event) {
             if (!event.target.classList.contains("content-item")) {
                 return;
@@ -237,6 +240,7 @@ export default {
             evt.dataTransfer.dropEffect = "move";
             evt.dataTransfer.effectAllowed = "move";
             evt.dataTransfer.setData("text", JSON.stringify([this.item]));
+            this.setDragEvent(this.item);
         },
         onEdit() {
             this.$router.push(this.itemUrls.edit);
