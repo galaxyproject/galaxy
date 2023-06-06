@@ -32,8 +32,8 @@ export const Activities = [
         mutable: false,
         optional: true,
         title: "Workflow",
-        to: "/workflows/list",
-        tooltip: "Download from URL or upload files from disk",
+        to: null,
+        tooltip: "Display an advanced search field for workflows.",
         visible: true,
     },
     {
