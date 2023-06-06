@@ -126,8 +126,9 @@ def enable_cache_monitor(config, config_dict) -> Tuple[bool, int]:
     default_interval = getattr(config, "object_store_cache_monitor_interval", 600)
     interval = cache_config_dict.get("monitor_interval") or default_interval
 
-    if getattr(config, "disable_process_management", False):
-        return True, interval
+    disable_process_management = getattr(config, "disable_process_management", None)
+    if disable_process_management is True:
+        return False, interval
 
     if config_dict.get("enable_cache_monitor", False) is False:
         return False, interval
