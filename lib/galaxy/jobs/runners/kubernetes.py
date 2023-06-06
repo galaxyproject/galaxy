@@ -243,8 +243,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         k8s_service_obj = service_object_dict(self.runner_params, k8s_job_name, self.__get_k8s_service_spec(ajs))
 
         k8s_ingress_obj = ingress_object_dict(self.runner_params, k8s_job_name, self.__get_k8s_ingress_spec(ajs))
-        log.trace(f"Kubernetes service object: {json.dumps(k8s_service_obj, indent=4)}")
-        log.trace(f"Kubernetes ingress object: {json.dumps(k8s_ingress_obj, indent=4)}")
+        log.debug(f"Kubernetes service object: {json.dumps(k8s_service_obj, indent=4)}")
+        log.debug(f"Kubernetes ingress object: {json.dumps(k8s_ingress_obj, indent=4)}")
         # We avoid creating service and ingress if they already exist (e.g. when Galaxy is restarted or resubmitting a job)
         service = Service(self._pykube_api, k8s_service_obj)
         service.create()
