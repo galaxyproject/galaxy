@@ -449,6 +449,23 @@ def is_merge_required(base_branch: str, new_branch: str, galaxy_root: pathlib.Pa
     return True
 
 
+def ensure_branches_up_to_date(branches: List[str], base_branch: str, upstream: str, galaxy_root: pathlib.Path):
+    for branch in branches:
+        subprocess.run(["git", "checkout", branch], cwd=galaxy_root).check_returncode()
+        # Check that the head commit matches the commit for the same branch at the specified remote repo url
+        result = subprocess.run(["git", "ls-remote", upstream, f"refs/heads/{branch}"], capture_output=True, text=True)
+        result.check_returncode()
+        remote_commit_hash = result.stdout.split("\t")[0]
+        result = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True)
+        result.check_returncode()
+        local_commit_hash = result.stdout.strip()
+        if remote_commit_hash != local_commit_hash:
+            raise Exception(
+                f"Local tip of branch {branch} is {local_commit_hash}, remote tip of branch is {remote_commit_hash}. Make sure that your local branches are up to date and track f{upstream}."
+            )
+    subprocess.run(["git", "checkout", base_branch], cwd=galaxy_root).check_returncode()
+
+
 def push_references(references: List[str], upstream: str = "https://github.com/galaxyproject/galaxy.git"):
     for reference in references:
         subprocess.run(["git", "push", upstream, reference]).check_returncode()
@@ -534,8 +551,11 @@ def create_point_release(
         click.confirm("Does this look correct?", abort=True)
     base_branch = current_branch = get_current_branch(galaxy_root)
     newer_branches = get_branches(galaxy_root, new_version, base_branch)
+    all_branches = newer_branches + [base_branch]
+    click.echo("Making sure that all branches are up to date")
+    ensure_branches_up_to_date(all_branches, base_branch, upstream, galaxy_root)
+
     click.echo("Making sure that merging forward will result in clean merges")
-    merge_required = False
     for new_branch in newer_branches:
         merge_required = is_merge_required(base_branch=current_branch, new_branch=new_branch, galaxy_root=galaxy_root)
         if merge_required:
@@ -546,7 +566,7 @@ def create_point_release(
             if click.confirm("Continue anyway ?", abort=True):
                 current_branch = new_branch
                 break
-    subprocess.run(["git", "checkout", base_branch], cwd=galaxy_root)
+    subprocess.run(["git", "checkout", base_branch], cwd=galaxy_root).check_returncode()
     modified_paths = [set_root_version(galaxy_root, new_version)]
     # read packages and find prs that affect a package
     packages: List[Package] = []
@@ -609,7 +629,7 @@ def create_point_release(
         click.echo(f"Merging {base_branch} into {new_branch}")
         merge_and_resolve_branches(galaxy_root, current_branch, new_branch, packages)
         current_branch = new_branch
-    references = [release_tag, base_branch] + newer_branches
+    references = [release_tag] + all_branches
     if no_confirm or click.confirm(f"Push {','.join(references)} to upstream '{upstream}' ?", abort=True):
         push_references(references=references, upstream=upstream)
 
