@@ -141,17 +141,8 @@ def read_package(package_path: pathlib.Path) -> Package:
     return package
 
 
-def _get_docutils_parser_settings():
-    try:
-        return frontend.get_default_settings(Parser)
-    except AttributeError:
-        # docutils < 0.18. Remove fallback in 23.1
-        components = (Parser,)
-        return frontend.OptionParser(components=components).get_default_values()
-
-
 def parse_changelog(package: Package) -> List[ChangelogItem]:
-    settings = _get_docutils_parser_settings()
+    settings = frontend.get_default_settings(Parser)
     document = utils.new_document(str(package.history_rst), settings)
     Parser().parse(package.history_rst.read_text(), document)
     changelog_items: List[ChangelogItem] = []
