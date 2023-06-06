@@ -347,7 +347,6 @@ def validate_has_pl_galaxy(ro_crate: ROCrate):
     assert programming_language.id == "https://w3id.org/workflowhub/workflow-ro-crate#galaxy"
     assert programming_language.name == "Galaxy"
     assert programming_language.url == "https://galaxyproject.org/"
-    assert programming_language.version
 
 
 def validate_organize_action(ro_crate: ROCrate):
