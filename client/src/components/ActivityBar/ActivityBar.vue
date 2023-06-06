@@ -75,10 +75,10 @@ function toggleContextMenu(evt) {
                                 :icon="activity.icon"
                                 :title="activity.title"
                                 :tooltip="activity.tooltip"
-                                :is-active="sidebarIsActive('search')"
-                                @click="onToggleSidebar('search')" />
+                                :is-active="sidebarIsActive('tools')"
+                                @click="onToggleSidebar('tools')" />
                             <ActivityItem
-                                v-if="activity.id === 'workflow'"
+                                v-if="activity.id === 'workflows'"
                                 :id="`activity-${activity.id}`"
                                 :key="activity.id"
                                 :icon="activity.icon"
