@@ -9,6 +9,7 @@ import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
 import ActivityItem from "./ActivityItem.vue";
 import ActivitySettings from "./ActivitySettings.vue";
 import UploadItem from "./Items/UploadItem.vue";
+import WorkflowBox from "@/components/Panels/WorkflowBox.vue";
 
 const activityStore = useActivityStore();
 const userStore = useUserStore();
@@ -77,6 +78,15 @@ function toggleContextMenu(evt) {
                                 :is-active="sidebarIsActive('search')"
                                 @click="onToggleSidebar('search')" />
                             <ActivityItem
+                                v-if="activity.id === 'workflow'"
+                                :id="`activity-${activity.id}`"
+                                :key="activity.id"
+                                :icon="activity.icon"
+                                :title="activity.title"
+                                :tooltip="activity.tooltip"
+                                :is-active="sidebarIsActive('workflows')"
+                                @click="onToggleSidebar('workflows')" />
+                            <ActivityItem
                                 v-if="activity.to"
                                 :id="`activity-${activity.id}`"
                                 :key="activity.id"
@@ -97,8 +107,11 @@ function toggleContextMenu(evt) {
                     to="/user" />
             </b-nav>
         </div>
-        <FlexPanel v-if="sidebarIsActive('search')" key="search" side="left" :collapsible="false">
+        <FlexPanel v-if="sidebarIsActive('tools')" key="tools" side="left" :collapsible="false">
             <ToolBox />
+        </FlexPanel>
+        <FlexPanel v-else-if="sidebarIsActive('workflows')" key="workflows" side="left" :collapsible="false">
+            <WorkflowBox />
         </FlexPanel>
         <ContextMenu :visible="contextMenuVisible" :x="contextMenuX" :y="contextMenuY" @hide="toggleContextMenu">
             <ActivitySettings />
