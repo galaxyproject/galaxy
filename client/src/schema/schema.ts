@@ -410,6 +410,10 @@ export interface paths {
          */
         post: operations["create_api_histories_post"];
     };
+    "/api/histories/count": {
+        /** Returns number of histories for the current user. */
+        get: operations["count_api_histories_count_get"];
+    };
     "/api/histories/deleted": {
         /** Returns deleted histories for the current user. */
         get: operations["index_deleted_api_histories_deleted_get"];
@@ -10643,6 +10647,29 @@ export interface operations {
                         | components["schemas"]["HistorySummary"]
                         | components["schemas"]["HistoryDetailed"]
                         | Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    count_api_histories_count_get: {
+        /** Returns number of histories for the current user. */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": number;
                 };
             };
             /** @description Validation Error */
