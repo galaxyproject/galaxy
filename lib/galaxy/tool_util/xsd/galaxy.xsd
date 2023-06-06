@@ -5026,6 +5026,8 @@ from the list.</xs:documentation>
     <xs:attribute name="name_val_separator" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Only used if ``type`` is ``attribute_value_splitter``. This is used to separate attributes and values from each other within an attribute-value pair, i.e. ``=`` if the target content is ``A=V; B=W; C=Y``. Defaults to whitespace.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="table_name" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Only used when ``type`` is
