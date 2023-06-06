@@ -112,8 +112,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faArrowCircleUp, faArrowCircleDown, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
 import { useEntryPointStore } from "stores/entryPointStore";
-import { useEventStore } from "stores/eventStore";
-import { mapActions } from "pinia";
+import { clearDrag, setDrag } from "@/utils/setDrag.js";
 
 library.add(faArrowCircleUp, faArrowCircleDown, faCheckCircle);
 export default {
@@ -208,7 +207,6 @@ export default {
         },
     },
     methods: {
-        ...mapActions(useEventStore, ["clearDragData", "setDragData"]),
         onKeyDown(event) {
             if (!event.target.classList.contains("content-item")) {
                 return;
@@ -237,15 +235,10 @@ export default {
             }
         },
         onDragStart(evt) {
-            this.setDragData(this.item);
-            evt.dataTransfer.dropEffect = "move";
-            evt.dataTransfer.effectAllowed = "move";
-            evt.dataTransfer.setData("text", JSON.stringify([this.item]));
-            const elem = document.getElementById("drag-ghost");
-            evt.dataTransfer.setDragImage(elem, 0, 0);
+            setDrag(evt, this.item);
         },
         onDragEnd: function () {
-            this.clearDragData();
+            clearDrag();
         },
         onEdit() {
             this.$router.push(this.itemUrls.edit);

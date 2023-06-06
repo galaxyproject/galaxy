@@ -94,10 +94,9 @@
 import { Services } from "./services";
 import { withPrefix } from "utils/redirect";
 import TextSummary from "components/Common/TextSummary";
-import { mapActions, mapState } from "pinia";
+import { mapState } from "pinia";
 import { useUserStore } from "@/stores/userStore";
-import { useEventStore } from "stores/eventStore";
-
+import { setDrag, clearDrag } from "@/utils/setDrag.js";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown, faSignature, faTimes, faEdit } from "@fortawesome/free-solid-svg-icons";
 
@@ -193,7 +192,6 @@ export default {
         this.services = new Services();
     },
     methods: {
-        ...mapActions(useEventStore, ["clearDragData", "setDragData"]),
         onCopy: function () {
             this.services
                 .copyWorkflow(this.workflow)
@@ -221,12 +219,10 @@ export default {
                 });
         },
         onDragStart: function (evt) {
-            this.setDragData(this.workflow);
-            const elem = document.getElementById("drag-ghost");
-            evt.dataTransfer.setDragImage(elem, 0, 0);
+            setDrag(evt, this.workflow);
         },
         onDragEnd: function () {
-            this.clearDragData();
+            clearDrag();
         },
         onRename: function () {
             const id = this.workflow.id;
