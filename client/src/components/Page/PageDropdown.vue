@@ -4,6 +4,11 @@ import { computed, unref } from "vue";
 import { deletePage } from "./services";
 import { storeToRefs } from "pinia";
 import { useUserStore } from "@/stores/userStore";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
+import { library } from "@fortawesome/fontawesome-svg-core";
+
+library.add(faCaretDown);
 
 interface Page {
     id: string;
@@ -50,7 +55,7 @@ function onDelete() {
             aria-haspopup="true"
             :data-page-dropdown="props.page.id"
             aria-expanded="false">
-            <Icon icon="caret-down" class="fa-lg" />
+            <font-awesome-icon icon="caret-down" class="fa-lg" />
             <span class="page-title">{{ props.page.title }}</span>
         </b-link>
         <p v-if="props.page.description">{{ props.page.description }}</p>
