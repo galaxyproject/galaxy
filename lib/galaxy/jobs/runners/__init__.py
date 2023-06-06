@@ -590,23 +590,10 @@ class BaseJobRunner:
 
             tool_stdout_path = os.path.join(outputs_directory, "tool_stdout")
             tool_stderr_path = os.path.join(outputs_directory, "tool_stderr")
-            # TODO: These might not exist for running jobs at the upgrade to 19.XX, remove that
-            # assumption in 20.XX.
-            if os.path.exists(tool_stdout_path):
-                with open(tool_stdout_path, "rb") as stdout_file:
-                    tool_stdout = self._job_io_for_db(stdout_file)
-            else:
-                # Legacy job, were getting a merged output - assume it is mostly tool output.
-                tool_stdout = job_stdout
-                job_stdout = None
-
-            if os.path.exists(tool_stderr_path):
-                with open(tool_stderr_path, "rb") as stdout_file:
-                    tool_stderr = self._job_io_for_db(stdout_file)
-            else:
-                # Legacy job, were getting a merged output - assume it is mostly tool output.
-                tool_stderr = job_stderr
-                job_stderr = None
+            with open(tool_stdout_path, "rb") as stdout_file:
+                tool_stdout = self._job_io_for_db(stdout_file)
+            with open(tool_stderr_path, "rb") as stdout_file:
+                tool_stderr = self._job_io_for_db(stdout_file)
 
             check_output_detected_state = job_wrapper.check_tool_output(
                 tool_stdout,
