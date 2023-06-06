@@ -70,6 +70,10 @@ class AthenaProject(Text):
         >>> fname = get_test_fname('test.prj')
         >>> AthenaProject().sniff(fname)
         True
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('Si.cif')
+        >>> FEFFInput().sniff(fname)
+        False
         """
 
         return file_prefix.startswith("# Athena project file")
@@ -135,19 +139,23 @@ class FEFFInput(Text):
         Try to guess if the file is an FEFF input file.
 
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('test.inp')
+        >>> fname = get_test_fname('feff_pymatgen.inp')
         >>> FEFFInput().sniff(fname)
         True
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('no_pymatgen.inp')
+        >>> fname = get_test_fname('feff_atoms.inp')
         >>> FEFFInput().sniff(fname)
         True
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('bad_atoms.inp')
+        >>> fname = get_test_fname('feff_potentials.inp')
+        >>> FEFFInput().sniff(fname)
+        True
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('feff_bad_atoms.inp')
         >>> FEFFInput().sniff(fname)
         False
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('bad_potential.inp')
+        >>> fname = get_test_fname('feff_bad_potentials.inp')
         >>> FEFFInput().sniff(fname)
         False
         >>> from galaxy.datatypes.sniff import get_test_fname
@@ -160,25 +168,30 @@ class FEFFInput(Text):
             return True
 
         generator = file_prefix.line_iterator()
-        line = next(generator)
-        while line is not None:
-            if line == "POTENTIALS":
-                line = next(generator).strip()
-                if line[0] == "*":
-                    words = line[1:].split()
-                    if words[0] in ["potential-index", "ipot"] and words[1] == "Z":
-                        return True
-                return False
+        try:
+            line = next(generator).strip()
+            while line is not None:
+                if line == "POTENTIALS":
+                    line = next(generator).strip()
+                    if line[0] == "*":
+                        words = line[1:].split()
+                        if (words[0] in ["potential-index", "ipot"]) and (words[1] == "Z"):
+                            return True
+                    return False
 
-            elif line == "ATOMS":
-                line = next(generator).strip()
-                if line[0] == "*":
-                    words = line[1:].split()
-                    if words[:4] == ["x", "y", "z", "ipot"]:
-                        return True
-                return False
+                elif line == "ATOMS":
+                    line = next(generator).strip()
+                    if line[0] == "*":
+                        words = line[1:].split()
+                        if words[:4] == ["x", "y", "z", "ipot"]:
+                            return True
+                    return False
 
-            line = next(generator)
+                else:
+                    line = next(generator).strip()
+
+        except StopIteration:
+            return False
 
         return False
 
