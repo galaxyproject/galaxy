@@ -592,8 +592,8 @@ class BaseJobRunner:
             tool_stderr_path = os.path.join(outputs_directory, "tool_stderr")
             with open(tool_stdout_path, "rb") as stdout_file:
                 tool_stdout = self._job_io_for_db(stdout_file)
-            with open(tool_stderr_path, "rb") as stdout_file:
-                tool_stderr = self._job_io_for_db(stdout_file)
+            with open(tool_stderr_path, "rb") as stderr_file:
+                tool_stderr = self._job_io_for_db(stderr_file)
 
             check_output_detected_state = job_wrapper.check_tool_output(
                 tool_stdout,
