@@ -1,7 +1,7 @@
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 import { getGalaxyInstance } from "app/singleton";
-import MountTarget from "./Login";
+import LoginModule from "./LoginModule.vue";
 
 // mock Galaxy object
 jest.mock("app/singleton");
@@ -29,7 +29,7 @@ const localVue = getLocalVue(true);
 
 describe("Login", () => {
     it("login index attribute matching", async () => {
-        const wrapper = shallowMount(MountTarget, {
+        const wrapper = shallowMount(LoginModule, {
             localVue,
             mocks: {
                 $route: {
@@ -54,7 +54,7 @@ describe("Login", () => {
     });
 
     it("change password attribute matching", async () => {
-        const wrapper = shallowMount(MountTarget, {
+        const wrapper = shallowMount(LoginModule, {
             localVue,
             mocks: {
                 $route: {

@@ -1,25 +1,26 @@
-import { getGalaxyInstance } from "app";
+import { getGalaxyInstance } from "@/app";
 
-import Admin from "entry/analysis/modules/Admin";
-import Home from "components/admin/Home";
-import ActiveInvocations from "components/admin/ActiveInvocations";
-import DataManager from "components/admin/DataManager/DataManager";
-import DataManagerJobs from "components/admin/DataManager/DataManagerJobs";
-import DataManagerJob from "components/admin/DataManager/DataManagerJob";
-import DataManagerTable from "components/admin/DataManager/DataManagerTable";
-import DataManagerView from "components/admin/DataManager/DataManagerView";
-import DataTables from "components/admin/DataTables";
-import DataTypes from "components/admin/DataTypes";
-import DisplayApplications from "components/admin/DisplayApplications";
-import ErrorStack from "components/admin/ErrorStack";
-import FormGeneric from "components/Form/FormGeneric";
-import Grid from "components/Grid/Grid";
-import JobsList from "components/admin/JobsList";
-import RegisterForm from "components/Login/RegisterForm";
-import ResetMetadata from "components/admin/ResetMetadata";
-import SanitizeAllow from "components/admin/SanitizeAllow";
-import Toolshed from "components/Toolshed/Index";
-import ToolboxDependencies from "components/admin/Dependencies/Landing";
+import Admin from "@/entry/analysis/modules/AdminModule.vue";
+import AdminHome from "@/components/admin/AdminHome.vue";
+import ActiveInvocations from "@/components/admin/ActiveInvocations.vue";
+import DataManager from "@/components/admin/DataManager/DataManager.vue";
+import DataManagerJobs from "@/components/admin/DataManager/DataManagerJobs.vue";
+import DataManagerJob from "@/components/admin/DataManager/DataManagerJob.vue";
+import DataManagerTable from "@/components/admin/DataManager/DataManagerTable.vue";
+import DataManagerView from "@/components/admin/DataManager/DataManagerView.vue";
+import DataTables from "@/components/admin/DataTables.vue";
+import DataTypes from "@/components/admin/DataTypes.vue";
+import DisplayApplications from "@/components/admin/DisplayApplications.vue";
+import ErrorStack from "@/components/admin/ErrorStack.vue";
+import FormGeneric from "@/components/Form/FormGeneric.vue";
+import Grid from "@/components/Grid/Grid.vue";
+import JobsList from "components/admin/JobsList.vue";
+import RegisterForm from "@/components/Login/RegisterForm.vue";
+import ResetMetadata from "@/components/admin/ResetMetadata.vue";
+import SanitizeAllow from "@/components/admin/SanitizeAllow.vue";
+import Toolshed from "@/components/Toolshed/Index.vue";
+import ToolboxDependencies from "@/components/admin/Dependencies/Landing.vue";
+import type { Route } from "vue-router";
 
 export default [
     {
@@ -29,7 +30,7 @@ export default [
         children: [
             {
                 path: "",
-                component: Home,
+                component: AdminHome,
                 props: () => {
                     const config = getGalaxyInstance().config;
                     return {
@@ -142,7 +143,7 @@ export default [
             {
                 path: "form/reset_user_password",
                 component: FormGeneric,
-                props: (route) => ({
+                props: (route: Route) => ({
                     title: "Reset passwords",
                     url: `/admin/reset_user_password?id=${route.query.id}`,
                     icon: "fa-user",
@@ -153,7 +154,7 @@ export default [
             {
                 path: "form/manage_roles_and_groups_for_user",
                 component: FormGeneric,
-                props: (route) => ({
+                props: (route: Route) => ({
                     url: `/admin/manage_roles_and_groups_for_user?id=${route.query.id}`,
                     icon: "fa-users",
                     redirect: "/admin/users",
@@ -162,7 +163,7 @@ export default [
             {
                 path: "form/manage_users_and_groups_for_role",
                 component: FormGeneric,
-                props: (route) => ({
+                props: (route: Route) => ({
                     url: `/admin/manage_users_and_groups_for_role?id=${route.query.id}`,
                     redirect: "/admin/users",
                 }),
@@ -170,7 +171,7 @@ export default [
             {
                 path: "form/manage_users_and_roles_for_group",
                 component: FormGeneric,
-                props: (route) => ({
+                props: (route: Route) => ({
                     url: `/admin/manage_users_and_roles_for_group?id=${route.query.id}`,
                     redirect: "/admin/users",
                 }),
@@ -178,7 +179,7 @@ export default [
             {
                 path: "form/manage_users_and_groups_for_quota",
                 component: FormGeneric,
-                props: (route) => ({
+                props: (route: Route) => ({
                     url: `/admin/manage_users_and_groups_for_quota?id=${route.query.id}`,
                     redirect: "/admin/quotas",
                 }),
@@ -210,7 +211,7 @@ export default [
             {
                 path: "form/rename_role",
                 component: FormGeneric,
-                props: (route) => ({
+                props: (route: Route) => ({
                     url: `/admin/rename_role?id=${route.query.id}`,
                     redirect: "/admin/roles",
                 }),
@@ -218,7 +219,7 @@ export default [
             {
                 path: "form/rename_group",
                 component: FormGeneric,
-                props: (route) => ({
+                props: (route: Route) => ({
                     url: `/admin/rename_group?id=${route.query.id}`,
                     redirect: "/admin/groups",
                 }),
@@ -226,7 +227,7 @@ export default [
             {
                 path: "form/rename_quota",
                 component: FormGeneric,
-                props: (route) => ({
+                props: (route: Route) => ({
                     url: `/admin/rename_quota?id=${route.query.id}`,
                     redirect: "/admin/quotas",
                 }),
@@ -234,7 +235,7 @@ export default [
             {
                 path: "form/edit_quota",
                 component: FormGeneric,
-                props: (route) => ({
+                props: (route: Route) => ({
                     url: `/admin/edit_quota?id=${route.query.id}`,
                     redirect: "/admin/quotas",
                 }),
@@ -242,7 +243,7 @@ export default [
             {
                 path: "form/set_quota_default",
                 component: FormGeneric,
-                props: (route) => ({
+                props: (route: Route) => ({
                     url: `/admin/set_quota_default?id=${route.query.id}`,
                     redirect: "/admin/quotas",
                 }),
@@ -258,7 +259,7 @@ export default [
             {
                 path: "form/edit_form",
                 component: FormGeneric,
-                props: (route) => ({
+                props: (route: Route) => ({
                     url: `/forms/edit_form?id=${route.query.id}`,
                     redirect: "/admin/forms",
                 }),

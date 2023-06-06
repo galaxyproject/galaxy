@@ -5,10 +5,10 @@ import { getGalaxyInstance } from "app";
 import { patchRouterPush } from "./router-push";
 
 // these modules are mounted below the masthead.
-import Analysis from "entry/analysis/modules/Analysis";
+import AnalysisModule from "entry/analysis/modules/AnalysisModule";
 import Home from "entry/analysis/modules/Home";
 import CenterFrame from "entry/analysis/modules/CenterFrame";
-import Login from "entry/analysis/modules/Login";
+import LoginModule from "entry/analysis/modules/LoginModule.vue";
 import WorkflowEditorModule from "entry/analysis/modules/WorkflowEditor";
 
 // routes
@@ -100,7 +100,7 @@ export function getRouter(Galaxy) {
             /** Login entry route */
             {
                 path: "/login/start",
-                component: Login,
+                component: LoginModule,
                 redirect: redirectLoggedIn(),
             },
             /** Page editor */
@@ -143,7 +143,7 @@ export function getRouter(Galaxy) {
             /** Analysis routes */
             {
                 path: "/",
-                component: Analysis,
+                component: AnalysisModule,
                 children: [
                     {
                         path: "",
