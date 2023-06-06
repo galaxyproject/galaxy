@@ -1206,10 +1206,6 @@ class MinimalJobWrapper(HasResourceParameters):
     def get_version_string_path(self):
         return os.path.abspath(os.path.join(self.working_directory, "outputs", COMMAND_VERSION_FILENAME))
 
-    # TODO: Remove in Galaxy 21.XX, for running jobs at GX upgrade
-    def get_version_string_path_legacy(self):
-        return os.path.abspath(os.path.join(self.working_directory, COMMAND_VERSION_FILENAME))
-
     def __prepare_upload_paramfile(self, job):
         """Special case paramfile handling for the upload tool. Copies the paramfile to the working directory"""
         new = os.path.join(self.working_directory, "upload_params.json")
