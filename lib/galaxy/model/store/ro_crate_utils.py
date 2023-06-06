@@ -6,8 +6,6 @@ from typing import (
     Optional,
 )
 
-from packaging.version import parse
-from rocrate import __version__ as rocrate_version
 from rocrate.model.computationalworkflow import (
     ComputationalWorkflow,
     WorkflowDescription,
@@ -106,11 +104,7 @@ class WorkflowRunCrateProfileBuilder:
             if not filename:
                 # dataset was not serialized
                 filename = f"datasets/dataset_{dataset.dataset.uuid}"
-                if parse(rocrate_version) >= parse("0.8.0"):
-                    source = None
-                else:
-                    # Drop in 23.1
-                    source = filename
+                source = None
             else:
                 source = os.path.join(self.model_store.export_directory, filename)
             name = dataset.name
