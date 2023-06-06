@@ -25,7 +25,7 @@ const showPanels = computed(() => {
 });
 
 const showActivityBar = computed(() => {
-    return userStore.showActivityBar;
+    return userStore.showActivityBar && !userStore.isAnonymous;
 });
 
 // methods
