@@ -946,6 +946,13 @@
     <datatype extension="castep" type="galaxy.datatypes.text:Castep" display_in_upload="true"/>
     <datatype extension="param" type="galaxy.datatypes.text:Param" display_in_upload="true"/>
     <datatype extension="den_fmt" type="galaxy.datatypes.text:FormattedDensity" display_in_upload="true"/>
+    <!-- Larch types -->
+    <datatype extension="prj" type="galaxy.datatypes.larch:AthenaProject" display_in_upload="true" description="Athena project file."/>
+    <datatype extension="inp" type="galaxy.datatypes.larch:FEFFInput" display_in_upload="true" description="FEFF input file."/>
+    <datatype extension="sp" type="galaxy.datatypes.tabular:CSV" subclass="true" description="CSV representing selected FEFF paths."/>
+    <datatype extension="gds" type="galaxy.datatypes.tabular:CSV" subclass="true" description="CSV representing GDS parameters."/>
+    <datatype extension="feff" type="galaxy.datatypes.tabular:CSV" subclass="true" description="CSV representing summary of FEFF paths."/>
+    <datatype extension="feffit" type="galaxy.datatypes.data:Text" subclass="true" description="Report of Artemis FEFFIT."/>
     <!-- ECOLOGY types -->
     <datatype extension="bil" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" display_in_upload="true" subclass="true" description="ENVI file with band interleave by line (BIL) format"/>
     <datatype extension="hdr" type="galaxy.datatypes.data:Text" mimetype="text/plain" display_in_upload="true" subclass="true" description="ENVI metadata header file"/>
@@ -1204,6 +1211,8 @@
     <sniffer type="galaxy.datatypes.media:Mpg"/>
     <sniffer type="galaxy.datatypes.speech:TextGrid" />
     <sniffer type="galaxy.datatypes.speech:BPF" />
+    <sniffer type="galaxy.datatypes.larch:FEFFInput" />
+    <sniffer type="galaxy.datatypes.larch:AthenaProject" />
     <sniffer type="galaxy.datatypes.text:Castep" />
     <sniffer type="galaxy.datatypes.text:CTLresult"/>
     <sniffer type="galaxy.datatypes.text:FormattedDensity" />
