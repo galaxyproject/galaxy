@@ -31,6 +31,7 @@ import AvailableDatatypes from "components/AvailableDatatypes/AvailableDatatypes
 import FormGeneric from "components/Form/FormGeneric";
 import GridShared from "components/Grid/GridShared";
 import GridHistory from "components/Grid/GridHistory";
+import PageList from "components/Page/PageList";
 import HistoryImport from "components/HistoryImport";
 import HistoryView from "components/History/HistoryView";
 import HistoryPublished from "components/History/HistoryPublished";
@@ -328,11 +329,9 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "pages/:actionId",
-                        component: GridShared,
+                        component: PageList,
                         props: (route) => ({
-                            actionId: route.params.actionId,
-                            item: "page",
-                            plural: "Pages",
+                            published: route.params.actionId == "list_published" ? true : false,
                         }),
                     },
                     {
