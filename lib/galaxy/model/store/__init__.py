@@ -2450,7 +2450,7 @@ class WriteCrates:
                     "encodingFormat": encoding_format,
                 }
                 ro_crate.add_file(
-                    file_name,
+                    os.path.join(self.export_directory, file_name),
                     dest_path=file_name,
                     properties=properties,
                 )
