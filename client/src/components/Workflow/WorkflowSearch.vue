@@ -3,9 +3,6 @@ import { ref, type Ref } from "vue";
 import { useRouter } from "vue-router/composables";
 import _l from "@/utils/localization";
 import { createWorkflowQuery } from "@/components/Panels/utilities";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faAngleDoubleUp, faAngleDoubleDown } from "@fortawesome/free-solid-svg-icons";
-import { library } from "@fortawesome/fontawesome-svg-core";
 
 const router = useRouter();
 
@@ -16,9 +13,6 @@ type FilterSettings = {
     shared_with_me?: boolean;
     deleted?: boolean;
 };
-
-// @ts-ignore bad library types
-library.add(faAngleDoubleUp, faAngleDoubleDown);
 
 const options = [
     { text: "Yes", value: true },
@@ -31,8 +25,6 @@ const filterSettings: Ref<FilterSettings> = ref({
     deleted: false,
 });
 
-const showAdvanced = ref(true);
-
 function onSearch() {
     const query = createWorkflowQuery(filterSettings.value);
     const path = "/workflows/list";
@@ -42,26 +34,12 @@ function onSearch() {
 </script>
 <template>
     <div>
-        <b-button
-            class="upload-button"
-            size="sm"
-            :pressed="showAdvanced"
-            :variant="showAdvanced ? 'info' : 'secondary'"
-            @click="showAdvanced = !showAdvanced">
-            <FontAwesomeIcon v-if="!showAdvanced" icon="angle-double-down" />
-            <FontAwesomeIcon v-else icon="angle-double-up" />
-            Search for Workflows
-        </b-button>
-        <div
-            v-if="showAdvanced"
-            description="advanced workflow filters"
-            @keyup.enter="onSearch"
-            @keyup.esc="showAdvanced = false">
+        <div description="advanced workflow filters" @keyup.enter="onSearch">
             <small class="mt-1">Filter by name:</small>
             <b-form-input v-model="filterSettings.name" size="sm" placeholder="any name" />
             <small class="mt-1">Filter by tag:</small>
             <b-form-input v-model="filterSettings.tag" size="sm" placeholder="any tag" />
-            <small>Published:</small>
+            <small>Search published workflows:</small>
             <b-form-group class="m-0">
                 <b-form-radio-group
                     v-model="filterSettings.published"
@@ -70,7 +48,7 @@ function onSearch() {
                     buttons
                     description="filter published" />
             </b-form-group>
-            <small>Shared:</small>
+            <small>Search shared workflows:</small>
             <b-form-group class="m-0">
                 <b-form-radio-group
                     v-model="filterSettings.shared_with_me"
@@ -79,7 +57,7 @@ function onSearch() {
                     buttons
                     description="filter shared" />
             </b-form-group>
-            <small>Deleted:</small>
+            <small>Search deleted workflows:</small>
             <b-form-group class="m-0">
                 <b-form-radio-group
                     v-model="filterSettings.deleted"
@@ -92,10 +70,6 @@ function onSearch() {
                 <b-button class="mr-1" size="sm" variant="primary" @click="onSearch">
                     <icon icon="search" />
                     <span>{{ _l("Search") }}</span>
-                </b-button>
-                <b-button size="sm" @click="showAdvanced = false">
-                    <icon icon="redo" />
-                    <span>{{ _l("Cancel") }}</span>
                 </b-button>
             </div>
         </div>
