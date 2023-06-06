@@ -1435,7 +1435,7 @@ def test_inputs_filter_correct(lint_ctx):
     assert not lint_ctx.error_messages
 
 
-def test_inputs_filter_correct(lint_ctx):
+def test_inputs_filter_incorrect(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_FILTER_INCORRECT)
     run_lint(lint_ctx, inputs.lint_inputs, tool_source)
     assert len(lint_ctx.info_messages) == 1
