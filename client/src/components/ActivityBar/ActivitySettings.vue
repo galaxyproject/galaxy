@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { storeToRefs } from "pinia";
 import { useActivityStore } from "@/stores/activityStore";
 
 const activityStore = useActivityStore();
-const activities = ref(activityStore.getAll());
+const { activities } = storeToRefs(activityStore);
 </script>
 
 <template>
     <div class="activity-settings rounded p-3 no-highlight">
         <div class="activity-settings-content overflow-auto">
             <div v-for="activity in activities" :key="activity.id">
-                <div class="p-2">
+                <div class="activity-settings-item p-2">
                     <b-form-checkbox v-model="activity.visible" :disabled="!activity.optional">
                         <small class="cursor-pointer">
                             <div>
