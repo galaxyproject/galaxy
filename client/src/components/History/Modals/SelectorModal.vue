@@ -205,9 +205,10 @@ async function loadMore(noScroll = false) {
                 <b-form-input v-model="filter" type="search" debounce="400" :placeholder="localize('Search Filter')" />
             </b-form-group>
 
+            <b-badge v-if="filter && !validFilter" class="alert-danger w-100">Search string too short!</b-badge>
+            <b-alert v-else-if="!busy && hasNoResults" variant="danger" show>No histories found.</b-alert>
+
             <div class="history-selector-modal-list">
-                <b-badge v-if="filter && !validFilter" class="alert-danger w-100">Search string too short!</b-badge>
-                <b-alert v-else-if="!busy && hasNoResults" variant="danger" show>No histories found.</b-alert>
                 <b-list-group>
                     <b-list-group-item
                         v-for="history in filtered"
