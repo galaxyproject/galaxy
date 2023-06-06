@@ -66,7 +66,7 @@ function onClick(evt: MouseEvent): void {
                     </span>
                     <span class="position-relative">
                         <div class="nav-icon">
-                            <Icon :icon="icon" />
+                            <icon :icon="icon" />
                         </div>
                         <TextShort :text="title" class="nav-title" />
                     </span>

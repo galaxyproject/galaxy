@@ -37,7 +37,7 @@ describe("ActivitySettings", () => {
         });
     });
 
-    it("availability of checkboxes", async () => {
+    it("availability of checkboxes and checkbox states", async () => {
         // check number of available default activities
         const items = wrapper.findAll("input[type='checkbox']");
         expect(items.length).toBe(7);
