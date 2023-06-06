@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref } from "vue";
 import { storeToRefs } from "pinia";
 import { useActivityStore } from "@/stores/activityStore";
 
