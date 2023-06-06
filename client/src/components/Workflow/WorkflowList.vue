@@ -187,6 +187,11 @@ export default {
             type: Boolean,
             default: false,
         },
+        query: {
+            type: String,
+            required: false,
+            default: "",
+        },
     },
     data() {
         const fields = this.published ? PUBLISHED_FIELDS : PERSONAL_FIELDS;
@@ -224,6 +229,9 @@ export default {
     created() {
         this.root = getAppRoot();
         this.services = new Services();
+        if (this.query) {
+            this.filter = this.query;
+        }
     },
     methods: {
         decorateData(item) {
