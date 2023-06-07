@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+<script setup lang="ts">
 import { computed, onMounted, ref, unref, watch } from "vue";
 import { useAnimationFrame } from "@/composables/sensors/animationFrame";
 import { useAnimationFrameThrottle } from "@/composables/throttle";

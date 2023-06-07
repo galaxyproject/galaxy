@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+<script setup lang="ts">
 import { ref, inject, reactive } from "vue";
 import type { Ref } from "vue";
 import { useAnimationFrameSize } from "@/composables/sensors/animationFrameSize";
