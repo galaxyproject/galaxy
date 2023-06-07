@@ -139,23 +139,23 @@ class FEFFInput(Text):
         Try to guess if the file is an FEFF input file.
 
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('inp_pymatgen.inp')
+        >>> fname = get_test_fname('larch_pymatgen.inp')
         >>> FEFFInput().sniff(fname)
         True
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('inp_atoms.inp')
+        >>> fname = get_test_fname('larch_atoms.inp')
         >>> FEFFInput().sniff(fname)
         True
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('inp_potentials.inp')
+        >>> fname = get_test_fname('larch_potentials.inp')
         >>> FEFFInput().sniff(fname)
         True
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('inp_bad_atoms.inp')
+        >>> fname = get_test_fname('larch_bad_atoms.txt')
         >>> FEFFInput().sniff(fname)
         False
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('inp_bad_potentials.inp')
+        >>> fname = get_test_fname('larch_bad_potentials.txt')
         >>> FEFFInput().sniff(fname)
         False
         >>> from galaxy.datatypes.sniff import get_test_fname
