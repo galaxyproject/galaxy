@@ -1,4 +1,5 @@
 import logging
+from typing import Tuple
 
 from galaxy import exceptions
 from galaxy.celery.tasks import prepare_pdf_download
@@ -56,7 +57,9 @@ class PagesService(ServiceBase):
         self.shareable_service = ShareableService(self.manager, self.serializer)
         self.short_term_storage_allocator = short_term_storage_allocator
 
-    def index(self, trans, payload: PageIndexQueryPayload, include_total_count: bool = False) -> PageSummaryList:
+    def index(
+        self, trans, payload: PageIndexQueryPayload, include_total_count: bool = False
+    ) -> Tuple[PageSummaryList, int]:
         """Return a list of Pages viewable by the user
 
         :param deleted: Display deleted pages

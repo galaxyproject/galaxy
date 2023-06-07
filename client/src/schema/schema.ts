@@ -6059,12 +6059,6 @@ export interface components {
             username: string;
         };
         /**
-         * PageSortByEnum
-         * @description An enumeration.
-         * @enum {string}
-         */
-        PageSortByEnum: "update_time" | "title" | "username";
-        /**
          * PageSummary
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -13044,7 +13038,7 @@ export interface operations {
                 user_id?: string;
                 show_published?: boolean;
                 show_shared?: boolean;
-                sort_by?: components["schemas"]["PageSortByEnum"];
+                sort_by?: "update_time" | "title" | "username";
                 sort_desc?: boolean;
                 limit?: number;
                 offset?: number;

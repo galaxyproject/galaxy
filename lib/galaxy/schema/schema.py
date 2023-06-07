@@ -1257,10 +1257,7 @@ class InvocationIndexQueryPayload(Model):
     offset: Optional[int] = Field(default=0, description="Number of invocations to skip")
 
 
-class PageSortByEnum(str, Enum):
-    update_time = "update_time"
-    title = "title"
-    username = "username"
+PageSortByEnum = Literal["update_time", "title", "username"]
 
 
 class PageIndexQueryPayload(Model):
@@ -1268,9 +1265,7 @@ class PageIndexQueryPayload(Model):
     show_published: Optional[bool] = None
     show_shared: Optional[bool] = None
     user_id: Optional[DecodedDatabaseIdField] = None
-    sort_by: PageSortByEnum = Field(
-        PageSortByEnum.update_time, title="Sort By", description="Sort pages by this attribute"
-    )
+    sort_by: PageSortByEnum = Field("update_time", title="Sort By", description="Sort pages by this attribute")
     sort_desc: Optional[bool] = Field(default=False, title="Sort descending", description="Sort in descending order.")
     search: Optional[str] = Field(default=None, title="Filter text", description="Freetext to search.")
     limit: Optional[int] = Field(default=100, lt=1000, title="Limit", description="Maximum number of pages to return.")

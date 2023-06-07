@@ -485,8 +485,11 @@ history_import:
 
 pages:
   selectors:
-    create: '.manage-table-actions .action-button'
+    create: '#page-create'
     submit: '#submit'
+    drop: '.page-dropdown'
+    edit: '.dropdown-item-edit'
+    view: '.dropdown-item-view'
     export: '.markdown-pdf-export'
     dropdown: '[data-page-dropdown*="${id}"]'
     index_table: "#page-table"

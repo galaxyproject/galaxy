@@ -61,7 +61,7 @@ ShowSharedQueryParam: bool = Query(default=False, title="Include pages shared wi
 
 
 SortByQueryParam: PageSortByEnum = Query(
-    default=PageSortByEnum.update_time,
+    default="update_time",
     title="Sort attribute",
     description="Sort page index by this specified attribute on the page model",
 )
