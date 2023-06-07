@@ -77,7 +77,7 @@ function onDragEnter(evt) {
 }
 
 function onDragLeave(evt) {
-    if (dragTarget.value == evt.target) {
+    if (dragItem.value && dragTarget.value == evt.target) {
         const dragId = dragItem.value.id;
         const activitiesTemp = activities.value.filter((a) => a.id !== dragId);
         activities.value = activitiesTemp;
