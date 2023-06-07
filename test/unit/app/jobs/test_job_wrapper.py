@@ -69,8 +69,8 @@ class AbstractTestCases:
 
         def test_version_path(self):
             wrapper = self._wrapper()
-            version_path = wrapper.get_version_string_path_legacy()
-            expected_path = os.path.join(self.test_directory, "working", "COMMAND_VERSION")
+            version_path = wrapper.get_version_string_path()
+            expected_path = os.path.join(self.working_directory, "outputs", "COMMAND_VERSION")
             assert version_path == expected_path
 
         def test_prepare_sets_command_line(self):
