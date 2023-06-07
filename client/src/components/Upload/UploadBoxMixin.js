@@ -350,16 +350,16 @@ export default {
         getRequestUrl: function (items, history_id) {
             return `${getAppRoot()}api/tools/fetch`;
         },
-        mountFtpComponentFromJs: function(targetDom) {
+        mountFtpComponentFromJs: function (targetDom) {
             return new Vue({
-                el: "upload-ftp",  //TODO rename
+                el: ".upload-top" /* component requires positioning */,
                 render: (h) =>
                     h(FormFTP, {
                         props: this.buildFtpComponentProps(),
-                    })
+                    }),
             }).$mount(targetDom).$el;
         },
-        buildFtpComponentProps: function() {
+        buildFtpComponentProps: function () {
             return {
                 options: {
                     ftp_upload_site: this.ftpUploadSite,
@@ -375,7 +375,7 @@ export default {
                                 uri: ftp_file.uri,
                             },
                         ]);
-                    },                
+                    },
                     onremove: function (thisCollection, model_index) {
                         return thisCollection.remove(model_index);
                     },

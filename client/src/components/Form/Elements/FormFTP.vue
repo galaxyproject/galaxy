@@ -1,11 +1,15 @@
 <template>
-    <div :class="model.attributes.cls" id="upload-ftp">
-    {{ /* //TODO model.cls = "upload-ftp" */ }}
+    <div :class="model.attributes.cls">
+        {{ /* //TODO model.cls = "upload-ftp" */ }}
         <div v-show="waiting" class="upload-ftp-wait fa fa-spinner fa-spin" />
         <div v-show="model.help_enabled" class="upload-ftp-help">
-            This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at <strong>{{ this.model.ftp_upload_site }}</strong> using your Galaxy credentials. For help visit the <a href="https://galaxyproject.org/ftp-upload/" target="_blank">tutorial</a>.
+            This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at
+            <strong>{{ model.ftp_upload_site }}</strong> using your Galaxy credentials. For help visit the
+            <a href="https://galaxyproject.org/ftp-upload/" target="_blank">tutorial</a>.
             <span v-show="model.oidc_text">
-                <br/>If you are signed-in to Galaxy using a third-party identity and you <strong>do not have a Galaxy password</strong> please use the reset password option in the login form with your email to create a password for your account.
+                <br />If you are signed-in to Galaxy using a third-party identity and you
+                <strong>do not have a Galaxy password</strong> please use the reset password option in the login form
+                with your email to create a password for your account.
             </span>
         </div>
         <div v-show="!waiting" class="upload-ftp-content">
@@ -22,7 +26,8 @@
                         <th v-show="model.collection" class="_has_collection">
                             <div
                                 class="upload-ftp-select-all"
-                                :class="{ [model.attributes.class_add]: !isAllSelected, [model.attributes.class_remove]: isAllSelected }"
+                                :ftp-id="'*'"
+                                :class="selectAllStatus"
                                 @click="selectAll"></div>
                         </th>
                         <th>Name</th>
@@ -35,6 +40,7 @@
                         v-for="(ftpFile, index) in ftpFiles"
                         :key="ftpFile.path"
                         :ftp-id="ftpFile.path"
+                        :ftp-index="index"
                         class="upload-ftp-row"
                         @click="onRowClick(ftpFile)">
                         <td class="_has_collection">
@@ -87,6 +93,19 @@ export default {
             ftpIndex: {},
         };
     },
+    computed: {
+        selectAllStatus() {
+            var status = this.model.attributes.class_add;
+            if (Object.keys(this.ftpIndex).length > 0) {
+                status =
+                    this.ftpFiles.length === Object.keys(this.ftpIndex).length
+                        ? this.model.attributes.class_remove
+                        : this.model.attributes.class_partial;
+            }
+
+            return status;
+        },
+    },
     created() {
         this.model = _.extend(this.model, this.options);
         this.model.collection = this.collection;
@@ -110,6 +129,7 @@ export default {
     methods: {
         /** Fill table with ftp entries */
         _renderTable: function () {
+            var self = this;
             var ftp_files = this.ftpFiles;
             this.rows = [];
             if (ftp_files && ftp_files.length > 0) {
@@ -119,7 +139,7 @@ export default {
                 });
                 var size = 0;
                 _.each(ftp_files, (ftp_file) => {
-                    this.rows.push(ftp_file);
+                    self.rows.push(ftp_file);
                     size += ftp_file.size;
                 });
                 this.totalSize = size;
@@ -140,7 +160,7 @@ export default {
         _renderRow: function (ftp_file) {
             var self = this;
             var options = this.model.attributes;
-            var $it = $(this._templateRow(ftp_file));
+            var $it = $(this._templateRow(ftp_file.path));
             var $icon = $it.find(".icon");
             this.$body.append($it);
             if (this.collection) {
@@ -173,14 +193,12 @@ export default {
         /** Select all event handler */
         selectAll: function () {
             var ftp_files = this.ftpFiles;
-            var $it = $(this._templateRow(ftp_file));
-            var $icon = $it.find(".icon");
-            var add = this.$el.querySelector(".upload-ftp-select-all").classList.contains(this.model.attributes.class_add);
+            var add = $(".upload-ftp-select-all").hasClass(this.model.attributes.class_add); //TODO needs DOM boundary
             for (var index in ftp_files) {
                 var ftp_file = ftp_files[index];
                 var model_index = this.ftpIndex[ftp_file.path];
                 if ((model_index === undefined && add) || (model_index !== undefined && !add)) {
-                    this._switch($icon, ftp_file);
+                    this._switch($(this._templateRow(ftp_file.path)).find(".icon"), ftp_file);
                 }
             }
             this.isAllSelected = !this.isAllSelected;
@@ -190,7 +208,7 @@ export default {
         /** Handle row click */
         onRowClick: function (ftp_file) {
             var self = this;
-            var $it = $(this._templateRow(ftp_file)); //TODO needs to be replaced
+            var $it = $(this._templateRow(ftp_file.path)); //TODO needs to be replaced
             var $icon = $it.find(".icon");
             if (this.collection) {
                 this._switch($icon, ftp_file);
@@ -201,14 +219,14 @@ export default {
         },
 
         /** Template of row */
-        _templateRow: function (options) {
-            return $(`[ftp-id="${options.path}"]`);
+        _templateRow: function (rowId) {
+            return $(`[ftp-id="${rowId}"]`);
         },
 
         /** Handle collection changes */
         _switch: function ($icon, ftp_file) {
             var options = this.model.attributes;
-            $icon.removeClass();
+            $icon.removeClass(options.class_add);
             var model_index = this.ftpIndex[ftp_file.path];
             if (model_index === undefined) {
                 var new_index = this.model.onadd(this.model.upload_box, ftp_file);
@@ -231,12 +249,16 @@ export default {
                 },
                 0
             );
-            $(".upload-ftp-select-all").removeClass();
-            if (counts == 0) {
-                $(".upload-ftp-select-all").addClass(options.class_add);
+            $(".upload-ftp-select-all").removeClass(this.model.attributes.class_add);
+            $(".upload-ftp-select-all").removeClass(this.model.attributes.class_remove);
+            $(".upload-ftp-select-all").removeClass(this.model.attributes.class_partial);
+            if (counts === 0) {
+                $(".upload-ftp-select-all").addClass(this.model.attributes.class_add);
             } else {
                 $(".upload-ftp-select-all").addClass(
-                    counts == this.rows.length ? options.class_remove : options.class_partial
+                    counts == this.rows.length
+                        ? this.model.attributes.class_remove
+                        : this.model.attributes.class_partial
                 );
             }
         },
