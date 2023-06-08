@@ -146,7 +146,7 @@ async function onPermanentlyDeleteDataset(datasetId: string) {
 }
 </script>
 <template>
-    <div class="mx-3">
+    <div class="mx-3 history-storage-overview">
         <router-link :to="{ name: 'StorageDashboard' }">{{ localize("Back to Dashboard") }}</router-link>
         <Heading h1 bold class="my-3"> History Storage Overview </Heading>
         <p class="text-justify">
