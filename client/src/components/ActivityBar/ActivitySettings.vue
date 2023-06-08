@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { computed, ref, type Ref, type ComputedRef } from "vue";
 import { storeToRefs } from "pinia";
 import { useActivityStore, type Activity } from "@/stores/activityStore";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faSquare } from "@fortawesome/free-regular-svg-icons";
 import { faCheckSquare, faTrash } from "@fortawesome/free-solid-svg-icons";
+import DelayedInput from "@/components/Common/DelayedInput.vue";
 
 library.add({
     faCheckSquare,
@@ -14,21 +16,48 @@ library.add({
 
 const activityStore = useActivityStore();
 const { activities } = storeToRefs(activityStore);
+const query: Ref<string> = ref("");
+
+const filteredActivities = computed(() => {
+    if (query.value.length > 0) {
+        const queryLower = query.value.toLowerCase();
+        const results = activities.value.filter((a: Activity) => {
+            const attributeValues = [a.title, a.description];
+            for (const value of attributeValues) {
+                if (value.toLowerCase().indexOf(queryLower) !== -1) {
+                    return true;
+                }
+            }
+            return false;
+        });
+        return results;
+    } else {
+        return activities.value;
+    }
+});
+
+const foundActivities: ComputedRef<boolean> = computed(() => {
+    return filteredActivities.value.length > 0;
+});
 
 function onClick(activity: Activity) {
     activity.visible = !activity.visible;
 }
 
 function onRemove(activity: Activity) {
-    console.log(activity);
     activityStore.remove(activity);
+}
+
+function onQuery(newQuery: string) {
+    query.value = newQuery;
 }
 </script>
 
 <template>
     <div class="activity-settings rounded p-3 no-highlight">
-        <div class="activity-settings-content overflow-auto">
-            <div v-for="activity in activities" :key="activity.id">
+        <delayed-input class="mb-3" :delay="100" placeholder="Search activities" @change="onQuery" />
+        <div v-if="foundActivities" class="activity-settings-content overflow-auto">
+            <div v-for="activity in filteredActivities" :key="activity.id">
                 <div class="activity-settings-item p-2 cursor-pointer" @click="onClick(activity)">
                     <div class="d-flex justify-content-between align-items-start">
                         <span class="w-100">
@@ -59,6 +88,9 @@ function onRemove(activity: Activity) {
                 </div>
             </div>
         </div>
+        <div v-else class="activity-settings-content">
+            <b-alert class="py-1 px-2" show> No matching activities found. </b-alert>
+        </div>
     </div>
 </template>
 
@@ -77,7 +109,7 @@ function onRemove(activity: Activity) {
     .icon-check {
         color: darken($brand-success, 15%);
     }
-    .button-edit {
+    .button-delete {
         background: transparent;
     }
 }
@@ -88,7 +120,7 @@ function onRemove(activity: Activity) {
     .icon-check {
         color: $brand-light;
     }
-    .button-edit {
+    .button-delete {
         color: $brand-light;
     }
 }
