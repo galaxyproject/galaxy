@@ -31,10 +31,7 @@
             </b-form-checkbox>
             <br />
             <div v-if="item.importable">
-                <div>
-                    This {{ modelClass }} is currently <strong>{{ itemStatus }}</strong
-                    >.
-                </div>
+                <div>This {{ modelClass }} is currently {{ itemStatus }}.</div>
                 <p>Anyone can view and import this {{ modelClass }} by visiting the following URL:</p>
                 <blockquote>
                     <b-button v-b-tooltip.hover title="Edit URL" variant="link" size="sm" @click="onEdit">

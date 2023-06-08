@@ -199,6 +199,8 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
                     elif key == "is":
                         if q == "published":
                             query = query.filter(model.StoredWorkflow.published == true())
+                        elif q == "importable":
+                            query = query.filter(model.StoredWorkflow.importable == true())
                         elif q == "deleted":
                             query = query.filter(model.StoredWorkflow.deleted == true())
                             show_deleted = true
