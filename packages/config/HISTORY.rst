@@ -3,13 +3,31 @@ History
 
 .. to_doc
 
----------------------
-22.5.0.dev0
----------------------
+---------
+23.1.dev0
+---------
 
 
----------------------
+
+-------------------
+23.0.1 (2023-06-08)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Change default watchdog inotify_buffer log level to info by `@mvdbeek <https://github.com/mvdbeek>`_ in `#15967 <https://github.com/galaxyproject/galaxy/pull/15967>`_
+
+============
+Enhancements
+============
+
+* Add ``ca_certs`` option for sentry client by `@mvdbeek <https://github.com/mvdbeek>`_ in `#15943 <https://github.com/galaxyproject/galaxy/pull/15943>`_
+
+-------------------
 22.1.1 (2022-08-22)
----------------------
+-------------------
 
 * Initial release
