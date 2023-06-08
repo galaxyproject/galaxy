@@ -5,13 +5,14 @@ import { useActivityStore, type Activity } from "@/stores/activityStore";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faSquare } from "@fortawesome/free-regular-svg-icons";
-import { faCheckSquare, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faCheckSquare, faTrash, faThumbtack } from "@fortawesome/free-solid-svg-icons";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 
 library.add({
     faCheckSquare,
     faSquare,
     faTrash,
+    faThumbtack,
 });
 
 const activityStore = useActivityStore();
@@ -41,7 +42,9 @@ const foundActivities: ComputedRef<boolean> = computed(() => {
 });
 
 function onClick(activity: Activity) {
-    activity.visible = !activity.visible;
+    if (activity.optional) {
+        activity.visible = !activity.visible;
+    }
 }
 
 function onRemove(activity: Activity) {
@@ -63,7 +66,12 @@ function onQuery(newQuery: string) {
                         <span class="w-100">
                             <font-awesome-icon
                                 class="icon-check mr-1"
-                                v-if="activity.visible"
+                                v-if="!activity.optional"
+                                icon="fas fa-thumbtack"
+                                fa-fw />
+                            <font-awesome-icon
+                                class="icon-check mr-1"
+                                v-else-if="activity.visible"
                                 icon="fas fa-check-square"
                                 fa-fw />
                             <font-awesome-icon v-else class="mr-1" icon="far fa-square" fa-fw />
