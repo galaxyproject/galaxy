@@ -8609,7 +8609,6 @@ class FormDefinition(Base, Dictifiable, RepresentById):
                     "WorkflowField": WorkflowField,
                 }
             ).get(field["type"], TextField)
-            default_value = field["default"] if "default" in field else None
             form_def["inputs"].append(
                 FieldClass(
                     user=user, value=values.get(field["name"], field.get("default")), security=security, **field
