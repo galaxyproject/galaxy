@@ -45,10 +45,10 @@ export const useActivityStore = defineStore(
             remove,
             saveAll,
         };
-    } /*
+    },
     {
         persist: {
             paths: ["activities"],
         },
-    }*/
+    }
 );
