@@ -1212,6 +1212,16 @@ def test_check_cache_sanity(tmp_path):
     assert not path.exists()
 
 
+def test_fits_in_cache_check(tmp_path):
+    cache_dir = tmp_path
+    big_cache_target = CacheTarget(cache_dir, 1, 0.2)
+    assert not big_cache_target.fits_in_cache(int(1024 * 1024 * 1024 * 0.3))
+    assert big_cache_target.fits_in_cache(int(1024 * 1024 * 1024 * 0.1))
+
+    noop_cache_target = CacheTarget(cache_dir, -1, 0.2)
+    assert noop_cache_target.fits_in_cache(1024 * 1024 * 1024 * 100)
+
+
 AZURE_BLOB_NO_CACHE_TEST_CONFIG = """<object_store type="azure_blob">
     <auth account_name="azureact" account_key="password123" />
     <container name="unique_container_name" max_chunk_size="250"/>
