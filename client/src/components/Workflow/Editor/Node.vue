@@ -107,7 +107,7 @@
     </draggable-wrapper>
 </template>
 
-<script lang="ts" setup>
+<script setup lang="ts">
 import type { PropType, Ref } from "vue";
 import Vue, { reactive } from "vue";
 import BootstrapVue from "bootstrap-vue";

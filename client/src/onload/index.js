@@ -25,3 +25,9 @@ if (!config.testBuild === true) {
     console.log(`Galaxy Client '${config.name}' build, dated ${config.buildTimestamp}`);
     console.debug("Full configuration:", config);
 }
+
+// Custom Icons
+import customIconPack from "@/assets/icons.json";
+import { library } from "@fortawesome/fontawesome-svg-core";
+
+library.add(customIconPack);

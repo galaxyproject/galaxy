@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+<script setup lang="ts">
 import SelectObjectStore from "@/components/ObjectStore/SelectObjectStore.vue";
 import { ref } from "vue";
 

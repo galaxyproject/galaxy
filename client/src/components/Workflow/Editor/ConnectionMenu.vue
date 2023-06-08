@@ -21,7 +21,7 @@
         </template>
     </b-list-group>
 </template>
-<script lang="ts" setup>
+<script setup lang="ts">
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { computed, onMounted, ref, watch, type ComputedRef } from "vue";
 import {

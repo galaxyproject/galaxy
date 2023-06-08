@@ -45,7 +45,7 @@
             @moveTo="moveTo" />
     </div>
 </template>
-<script lang="ts" setup>
+<script setup lang="ts">
 import ZoomControl from "@/components/Workflow/Editor/ZoomControl.vue";
 import WorkflowNode from "@/components/Workflow/Editor/Node.vue";
 import WorkflowEdges from "@/components/Workflow/Editor/WorkflowEdges.vue";

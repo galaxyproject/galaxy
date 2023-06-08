@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+<script setup lang="ts">
 import { computed, ref } from "vue";
 import axios from "axios";
 import SelectObjectStore from "@/components/ObjectStore/SelectObjectStore.vue";

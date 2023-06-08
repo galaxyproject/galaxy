@@ -4,6 +4,7 @@ const del = require("del");
 const { src, dest, series, parallel, watch } = require("gulp");
 const child_process = require("child_process");
 const glob = require("glob");
+const buildIcons = require("./icons/build_icons");
 
 /*
  * We'll want a flexible glob down the road, but for now there are no
@@ -88,6 +89,10 @@ function fonts() {
     return src(path.resolve(path.join(PATHS.nodeModules, "font-awesome/fonts/**/*"))).pipe(
         dest("../static/images/fonts")
     );
+}
+
+async function icons() {
+    await buildIcons("./src/assets/icons.json");
 }
 
 function stagePlugins() {
@@ -186,7 +191,7 @@ function cleanPlugins() {
     return del(["../static/plugins/{visualizations,welcome_page}/*"], { force: true });
 }
 
-const client = parallel(fonts, stageLibs);
+const client = parallel(fonts, stageLibs, icons);
 const plugins = series(buildPlugins, cleanPlugins, stagePlugins);
 const pluginsRebuild = series(forceBuildPlugins, cleanPlugins, stagePlugins);
 
