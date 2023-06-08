@@ -69,27 +69,29 @@ function onQuery(newQuery: string) {
                             <font-awesome-icon v-else class="mr-1" icon="far fa-square" fa-fw />
                             <small>
                                 <icon class="mr-1" :icon="activity.icon" />
-                                <span class="font-weight-bold">{{ activity.title || "No title available" }}</span>
+                                <span class="font-weight-bold" v-localize>{{
+                                    activity.title || "No title available"
+                                }}</span>
                             </small>
                         </span>
                         <b-button
                             v-if="activity.mutable"
                             @click.stop="onRemove(activity)"
                             data-description="delete activity"
-                            class="button-edit"
+                            class="button-delete"
                             size="sm"
                             variant="link">
                             <font-awesome-icon icon="fa-trash" fa-fw />
                         </b-button>
                     </div>
-                    <small>
+                    <small v-localize>
                         {{ activity.description || "No description available" }}
                     </small>
                 </div>
             </div>
         </div>
         <div v-else class="activity-settings-content">
-            <b-alert class="py-1 px-2" show> No matching activities found. </b-alert>
+            <b-alert class="py-1 px-2" show v-localize> No matching activities found. </b-alert>
         </div>
     </div>
 </template>
