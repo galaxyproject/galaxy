@@ -17,6 +17,7 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.util.resources import resource_string
+from ..fork_safe_write import fork_safe_write
 
 log = logging.getLogger(__name__)
 DEFAULT_SHELL = "/bin/bash"
@@ -131,9 +132,7 @@ def write_script(path: str, contents, job_io: DescribesScriptIntegrityChecks, mo
     dir = os.path.dirname(path)
     if not os.path.exists(dir):
         os.makedirs(dir)
-
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(unicodify(contents))
+    fork_safe_write(path, contents)
     os.chmod(path, mode)
     if job_io.check_job_script_integrity:
         assert job_io.check_job_script_integrity_count is not None
