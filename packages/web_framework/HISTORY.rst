@@ -3,20 +3,25 @@ History
 
 .. to_doc
 
----------------------
-22.5.0.dev0
----------------------
+-------------------
+23.0.1 (2023-06-08)
+-------------------
 
 
+=========
+Bug fixes
+=========
 
----------------------
+* Various fixes to path prefix handling by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16033 <https://github.com/galaxyproject/galaxy/pull/16033>`_
+
+-------------------
 20.9.0 (2020-10-15)
----------------------
+-------------------
 
 * First release from the 20.09 branch of Galaxy.
 
----------------------
+-------------------
 20.5.0 (2020-07-04)
----------------------
+-------------------
 
 * First release from the 20.05 branch of Galaxy.
