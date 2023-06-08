@@ -10,6 +10,7 @@ except ImportError:
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.remote.webdriver import WebDriver
+from selenium.webdriver.safari.options import Options as SafariOptions
 
 logger = logging.getLogger("selenium.webdriver.remote.remote_connection")
 logger.setLevel(logging.WARNING)
@@ -109,7 +110,7 @@ def get_local_driver(browser=DEFAULT_BROWSER, headless=False) -> WebDriver:
 
 def get_remote_driver(host, port, browser=DEFAULT_BROWSER) -> WebDriver:
     # docker run -d -p 4444:4444 -v /dev/shm:/dev/shm selenium/standalone-chrome:3.0.1-aluminum
-    options: Union[webdriver.ChromeOptions, webdriver.FirefoxOptions, webdriver.EdgeOptions, None] = None
+    options: Union[webdriver.ChromeOptions, webdriver.FirefoxOptions, webdriver.EdgeOptions, SafariOptions]
     if browser == "auto" or browser == "CHROME":
         options = webdriver.ChromeOptions()
         options.set_capability("goog:loggingPrefs", LOGGING_PREFS)
@@ -118,7 +119,7 @@ def get_remote_driver(host, port, browser=DEFAULT_BROWSER) -> WebDriver:
     elif browser == "EDGE":
         options = webdriver.EdgeOptions()
     elif browser == "SAFARI":
-        pass
+        options = SafariOptions()
     else:
         raise Exception(f"Browser '{browser}' not supported.")
     executor = f"http://{host}:{port}/wd/hub"
