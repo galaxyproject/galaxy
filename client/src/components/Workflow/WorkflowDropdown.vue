@@ -1,12 +1,12 @@
 <template>
     <div>
         <b-link
+            aria-expanded="false"
             class="workflow-dropdown font-weight-bold"
             data-toggle="dropdown"
             :data-workflow-dropdown="workflow.id"
             draggable
-            @dragstart="onDragStart"
-            aria-expanded="false">
+            @dragstart="onDragStart">
             <Icon icon="caret-down" class="fa-lg" />
             <span class="workflow-dropdown-name">{{ workflow.name }}</span>
         </b-link>

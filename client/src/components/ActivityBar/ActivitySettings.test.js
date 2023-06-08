@@ -39,7 +39,7 @@ describe("ActivitySettings", () => {
 
     it("availability of checkboxes and checkbox states", async () => {
         // check number of available default activities
-        const items = wrapper.findAll("input[type='checkbox']");
+        const items = wrapper.findAll(".activity-settings-item");
         expect(items.length).toBe(8);
 
         // replace stored activity with a visible but non-optional test activity
@@ -48,9 +48,8 @@ describe("ActivitySettings", () => {
         await wrapper.vm.$nextTick();
         const visibleItems = wrapper.findAll(".activity-settings-item");
         expect(visibleItems.length).toBe(1);
-        const visibleCheckbox = visibleItems.at(0).find("input");
-        expect(visibleCheckbox.attributes("disabled")).toBe("disabled");
-        expect(visibleCheckbox.element.checked).toBeTruthy();
+        const visibleCheckbox = visibleItems.at(0).find("[data-icon='thumbtack']");
+        expect(visibleCheckbox.exists()).toBeTruthy();
         const visibleIcon = wrapper.find("[icon='activity-test-icon'");
         expect(visibleIcon.exists()).toBe(true);
 
@@ -64,8 +63,7 @@ describe("ActivitySettings", () => {
         await wrapper.vm.$nextTick();
         const hiddenItems = wrapper.findAll(".activity-settings-item");
         expect(hiddenItems.length).toBe(1);
-        const hiddenCheckbox = visibleItems.at(0).find("input");
-        expect(hiddenCheckbox.attributes("disabled")).toBeUndefined;
-        expect(hiddenCheckbox.element.checked).toBeFalsy();
+        const hiddenCheckbox = visibleItems.at(0).find("[data-icon='square']");
+        expect(hiddenCheckbox.exists()).toBeTruthy();
     });
 });

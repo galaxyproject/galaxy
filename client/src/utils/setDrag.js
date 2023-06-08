@@ -19,5 +19,5 @@ export function setDrag(evt, data = null) {
 
 export function clearDrag() {
     const eventStore = useEventStore();
-    eventStore.clearDragData(data);
+    eventStore.clearDragData();
 }

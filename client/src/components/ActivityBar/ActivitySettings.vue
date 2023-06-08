@@ -65,30 +65,30 @@ function onQuery(newQuery: string) {
                     <div class="d-flex justify-content-between align-items-start">
                         <span class="w-100">
                             <font-awesome-icon
-                                class="icon-check mr-1"
                                 v-if="!activity.optional"
+                                class="icon-check mr-1"
                                 icon="fas fa-thumbtack"
                                 fa-fw />
                             <font-awesome-icon
-                                class="icon-check mr-1"
                                 v-else-if="activity.visible"
+                                class="icon-check mr-1"
                                 icon="fas fa-check-square"
                                 fa-fw />
                             <font-awesome-icon v-else class="mr-1" icon="far fa-square" fa-fw />
                             <small>
                                 <icon class="mr-1" :icon="activity.icon" />
-                                <span class="font-weight-bold" v-localize>{{
+                                <span v-localize class="font-weight-bold">{{
                                     activity.title || "No title available"
                                 }}</span>
                             </small>
                         </span>
                         <b-button
                             v-if="activity.mutable"
-                            @click.stop="onRemove(activity)"
                             data-description="delete activity"
                             class="button-delete"
                             size="sm"
-                            variant="link">
+                            variant="link"
+                            @click.stop="onRemove(activity)">
                             <font-awesome-icon icon="fa-trash" fa-fw />
                         </b-button>
                     </div>
@@ -99,7 +99,7 @@ function onQuery(newQuery: string) {
             </div>
         </div>
         <div v-else class="activity-settings-content">
-            <b-alert class="py-1 px-2" show v-localize> No matching activities found. </b-alert>
+            <b-alert v-localize class="py-1 px-2" show> No matching activities found. </b-alert>
         </div>
     </div>
 </template>

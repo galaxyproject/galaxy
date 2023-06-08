@@ -11,7 +11,6 @@ describe("ActivityItem", () => {
         wrapper = mount(mountTarget, {
             propsData: {
                 id: "activity-test-id",
-                description: "activity-test-description",
                 icon: "activity-test-icon",
                 progressPercentage: 0,
                 progressStatus: null,
@@ -27,19 +26,19 @@ describe("ActivityItem", () => {
     });
 
     it("rendering", async () => {
-        expect(wrapper.attributes().description).toBe("activity-test-description");
-        expect(wrapper.find("li").attributes().id).toBe("activity-test-id");
-        expect(wrapper.find("li").text()).toBe("activity-test-title");
-        expect(wrapper.find("[icon='activity-test-icon']").exists()).toBeTruthy();
-        expect(wrapper.find(".progress").exists()).toBeFalsy();
+        const reference = wrapper.find("[id='activity-test-id']");
+        expect(reference.attributes().id).toBe("activity-test-id");
+        expect(reference.text()).toBe("activity-test-title");
+        expect(reference.find("[icon='activity-test-icon']").exists()).toBeTruthy();
+        expect(reference.find(".progress").exists()).toBeFalsy();
         await wrapper.setProps({ progressStatus: "success" });
-        expect(wrapper.find(".progress").exists()).toBeTruthy();
-        expect(wrapper.find(".bg-success").exists()).toBeTruthy();
-        expect(wrapper.find(".progress-bar").element.style.width).toBe("0%");
+        expect(reference.find(".progress").exists()).toBeTruthy();
+        expect(reference.find(".bg-success").exists()).toBeTruthy();
+        expect(reference.find(".progress-bar").element.style.width).toBe("0%");
         await wrapper.setProps({ progressPercentage: 50 });
-        expect(wrapper.find(".progress-bar").element.style.width).toBe("50%");
+        expect(reference.find(".progress-bar").element.style.width).toBe("50%");
         await wrapper.setProps({ progressStatus: "danger" });
-        expect(wrapper.find(".bg-success").exists()).toBeFalsy();
-        expect(wrapper.find(".bg-danger").exists()).toBeTruthy();
+        expect(reference.find(".bg-success").exists()).toBeFalsy();
+        expect(reference.find(".bg-danger").exists()).toBeTruthy();
     });
 });
