@@ -361,6 +361,10 @@ class NavigatesGalaxy(HasDriver):
     def current_history_id(self) -> str:
         return self.current_history()["id"]
 
+    def current_history_publish(self):
+        self.click_history_option_sharing()
+        self.make_accessible_and_publishable()
+
     def latest_history_item(self):
         history_contents = self.history_contents()
         assert len(history_contents) > 0
