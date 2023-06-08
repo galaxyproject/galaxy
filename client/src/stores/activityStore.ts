@@ -7,7 +7,7 @@ import { defineStore } from "pinia";
 
 import Activities from "@/components/ActivityBar/activities";
 
-interface Activity {
+export interface Activity {
     description: string;
     id: string;
     icon: string;
@@ -32,9 +32,17 @@ export const useActivityStore = defineStore(
             activities.value = newActivities;
         }
 
+        function remove(activity: Activity) {
+            const findIndex = activities.value.findIndex((a: Activity) => a.id === activity.id);
+            if (findIndex !== -1) {
+                activities.value.splice(findIndex, 1);
+            }
+        }
+
         return {
             activities,
             getAll,
+            remove,
             saveAll,
         };
     } /*

@@ -1,21 +1,27 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { useActivityStore } from "@/stores/activityStore";
+import { useActivityStore, type Activity } from "@/stores/activityStore";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faSquare } from "@fortawesome/free-regular-svg-icons";
-import { faCheckSquare } from "@fortawesome/free-solid-svg-icons";
+import { faCheckSquare, faTrash } from "@fortawesome/free-solid-svg-icons";
 
 library.add({
-    faSquare,
     faCheckSquare,
+    faSquare,
+    faTrash,
 });
 
 const activityStore = useActivityStore();
 const { activities } = storeToRefs(activityStore);
 
-function onClick(activity: any) {
+function onClick(activity: Activity) {
     activity.visible = !activity.visible;
+}
+
+function onRemove(activity: Activity) {
+    console.log(activity);
+    activityStore.remove(activity);
 }
 </script>
 
@@ -37,30 +43,15 @@ function onClick(activity: any) {
                                 <span class="font-weight-bold">{{ activity.title || "No title available" }}</span>
                             </small>
                         </span>
-                        <b-button-group>
-                            <b-button
-                                v-if="activity.mutable"
-                                v-b-tooltip.bottom.hover
-                                class="create-hist-btn"
-                                @click.stop
-                                data-description="create new history"
-                                size="sm"
-                                variant="link"
-                                :title="'Edit' | l">
-                                <icon fixed-width icon="edit" />
-                            </b-button>
-                            <b-button
-                                v-if="activity.mutable"
-                                v-b-modal.selector-history-modal
-                                v-b-tooltip.bottom.hover
-                                @click.stop
-                                data-description="switch to another history"
-                                size="sm"
-                                variant="link"
-                                :title="'Delete' | l">
-                                <icon fixed-width icon="trash" />
-                            </b-button>
-                        </b-button-group>
+                        <b-button
+                            v-if="activity.mutable"
+                            @click.stop="onRemove(activity)"
+                            data-description="delete activity"
+                            class="button-edit"
+                            size="sm"
+                            variant="link">
+                            <font-awesome-icon icon="fa-trash" fa-fw />
+                        </b-button>
                     </div>
                     <small>
                         {{ activity.description || "No description available" }}
@@ -86,12 +77,18 @@ function onClick(activity: any) {
     .icon-check {
         color: darken($brand-success, 15%);
     }
+    .button-edit {
+        background: transparent;
+    }
 }
 .activity-settings-item:hover {
     background: $brand-primary;
     color: $brand-light;
     border-radius: $border-radius-large;
     .icon-check {
+        color: $brand-light;
+    }
+    .button-edit {
         color: $brand-light;
     }
 }
