@@ -4181,7 +4181,7 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
         deleted=False,
         designation=None,
         parent_id=None,
-        validated_state="unknown",
+        validated_state=DatasetValidatedState.UNKNOWN,
         validated_state_message=None,
         visible=True,
         create_dataset=False,

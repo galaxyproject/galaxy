@@ -25,6 +25,7 @@ from requests import (
 )
 
 from galaxy.exceptions import error_codes
+from galaxy.util import UNKNOWN
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
@@ -5740,7 +5741,7 @@ steps:
                 history_id=history_id,
             )
             hda2 = self.dataset_populator.get_history_dataset_details(history_id, hid=2)
-            assert hda2["validated_state"] == "unknown"
+            assert hda2["validated_state"] == UNKNOWN
 
     @skip_without_tool("cat1")
     def test_validated_post_job_action_invalid(self):

@@ -43,6 +43,7 @@ from galaxy.util import (
     ParamsWithSpecs,
     shrink_stream_by_size,
     unicodify,
+    UNKNOWN,
 )
 from galaxy.util.custom_logging import get_logger
 from galaxy.util.monitors import Monitors
@@ -146,11 +147,11 @@ class BaseJobRunner:
                     # arg should be a JobWrapper/TaskWrapper
                     job_id = arg.get_id_tag()
             except Exception:
-                job_id = "unknown"
+                job_id = UNKNOWN
             try:
                 name = method.__name__
             except Exception:
-                name = "unknown"
+                name = UNKNOWN
             try:
                 action_str = f"galaxy.jobs.runners.{self.__class__.__name__.lower()}.{name}"
                 action_timer = self.app.execution_timer_factory.get_timer(

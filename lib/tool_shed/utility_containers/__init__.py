@@ -7,6 +7,7 @@ from galaxy.tool_shed.util.container_util import (
     generate_repository_dependencies_key_for_repository,
     STRSEP,
 )
+from galaxy.util import UNKNOWN
 from galaxy.util.tool_shed.common_util import parse_repository_dependency_tuple
 from tool_shed.util.readme_util import build_readme_files_dict
 
@@ -221,9 +222,9 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
                     version = requirements_dict["version"]
                     error = requirements_dict["error"]
                 except Exception as e:
-                    name = "unknown"
-                    type = "unknown"
-                    version = "unknown"
+                    name = UNKNOWN
+                    type = UNKNOWN
+                    version = UNKNOWN
                     error = str(e)
                 key = self.generate_tool_dependencies_key(name, version, type)
                 label = f"Version <b>{version}</b> of the <b>{name}</b> <b>{type}</b>"

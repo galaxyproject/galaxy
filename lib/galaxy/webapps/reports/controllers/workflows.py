@@ -20,6 +20,7 @@ from galaxy import (
     model,
     util,
 )
+from galaxy.util import UNKNOWN
 from galaxy.web.legacy_framework import grids
 from galaxy.webapps.base.controller import (
     BaseUIController,
@@ -47,7 +48,7 @@ class SpecifiedDateListGrid(grids.Grid):
         def get_value(self, trans, grid, stored_workflow):
             if stored_workflow.user:
                 return escape(stored_workflow.user.email)
-            return "unknown"
+            return UNKNOWN
 
     class EmailColumn(grids.GridColumn):
         def filter(self, trans, user, query, column_filter):

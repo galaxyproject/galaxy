@@ -82,6 +82,7 @@ from galaxy.util import (
     compression_utils,
     nice_size,
     sqlite,
+    UNKNOWN,
 )
 from galaxy.util.checkers import (
     is_bz2,
@@ -2516,7 +2517,7 @@ class GeminiSQLite(SQlite):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = "Gemini SQLite Database, version %s" % (dataset.metadata.gemini_version or "unknown")
+            dataset.peek = "Gemini SQLite Database, version %s" % (dataset.metadata.gemini_version or UNKNOWN)
             dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = "file does not exist"
@@ -2526,7 +2527,7 @@ class GeminiSQLite(SQlite):
         try:
             return dataset.peek
         except Exception:
-            return "Gemini SQLite Database, version %s" % (dataset.metadata.gemini_version or "unknown")
+            return "Gemini SQLite Database, version %s" % (dataset.metadata.gemini_version or UNKNOWN)
 
 
 class ChiraSQLite(SQlite):
@@ -2603,7 +2604,7 @@ class CuffDiffSQlite(SQlite):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = "CuffDiff SQLite Database, version %s" % (dataset.metadata.cuffdiff_version or "unknown")
+            dataset.peek = "CuffDiff SQLite Database, version %s" % (dataset.metadata.cuffdiff_version or UNKNOWN)
             dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = "file does not exist"
@@ -2613,7 +2614,7 @@ class CuffDiffSQlite(SQlite):
         try:
             return dataset.peek
         except Exception:
-            return "CuffDiff SQLite Database, version %s" % (dataset.metadata.cuffdiff_version or "unknown")
+            return "CuffDiff SQLite Database, version %s" % (dataset.metadata.cuffdiff_version or UNKNOWN)
 
 
 class MzSQlite(SQlite):
@@ -3033,8 +3034,8 @@ class NcbiTaxonomySQlite(SQlite):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "NCBI Taxonomy SQLite Database, version {} ({} taxons)".format(
-                getattr(dataset.metadata, "ncbitaxonomy_schema_version", "unknown"),
-                getattr(dataset.metadata, "taxon_count", "unknown"),
+                getattr(dataset.metadata, "ncbitaxonomy_schema_version", UNKNOWN),
+                getattr(dataset.metadata, "taxon_count", UNKNOWN),
             )
             dataset.blurb = nice_size(dataset.get_size())
         else:
@@ -3046,8 +3047,8 @@ class NcbiTaxonomySQlite(SQlite):
             return dataset.peek
         except Exception:
             return "NCBI Taxonomy SQLite Database, version {} ({} taxons)".format(
-                getattr(dataset.metadata, "ncbitaxonomy_schema_version", "unknown"),
-                getattr(dataset.metadata, "taxon_count", "unknown"),
+                getattr(dataset.metadata, "ncbitaxonomy_schema_version", UNKNOWN),
+                getattr(dataset.metadata, "taxon_count", UNKNOWN),
             )
 
 
@@ -3504,7 +3505,7 @@ class PostgresqlArchive(CompressedArchive):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = f"PostgreSQL Archive ({nice_size(dataset.get_size())})"
-            dataset.blurb = "PostgreSQL version %s" % (dataset.metadata.version or "unknown")
+            dataset.blurb = "PostgreSQL version %s" % (dataset.metadata.version or UNKNOWN)
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
@@ -3558,7 +3559,7 @@ class Fast5Archive(CompressedArchive):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = f"FAST5 Archive ({nice_size(dataset.get_size())})"
-            dataset.blurb = "%s sequences" % (dataset.metadata.fast5_count or "unknown")
+            dataset.blurb = "%s sequences" % (dataset.metadata.fast5_count or UNKNOWN)
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
@@ -3666,7 +3667,7 @@ class SearchGuiArchive(CompressedArchive):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = "SearchGUI Archive, version %s" % (dataset.metadata.searchgui_version or "unknown")
+            dataset.peek = "SearchGUI Archive, version %s" % (dataset.metadata.searchgui_version or UNKNOWN)
             dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = "file does not exist"
@@ -3676,7 +3677,7 @@ class SearchGuiArchive(CompressedArchive):
         try:
             return dataset.peek
         except Exception:
-            return "SearchGUI Archive, version %s" % (dataset.metadata.searchgui_version or "unknown")
+            return "SearchGUI Archive, version %s" % (dataset.metadata.searchgui_version or UNKNOWN)
 
 
 @build_sniff_from_prefix

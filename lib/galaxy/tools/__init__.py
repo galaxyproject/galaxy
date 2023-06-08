@@ -140,6 +140,7 @@ from galaxy.util import (
     rst_to_html,
     string_as_bool,
     unicodify,
+    UNKNOWN,
     XML,
 )
 from galaxy.util.bunch import Bunch
@@ -2158,7 +2159,7 @@ class Tool(Dictifiable):
             )
         except exceptions.ToolExecutionError as exc:
             job = exc.job
-            job_id = "unknown"
+            job_id = UNKNOWN
             if job is not None:
                 job.mark_failed(info=exc.err_msg, blurb=exc.err_code.default_error_message)
                 job_id = job.id
