@@ -325,7 +325,7 @@ class WorkflowRequestMonitor(Monitors):
                 return
 
     def __attempt_schedule(self, invocation_id, workflow_scheduler):
-        with self.app.model.context() as session, session.begin():
+        with self.app.model.context() as session:
             workflow_invocation = session.get(model.WorkflowInvocation, invocation_id)
 
             try:
