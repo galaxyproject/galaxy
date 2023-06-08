@@ -8611,7 +8611,7 @@ class FormDefinition(Base, Dictifiable, RepresentById):
             ).get(field["type"], TextField)
             form_def["inputs"].append(
                 FieldClass(
-                    user=user, value=values.get(field["name"], field["default"]), security=security, **field
+                    user=user, value=values.get(field["name"], field.get("default")), security=security, **field
                 ).to_dict()
             )
         return form_def
