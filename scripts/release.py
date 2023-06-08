@@ -298,7 +298,7 @@ def build_package(package: Package):
 def upload_package(package: Package):
     click.echo(f"uploading package {package.name}")
     subprocess.run(
-        ["twine", "upload"] + list(package.path.joinpath("dist").glob("*")),
+        ["twine", "upload", "--skip-existing"] + list(package.path.joinpath("dist").glob("*")),
         cwd=package.path,
     ).check_returncode()
 
