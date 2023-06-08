@@ -8612,7 +8612,7 @@ class FormDefinition(Base, Dictifiable, RepresentById):
             default_value = field["default"] if "default" in field else None
             form_def["inputs"].append(
                 FieldClass(
-                    user=user, value=values.get(field["name"], default_value), security=security, **field
+                    user=user, value=values.get(field["name"], field.get("default")), security=security, **field
                 ).to_dict()
             )
         return form_def
