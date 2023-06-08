@@ -112,6 +112,7 @@ def get_remote_driver(host, port, browser=DEFAULT_BROWSER) -> WebDriver:
     options: Union[webdriver.ChromeOptions, webdriver.FirefoxOptions, webdriver.EdgeOptions, None] = None
     if browser == "auto" or browser == "CHROME":
         options = webdriver.ChromeOptions()
+        options.set_capability("goog:loggingPrefs", LOGGING_PREFS)
     elif browser == "FIREFOX":
         options = webdriver.FirefoxOptions()
     elif browser == "EDGE":
@@ -120,8 +121,6 @@ def get_remote_driver(host, port, browser=DEFAULT_BROWSER) -> WebDriver:
         pass
     else:
         raise Exception(f"Browser '{browser}' not supported.")
-    if options:
-        options.set_capability("goog:loggingPrefs", LOGGING_PREFS)
     executor = f"http://{host}:{port}/wd/hub"
     driver = webdriver.Remote(
         command_executor=executor,
