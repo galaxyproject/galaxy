@@ -6,8 +6,10 @@
 import { ref, type Ref } from "vue";
 import { defineStore } from "pinia";
 
+type EventData = { [key: string]: unknown };
+
 export const useEventStore = defineStore("eventStore", () => {
-    const dragData: Ref<{} | null> = ref(null);
+    const dragData: Ref<EventData | null> = ref(null);
 
     function clearDragData() {
         dragData.value = null;
@@ -17,7 +19,7 @@ export const useEventStore = defineStore("eventStore", () => {
         return dragData.value;
     }
 
-    function setDragData(data: {}) {
+    function setDragData(data: EventData) {
         dragData.value = data;
     }
 
