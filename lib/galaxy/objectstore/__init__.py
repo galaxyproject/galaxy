@@ -48,6 +48,7 @@ from .badges import (
     serialize_badges,
     StoredBadgeDict,
 )
+from .caching import CacheTarget
 
 NO_SESSION_ERROR_MESSAGE = (
     "Attempted to 'create' object store entity in configuration with no database session present."
@@ -302,8 +303,13 @@ class ObjectStore(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
+    def cache_targets(self) -> List[CacheTarget]:
+        """Return a list of CacheTargets used by this object store."""
+        raise NotImplementedError()
+
+    @abc.abstractmethod
     def to_dict(self) -> Dict[str, Any]:
-        raise NotImplementedError
+        raise NotImplementedError()
 
     @abc.abstractmethod
     def get_quota_source_map(self):
@@ -445,6 +451,9 @@ class BaseObjectStore(ObjectStore):
     def is_private(self, obj):
         return self._invoke("is_private", obj)
 
+    def cache_targets(self) -> List[CacheTarget]:
+        return []
+
     @classmethod
     def parse_private_from_config_xml(clazz, config_xml):
         private = DEFAULT_PRIVATE
@@ -545,6 +554,14 @@ class ConcreteObjectStore(BaseObjectStore):
 
     def _is_private(self, obj):
         return self.private
+
+    @property
+    def cache_target(self) -> Optional[CacheTarget]:
+        return None
+
+    def cache_targets(self) -> List[CacheTarget]:
+        cache_target = self.cache_target
+        return [cache_target] if cache_target is not None else []
 
     def get_quota_source_map(self):
         quota_source_map = QuotaSourceMap(
@@ -898,6 +915,13 @@ class NestedObjectStore(BaseObjectStore):
         """Create a backing file in a random backend."""
         objectstore = random.choice(list(self.backends.values()))
         return objectstore.create(obj, **kwargs)
+
+    def cache_targets(self) -> List[CacheTarget]:
+        cache_targets = []
+        for backend in self.backends.values():
+            cache_targets.extend(backend.cache_targets())
+        # TODO: merge more intelligently - de-duplicate paths and handle conflicting sizes/percents
+        return cache_targets
 
     def _empty(self, obj, **kwargs):
         """For the first backend that has this `obj`, determine if it is empty."""
@@ -1364,7 +1388,9 @@ def type_to_object_store_class(store: str, fsmon: bool = False) -> Tuple[Type[Ba
     return objectstore_class, objectstore_constructor_kwds
 
 
-def build_object_store_from_config(config, fsmon=False, config_xml=None, config_dict=None):
+def build_object_store_from_config(
+    config, fsmon=False, config_xml=None, config_dict=None, disable_process_management=False
+):
     """
     Invoke the appropriate object store.
 
@@ -1378,8 +1404,8 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None, config_
     from_object = "xml"
 
     if config is None and config_dict is not None and "config" in config_dict:
-        # Build a config object from to_dict of an ObjectStore.
-        config = Bunch(**config_dict["config"])
+        # Build an application config object from to_dict of an ObjectStore.
+        config = Bunch(disable_process_management=disable_process_management, **config_dict["config"])
     elif config is None:
         raise Exception(
             "build_object_store_from_config sent None as config parameter and one cannot be recovered from config_dict"
