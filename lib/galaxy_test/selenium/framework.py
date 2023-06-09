@@ -343,6 +343,12 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
         """Returns default download path"""
         return DEFAULT_DOWNLOAD_PATH
 
+    @property
+    def anonymous_galaxy_interactor(self):
+        api_key = self.get_api_key(force=False)
+        interactor = self._get_interactor(api_key=api_key, allow_anonymous=True)
+        return interactor
+
     def api_interactor_for_logged_in_user(self):
         api_key = self.get_api_key(force=True)
         interactor = self._get_interactor(api_key=api_key)

@@ -519,22 +519,48 @@ class NavigatesGalaxy(HasDriver):
             search_term,
         )
 
-    def get_logged_in_user(self):
-        return self.api_get("users/current")
+    def get_logged_in_user(self) -> Optional[Dict[str, Any]]:
+        user_dict = self.api_get("users/current")
+        # for user's not logged in - this just returns a {} so lets
+        # key this on an id being available?
+        if "id" in user_dict:
+            return user_dict
+        else:
+            return None
 
-    def get_api_key(self, force=False):
-        if not force:
-            response = self.api_get(f"users/{self.get_user_id()}/api_key/detailed")
+    def get_api_key(self, force=False) -> Optional[str]:
+        user_id = self.get_user_id()
+        if user_id is None:
+            if force:
+                raise Exception("Attempting to get_api_key but no user logged in.")
+            else:
+                return None
+        elif not force:
+            response = self.api_get(f"users/{user_id}/api_key/detailed")
             return response["key"] if response else None
         else:
-            return self.api_post(f"users/{self.get_user_id()}/api_key")
+            return self.api_post(f"users/{user_id}/api_key")
 
-    def get_user_id(self):
+    def get_user_id(self) -> Optional[str]:
         user = self.get_logged_in_user()
-        return user["id"]
+        if user is not None:
+            return user["id"]
+        else:
+            return None
 
-    def is_logged_in(self):
-        return "email" in self.get_logged_in_user()
+    def get_user_email(self) -> str:
+        user = self.get_logged_in_user()
+        if user is None:
+            raise Exception("No user is logged in, cannot fetch user e-mail.")
+        else:
+            return user["email"]
+
+    def is_logged_in(self) -> bool:
+        user_object = self.get_logged_in_user()
+        if not user_object:
+            return False
+        else:
+            return "email" in user_object
 
     @retry_during_transitions
     def _inline_search_for(self, selector, search_term=None, escape_to_clear=False):
@@ -638,7 +664,9 @@ class NavigatesGalaxy(HasDriver):
 
             text = username_element.text
             assert username in text
-            assert self.get_logged_in_user()["email"] == email
+            user_object = self.get_logged_in_user()
+            assert user_object and "email" in user_object
+            assert user_object["email"] == email
 
             # clicking away no longer closes menu post Masthead -> VueJS
             self.click_masthead_user()
