@@ -26,8 +26,7 @@ export function createWorkflowQuery(filterSettings) {
     return query;
 }
 
-/**
- *
+/** Converts filters into tool search backend whoosh query.
  * @param {Object} filterSettings e.g.: {"name": "Tool Name", "section": "Collection", ...}
  * @param {String} panelView (if not `default`, does ontology search at backend)
  * @param {Array} toolbox (to find ontology id if given ontology name)
@@ -119,32 +118,6 @@ export function hasResults(results) {
     return Array.isArray(results) && results.length > 0;
 }
 
-export function normalizeTools(tools) {
-    tools = hideToolsSection(tools);
-    tools = flattenTools(tools);
-    return tools;
-}
-
-export function hideToolsSection(tools) {
-    return tools.filter((section) => !TOOLS_RESULTS_SECTIONS_HIDE.includes(section.name));
-}
-
-export function removeDisabledTools(tools) {
-    return tools.filter((section) => {
-        if (section.model_class === "ToolSectionLabel") {
-            return true;
-        } else if (!section.elems && section.disabled) {
-            return false;
-        } else if (section.elems) {
-            section.elems = section.elems.filter((el) => !el.disabled);
-            if (!section.elems.length) {
-                return false;
-            }
-        }
-        return true;
-    });
-}
-
 /**
  * Given toolbox, keys to sort/search results by and a search query,
  * Does a direct string.match() comparison to find results,
@@ -211,6 +184,27 @@ export function flattenTools(tools) {
         normalizedTools = normalizedTools.concat(flattenToolsSection(section));
     });
     return normalizedTools;
+}
+
+export function hideToolsSection(tools) {
+    return tools.filter((section) => !TOOLS_RESULTS_SECTIONS_HIDE.includes(section.name));
+}
+
+export function removeDisabledTools(tools) {
+    return tools.filter((section) => {
+        if (section.model_class === "ToolSectionLabel") {
+            return true;
+        } else if (!section.elems && section.disabled) {
+            return false;
+        } else if (section.elems) {
+            section.elems = section.elems.filter((el) => !el.disabled);
+            if (!section.elems.length) {
+                return false;
+            }
+        }
+        return true;
+    });
+}
 
 /**
  *
@@ -254,6 +248,7 @@ function isToolObject(tool) {
         return true;
     }
     return false;
+}
 
 // given array and a substring, get the closest matching term for substring
 function matchingTerm(termArray, substring) {
