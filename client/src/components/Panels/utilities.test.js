@@ -22,13 +22,18 @@ describe("test helpers in tool searching utilities and panel handling", () => {
             name: "Filter",
             id: "__FILTER_FAILED_DATASETS__",
             help: "downstream",
+            owner: "devteam",
         };
         const q = createWhooshQuery(settings, "default", []);
 
         // OrGroup (at backend) on name, name_exact, description
         expect(q).toContain("name:(Filter) name_exact:(Filter) description:(Filter)");
         // AndGroup (explicit at frontend) on all other settings
-        expect(q).toContain("id_exact:(__FILTER_FAILED_DATASETS__) AND help:(downstream)");
+        expect(q).toContain("id_exact:(__FILTER_FAILED_DATASETS__) AND help:(downstream) AND owner:(devteam)");
+        // Combined query results in:
+        expect(q).toEqual(
+            "(name:(Filter) name_exact:(Filter) description:(Filter)) AND (id_exact:(__FILTER_FAILED_DATASETS__) AND help:(downstream) AND owner:(devteam) AND )"
+        );
     });
 
     it("test tool search helper that searches for tools given keys", async () => {

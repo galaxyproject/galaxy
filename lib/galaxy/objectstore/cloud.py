@@ -24,6 +24,7 @@ from galaxy.util import (
 from . import ConcreteObjectStore
 from .caching import (
     CacheTarget,
+    enable_cache_monitor,
     InProcessCacheMonitor,
 )
 from .s3 import parse_config_xml
@@ -66,7 +67,6 @@ class CloudConfigMixin:
                 "size": self.cache_size,
                 "path": self.staging_path,
             },
-            "enable_cache_monitor": False,
         }
 
 
@@ -87,7 +87,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
         bucket_dict = config_dict["bucket"]
         connection_dict = config_dict.get("connection", {})
         cache_dict = config_dict.get("cache") or {}
-        self.enable_cache_monitor = config_dict.get("enable_cache_monitor", True)
+        self.enable_cache_monitor, self.cache_monitor_interval = enable_cache_monitor(config, config_dict)
 
         self.provider = config_dict["provider"]
         self.credentials = config_dict["auth"]
@@ -121,11 +121,8 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
             self.use_axel = False
 
     def start_cache_monitor(self):
-        # Clean cache only if value is set in galaxy.ini
-        if self.cache_size != -1 and self.enable_cache_monitor:
-            # Convert GBs to bytes for comparison
-            self.cache_size = self.cache_size * 1073741824
-            self.cache_monitor = InProcessCacheMonitor(self.cache_target, 30)
+        if self.enable_cache_monitor:
+            self.cache_monitor = InProcessCacheMonitor(self.cache_target, self.cache_monitor_interval)
 
     @staticmethod
     def _get_connection(provider, credentials):
@@ -384,12 +381,12 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
             log.debug("Pulling key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
             key = self.bucket.objects.get(rel_path)
             # Test if cache is large enough to hold the new file
-            if self.cache_size > 0 and key.size > self.cache_size:
+            if not self.cache_target.fits_in_cache(key.size):
                 log.critical(
-                    "File %s is larger (%s) than the cache size (%s). Cannot download.",
+                    "File %s is larger (%s) than the configured cache allows (%s). Cannot download.",
                     rel_path,
                     key.size,
-                    self.cache_size,
+                    self.cache_target.log_description,
                 )
                 return False
             if self.use_axel:

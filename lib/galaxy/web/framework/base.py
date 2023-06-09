@@ -158,14 +158,21 @@ class WebApplication:
         friendly objects, finds the appropriate method to handle the request
         and calls it.
         """
-        # Immediately create request_id which we will use for logging
-        request_id = environ.get("request_id", "unknown")
+        # Get request_id (set by RequestIDMiddleware):
+        # Used for logging + ensuring request-scoped SQLAlchemy sessions.
+        request_id = environ["request_id"]
+
         if self.trace_logger:
             self.trace_logger.context_set("request_id", request_id)
         self.trace(message="Starting request")
+
+        path_info = environ.get("PATH_INFO", "")
+
         try:
-            return self.handle_request(environ, start_response)
+            self._model.set_request_id(request_id)  # Start SQLAlchemy session scope
+            return self.handle_request(request_id, path_info, environ, start_response)
         finally:
+            self._model.unset_request_id(request_id)  # End SQLAlchemy session scope
             self.trace(message="Handle request finished")
             if self.trace_logger:
                 self.trace_logger.context_remove("request_id")
@@ -198,11 +205,8 @@ class WebApplication:
             raise webob.exc.HTTPNotFound(f"Action not callable for {path_info}")
         return (controller_name, controller, action, method)
 
-    def handle_request(self, environ, start_response, body_renderer=None):
-        # Grab the request_id (should have been set by middleware)
-        request_id = environ.get("request_id", "unknown")
+    def handle_request(self, request_id, path_info, environ, start_response, body_renderer=None):
         # Map url using routes
-        path_info = environ.get("PATH_INFO", "")
         client_match = self.clientside_routes.match(path_info, environ)
         map_match = self.mapper.match(path_info, environ) or client_match
         if path_info.startswith("/api"):

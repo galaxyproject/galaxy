@@ -139,6 +139,8 @@ XML = etree.XML
 
 defaultdict = collections.defaultdict
 
+UNKNOWN = "unknown"
+
 
 def str_removeprefix(s: str, prefix: str):
     """

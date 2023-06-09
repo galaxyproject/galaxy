@@ -29,6 +29,7 @@ from galaxy.util.path import safe_relpath
 from . import ConcreteObjectStore
 from .caching import (
     CacheTarget,
+    enable_cache_monitor,
     InProcessCacheMonitor,
     parse_caching_config_dict_from_xml,
 )
@@ -98,7 +99,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         auth_dict = config_dict["auth"]
         container_dict = config_dict["container"]
         cache_dict = config_dict.get("cache") or {}
-        self.enable_cache_monitor = config_dict.get("enable_cache_monitor", True)
+        self.enable_cache_monitor, self.cache_monitor_interval = enable_cache_monitor(config, config_dict)
 
         self.account_name = auth_dict.get("account_name")
         self.account_key = auth_dict.get("account_key")
@@ -117,11 +118,8 @@ class AzureBlobObjectStore(ConcreteObjectStore):
 
         self._configure_connection()
 
-        # Clean cache only if value is set in galaxy.ini
-        if self.cache_size != -1 and self.enable_cache_monitor:
-            # Convert GBs to bytes for comparison
-            self.cache_size = self.cache_size * 1073741824
-            self.cache_monitor = InProcessCacheMonitor(self.cache_target, 30)
+        if self.enable_cache_monitor:
+            self.cache_monitor = InProcessCacheMonitor(self.cache_target, self.cache_monitor_interval)
 
     def to_dict(self):
         as_dict = super().to_dict()
@@ -268,12 +266,12 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         local_destination = self._get_cache_path(rel_path)
         try:
             log.debug("Pulling '%s' into cache to %s", rel_path, local_destination)
-            if self.cache_size > 0 and self._get_size_in_azure(rel_path) > self.cache_size:
+            if not self.cache_target.fits_in_cache(self._get_size_in_azure(rel_path)):
                 log.critical(
-                    "File %s is larger (%s) than the cache size (%s). Cannot download.",
+                    "File %s is larger (%s bytes) than the configured cache allows (%s). Cannot download.",
                     rel_path,
                     self._get_size_in_azure(rel_path),
-                    self.cache_size,
+                    self.cache_target.log_description,
                 )
                 return False
             else:

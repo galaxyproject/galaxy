@@ -100,14 +100,14 @@ const greenAlgorithmsUrl = "https://www.green-algorithms.org/";
             </p>
 
             <pre>
-              energy_needed_cpu = runtime * power_needed_cpu / 1000
-              energy_needed_memory = runtime * power_needed_memory / 1000
-              total_energy_needed = runtime * total_power_needed / 1000
+                energy_needed_cpu = runtime * power_needed_cpu / 1000
+                energy_needed_memory = runtime * power_needed_memory / 1000
+                total_energy_needed = runtime * total_power_needed / 1000
             </pre>
 
             <p>
                 Finally, we convert the energy usage into estimated carbon emissions (in metric units CO2e) by
-                multiplying the carbon intensity of the server location.
+                multiplying the carbon intensity of the server location:
             </p>
 
             <pre>
@@ -157,16 +157,20 @@ const greenAlgorithmsUrl = "https://www.green-algorithms.org/";
     </article>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
+@import "scss/theme/blue.scss";
+
 pre {
     font-weight: bold;
     white-space: pre-line;
-    border-left: 4px solid lightgray;
+    line-height: 1.5rem;
+    background-color: $gray-100;
+    border: 1px solid $brand-secondary;
     border-radius: 4px;
-    padding-left: 1rem;
+    padding: 1rem;
 }
 
 section {
-    margin-top: 2rem;
+    margin-top: 4rem;
 }
 </style>

@@ -113,6 +113,10 @@ class WebApplication(base.WebApplication):
         # Security helper
         self.security = galaxy_app.security
 
+        # We need this to set the REQUEST_ID contextvar in model.base *BEFORE* a GalaxyWebTransaction is created.
+        # This will ensure a SQLAlchemy session is request-scoped for legacy (non-fastapi) endpoints.
+        self._model = galaxy_app.model
+
     def build_apispec(self):
         """
         Traverse all route paths starting with "api" and create an APISpec instance.

@@ -145,7 +145,9 @@ def get_object_store(tool_job_working_directory, object_store=None):
         with open(object_store_conf_path) as f:
             config_dict = json.load(f)
         assert config_dict is not None
-        object_store = build_object_store_from_config(None, config_dict=config_dict)
+        # build an object store but disable any process management associated with it
+        # we're using it as a library - not as a service.
+        object_store = build_object_store_from_config(None, config_dict=config_dict, disable_process_management=True)
     Dataset.object_store = object_store
     return object_store
 
