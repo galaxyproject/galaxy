@@ -27,7 +27,7 @@ export const Activities = [
     },
     {
         description: "Displays a panel to search and access available workflows.",
-        icon: "sitemap",
+        icon: "search",
         id: "workflows",
         mutable: false,
         optional: true,
