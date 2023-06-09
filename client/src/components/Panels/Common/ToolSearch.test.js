@@ -74,6 +74,7 @@ describe("ToolSearch", () => {
             name: "name-filter",
             section: "section-filter",
             id: "id-filter",
+            owner: "owner-filter",
             help: "help-filter",
         };
         expect(mockMethod).toHaveBeenCalledWith({

@@ -120,7 +120,7 @@ function checkQuery(q: string) {
 
 function post(message: object) {
     searchWorker.value?.postMessage(message);
-};
+}
 
 function onSearch() {
     for (const [filter, value] of Object.entries(filterSettings.value)) {
