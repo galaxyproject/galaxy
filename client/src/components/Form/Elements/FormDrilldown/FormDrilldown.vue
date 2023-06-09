@@ -85,7 +85,7 @@ function onSelectAll(selected: boolean): void {
             :indeterminate="selectAllIndeterminate"
             class="d-inline select-all-checkbox"
             @change="onSelectAll">
-            Select/Unselect All
+            Select / Deselect All
         </b-form-checkbox>
         <form-drilldown-list
             :multiple="multiple"
