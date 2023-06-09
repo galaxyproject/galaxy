@@ -1167,10 +1167,11 @@ class NavigatesGalaxy(HasDriver):
         self.libraries_index_search_for(name)
         self.libraries_index_table_elements()[0].find_element(By.CSS_SELECTOR, "td a").click()
 
-    def page_open_with_name(self, name, screenshot_name):
+    def page_open_and_screenshot(self, screenshot_name):
         self.home()
         self.navigate_to_pages()
-        self.click_grid_popup_option(name, "View")
+        self.components.pages.drop.wait_for_and_click()
+        self.components.pages.view.wait_for_and_click()
         if screenshot_name:
             self.sleep_for(self.wait_types.UX_RENDER)
             self.screenshot(screenshot_name)
@@ -1478,7 +1479,8 @@ class NavigatesGalaxy(HasDriver):
 
     def create_page_and_edit(self, name=None, slug=None, screenshot_name=None):
         name = self.create_page(name=name, slug=slug, screenshot_name=screenshot_name)
-        self.click_grid_popup_option(name, "Edit content")
+        self.components.pages.drop.wait_for_and_click()
+        self.components.pages.edit.wait_for_and_click()
         self.components.pages.editor.markdown_editor.wait_for_visible()
         return name
 

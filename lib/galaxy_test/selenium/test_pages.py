@@ -21,7 +21,7 @@ class TestPages(SeleniumTestCase):
         self.history_panel_wait_for_hid_ok(1)
         self.navigate_to_pages()
         self.screenshot("pages_grid")
-        name = self.create_page_and_edit(screenshot_name="pages_create_form")
+        self.create_page_and_edit(screenshot_name="pages_create_form")
         self.screenshot("pages_editor_new")
         editor = self._page_editor
         editor.markdown_editor.wait_for_and_send_keys("moo\n\n\ncow\n\n")
@@ -31,7 +31,7 @@ class TestPages(SeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
         editor.save.wait_for_and_click()
         self.screenshot("pages_editor_saved")
-        self.page_open_with_name(name, "page_view_with_embedded_dataset")
+        self.page_open_and_screenshot("page_view_with_embedded_dataset")
 
     @selenium_test
     @managed_history
@@ -45,7 +45,7 @@ class TestPages(SeleniumTestCase):
         )
 
         self.navigate_to_pages()
-        name = self.create_page_and_edit()
+        self.create_page_and_edit()
         editor = self._page_editor
         editor.markdown_editor.wait_for_and_send_keys("moo\n\n\ncow\n\n")
         editor.embed_workflow_display.wait_for_and_click()
@@ -56,7 +56,7 @@ class TestPages(SeleniumTestCase):
         editor.workflow_selection(id=problem_workflow_2_id).wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         editor.save.wait_for_and_click()
-        self.page_open_with_name(name, "page_view_with_workflow_problems")
+        self.page_open_and_screenshot("page_view_with_workflow_problems")
 
     @property
     def _page_editor(self):
