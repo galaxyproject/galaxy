@@ -22,7 +22,7 @@ const text = computed(() => {
 </script>
 
 <template>
-    <div class="text-break text-center">
+    <span class="text-break text-center">
         {{ text }}
-    </div>
+    </span>
 </template>
