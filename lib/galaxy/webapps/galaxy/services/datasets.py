@@ -610,7 +610,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         dataset_id: DecodedDatabaseIdField,
     ) -> DatasetTextContentDetails:
         """Returns dataset content as Text."""
-        user = self.get_authenticated_user(trans)
+        user = trans.user
         hda = self.hda_manager.get_accessible(dataset_id, user)
         hda = self.hda_manager.error_if_uploading(hda)
         truncated, dataset_data = self.hda_manager.text_data(hda, preview=True)
