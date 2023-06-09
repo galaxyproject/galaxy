@@ -25,6 +25,8 @@
             <b-form-datalist id="sectionSelect" :options="sectionNames"></b-form-datalist>
             <small class="mt-1">Filter by id:</small>
             <b-form-input v-model="filterSettings['id']" size="sm" placeholder="any id" />
+            <small class="mt-1">Filter by repository owner:</small>
+            <b-form-input v-model="filterSettings['owner']" size="sm" placeholder="any owner" />
             <small class="mt-1">Filter by help text:</small>
             <b-form-input v-model="filterSettings['help']" size="sm" placeholder="any help text" />
             <div class="mt-3">
@@ -36,6 +38,57 @@
                     <icon icon="redo" />
                     <span>{{ "Cancel" | localize }}</span>
                 </b-button>
+                <b-button title="Search Help" size="sm" @click="showHelp = true">
+                    <icon icon="question" />
+                </b-button>
+                <b-modal v-model="showHelp" title="Tool Advanced Search Help" ok-only>
+                    <div>
+                        <p>
+                            You can use this Advanced Tool Search Panel to find tools by applying search filters, with
+                            the results showing up in the center panel.
+                        </p>
+
+                        <p>
+                            <i>
+                                (Clicking on the Section, Repo or Owner labels in the Search Results will activate the
+                                according filter)
+                            </i>
+                        </p>
+
+                        <p>The available tool search filters are:</p>
+                        <dl>
+                            <dt><code>name</code></dt>
+                            <dd>The tool name (stored as tool.name + tool.description in the XML)</dd>
+                            <dt><code>section</code></dt>
+                            <dd>
+                                The tool section is based on the current view you have selected for the panel. <br />
+                                When this field is active, you will be able to see a datalist showing the available
+                                sections you can filter from. <br />
+                                By default, Galaxy tool panel sections are filterable if you are currently on the
+                                <i>Full Tool Panel</i> view, and it will show EDAM ontologies or EDAM topics if you have
+                                either of those options selected. <br />
+                                Change panel views by clicking on the
+                                <icon icon="caret-down" />
+                                icon at the top right of the tool panel.
+                            </dd>
+                            <dt><code>id</code></dt>
+                            <dd>The tool id (taken from its XML)</dd>
+                            <dt><code>owner</code></dt>
+                            <dd>
+                                For the tools that have been installed from the
+                                <a href="https://toolshed.g2.bx.psu.edu/" target="_blank">ToolShed</a>
+                                , this <i>owner</i> filter allows you to search for tools from a specific ToolShed
+                                repository <b>owner</b>.
+                            </dd>
+                            <dt><code>help text</code></dt>
+                            <dd>
+                                This is like a keyword search: you can search for keywords that might exist in a tool's
+                                help text. An example input:
+                                <i>"genome, RNA, minimap"</i>
+                            </dd>
+                        </dl>
+                    </div>
+                </b-modal>
             </div>
         </div>
     </div>
@@ -82,6 +135,7 @@ export default {
             favorites: ["#favs", "#favorites", "#favourites"],
             minQueryLength: 3,
             filterSettings: {},
+            showHelp: false,
         };
     },
     computed: {
