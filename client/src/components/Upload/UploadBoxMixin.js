@@ -352,7 +352,7 @@ export default {
         },
         mountFtpComponentFromJs: function (targetDom) {
             return new Vue({
-                el: ".upload-top" /* component requires positioning */,
+                el: ".upload-top" /* //TODO component requires positioning */,
                 render: (h) =>
                     h(FormFTP, {
                         props: this.buildFtpComponentProps(),
@@ -363,21 +363,21 @@ export default {
             return {
                 options: {
                     ftp_upload_site: this.ftpUploadSite,
-                    upload_box: this.uploadbox, //TODO rename
+                    upload_box: this.uploadbox,
                     onchange: function () {},
-                    onadd: function (uploadBox, ftp_file) {
+                    onadd: function (uploadBox, file) {
                         return uploadBox.add([
                             {
                                 mode: "ftp",
-                                name: ftp_file.path,
-                                size: ftp_file.size,
-                                path: ftp_file.path,
-                                uri: ftp_file.uri,
+                                name: file.path,
+                                size: file.size,
+                                path: file.path,
+                                uri: file.uri,
                             },
                         ]);
                     },
-                    onremove: function (thisCollection, model_index) {
-                        return thisCollection.remove(model_index);
+                    onremove: function (thisCollection, index) {
+                        return thisCollection.remove(index);
                     },
                 },
                 collection: this.collection,

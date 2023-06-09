@@ -1,12 +1,11 @@
 <template>
-    <div :class="model.attributes.cls">
-        {{ /* //TODO model.cls = "upload-ftp" */ }}
+    <div :class="model.class">
         <div v-show="waiting" class="upload-ftp-wait fa fa-spinner fa-spin" />
-        <div v-show="model.help_enabled" class="upload-ftp-help">
+        <div v-show="model.text.help" class="upload-ftp-help">
             This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at
             <strong>{{ model.ftp_upload_site }}</strong> using your Galaxy credentials. For help visit the
             <a href="https://galaxyproject.org/ftp-upload/" target="_blank">tutorial</a>.
-            <span v-show="model.oidc_text">
+            <span v-show="model.text.oidc">
                 <br />If you are signed-in to Galaxy using a third-party identity and you
                 <strong>do not have a Galaxy password</strong> please use the reset password option in the login form
                 with your email to create a password for your account.
@@ -16,7 +15,7 @@
             <span style="whitespace: nowrap; float: left">Available files: </span>
             <span style="whitespace: nowrap; float: right">
                 <span class="upload-icon fa fa-file-text-o" />
-                <span class="upload-ftp-number">{{ ftpFiles.length }} files</span>
+                <span class="upload-ftp-number">{{ filesSource.length }} files</span>
                 <span class="upload-icon fa fa-hdd-o" />
                 <span class="upload-ftp-disk">{{ bytesToString(totalSize, true) }}</span>
             </span>
@@ -37,30 +36,30 @@
                 </thead>
                 <tbody class="upload-ftp-body">
                     <tr
-                        v-for="(ftpFile, index) in ftpFiles"
-                        :key="ftpFile.path"
-                        :ftp-id="ftpFile.path"
+                        v-for="(file, index) in filesSource"
+                        :key="file.path"
+                        :ftp-id="file.path"
                         :ftp-index="index"
                         class="upload-ftp-row"
-                        @click="onRowClick(ftpFile)">
+                        @click="onRowClick(file)">
                         <td class="_has_collection">
                             <div
                                 class="icon"
                                 :class="{
-                                    [model.attributes.class_add]: !isSelected(ftpFile),
-                                    [model.attributes.class_remove]: isSelected(ftpFile),
+                                    [model.checkbox.add]: !isSelected(file),
+                                    [model.checkbox.remove]: isSelected(file),
                                 }"></div>
                         </td>
                         <td class="ftp-name">
-                            {{ escape(ftpFile.path) }}
+                            {{ escape(file.path) }}
                         </td>
-                        <td class="ftp-size">{{ bytesToString(ftpFile.size) }}</td>
-                        <td class="ftp-time">{{ ftpFile.ctime }}</td>
+                        <td class="ftp-size">{{ bytesToString(file.size) }}</td>
+                        <td class="ftp-time">{{ file.ctime }}</td>
                     </tr>
                 </tbody>
             </table>
         </div>
-        <div v-show="ftpFiles.length === 0" class="upload-ftp-warning warningmessage">no files.</div>
+        <div v-show="filesSource.length === 0" class="upload-ftp-warning warningmessage">no files.</div>
     </div>
 </template>
 
@@ -76,31 +75,32 @@ export default {
     data() {
         return {
             model: {
-                attributes: {
-                    cls: "upload-ftp", //TODO cls: "FormFTP",
-                    class_add: "upload-icon-button fa fa-square-o",
-                    class_remove: "upload-icon-button fa fa-check-square-o",
-                    class_partial: "upload-icon-button fa fa-minus-square-o",
+                class: "upload-ftp",
+                checkbox: {
+                    add: "upload-icon-button fa fa-square-o",
+                    remove: "upload-icon-button fa fa-check-square-o",
+                    partial: "upload-icon-button fa fa-minus-square-o",
                 },
-                help_enabled: true,
-                oidc_text: false,
+                text: {
+                    help: true,
+                    oidc: false,
+                },
                 collection: null,
             },
-            ftpFiles: [],
-            waiting: true,
+            filesSource: [],
+            filesTarget: {},
             totalSize: 0,
-            isAllSelected: false,
-            ftpIndex: {},
+            waiting: true,
         };
     },
     computed: {
         selectAllStatus() {
-            var status = this.model.attributes.class_add;
-            if (Object.keys(this.ftpIndex).length > 0) {
+            var status = this.model.checkbox.add;
+            if (Object.keys(this.filesTarget).length > 0) {
                 status =
-                    this.ftpFiles.length === Object.keys(this.ftpIndex).length
-                        ? this.model.attributes.class_remove
-                        : this.model.attributes.class_partial;
+                    this.filesSource.length === Object.keys(this.filesTarget).length
+                        ? this.model.checkbox.remove
+                        : this.model.checkbox.partial;
             }
 
             return status;
@@ -111,14 +111,14 @@ export default {
         this.model.collection = this.collection;
         const Galaxy = getGalaxyInstance();
         if (Galaxy.config.enable_oidc) {
-            this.model.oidc_text = true;
+            this.model.text.oidc = true;
         }
     },
     mounted() {
         UploadUtils.getRemoteFiles(
-            (ftp_files) => {
-                this.ftpFiles = ftp_files;
-                this._index();
+            (files) => {
+                this.filesSource = files;
+                this._buildFtpIndex();
                 this._renderTable();
             },
             () => {
@@ -127,20 +127,19 @@ export default {
         );
     },
     methods: {
-        /** Fill table with ftp entries */
         _renderTable: function () {
             var self = this;
-            var ftp_files = this.ftpFiles;
+            var files = this.filesSource;
             this.rows = [];
-            if (ftp_files && ftp_files.length > 0) {
+            if (files && files.length > 0) {
                 this.$nextTick(() => {
                     this.$el.querySelector(".upload-ftp-content").style.display = "block";
                     this.$el.querySelector(".upload-ftp-warning").style.display = "none";
                 });
                 var size = 0;
-                _.each(ftp_files, (ftp_file) => {
-                    self.rows.push(ftp_file);
-                    size += ftp_file.size;
+                _.each(files, (file) => {
+                    self.rows.push(file);
+                    size += file.size;
                 });
                 this.totalSize = size;
                 if (this.collection) {
@@ -156,116 +155,110 @@ export default {
             this.waiting = false;
         },
 
-        /** Add row */
-        _renderRow: function (ftp_file) {
+        _renderRow: function (file) {
             var self = this;
-            var options = this.model.attributes;
-            var $it = $(this._templateRow(ftp_file.path));
+            var options = this.model.checkbox;
+            var $it = $(this._templateRow(file.path));
             var $icon = $it.find(".icon");
             this.$body.append($it);
             if (this.collection) {
-                var model_index = this.ftpIndex[ftp_file.path];
-                $icon.addClass(model_index === undefined ? options.class_add : options.class_remove);
+                var index = this.filesTarget[file.path];
+                $icon.addClass(index === undefined ? options.add : options.remove);
                 $it.on("click", () => {
-                    self._switch($icon, ftp_file);
+                    self._updateCheckboxes($icon, file);
                     self._refresh();
                 });
             } else {
                 $it.on("click", () => {
-                    options.onchange(ftp_file);
+                    options.onchange(file);
                 });
             }
             return $icon;
         },
 
-        /** Create ftp index */
-        _index: function () {
-            this.ftpIndex = {};
+        _buildFtpIndex: function () {
+            this.filesTarget = {};
             if (this.collection) {
                 this.collection.each((model) => {
                     if (model.get("file_mode") == "ftp") {
-                        this.ftpIndex[model.get("file_path")] = model.id;
+                        this.filesTarget[model.get("file_path")] = model.id;
                     }
                 });
             }
         },
 
-        /** Select all event handler */
         selectAll: function () {
-            var ftp_files = this.ftpFiles;
-            var add = $(".upload-ftp-select-all").hasClass(this.model.attributes.class_add); //TODO needs DOM boundary
-            for (var index in ftp_files) {
-                var ftp_file = ftp_files[index];
-                var model_index = this.ftpIndex[ftp_file.path];
-                if ((model_index === undefined && add) || (model_index !== undefined && !add)) {
-                    this._switch($(this._templateRow(ftp_file.path)).find(".icon"), ftp_file);
+            var files = this.filesSource;
+            var add = $(".upload-ftp-select-all").hasClass(this.model.checkbox.add); //TODO needs DOM boundary
+            for (var f in files) {
+                var file = files[f];
+                var index = this.filesTarget[file.path];
+                if ((index === undefined && add) || (index !== undefined && !add)) {
+                    this._updateCheckboxes($(this._templateRow(file.path)).find(".icon"), file);
                 }
             }
-            this.isAllSelected = !this.isAllSelected;
             this._refresh();
         },
 
-        /** Handle row click */
-        onRowClick: function (ftp_file) {
+        onRowClick: function (file) {
             var self = this;
-            var $it = $(this._templateRow(ftp_file.path)); //TODO needs to be replaced
+            var $it = $(this._templateRow(file.path)); //TODO needs to be replaced
             var $icon = $it.find(".icon");
             if (this.collection) {
-                this._switch($icon, ftp_file);
+                this._updateCheckboxes($icon, file);
             } else {
-                this.model.onchange(ftp_file);
+                this.model.onchange(file);
             }
             self._refresh();
         },
 
-        /** Template of row */
         _templateRow: function (rowId) {
             return $(`[ftp-id="${rowId}"]`);
         },
 
         /** Handle collection changes */
-        _switch: function ($icon, ftp_file) {
-            var options = this.model.attributes;
-            $icon.removeClass(options.class_add);
-            var model_index = this.ftpIndex[ftp_file.path];
-            if (model_index === undefined) {
-                var new_index = this.model.onadd(this.model.upload_box, ftp_file);
-                $icon.addClass(options.class_remove); //TODO replace this jQuery for the check/uncheck box with Vue.js
-                this.ftpIndex[ftp_file.path] = new_index;
+        _updateCheckboxes: function ($icon, file) {
+            var options = this.model.checkbox;
+            $icon.removeClass(options.add);
+            var index = this.filesTarget[file.path];
+            if (index === undefined) {
+                var indexNew = this.model.onadd(this.model.upload_box, file);
+                $icon.addClass(options.remove); //TODO replace this jQuery for the check/uncheck box with Vue.js
+                this.filesTarget[file.path] = indexNew;
             } else {
-                this.model.onremove(this.model.collection, model_index);
-                $icon.addClass(options.class_add);
-                delete this.ftpIndex[ftp_file.path];
+                this.model.onremove(this.model.collection, index);
+                $icon.addClass(options.add);
+                delete this.filesTarget[file.path];
             }
         },
 
         /** Refresh select all button state */
         _refresh: function () {
             var counts = _.reduce(
-                this.ftpIndex,
+                this.filesTarget,
                 (memo, element) => {
                     element !== undefined && memo++;
                     return memo;
                 },
                 0
             );
-            $(".upload-ftp-select-all").removeClass(this.model.attributes.class_add);
-            $(".upload-ftp-select-all").removeClass(this.model.attributes.class_remove);
-            $(".upload-ftp-select-all").removeClass(this.model.attributes.class_partial);
+            $(".upload-ftp-select-all").removeClass(this.model.checkbox.add);
+            $(".upload-ftp-select-all").removeClass(this.model.checkbox.remove);
+            $(".upload-ftp-select-all").removeClass(this.model.checkbox.partial);
             if (counts === 0) {
-                $(".upload-ftp-select-all").addClass(this.model.attributes.class_add);
+                $(".upload-ftp-select-all").addClass(this.model.checkbox.add);
             } else {
                 $(".upload-ftp-select-all").addClass(
                     counts == this.rows.length
-                        ? this.model.attributes.class_remove
-                        : this.model.attributes.class_partial
+                        ? this.model.checkbox.remove
+                        : this.model.checkbox.partial
                 );
             }
         },
 
         /** Check if file is selected */
-        isSelected: function (ftp_file) {
-            return this.ftpIndex[ftp_file.path] !== undefined;
+        isSelected: function (file) {
+            return this.filesTarget[file.path] !== undefined;
         },
 
         /** Convert bytes to string */
