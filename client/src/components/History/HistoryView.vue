@@ -1,7 +1,7 @@
 <template>
     <div v-if="currentUser && history" class="d-flex flex-column h-100">
         <b-alert v-if="history.purged" variant="info" show>This history has been purged.</b-alert>
-        <div v-else class="flex-row flex-grow-0">
+        <div v-else class="flex-row flex-grow-0 pb-3">
             <b-button
                 v-if="currentUser.id == history.user_id"
                 size="sm"
@@ -26,6 +26,7 @@
             :history="history"
             :writable="currentUser.id == history.user_id"
             :show-controls="false"
+            filterable
             @view-collection="onViewCollection" />
         <CopyModal id="copy-history-modal" :history="history" />
     </div>
