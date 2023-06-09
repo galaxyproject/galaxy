@@ -249,9 +249,7 @@ export default {
                 $(".upload-ftp-select-all").addClass(this.model.checkbox.add);
             } else {
                 $(".upload-ftp-select-all").addClass(
-                    counts == this.rows.length
-                        ? this.model.checkbox.remove
-                        : this.model.checkbox.partial
+                    counts == this.rows.length ? this.model.checkbox.remove : this.model.checkbox.partial
                 );
             }
         },
