@@ -32,7 +32,7 @@ const indeterminate: ComputedRef<boolean> = computed(
 );
 const selectAll: ComputedRef<boolean> = computed(() => currentValue.value.length === props.options.length);
 
-function onSelectAll(selected: boolean): void {
+function onSelectAll(selected) {
     if (selected) {
         const allValues = props.options.map((option) => option[1]);
         emit("input", allValues);
