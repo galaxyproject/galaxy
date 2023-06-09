@@ -142,6 +142,7 @@ export default {
             };
             this.openGlobalUploadModal(propsData);
             this.modalShow = false;
+            this.$emit("onUpload");
         },
         /** Called when selection is complete, values are formatted and parsed to external callback **/
         onOk() {
