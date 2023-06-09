@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, type ComputedRef } from "vue";
+import { computed } from "vue";
 
 export interface FormCheckProps {
     value?: string | string[];
@@ -26,11 +26,9 @@ const currentValue = computed({
     },
 });
 
-const hasOptions: ComputedRef<boolean> = computed(() => props.options.length > 0);
-const indeterminate: ComputedRef<boolean> = computed(
-    () => ![0, props.options.length].includes(currentValue.value.length)
-);
-const selectAll: ComputedRef<boolean> = computed(() => currentValue.value.length === props.options.length);
+const hasOptions = computed(() => props.options.length > 0);
+const indeterminate = computed(() => ![0, props.options.length].includes(currentValue.value.length));
+const selectAll = computed(() => currentValue.value.length === props.options.length);
 
 function onSelectAll(selected: boolean): void {
     if (selected) {
