@@ -17,8 +17,10 @@ const activityStore = useActivityStore();
 const eventStore = useEventStore();
 const userStore = useUserStore();
 
-// activities from store
+// sync built-in activities with cached activities
 activityStore.syncActivities();
+
+// activities from store
 const activities = ref(activityStore.getAll());
 
 // context menu references
