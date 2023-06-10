@@ -118,25 +118,16 @@ function onDragLeave(evt) {
                                 :title="activity.title"
                                 :tooltip="activity.tooltip" />
                             <ActivityItem
-                                v-if="activity.id === 'tools'"
+                                v-else-if="['tools', 'workflows'].includes(activity.id)"
                                 :id="`activity-${activity.id}`"
                                 :key="activity.id"
                                 :icon="activity.icon"
                                 :title="activity.title"
                                 :tooltip="activity.tooltip"
-                                :is-active="sidebarIsActive('tools')"
-                                @click="onToggleSidebar('tools')" />
+                                :is-active="sidebarIsActive(activity.id)"
+                                @click="onToggleSidebar(activity.id)" />
                             <ActivityItem
-                                v-if="activity.id === 'workflows'"
-                                :id="`activity-${activity.id}`"
-                                :key="activity.id"
-                                :icon="activity.icon"
-                                :title="activity.title"
-                                :tooltip="activity.tooltip"
-                                :is-active="sidebarIsActive('workflows')"
-                                @click="onToggleSidebar('workflows')" />
-                            <ActivityItem
-                                v-if="activity.to"
+                                v-else-if="activity.to"
                                 :id="`activity-${activity.id}`"
                                 :key="activity.id"
                                 :title="activity.title"
