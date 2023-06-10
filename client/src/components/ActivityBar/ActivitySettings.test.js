@@ -24,10 +24,13 @@ function testActivity(newOptions = {}) {
 }
 
 describe("ActivitySettings", () => {
+    let activityStore;
     let wrapper;
 
     beforeEach(async () => {
         const pinia = createTestingPinia({ stubActions: false });
+        activityStore = useActivityStore();
+        activityStore.syncActivities();
         wrapper = mount(mountTarget, {
             localVue,
             pinia,
@@ -43,7 +46,6 @@ describe("ActivitySettings", () => {
         expect(items.length).toBe(8);
 
         // replace stored activity with a visible but non-optional test activity
-        const activityStore = useActivityStore();
         activityStore.setAll([testActivity()]);
         await wrapper.vm.$nextTick();
         const visibleItems = wrapper.findAll(".activity-settings-item");
