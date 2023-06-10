@@ -26,25 +26,25 @@ export const Activities = [
         visible: true,
     },
     {
-        description: "Displays a panel to search and access available workflows.",
+        description: "Displays a panel to search and access workflows.",
         icon: "search",
         id: "workflows",
         mutable: false,
         optional: true,
         title: "Search Workflows",
         to: null,
-        tooltip: "Display an advanced search field for workflows.",
+        tooltip: "Search and run workflows",
         visible: true,
     },
     {
-        description: "Displays a panel to search and access available workflows.",
+        description: "Displays the list of your workflows.",
         icon: "sitemap",
-        id: "workflow",
+        id: "workflowlist",
         mutable: false,
         optional: true,
         title: "Show All Workflows",
         to: "/workflows/list",
-        tooltip: "Display an advanced search field for workflows.",
+        tooltip: "Show all workflows",
         visible: true,
     },
     {
@@ -96,27 +96,14 @@ export const Activities = [
 export function convertDropData(data) {
     if (data.history_content_type === "dataset") {
         return {
-            description: data.name,
-            icon: "fa-folder",
+            description: "Displays this dataset.",
+            icon: "fa-file",
             id: `dataset-${data.id}`,
             mutable: true,
             optional: true,
             title: data.name,
-            tooltip: "A dataset from your history",
-            to: "/datasets/list",
-            visible: true,
-        };
-    }
-    if (data.history_content_type === "dataset_collection") {
-        return {
-            description: data.name,
-            icon: "fa-folder",
-            id: `collection-${data.id}`,
-            mutable: true,
-            optional: true,
-            title: data.name,
-            tooltip: "A collection from your history",
-            to: "/datasets/list",
+            tooltip: "View your dataset",
+            to: `/datasets/${data.id}/preview`,
             visible: true,
         };
     }
