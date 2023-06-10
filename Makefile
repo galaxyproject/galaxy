@@ -120,19 +120,16 @@ release-push-dev: release-ensure-upstream # Push local dev branch upstream
 	git push $(RELEASE_UPSTREAM) dev
 
 release-issue: ## Create release issue on github
-	$(IN_VENV) python scripts/bootstrap_history.py --create-release-issue $(RELEASE_CURR)
-
-release-check-metadata: ## check github PR metadata for target release
-	$(IN_VENV) python scripts/bootstrap_history.py --check-release $(RELEASE_CURR)
+	$(IN_VENV) galaxy-release-util create-release-issue $(RELEASE_CURR)
 
 release-check-blocking-issues: ## Check github for release blocking issues
-	$(IN_VENV) python scripts/bootstrap_history.py --check-blocking-issues $(RELEASE_CURR)
+	$(IN_VENV) galaxy-release-util check-blocking-issues $(RELEASE_CURR)
 
 release-check-blocking-prs: ## Check github for release blocking PRs
-	$(IN_VENV) python scripts/bootstrap_history.py --check-blocking-prs $(RELEASE_CURR)
+	$(IN_VENV) galaxy-release-util check-blocking-prs $(RELEASE_CURR)
 
 release-bootstrap-history: ## bootstrap history for a new release
-	$(IN_VENV) python scripts/bootstrap_history.py --release $(RELEASE_CURR)
+	$(IN_VENV) galaxy-release-util create-changelog $(RELEASE_CURR)
 
 update-lint-requirements:
 	./lib/galaxy/dependencies/update_lint_requirements.sh
