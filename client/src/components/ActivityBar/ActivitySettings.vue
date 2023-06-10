@@ -48,7 +48,7 @@ function onClick(activity: Activity) {
 }
 
 function onRemove(activity: Activity) {
-    activityStore.remove(activity);
+    activityStore.remove(activity.id);
 }
 
 function onQuery(newQuery: string) {

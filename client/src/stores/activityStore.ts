@@ -5,7 +5,7 @@
 import { ref, type Ref } from "vue";
 import { defineStore } from "pinia";
 
-import Activities from "@/components/ActivityBar/activities";
+import { Activities } from "@/components/ActivityBar/activities";
 
 export interface Activity {
     description: string;
@@ -71,12 +71,12 @@ export const useActivityStore = defineStore(
             return activities.value;
         }
 
-        function saveAll(newActivities: Array<Activity>) {
+        function setAll(newActivities: Array<Activity>) {
             activities.value = newActivities;
         }
 
-        function remove(activity: Activity) {
-            const findIndex = activities.value.findIndex((a: Activity) => a.id === activity.id);
+        function remove(activityId: string) {
+            const findIndex = activities.value.findIndex((a: Activity) => a.id === activityId);
             if (findIndex !== -1) {
                 activities.value.splice(findIndex, 1);
             }
@@ -86,7 +86,7 @@ export const useActivityStore = defineStore(
             activities,
             getAll,
             remove,
-            saveAll,
+            setAll,
             syncActivities,
         };
     },

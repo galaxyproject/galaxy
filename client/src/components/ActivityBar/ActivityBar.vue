@@ -44,7 +44,7 @@ function onToggleSidebar(toggle) {
 }
 
 function onChange() {
-    activityStore.saveAll(activities);
+    activityStore.setAll(activities);
 }
 
 function toggleContextMenu(evt) {

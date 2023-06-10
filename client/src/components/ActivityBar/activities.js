@@ -134,5 +134,3 @@ export function convertDropData(data) {
         };
     }
 }
-
-export default Activities;

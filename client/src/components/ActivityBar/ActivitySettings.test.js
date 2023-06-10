@@ -44,7 +44,7 @@ describe("ActivitySettings", () => {
 
         // replace stored activity with a visible but non-optional test activity
         const activityStore = useActivityStore();
-        activityStore.saveAll([testActivity()]);
+        activityStore.setAll([testActivity()]);
         await wrapper.vm.$nextTick();
         const visibleItems = wrapper.findAll(".activity-settings-item");
         expect(visibleItems.length).toBe(1);
@@ -54,7 +54,7 @@ describe("ActivitySettings", () => {
         expect(visibleIcon.exists()).toBe(true);
 
         // replace stored activity with a non-visible but optional test activity
-        activityStore.saveAll([
+        activityStore.setAll([
             testActivity({
                 optional: true,
                 visible: false,
