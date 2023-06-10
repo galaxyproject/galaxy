@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed } from "vue";
 
 export interface FormCheckProps {
     value?: string | string[];
@@ -12,8 +12,6 @@ const emit = defineEmits<{
     (e: "input", value: string[] | null): void;
 }>();
 
-const indeterminate = ref(false);
-
 const currentValue = computed({
     get: () => {
         const val = props.value ?? [];
@@ -25,26 +23,15 @@ const currentValue = computed({
         } else {
             emit("input", null);
         }
-        if (newValue.length === 0) {
-            selectAll.value = false;
-            indeterminate.value = false;
-        } else if (newValue.length === props.options.length) {
-            selectAll.value = true;
-            indeterminate.value = false;
-        } else {
-            indeterminate.value = true;
-        }
     },
 });
 
-const hasOptions = computed(() => {
-    return props.options.length > 0;
-});
+const hasOptions = computed(() => props.options.length > 0);
+const indeterminate = computed(() => ![0, props.options.length].includes(currentValue.value.length));
+const selectAll = computed(() => currentValue.value.length === props.options.length);
 
-const selectAll = ref(false);
-
-function onSelectAll() {
-    if (selectAll.value) {
+function onSelectAll(selected: boolean): void {
+    if (selected) {
         const allValues = props.options.map((option) => option[1]);
         emit("input", allValues);
     } else {
@@ -56,11 +43,11 @@ function onSelectAll() {
 <template>
     <div v-if="hasOptions">
         <b-form-checkbox
-            v-model="selectAll"
             v-localize
             class="mb-1"
+            :checked="selectAll"
             :indeterminate="indeterminate"
-            @input="onSelectAll">
+            @change="onSelectAll">
             Select / Deselect all
         </b-form-checkbox>
         <b-form-checkbox-group v-model="currentValue" stacked class="pl-3">
