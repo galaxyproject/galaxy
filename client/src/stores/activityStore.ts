@@ -5,7 +5,7 @@
 import { ref, type Ref } from "vue";
 import { defineStore } from "pinia";
 
-import { Activities } from "@/components/ActivityBar/activities";
+import { Activities } from "./activitySetup";
 
 export interface Activity {
     description: string;
@@ -25,7 +25,7 @@ export const useActivityStore = defineStore(
         const activities: Ref<Array<Activity>> = ref([]);
 
         /**
-         * The set of built-in activities is defined in activities.js.
+         * The set of built-in activities is defined in activitySetup.js.
          * This helper function applies changes of the built-in activities,
          * to the user stored activities which are persisted in local cache.
          */

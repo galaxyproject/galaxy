@@ -3,13 +3,13 @@ import draggable from "vuedraggable";
 import { ref } from "vue";
 import { useUserStore } from "@/stores/userStore";
 import { useActivityStore } from "@/stores/activityStore";
+import { convertDropData } from "@/stores/activitySetup.js";
 import { useEventStore } from "@/stores/eventStore";
 import ContextMenu from "@/components/Common/ContextMenu.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
 import ActivityItem from "./ActivityItem.vue";
 import ActivitySettings from "./ActivitySettings.vue";
-import { convertDropData } from "./activities.js";
 import UploadItem from "./Items/UploadItem.vue";
 import WorkflowBox from "@/components/Panels/WorkflowBox.vue";
 

@@ -2,7 +2,7 @@ import { setActivePinia, createPinia } from "pinia";
 import { useActivityStore } from "@/stores/activityStore";
 
 // mock Galaxy object
-jest.mock("components/ActivityBar/activities", () => ({
+jest.mock("./activitySetup", () => ({
     Activities: [
         {
             description: "a-description",
