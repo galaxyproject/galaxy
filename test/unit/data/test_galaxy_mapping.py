@@ -15,6 +15,7 @@ import galaxy.datatypes.registry
 import galaxy.model
 import galaxy.model.mapping as mapping
 from galaxy import model
+from galaxy.model.base import transaction
 from galaxy.model.database_utils import create_database
 from galaxy.model.metadata import MetadataTempFile
 from galaxy.model.orm.util import (
@@ -661,7 +662,11 @@ class TestMappings(BaseModelTestCase):
 
         self.new_hda(h1, name="1")
         self.new_hda(h2, name="2")
-        self.session().commit()
+
+        session = self.session()
+
+        with transaction(session):
+            session.commit()
         # _next_hid modifies history, plus trigger on HDA means 2 additional audit rows per history
 
         h1_audits = get_audit_table_entries(h1)
@@ -676,9 +681,9 @@ class TestMappings(BaseModelTestCase):
         # starts and commits a new transaction, closing a scoped session on exit. Thus, here we
         # should end the current transaction (via rollback) and add the History objects to a new
         # session, as the previous one will be closed.
-        self.session().rollback()
-        model.HistoryAudit.prune(self.session())
-        self.session().add_all([h1, h2])
+        session.rollback()
+        model.HistoryAudit.prune(session)
+        session.add_all([h1, h2])
 
         h1_audits = get_audit_table_entries(h1)
         h2_audits = get_audit_table_entries(h2)
