@@ -45,6 +45,9 @@ const baseRules = {
     "vuejs-accessibility/no-autofocus": "error",
     "vuejs-accessibility/no-static-element-interactions": "warn",
     "vuejs-accessibility/tabindex-no-positive": "error",
+
+    // Auto-sorting configuration via 'perfectionist' plugin.
+    "perfectionist/sort-imports": "error",
 };
 
 const baseExtends = [
@@ -64,6 +67,7 @@ module.exports = {
     },
     rules: baseRules,
     ignorePatterns: ["dist", "src/libs", "src/nls", "src/legacy"],
+    plugins: ["perfectionist"],
     overrides: [
         {
             files: ["**/*.test.js", "**/*.test.ts", "**/tests/jest/**"],
