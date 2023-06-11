@@ -10,6 +10,7 @@ import type { FormParameterAttributes, FormParameterTypes, FormParameterValue } 
 
 import FormBoolean from "./Elements/FormBoolean.vue";
 import FormColor from "./Elements/FormColor.vue";
+import FormData from "./Elements/FormData/FormData.vue";
 import FormDirectory from "./Elements/FormDirectory.vue";
 import FormDrilldown from "./Elements/FormDrilldown/FormDrilldown.vue";
 import FormHidden from "./Elements/FormHidden.vue";
@@ -204,9 +205,9 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                     <label :for="props.id">{{ props.title }}</label>
                 </span>
             </span>
-            <span v-else-if="props.title" class="ui-form-title-text"
-                ><label :for="props.id">{{ props.title }}</label></span
-            >
+            <span v-else-if="props.title" class="ui-form-title-text">
+                <label :for="props.id">{{ props.title }}</label>
+            </span>
 
             <span
                 v-if="isRequired && isRequiredType && props.title"
@@ -272,6 +273,16 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 :options="attrs.options"
                 :optional="attrs.optional"
                 :multiple="attrs.multiple" />
+            <FormData
+                v-else-if="['data', 'data_collection'].includes(props.type)"
+                v-model="currentValue"
+                :id="id"
+                :extension="attrs.extension"
+                :flavor="attrs.flavor"
+                :multiple="attrs.multiple"
+                :optional="attrs.optional"
+                :options="attrs.options"
+                :tag="attrs.tag" />
             <FormDrilldown
                 v-else-if="props.type === 'drill_down'"
                 :id="id"
