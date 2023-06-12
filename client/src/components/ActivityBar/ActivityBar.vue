@@ -3,6 +3,7 @@ import draggable from "vuedraggable";
 import { ref } from "vue";
 import { useUserStore } from "@/stores/userStore";
 import { useActivityStore } from "@/stores/activityStore";
+import { useRoute } from "vue-router/composables";
 import { convertDropData } from "@/stores/activitySetup.js";
 import { useEventStore } from "@/stores/eventStore";
 import ContextMenu from "@/components/Common/ContextMenu.vue";
@@ -15,6 +16,7 @@ import WorkflowBox from "@/components/Panels/WorkflowBox.vue";
 
 const activityStore = useActivityStore();
 const eventStore = useEventStore();
+const route = useRoute();
 const userStore = useUserStore();
 
 // sync built-in activities with cached activities
@@ -35,29 +37,52 @@ const dragItem = ref(null);
 // drag state
 const isDragging = ref(false);
 
-function sidebarIsActive(menuKey) {
+/**
+ * Checks if the route of an activitiy is currently being visited and panels are collapsed
+ */
+function isActiveRoute(activityTo) {
+    return route.path === activityTo && isActiveSideBar("");
+}
+
+/**
+ * Checks if a panel has been expanded
+ */
+function isActiveSideBar(menuKey) {
     return userStore.toggledSideBar === menuKey;
 }
 
-function onToggleSidebar(toggle) {
-    userStore.toggleSideBar(toggle);
-}
-
+/**
+ * Triggered by vue-draggable when the list of activities has changed
+ */
 function onChange() {
     activityStore.setAll(activities);
 }
 
-function toggleContextMenu(evt) {
-    if (evt && !contextMenuVisible.value) {
-        evt.preventDefault();
-        contextMenuVisible.value = true;
-        contextMenuX.value = evt.x;
-        contextMenuY.value = evt.y;
-    } else {
-        contextMenuVisible.value = false;
+/**
+ * Evaluates the drop data and keeps track of the drop area
+ */
+function onDragEnter(evt) {
+    const eventData = eventStore.getDragData();
+    if (eventData) {
+        dragTarget.value = evt.target;
+        dragItem.value = convertDropData(eventData);
     }
 }
 
+/**
+ * Removes the dragged activity when exiting the drop area
+ */
+function onDragLeave(evt) {
+    if (dragItem.value && dragTarget.value == evt.target) {
+        const dragId = dragItem.value.id;
+        const activitiesTemp = activities.value.filter((a) => a.id !== dragId);
+        activities.value = activitiesTemp;
+    }
+}
+
+/**
+ * Insert the dragged item into the activities list
+ */
 function onDragOver(evt) {
     const target = evt.target.closest(".activity-item");
     if (target && dragItem.value) {
@@ -74,19 +99,24 @@ function onDragOver(evt) {
     }
 }
 
-function onDragEnter(evt) {
-    const eventData = eventStore.getDragData();
-    if (eventData) {
-        dragTarget.value = evt.target;
-        dragItem.value = convertDropData(eventData);
-    }
+/**
+ * Tracks the state of activities which expand or collapse the sidepanel
+ */
+function onToggleSidebar(toggle) {
+    userStore.toggleSideBar(toggle);
 }
 
-function onDragLeave(evt) {
-    if (dragItem.value && dragTarget.value == evt.target) {
-        const dragId = dragItem.value.id;
-        const activitiesTemp = activities.value.filter((a) => a.id !== dragId);
-        activities.value = activitiesTemp;
+/**
+ * Positions and displays the context menu
+ */
+function toggleContextMenu(evt) {
+    if (evt && !contextMenuVisible.value) {
+        evt.preventDefault();
+        contextMenuVisible.value = true;
+        contextMenuX.value = evt.x;
+        contextMenuY.value = evt.y;
+    } else {
+        contextMenuVisible.value = false;
     }
 }
 </script>
@@ -128,7 +158,7 @@ function onDragLeave(evt) {
                                 :icon="activity.icon"
                                 :title="activity.title"
                                 :tooltip="activity.tooltip"
-                                :is-active="sidebarIsActive(activity.id)"
+                                :is-active="isActiveSideBar(activity.id)"
                                 @click="onToggleSidebar(activity.id)" />
                             <ActivityItem
                                 v-else-if="activity.to"
@@ -136,6 +166,7 @@ function onDragLeave(evt) {
                                 :key="activity.id"
                                 :title="activity.title"
                                 :icon="activity.icon"
+                                :is-active="isActiveRoute(activity.to)"
                                 :tooltip="activity.tooltip"
                                 :to="activity.to"
                                 @click="onToggleSidebar()" />
@@ -152,10 +183,10 @@ function onDragLeave(evt) {
                     to="/user" />
             </b-nav>
         </div>
-        <FlexPanel v-if="sidebarIsActive('tools')" key="tools" side="left" :collapsible="false">
+        <FlexPanel v-if="isActiveSideBar('tools')" key="tools" side="left" :collapsible="false">
             <ToolBox />
         </FlexPanel>
-        <FlexPanel v-else-if="sidebarIsActive('workflows')" key="workflows" side="left" :collapsible="false">
+        <FlexPanel v-else-if="isActiveSideBar('workflows')" key="workflows" side="left" :collapsible="false">
             <WorkflowBox />
         </FlexPanel>
         <ContextMenu :visible="contextMenuVisible" :x="contextMenuX" :y="contextMenuY" @hide="toggleContextMenu">
