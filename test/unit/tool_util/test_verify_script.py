@@ -1,6 +1,6 @@
 import json
 import os
-from tempfile import NamedTemporaryFile, mktemp
+from tempfile import NamedTemporaryFile
 from typing import (
     cast,
     NoReturn,
@@ -270,15 +270,16 @@ def test_test_tools_records_retry_exception() -> None:
 
 
 def test_append_results() -> None:
-    tf = mktemp(dir="/tmp")
-    assert not os.path.exists(tf)
+    tf = NamedTemporaryFile()
+    tf.close()
+    assert not os.path.exists(tf.name)
     # Now try to append to the non-existent file.
-    results = Results("my suite", tf, True)
+    results = Results("my suite", tf.name, True)
     results.register_result({"id": "foo", "has_data": True, "data": {"status": "success"}})
     try:
         results.write()
-        assert os.path.exists(tf)
-        with open(tf) as f:
+        assert os.path.exists(tf.name)
+        with open(tf.name) as f:
             report_obj = json.load(f)
         assert "tests" in report_obj
         assert len(report_obj["tests"]) == 1
@@ -286,8 +287,8 @@ def test_append_results() -> None:
         assert report_obj["results"]["errors"] == 0
         assert report_obj["results"]["skips"] == 0
     finally:
-        os.remove(tf)
-    assert not os.path.exists(tf)
+        os.remove(tf.name)
+    assert not os.path.exists(tf.name)
 
 
 def test_results():
