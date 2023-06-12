@@ -18,7 +18,7 @@ const eventStore = useEventStore();
 const userStore = useUserStore();
 
 // sync built-in activities with cached activities
-activityStore.syncActivities();
+activityStore.sync();
 
 // activities from store
 const activities = ref(activityStore.getAll());

@@ -29,7 +29,7 @@ export const useActivityStore = defineStore(
          * This helper function applies changes of the built-in activities,
          * to the user stored activities which are persisted in local cache.
          */
-        function syncActivities() {
+        function sync() {
             // create a map of built-in activities
             const activitiesMap: Record<string, Activity> = {};
             Activities.forEach((a) => {
@@ -87,7 +87,7 @@ export const useActivityStore = defineStore(
             getAll,
             remove,
             setAll,
-            syncActivities,
+            sync,
         };
     },
     {

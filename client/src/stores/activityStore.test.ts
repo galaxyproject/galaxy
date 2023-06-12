@@ -51,13 +51,13 @@ describe("Activity Store", () => {
     it("initialize store", () => {
         const activityStore = useActivityStore();
         expect(activityStore.getAll().length).toBe(0);
-        activityStore.syncActivities();
+        activityStore.sync();
         expect(activityStore.getAll().length).toBe(1);
     });
 
     it("add activity", () => {
         const activityStore = useActivityStore();
-        activityStore.syncActivities();
+        activityStore.sync();
         const initialActivities = activityStore.getAll();
         expect(initialActivities[0]?.visible).toBeTruthy();
         activityStore.setAll(newActivities);
@@ -65,7 +65,7 @@ describe("Activity Store", () => {
         const currentActivities = activityStore.getAll();
         expect(currentActivities[0]).toEqual(newActivities[0]);
         expect(currentActivities[1]).toEqual(newActivities[1]);
-        activityStore.syncActivities();
+        activityStore.sync();
         const syncActivities = activityStore.getAll();
         expect(syncActivities.length).toEqual(2);
         expect(syncActivities[0]?.description).toEqual("a-description");
@@ -75,17 +75,17 @@ describe("Activity Store", () => {
 
     it("remove activity", () => {
         const activityStore = useActivityStore();
-        activityStore.syncActivities();
+        activityStore.sync();
         const initialActivities = activityStore.getAll();
         expect(initialActivities.length).toEqual(1);
         activityStore.remove("a-id");
         expect(activityStore.getAll().length).toEqual(0);
-        activityStore.syncActivities();
+        activityStore.sync();
         expect(activityStore.getAll().length).toEqual(1);
         activityStore.setAll(newActivities);
         expect(activityStore.getAll().length).toEqual(2);
         activityStore.remove("b-id");
-        activityStore.syncActivities();
+        activityStore.sync();
         expect(activityStore.getAll().length).toEqual(1);
     });
 });

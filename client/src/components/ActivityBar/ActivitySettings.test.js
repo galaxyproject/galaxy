@@ -8,9 +8,9 @@ import mountTarget from "./ActivitySettings.vue";
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);
 
-function testActivity(newOptions = {}) {
+function testActivity(id, newOptions = {}) {
     const defaultOptions = {
-        id: "activity-test-id",
+        id: `activity-test-${id}`,
         description: "activity-test-description",
         icon: "activity-test-icon",
         mutable: true,
@@ -23,6 +23,15 @@ function testActivity(newOptions = {}) {
     return { ...defaultOptions, ...newOptions };
 }
 
+async function testSearch(wrapper, query, result) {
+    const searchField = wrapper.find("input");
+    searchField.element.value = query;
+    searchField.trigger("change");
+    await wrapper.vm.$nextTick();
+    const filtered = wrapper.findAll(".activity-settings-item");
+    expect(filtered.length).toBe(result);
+}
+
 describe("ActivitySettings", () => {
     let activityStore;
     let wrapper;
@@ -30,7 +39,7 @@ describe("ActivitySettings", () => {
     beforeEach(async () => {
         const pinia = createTestingPinia({ stubActions: false });
         activityStore = useActivityStore();
-        activityStore.syncActivities();
+        activityStore.sync();
         wrapper = mount(mountTarget, {
             localVue,
             pinia,
@@ -46,7 +55,7 @@ describe("ActivitySettings", () => {
         expect(items.length).toBe(8);
 
         // replace stored activity with a visible but non-optional test activity
-        activityStore.setAll([testActivity()]);
+        activityStore.setAll([testActivity("1")]);
         await wrapper.vm.$nextTick();
         const visibleItems = wrapper.findAll(".activity-settings-item");
         expect(visibleItems.length).toBe(1);
@@ -57,7 +66,7 @@ describe("ActivitySettings", () => {
 
         // replace stored activity with a non-visible but optional test activity
         activityStore.setAll([
-            testActivity({
+            testActivity("1", {
                 optional: true,
                 visible: false,
             }),
@@ -67,5 +76,21 @@ describe("ActivitySettings", () => {
         expect(hiddenItems.length).toBe(1);
         const hiddenCheckbox = visibleItems.at(0).find("[data-icon='square']");
         expect(hiddenCheckbox.exists()).toBeTruthy();
+    });
+
+    it("filtering", async () => {
+        // replace stored activity with a visible but non-optional test activity
+        activityStore.setAll([
+            testActivity("1"),
+            testActivity("2", { title: "something else" }),
+            testActivity("3", { title: "SOMETHING different" }),
+            testActivity("4", { description: "SOMEthing odd" }),
+        ]);
+        await wrapper.vm.$nextTick();
+        const visibleItems = wrapper.findAll(".activity-settings-item");
+        expect(visibleItems.length).toBe(4);
+        await testSearch(wrapper, "else", 1);
+        await testSearch(wrapper, "someTHING", 3);
+        await testSearch(wrapper, "odd", 1);
     });
 });
