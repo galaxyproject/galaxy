@@ -2,11 +2,14 @@ import { createTestingPinia } from "@pinia/testing";
 import { PiniaVuePlugin } from "pinia";
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
+import { Activities } from "@/stores/activitySetup";
 import { useActivityStore } from "@/stores/activityStore";
 import mountTarget from "./ActivitySettings.vue";
 
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);
+
+const activityItemSelector = ".activity-settings-item";
 
 function testActivity(id, newOptions = {}) {
     const defaultOptions = {
@@ -28,7 +31,7 @@ async function testSearch(wrapper, query, result) {
     searchField.element.value = query;
     searchField.trigger("change");
     await wrapper.vm.$nextTick();
-    const filtered = wrapper.findAll(".activity-settings-item");
+    const filtered = wrapper.findAll(activityItemSelector);
     expect(filtered.length).toBe(result);
 }
 
@@ -49,22 +52,27 @@ describe("ActivitySettings", () => {
         });
     });
 
-    it("availability of checkboxes and checkbox states", async () => {
-        // check number of available default activities
-        const items = wrapper.findAll(".activity-settings-item");
-        expect(items.length).toBe(8);
+    it("availability of built-in activities", async () => {
+        const items = wrapper.findAll(activityItemSelector);
+        expect(items.length).toBe(Activities.length);
+    });
 
-        // replace stored activity with a visible but non-optional test activity
+    it("visible but non-optional activity", async () => {
         activityStore.setAll([testActivity("1")]);
         await wrapper.vm.$nextTick();
-        const visibleItems = wrapper.findAll(".activity-settings-item");
+        const visibleItems = wrapper.findAll(activityItemSelector);
         expect(visibleItems.length).toBe(1);
-        const visibleCheckbox = visibleItems.at(0).find("[data-icon='thumbtack']");
-        expect(visibleCheckbox.exists()).toBeTruthy();
-        const visibleIcon = wrapper.find("[icon='activity-test-icon'");
-        expect(visibleIcon.exists()).toBe(true);
+        const pinnedCheckbox = visibleItems.at(0).find("[data-icon='thumbtack']");
+        expect(pinnedCheckbox.exists()).toBeTruthy();
+        const pinnedIcon = wrapper.find("[icon='activity-test-icon'");
+        expect(pinnedIcon.exists()).toBeTruthy();
+        expect(activityStore.getAll()[0].visible).toBeTruthy();
+        pinnedCheckbox.trigger("click");
+        await wrapper.vm.$nextTick();
+        expect(activityStore.getAll()[0].visible).toBeTruthy();
+    });
 
-        // replace stored activity with a non-visible but optional test activity
+    it("non-visible but optional activity", async () => {
         activityStore.setAll([
             testActivity("1", {
                 optional: true,
@@ -72,13 +80,20 @@ describe("ActivitySettings", () => {
             }),
         ]);
         await wrapper.vm.$nextTick();
-        const hiddenItems = wrapper.findAll(".activity-settings-item");
+        const visibleItems = wrapper.findAll(activityItemSelector);
+        const hiddenItems = wrapper.findAll(activityItemSelector);
         expect(hiddenItems.length).toBe(1);
         const hiddenCheckbox = visibleItems.at(0).find("[data-icon='square']");
         expect(hiddenCheckbox.exists()).toBeTruthy();
+        expect(activityStore.getAll()[0].visible).toBeFalsy();
+        hiddenCheckbox.trigger("click");
+        await wrapper.vm.$nextTick();
+        const visibleCheckbox = visibleItems.at(0).find("[data-icon='check-square']");
+        expect(visibleCheckbox.exists()).toBeTruthy();
+        expect(activityStore.getAll()[0].visible).toBeTruthy();
     });
 
-    it("filtering", async () => {
+    it("filter activities by title and description", async () => {
         // replace stored activity with a visible but non-optional test activity
         activityStore.setAll([
             testActivity("1"),
@@ -87,7 +102,7 @@ describe("ActivitySettings", () => {
             testActivity("4", { description: "SOMEthing odd" }),
         ]);
         await wrapper.vm.$nextTick();
-        const visibleItems = wrapper.findAll(".activity-settings-item");
+        const visibleItems = wrapper.findAll(activityItemSelector);
         expect(visibleItems.length).toBe(4);
         await testSearch(wrapper, "else", 1);
         await testSearch(wrapper, "someTHING", 3);
