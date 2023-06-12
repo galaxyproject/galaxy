@@ -2164,7 +2164,7 @@ export interface components {
             slug: string;
             /**
              * Title
-             * @description The name of the page
+             * @description The name of the page.
              */
             title: string;
         };
@@ -5988,7 +5988,7 @@ export interface components {
             deleted: boolean;
             /**
              * Encoded email
-             * @description The encoded email of the user
+             * @description The encoded email of the user.
              */
             email_hash: string;
             /**
@@ -6043,7 +6043,7 @@ export interface components {
             tags: components["schemas"]["TagCollection"];
             /**
              * Title
-             * @description The name of the page
+             * @description The name of the page.
              */
             title: string;
             /**
@@ -6076,7 +6076,7 @@ export interface components {
             deleted: boolean;
             /**
              * Encoded email
-             * @description The encoded email of the user
+             * @description The encoded email of the user.
              */
             email_hash: string;
             /**
@@ -6121,7 +6121,7 @@ export interface components {
             tags: components["schemas"]["TagCollection"];
             /**
              * Title
-             * @description The name of the page
+             * @description The name of the page.
              */
             title: string;
             /**
