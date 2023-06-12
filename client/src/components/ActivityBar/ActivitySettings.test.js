@@ -60,9 +60,9 @@ describe("ActivitySettings", () => {
     it("visible but non-optional activity", async () => {
         activityStore.setAll([testActivity("1")]);
         await wrapper.vm.$nextTick();
-        const visibleItems = wrapper.findAll(activityItemSelector);
-        expect(visibleItems.length).toBe(1);
-        const pinnedCheckbox = visibleItems.at(0).find("[data-icon='thumbtack']");
+        const items = wrapper.findAll(activityItemSelector);
+        expect(items.length).toBe(1);
+        const pinnedCheckbox = items.at(0).find("[data-icon='thumbtack']");
         expect(pinnedCheckbox.exists()).toBeTruthy();
         const pinnedIcon = wrapper.find("[icon='activity-test-icon'");
         expect(pinnedIcon.exists()).toBeTruthy();
@@ -80,21 +80,45 @@ describe("ActivitySettings", () => {
             }),
         ]);
         await wrapper.vm.$nextTick();
-        const visibleItems = wrapper.findAll(activityItemSelector);
-        const hiddenItems = wrapper.findAll(activityItemSelector);
-        expect(hiddenItems.length).toBe(1);
-        const hiddenCheckbox = visibleItems.at(0).find("[data-icon='square']");
+        const items = wrapper.findAll(activityItemSelector);
+        expect(items.length).toBe(1);
+        const hiddenCheckbox = items.at(0).find("[data-icon='square']");
         expect(hiddenCheckbox.exists()).toBeTruthy();
         expect(activityStore.getAll()[0].visible).toBeFalsy();
         hiddenCheckbox.trigger("click");
         await wrapper.vm.$nextTick();
-        const visibleCheckbox = visibleItems.at(0).find("[data-icon='check-square']");
+        const visibleCheckbox = items.at(0).find("[data-icon='check-square']");
         expect(visibleCheckbox.exists()).toBeTruthy();
         expect(activityStore.getAll()[0].visible).toBeTruthy();
     });
 
+    it("removable", async () => {
+        activityStore.setAll([testActivity("1")]);
+        await wrapper.vm.$nextTick();
+        const items = wrapper.findAll(activityItemSelector);
+        expect(items.length).toBe(1);
+        const trash = items.at(0).find("[data-icon='trash']");
+        expect(trash.exists()).toBeTruthy();
+        expect(activityStore.getAll().length).toBe(1);
+        trash.trigger("click");
+        await wrapper.vm.$nextTick();
+        expect(activityStore.getAll().length).toBe(0);
+    });
+
+    it("non-removable", async () => {
+        activityStore.setAll([
+            testActivity("1", {
+                mutable: false,
+            }),
+        ]);
+        await wrapper.vm.$nextTick();
+        const items = wrapper.findAll(activityItemSelector);
+        expect(items.length).toBe(1);
+        const trash = items.at(0).find("[data-icon='trash']");
+        expect(trash.exists()).toBeFalsy();
+    });
+
     it("filter activities by title and description", async () => {
-        // replace stored activity with a visible but non-optional test activity
         activityStore.setAll([
             testActivity("1"),
             testActivity("2", { title: "something else" }),
@@ -102,8 +126,8 @@ describe("ActivitySettings", () => {
             testActivity("4", { description: "SOMEthing odd" }),
         ]);
         await wrapper.vm.$nextTick();
-        const visibleItems = wrapper.findAll(activityItemSelector);
-        expect(visibleItems.length).toBe(4);
+        const items = wrapper.findAll(activityItemSelector);
+        expect(items.length).toBe(4);
         await testSearch(wrapper, "else", 1);
         await testSearch(wrapper, "someTHING", 3);
         await testSearch(wrapper, "odd", 1);
