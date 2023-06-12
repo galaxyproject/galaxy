@@ -270,7 +270,7 @@ def test_test_tools_records_retry_exception() -> None:
 
 
 def test_append_results() -> None:
-    tf = mktemp(dir='/tmp')
+    tf = mktemp(dir="/tmp")
     assert not os.path.exists(tf)
     # Now try to append to the non-existent file.
     results = Results("my suite", tf, True)
