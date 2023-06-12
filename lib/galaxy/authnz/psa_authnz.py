@@ -22,6 +22,7 @@ from galaxy.model import (
     PSAPartial,
     UserAuthnzToken,
 )
+from galaxy.model.base import transaction
 from galaxy.util import DEFAULT_SOCKET_TIMEOUT
 from . import IdentityProvider
 
@@ -438,4 +439,5 @@ def disconnect(
     sa_session.delete(user_authnz)
     # option B
     # user_authnz.extra_data = None
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()

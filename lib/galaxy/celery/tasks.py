@@ -33,6 +33,7 @@ from galaxy.managers.markdown_util import generate_branded_pdf
 from galaxy.managers.model_stores import ModelStoreManager
 from galaxy.managers.tool_data import ToolDataImportManager
 from galaxy.metadata.set_metadata import set_metadata_portable
+from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.objectstore import BaseObjectStore
 from galaxy.objectstore.caching import check_caches
@@ -138,7 +139,8 @@ def change_datatype(
         path = dataset_instance.dataset.file_name
         datatype = sniff.guess_ext(path, datatypes_registry.sniff_order)
     datatypes_registry.change_datatype(dataset_instance, datatype)
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
     set_metadata(hda_manager, ldda_manager, sa_session, dataset_id, model_class)
 
 
@@ -148,7 +150,8 @@ def touch(sa_session: galaxy_scoped_session, item_id: int, model_class: str = "H
         raise NotImplementedError(f"touch method not implemented for '{model_class}'")
     item = sa_session.query(model.HistoryDatasetCollectionAssociation).filter_by(id=item_id).one()
     item.touch()
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
 
 
 @galaxy_task(action="set dataset association metadata")
@@ -175,7 +178,8 @@ def set_metadata(
     except Exception as e:
         log.info(f"Setting metadata failed on {model_class} {dataset_instance.id}: {str(e)}")
         dataset_instance.dataset.state = dataset_instance.dataset.states.FAILED_METADATA
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
 
 
 def _get_dataset_manager(

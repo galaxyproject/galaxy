@@ -13,6 +13,7 @@ from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import Role
+from galaxy.model.base import transaction
 from galaxy.schema.schema import RoleDefinitionModel
 from galaxy.util import unicodify
 
@@ -87,5 +88,6 @@ class RoleManager(base.ModelManager[model.Role]):
         for group in groups:
             trans.app.security_agent.associate_group_role(group, role)
 
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         return role

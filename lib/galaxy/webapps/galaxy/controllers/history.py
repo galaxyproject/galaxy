@@ -12,6 +12,7 @@ from galaxy import (
 )
 from galaxy.managers import histories
 from galaxy.managers.sharable import SlugBuilder
+from galaxy.model.base import transaction
 from galaxy.model.item_attrs import (
     UsesAnnotations,
     UsesItemRatings,
@@ -281,7 +282,8 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 elif operation == "undelete":
                     status, message = self._list_undelete(trans, histories)
 
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
         # Render the list view
         if message and status:
             kwargs["message"] = sanitize_text(message)
@@ -379,7 +381,8 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             association = None
         new_history.add_galaxy_session(galaxy_session, association=association)
         trans.sa_session.add(new_history)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         trans.set_history(new_history)
         # No message
         return None, None
@@ -408,7 +411,8 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                         .one()
                     )
                     trans.sa_session.delete(association)
-                    trans.sa_session.flush()
+                    with transaction(trans.sa_session):
+                        trans.sa_session.commit()
                 message = "Unshared %d shared histories" % len(ids)
                 status = "done"
         # Render the list view
@@ -600,7 +604,8 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                     hda.mark_deleted()
         elif action == "unhide":
             trans.history.unhide_datasets()
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
 
     # ......................................................................... actions/orig. async
 
@@ -615,7 +620,8 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 hda.purged = True
                 trans.sa_session.add(hda)
                 trans.log_event(f"HDA id {hda.id} has been purged")
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
                 if hda.dataset.user_can_purge:
                     try:
                         hda.dataset.full_delete()
@@ -642,7 +648,8 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         for history in histories:
             history.resume_paused_jobs()
             trans.sa_session.add(history)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         return trans.show_ok_message("Your jobs have been resumed.", refresh_frames=refresh_frames)
         # TODO: used in index.mako
 
@@ -653,7 +660,8 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         """Returns history's name and link."""
         history = self.history_manager.get_accessible(self.decode_id(id), trans.user, current_history=trans.history)
         if self.slug_builder.create_item_slug(trans.sa_session, history):
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
         return_dict = {
             "name": history.name,
             "link": url_for(
@@ -678,7 +686,8 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 self._make_item_accessible(trans.sa_session, history)
             else:
                 history.importable = importable
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
         return
         # TODO: used in page/editor.mako
 
@@ -720,7 +729,8 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 elif new_name != cur_name:
                     h.name = new_name
                     trans.sa_session.add(h)
-                    trans.sa_session.flush()
+                    with transaction(trans.sa_session):
+                        trans.sa_session.commit()
                     trans.log_event(f"History renamed: id: {str(h.id)}, renamed to: {new_name}")
                     messages.append(f"History '{cur_name}' renamed to '{new_name}'.")
             message = sanitize_text(" ".join(messages)) if messages else "History names remain unchanged."

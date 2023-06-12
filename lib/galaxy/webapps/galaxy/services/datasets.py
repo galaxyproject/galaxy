@@ -39,6 +39,7 @@ from galaxy.managers.history_contents import (
     HistoryContentsManager,
 )
 from galaxy.managers.lddas import LDDAManager
+from galaxy.model.base import transaction
 from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
@@ -712,7 +713,8 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                 )
 
         if success_count:
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
         return DeleteDatasetBatchResult.construct(success_count=success_count, errors=errors)
 
     def get_structured_content(

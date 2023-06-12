@@ -38,6 +38,7 @@ from galaxy.model import (
     User,
     UserShareAssociation,
 )
+from galaxy.model.base import transaction
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.schema.schema import (
     ShareWithExtra,
@@ -203,7 +204,9 @@ class SharableModelManager(
             self.create_unique_slug(item)
 
         if flush:
-            self.session().flush()
+            session = self.session()
+            with transaction(session):
+                session.commit()
         return user_share_assoc
 
     def unshare_with(self, item, user: User, flush: bool = True):
@@ -214,7 +217,9 @@ class SharableModelManager(
         user_share_assoc = self.get_share_assocs(item, user=user)[0]
         self.session().delete(user_share_assoc)
         if flush:
-            self.session().flush()
+            session = self.session()
+            with transaction(session):
+                session.commit()
         return user_share_assoc
 
     def _query_shared_with(self, user, eagerloads=True, **kwargs):
@@ -279,7 +284,9 @@ class SharableModelManager(
             current_shares.remove(self.unshare_with(item, user, flush=False))
 
         if flush:
-            self.session().flush()
+            session = self.session()
+            with transaction(session):
+                session.commit()
         return current_shares
 
     # .... slugs
@@ -302,7 +309,9 @@ class SharableModelManager(
 
         item.slug = new_slug
         if flush:
-            self.session().flush()
+            session = self.session()
+            with transaction(session):
+                session.commit()
         return item
 
     def is_valid_slug(self, slug):
@@ -366,7 +375,9 @@ class SharableModelManager(
         item.slug = self.get_unique_slug(item)
         self.session().add(item)
         if flush:
-            self.session().flush()
+            session = self.session()
+            with transaction(session):
+                session.commit()
         return item
 
     # TODO: def by_slug( self, user, **kwargs ):

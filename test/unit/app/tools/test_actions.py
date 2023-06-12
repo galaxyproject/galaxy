@@ -7,6 +7,7 @@ from typing import (
 from galaxy import model
 from galaxy.app_unittest_utils import tools_support
 from galaxy.exceptions import UserActivationRequiredException
+from galaxy.model.base import transaction
 from galaxy.objectstore import BaseObjectStore
 from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tools.actions import (
@@ -68,7 +69,9 @@ class TestDefaultToolAction(TestCase, tools_support.UsesTools):
         self.history = history
         self.trans = MockTrans(self.app, self.history)
         self.app.model.context.add(history)
-        self.app.model.context.flush()
+        session = self.app.model.context
+        with transaction(session):
+            session.commit()
         self.action = DefaultToolAction()
         self.app.config.len_file_path = "moocow"
         self.app.object_store = cast(BaseObjectStore, MockObjectStore())
@@ -125,7 +128,9 @@ class TestDefaultToolAction(TestCase, tools_support.UsesTools):
         hda.dataset.state = "ok"
         hda.dataset.external_filename = "/tmp/datasets/dataset_001.dat"
         self.history.add_dataset(hda)
-        self.app.model.context.flush()
+        session = self.app.model.context
+        with transaction(session):
+            session.commit()
         return hda
 
     def _simple_execute(self, contents=None, incoming=None):

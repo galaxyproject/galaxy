@@ -22,6 +22,7 @@ from galaxy.managers.histories import (
 from galaxy.managers.pages import PageManager
 from galaxy.managers.sharable import SlugBuilder
 from galaxy.managers.workflows import WorkflowsManager
+from galaxy.model.base import transaction
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.schema.schema import CreatePagePayload
 from galaxy.structured_app import StructuredApp
@@ -379,7 +380,8 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
                     item = session.query(model.Page).get(self.decode_id(id))
                     self.security_check(trans, item, check_ownership=True)
                     item.deleted = True
-            session.flush()
+            with transaction(session):
+                session.commit()
 
         # Build grid dictionary.
         grid = self._page_list(trans, *args, **kwargs)
@@ -525,7 +527,8 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
                     p_annotation = sanitize_html(p_annotation)
                     self.add_item_annotation(trans.sa_session, user, p, p_annotation)
                 trans.sa_session.add(p)
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
             return {"message": "Attributes of '%s' successfully saved." % p.title, "status": "success"}
 
     @web.expose
@@ -576,7 +579,8 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
                 self._make_item_accessible(trans.sa_session, page)
             else:
                 page.importable = importable
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
         return
 
     @web.expose
@@ -596,7 +600,8 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
         page = self.get_page(trans, id)
 
         if self.slug_builder.create_item_slug(trans.sa_session, page):
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
         return_dict = {
             "name": page.title,
             "link": url_for(

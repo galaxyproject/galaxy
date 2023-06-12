@@ -19,6 +19,7 @@ from typing import (
 from boltons.iterutils import remap
 
 from galaxy import model
+from galaxy.model.base import transaction
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.dataset_collections.structure import (
     get_structure,
@@ -177,7 +178,8 @@ def execute(
     if execution_slice:
         history.add_pending_items()
     # Make sure collections, implicit jobs etc are flushed even if there are no precreated output datasets
-    trans.sa_session.flush()
+    with transaction(trans.sa_session):
+        trans.sa_session.commit()
 
     tool_id = tool.id
     for job2 in execution_tracker.successful_jobs:
@@ -205,7 +207,8 @@ def execute(
             continue
         tool.app.job_manager.enqueue(job2, tool=tool, flush=False)
         trans.log_event(f"Added job to the job queue, id: {str(job2.id)}", tool_id=tool_id)
-    trans.sa_session.flush()
+    with transaction(trans.sa_session):
+        trans.sa_session.commit()
 
     if has_remaining_jobs:
         raise PartialJobExecution(execution_tracker)
@@ -425,7 +428,8 @@ class ExecutionTracker:
             trans.sa_session.add(collection_instance)
         # Needed to flush the association created just above with
         # job.add_output_dataset_collection.
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         self.implicit_collections = collection_instances
 
     @property
@@ -462,7 +466,8 @@ class ExecutionTracker:
                     collection_type_description=self.collection_info.structure.collection_type_description
                 )
                 trans.sa_session.add(implicit_collection.collection)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
 
     @property
     def implicit_inputs(self):

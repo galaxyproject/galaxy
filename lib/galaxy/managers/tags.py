@@ -5,6 +5,7 @@ from pydantic import Field
 
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import ItemTagAssociation
+from galaxy.model.base import transaction
 from galaxy.model.tags import GalaxyTagHandlerSession
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
@@ -50,7 +51,8 @@ class TagsManager:
         item = self._get_item(tag_handler, payload)
         tag_handler.delete_item_tags(user, item)
         tag_handler.apply_item_tags(user, item, new_tags)
-        sa_session.flush()
+        with transaction(sa_session):
+            sa_session.commit()
 
     def _get_item(self, tag_handler: GalaxyTagHandlerSession, payload: ItemTagsPayload):
         """

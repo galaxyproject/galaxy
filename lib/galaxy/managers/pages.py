@@ -37,6 +37,7 @@ from galaxy.managers.markdown_util import (
     ready_galaxy_markdown_for_export,
     ready_galaxy_markdown_for_import,
 )
+from galaxy.model.base import transaction
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.schema.schema import (
     CreatePagePayload,
@@ -181,7 +182,8 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         # Persist
         session = trans.sa_session
         session.add(page)
-        session.flush()
+        with transaction(session):
+            session.commit()
         return page
 
     def save_new_revision(self, trans, page, payload):
@@ -213,7 +215,8 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
 
         # Persist
         session = trans.sa_session
-        session.flush()
+        with transaction(session):
+            session.commit()
         return page_revision
 
     def rewrite_content_for_import(self, trans, content, content_format: str):

@@ -3,6 +3,7 @@ from typing import Optional
 
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.model import History
+from galaxy.model.base import transaction
 
 
 class WorkRequestContext(ProvidesHistoryContext):
@@ -114,7 +115,8 @@ class SessionRequestContext(WorkRequestContext):
         if history and not history.deleted:
             self.galaxy_session.current_history = history
         self.sa_session.add(self.galaxy_session)
-        self.sa_session.flush()
+        with transaction(self.sa_session):
+            self.sa_session.commit()
 
 
 def proxy_work_context_for_history(

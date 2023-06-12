@@ -34,6 +34,7 @@ from galaxy.jobs import (
     TaskWrapper,
 )
 from galaxy.jobs.mapper import JobNotReadyException
+from galaxy.model.base import transaction
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import unicodify
 from galaxy.util.custom_logging import get_logger
@@ -570,8 +571,10 @@ class JobHandlerQueue(BaseJobHandlerQueue):
         # Remove cached wrappers for any jobs that are no longer being tracked
         for id in set(self.job_wrappers.keys()) - set(new_waiting_jobs):
             del self.job_wrappers[id]
-        # Flush, if we updated the state
-        self.sa_session.flush()
+        # Commit updated state
+        with transaction(self.sa_session):
+            self.sa_session.commit()
+
         # Done with the session
         self.sa_session.remove()
 

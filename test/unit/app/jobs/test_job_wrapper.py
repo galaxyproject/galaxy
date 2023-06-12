@@ -137,7 +137,6 @@ class MockJobDispatcher:
 class MockContext:
     def __init__(self, model_objects):
         self.expunged_all = False
-        self.flushed = False
         self.model_objects = model_objects
         self.created_objects = []
 
@@ -148,7 +147,10 @@ class MockContext:
         return MockQuery(self.model_objects.get(clazz))
 
     def flush(self):
-        self.flushed = True
+        pass
+
+    def commit(self):
+        pass
 
     def add(self, object):
         self.created_objects.append(object)
