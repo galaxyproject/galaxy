@@ -13,6 +13,8 @@ from inspect import (
 from typing import (
     Dict,
     Type,
+    TYPE_CHECKING,
+    Union,
 )
 
 from sqlalchemy import event
@@ -24,6 +26,9 @@ from sqlalchemy.orm import (
 
 from galaxy.util.bunch import Bunch
 
+if TYPE_CHECKING:
+    from galaxy.model.store import SessionlessContext
+
 # Create a ContextVar with mutable state, this allows sync tasks in the context
 # of a request (which run within a threadpool) to see changes to the ContextVar
 # state. See https://github.com/tiangolo/fastapi/issues/953#issuecomment-586006249
@@ -33,7 +38,7 @@ REQUEST_ID = ContextVar("request_id", default=_request_state.copy())
 
 
 @contextlib.contextmanager
-def transaction(session):
+def transaction(session: Union[scoped_session, Session, "SessionlessContext"]):
     """Start a new transaction only if one is not present."""
     # temporary hack; need to fix access to scoped_session callable, not proxy
     if isinstance(session, scoped_session):
