@@ -3,12 +3,9 @@ import AwsEstimate from "./AwsEstimate.vue";
 import CarbonEmissions from "./CarbonEmissions/CarbonEmissions.vue";
 import { useJobMetricsStore } from "@/stores/jobMetricsStore";
 import { computed, ref, unref } from "vue";
+import { worldwidePowerUsageEffectiveness } from "./CarbonEmissions/carbonEmissionConstants";
 
 const props = defineProps({
-    jobId: {
-        type: String,
-        default: null,
-    },
     datasetFilesize: {
         type: Number,
         default: 0,
@@ -25,9 +22,25 @@ const props = defineProps({
         type: Boolean,
         default: true,
     },
+    jobId: {
+        type: String,
+        default: null,
+    },
+    powerUsageEffectiveness: {
+       type: Number,
+       default: worldwidePowerUsageEffectiveness
+    },
+    geographicalServerLocation: {
+       type: String,
+       default: "GLOBAL"
+    },
     shouldShowAwsEstimate: {
         type: Boolean,
         default: false,
+    },
+    shouldShowCarbonEmissionsEstimates: {
+        type: Boolean,
+        default: true,
     },
 });
 
@@ -182,7 +195,9 @@ const estimatedServerInstance = computed(() => {
             :memory-allocated-in-mebibyte="memoryAllocatedInMebibyte" />
 
         <CarbonEmissions
-            v-if="estimatedServerInstance && jobRuntimeInSeconds && coresAllocated"
+            v-if="shouldShowCarbonEmissionsEstimates && estimatedServerInstance && jobRuntimeInSeconds && coresAllocated"
+            :geographical-server-location="geographicalServerLocation"
+            :power-usage-effectiveness="powerUsageEffectiveness"
             :estimated-server-instance="estimatedServerInstance"
             :job-runtime-in-seconds="jobRuntimeInSeconds"
             :cores-allocated="coresAllocated"

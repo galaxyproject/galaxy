@@ -1305,6 +1305,32 @@ mapping:
           CPU, RAM and runtime usage is mapped against AWS pricing table.
           Please note, that those numbers are only estimates.
 
+      carbon_emission_estimates:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          This flag enables carbon emissions estimates for every job based on its runtime metrics.
+          CPU, RAM and runtime usage is used to determine an estimate value.
+          Please note: all values are only estimates.
+
+      geographical_server_location:
+        type: str
+        default: "GLOBAL"
+        required: false
+        desc: |
+          The estimated geographical location of the server hosting your galaxy instance given as an ISO 3166 code.
+          This is used to make carbon emissions estimates more accurate as the location effects the
+          carbon intensity values used in the estimate calculation.
+
+      power_usage_effectiveness:
+        type: int
+        default: 1.67
+        required: false
+        desc: |
+          The estimated power usage effectivness of the data centre housing the sever your galaxy
+          instance is running on. This can make carbon emissions estimates more accurate.
+
       interactivetools_enable:
         type: bool
         default: false

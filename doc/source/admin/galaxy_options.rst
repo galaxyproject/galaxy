@@ -1752,6 +1752,44 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``carbon_emission_estimates``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    This flag enables carbon emissions estimates for every job based
+    on its runtime metrics. CPU, RAM and runtime usage is used to
+    determine an estimate value. Please note: all values are only
+    estimates.
+:Default: ``true``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``geographical_server_location``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The estimated geographical location of the server hosting your
+    galaxy instance given as an ISO 3166 code. This is used to make
+    carbon emissions estimates more accurate as the location effects
+    the carbon intensity values used in the estimate calculation.
+:Default: ``GLOBAL``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``power_usage_effectiveness``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The estimated power usage effectivness of the data centre housing
+    the sever your galaxy instance is running on. This can make carbon
+    emissions estimates more accurate.
+:Default: ``1.67``
+:Type: int
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``interactivetools_enable``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~

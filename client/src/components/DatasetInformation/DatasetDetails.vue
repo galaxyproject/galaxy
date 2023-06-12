@@ -21,8 +21,11 @@
                             <inheritance-chain :dataset-id="datasetId" :dataset-name="dataset.name" />
                             <job-metrics
                                 v-if="config"
+                                :dataset-id="datasetId" 
+                                :geographical-server-location="config.geographical_server_location"
+                                :power-usage-effectiveness="config.power_usage_effectiveness"
                                 :should-show-aws-estimate="config.aws_estimate"
-                                :dataset-id="datasetId" />
+                                :should-show-carbon-emissions-estimates="config.carbon_emissions_estimates" />
                             <job-destination-params v-if="currentUser.is_admin" :job-id="dataset.creating_job" />
                             <job-dependencies :dependencies="job.dependencies"></job-dependencies>
                             <div v-if="dataset.peek">

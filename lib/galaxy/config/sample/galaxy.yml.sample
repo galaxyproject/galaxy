@@ -987,6 +987,16 @@ galaxy:
   # <config_dir>.
   #object_store_config_file: object_store_conf.xml
 
+  # Default cache path for caching object stores if cache not configured
+  # for that object store entry.
+  # The value of this option will be resolved with respect to
+  # <cache_dir>.
+  #object_store_cache_path: object_store_cache
+
+  # Default cache size for caching object stores if cache not configured
+  # for that object store entry.
+  #object_store_cache_size: -1
+
   # What Dataset attribute is used to reference files in an ObjectStore
   # implementation, this can be 'uuid' or 'id'. The default will depend
   # on how the object store is configured, starting with 20.05 Galaxy
@@ -1170,6 +1180,22 @@ galaxy:
   # runtime matrices. CPU, RAM and runtime usage is mapped against AWS
   # pricing table. Please note, that those numbers are only estimates.
   #aws_estimate: false
+
+  # This flag enables carbon emissions estimates for every job based on
+  # its runtime metrics. CPU, RAM and runtime usage is used to determine
+  # an estimate value. Please note: all values are only estimates.
+  #carbon_emission_estimates: true
+
+  # The estimated geographical location of the server hosting your
+  # galaxy instance given as an ISO 3166 code. This is used to make
+  # carbon emissions estimates more accurate as the location effects the
+  # carbon intensity values used in the estimate calculation.
+  geographical_server_location: US
+
+  # The estimated power usage effectivness of the data centre housing
+  # the sever your galaxy instance is running on. This can make carbon
+  # emissions estimates more accurate.
+  #power_usage_effectiveness: 1
 
   # Enable InteractiveTools.
   #interactivetools_enable: false
