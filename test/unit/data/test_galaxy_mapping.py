@@ -726,6 +726,8 @@ class TestMappings(BaseModelTestCase):
         # However, flushing anything non-empty - even unrelated object will invalidate
         # the session ID.
         self._non_empty_flush()
+        if session().in_transaction():
+            session.commit()
         assert "id" in inspect(galaxy_model_object).unloaded
 
         # Fetch the ID loads the value from the database
@@ -734,6 +736,8 @@ class TestMappings(BaseModelTestCase):
 
         # Using cached_id instead does not exhibit this behavior.
         self._non_empty_flush()
+        if session().in_transaction():
+            session.commit()
         assert expected_id == galaxy.model.cached_id(galaxy_model_object)
         assert "id" in inspect(galaxy_model_object).unloaded
 
@@ -760,6 +764,8 @@ class TestMappings(BaseModelTestCase):
         galaxy_model_object_new = model.GalaxySession()
         session.add(galaxy_model_object_new)
         session.flush()
+        if session().in_transaction():
+            session.commit()
         assert galaxy.model.cached_id(galaxy_model_object_new)
         assert "id" in inspect(galaxy_model_object_new).unloaded
 
