@@ -313,9 +313,15 @@ history_panel:
     pagination_next: '.list-pagination button.next'
     pagination_previous: '.list-pagination button.prev'
 
+    storage_overview: '.history-storage-overview-button'
+
   text:
     tooltip_name: 'Rename history...'
     new_name: 'Unnamed history'
+
+history_storage:
+  selectors:
+    _: '.history-storage-overview'
 
 edit_dataset_attributes:
   selectors:

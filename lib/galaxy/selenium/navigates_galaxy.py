@@ -690,7 +690,14 @@ class NavigatesGalaxy(HasDriver):
             self.upload_queue_local_file(test_path)
         else:
             assert paste_data is not None
-            self.upload_paste_data(paste_data)
+            if isinstance(paste_data, dict):
+                for name, value in paste_data.items():
+                    self.upload_paste_data(value)
+                    name_input = self.wait_for_selector("div#regular .upload-row:last-of-type .upload-title")
+                    name_input.clear()
+                    name_input.send_keys(name)
+            else:
+                self.upload_paste_data(paste_data)
 
         if ext is not None:
             self.wait_for_selector_visible(".upload-extension")
@@ -837,7 +844,7 @@ class NavigatesGalaxy(HasDriver):
         tab_locator = f"div#{tab_id}"
         self.wait_for_and_click_selector(f"{tab_locator} button#btn-new")
 
-        textarea = self.wait_for_selector(f"{tab_locator} .upload-text-content")
+        textarea = self.wait_for_selector(f"{tab_locator} .upload-row:last-of-type .upload-text-content")
         textarea.send_keys(pasted_content)
 
     def upload_rule_start(self):
