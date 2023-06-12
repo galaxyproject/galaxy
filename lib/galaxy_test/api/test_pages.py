@@ -112,7 +112,7 @@ steps:
         create_response_json = self._create_valid_page_with_slug("indexpage")
         assert self._users_index_has_page_with_id(create_response_json)
 
-    def test_index_published_shared(self):
+    def test_400_on_index_deleted_shared(self):
         response = self._index_raw(params=dict(show_shared=True, deleted=True))
         assert response.status_code == 400
 
