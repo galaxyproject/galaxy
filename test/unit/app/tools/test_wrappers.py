@@ -317,6 +317,7 @@ class MockTool:
     def __init__(self, app):
         self.app = app
         self.options = Mock(sanitize=False)
+        self.profile = 23.0
 
 
 class MockApp:
