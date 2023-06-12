@@ -3,8 +3,14 @@
         <component :is="referenceIs" v-bind="referenceProps" ref="reference">
             <slot name="reference" />
         </component>
-        <component :is="popperIs" v-show="visible" v-bind="popperProps" ref="popper" class="popper-element mt-1">
-            <div class="popper-arrow" data-popper-arrow />
+        <component
+            :is="popperIs"
+            v-show="visible"
+            v-bind="popperProps"
+            ref="popper"
+            class="popper-element mt-1"
+            :class="{ 'popper-element-dark': darkMode, 'popper-element-light': !darkMode }">
+            <div v-if="darkMode" class="popper-arrow" data-popper-arrow />
             <slot />
         </component>
     </div>
@@ -46,7 +52,14 @@ export default defineComponent({
         referenceProps: {
             type: Object,
         },
-        disabled: Boolean,
+        disabled: {
+            type: Boolean,
+            default: false,
+        },
+        darkMode: {
+            type: Boolean,
+            default: true,
+        },
     },
 
     emits: [
@@ -69,6 +82,7 @@ export default defineComponent({
             ...props,
             trigger: toRef(props, "trigger"),
             forceShow: toRef(props, "forceShow"),
+            disabled: toRef(props, "disabled"),
             delayOnMouseover: toRef(props, "delayOnMouseover"),
             delayOnMouseout: toRef(props, "delayOnMouseout"),
             onShow: () => emit("show"),
@@ -106,11 +120,21 @@ export default defineComponent({
 
 .popper-element {
     z-index: 9999;
+    border-radius: $border-radius-base;
+}
+
+.popper-element-dark {
     background: $brand-dark;
     color: $brand-light;
-    border-radius: $border-radius-base;
     max-width: 12rem;
     opacity: 0.95;
+}
+
+.popper-element-light {
+    background: $white;
+    color: $brand-dark;
+    border: $border-default;
+    box-shadow: 0 $border-radius-base $border-radius-base $brand-dark;
 }
 
 .popper-arrow,

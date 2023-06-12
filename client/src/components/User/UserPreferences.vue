@@ -57,6 +57,16 @@
             description="Add or remove custom builds using history datasets."
             to="/custom_builds" />
         <user-preferences-element
+            icon="fa-th-list"
+            title="Manage Activity Bar"
+            description="Click here to show or hide the activity bar."
+            badge="New!"
+            @click="toggleActivityBar = !toggleActivityBar">
+            <b-collapse v-model="toggleActivityBar">
+                <UserActivityBarSettings />
+            </b-collapse>
+        </user-preferences-element>
+        <user-preferences-element
             v-if="hasThemes"
             icon="fa-palette"
             title="Pick a Color Theme"
@@ -124,6 +134,7 @@ import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
 import ConfigProvider from "components/providers/ConfigProvider";
 import { userLogoutAll } from "utils/logout";
 import UserDeletion from "./UserDeletion";
+import UserActivityBarSettings from "./UserActivityBarSettings";
 import UserPreferencesElement from "./UserPreferencesElement";
 import UserPreferredObjectStore from "./UserPreferredObjectStore";
 
@@ -136,6 +147,7 @@ Vue.use(BootstrapVue);
 export default {
     components: {
         ConfigProvider,
+        UserActivityBarSettings,
         UserDeletion,
         UserPreferencesElement,
         ThemeSelector,
@@ -159,6 +171,7 @@ export default {
             diskQuota: "",
             messageVariant: null,
             message: null,
+            toggleActivityBar: false,
             toggleTheme: false,
         };
     },

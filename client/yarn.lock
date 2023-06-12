@@ -11291,9 +11291,9 @@ vue@2.7.14, vue@^2.6.10, vue@^2.7.14:
     "@vue/compiler-sfc" "2.7.14"
     csstype "^3.1.0"
 
-vuedraggable@2.24.3:
+vuedraggable@^2.24.3:
   version "2.24.3"
-  resolved "https://registry.npmjs.org/vuedraggable/-/vuedraggable-2.24.3.tgz"
+  resolved "https://registry.yarnpkg.com/vuedraggable/-/vuedraggable-2.24.3.tgz#43c93849b746a24ce503e123d5b259c701ba0d19"
   integrity sha512-6/HDXi92GzB+Hcs9fC6PAAozK1RLt1ewPTLjK0anTYguXLAeySDmcnqE8IC0xa7shvSzRjQXq3/+dsZ7ETGF3g==
   dependencies:
     sortablejs "1.10.2"

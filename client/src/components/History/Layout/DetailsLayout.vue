@@ -69,8 +69,8 @@
 <script>
 import { mapState } from "pinia";
 import { useUserStore } from "@/stores/userStore";
-import short from "components/directives/v-short";
-import StatelessTags from "components/TagsMultiselect/StatelessTags";
+import short from "@/components/plugins/short.js";
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 export default {
     components: {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useRouter } from "vue-router/composables";
-import Popper from "components/Popper/Popper.vue";
+import Popper from "@/components/Popper/Popper.vue";
+import TextShort from "@/components/Common/TextShort.vue";
 
 const router = useRouter();
 
@@ -35,7 +36,7 @@ const emit = defineEmits<{
     (e: "click"): void;
 }>();
 
-function onClick(): void {
+function onClick(evt: MouseEvent): void {
     if (props.to) {
         router.push(props.to);
     }
@@ -44,15 +45,14 @@ function onClick(): void {
 </script>
 
 <template>
-    <div>
-        <Popper reference-is="span" popper-is="span" placement="right">
-            <template v-slot:reference>
+    <Popper reference-is="span" popper-is="span" placement="right">
+        <template v-slot:reference>
+            <div @click="onClick">
                 <b-nav-item
                     :id="id"
-                    class="position-relative mb-1"
+                    class="position-relative my-1 p-2"
                     :class="{ 'nav-item-active': isActive }"
-                    :aria-label="title | l"
-                    @click="onClick">
+                    :aria-label="title | l">
                     <span v-if="progressStatus" class="progress">
                         <div
                             class="progress-bar notransition"
@@ -66,29 +66,34 @@ function onClick(): void {
                     </span>
                     <span class="position-relative">
                         <div class="nav-icon">
-                            <Icon :icon="icon" />
+                            <icon :icon="icon" />
                         </div>
-                        <div class="nav-title">{{ title }}</div>
+                        <TextShort :text="title" class="nav-title" />
                     </span>
                 </b-nav-item>
-            </template>
-            <div class="px-2 py-1">
-                <small v-if="tooltip">{{ tooltip | l }}</small>
-                <small v-else>No tooltip available for this item</small>
-                <div v-if="options" class="nav-options p-1">
-                    <router-link v-for="(option, index) in options" :key="index" :to="option.value">
-                        <b-button size="sm" variant="outline-primary" class="w-100 my-1 text-break text-light">
-                            {{ option.name }}
-                        </b-button>
-                    </router-link>
-                </div>
             </div>
-        </Popper>
-    </div>
+        </template>
+        <div class="px-2 py-1">
+            <small v-if="tooltip">{{ tooltip | l }}</small>
+            <small v-else>No tooltip available for this item</small>
+            <div v-if="options" class="nav-options p-1">
+                <router-link v-for="(option, index) in options" :key="index" :to="option.value">
+                    <b-button size="sm" variant="outline-primary" class="w-100 my-1 text-break text-light">
+                        {{ option.name }}
+                    </b-button>
+                </router-link>
+            </div>
+        </div>
+    </Popper>
 </template>
 
 <style scoped lang="scss">
 @import "theme/blue.scss";
+
+.nav-icon {
+    @extend .nav-item;
+    font-size: 1rem;
+}
 
 .nav-item {
     display: flex;
@@ -102,23 +107,20 @@ function onClick(): void {
     background: $gray-300;
 }
 
-.nav-icon {
-    @extend .nav-item;
-    font-size: 1rem;
+.nav-link {
+    padding: 0;
+}
+
+.nav-options {
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 .nav-title {
     @extend .nav-item;
-    margin-top: 0.7rem;
-    margin-bottom: 0.3rem;
-    line-height: 0rem;
+    width: 4rem;
+    margin-top: 0.5rem;
     font-size: 0.7rem;
-}
-
-.nav-options {
-    max-height: 20rem;
-    overflow-x: hidden;
-    overflow-y: auto;
 }
 
 .progress {
