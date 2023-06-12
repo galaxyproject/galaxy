@@ -108,7 +108,7 @@ export const useUserStore = defineStore(
         function toggleActivityBar() {
             showActivityBar.value = !showActivityBar.value;
         }
-        function toggleSideBar(currentOpen: string) {
+        function toggleSideBar(currentOpen = "") {
             toggledSideBar.value = toggledSideBar.value === currentOpen ? "" : currentOpen;
         }
 

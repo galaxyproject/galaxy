@@ -119,7 +119,8 @@ function onDragLeave(evt) {
                                 :key="activity.id"
                                 :icon="activity.icon"
                                 :title="activity.title"
-                                :tooltip="activity.tooltip" />
+                                :tooltip="activity.tooltip"
+                                @click="onToggleSidebar()" />
                             <ActivityItem
                                 v-else-if="['tools', 'workflows'].includes(activity.id)"
                                 :id="`activity-${activity.id}`"
@@ -136,7 +137,8 @@ function onDragLeave(evt) {
                                 :title="activity.title"
                                 :icon="activity.icon"
                                 :tooltip="activity.tooltip"
-                                :to="activity.to" />
+                                :to="activity.to"
+                                @click="onToggleSidebar()" />
                         </div>
                     </div>
                 </draggable>

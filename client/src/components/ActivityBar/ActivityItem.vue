@@ -37,10 +37,10 @@ const emit = defineEmits<{
 }>();
 
 function onClick(evt: MouseEvent): void {
+    emit("click");
     if (props.to) {
         router.push(props.to);
     }
-    emit("click");
 }
 </script>
 
