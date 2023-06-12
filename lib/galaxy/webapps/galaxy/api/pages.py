@@ -81,10 +81,10 @@ OffsetQueryParam: int = Query(
 )
 
 query_tags = [
-    IndexQueryTag("title", "The pages's title."),
-    IndexQueryTag("slug", "The pages's slug.", "s"),
-    IndexQueryTag("tag", "The pages's tags.", "t"),
-    IndexQueryTag("user", "The pages's owner's username.", "u"),
+    IndexQueryTag("title", "The page's title."),
+    IndexQueryTag("slug", "The page's slug.", "s"),
+    IndexQueryTag("tag", "The page's tags.", "t"),
+    IndexQueryTag("user", "The page's owner's username.", "u"),
 ]
 
 SearchQueryParam: Optional[str] = search_query_param(

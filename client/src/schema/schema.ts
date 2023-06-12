@@ -13017,16 +13017,16 @@ export interface operations {
              * ## GitHub-style Tags Available
              *
              * `title`
-             * : The pages's title.
+             * : The page's title.
              *
              * `slug`
-             * : The pages's slug. (The tag `s` can be used a short hand alias for this tag to filter on this attribute.)
+             * : The page's slug. (The tag `s` can be used a short hand alias for this tag to filter on this attribute.)
              *
              * `tag`
-             * : The pages's tags. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
+             * : The page's tags. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
              *
              * `user`
-             * : The pages's owner's username. (The tag `u` can be used a short hand alias for this tag to filter on this attribute.)
+             * : The page's owner's username. (The tag `u` can be used a short hand alias for this tag to filter on this attribute.)
              *
              * ## Free Text
              *
