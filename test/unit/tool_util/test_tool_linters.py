@@ -794,6 +794,10 @@ TESTS_DISCOVER_OUTPUTS = """
             <output name="data_name"/>
             <output_collection name="collection_name"/>
         </test>
+        <!-- no count or discovered_dataset/element
+             - no outputs can be given
+             - consequently also counts and expect_num_output need not to be given -->
+        <test expect_failure="true"/>
         <!-- no nested element and count at element -->
         <test>
             <output name="data_name" count="1"/>
@@ -1720,7 +1724,7 @@ def test_tests_discover_outputs(lint_ctx):
         in lint_ctx.error_messages
     )
     assert (
-        "Test 4: test collection 'collection_name' must contain nested 'element' tags and/or element childen with a 'count' attribute"
+        "Test 5: test collection 'collection_name' must contain nested 'element' tags and/or element childen with a 'count' attribute"
         in lint_ctx.error_messages
     )
     assert not lint_ctx.warn_messages
