@@ -341,6 +341,35 @@ class TestDatasetsApi(ApiTestCase):
         self._assert_status_code_is(display_response, 200)
         assert display_response.text == contents
 
+    def test_get_content_as_text(self, history_id):
+        contents = textwrap.dedent(
+            """\
+        1   2   3   4
+        A   B   C   D
+        10  20  30  40
+        """
+        )
+        hda1 = self.dataset_populator.new_dataset(history_id, content=contents, wait=True)
+        get_content_as_text_response = self._get(f"datasets/{hda1['id']}/get_content_as_text")
+        self._assert_status_code_is(get_content_as_text_response, 200)
+        self._assert_has_key(get_content_as_text_response.json(), "item_data")
+        assert get_content_as_text_response.json().get("item_data") == contents
+
+    def test_anon_get_content_as_text(self, history_id):
+        contents = "accessible data"
+        hda1 = self.dataset_populator.new_dataset(history_id, content=contents, wait=True)
+        with self._different_user(anon=True):
+            get_content_as_text_response = self._get(f"datasets/{hda1['id']}/get_content_as_text")
+            self._assert_status_code_is(get_content_as_text_response, 200)
+
+    def test_anon_private_get_content_as_text(self, history_id):
+        contents = "private data"
+        hda1 = self.dataset_populator.new_dataset(history_id, content=contents, wait=True)
+        self.dataset_populator.make_private(history_id=history_id, dataset_id=hda1["id"])
+        with self._different_user(anon=True):
+            get_content_as_text_response = self._get(f"datasets/{hda1['id']}/get_content_as_text")
+            self._assert_status_code_is(get_content_as_text_response, 403)
+
     def test_dataprovider_chunk(self, history_id):
         contents = textwrap.dedent(
             """\
