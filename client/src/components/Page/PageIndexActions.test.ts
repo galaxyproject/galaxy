@@ -9,8 +9,8 @@ const localVue = getLocalVue();
 describe("PageIndexActions.vue", () => {
     let wrapper: any;
     const mockRouter = {
-        push: jest.fn()
-    }
+        push: jest.fn(),
+    };
 
     beforeEach(async () => {
         const propsData = {
@@ -28,8 +28,8 @@ describe("PageIndexActions.vue", () => {
     describe("navigation", () => {
         it("should create a page when create is clicked", async () => {
             await wrapper.find("#page-create").trigger("click");
-            expect(mockRouter.push).toHaveBeenCalledTimes(1)
-            expect(mockRouter.push).toHaveBeenCalledWith("/rootprefix/pages/create")
+            expect(mockRouter.push).toHaveBeenCalledTimes(1);
+            expect(mockRouter.push).toHaveBeenCalledWith("/rootprefix/pages/create");
         });
     });
 });
