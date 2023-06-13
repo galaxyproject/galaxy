@@ -47,9 +47,9 @@
                     class="page-filter-link-owner"
                     href="#"
                     :title="'Search more from ' + row.item.username"
-                    @click="appendTagFilter('user', row.item.username)"
-                    >{{ row.item.username }}</a
-                >
+                    @click="appendTagFilter('user', row.item.username)">
+                    {{ row.item.username }}
+                </a>
             </template>
             <template v-slot:cell(sharing)="row">
                 <span v-if="row.item.published || row.item.shared || row.item.importable">
@@ -74,7 +74,7 @@
             v-if="rows >= perPage"
             v-model="currentPage"
             class="gx-pages-grid-pager"
-            v-bind="paginationAttrs"></b-pagination>
+            v-bind="paginationAttrs" />
     </div>
 </template>
 <script>
