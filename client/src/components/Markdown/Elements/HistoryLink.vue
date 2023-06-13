@@ -1,6 +1,10 @@
 <template>
     <div>
-        <b-link v-if="showLink" class="history-import-link" :data-history-id="args.history_id" @click="onClick"
+        <b-link
+            v-if="showLink"
+            data-description="history import link"
+            :data-history-id="args.history_id"
+            @click="onClick"
             >Click to Import History: {{ name }}.</b-link
         >
         <div v-if="imported" class="text-success">

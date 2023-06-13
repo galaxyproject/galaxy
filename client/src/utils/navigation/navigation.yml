@@ -508,7 +508,7 @@ pages:
 
   view:
     selectors:
-      history_link: '.history-import-link[data-history-id="${history_id}"]'
+      history_link: '[data-description="history import link"][data-history-id="${history_id}"]'
 
 login:
   selectors:
