@@ -546,7 +546,9 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 # older tool is in same section, just replace it with newer
                 else:
                     panel_dict.replace_tool(
-                        previous_tool_id=related_tool.id, new_tool_id=tool_id, tool=tool,
+                        previous_tool_id=related_tool.id,
+                        new_tool_id=tool_id,
+                        tool=tool,
                     )
                 log_msg = f"Loaded tool id: {tool.id}, version: {tool.version} into tool panel."
 
