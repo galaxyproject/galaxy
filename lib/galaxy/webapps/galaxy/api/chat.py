@@ -44,24 +44,15 @@ class ChatAPI:
         else:
             openai.api_key = self.config.openai_api_key
 
-        messages=[
+        messages = [
             {"role": "system", "content": PROMPT},
             {"role": "user", "content": query.query},
         ]
 
-        if query.context == "username":
-            user = trans.user
-            if user is not None:
-                log.debug(f"CHATGPTuser: {user.username}")
-                msg = f"You will address the user as {user.username}"
-            else:
-                msg = f"You will address the user as Anonymous User"
+        if query.context == "tool_error":
+            msg = "The user will provide you a Galaxy tool error, and you will try to explain the error and provide a solution."
             messages.append({"role": "system", "content": msg})
-        elif query.context == "tool_error":
-            msg = "The user will provide you a Galaxy tool error, and you will try to debug and explain what happened"
-            messages.append({"role": "system", "content": msg})
-        
-        log.debug(f"CHATGPTmessages: {messages}")
+
 
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
