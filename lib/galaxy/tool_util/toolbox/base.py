@@ -526,16 +526,32 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         else:
             panel_dict = panel_component
 
-        related_tool = self._lineage_in_panel(panel_dict, tool=tool)
+        # If tool is newer version, remove older related_tool (from this section or other section)
+        tool_deleted = False
+        related_tool = self._lineage_in_panel(panel_dict, tool=tool, check_toolbox=True)
         if related_tool:
             if self._newer_tool(tool, related_tool):
-                panel_dict.replace_tool(
-                    previous_tool_id=related_tool.id,
-                    new_tool_id=tool_id,
-                    tool=tool,
-                )
+                related_section_id = self.get_section_for_tool(related_tool)[0]
+                related_section = self.get_section(related_section_id)[1]
+                # older tool is in another section, delete it from there
+                if (
+                    section
+                    and related_section
+                    and isinstance(related_section, ToolSection)
+                    and related_section.id != panel_component.id
+                ):
+                    if related_section.elems and f"tool_{related_tool.id}" in related_section.elems:
+                        del related_section.elems[f"tool_{related_tool.id}"]
+                        tool_deleted = True
+                # older tool is in same section, just replace it with newer
+                else:
+                    panel_dict.replace_tool(
+                        previous_tool_id=related_tool.id, new_tool_id=tool_id, tool=tool,
+                    )
                 log_msg = f"Loaded tool id: {tool.id}, version: {tool.version} into tool panel."
-        else:
+
+        # If there is no related tool or we deleted older version and need to insert newer one
+        if related_tool is None or tool_deleted:
             inserted = False
             index = self._integrated_tool_panel.index_of_tool_id(tool_id)
             if index:
@@ -1312,9 +1328,10 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 rval.append(self.get_tool_to_dict(trans, tool, tool_help=tool_help))
         return rval
 
-    def _lineage_in_panel(self, panel_dict, tool=None, tool_lineage=None):
+    def _lineage_in_panel(self, panel_dict, tool=None, tool_lineage=None, check_toolbox=False):
         """If tool with same lineage already in panel (or section) - find
-        and return it. Otherwise return None.
+        and return it. Otherwise return None. Setting `check_toolbox=True`
+        will check for lineage tool in all sections, and not only current.
         """
         if tool_lineage is None:
             assert tool is not None
@@ -1326,6 +1343,12 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                     lineage_id = lineage_tool.id
                     if panel_dict.has_tool_with_id(lineage_id):
                         return panel_dict.get_tool_with_id(lineage_id)
+                    if check_toolbox:
+                        other_section_id = self.get_section_for_tool(lineage_tool)[0]
+                        other_section = self.get_section(other_section_id)[1]
+                        if other_section and isinstance(other_section, ToolSection):
+                            if other_section.elems.has_tool_with_id(lineage_id):
+                                return other_section.elems.get_tool_with_id(lineage_id)
         else:
             log.warning("Could not find lineage for tool '%s'", tool.id)
         return None
