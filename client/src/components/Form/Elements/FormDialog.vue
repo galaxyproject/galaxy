@@ -12,7 +12,7 @@ library.add(faFolderOpen);
 interface DataDialogProps {
     id: string;
     multiple: boolean;
-    value?: Array<string>;
+    value?: Array<string> | string;
 }
 
 const props = withDefaults(defineProps<DataDialogProps>(), {
@@ -37,20 +37,18 @@ const openDataDialog = reactive({
 });
 
 const dataSelected = reactive({
-    value: [""]
+    value: props.value,
 });
 
 const emit = defineEmits<{
-    (e: "input", value: Array<string>): void;
+    (e: "input", value: Array<string> | string): void;
 }>();
 
-
-function onData(result: Array<string>) {
-    openDataDialog.value = false
+function onData(result: Array<string> | string) {
+    openDataDialog.value = false;
     dataSelected.value = result;
     emit("input", result);
 }
-
 </script>
 
 <template>
