@@ -3,11 +3,23 @@ History
 
 .. to_doc
 
----------
-23.1.dev0
----------
+-------------------
+23.0.2 (2023-06-13)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fix ``Text File Busy`` errors at the source by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16212 <https://github.com/galaxyproject/galaxy/pull/16212>`_
+
+============
+Enhancements
+============
+
+* Point release deps fixes and docs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16214 <https://github.com/galaxyproject/galaxy/pull/16214>`_
+* Use galaxy-release-util to upload python packages by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16240 <https://github.com/galaxyproject/galaxy/pull/16240>`_
 
 -------------------
 23.0.1 (2023-06-08)

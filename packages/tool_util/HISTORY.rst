@@ -3,11 +3,17 @@ History
 
 .. to_doc
 
----------
-23.1.dev0
----------
+-------------------
+23.0.2 (2023-06-13)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Don't fail CWL tool parsing when Cheetah not installed by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16219 <https://github.com/galaxyproject/galaxy/pull/16219>`_
+* Allow skipping ``expect_num_outputs`` when ``expect_failure`` is set in tool test by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#16237 <https://github.com/galaxyproject/galaxy/pull/16237>`_
 
 -------------------
 23.0.1 (2023-06-08)
