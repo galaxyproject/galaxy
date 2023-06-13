@@ -1,7 +1,11 @@
 try:
-    from dropboxfs.dropboxfs import DropboxFS
+    from fs.dropboxfs import DropboxFS
 except ImportError:
-    DropboxFS = None
+    # fs.dropboxfs < 0.3
+    try:
+        from dropboxfs.dropboxfs import DropboxFS
+    except ImportError:
+        DropboxFS = None
 
 from ._pyfilesystem2 import PyFilesystem2FilesSource
 
