@@ -26,25 +26,14 @@ export const Activities = [
         visible: true,
     },
     {
-        description: "Displays a panel to search and access available workflows.",
+        description: "Displays a panel to search and access workflows.",
         icon: "sitemap",
         id: "workflows",
         mutable: false,
         optional: true,
-        title: "Workflow",
-        to: null,
-        tooltip: "Display an advanced search field for workflows.",
-        visible: true,
-    },
-    {
-        description: "Displays a panel to search and access available workflows.",
-        icon: "sitemap",
-        id: "workflow",
-        mutable: false,
-        optional: true,
         title: "Workflows",
-        to: "/workflows/list/",
-        tooltip: "Display an advanced search field for workflows.",
+        to: "/workflows/list",
+        tooltip: "Search and run workflows",
         visible: true,
     },
     {
@@ -93,4 +82,31 @@ export const Activities = [
     },
 ];
 
-export default Activities;
+export function convertDropData(data) {
+    if (data.history_content_type === "dataset") {
+        return {
+            description: "Displays this dataset.",
+            icon: "fa-file",
+            id: `dataset-${data.id}`,
+            mutable: true,
+            optional: true,
+            title: data.name,
+            tooltip: "View your dataset",
+            to: `/datasets/${data.id}/preview`,
+            visible: true,
+        };
+    }
+    if (data.model_class === "StoredWorkflow") {
+        return {
+            description: data.description,
+            icon: "fa-play",
+            id: `workflow-${data.id}`,
+            mutable: true,
+            optional: true,
+            title: data.name,
+            tooltip: data.name,
+            to: `/workflows/run?id=${data.id}`,
+            visible: true,
+        };
+    }
+}

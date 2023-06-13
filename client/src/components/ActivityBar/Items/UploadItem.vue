@@ -19,6 +19,10 @@ export interface Props {
 
 defineProps<Props>();
 
+const emit = defineEmits<{
+    (e: "click"): void;
+}>();
+
 const status: Ref<string> = ref("success");
 const percentage: Ref<number> = ref(0);
 
@@ -34,6 +38,11 @@ onUnmounted(() => {
     eventHub.$off("upload:status", setStatus);
     eventHub.$off("upload:percentage", setPercentage);
 });
+
+function onUploadModal() {
+    emit("click");
+    openGlobalUploadModal();
+}
 
 function setStatus(val: string): void {
     status.value = val;
@@ -52,5 +61,5 @@ function setPercentage(val: number): void {
         :icon="icon"
         :progress-percentage="percentage"
         :progress-status="status"
-        @click="openGlobalUploadModal" />
+        @click="onUploadModal" />
 </template>

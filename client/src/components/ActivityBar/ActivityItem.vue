@@ -37,19 +37,18 @@ const emit = defineEmits<{
 }>();
 
 function onClick(evt: MouseEvent): void {
+    emit("click");
     if (props.to) {
         router.push(props.to);
     }
-    emit("click");
 }
 </script>
 
 <template>
     <Popper reference-is="span" popper-is="span" placement="right">
         <template v-slot:reference>
-            <div @click="onClick">
+            <div :id="id" class="activity-item" @click="onClick">
                 <b-nav-item
-                    :id="id"
                     class="position-relative my-1 p-2"
                     :class="{ 'nav-item-active': isActive }"
                     :aria-label="title | l">
