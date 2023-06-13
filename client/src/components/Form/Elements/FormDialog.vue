@@ -55,7 +55,7 @@ function onData(result: Array<string> | string) {
     <div class="d-flex">
         <span @click="openDataDialog.value = true">
             <font-awesome-icon icon="folder-open" :title="title" />
-            <input disabled class="ui-input float-left" v-model="dataSelected.value" />
+            <input v-model="dataSelected.value" disabled class="ui-input float-left" />
         </span>
         <DataDialog
             v-if="openDataDialog.value"

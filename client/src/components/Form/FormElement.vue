@@ -134,7 +134,7 @@ function onConnect() {
     }
 }
 
-function toBoolean(value: string){
+function toBoolean(value: string) {
     //convert string to boolean or return null
     if (typeof value === "string") {
         if (value.toLowerCase() === "true") {
@@ -309,7 +309,7 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 v-else-if="props.type == 'data_dialog'"
                 :id="id"
                 v-model="currentValue"
-                :multiple="toBoolean(attrs.multiple)"/>
+                :multiple="toBoolean(attrs.multiple)" />
             <FormColor v-else-if="props.type === 'color'" :id="props.id" v-model="currentValue" />
             <FormDirectory v-else-if="props.type === 'directory_uri'" v-model="currentValue" />
             <FormUpload v-else-if="props.type === 'upload'" v-model="currentValue" />
