@@ -156,17 +156,18 @@ function toggleContextMenu(evt) {
                                 :id="`activity-${activity.id}`"
                                 :key="activity.id"
                                 :icon="activity.icon"
+                                :is-active="isActiveSideBar(activity.id)"
                                 :title="activity.title"
                                 :tooltip="activity.tooltip"
-                                :is-active="isActiveSideBar(activity.id)"
+                                :to="activity.to"
                                 @click="onToggleSidebar(activity.id)" />
                             <ActivityItem
                                 v-else-if="activity.to"
                                 :id="`activity-${activity.id}`"
                                 :key="activity.id"
-                                :title="activity.title"
                                 :icon="activity.icon"
                                 :is-active="isActiveRoute(activity.to)"
+                                :title="activity.title"
                                 :tooltip="activity.tooltip"
                                 :to="activity.to"
                                 @click="onToggleSidebar()" />
