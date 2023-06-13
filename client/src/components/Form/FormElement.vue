@@ -134,6 +134,21 @@ function onConnect() {
     }
 }
 
+function toBoolean(value: string){
+    //convert string to boolean or return null
+    if (typeof value === "string") {
+        if (value.toLowerCase() === "true") {
+            return true;
+        } else if (value.toLowerCase() === "false") {
+            return false;
+        } else {
+            return null;
+        }
+    } else {
+        return value;
+    }
+}
+
 const isHidden = computed(() => attrs.value["hidden"]);
 const elementId = computed(() => `form-element-${props.id}`);
 const hasAlert = computed(() => Boolean(props.error || props.warning));
@@ -294,7 +309,7 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 v-else-if="props.type == 'data_dialog'"
                 :id="id"
                 v-model="currentValue"
-                :multiple="attrs.multiple"/>
+                :multiple="toBoolean(attrs.multiple)"/>
             <FormColor v-else-if="props.type === 'color'" :id="props.id" v-model="currentValue" />
             <FormDirectory v-else-if="props.type === 'directory_uri'" v-model="currentValue" />
             <FormUpload v-else-if="props.type === 'upload'" v-model="currentValue" />
