@@ -303,13 +303,13 @@ def upload_package(package: Package):
     ).check_returncode()
 
 
-def get_root_version(galaxy_root: pathlib.Path) -> str:
+def get_root_version(galaxy_root: pathlib.Path) -> Version:
     version_py = galaxy_root / "lib" / "galaxy" / "version.py"
     version_py_contents = version_py.read_text().splitlines()
     assert len(version_py_contents) == 3
     major_version = version_py_contents[0].split('"')[1]
     minor_version = version_py_contents[1].split('"')[1]
-    return f"{major_version}.{minor_version}"
+    return Version(f"{major_version}.{minor_version}")
 
 
 def set_root_version(galaxy_root: pathlib.Path, new_version: Version) -> pathlib.Path:
@@ -405,7 +405,7 @@ def merge_and_resolve_branches(galaxy_root: pathlib.Path, base_branch: str, new_
         previous_package.package_history = sorted(
             new_history, key=lambda item: datetime.datetime.fromisoformat(item.date), reverse=True
         )
-        dev_version = Version(get_root_version(galaxy_root))
+        dev_version = get_root_version(galaxy_root)
         previous_package.package_history.insert(0, ChangelogItem(version=dev_version, changes=[], date=None))
         previous_package.write_history()
         subprocess.run(["git", "add", str(previous_package.history_rst)])
@@ -419,14 +419,16 @@ def merge_and_resolve_branches(galaxy_root: pathlib.Path, base_branch: str, new_
 
 
 def get_next_devN_version(galaxy_root) -> Version:
-    root_version = Version(get_root_version(galaxy_root))
+    root_version = get_root_version(galaxy_root)
     if root_version.is_devrelease:
         minor_version = root_version.minor
+        micro_version = root_version.micro
         dev_version = root_version.dev + 1
     else:
-        minor_version = root_version.minor + 1
+        minor_version = root_version.minor
+        micro_version = root_version.micro + 1
         dev_version = 0
-    return Version(f"{root_version.major}.{minor_version}.dev{dev_version}")
+    return Version(f"{root_version.major}.{minor_version}.{micro_version}.dev{dev_version}")
 
 
 def is_merge_required(base_branch: str, new_branch: str, galaxy_root: pathlib.Path):
