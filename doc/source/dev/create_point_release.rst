@@ -1,10 +1,10 @@
 Creating Galaxy Point Releases
 ==============================
 
-The process is currently a mix of a script that is run locally and creating a (pre-)release in the GitHub interface (or using the GitHub API).
-The script is in scripts/release.py.
+The process is currently a mix of the `galaxy-release-util create-release` command that is run locally and creating a (pre-)release in the GitHub interface (or using the GitHub API).
+The command is shipped with the `galaxy-release-util <https://pypi.org/project/galaxy-release-util/>`_ python package.
 
-The local script will:
+`galaxy-release-util create-release` will:
 
  - update lib/galaxy/version.py
  - create HISTORY.rst entries for all packages
@@ -28,7 +28,7 @@ Follow these steps:
     2. Activate your local virtualenv with Galaxy's dev requirements: `. .venv/bin/activate`
     3. Update Galaxy's dev dependencies (if you haven't done this in a while): `pip install -r lib/galaxy/dependencies/dev-requirements.txt`
     4. You need a personal access token from github (only needs public read permissions).
-    5. `GITHUB_AUTH=$YOUR_PAT_FROM_STEP_3 python scripts/release.py create-release --new-version 23.0.1 --last-commit v23.0`
+    5. `GITHUB_AUTH=$YOUR_PAT_FROM_STEP_3 galaxy-release-util create-release --new-version 23.0.1 --last-commit v23.0`
     6. Follow along the prompts and make sure the proposed changes look correct
 
 When the script is finished you should find a new tag in the GitHub interface, as well as updated release and dev branches.
