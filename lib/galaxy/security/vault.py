@@ -30,6 +30,7 @@ except ImportError:
     hvac = None
 
 from galaxy import model
+from galaxy.model.base import transaction
 
 log = logging.getLogger(__name__)
 
@@ -134,7 +135,8 @@ class DatabaseVault(Vault):
             if value:
                 vault_entry.value = value
                 self.sa_session.merge(vault_entry)
-                self.sa_session.flush()
+                with transaction(self.sa_session):
+                    self.sa_session.commit()
         else:
             # recursively create parent keys
             parent_key, _, _ = key.rpartition("/")
@@ -142,7 +144,8 @@ class DatabaseVault(Vault):
                 self._update_or_create(parent_key, None)
             vault_entry = model.Vault(key=key, value=value, parent_key=parent_key or None)
             self.sa_session.merge(vault_entry)
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
         return vault_entry
 
     def read_secret(self, key: str) -> Optional[str]:

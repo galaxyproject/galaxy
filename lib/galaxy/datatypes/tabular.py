@@ -795,8 +795,8 @@ class Sam(Tabular, _BamOrSam):
         >>> from galaxy.model.mapping import init
         >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
         >>> hist = History()
-        >>> sa_session.add(hist)
-        >>> sa_session.flush()
+        >>> with sa_session.begin():
+        ...     sa_session.add(hist)
         >>> set_datatypes_registry(example_datatype_registry_for_sample())
         >>> fname = get_test_fname( 'sam_with_header.sam' )
         >>> samds = Dataset(external_filename=fname)

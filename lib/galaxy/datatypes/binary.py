@@ -82,6 +82,7 @@ from galaxy.util import (
     compression_utils,
     nice_size,
     sqlite,
+    UNKNOWN,
 )
 from galaxy.util.checkers import (
     is_bz2,
@@ -91,6 +92,13 @@ from . import (
     data,
     dataproviders,
 )
+
+# Optional dependency to enable better metadata support in FITS datatype
+try:
+    from astropy.io import fits
+except ModuleNotFoundError:
+    # If astropy cannot be found FITS datatype will work with minimal metadata support
+    pass
 
 if TYPE_CHECKING:
     from galaxy.util.compression_utils import FileObjType
@@ -2509,7 +2517,7 @@ class GeminiSQLite(SQlite):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = "Gemini SQLite Database, version %s" % (dataset.metadata.gemini_version or "unknown")
+            dataset.peek = "Gemini SQLite Database, version %s" % (dataset.metadata.gemini_version or UNKNOWN)
             dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = "file does not exist"
@@ -2519,7 +2527,7 @@ class GeminiSQLite(SQlite):
         try:
             return dataset.peek
         except Exception:
-            return "Gemini SQLite Database, version %s" % (dataset.metadata.gemini_version or "unknown")
+            return "Gemini SQLite Database, version %s" % (dataset.metadata.gemini_version or UNKNOWN)
 
 
 class ChiraSQLite(SQlite):
@@ -2596,7 +2604,7 @@ class CuffDiffSQlite(SQlite):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = "CuffDiff SQLite Database, version %s" % (dataset.metadata.cuffdiff_version or "unknown")
+            dataset.peek = "CuffDiff SQLite Database, version %s" % (dataset.metadata.cuffdiff_version or UNKNOWN)
             dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = "file does not exist"
@@ -2606,7 +2614,7 @@ class CuffDiffSQlite(SQlite):
         try:
             return dataset.peek
         except Exception:
-            return "CuffDiff SQLite Database, version %s" % (dataset.metadata.cuffdiff_version or "unknown")
+            return "CuffDiff SQLite Database, version %s" % (dataset.metadata.cuffdiff_version or UNKNOWN)
 
 
 class MzSQlite(SQlite):
@@ -3026,8 +3034,8 @@ class NcbiTaxonomySQlite(SQlite):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "NCBI Taxonomy SQLite Database, version {} ({} taxons)".format(
-                getattr(dataset.metadata, "ncbitaxonomy_schema_version", "unknown"),
-                getattr(dataset.metadata, "taxon_count", "unknown"),
+                getattr(dataset.metadata, "ncbitaxonomy_schema_version", UNKNOWN),
+                getattr(dataset.metadata, "taxon_count", UNKNOWN),
             )
             dataset.blurb = nice_size(dataset.get_size())
         else:
@@ -3039,8 +3047,8 @@ class NcbiTaxonomySQlite(SQlite):
             return dataset.peek
         except Exception:
             return "NCBI Taxonomy SQLite Database, version {} ({} taxons)".format(
-                getattr(dataset.metadata, "ncbitaxonomy_schema_version", "unknown"),
-                getattr(dataset.metadata, "taxon_count", "unknown"),
+                getattr(dataset.metadata, "ncbitaxonomy_schema_version", UNKNOWN),
+                getattr(dataset.metadata, "taxon_count", UNKNOWN),
             )
 
 
@@ -3497,7 +3505,7 @@ class PostgresqlArchive(CompressedArchive):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = f"PostgreSQL Archive ({nice_size(dataset.get_size())})"
-            dataset.blurb = "PostgreSQL version %s" % (dataset.metadata.version or "unknown")
+            dataset.blurb = "PostgreSQL version %s" % (dataset.metadata.version or UNKNOWN)
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
@@ -3551,7 +3559,7 @@ class Fast5Archive(CompressedArchive):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = f"FAST5 Archive ({nice_size(dataset.get_size())})"
-            dataset.blurb = "%s sequences" % (dataset.metadata.fast5_count or "unknown")
+            dataset.blurb = "%s sequences" % (dataset.metadata.fast5_count or UNKNOWN)
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
@@ -3659,7 +3667,7 @@ class SearchGuiArchive(CompressedArchive):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = "SearchGUI Archive, version %s" % (dataset.metadata.searchgui_version or "unknown")
+            dataset.peek = "SearchGUI Archive, version %s" % (dataset.metadata.searchgui_version or UNKNOWN)
             dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = "file does not exist"
@@ -3669,7 +3677,7 @@ class SearchGuiArchive(CompressedArchive):
         try:
             return dataset.peek
         except Exception:
-            return "SearchGUI Archive, version %s" % (dataset.metadata.searchgui_version or "unknown")
+            return "SearchGUI Archive, version %s" % (dataset.metadata.searchgui_version or UNKNOWN)
 
 
 @build_sniff_from_prefix
@@ -4350,3 +4358,77 @@ class HexrdEtaOmeNpz(Npz):
             return dataset.peek
         except Exception:
             return "Binary Numpy npz file (%s)" % (nice_size(dataset.get_size()))
+
+
+class FITS(Binary):
+    """
+    FITS (Flexible Image Transport System) file data format, widely used in astronomy
+    Represents sky images (in celestial coordinates) and tables
+    https://fits.gsfc.nasa.gov/fits_primer.html
+    """
+
+    file_ext = "fits"
+
+    MetadataElement(
+        name="HDUs",
+        default=["FITS File HDUs"],
+        desc="Header Data Units",
+        param=metadata.ListParameter,
+        readonly=True,
+        visible=True,
+        no_value=(),
+    )
+
+    def __init__(self, **kwd):
+        super().__init__(**kwd)
+        self._magic = b"SIMPLE  ="
+
+    def sniff(self, filename: str) -> bool:
+        """
+        Determines whether the file is a FITS file
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('test.fits')
+        >>> FITS().sniff(fname)
+        True
+        >>> fname = FilePrefix(get_test_fname('interval.interval'))
+        >>> FITS().sniff(fname)
+        False
+        """
+
+        try:
+            # The first 9 bytes of any FITS file are always "SIMPLE  ="
+            with open(filename, "rb") as header:
+                if header.read(9) == self._magic:
+                    return True
+                return False
+        except Exception as e:
+            log.warning("%s, sniff Exception: %s", self, e)
+            return False
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
+        try:
+            with fits.open(dataset.file_name) as hdul:
+                dataset.metadata.HDUs = []
+                for i in range(len(hdul)):
+                    dataset.metadata.HDUs.append(
+                        " ".join(
+                            filter(None, [str(i), hdul[i].__class__.__name__, hdul[i].name, str(hdul[i]._summary()[4])])
+                        )
+                    )
+        except Exception as e:
+            log.warning("%s, set_meta Exception: %s", self, e)
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        if not dataset.dataset.purged:
+            dataset.peek = "\n".join(dataset.metadata.HDUs)
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def display_peek(self, dataset: DatasetProtocol) -> str:
+        try:
+            return dataset.peek
+        except Exception:
+            return f"Binary FITS file size ({nice_size(dataset.get_size())})"

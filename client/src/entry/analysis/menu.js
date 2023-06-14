@@ -1,11 +1,9 @@
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import { userLogout } from "utils/logout";
-import { useUserStore } from "@/stores/userStore";
 
 export function fetchMenu(options = {}) {
     const Galaxy = getGalaxyInstance();
-    const userStore = useUserStore();
     const menu = [];
     //
     // Analyze data tab.
@@ -202,12 +200,6 @@ export function fetchMenu(options = {}) {
                 {
                     title: _l("Preferences"),
                     url: "/user",
-                },
-                {
-                    title: _l("Show/Hide Activity Bar"),
-                    onclick: () => {
-                        userStore.toggleActivityBar();
-                    },
                 },
                 { divider: true },
                 {

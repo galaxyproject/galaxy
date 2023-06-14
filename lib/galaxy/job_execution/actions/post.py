@@ -6,6 +6,7 @@ import datetime
 
 from markupsafe import escape
 
+from galaxy.model.base import transaction
 from galaxy.util import (
     send_mail,
     unicodify,
@@ -193,7 +194,15 @@ class RenameDatasetAction(DefaultJobAction):
                 # repeat in cat1 would be something like queries_0.input2.
                 input_file_var = input_file_var.replace(".", "|")
 
-                replacement = input_names.get(input_file_var, "")
+                replacement = None
+                if input_file_var in input_names:
+                    replacement = input_names[input_file_var]
+                else:
+                    for input_name, _replacement in input_names.items():
+                        if "|" in input_name and input_name.endswith(input_file_var):
+                            # best effort attempt at matching up unqualified input
+                            replacement = _replacement
+                            break
 
                 # In case name was None.
                 replacement = replacement or ""
@@ -358,7 +367,8 @@ class DeleteIntermediatesAction(DefaultJobAction):
         # POTENTIAL ISSUES:  When many outputs are being finish()ed
         # concurrently, sometimes non-terminal steps won't be cleaned up
         # because of the lag in job state updates.
-        sa_session.flush()
+        with transaction(sa_session):
+            sa_session.commit()
         if not job.workflow_invocation_step:
             log.debug("This job is not part of a workflow invocation, delete intermediates aborted.")
             return

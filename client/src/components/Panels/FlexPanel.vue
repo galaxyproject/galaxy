@@ -63,7 +63,12 @@ watch(position, () => {
 </script>
 
 <template>
-    <div v-if="show" :id="side" ref="root" class="d-flex">
+    <div
+        v-if="show"
+        :id="side"
+        ref="root"
+        class="d-flex"
+        :class="{ 'flex-panel-left': side === 'left', 'flex-panel-right': side === 'right' }">
         <div class="d-flex flex-column" :style="style">
             <slot />
             <div v-if="side === 'right'" class="flex-panel-footer d-flex px-2 py-1">
@@ -132,6 +137,12 @@ watch(position, () => {
 }
 .flex-panel-footer {
     background: $panel-footer-bg-color;
+}
+.flex-panel-left {
+    border-right: $border-default;
+}
+.flex-panel-right {
+    border-left: $border-default;
 }
 .flex-panel-left-expand {
     @extend .flex-panel-expand;

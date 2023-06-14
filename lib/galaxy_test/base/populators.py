@@ -98,6 +98,7 @@ from galaxy.tool_util.verify.wait import (
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     galaxy_root_path,
+    UNKNOWN,
 )
 from galaxy.util.resources import resource_string
 from galaxy.util.unittest_utils import skip_if_site_down
@@ -1195,7 +1196,7 @@ class BaseDatasetPopulator(BasePopulator):
         def validated():
             metadata = self.get_history_dataset_details(history_id, dataset_id=dataset_id)
             validated_state = metadata["validated_state"]
-            if validated_state == "unknown":
+            if validated_state == UNKNOWN:
                 return
             else:
                 return validated_state

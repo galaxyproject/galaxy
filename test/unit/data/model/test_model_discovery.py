@@ -3,6 +3,7 @@ from tempfile import mkdtemp
 
 from galaxy import model
 from galaxy.model import store
+from galaxy.model.base import transaction
 from galaxy.model.store.discover import persist_target_to_export_store
 from galaxy.model.unittest_utils import GalaxyDataTestApp
 
@@ -242,7 +243,8 @@ def _import_directory_to_history(app, target, work_directory):
 
     sa_session = app.model.context
     sa_session.add_all([u, import_history])
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
 
     assert len(import_history.datasets) == 0
 

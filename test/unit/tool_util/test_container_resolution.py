@@ -56,11 +56,11 @@ def test_docker_container_resolver_detects_docker_cli(mocker):
     assert resolver.cli_available
 
 
-def test_cached_docker_container_docker_cli_absent_resolve(mocker):
+def test_cached_docker_container_docker_cli_absent_resolve(mocker) -> None:
     mocker.patch("galaxy.tool_util.deps.container_resolvers.mulled.which", return_value=None)
     resolver = CachedMulledDockerContainerResolver()
     assert resolver.cli_available is False
-    assert resolver.resolve(enabled_container_types=[], tool_info={}) is None
+    assert resolver.resolve(enabled_container_types=[], tool_info=ToolInfo()) is None
 
 
 def test_docker_container_docker_cli_absent_resolve(mocker):
@@ -74,6 +74,7 @@ def test_docker_container_docker_cli_absent_resolve(mocker):
         return_value="samtools:1.10--h2e538c0_3",
     )
     container_description = resolver.resolve(enabled_container_types=["docker"], tool_info=tool_info)
+    assert container_description
     assert container_description.type == "docker"
     assert container_description.identifier == "quay.io/biocontainers/samtools:1.10--h2e538c0_3"
 
@@ -94,6 +95,7 @@ def test_docker_container_docker_cli_exception_resolve(mocker):
     )
     container_description = resolver.resolve(enabled_container_types=["docker"], tool_info=tool_info, install=True)
     assert resolver.cli_available is True
+    assert container_description
     assert container_description.type == "docker"
     assert container_description.identifier == "quay.io/biocontainers/samtools:1.10--h2e538c0_3"
 
@@ -106,6 +108,7 @@ def test_cached_singularity_container_resolver_uncached(mocker):
     requirement = ToolRequirement(name="foo", version="1.0", type="package")
     tool_info = ToolInfo(requirements=[requirement])
     container_description = resolver.resolve(enabled_container_types=["singularity"], tool_info=tool_info)
+    assert container_description
     assert container_description.type == "singularity"
     assert container_description.identifier == "/singularity/mulled/foo:1.0--bar"
 
@@ -121,11 +124,13 @@ def test_cached_singularity_container_resolver_dir_mtime_cached(mocker):
     requirement = ToolRequirement(name="baz", version="2.22", type="package")
     tool_info = ToolInfo(requirements=[requirement])
     container_description = resolver.resolve(enabled_container_types=["singularity"], tool_info=tool_info)
+    assert container_description
     assert container_description.type == "singularity"
     assert container_description.identifier == "/singularity/mulled/baz:2.22"
     requirement = ToolRequirement(name="foo", version="1.0", type="package")
     tool_info.requirements.append(requirement)
     container_description = resolver.resolve(enabled_container_types=["singularity"], tool_info=tool_info)
+    assert container_description
     assert container_description.type == "singularity"
     assert (
         container_description.identifier

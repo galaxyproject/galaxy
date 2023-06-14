@@ -2,14 +2,17 @@
     <div class="mb-3 workflow-invocation-state-component">
         <div v-if="invocationAndJobTerminal">
             <span>
-                <a class="invocation-report-link" :href="invocationLink">
-                    <b>View Report {{ indexStr }}</b>
-                </a>
-                <a
-                    v-b-tooltip
-                    class="fa fa-print ml-1 invocation-pdf-link"
+                <b-button v-b-tooltip.hover size="sm" class="invocation-report-link" :href="invocationLink">
+                    View Report
+                </b-button>
+                <b-button
+                    v-b-tooltip.hover
+                    size="sm"
+                    class="invocation-pdf-link"
                     :href="invocationPdfLink"
-                    title="Download PDF" />
+                    target="_blank">
+                    Generate PDF
+                </b-button>
             </span>
         </div>
         <div v-else-if="!invocationSchedulingTerminal">

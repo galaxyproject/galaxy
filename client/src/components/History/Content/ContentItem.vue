@@ -112,6 +112,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faArrowCircleUp, faArrowCircleDown, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
 import { useEntryPointStore } from "stores/entryPointStore";
+import { clearDrag, setDrag } from "@/utils/setDrag.js";
 
 library.add(faArrowCircleUp, faArrowCircleDown, faCheckCircle);
 export default {
@@ -234,9 +235,10 @@ export default {
             }
         },
         onDragStart(evt) {
-            evt.dataTransfer.dropEffect = "move";
-            evt.dataTransfer.effectAllowed = "move";
-            evt.dataTransfer.setData("text", JSON.stringify([this.item]));
+            setDrag(evt, this.item);
+        },
+        onDragEnd: function () {
+            clearDrag();
         },
         onEdit() {
             this.$router.push(this.itemUrls.edit);

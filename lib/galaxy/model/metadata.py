@@ -24,6 +24,7 @@ from sqlalchemy.orm import object_session
 from sqlalchemy.orm.attributes import flag_modified
 
 import galaxy.model
+from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.security.object_wrapper import sanitize_lists_to_string
 from galaxy.util import (
@@ -620,7 +621,9 @@ class FileParameter(MetadataParameter):
             try:
                 new_value.update_from_file(value.file_name)
             except AssertionError:
-                session(target_context.parent).flush()
+                tmp_session = session(target_context.parent)
+                with transaction(tmp_session):
+                    tmp_session.commit()
                 new_value.update_from_file(value.file_name)
             return self.unwrap(new_value)
         return None
@@ -676,7 +679,8 @@ class FileParameter(MetadataParameter):
             sa_session = object_session(dataset)
             if sa_session:
                 sa_session.add(mf)
-                sa_session.flush()  # flush to assign id
+                with transaction(sa_session):
+                    sa_session.commit()  # commit to assign id
             return mf
         else:
             # we need to make a tmp file that is accessable to the head node,

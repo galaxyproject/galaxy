@@ -3,7 +3,7 @@
 
 <template>
     <div>
-        <nav class="d-flex justify-content-between mx-3 my-2">
+        <nav class="d-flex justify-content-between mx-3 my-2" aria-label="current history management">
             <h2 class="m-1 h-sm">History</h2>
             <b-button-group>
                 <b-button
@@ -102,6 +102,14 @@
                         @click="iframeRedirect('/workflow/build_from_current_history')">
                         <Icon fixed-width icon="file-export" class="mr-1" />
                         <span v-localize>Extract Workflow</span>
+                    </b-dropdown-item>
+
+                    <b-dropdown-item
+                        :disabled="isAnonymous"
+                        :title="userTitle('Display Workflow Invocations')"
+                        @click="$router.push(`/histories/${history.id}/invocations`)">
+                        <Icon fixed-width icon="sitemap" class="fa-rotate-270 mr-1" />
+                        <span v-localize>Show Invocations</span>
                     </b-dropdown-item>
 
                     <b-dropdown-divider></b-dropdown-divider>

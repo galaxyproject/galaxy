@@ -60,11 +60,12 @@ class Results:
         self.galaxy_url = galaxy_url
         test_results = []
         suitename = default_suitename
-        if append:
+        if append and os.path.exists(test_json):
             assert test_json != "-"
             with open(test_json) as f:
                 previous_results = json.load(f)
-                test_results = previous_results["tests"]
+                if "tests" in previous_results:
+                    test_results = previous_results["tests"]
                 if "suitename" in previous_results:
                     suitename = previous_results["suitename"]
         self.test_results = test_results

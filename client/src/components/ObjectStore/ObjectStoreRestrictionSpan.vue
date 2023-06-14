@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+<script setup lang="ts">
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { computed } from "vue";

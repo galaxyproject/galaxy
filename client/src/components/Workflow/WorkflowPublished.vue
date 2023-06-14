@@ -1,7 +1,7 @@
 <template>
     <Published :item="workflow">
         <template v-slot>
-            <WorkflowDisplay :workflow-id="id" :workflow="workflow" :expanded="true" />
+            <WorkflowDisplay :workflow-id="id" :expanded="true" />
         </template>
     </Published>
 </template>

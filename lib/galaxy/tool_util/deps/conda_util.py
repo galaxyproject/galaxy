@@ -3,6 +3,7 @@ import hashlib
 import json
 import logging
 import os
+import platform
 import re
 import shutil
 import sys
@@ -54,10 +55,16 @@ USE_LOCAL_DEFAULT = False
 
 def conda_link() -> str:
     if IS_OS_X:
-        url = "https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh"
+        if "arm64" in platform.platform():
+            url = "https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-MacOSX-arm64.sh"
+        else:
+            url = "https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-MacOSX-x86_64.sh"
     else:
         if sys.maxsize > 2**32:
-            url = "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"
+            if "arm64" in platform.platform():
+                url = "https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-aarch64.sh"
+            else:
+                url = "https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh"
         else:
             url = "https://repo.anaconda.com/miniconda/Miniconda3-4.5.12-Linux-x86.sh"
     return url
@@ -409,7 +416,7 @@ def installed_conda_targets(conda_context: CondaContext) -> Iterator["CondaTarge
     for name in dir_contents:
         versioned_match = VERSIONED_ENV_DIR_NAME.match(name)
         if versioned_match:
-            yield CondaTarget(versioned_match.group(1), versioned_match.group(2))
+            yield CondaTarget(versioned_match.group(1), version=versioned_match.group(2))
 
         unversioned_match = UNVERSIONED_ENV_DIR_NAME.match(name)
         if unversioned_match:
@@ -417,13 +424,18 @@ def installed_conda_targets(conda_context: CondaContext) -> Iterator["CondaTarge
 
 
 class CondaTarget:
-    def __init__(self, package: str, version: Optional[str] = None, channel: Optional[str] = None) -> None:
+    def __init__(
+        self, package: str, version: Optional[str] = None, build: Optional[str] = None, channel: Optional[str] = None
+    ) -> None:
         if SHELL_UNSAFE_PATTERN.search(package) is not None:
             raise ValueError(f"Invalid package [{package}] encountered.")
-        self.package = package
+        self.package = package.lower()
         if version and SHELL_UNSAFE_PATTERN.search(version) is not None:
             raise ValueError(f"Invalid version [{version}] encountered.")
         self.version = version
+        if build is not None and SHELL_UNSAFE_PATTERN.search(build) is not None:
+            raise ValueError(f"Invalid build [{build}] encountered.")
+        self.build = build
         if channel and SHELL_UNSAFE_PATTERN.search(channel) is not None:
             raise ValueError(f"Invalid version [{channel}] encountered.")
         self.channel = channel
@@ -432,8 +444,8 @@ class CondaTarget:
         attributes = f"package={self.package}"
         if self.version is not None:
             attributes += f",version={self.version}"
-        else:
-            attributes += ",unversioned"
+        if self.build is not None:
+            attributes += f",build={self.build}"
 
         if self.channel:
             attributes += f",channel={self.channel}"
@@ -446,9 +458,12 @@ class CondaTarget:
     def package_specifier(self) -> str:
         """Return a package specifier as consumed by conda install/create."""
         if self.version:
-            return f"{self.package}={self.version}"
+            spec = f"{self.package}={self.version}"
         else:
-            return self.package
+            spec = f"{self.package}=*"
+        if self.build:
+            spec += f"={self.build}"
+        return spec
 
     @property
     def install_environment(self) -> str:
@@ -462,11 +477,16 @@ class CondaTarget:
             return f"__{self.package}@_uv_"
 
     def __hash__(self) -> int:
-        return hash((self.package, self.version, self.channel))
+        return hash((self.package, self.version, self.build, self.channel))
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, self.__class__):
-            return (self.package, self.version, self.channel) == (other.package, other.version, other.channel)
+            return (self.package, self.version, self.build, self.channel) == (
+                other.package,
+                other.version,
+                other.build,
+                other.channel,
+            )
         return False
 
 
@@ -557,7 +577,7 @@ def best_search_result(
 ) -> Union[Tuple[None, None], Tuple[Dict[str, Any], bool]]:
     """Find best "conda search" result for specified target.
 
-    Return ``None`` if no results match.
+    Return (``None``, ``None``) if no results match.
     """
     # Cannot specify the version here (i.e. conda_target.package_specifier)
     # because if the version is not found, the exec_search() call would fail.
@@ -589,10 +609,15 @@ def best_search_result(
 
 
 def is_search_hit_exact(conda_target: CondaTarget, search_hit: Dict[str, Any]) -> bool:
-    target_version = conda_target.version
     # It'd be nice to make request verson of 1.0 match available
     # version of 1.0.3 or something like that.
-    return bool(not target_version or search_hit["version"] == target_version)
+    target_version = conda_target.version
+    if target_version and search_hit["version"] != target_version:
+        return False
+    target_build = conda_target.build
+    if target_build and search_hit["build"] != target_build:
+        return False
+    return True
 
 
 def is_conda_target_installed(conda_target: CondaTarget, conda_context: CondaContext) -> bool:
@@ -671,6 +696,7 @@ def build_isolated_environment(
 def requirement_to_conda_targets(requirement: "ToolRequirement") -> Optional[CondaTarget]:
     conda_target = None
     if requirement.type == "package":
+        assert requirement.name
         conda_target = CondaTarget(requirement.name, version=requirement.version)
     return conda_target
 

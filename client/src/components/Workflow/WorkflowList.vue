@@ -50,7 +50,7 @@
                 <SharingIndicators
                     v-if="!row.item.deleted"
                     :object="row.item"
-                    @filter="(filter) => appendFilter(filter)" />
+                    @filter="(filter) => appendFilter(filter, true)" />
                 <div v-else>&#8212;</div>
             </template>
             <template v-slot:cell(show_in_tool_panel)="row">
@@ -127,11 +127,15 @@ const helpHtml = `<div>
         <dt><code>tag</code></dt>
         <dd>
             Shows workflows with the given workflow tag. You may also click
-            on a tag in your list of workflows to filter on that tag directly.
+            on a tag to filter on that tag directly.
         </dd>
         <dt><code>is:published</code></dt>
         <dd>
             Shows published workflows.
+        </dd>
+        <dt><code>is:importable</code></dt>
+        <dd>
+            Shows importable workflows (this also means they have URL generated).
         </dd>
         <dt><code>is:shared_with_me</code></dt>
         <dd>
@@ -187,6 +191,11 @@ export default {
             type: Boolean,
             default: false,
         },
+        query: {
+            type: String,
+            required: false,
+            default: "",
+        },
     },
     data() {
         const fields = this.published ? PUBLISHED_FIELDS : PERSONAL_FIELDS;
@@ -224,6 +233,9 @@ export default {
     created() {
         this.root = getAppRoot();
         this.services = new Services();
+        if (this.query) {
+            this.filter = this.query;
+        }
     },
     methods: {
         decorateData(item) {

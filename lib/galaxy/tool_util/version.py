@@ -42,7 +42,7 @@ __all__ = ["parse_version", "LegacyVersion"]
 LegacyCmpKey = Tuple[int, Tuple[str, ...]]
 
 
-def parse_version(version: str) -> Union["LegacyVersion", "Version"]:
+def parse_version(version: str) -> Union["LegacyVersion", Version]:
     """
     Parse the given version string and return either a :class:`Version` object
     or a :class:`LegacyVersion` object depending on if the given version is

@@ -43,9 +43,8 @@ describe("FormCheck", () => {
             if (expectedValues.length === 0) {
                 expectedValues = null;
             }
-            expect(wrapper.emitted().input[i + 4][0]).toEqual(expectedValues);
+            expect(wrapper.emitted().input[i + 3][0]).toEqual(expectedValues);
         }
-        expect(wrapper.emitted().input[7][0]).toBe(null);
     });
 
     it("Confirm checkboxes are created when various 'empty values' are passed.", async () => {
@@ -95,6 +94,8 @@ describe("FormCheck", () => {
         }
         /* 3 - confirm corresponding options indeterminate-state */
         await inputs.at(1).setChecked(true);
-        expect(wrapper.find("input:indeterminate").exists()).toBe(true);
+        expect(wrapper.emitted().input[2][0]).toStrictEqual(["value_0"]);
+        await wrapper.setProps({ value: ["value_0"] });
+        expect(inputs.at(0).element.indeterminate).toBe(true);
     });
 });

@@ -2,13 +2,20 @@
 import copy
 import logging
 import os
-from typing import cast
+from typing import (
+    cast,
+    Optional,
+    TYPE_CHECKING,
+)
 
 from galaxy.util.commands import shell
 from . import ContainerResolver
 from .mulled import CliContainerResolver
 from ..container_classes import SingularityContainer
 from ..requirements import ContainerDescription
+
+if TYPE_CHECKING:
+    from ..dependencies import AppInfo
 
 log = logging.getLogger(__name__)
 
@@ -62,8 +69,8 @@ class CachedExplicitSingularityContainerResolver(CliContainerResolver):
     container_type = "singularity"
     cli = "singularity"
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, app_info: Optional["AppInfo"] = None, **kwargs) -> None:
+        super().__init__(app_info=app_info, **kwargs)
         self.cache_directory_path = kwargs.get(
             "cache_directory", os.path.join(kwargs["app_info"].container_image_cache_path, "singularity", "explicit")
         )
@@ -116,8 +123,8 @@ class CachedExplicitSingularityContainerResolver(CliContainerResolver):
 
 
 class BaseAdminConfiguredContainerResolver(ContainerResolver):
-    def __init__(self, app_info=None, shell=DEFAULT_SHELL, **kwds):
-        super().__init__(app_info, **kwds)
+    def __init__(self, app_info: Optional["AppInfo"] = None, shell=DEFAULT_SHELL, **kwds) -> None:
+        super().__init__(app_info=app_info, **kwds)
         self.shell = shell
 
     def _container_description(self, identifier, container_type):
@@ -135,8 +142,8 @@ class FallbackContainerResolver(BaseAdminConfiguredContainerResolver):
     resolver_type = "fallback"
     container_type = "docker"
 
-    def __init__(self, app_info=None, identifier="", **kwds):
-        super().__init__(app_info, **kwds)
+    def __init__(self, app_info: Optional["AppInfo"] = None, identifier="", **kwds) -> None:
+        super().__init__(app_info=app_info, **kwds)
         assert identifier, "fallback container resolver must be specified with non-empty identifier"
         self.identifier = identifier
 
@@ -187,8 +194,8 @@ class RequiresGalaxyEnvironmentSingularityContainerResolver(RequiresGalaxyEnviro
 class MappingContainerResolver(BaseAdminConfiguredContainerResolver):
     resolver_type = "mapping"
 
-    def __init__(self, app_info=None, **kwds):
-        super().__init__(app_info, **kwds)
+    def __init__(self, app_info: Optional["AppInfo"] = None, **kwds) -> None:
+        super().__init__(app_info=app_info, **kwds)
         mappings = self.resolver_kwds["mappings"]
         assert isinstance(mappings, list), "mapping container resolver must be specified with mapping list"
         self.mappings = mappings

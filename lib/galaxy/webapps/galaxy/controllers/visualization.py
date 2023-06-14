@@ -25,6 +25,7 @@ from galaxy import (
 )
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.sharable import SlugBuilder
+from galaxy.model.base import transaction
 from galaxy.model.item_attrs import (
     UsesAnnotations,
     UsesItemRatings,
@@ -367,7 +368,8 @@ class VisualizationController(
                     item.deleted = True
                 if operation == "copy":
                     self.copy(trans, **kwargs)
-            session.flush()
+            with transaction(session):
+                session.commit()
         kwargs["embedded"] = True
         if message and status:
             kwargs["message"] = sanitize_text(message)
@@ -416,7 +418,8 @@ class VisualizationController(
         # Persist
         session = trans.sa_session
         session.add(copied_viz)
-        session.flush()
+        with transaction(session):
+            session.commit()
 
         # Display the management page
         trans.set_message(f'Created new visualization with name "{copied_viz.title}"')
@@ -435,7 +438,8 @@ class VisualizationController(
                 self._make_item_accessible(trans.sa_session, visualization)
             else:
                 visualization.importable = importable
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
 
         return
 
@@ -472,7 +476,8 @@ class VisualizationController(
             # Persist
             session = trans.sa_session
             session.add(imported_visualization)
-            session.flush()
+            with transaction(session):
+                session.commit()
 
             # Redirect to load galaxy frames.
             return trans.show_ok_message(
@@ -518,7 +523,8 @@ class VisualizationController(
         visualization = self.get_visualization(trans, id, check_ownership=False, check_accessible=True)
 
         if self.slug_builder.create_item_slug(trans.sa_session, visualization):
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
         return_dict = {
             "name": visualization.title,
             "link": web.url_for(
@@ -614,7 +620,8 @@ class VisualizationController(
                     v_annotation = sanitize_html(v_annotation)
                     self.add_item_annotation(trans.sa_session, trans_user, v, v_annotation)
                 trans.sa_session.add(v)
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
             return {"message": "Attributes of '%s' successfully saved." % v.title, "status": "success"}
 
     # ------------------------- registry.

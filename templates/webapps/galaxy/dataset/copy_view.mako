@@ -54,7 +54,8 @@
 <div>
     <form method="post">
         <div class="toolForm" style="float: left; width: 45%; padding: 0px;">
-            <div class="toolFormTitle">Source History:<br />
+            <div class="toolFormTitle">
+                <label for="source_history">Source History:<br /></label>
                 <select id="source_history" name="source_history" refresh_on_change="true" style="font-weight: normal;">
                     %for i, hist in enumerate(target_histories):
                         <%
@@ -107,6 +108,9 @@
                 <div class="toolFormTitle">Destination History:</div>
                 <div class="toolFormBody">
                     <div class="form-row" id="single-destination">
+                        <label for="single-dest-select">
+                            Chose a destination for copied items
+                        </label>
                         <select id="single-dest-select" name="target_history_id">
                             %for i, hist in enumerate(target_histories):
                                 <%
@@ -144,7 +148,7 @@
                                 checked = " checked='checked'"
                         %>
                         <hr />
-                        <div style="text-align: center; color: #888;">&mdash; OR &mdash;</div>
+                        <div style="text-align: center; color: #666;">&mdash; OR &mdash;</div>
                         <div class="form-row">
                             <label for="new_history_name" style="display: inline; font-weight:normal;">New history named:</label>
                             <input id="new_history_name" type="text" name="new_history_name" />

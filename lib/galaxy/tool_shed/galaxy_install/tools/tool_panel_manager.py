@@ -7,6 +7,7 @@ from typing import (
 )
 
 from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.model.base import transaction
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tool_shed.util.basic_util import strip_path
 from galaxy.tool_shed.util.repository_util import get_repository_owner
@@ -514,8 +515,12 @@ class ToolPanelManager:
         # activated or reinstalled.
         tool_panel_dict = self.generate_tool_panel_dict_from_shed_tool_conf_entries(repository)
         repository.metadata_["tool_panel_section"] = tool_panel_dict
-        self.app.install_model.context.add(repository)
-        self.app.install_model.context.flush()
+
+        session = self.app.install_model.context
+        session.add(repository)
+        with transaction(session):
+            session.commit()
+
         # Create a list of guids for all tools that will be removed from the in-memory tool panel
         # and config file on disk.
         guids_to_remove = list(tool_panel_dict.keys())

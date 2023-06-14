@@ -7,6 +7,7 @@ from sqlalchemy import (
 )
 
 from galaxy import util
+from galaxy.model.base import transaction
 from galaxy.util import inflector
 from galaxy.web.form_builder import SelectField
 from tool_shed.metadata import metadata_generator
@@ -78,7 +79,9 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
         if tool_versions_dict:
             repository_metadata.tool_versions = tool_versions_dict
             self.sa_session.add(repository_metadata)
-            self.sa_session.flush()
+            session = self.sa_session()
+            with transaction(session):
+                session.commit()
 
     def build_repository_ids_select_field(
         self, name="repository_ids", multiple=True, display="checkboxes", my_writable=False
@@ -111,7 +114,9 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
             changeset_revision = repository_metadata.changeset_revision
             if changeset_revision in changeset_revisions_checked or changeset_revision not in changeset_revisions:
                 self.sa_session.delete(repository_metadata)
-                self.sa_session.flush()
+                session = self.sa_session()
+                with transaction(session):
+                    session.commit()
 
     def compare_changeset_revisions(self, ancestor_changeset_revision, ancestor_metadata_dict):
         """
@@ -450,7 +455,9 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
         # on a repository this will reset the values.
         repository_metadata.missing_test_components = False
         self.sa_session.add(repository_metadata)
-        self.sa_session.flush()
+        session = self.sa_session()
+        with transaction(session):
+            session.commit()
 
         return repository_metadata
 
@@ -951,7 +958,9 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
             if tool_versions_dict:
                 repository_metadata.tool_versions = tool_versions_dict
                 self.sa_session.add(repository_metadata)
-                self.sa_session.flush()
+                session = self.sa_session()
+                with transaction(session):
+                    session.commit()
 
     def reset_metadata_on_selected_repositories(self, **kwd):
         """
@@ -1060,7 +1069,9 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                     repository_metadata.includes_workflows = False
                     repository_metadata.missing_test_components = False
                     self.sa_session.add(repository_metadata)
-                    self.sa_session.flush()
+                    session = self.sa_session()
+                    with transaction(session):
+                        session.commit()
                 else:
                     # There are no metadata records associated with the repository.
                     repository_metadata = self.create_or_update_repository_metadata(

@@ -22,7 +22,7 @@ interface Preferences {
 export const useUserStore = defineStore(
     "userStore",
     () => {
-        const toggledSideBar = ref("search");
+        const toggledSideBar = ref("tools");
         const showActivityBar = ref(false);
         const currentUser = ref<User | null>(null);
         const currentPreferences = ref<Preferences | null>(null);
@@ -108,7 +108,7 @@ export const useUserStore = defineStore(
         function toggleActivityBar() {
             showActivityBar.value = !showActivityBar.value;
         }
-        function toggleSideBar(currentOpen: string) {
+        function toggleSideBar(currentOpen = "") {
             toggledSideBar.value = toggledSideBar.value === currentOpen ? "" : currentOpen;
         }
 

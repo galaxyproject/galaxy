@@ -18,7 +18,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 */
 // Compute the edit distance between the two given strings
 //exports.getEditDistance = function(a, b){
-function levenshteinDistance(a, b) {
+function levenshteinDistance(a, b, transpose = false) {
     if (a.length === 0) {
         return b.length;
     }
@@ -50,9 +50,15 @@ function levenshteinDistance(a, b) {
                     matrix[i - 1][j - 1] + 1, // substitution
                     Math.min(
                         matrix[i][j - 1] + 1, // insertion
-                        matrix[i - 1][j] + 1
+                        matrix[i - 1][j] + 1 // deletion
                     )
-                ); // deletion
+                );
+                if (transpose == true) {
+                    // Check for transpostions
+                    if (i > 1 && j > 1 && b.charAt(i - 1) === a.charAt(j - 2) && b.charAt(i - 2) === a.charAt(j - 1)) {
+                        matrix[i][j] = Math.min(matrix[i][j], matrix[i - 2][j - 2] + 1);
+                    }
+                }
             }
         }
     }

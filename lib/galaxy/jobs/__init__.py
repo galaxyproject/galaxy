@@ -60,6 +60,7 @@ from galaxy.jobs.runners import (
 )
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import store
+from galaxy.model.base import transaction
 from galaxy.model.store.discover import MaxDiscoveredFilesExceededError
 from galaxy.objectstore import ObjectStorePopulator
 from galaxy.structured_app import MinimalManagerApp
@@ -1047,7 +1048,7 @@ class MinimalJobWrapper(HasResourceParameters):
         )
 
     def tool_directory(self):
-        tool_dir = self.tool.tool_dir
+        tool_dir = self.tool and self.tool.tool_dir
         if tool_dir is not None:
             tool_dir = os.path.abspath(tool_dir)
         return tool_dir
@@ -1058,6 +1059,7 @@ class MinimalJobWrapper(HasResourceParameters):
             job = self.get_job()
             work_request = WorkRequestContext(self.app, user=job.user)
             user_context = ProvidesUserFileSourcesUserContext(work_request)
+            tool_source = self.tool and self.tool.tool_source.to_string()
             self._job_io = JobIO(
                 sa_session=self.sa_session,
                 job=job,
@@ -1079,9 +1081,9 @@ class MinimalJobWrapper(HasResourceParameters):
                 check_job_script_integrity=self.app.config.check_job_script_integrity,
                 check_job_script_integrity_count=self.app.config.check_job_script_integrity_count,
                 check_job_script_integrity_sleep=self.app.config.check_job_script_integrity_sleep,
-                tool_source=self.tool.tool_source.to_string(),
-                tool_source_class=type(self.tool.tool_source).__name__,
-                tool_dir=self.tool.tool_dir,
+                tool_source=tool_source,
+                tool_source_class=type(self.tool.tool_source).__name__ if self.tool else None,
+                tool_dir=self.tool and self.tool.tool_dir,
                 is_task=self.is_task,
             )
         return self._job_io
@@ -1205,10 +1207,6 @@ class MinimalJobWrapper(HasResourceParameters):
     def get_version_string_path(self):
         return os.path.abspath(os.path.join(self.working_directory, "outputs", COMMAND_VERSION_FILENAME))
 
-    # TODO: Remove in Galaxy 21.XX, for running jobs at GX upgrade
-    def get_version_string_path_legacy(self):
-        return os.path.abspath(os.path.join(self.working_directory, COMMAND_VERSION_FILENAME))
-
     def __prepare_upload_paramfile(self, job):
         """Special case paramfile handling for the upload tool. Copies the paramfile to the working directory"""
         new = os.path.join(self.working_directory, "upload_params.json")
@@ -1269,7 +1267,8 @@ class MinimalJobWrapper(HasResourceParameters):
             )
         job.dependencies = self.tool.dependencies
         self.sa_session.add(job)
-        self.sa_session.flush()
+        with transaction(self.sa_session):
+            self.sa_session.commit()
         log.debug(f"Job wrapper for Job [{job.id}] prepared {prepare_timer}")
 
     def _setup_working_directory(self, job=None):
@@ -1412,13 +1411,16 @@ class MinimalJobWrapper(HasResourceParameters):
                 # a better message
                 etype, evalue, tb = sys.exc_info()
 
-            if self.outputs_to_working_directory and not self.__link_file_check() and working_directory_exists:
-                for dataset_path in self.job_io.get_output_fnames():
-                    try:
-                        shutil.move(dataset_path.false_path, dataset_path.real_path)
-                        log.debug("fail(): Moved %s to %s", dataset_path.false_path, dataset_path.real_path)
-                    except OSError as e:
-                        log.error("fail(): Missing output file in working directory: %s", unicodify(e))
+            try:
+                if self.outputs_to_working_directory and not self.__link_file_check() and working_directory_exists:
+                    for dataset_path in self.job_io.get_output_fnames():
+                        try:
+                            shutil.move(dataset_path.false_path, dataset_path.real_path)
+                            log.debug("fail(): Moved %s to %s", dataset_path.false_path, dataset_path.real_path)
+                        except OSError as e:
+                            log.error("fail(): Missing output file in working directory: %s", unicodify(e))
+            except Exception as e:
+                log.exception(str(e))
             for dataset_assoc in job.output_datasets + job.output_library_datasets:
                 dataset = dataset_assoc.dataset
                 self.sa_session.refresh(dataset)
@@ -1458,7 +1460,8 @@ class MinimalJobWrapper(HasResourceParameters):
                 job.exit_code = exit_code
 
             self.sa_session.add(job)
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
         else:
             for dataset_assoc in job.output_datasets:
                 dataset = dataset_assoc.dataset
@@ -1517,7 +1520,8 @@ class MinimalJobWrapper(HasResourceParameters):
             job.info = info
         job.set_state(model.Job.states.RESUBMITTED)
         self.sa_session.add(job)
-        self.sa_session.flush()
+        with transaction(self.sa_session):
+            self.sa_session.commit()
 
     def change_state(self, state, info=False, flush=True, job=None):
         job_supplied = job is not None
@@ -1542,7 +1546,8 @@ class MinimalJobWrapper(HasResourceParameters):
         self.sa_session.add(job)
         job.update_output_states(self.app.application_stack.supports_skip_locked())
         if flush:
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
 
     def get_state(self) -> str:
         job = self.get_job()
@@ -1559,16 +1564,17 @@ class MinimalJobWrapper(HasResourceParameters):
         job.job_runner_external_id = external_id
         self.sa_session.add(job)
         if flush:
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
 
     @property
     def home_target(self):
-        home_target = self.tool.home_target
+        home_target = self.tool and self.tool.home_target
         return home_target
 
     @property
     def tmp_target(self):
-        return self.tool.tmp_target
+        return self.tool and self.tool.tmp_target
 
     def get_destination_configuration(self, key, default=None):
         """Get a destination parameter that can be defaulted back
@@ -1585,7 +1591,8 @@ class MinimalJobWrapper(HasResourceParameters):
         self.set_job_destination(self.job_destination, None, flush=False, job=job)
         # Set object store after job destination so can leverage parameters...
         self._set_object_store_ids(job)
-        self.sa_session.flush()
+        with transaction(self.sa_session):
+            self.sa_session.commit()
         return True
 
     def set_job_destination(self, job_destination, external_id=None, flush=True, job=None):
@@ -2025,7 +2032,8 @@ class MinimalJobWrapper(HasResourceParameters):
         # differently and deadlocks can occur (one thread updates user and
         # waits on invocation and the other updates invocation and waits on
         # user).
-        self.sa_session.flush()
+        with transaction(self.sa_session):
+            self.sa_session.commit()
 
         # Finally set the job state.  This should only happen *after* all
         # dataset creation, and will allow us to eliminate force_history_refresh.
@@ -2033,7 +2041,8 @@ class MinimalJobWrapper(HasResourceParameters):
         if not job.tasks:
             # If job was composed of tasks, don't attempt to recollect statistics
             self._collect_metrics(job, job_metrics_directory)
-        self.sa_session.flush()
+        with transaction(self.sa_session):
+            self.sa_session.commit()
         if job.state == job.states.ERROR:
             self._report_error()
         cleanup_job = self.cleanup_job
@@ -2262,7 +2271,8 @@ class MinimalJobWrapper(HasResourceParameters):
                 if output_dataset_assoc.dataset.ext == "auto":
                     context = self.get_dataset_finish_context(dict(), output_dataset_assoc)
                     output_dataset_assoc.dataset.extension = context.get("ext", "data")
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
         if tmp_dir is None:
             # this dir should should relative to the exec_dir
             tmp_dir = self.app.config.new_file_path
@@ -2495,7 +2505,8 @@ class MinimalJobWrapper(HasResourceParameters):
                 container_info=container.container_info,
             )
             self.sa_session.add(cont)
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
 
 
 class JobWrapper(MinimalJobWrapper):
@@ -2537,7 +2548,8 @@ class JobWrapper(MinimalJobWrapper):
         job.job_runner_external_id = external_id
         self.sa_session.add(job)
         if flush:
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
 
 
 class TaskWrapper(JobWrapper):
@@ -2592,7 +2604,8 @@ class TaskWrapper(JobWrapper):
         compute_environment = compute_environment or self.default_compute_environment(job)
         tool_evaluator.set_compute_environment(compute_environment)
 
-        self.sa_session.flush()
+        with transaction(self.sa_session):
+            self.sa_session.commit()
 
         if not self.remote_command_line:
             (
@@ -2610,7 +2623,8 @@ class TaskWrapper(JobWrapper):
         # if the server was stopped and restarted before the job finished
         task.command_line = self.command_line
         self.sa_session.add(task)
-        self.sa_session.flush()
+        with transaction(self.sa_session):
+            self.sa_session.commit()
 
         self.status = "prepared"
         return self.extra_filenames
@@ -2638,7 +2652,8 @@ class TaskWrapper(JobWrapper):
             task.info = info
         task.state = state
         self.sa_session.add(task)
-        self.sa_session.flush()
+        with transaction(self.sa_session):
+            self.sa_session.commit()
 
     def get_state(self):
         task = self.get_task()
@@ -2657,7 +2672,8 @@ class TaskWrapper(JobWrapper):
         task.task_runner_external_id = external_id
         # DBTODO Check task job_runner_stuff
         self.sa_session.add(task)
-        self.sa_session.flush()
+        with transaction(self.sa_session):
+            self.sa_session.commit()
 
     def finish(self, stdout, stderr, tool_exit_code=None, **kwds):
         # DBTODO integrate previous finish logic.
@@ -2698,7 +2714,8 @@ class TaskWrapper(JobWrapper):
         self._collect_metrics(task)
         task.exit_code = tool_exit_code
         task.command_line = self.command_line
-        self.sa_session.flush()
+        with transaction(self.sa_session):
+            self.sa_session.commit()
 
     def cleanup(self, delete_files=True):
         # There is no task cleanup.  The job cleans up for all tasks.

@@ -24,6 +24,8 @@ class TestHistoryCopyElements(SeleniumTestCase):
         self.history_panel_click_copy_elements()
 
         with self.main_panel():
+            axe_results = self.axe_eval()
+            axe_results.assert_no_violations_with_impact_of_at_least("serious")
             self.components.history_copy_elements.collection_checkbox(id=input_collection["id"]).wait_for_and_click()
             self.components.history_copy_elements.collection_checkbox(id=failed_collection["id"]).wait_for_and_click()
 

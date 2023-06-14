@@ -34,17 +34,29 @@
                             role="tabpanel"
                             accordion="registration_acc">
                             <b-card-body>
-                                <b-form-group :label="labelEmailAddress">
-                                    <b-form-input v-model="email" name="email" type="text" />
+                                <b-form-group :label="labelEmailAddress" label-for="register-form-email">
+                                    <b-form-input id="register-form-email" v-model="email" name="email" type="text" />
                                 </b-form-group>
-                                <b-form-group :label="labelPassword">
-                                    <b-form-input v-model="password" name="password" type="password" />
+                                <b-form-group :label="labelPassword" label-for="register-form-password">
+                                    <b-form-input
+                                        id="register-form-password"
+                                        v-model="password"
+                                        name="password"
+                                        type="password" />
                                 </b-form-group>
-                                <b-form-group :label="labelConfirmPassword">
-                                    <b-form-input v-model="confirm" name="confirm" type="password" />
+                                <b-form-group :label="labelConfirmPassword" label-for="register-form-confirm">
+                                    <b-form-input
+                                        id="register-form-confirm"
+                                        v-model="confirm"
+                                        name="confirm"
+                                        type="password" />
                                 </b-form-group>
-                                <b-form-group :label="labelPublicName">
-                                    <b-form-input v-model="username" name="username" type="text" />
+                                <b-form-group :label="labelPublicName" label-for="register-form-username">
+                                    <b-form-input
+                                        id="register-form-username"
+                                        v-model="username"
+                                        name="username"
+                                        type="text" />
                                     <b-form-text v-localize
                                         >Your public name is an identifier that will be used to generate addresses for
                                         information you share publicly. Public names must be at least three characters
@@ -52,8 +64,15 @@
                                         dashes ('.', '_', '-').
                                     </b-form-text>
                                 </b-form-group>
-                                <b-form-group v-if="mailingJoinAddr && serverMailConfigured" :label="labelSubscribe">
-                                    <input v-model="subscribe" name="subscribe" type="checkbox" />
+                                <b-form-group
+                                    v-if="mailingJoinAddr && serverMailConfigured"
+                                    :label="labelSubscribe"
+                                    label-for="register-form-subscribe">
+                                    <input
+                                        id="register-form-subscribe"
+                                        v-model="subscribe"
+                                        name="subscribe"
+                                        type="checkbox" />
                                 </b-form-group>
                                 <b-button v-localize name="create" type="submit" :disabled="disableCreate"
                                     >Create</b-button

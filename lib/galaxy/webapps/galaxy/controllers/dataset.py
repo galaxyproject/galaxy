@@ -26,6 +26,7 @@ from galaxy.managers.hdas import (
 )
 from galaxy.managers.histories import HistoryManager
 from galaxy.model import Dataset
+from galaxy.model.base import transaction
 from galaxy.model.item_attrs import (
     UsesAnnotations,
     UsesItemRatings,
@@ -425,7 +426,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             else:
                 message = "Attributes updated, but metadata could not be changed because this dataset is currently being used as input or output. You must cancel or wait for these jobs to complete before changing metadata."
                 status = "warning"
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
         elif operation == "datatype":
             # The user clicked the Save button on the 'Change data type' form
             datatype = payload.get("datatype")
@@ -444,7 +446,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     path = data.dataset.file_name
                     datatype = guess_ext(path, trans.app.datatypes_registry.sniff_order)
                     trans.app.datatypes_registry.change_datatype(data, datatype)
-                    trans.sa_session.flush()
+                    with transaction(trans.sa_session):
+                        trans.sa_session.commit()
                     job, *_ = trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
                         trans.app.datatypes_registry.set_external_metadata_tool,
                         trans,
@@ -613,7 +616,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             # Sanitize annotation before adding it.
             new_annotation = sanitize_html(new_annotation)
             self.add_item_annotation(trans.sa_session, trans.get_user(), dataset, new_annotation)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             return new_annotation
 
     @web.expose
@@ -862,7 +866,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             item = self.hda_manager.get_owned(id, trans.user, current_history=trans.history)
             self.hda_manager.error_unless_mutable(item.history)
             item.mark_unhidden()
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             trans.log_event(f"Dataset id {str(id)} has been unhidden")
             return True
         except Exception:
@@ -895,7 +900,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             hda.purged = True
             trans.sa_session.add(hda)
             trans.log_event(f"HDA id {hda.id} has been purged")
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             # Don't delete anything if there are active HDAs or any LDDAs, even if
             # the LDDAs are deleted.  Let the cleanup scripts get it in the latter
             # case.
@@ -908,7 +914,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     trans.sa_session.add(hda.dataset)
                 except Exception:
                     log.exception(f"Unable to purge dataset ({hda.dataset.id}) on purge of HDA ({hda.id}):")
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
         except Exception:
             msg = f"HDA purge failed (encoded: {dataset_id}, decoded: {id})"
             log.exception(msg)
@@ -1047,7 +1054,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     new_history.name = new_history_name
                     new_history.user = user
                     trans.sa_session.add(new_history)
-                    trans.sa_session.flush()
+                    with transaction(trans.sa_session):
+                        trans.sa_session.commit()
                     target_history_ids.append(new_history.id)
                 if user:
                     target_histories = [
@@ -1091,7 +1099,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                                 copy.copy_tags_from(user, content)
                         for hist in target_histories:
                             hist.add_pending_items()
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
                 if current_history in target_histories:
                     refresh_frames = ["history"]
                 hist_names_str = ", ".join(
@@ -1163,7 +1172,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                         if imported:
                             dataset_copy.name = f"imported: {dataset_copy.name}"
                         hist.add_dataset(dataset_copy)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             num_datasets_copied = len(dataset_ids) - invalid_datasets
             done_msg = "%i dataset%s copied to %i histor%s." % (
                 num_datasets_copied,

@@ -21,8 +21,8 @@
                 :title="titleAdvanced | l"
                 data-description="toggle advanced search"
                 @click="onToggle">
-                <icon v-if="showAdvanced" icon="angle-double-up" />
-                <icon v-else icon="angle-double-down" />
+                <icon v-if="showAdvanced" fixed-width icon="angle-double-up" />
+                <icon v-else fixed-width icon="angle-double-down" />
             </b-button>
             <b-button
                 v-b-tooltip.hover
@@ -32,8 +32,8 @@
                 :title="titleClear | l"
                 data-description="reset query"
                 @click="clearBox">
-                <icon v-if="loading" icon="spinner" spin />
-                <icon v-else icon="times" />
+                <icon v-if="loading" fixed-width icon="spinner" spin />
+                <icon v-else fixed-width icon="times" />
             </b-button>
         </b-input-group-append>
     </b-input-group>

@@ -1,4 +1,5 @@
 from galaxy import model
+from galaxy.model.base import transaction
 from galaxy.util.unittest import TestCase
 from galaxy.workflow.run import WorkflowProgress
 from .workflow_support import (
@@ -189,7 +190,9 @@ class TestWorkflowProgress(TestCase):
             self.invocation.workflow.step_by_index(1)
         )
         self.app.model.session.add(subworkflow_invocation)
-        self.app.model.session.flush()
+        session = self.app.model.session
+        with transaction(session):
+            session.commit()
         progress = self._new_workflow_progress()
         remaining_steps = progress.remaining_steps()
         (subworkflow_step, subworkflow_invocation_step) = remaining_steps[0]

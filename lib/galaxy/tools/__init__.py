@@ -10,6 +10,7 @@ import re
 import tarfile
 import tempfile
 import threading
+from collections.abc import MutableMapping
 from pathlib import Path
 from typing import (
     cast,
@@ -37,6 +38,7 @@ from galaxy import (
 from galaxy.exceptions import ToolInputsNotReadyException
 from galaxy.job_execution import output_collect
 from galaxy.metadata import get_metadata_compute_strategy
+from galaxy.model.base import transaction
 from galaxy.tool_shed.util.repository_util import get_installed_repository
 from galaxy.tool_shed.util.shed_util_common import set_image_paths
 from galaxy.tool_util.deps import (
@@ -139,6 +141,7 @@ from galaxy.util import (
     rst_to_html,
     string_as_bool,
     unicodify,
+    UNKNOWN,
     XML,
 )
 from galaxy.util.bunch import Bunch
@@ -346,7 +349,8 @@ class PersistentToolTagManager(AbstractToolTagManager):
             f"removing all tool tag associations ({str(self.sa_session.query(self.app.model.ToolTagAssociation).count())})"
         )
         self.sa_session.query(self.app.model.ToolTagAssociation).delete()
-        self.sa_session.flush()
+        with transaction(self.sa_session):
+            self.sa_session.commit()
 
     def handle_tags(self, tool_id, tool_definition_source):
         elem = tool_definition_source
@@ -359,10 +363,12 @@ class PersistentToolTagManager(AbstractToolTagManager):
                 if not tag:
                     tag = self.app.model.Tag(name=tag_name)
                     self.sa_session.add(tag)
-                    self.sa_session.flush()
+                    with transaction(self.sa_session):
+                        self.sa_session.commit()
                     tta = self.app.model.ToolTagAssociation(tool_id=tool_id, tag_id=tag.id)
                     self.sa_session.add(tta)
-                    self.sa_session.flush()
+                    with transaction(self.sa_session):
+                        self.sa_session.commit()
                 else:
                     for tagged_tool in tag.tagged_tools:
                         if tagged_tool.tool_id == tool_id:
@@ -370,7 +376,8 @@ class PersistentToolTagManager(AbstractToolTagManager):
                     else:
                         tta = self.app.model.ToolTagAssociation(tool_id=tool_id, tag_id=tag.id)
                         self.sa_session.add(tta)
-                        self.sa_session.flush()
+                        with transaction(self.sa_session):
+                            self.sa_session.commit()
 
 
 class ToolBox(AbstractToolBox):
@@ -2157,7 +2164,7 @@ class Tool(Dictifiable):
             )
         except exceptions.ToolExecutionError as exc:
             job = exc.job
-            job_id = "unknown"
+            job_id = UNKNOWN
             if job is not None:
                 job.mark_failed(info=exc.err_msg, blurb=exc.err_code.default_error_message)
                 job_id = job.id
@@ -2575,7 +2582,7 @@ class Tool(Dictifiable):
 
         # load job parameters into incoming
         tool_message = ""
-        tool_warnings = ""
+        tool_warnings = None
         if job:
             try:
                 job_params = job.get_param_values(self.app, ignore_errors=True)
@@ -2846,7 +2853,7 @@ class OutputParameterJSONTool(Tool):
     def _prepare_json_param_dict(self, param_dict):
         rval = {}
         for key, value in param_dict.items():
-            if isinstance(value, dict):
+            if isinstance(value, MutableMapping):
                 rval[key] = self._prepare_json_param_dict(value)
             elif isinstance(value, list):
                 rval[key] = self._prepare_json_list(value)
@@ -3108,7 +3115,8 @@ class SetMetadataTool(Tool):
             if not metadata_set_successfully:
                 dataset._state = model.Dataset.states.FAILED_METADATA
                 self.sa_session.add(dataset)
-                self.sa_session.flush()
+                with transaction(self.sa_session):
+                    self.sa_session.commit()
                 return
             # If setting external metadata has failed, how can we inform the
             # user? For now, we'll leave the default metadata and set the state
@@ -3127,7 +3135,8 @@ class SetMetadataTool(Tool):
             except Exception:
                 log.exception("Exception occured while setting dataset peek")
             self.sa_session.add(dataset)
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
 
     def job_failed(self, job_wrapper, message, exception=False):
         job = job_wrapper.sa_session.query(model.Job).get(job_wrapper.job_id)
@@ -3218,7 +3227,8 @@ class DataManagerTool(OutputParameterJSONTool):
             history = trans.app.model.History(name="Data Manager History (automatically created)", user=user)
             data_manager_association = trans.app.model.DataManagerHistoryAssociation(user=user, history=history)
             trans.sa_session.add_all((history, data_manager_association))
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             return history
 
         user = trans.user

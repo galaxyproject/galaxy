@@ -4,6 +4,7 @@ import time
 
 import psutil
 
+from galaxy.model.base import transaction
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
@@ -50,7 +51,8 @@ class TestLocalJobCancellation(CancelsJob, integration_util.IntegrationTestCase)
             job.job_stderr = "admin cancelled job"
             job.set_state(app.model.Job.states.DELETING)
             sa_session.add(job)
-            sa_session.flush()
+            with transaction(sa_session):
+                sa_session.commit()
             self.galaxy_interactor.wait_for(
                 lambda: self._get(f"jobs/{job_id}").json()["state"] != "error",
                 what="Wait for job to end in error",

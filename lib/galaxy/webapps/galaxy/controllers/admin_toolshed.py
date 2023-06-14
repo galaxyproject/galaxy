@@ -8,6 +8,7 @@ from galaxy import (
     web,
 )
 from galaxy.exceptions import ConfigDoesNotAllowException
+from galaxy.model.base import transaction
 from galaxy.tool_shed.util import dependency_display
 from galaxy.tool_shed.util.repository_util import (
     get_absolute_path_to_file_in_repository,
@@ -149,7 +150,8 @@ class AdminToolshed(AdminGalaxy):
             if description != repository.description:
                 repository.description = description
                 trans.install_model.context.add(repository)
-                trans.install_model.context.flush()
+                with transaction(trans.install_model.context):
+                    trans.install_model.context.commit()
             message = "The repository information has been updated."
         dd = dependency_display.DependencyDisplayer(trans.app)
         containers_dict = dd.populate_containers_dict_from_repository_metadata(

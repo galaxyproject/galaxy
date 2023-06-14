@@ -15,6 +15,9 @@ import galaxy.webapps.base.webapp
 from galaxy import util
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
+from galaxy.web.framework.middleware.error import ErrorMiddleware
+from galaxy.web.framework.middleware.request_id import RequestIDMiddleware
+from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
 from galaxy.webapps.base.webapp import build_url_map
 from galaxy.webapps.util import wrap_if_allowed
 
@@ -269,14 +272,11 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
         app = wrap_if_allowed(app, stack, TransLogger)
 
     # X-Forwarded-Host handling
-    from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
-
     app = wrap_if_allowed(app, stack, XForwardedHostMiddleware)
-
+    # Request ID handling
+    app = wrap_if_allowed(app, stack, RequestIDMiddleware)
     # Error middleware
-    import galaxy.web.framework.middleware.error
-
-    app = wrap_if_allowed(app, stack, galaxy.web.framework.middleware.error.ErrorMiddleware, args=(conf,))
+    app = wrap_if_allowed(app, stack, ErrorMiddleware, args=(conf,))
     return app
 
 

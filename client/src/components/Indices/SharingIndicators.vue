@@ -1,43 +1,48 @@
+<script setup lang="ts">
+import { BButton, VBTooltip } from "bootstrap-vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { faShareAlt, faGlobe, faLink } from "@fortawesome/free-solid-svg-icons";
+import { library } from "@fortawesome/fontawesome-svg-core";
+
+library.add(faGlobe, faShareAlt, faLink);
+
+interface SharingIndicatorsProps {
+    object: Object;
+}
+const props = defineProps<SharingIndicatorsProps>();
+</script>
+
 <template>
     <span>
         <b-button
-            v-if="object.published"
+            v-if="props.object.published"
             v-b-tooltip.hover
             class="sharing-indicator-published"
             size="sm"
             variant="link"
-            :title="'Search more published workflows' | localize"
+            :title="'Find all published items' | localize"
             @click.prevent="$emit('filter', 'is:published')">
-            <Icon fixed-width icon="globe" />
+            <font-awesome-icon icon="globe" />
         </b-button>
         <b-button
-            v-if="object.shared"
+            v-if="props.object.importable"
+            v-b-tooltip.hover
+            class="sharing-indicator-importable"
+            size="sm"
+            variant="link"
+            :title="'Find all importable items' | localize"
+            @click.prevent="$emit('filter', 'is:importable')">
+            <font-awesome-icon icon="link" />
+        </b-button>
+        <b-button
+            v-if="props.object.shared"
             v-b-tooltip.hover
             class="sharing-indicator-shared"
             size="sm"
             variant="link"
-            :title="'Search more workflows shared with me' | localize"
+            :title="'Find all items shared with me' | localize"
             @click.prevent="$emit('filter', 'is:shared_with_me')">
-            <Icon fixed-width icon="share-alt" />
+            <font-awesome-icon icon="share-alt" />
         </b-button>
     </span>
 </template>
-
-<script>
-import { VBTooltip } from "bootstrap-vue";
-import { faShareAlt, faGlobe } from "@fortawesome/free-solid-svg-icons";
-import { library } from "@fortawesome/fontawesome-svg-core";
-library.add(faGlobe, faShareAlt);
-
-export default {
-    directives: {
-        VBTooltip,
-    },
-    props: {
-        object: {
-            type: Object,
-            required: true,
-        },
-    },
-};
-</script>

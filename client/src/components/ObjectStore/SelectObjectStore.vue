@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+<script setup lang="ts">
 import { ref, watch, onMounted } from "vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DescribeObjectStore from "@/components/ObjectStore/DescribeObjectStore.vue";

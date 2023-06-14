@@ -411,6 +411,9 @@ def guess_ext(fname_or_file_prefix: Union[str, "FilePrefix"], sniff_order, is_bi
     >>> fname = get_test_fname('Si.castep')
     >>> guess_ext(fname, sniff_order)
     'castep'
+    >>> fname = get_test_fname('test.fits')
+    >>> guess_ext(fname, sniff_order)
+    'fits'
     >>> fname = get_test_fname('Si.param')
     >>> guess_ext(fname, sniff_order)
     'param'

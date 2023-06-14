@@ -16,7 +16,7 @@ const emit = defineEmits<{
 const loading = ref(true);
 const selection: Ref<TrsSelection | null> = ref(null);
 const trsServers: Ref<TrsSelection[]> = ref([]);
-const trsSelection: Ref<TrsSelection | null> = ref(null);
+const trsSelectionLookup: Ref<TrsSelection | null> = ref(null);
 
 const showDropdown = computed(() => {
     return trsServers.value.length > 1;
@@ -37,34 +37,34 @@ async function configureTrsServers() {
     if (queryTrsServer) {
         for (const server of servers) {
             if (server.id == queryTrsServer) {
-                trsSelection.value = server;
+                trsSelectionLookup.value = server;
                 break;
             }
 
             if (possibleServeUrlsMatch(server.api_url, queryTrsServer)) {
-                trsSelection.value = server;
+                trsSelectionLookup.value = server;
                 break;
             }
 
             if (possibleServeUrlsMatch(server.link_url, queryTrsServer)) {
-                trsSelection.value = server;
+                trsSelectionLookup.value = server;
                 break;
             }
         }
     }
 
-    if (trsSelection.value === null) {
+    if (trsSelectionLookup.value === null) {
         if (queryTrsServer) {
             emit("onError", "Failed to find requested TRS server " + queryTrsServer);
         }
 
-        trsSelection.value = servers[0];
+        trsSelectionLookup.value = servers[0];
     }
 
-    selection.value = trsSelection.value;
+    selection.value = trsSelectionLookup.value;
     loading.value = false;
 
-    onTrsSelection(trsSelection.value as TrsSelection);
+    onTrsSelection(trsSelectionLookup.value as TrsSelection);
 }
 
 configureTrsServers();

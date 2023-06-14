@@ -15,6 +15,7 @@ import galaxy.datatypes.registry
 import galaxy.model
 import galaxy.model.mapping as mapping
 from galaxy import model
+from galaxy.model.base import transaction
 from galaxy.model.database_utils import create_database
 from galaxy.model.metadata import MetadataTempFile
 from galaxy.model.orm.util import (
@@ -661,7 +662,11 @@ class TestMappings(BaseModelTestCase):
 
         self.new_hda(h1, name="1")
         self.new_hda(h2, name="2")
-        self.session().flush()
+
+        session = self.session()
+
+        with transaction(session):
+            session.commit()
         # _next_hid modifies history, plus trigger on HDA means 2 additional audit rows per history
 
         h1_audits = get_audit_table_entries(h1)
@@ -672,7 +677,13 @@ class TestMappings(BaseModelTestCase):
         h1_latest = get_latest_entry(h1_audits)
         h2_latest = get_latest_entry(h2_audits)
 
-        model.HistoryAudit.prune(self.session())
+        # In galaxy, HistoryAudit.prune() executes in the context of a separate thread, where it
+        # starts and commits a new transaction, closing a scoped session on exit. Thus, here we
+        # should end the current transaction (via rollback) and add the History objects to a new
+        # session, as the previous one will be closed.
+        session.rollback()
+        model.HistoryAudit.prune(session)
+        session.add_all([h1, h2])
 
         h1_audits = get_audit_table_entries(h1)
         h2_audits = get_audit_table_entries(h2)
@@ -715,6 +726,8 @@ class TestMappings(BaseModelTestCase):
         # However, flushing anything non-empty - even unrelated object will invalidate
         # the session ID.
         self._non_empty_flush()
+        if session().in_transaction():
+            session.commit()
         assert "id" in inspect(galaxy_model_object).unloaded
 
         # Fetch the ID loads the value from the database
@@ -723,6 +736,8 @@ class TestMappings(BaseModelTestCase):
 
         # Using cached_id instead does not exhibit this behavior.
         self._non_empty_flush()
+        if session().in_transaction():
+            session.commit()
         assert expected_id == galaxy.model.cached_id(galaxy_model_object)
         assert "id" in inspect(galaxy_model_object).unloaded
 
@@ -749,6 +764,8 @@ class TestMappings(BaseModelTestCase):
         galaxy_model_object_new = model.GalaxySession()
         session.add(galaxy_model_object_new)
         session.flush()
+        if session().in_transaction():
+            session.commit()
         assert galaxy.model.cached_id(galaxy_model_object_new)
         assert "id" in inspect(galaxy_model_object_new).unloaded
 

@@ -20,6 +20,7 @@ from sqlalchemy.orm.scoping import scoped_session
 
 from galaxy import model
 from galaxy.model import store
+from galaxy.model.base import transaction
 from galaxy.model.metadata import MetadataTempFile
 from galaxy.model.orm.now import now
 from galaxy.model.unittest_utils import GalaxyDataTestApp
@@ -71,7 +72,9 @@ def test_import_export_history_hidden_false_with_hidden_dataset():
 
     u, h, d1, d2, j = _setup_simple_cat_job(app)
     d2.visible = False
-    app.model.session.flush()
+    session = app.model.session
+    with transaction(session):
+        session.commit()
 
     imported_history = _import_export_history(app, h, export_files="copy", include_hidden=False)
     assert d1.dataset.get_size() == imported_history.datasets[0].get_size()
@@ -83,7 +86,9 @@ def test_import_export_history_hidden_true_with_hidden_dataset():
 
     u, h, d1, d2, j = _setup_simple_cat_job(app)
     d2.visible = False
-    app.model.session.flush()
+    session = app.model.session
+    with transaction(session):
+        session.commit()
 
     imported_history = _import_export_history(app, h, export_files="copy", include_hidden=True)
     assert d1.dataset.get_size() == imported_history.datasets[0].get_size()
@@ -245,7 +250,8 @@ def test_import_library_require_permissions():
     root_folder = model.LibraryFolder(name="my library 1", description="folder description")
     library.root_folder = root_folder
     sa_session.add_all((library, root_folder))
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
 
     temp_directory = mkdtemp()
     with store.DirectoryModelExportStore(temp_directory, app=app) as export_store:
@@ -273,7 +279,8 @@ def test_import_export_library():
     root_folder = model.LibraryFolder(name="my library 1", description="folder description")
     library.root_folder = root_folder
     sa_session.add_all((library, root_folder))
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
 
     subfolder = model.LibraryFolder(name="sub folder 1", description="sub folder")
     root_folder.add_folder(subfolder)
@@ -287,7 +294,8 @@ def test_import_export_library():
     sa_session.add(ld)
     sa_session.add(ldda)
 
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
     assert len(root_folder.datasets) == 1
     assert len(root_folder.folders) == 1
 
@@ -329,7 +337,8 @@ def test_import_export_invocation():
     sa_session = app.model.context
     h2 = model.History(user=workflow_invocation.user)
     sa_session.add(h2)
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
 
     import_model_store = store.get_import_model_store_for_directory(
         temp_directory, app=app, user=workflow_invocation.user, import_options=store.ImportOptions()
@@ -347,7 +356,6 @@ def validate_has_pl_galaxy(ro_crate: ROCrate):
     assert programming_language.id == "https://w3id.org/workflowhub/workflow-ro-crate#galaxy"
     assert programming_language.name == "Galaxy"
     assert programming_language.url == "https://galaxyproject.org/"
-    assert programming_language.version
 
 
 def validate_organize_action(ro_crate: ROCrate):
@@ -607,7 +615,8 @@ def test_import_export_edit_collection():
     sa_session.add(h)
     import_history = model.History(name="Test History for Import", user=u)
     sa_session.add(import_history)
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
 
     temp_directory = mkdtemp()
     with store.DirectoryModelExportStore(temp_directory, app=app, for_edit=True) as export_store:
@@ -681,7 +690,8 @@ def test_import_export_composite_datasets():
     d1 = _create_datasets(sa_session, h, 1, extension="html")[0]
     d1.dataset.create_extra_files_path()
     sa_session.add_all((h, d1))
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
 
     primary = NamedTemporaryFile("w")
     primary.write("cool primary file")
@@ -707,7 +717,8 @@ def test_import_export_composite_datasets():
 
     import_history = model.History(name="Test History for Import", user=u)
     sa_session.add(import_history)
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
     _perform_import_from_directory(temp_directory, app, u, import_history)
     assert len(import_history.datasets) == 1
     import_dataset = import_history.datasets[0]
@@ -731,7 +742,8 @@ def test_edit_metadata_files():
 
     d1 = _create_datasets(sa_session, h, 1, extension="bam")[0]
     sa_session.add_all((h, d1))
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
     index = NamedTemporaryFile("w")
     index.write("cool bam index")
     metadata_dict = {"bam_index": MetadataTempFile.from_JSON({"kwds": {}, "filename": index.name})}
@@ -747,7 +759,8 @@ def test_edit_metadata_files():
 
     import_history = model.History(name="Test History for Import", user=u)
     sa_session.add(import_history)
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
     _perform_import_from_directory(temp_directory, app, u, import_history, store.ImportOptions(allow_edit=True))
 
 
@@ -788,7 +801,8 @@ def _setup_simple_export(export_kwds):
 
     import_history = model.History(name="Test History for Import", user=u)
     sa_session.add(import_history)
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
 
     temp_directory = mkdtemp()
     with store.DirectoryModelExportStore(temp_directory, app=app, **export_kwds) as export_store:
@@ -837,7 +851,8 @@ def _setup_simple_cat_job(app, state="ok"):
     j.add_output_dataset("out_file1", d2)
 
     sa_session.add_all((d1, d2, h, j))
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
 
     app.object_store.update_from_file(d1, file_name=TEST_PATH_1, create=True)
     app.object_store.update_from_file(d2, file_name=TEST_PATH_2, create=True)
@@ -873,7 +888,8 @@ def _setup_invocation(app):
     wf_output = model.WorkflowOutput(workflow_step_1, label="output_label")
     workflow_invocation.add_output(wf_output, workflow_step_1, d2)
     sa_session.add(workflow_invocation)
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
     return workflow_invocation
 
 
@@ -919,7 +935,8 @@ def _setup_simple_collection_job(app, state="ok"):
     sa_session.add(hc2)
     sa_session.add(hc3)
     sa_session.add(j)
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
 
     return u, h, c1, c2, c3, hc1, hc2, hc3, j
 
@@ -946,7 +963,8 @@ def _setup_collection_invocation(app):
     workflow_invocation.add_output(wf_output, workflow_step_1, hc3)
 
     sa_session.add(workflow_invocation)
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
     return workflow_invocation
 
 
@@ -1027,7 +1045,8 @@ class MockWorkflowContentsManager:
         stored_workflow.latest_workflow = workflow
         sa_session = app.model.context
         sa_session.add_all((stored_workflow, workflow))
-        sa_session.flush()
+        with transaction(sa_session):
+            sa_session.commit()
         return workflow
 
 
@@ -1071,7 +1090,8 @@ def setup_fixture_context_with_history(
     app, sa_session, user = setup_fixture_context_with_user(**kwd)
     history = model.History(name=history_name, user=user)
     sa_session.add(history)
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
     return StoreFixtureContextWithHistory(app, sa_session, user, history)
 
 

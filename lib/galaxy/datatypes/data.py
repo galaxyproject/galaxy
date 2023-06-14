@@ -50,6 +50,7 @@ from galaxy.util import (
     inflector,
     iter_start_of_line,
     unicodify,
+    UNKNOWN,
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.compression_utils import FileObjType
@@ -106,7 +107,7 @@ class DatatypeValidation:
 
     @staticmethod
     def unvalidated() -> "DatatypeValidation":
-        return DatatypeValidation("unknown", "Dataset validation unimplemented for this datatype.")
+        return DatatypeValidation(UNKNOWN, "Dataset validation unimplemented for this datatype.")
 
     def __repr__(self) -> str:
         return f"DatatypeValidation[state={self.state},message={self.message}]"
@@ -713,7 +714,7 @@ class Data(metaclass=DataMeta):
         try:
             return self.supported_display_apps[type]["label"]
         except Exception:
-            return "unknown"
+            return UNKNOWN
 
     def as_display_type(self, dataset: DatasetProtocol, type: str, **kwd) -> Union[FileObjType, str]:
         """Returns modified file contents for a particular display type"""

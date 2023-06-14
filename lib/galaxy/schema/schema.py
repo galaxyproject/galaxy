@@ -2402,13 +2402,14 @@ class ToolShedRepositoryChangeset(ToolShedRepository):
 
 
 class InstalledRepositoryToolShedStatus(Model):
-    # See https://github.com/galaxyproject/galaxy/issues/10453
-    latest_installable_revision: str = Field(
+    # See https://github.com/galaxyproject/galaxy/issues/10453 , bad booleans
+    # See https://github.com/galaxyproject/galaxy/issues/16135 , optional fields
+    latest_installable_revision: Optional[str] = Field(
         title="Latest installed revision", description="Most recent version available on the tool shed"
     )
     revision_update: str
     revision_upgrade: Optional[str]
-    repository_deprecated: str = Field(
+    repository_deprecated: Optional[str] = Field(
         title="Repository deprecated", description="Repository has been depreciated on the tool shed"
     )
 
@@ -2425,7 +2426,7 @@ class InstalledToolShedRepository(Model):
     owner: str = Field(title="Owner", description="Owner of repository")
     deleted: bool
     # This should be an int... but it would break backward compatiblity. Probably switch it at some point anyway?
-    ctx_rev: str = Field(
+    ctx_rev: Optional[str] = Field(
         title="Changeset revision number",
         description="The linearized 0-based index of the changeset on the tool shed (0, 1, 2,...)",
     )

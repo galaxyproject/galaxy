@@ -15,6 +15,7 @@ const expectedOptions = [
     "Export Tool Citations",
     "Export History to File",
     "Extract Workflow",
+    "Show Invocations",
     "Share or Publish",
     "Set Permissions",
     "Make Private",

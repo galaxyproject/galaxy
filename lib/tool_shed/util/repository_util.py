@@ -18,6 +18,7 @@ from galaxy import (
     util,
     web,
 )
+from galaxy.model.base import transaction
 from galaxy.tool_shed.util.repository_util import (
     create_or_update_tool_shed_repository,
     extract_components_from_tuple,
@@ -160,13 +161,16 @@ def create_repository_admin_role(app: "ToolShedApp", repository: "Repository"):
     description = "A user or group member with this role can administer this repository."
     role = app.model.Role(name=name, description=description, type=app.model.Role.types.SYSTEM)
     sa_session.add(role)
-    sa_session.flush()
+    session = sa_session()
+    with transaction(session):
+        session.commit()
     # Associate the role with the repository owner.
     app.model.UserRoleAssociation(repository.user, role)
     # Associate the role with the repository.
     rra = app.model.RepositoryRoleAssociation(repository, role)
     sa_session.add(rra)
-    sa_session.flush()
+    with transaction(session):
+        session.commit()
     return role
 
 
@@ -196,7 +200,9 @@ def create_repository(
     )
     # Flush to get the id.
     sa_session.add(repository)
-    sa_session.flush()
+    session = sa_session()
+    with transaction(session):
+        session.commit()
     # Create an admin role for the repository.
     create_repository_admin_role(app, repository)
     # Determine the repository's repo_path on disk.
@@ -225,7 +231,8 @@ def create_repository(
             sa_session.add(rca)
             flush_needed = True
     if flush_needed:
-        sa_session.flush()
+        with transaction(session):
+            session.commit()
     # Update the repository registry.
     app.repository_registry.add_entry(repository)
     message = f"Repository <b>{escape(str(repository.name))}</b> has been created."
@@ -515,7 +522,8 @@ def update_repository(trans: "ProvidesUserContext", id: str, **kwds) -> Tuple[Op
 
     if flush_needed:
         trans.sa_session.add(repository)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         message = "The repository information has been updated."
     else:
         message = None

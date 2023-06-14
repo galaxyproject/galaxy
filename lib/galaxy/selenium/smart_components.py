@@ -4,6 +4,10 @@ from galaxy.navigation.components import (
     Component,
     Target,
 )
+from .axe_results import (
+    AxeResults,
+    Impact,
+)
 
 
 class SmartComponent:
@@ -114,3 +118,13 @@ class SmartTarget:
 
     def wait_for_and_send_keys(self, *text):
         self.wait_for_visible().send_keys(*text)
+
+    def axe_eval(self) -> AxeResults:
+        return self._has_driver.axe_eval(context=self._target.element_locator[1])
+
+    def assert_no_axe_violations_with_impact_of_at_least(self, impact: Impact) -> None:
+        self.wait_for_visible()
+        self.axe_eval().assert_no_violations_with_impact_of_at_least(impact)
+
+    def __str__(self):
+        return f"SmartTarget[_target={self._target}]"

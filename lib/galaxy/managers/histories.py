@@ -43,6 +43,7 @@ from galaxy.managers.base import (
     StorageCleanerManager,
 )
 from galaxy.managers.export_tracker import StoreExportTracker
+from galaxy.model.base import transaction
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     ExportObjectMetadata,
@@ -417,15 +418,19 @@ class HistoryStorageCleanerManager(StorageCleanerManager):
         total_free_bytes = 0
         errors: List[StorageItemCleanupError] = []
 
-        with self.history_manager.session().begin():
-            for history_id in item_ids:
-                try:
-                    history = self.history_manager.get_owned(history_id, user)
-                    self.history_manager.purge(history, flush=False)
-                    success_item_count += 1
-                    total_free_bytes += int(history.disk_size)
-                except BaseException as e:
-                    errors.append(StorageItemCleanupError(item_id=history_id, error=str(e)))
+        for history_id in item_ids:
+            try:
+                history = self.history_manager.get_owned(history_id, user)
+                self.history_manager.purge(history, flush=False)
+                success_item_count += 1
+                total_free_bytes += int(history.disk_size)
+            except BaseException as e:
+                errors.append(StorageItemCleanupError(item_id=history_id, error=str(e)))
+
+        if success_item_count:
+            session = self.history_manager.session()
+            with transaction(session):
+                session.commit()
 
         return StorageItemsCleanupResult(
             total_item_count=len(item_ids),

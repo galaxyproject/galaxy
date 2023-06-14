@@ -9,6 +9,7 @@ from galaxy.tool_shed.util.repository_util import (
     extract_components_from_tuple,
     get_tool_shed_repository_by_id,
 )
+from galaxy.util import UNKNOWN
 from galaxy.util.tool_shed.common_util import parse_repository_dependency_tuple
 
 log = logging.getLogger(__name__)
@@ -253,8 +254,8 @@ class UtilityContainerManager:
                     data_tables = ", ".join(data_manager_dict.get("data_tables", ""))
                 except Exception as e:
                     name = str(e)
-                    version = "unknown"
-                    data_tables = "unknown"
+                    version = UNKNOWN
+                    data_tables = UNKNOWN
                 data_manager = DataManager(id=data_manager_id, name=name, version=version, data_tables=data_tables)
                 folder.valid_data_managers.append(data_manager)
         else:
@@ -442,28 +443,28 @@ class UtilityContainerManager:
                     requirements_str = ""
                     for requirement_dict in requirements:
                         try:
-                            requirement_name = str(requirement_dict.get("name", "unknown"))
-                            requirement_type = str(requirement_dict.get("type", "unknown"))
+                            requirement_name = str(requirement_dict.get("name", UNKNOWN))
+                            requirement_type = str(requirement_dict.get("type", UNKNOWN))
                         except Exception as e:
                             requirement_name = str(e)
-                            requirement_type = "unknown"
+                            requirement_type = UNKNOWN
                         requirements_str += f"{requirement_name} ({requirement_type}), "
                     requirements_str = requirements_str.rstrip(", ")
                 else:
                     requirements_str = "none"
                 try:
                     tool_config = str(tool_dict.get("tool_config", "missing"))
-                    tool_id = str(tool_dict.get("id", "unknown"))
-                    name = str(tool_dict.get("name", "unknown"))
+                    tool_id = str(tool_dict.get("id", UNKNOWN))
+                    name = str(tool_dict.get("name", UNKNOWN))
                     description = str(tool_dict.get("description", ""))
-                    version = str(tool_dict.get("version", "unknown"))
+                    version = str(tool_dict.get("version", UNKNOWN))
                     profile = str(tool_dict.get("profile", "any"))
                 except Exception as e:
                     tool_config = str(e)
-                    tool_id = "unknown"
-                    name = "unknown"
+                    tool_id = UNKNOWN
+                    name = UNKNOWN
                     description = ""
-                    version = "unknown"
+                    version = UNKNOWN
                 tool = Tool(
                     id=container_object_tool_id,
                     tool_config=tool_config,
@@ -547,9 +548,9 @@ class UtilityContainerManager:
                             td_id = set_environment_dict.get("tool_dependency_id", None)
                         except Exception as e:
                             name = str(e)
-                            type = "unknown"
-                            repository_id = "unknown"
-                            td_id = "unknown"
+                            type = UNKNOWN
+                            repository_id = UNKNOWN
+                            td_id = UNKNOWN
                         if self.app.name == "galaxy":
                             try:
                                 installation_status = set_environment_dict.get("status", "Never installed")
@@ -577,10 +578,10 @@ class UtilityContainerManager:
                         td_id = requirements_dict.get("tool_dependency_id", None)
                     except Exception as e:
                         name = str(e)
-                        version = "unknown"
-                        type = "unknown"
-                        repository_id = "unknown"
-                        td_id = "unknown"
+                        version = UNKNOWN
+                        type = UNKNOWN
+                        repository_id = UNKNOWN
+                        td_id = UNKNOWN
                     if self.app.name == "galaxy":
                         try:
                             installation_status = requirements_dict.get("status", "Never installed")
@@ -672,7 +673,7 @@ class UtilityContainerManager:
             repository_dependency = repository_dependency[0:6]
         else:
             tool_shed_repository_id = None
-            installation_status = "unknown"
+            installation_status = UNKNOWN
         if tool_shed_repository_id:
             tool_shed_repository = get_tool_shed_repository_by_id(
                 self.app, self.app.security.encode_id(tool_shed_repository_id)

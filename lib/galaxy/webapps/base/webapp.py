@@ -37,6 +37,7 @@ from galaxy.exceptions import (
 from galaxy.managers import context
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.users import UserManager
+from galaxy.model.base import transaction
 from galaxy.structured_app import (
     BasicSharedApp,
     MinimalApp,
@@ -112,6 +113,10 @@ class WebApplication(base.WebApplication):
         self.mako_template_lookup = self.create_mako_template_lookup(galaxy_app, name)
         # Security helper
         self.security = galaxy_app.security
+
+        # We need this to set the REQUEST_ID contextvar in model.base *BEFORE* a GalaxyWebTransaction is created.
+        # This will ensure a SQLAlchemy session is request-scoped for legacy (non-fastapi) endpoints.
+        self._model = galaxy_app.model
 
     def build_apispec(self):
         """
@@ -348,7 +353,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                     expiration_time = now
                     self.galaxy_session.last_action = now - datetime.timedelta(seconds=1)
                     self.sa_session.add(self.galaxy_session)
-                    self.sa_session.flush()
+                    with transaction(self.sa_session):
+                        self.sa_session.commit()
                 if expiration_time < now:
                     # Expiration time has passed.
                     self.handle_user_logout()
@@ -369,7 +375,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                 else:
                     self.galaxy_session.last_action = now
                     self.sa_session.add(self.galaxy_session)
-                    self.sa_session.flush()
+                    with transaction(self.sa_session):
+                        self.sa_session.commit()
 
     @property
     def app(self):
@@ -443,7 +450,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             if user and not user.bootstrap_admin_user:
                 self.galaxy_session.user = user
                 self.sa_session.add(self.galaxy_session)
-                self.sa_session.flush()
+                with transaction(self.sa_session):
+                    self.sa_session.commit()
         self.__user = user
 
     user = property(get_user, set_user)
@@ -637,7 +645,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             #        be needed.
             if prev_galaxy_session:
                 self.sa_session.add(prev_galaxy_session)
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
         # If the old session was invalid, get a new (or existing default,
         # unused) history with our new session
         if invalidate_existing_session:
@@ -768,7 +777,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                 username += f"-{str(i)}"
             user.username = username
             self.sa_session.add(user)
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
             self.app.security_agent.create_private_user_role(user)
             # We set default user permissions, before we log in and set the default history permissions
             if "webapp" not in self.environ or self.environ["webapp"] != "tool_shed":
@@ -873,7 +883,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         else:
             cookie_name = "galaxycommunitysession"
             self.sa_session.add_all((prev_galaxy_session, self.galaxy_session))
-        self.sa_session.flush()
+        with transaction(self.sa_session):
+            self.sa_session.commit()
         # This method is not called from the Galaxy reports, so the cookie will always be galaxysession
         self.__update_session_cookie(name=cookie_name)
 
@@ -898,7 +909,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             ):
                 other_galaxy_session.is_valid = False
                 self.sa_session.add(other_galaxy_session)
-        self.sa_session.flush()
+        with transaction(self.sa_session):
+            self.sa_session.commit()
         if self.webapp.name == "galaxy":
             # This method is not called from the Galaxy reports, so the cookie will always be galaxysession
             self.__update_session_cookie(name="galaxysession")
@@ -935,7 +947,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         if history and not history.deleted:
             self.galaxy_session.current_history = history
         self.sa_session.add(self.galaxy_session)
-        self.sa_session.flush()
+        with transaction(self.sa_session):
+            self.sa_session.commit()
 
     @property
     def history(self):
@@ -1016,7 +1029,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         self.app.security_agent.history_set_default_permissions(history)
         # Save
         self.sa_session.add_all((self.galaxy_session, history))
-        self.sa_session.flush()
+        with transaction(self.sa_session):
+            self.sa_session.commit()
         return history
 
     @base.lazy_property

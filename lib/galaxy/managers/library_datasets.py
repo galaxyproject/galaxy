@@ -13,6 +13,7 @@ from galaxy.exceptions import (
 )
 from galaxy.managers import datasets
 from galaxy.model import tags
+from galaxy.model.base import transaction
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import validation
 
@@ -116,7 +117,8 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
         if changed:
             ldda.update_parent_folder_update_times()
             trans.sa_session.add(ldda)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
         return changed
 
     def _validate_and_parse_update_payload(self, payload):

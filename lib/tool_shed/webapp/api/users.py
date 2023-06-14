@@ -6,6 +6,7 @@ from galaxy import (
     util,
     web,
 )
+from galaxy.model.base import transaction
 from galaxy.security.validate_user_input import (
     validate_email,
     validate_password,
@@ -57,7 +58,8 @@ class UsersController(BaseAPIController):
         else:
             user.active = True  # Activation is off, every new user is active by default.
         trans.sa_session.add(user)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         trans.app.security_agent.create_private_user_role(user)
         return user
 

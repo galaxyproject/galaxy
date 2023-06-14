@@ -3,6 +3,7 @@ import os
 
 from galaxy import util
 from galaxy.tool_shed.util import utility_container_manager
+from galaxy.util import UNKNOWN
 from galaxy.util.tool_shed.common_util import parse_repository_dependency_tuple
 
 log = logging.getLogger(__name__)
@@ -24,9 +25,9 @@ class DependencyDisplayer:
         for dependency_key, requirements_dict in tool_dependencies.items():
             if dependency_key in ["set_environment"]:
                 continue
-            repository_name = requirements_dict.get("repository_name", "unknown")
-            repository_owner = requirements_dict.get("repository_owner", "unknown")
-            changeset_revision = requirements_dict.get("changeset_revision", "unknown")
+            repository_name = requirements_dict.get("repository_name", UNKNOWN)
+            repository_owner = requirements_dict.get("repository_owner", UNKNOWN)
+            changeset_revision = requirements_dict.get("changeset_revision", UNKNOWN)
             dependency_name = requirements_dict["name"]
             version = requirements_dict["version"]
             if self.app.tool_dependency_dir:

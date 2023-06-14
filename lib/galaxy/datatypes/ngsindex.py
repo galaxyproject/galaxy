@@ -8,6 +8,7 @@ from galaxy.datatypes.protocols import (
     DatasetProtocol,
     HasExtraFilesAndMetadata,
 )
+from galaxy.util import UNKNOWN
 from .metadata import MetadataElement
 from .text import Html
 
@@ -30,7 +31,7 @@ class BowtieIndex(Html):
     MetadataElement(
         name="sequence_space",
         desc="sequence_space for this index set",
-        default="unknown",
+        default=UNKNOWN,
         set_in_upload=True,
         readonly=True,
     )

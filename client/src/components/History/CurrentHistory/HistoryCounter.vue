@@ -118,7 +118,7 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
             title="History Size"
             variant="link"
             size="sm"
-            class="rounded-0 text-decoration-none"
+            class="rounded-0 text-decoration-none history-storage-overview-button"
             :disabled="!showControls"
             @click="onDashboard">
             <icon icon="database" />
@@ -128,6 +128,7 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
             <b-button
                 v-if="config && config.object_store_allows_id_selection"
                 :id="`history-storage-${history.id}`"
+                title="Manage Preferred History Storage"
                 variant="link"
                 size="sm"
                 class="rounded-0 text-decoration-none"

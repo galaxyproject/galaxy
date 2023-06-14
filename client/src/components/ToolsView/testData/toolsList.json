@@ -114,5 +114,13 @@
     "version": "",
     "id": "liftOver",
     "name": "Lift-Over"
+  },
+  {
+    "model_class": "ToolSectionLabel",
+    "id": "testlabel3",
+    "text": null,
+    "version": "",
+    "description": null,
+    "links": null
   }
 ]

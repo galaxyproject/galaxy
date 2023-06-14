@@ -313,9 +313,15 @@ history_panel:
     pagination_next: '.list-pagination button.next'
     pagination_previous: '.list-pagination button.prev'
 
+    storage_overview: '.history-storage-overview-button'
+
   text:
     tooltip_name: 'Rename history...'
     new_name: 'Unnamed history'
+
+history_storage:
+  selectors:
+    _: '.history-storage-overview'
 
 edit_dataset_attributes:
   selectors:
@@ -407,6 +413,7 @@ collection_builders:
     clear_filters: "a.clear-filters-link"
     forward_datasets: ".forward-column .column-datasets"
     reverse_datasets: ".reverse-column .column-datasets"
+    name: "input.collection-name"
 
 histories:
   labels:
@@ -561,6 +568,13 @@ workflows:
     dropdown: '[data-workflow-dropdown*="${id}"]'
     run_button: '[data-workflow-run*="${id}"]'
     bookmark_link: '.workflow-bookmark-link'
+    import_file: '.workflow-import-file'
+    import_trs_search: '.workflow-import-trs-search'
+    import_trs_id: '.workflow-import-trs-id'
+    import_file_link: '.workflow-import-file-link'
+    import_trs_search_link: '.workflow-import-trs-search-link'
+    import_trs_id_link: '.workflow-import-trs-id-link'
+
     workflow_with_name:
       type: xpath
       selector: '//span[@class="workflow-dropdown-name" and text() = "${workflow_name}"]'
@@ -717,6 +731,7 @@ workflow_editor:
 
 workflow_show:
   selectors:
+    _: '.workflow-display'
     title: '[data-description="workflow name"]'
     import_link: '[data-description="workflow import"]'
 
@@ -996,6 +1011,16 @@ upload:
       selector: '//span[contains(@title, "${path}")]'
     file_dialog_ok: '.file-dialog-modal-ok'
     paste_new: .upload-paste
+
+new_user_welcome:
+  selectors:
+    _: .new-user-welcome
+    topics: .new-user-welcome-topic
+    topic_button: '.new-user-welcome-topic[data-new-user-welcome-topic-title="${title}"] button'
+    subtopics: .new-user-welcome-subtopic
+    subtopic_button: '.new-user-welcome-subtopic[data-new-user-welcome-subtopic-title="${title}"] button'
+    slides: .new-user-welcome-slides
+    back: .new-user-welcome-return
 
 rule_builder:
   selectors:

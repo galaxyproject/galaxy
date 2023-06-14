@@ -23,3 +23,4 @@ A multi-hour long video playlist covering these slides can be found at
   debugging_galaxy
   debugging_galaxy_slurm
   translating
+  create_point_release

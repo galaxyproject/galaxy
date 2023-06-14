@@ -4,7 +4,14 @@
             {{ header }}
         </h1>
         <hr />
-        <b-carousel indicators controls :interval="0" no-animation align="center" position="float">
+        <b-carousel
+            indicators
+            controls
+            :interval="0"
+            class="new-user-welcome-slides"
+            no-animation
+            align="center"
+            position="float">
             <b-carousel-slide v-for="(slide, idx) in slides" :key="idx">
                 <h2 class="carousel-caption h-md">
                     {{ slide.text | localize }}
@@ -17,7 +24,9 @@
             </b-carousel-slide>
         </b-carousel>
         <div class="button-housing">
-            <b-button class="mt-auto carousel-button" variant="primary" @click="$emit('back')">Return</b-button>
+            <b-button class="mt-auto carousel-button new-user-welcome-return" variant="primary" @click="$emit('back')"
+                >Return</b-button
+            >
         </div>
     </div>
 </template>
