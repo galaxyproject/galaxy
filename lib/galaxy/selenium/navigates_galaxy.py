@@ -1488,11 +1488,10 @@ class NavigatesGalaxy(HasDriver):
         self.components.pages.create.wait_for_and_click()
         name = name or self._get_random_name(prefix="page")
         slug = slug = self._get_random_name(prefix="pageslug")
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.tool_set_value("title", name)
         self.tool_set_value("slug", slug)
         self.screenshot_if(screenshot_name)
-        # Sometimes 'submit' button not yet hooked up?
-        self.sleep_for(self.wait_types.UX_RENDER)
         self.components.pages.submit.wait_for_and_click()
         return name
 
