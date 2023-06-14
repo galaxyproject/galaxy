@@ -38,11 +38,11 @@ function onActionClick(item: BroadcastNotification, link: string) {
 
 <template>
     <div v-if="activeBroadcasts.length > 0">
-        <div
-            v-for="broadcast in activeBroadcasts"
-            :key="broadcast.id"
-            :class="{ 'urgent-broadcast': broadcast.variant === 'urgent' }">
-            <BRow align-v="center" class="broadcast-banner m-0">
+        <div v-for="broadcast in activeBroadcasts" :key="broadcast.id">
+            <BRow
+                align-v="center"
+                class="broadcast-banner m-0"
+                :class="{ 'non-urgent': broadcast.variant !== 'urgent' }">
                 <BCol cols="auto">
                     <FontAwesomeIcon
                         class="mx-2"
@@ -73,7 +73,7 @@ function onActionClick(item: BroadcastNotification, link: string) {
                         </div>
                     </BRow>
                 </BCol>
-                <BCol cols="auto" align-self="start" class="p-0">
+                <BCol cols="auto" align-self="center" class="p-0">
                     <BButton
                         variant="light"
                         class="align-items-center d-flex"
@@ -88,16 +88,7 @@ function onActionClick(item: BroadcastNotification, link: string) {
 </template>
 
 <style lang="scss" scoped>
-.urgent-broadcast {
-    width: 100%;
-    height: 100%;
-    z-index: 1000;
-    position: fixed;
-    background-color: rgb(0, 0, 0, 0.6);
-}
-
 .broadcast-banner {
-    bottom: 0;
     width: 100%;
     color: white;
     display: flex;
@@ -105,7 +96,6 @@ function onActionClick(item: BroadcastNotification, link: string) {
     padding: 1rem;
     position: fixed;
     min-height: 6rem;
-    align-items: center;
     backdrop-filter: blur(0.2rem);
     justify-content: space-between;
     background-color: rgb(0, 0, 0, 0.7);
@@ -114,5 +104,9 @@ function onActionClick(item: BroadcastNotification, link: string) {
     .broadcast-message {
         font-size: large;
     }
+}
+
+.non-urgent {
+    bottom: 0;
 }
 </style>
