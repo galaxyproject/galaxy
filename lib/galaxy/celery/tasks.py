@@ -422,6 +422,7 @@ def cleanup_expired_notifications(notification_manager: NotificationManager):
         f"Successfully deleted {result.deleted_notifications_count} notifications and {result.deleted_associations_count} associations."
     )
 
+
 @galaxy_task(action="prune object store cache directories")
 def clean_object_store_caches(object_store: BaseObjectStore):
     check_caches(object_store.cache_targets())
