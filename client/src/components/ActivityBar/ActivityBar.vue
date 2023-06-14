@@ -58,7 +58,7 @@ function isActiveSideBar(menuKey) {
 }
 
 /**
- * Triggered by vue-draggable when the list of activities has changed
+ * Triggered by vue-draggable when the list of activities has changed or an item has been dropped
  */
 function onChange() {
     activityStore.setAll(activities);
@@ -72,6 +72,8 @@ function onDragEnter(evt) {
     if (eventData) {
         dragTarget.value = evt.target;
         dragItem.value = convertDropData(eventData);
+    } else {
+        dragItem.value = null;
     }
 }
 
@@ -80,9 +82,7 @@ function onDragEnter(evt) {
  */
 function onDragLeave(evt) {
     if (dragItem.value && dragTarget.value == evt.target) {
-        const dragId = dragItem.value.id;
-        const activitiesTemp = activities.value.filter((a) => a.id !== dragId);
-        activities.value = activitiesTemp;
+        activities.value = activities.value.filter((a) => a.id !== dragItem.value.id);
     }
 }
 
