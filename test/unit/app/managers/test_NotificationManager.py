@@ -443,19 +443,19 @@ class TestNotificationRecipientResolver(NotificationsBaseTestCase):
 
     def _create_test_group(self, name: str, users: List[User], roles: List[Role]):
         sa_session = self.trans.sa_session
-        with sa_session.begin():
-            group = Group(name=name)
-            sa_session.add(group)
-            self.trans.app.security_agent.set_entity_group_associations(groups=[group], roles=roles, users=users)
-            return group
+        group = Group(name=name)
+        sa_session.add(group)
+        self.trans.app.security_agent.set_entity_group_associations(groups=[group], roles=roles, users=users)
+        sa_session.flush()
+        return group
 
     def _create_test_role(self, name: str, users: List[User], groups: List[Group]):
         sa_session = self.trans.sa_session
-        with sa_session.begin():
-            role = Role(name=name)
-            sa_session.add(role)
-            for user in users:
-                self.trans.app.security_agent.associate_user_role(user, role)
-            for group in groups:
-                self.trans.app.security_agent.associate_group_role(group, role)
-            return role
+        role = Role(name=name)
+        sa_session.add(role)
+        for user in users:
+            self.trans.app.security_agent.associate_user_role(user, role)
+        for group in groups:
+            self.trans.app.security_agent.associate_group_role(group, role)
+        sa_session.flush()
+        return role
