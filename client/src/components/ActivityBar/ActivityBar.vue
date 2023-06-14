@@ -128,14 +128,14 @@ function toggleContextMenu(evt) {
 </script>
 
 <template>
-    <div
-        class="d-flex"
-        @contextmenu="toggleContextMenu"
-        @drop.prevent="onChange"
-        @dragover.prevent="onDragOver"
-        @dragenter.prevent="onDragEnter"
-        @dragleave.prevent="onDragLeave">
-        <div class="activity-bar d-flex flex-column no-highlight">
+    <div class="d-flex">
+        <div
+            class="activity-bar d-flex flex-column no-highlight"
+            @contextmenu="toggleContextMenu"
+            @drop.prevent="onChange"
+            @dragover.prevent="onDragOver"
+            @dragenter.prevent="onDragEnter"
+            @dragleave.prevent="onDragLeave">
             <b-nav vertical class="flex-nowrap p-1 h-100 vertical-overflow">
                 <draggable
                     :list="activities"
