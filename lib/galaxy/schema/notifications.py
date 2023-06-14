@@ -216,11 +216,6 @@ class UserNotificationResponse(NotificationResponse):
         title="Seen time",
         description="The time when the notification was seen by the user. If not set, the notification was not seen yet.",
     )
-    favorite: bool = Field(
-        Required,
-        title="Favorite",
-        description="Whether the notification is marked as favorite by the user. Favorite notifications don't expire until they are manually deleted.",
-    )
     deleted: bool = Field(
         Required,
         title="Deleted",
@@ -352,11 +347,6 @@ class UserNotificationUpdateRequest(NotificationUpdateRequest):
         None,
         title="Seen",
         description="Whether the notification should be marked as seen by the user. If not set, the notification will not be changed.",
-    )
-    favorite: Optional[bool] = Field(
-        None,
-        title="Favorite",
-        description="Whether the notification should be marked as favorite by the user. If not set, the notification will not be changed.",
     )
     deleted: Optional[bool] = Field(
         None,

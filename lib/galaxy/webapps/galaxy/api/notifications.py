@@ -194,7 +194,7 @@ class FastAPINotifications:
 
         - It will not be returned in the list of notifications, but admins can still access it as long as it is not expired.
         - It will be eventually removed from the database by a background task after the expiration time.
-        - Deleted notifications will be permanently deleted when the expiration time is reached even if they were marked as favorite.
+        - Deleted notifications will be permanently deleted when the expiration time is reached.
         """
         delete_request = UserNotificationUpdateRequest(deleted=True)
         self.service.update_user_notification(trans, notification_id, delete_request)

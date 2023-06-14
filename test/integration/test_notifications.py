@@ -207,7 +207,7 @@ class TestNotificationsIntegration(IntegrationTestCase):
         broadcasted_notification_id = created_broadcast_notification_response["notification"]["id"]
 
         update_core_value_payload = {"source": "updated_source"}  # Core values are part of the notification itself
-        update_user_value_payload = {"seen": True}  # User values are from the association (seen, favorite, etc.)
+        update_user_value_payload = {"seen": True}  # User values are from the association (seen, deleted, etc)
 
         # Regular users cannot update core notification values
         update_response = self._put(f"notifications/{user_notification_id}", data=update_core_value_payload, json=True)

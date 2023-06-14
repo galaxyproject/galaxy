@@ -45,7 +45,6 @@ def upgrade():
             sa.Column("user_id", sa.Integer, sa.ForeignKey("galaxy_user.id"), index=True),
             sa.Column("notification_id", sa.Integer, sa.ForeignKey("notification.id"), index=True),
             sa.Column("seen_time", sa.DateTime, nullable=True),
-            sa.Column("favorite", sa.Boolean, index=True, default=False),
             sa.Column("deleted", sa.Boolean, index=True, default=False),
             sa.Column("update_time", sa.DateTime),
         )

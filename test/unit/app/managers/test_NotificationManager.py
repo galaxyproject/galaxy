@@ -268,7 +268,6 @@ class TestUserNotifications(NotificationManagerBaseTestCase):
 
         self._assert_notification_expected(actual_user_notification, expected_user_notification)
         assert actual_user_notification["seen_time"] is None
-        assert actual_user_notification["favorite"] is False
         assert actual_user_notification["deleted"] is False
 
     def test_update_user_notifications(self):
@@ -276,13 +275,11 @@ class TestUserNotifications(NotificationManagerBaseTestCase):
         notification, _ = self._send_message_notification_to_users([user])
         user_notification = self.notification_manager.get_user_notification(user, notification.id)
         assert user_notification.seen_time is None
-        assert user_notification.favorite is False
         assert user_notification.deleted is False
-        request = UserNotificationUpdateRequest(seen=True, favorite=True)
+        request = UserNotificationUpdateRequest(seen=True)
         self.notification_manager.update_user_notifications(user, set([notification.id]), request)
         user_notification = self.notification_manager.get_user_notification(user, notification.id)
         assert user_notification.seen_time is not None
-        assert user_notification.favorite is True
         assert user_notification.deleted is False
 
     def test_scheduled_notifications(self):
@@ -354,39 +351,6 @@ class TestUserNotifications(NotificationManagerBaseTestCase):
         assert result.deleted_notifications_count == 1
         assert result.deleted_associations_count == 1
 
-        with pytest.raises(ObjectNotFound):
-            self.notification_manager.get_user_notification(user, notification.id, active_only=False)
-
-    def test_cleanup_keeps_expired_favorite_notifications_until_deleted(self):
-        user = self._create_test_user()
-        now = datetime.utcnow()
-        notification, _ = self._send_message_notification_to_users([user], notification={"expiration_time": now})
-        request = UserNotificationUpdateRequest(favorite=True)
-        self.notification_manager.update_user_notifications(user, set([notification.id]), request)
-        user_notification = self.notification_manager.get_user_notification(user, notification.id, active_only=False)
-        assert self._has_expired(user_notification.expiration_time) is True
-        assert user_notification.favorite is True
-
-        result = self.notification_manager.cleanup_expired_notifications()
-        assert result.deleted_notifications_count == 0
-        assert result.deleted_associations_count == 0
-
-        # The notification should remain
-        user_notification = self.notification_manager.get_user_notification(user, notification.id, active_only=False)
-        assert user_notification
-
-        # Mark it as deleted
-        request = UserNotificationUpdateRequest(deleted=True)
-        self.notification_manager.update_user_notifications(user, set([notification.id]), request)
-        user_notification = self.notification_manager.get_user_notification(user, notification.id, active_only=False)
-        assert user_notification.favorite is True
-        assert user_notification.deleted is True
-
-        result = self.notification_manager.cleanup_expired_notifications()
-        assert result.deleted_notifications_count == 1
-        assert result.deleted_associations_count == 1
-
-        # If marked as deleted it will be removed (even if marked as favorite)
         with pytest.raises(ObjectNotFound):
             self.notification_manager.get_user_notification(user, notification.id, active_only=False)
 

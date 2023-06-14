@@ -8206,11 +8206,6 @@ export interface components {
              */
             expiration_time?: string;
             /**
-             * Favorite
-             * @description Whether the notification is marked as favorite by the user. Favorite notifications don't expire until they are manually deleted.
-             */
-            favorite: boolean;
-            /**
              * ID
              * @description The encoded ID of the notification.
              * @example 0123456789ABCDEF
