@@ -560,7 +560,8 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
     def export_to_file(self, trans, id):
         """
         Get the latest Workflow for the StoredWorkflow identified by `id` and
-        encode it as a json string that can be imported back into Galaxy
+        export it to a JSON file that can be imported back into Galaxy.
+
         This has slightly different information than the above. In particular,
         it does not attempt to decode forms and build UIs, it just stores
         the raw state.
