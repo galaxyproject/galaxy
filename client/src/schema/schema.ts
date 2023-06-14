@@ -6398,9 +6398,9 @@ export interface components {
              * Share Option
              * @description User choice for sharing resources which its contents may be restricted:
              *  - None: The user did not choose anything yet or no option is needed.
-             *  - make_public: The contents of the resource will be made publicly accessible.
-             *  - make_accessible_to_shared: This will automatically create a new `sharing role` allowing protected contents to be accessed only by the desired users.
-             *  - no_changes: This won't change the current permissions for the contents. The user which this resource will be shared may not be able to access all its contents.
+             *  - SharingOptions.make_public: The contents of the resource will be made publicly accessible.
+             *  - SharingOptions.make_accessible_to_shared: This will automatically create a new `sharing role` allowing protected contents to be accessed only by the desired users.
+             *  - SharingOptions.no_changes: This won't change the current permissions for the contents. The user which this resource will be shared may not be able to access all its contents.
              */
             share_option?: components["schemas"]["SharingOptions"];
             /**
@@ -8789,7 +8789,7 @@ export interface operations {
          * @description Sets the permissions to manage a library folder.
          */
         parameters: {
-            /** @description Indicates what action should be performed on the Library. Currently only `set_permissions` is supported. */
+            /** @description Indicates what action should be performed on the Library. Currently only `LibraryFolderPermissionAction.set_permissions` is supported. */
             query?: {
                 action?: components["schemas"]["LibraryFolderPermissionAction"];
             };
@@ -13340,6 +13340,9 @@ export interface operations {
     create_api_tool_data_post: {
         /** Import a data manager bundle */
         parameters?: {
+            query?: {
+                tool_data_file_path?: Record<string, never>;
+            };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
                 "run-as"?: string;
