@@ -5149,8 +5149,6 @@
     finished, etc.
     The system allows notification scheduling and expiration, and
     users can opt-out of specific notification categories or channels.
-    They can also mark certain notifications as favorites to prevent
-    expiration and manually delete notifications.
     Admins can schedule and broadcast notifications that will be
     visible to all users, including special server-wide announcements
     such as scheduled maintenance, high load warnings, and event

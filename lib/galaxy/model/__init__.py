@@ -2742,7 +2742,6 @@ class UserNotificationAssociation(Base, RepresentById):
     user_id = Column(Integer, ForeignKey("galaxy_user.id"), index=True)
     notification_id = Column(Integer, ForeignKey("notification.id"), index=True)
     seen_time = Column(DateTime, nullable=True)
-    favorite = Column(Boolean, index=True, default=False)
     deleted = Column(Boolean, index=True, default=False)
     update_time = Column(DateTime, default=now, onupdate=now)
 

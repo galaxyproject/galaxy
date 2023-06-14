@@ -74,7 +74,6 @@ class NotificationManager:
             Notification.expiration_time,
             Notification.content,
             UserNotificationAssociation.seen_time,
-            UserNotificationAssociation.favorite,
             UserNotificationAssociation.deleted,
         ]
         self.broadcast_notification_columns = [
@@ -239,8 +238,6 @@ class NotificationManager:
             if request.seen is not None:
                 seen_time = self._now if request.seen else None
                 stmt = stmt.values(seen_time=seen_time)
-            if request.favorite is not None:
-                stmt = stmt.values(favorite=request.favorite)
             if request.deleted is not None:
                 stmt = stmt.values(deleted=request.deleted)
             result = self.sa_session.execute(stmt)
@@ -297,8 +294,6 @@ class NotificationManager:
     def cleanup_expired_notifications(self) -> CleanupResultSummary:
         """
         Permanently removes from the database all notifications (and user associations) that have expired.
-        User notifications that have been marked as `favorite` will not be removed on expiration unless the user
-        un-favorite them or they are marked as deleted too.
         """
         deleted_notifications_count = 0
         deleted_associations_count = 0
