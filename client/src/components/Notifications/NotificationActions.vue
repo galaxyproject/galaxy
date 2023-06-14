@@ -20,13 +20,13 @@ defineProps<Props>();
 const notificationsStore = useNotificationsStore();
 
 function getNotificationExpirationTitle(notification: UserNotification) {
-    if (notification.favorite) {
-        return "This notification will not be deleted automatically because it is marked as favorite";
-    } else if (notification.expiration_time) {
+    if (notification.expiration_time) {
         const expirationTime = parseISO(notification.expiration_time);
         return `This notification will be automatically deleted ${formatDistanceToNow(expirationTime, {
             addSuffix: true,
         })}`;
+    } else {
+        return "This notification will never be automatically deleted";
     }
 }
 </script>
@@ -50,18 +50,6 @@ function getNotificationExpirationTitle(notification: UserNotification) {
                     :title="getNotificationExpirationTitle(notification)">
                     <FontAwesomeIcon icon="hourglass-half" />
                 </BButton>
-                <AsyncButton
-                    v-if="notification.favorite"
-                    id="remove-from-favorites-button"
-                    title="Remove from favorites"
-                    icon="star"
-                    :action="() => notificationsStore.updateNotification(notification, { favorite: false })" />
-                <AsyncButton
-                    v-else
-                    id="add-to-favorites-button"
-                    title="Add to favorites"
-                    icon="fa-regular fa-star"
-                    :action="() => notificationsStore.updateNotification(notification, { favorite: true })" />
                 <AsyncButton
                     id="delete-button"
                     icon="trash"

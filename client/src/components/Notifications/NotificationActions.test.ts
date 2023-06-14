@@ -82,39 +82,6 @@ describe("NotificationActions.vue", () => {
         expect(wrapper.find("#expiration-time-button").exists()).toBe(true);
     });
 
-    it("add/remove to favorites", async () => {
-        const { spyOnUpdateNotification, wrapper } = await mouthNotificationActions();
-
-        wrapper.setProps({
-            notification: {
-                ...wrapper.props("notification"),
-                favorite: false,
-            },
-        });
-        await wrapper.vm.$nextTick();
-
-        expect(wrapper.find("#add-to-favorites-button").exists()).toBe(true);
-        expect(wrapper.find("#remove-from-favorites-button").exists()).toBe(false);
-
-        await wrapper.find("#add-to-favorites-button").trigger("click");
-
-        await wrapper.vm.$nextTick();
-
-        expect(spyOnUpdateNotification).toHaveBeenCalledTimes(1);
-
-        expect(wrapper.find("#remove-from-favorites-button").exists()).toBe(true);
-        expect(wrapper.find("#add-to-favorites-button").exists()).toBe(false);
-
-        await wrapper.find("#remove-from-favorites-button").trigger("click");
-
-        await wrapper.vm.$nextTick();
-
-        expect(wrapper.find("#add-to-favorites-button").exists()).toBe(true);
-        expect(wrapper.find("#remove-from-favorites-button").exists()).toBe(false);
-
-        expect(spyOnUpdateNotification).toHaveBeenCalledTimes(2);
-    });
-
     it("delete notification", async () => {
         const { spyOnUpdateNotification, wrapper } = await mouthNotificationActions();
 
