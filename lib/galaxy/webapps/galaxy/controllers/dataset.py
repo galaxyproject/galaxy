@@ -35,7 +35,6 @@ from galaxy.structured_app import StructuredApp
 from galaxy.util import (
     inflector,
     sanitize_text,
-    smart_str,
 )
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.zipstream import ZipstreamWrapper
@@ -85,7 +84,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         return "This link may not be followed from within Galaxy."
 
     @web.expose_api_raw_anonymous_and_sessionless
-    def get_metadata_file(self, trans, hda_id, metadata_name):
+    def get_metadata_file(self, trans, hda_id, metadata_name, **kwd):
         """Allows the downloading of metadata files associated with datasets (eg. bai index for bam files)"""
         # Backward compatibility with legacy links, should use `/api/datasets/{hda_id}/get_metadata_file` instead
         fh, headers = self.service.get_metadata_file(

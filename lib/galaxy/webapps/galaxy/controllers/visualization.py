@@ -427,7 +427,7 @@ class VisualizationController(
 
     @web.expose
     @web.require_login("share Galaxy visualizations")
-    def imp(self, trans, id):
+    def imp(self, trans, id, **kwargs):
         """Import a visualization into user's workspace."""
         # Set referer message.
         referer = trans.request.referer
@@ -498,7 +498,7 @@ class VisualizationController(
         )
 
     @web.json
-    def save(self, trans, vis_json=None, type=None, id=None, title=None, dbkey=None, annotation=None):
+    def save(self, trans, vis_json=None, type=None, id=None, title=None, dbkey=None, annotation=None, **kwargs):
         """
         Save a visualization; if visualization does not have an ID, a new
         visualization is created. Returns JSON of visualization.
@@ -734,7 +734,7 @@ class VisualizationController(
         return trans.fill_template("visualization/trackster.mako", config={"app": app, "bundle": "extended"})
 
     @web.expose
-    def circster(self, trans, id=None, hda_ldda=None, dataset_id=None, dbkey=None):
+    def circster(self, trans, id=None, hda_ldda=None, dataset_id=None, dbkey=None, **kwargs):
         """
         Display a circster visualization.
         """
@@ -795,7 +795,7 @@ class VisualizationController(
         return trans.fill_template("visualization/trackster.mako", config={"app": app, "bundle": "extended"})
 
     @web.expose
-    def sweepster(self, trans, id=None, hda_ldda=None, dataset_id=None, regions=None):
+    def sweepster(self, trans, id=None, hda_ldda=None, dataset_id=None, regions=None, **kwargs):
         """
         Displays a sweepster visualization using the incoming parameters. If id is available,
         get the visualization with the given id; otherwise, create a new visualization using

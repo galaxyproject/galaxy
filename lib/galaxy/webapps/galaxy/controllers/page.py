@@ -533,7 +533,7 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
 
     @web.expose
     @web.require_login()
-    def display(self, trans, id):
+    def display(self, trans, id, **kwargs):
         id = self.decode_id(id)
         page = trans.sa_session.query(model.Page).get(id)
         if not page:

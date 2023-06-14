@@ -21,10 +21,9 @@ log = logging.getLogger(__name__)
 
 
 class TagsController(BaseUIController, UsesTagsMixin):
-
     @web.expose
     @web.require_login("add tag to an item")
-    def add_tag_async(self, trans, item_id=None, item_class=None, new_tag=None, context=None):
+    def add_tag_async(self, trans, item_id=None, item_class=None, new_tag=None, context=None, **kwargs):
         """
         Add tag to an item.
         """
@@ -40,7 +39,7 @@ class TagsController(BaseUIController, UsesTagsMixin):
 
     @web.expose
     @web.require_login("remove tag from an item")
-    def remove_tag_async(self, trans, item_id=None, item_class=None, tag_name=None, context=None):
+    def remove_tag_async(self, trans, item_id=None, item_class=None, tag_name=None, context=None, **kwargs):
         """
         Remove tag from an item.
         """
@@ -56,7 +55,7 @@ class TagsController(BaseUIController, UsesTagsMixin):
 
     @web.expose
     @web.require_login("get autocomplete data for an item's tags")
-    def tag_autocomplete_data(self, trans, q=None, limit=None, timestamp=None, item_id=None, item_class=None):
+    def tag_autocomplete_data(self, trans, q=None, limit=None, timestamp=None, item_id=None, item_class=None, **kwargs):
         """
         Get autocomplete data for an item's tags.
         """

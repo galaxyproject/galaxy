@@ -333,7 +333,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
 
     @web.expose
     @web.require_login("use Galaxy workflows")
-    def gen_image(self, trans, id):
+    def gen_image(self, trans, id, **kwargs):
         stored = self.get_stored_workflow(trans, id, check_ownership=True)
         try:
             svg = self._workflow_to_svg_canvas(trans, stored)
@@ -390,7 +390,9 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             }
 
     @web.json
-    def save_workflow_as(self, trans, workflow_name, workflow_data, workflow_annotation="", from_tool_form=False):
+    def save_workflow_as(
+        self, trans, workflow_name, workflow_data, workflow_annotation="", from_tool_form=False, **kwargs
+    ):
         """
         Creates a new workflow based on Save As command. It is a new workflow, but
         is created with workflow_data already present.
@@ -443,7 +445,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
     @web.expose
     @web.json
     @web.require_login("edit workflows")
-    def editor(self, trans, id=None, workflow_id=None, version=None):
+    def editor(self, trans, id=None, workflow_id=None, version=None, **kwargs):
         """
         Render the main workflow editor interface. The canvas is embedded as
         an iframe (necessary for scrolling to work properly), which is
@@ -530,7 +532,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         return editor_config
 
     @web.json
-    def load_workflow(self, trans, id, version=None):
+    def load_workflow(self, trans, id, version=None, **kwargs):
         """
         Get the latest Workflow for the StoredWorkflow identified by `id` and
         encode it as a json string that can be read by the workflow editor
@@ -542,7 +544,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         return workflow_contents_manager.workflow_to_dict(trans, stored, style="editor", version=version)
 
     @web.json_pretty
-    def for_direct_import(self, trans, id):
+    def for_direct_import(self, trans, id, **kwargs):
         """
         Get the latest Workflow for the StoredWorkflow identified by `id` and
         encode it as a json string that can be imported back into Galaxy
@@ -554,6 +556,31 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         stored = self.get_stored_workflow(trans, id, check_ownership=False, check_accessible=True)
         return self._workflow_to_dict(trans, stored)
 
+    @web.json_pretty
+    def export_to_file(self, trans, id):
+        """
+        Get the latest Workflow for the StoredWorkflow identified by `id` and
+        encode it as a json string that can be imported back into Galaxy
+        This has slightly different information than the above. In particular,
+        it does not attempt to decode forms and build UIs, it just stores
+        the raw state.
+        """
+
+        # Get workflow.
+        stored = self.get_stored_workflow(trans, id, check_ownership=False, check_accessible=True)
+
+        # Stream workflow to file.
+        stored_dict = self._workflow_to_dict(trans, stored)
+        if not stored_dict:
+            # This workflow has a tool that's missing from the distribution
+            trans.response.status = 400
+            return "Workflow cannot be exported due to missing tools."
+        sname = stored.name
+        sname = "".join(c in FILENAME_VALID_CHARS and c or "_" for c in sname)[0:150]
+        trans.response.headers["Content-Disposition"] = f'attachment; filename="Galaxy-Workflow-{sname}.ga"'
+        trans.response.set_content_type("application/galaxy-archive")
+        return stored_dict
+
     @web.expose
     def build_from_current_history(
         self,
@@ -564,6 +591,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         workflow_name=None,
         dataset_names=None,
         dataset_collection_names=None,
+        **kwargs,
     ):
         user = trans.get_user()
         history = trans.get_history()
