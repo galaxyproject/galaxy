@@ -3,6 +3,8 @@ import os
 import shutil
 from tempfile import mkdtemp
 from typing import ClassVar
+from unittest import SkipTest
+from urllib.parse import urlparse
 
 from galaxy.exceptions import error_codes
 from galaxy_test.base.api_asserts import (
@@ -16,7 +18,7 @@ from galaxy_test.base.populators import (
 from galaxy_test.driver import integration_util
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
-FILE_SOURCES_JOB_CONF = os.path.join(SCRIPT_DIRECTORY, "file_sources_conf.yml")
+FILE_SOURCES_JOB_CONF = os.path.join(SCRIPT_DIRECTORY, "file_sources_conf_remote_files.yml")
 VCF_GZ_PATH = os.path.join(SCRIPT_DIRECTORY, os.path.pardir, os.path.pardir, "test-data", "test.vcf.gz")
 
 USERNAME = "user--bx--psu--edu"
@@ -50,6 +52,7 @@ class ConfiguresRemoteFilesIntegrationTestCase(integration_util.IntegrationTestC
         config["ftp_upload_purge"] = True
         config["metadata_strategy"] = "extended"
         config["tool_evaluation_strategy"] = "remote"
+        config["file_sources_config_file"] = FILE_SOURCES_JOB_CONF
 
     def setUp(self):
         super().setUp()
@@ -114,6 +117,41 @@ class TestRemoteFilesIntegration(ConfiguresRemoteFilesIntegrationTestCase):
             assert content == "a\n", content
 
         assert os.path.exists(os.path.join(self.library_dir, "a"))
+
+    def test_fetch_from_drs(self):
+        CONTENT = "a\n"
+        history_id = self.dataset_populator.new_history()
+
+        def create_drs_object():
+            hda = self.dataset_populator.new_dataset(history_id, content=CONTENT, wait=True)
+            # Force the md5 hash to be evaluated. Otherwise, the DRS endpoint will attempt to dispatch an md5
+            # task and returns a 204 Try Later. This will cause a timeout in a test environment without multiple
+            # celery workers, so we forcibly compute the hash.
+            self.dataset_populator.compute_hash(hda["id"])
+            drs_id = hda["drs_id"]
+            components = urlparse(self.url)
+            netloc = components.netloc
+            if components.path != "/":
+                raise SkipTest("Real DRS cannot be served on Galaxy not hosted at root.")
+            drs_uri = f"drs://{netloc}/{drs_id}"
+            return drs_uri
+
+        # Upload a dataset to Galaxy, which will be available over DRS
+        drs_url = create_drs_object()
+        # Download the created DRS object to check drs url handling
+        element = dict(src="url", url=drs_url)
+        target = {
+            "destination": {"type": "hdas"},
+            "elements": [element],
+        }
+        targets = [target]
+        payload = {
+            "history_id": history_id,
+            "targets": targets,
+        }
+        new_dataset = self.dataset_populator.fetch(payload, assert_ok=True).json()["outputs"][0]
+        content = self.dataset_populator.get_history_dataset_content(history_id, dataset=new_dataset)
+        assert content == CONTENT, content
 
     def test_fetch_from_ftp(self):
         ftp_dir = self.user_ftp_dir
