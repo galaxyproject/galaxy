@@ -414,11 +414,6 @@ def cleanup_short_term_storage(storage_monitor: ShortTermStorageMonitor):
     storage_monitor.cleanup()
 
 
-@galaxy_task(action="prune object store cache directories")
-def clean_object_store_caches(object_store: BaseObjectStore):
-    check_caches(object_store.cache_targets())
-
-
 @galaxy_task(action="clean up expired notifications")
 def cleanup_expired_notifications(notification_manager: NotificationManager):
     """Cleanup expired notifications."""
@@ -426,3 +421,8 @@ def cleanup_expired_notifications(notification_manager: NotificationManager):
     log.info(
         f"Successfully deleted {result.deleted_notifications_count} notifications and {result.deleted_associations_count} associations."
     )
+
+
+@galaxy_task(action="prune object store cache directories")
+def clean_object_store_caches(object_store: BaseObjectStore):
+    check_caches(object_store.cache_targets())
