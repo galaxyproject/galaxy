@@ -26,7 +26,6 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
     const lastNotificationUpdate = ref<Date | null>(null);
 
     const unreadNotifications = computed(() => notifications.value.filter((n) => !n.seen_time));
-    const favoriteNotifications = computed(() => notifications.value.filter((item) => item.favorite));
 
     async function loadNotifications() {
         await loadNotificationsFromServer().then((data) => {
@@ -87,7 +86,6 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
         totalUnreadCount,
         unreadNotifications,
         loadingNotifications,
-        favoriteNotifications,
         updateNotification,
         updateBatchNotification,
         startPollingNotifications,

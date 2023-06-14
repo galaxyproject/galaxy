@@ -51,18 +51,6 @@ describe("NotificationsList", () => {
         );
     });
 
-    it("favorite filter works", async () => {
-        const wrapper = await mountNotificationsList();
-
-        const favoriteFilter = wrapper.find("#show-favorites-filter");
-        expect(favoriteFilter.exists()).toBe(true);
-        favoriteFilter.trigger("click");
-
-        await wrapper.vm.$nextTick();
-
-        expect(wrapper.findAll(".notification-card")).toHaveLength(FAKE_NOTIFICATIONS.filter((n) => n.favorite).length);
-    });
-
     it("show no notifications message", async () => {
         const wrapper = await mountNotificationsList();
         expect(wrapper.find("#no-notifications").exists()).toBe(false);

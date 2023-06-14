@@ -37,7 +37,6 @@ export function generateMessageNotification(): MessageNotification {
             category: "message",
         },
         seen_time: Math.random() > 0.5 ? new Date().toISOString() + 3 : undefined,
-        favorite: Math.random() > 0.5,
         deleted: false,
     };
 }
@@ -60,7 +59,6 @@ export function generateNewSharedItemNotification(): SharedItemNotification {
             slug: generateRandomString(),
         },
         seen_time: Math.random() > 0.5 ? new Date().toISOString() + 3 : undefined,
-        favorite: Math.random() > 0.5,
         deleted: false,
     };
 }
