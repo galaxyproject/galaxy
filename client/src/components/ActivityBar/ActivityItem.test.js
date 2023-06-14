@@ -20,7 +20,7 @@ describe("ActivityItem", () => {
             },
             localVue,
             stubs: {
-                icon: { template: "<div></div>" },
+                FontAwesomeIcon: true,
             },
         });
     });
