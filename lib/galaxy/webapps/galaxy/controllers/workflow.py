@@ -332,32 +332,6 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             return new_annotation
 
     @web.expose
-    def get_embed_html_async(self, trans, id):
-        """Returns HTML for embedding a workflow in a page."""
-
-        # TODO: user should be able to embed any item he has access to. see display_by_username_and_slug for security code.
-        stored = self.get_stored_workflow(trans, id)
-        if stored:
-            return f"Embedded Workflow '{stored.name}'"
-
-    @web.expose
-    @web.json
-    @web.require_login("use Galaxy workflows")
-    def get_name_and_link_async(self, trans, id=None):
-        """Returns workflow's name and link."""
-        stored = self.get_stored_workflow(trans, id)
-        return_dict = {
-            "name": stored.name,
-            "link": url_for(
-                controller="workflow",
-                action="display_by_username_and_slug",
-                username=stored.user.username,
-                slug=stored.slug,
-            ),
-        }
-        return return_dict
-
-    @web.expose
     @web.require_login("use Galaxy workflows")
     def gen_image(self, trans, id):
         stored = self.get_stored_workflow(trans, id, check_ownership=True)
@@ -579,32 +553,6 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         """
         stored = self.get_stored_workflow(trans, id, check_ownership=False, check_accessible=True)
         return self._workflow_to_dict(trans, stored)
-
-    @web.json_pretty
-    def export_to_file(self, trans, id):
-        """
-        Get the latest Workflow for the StoredWorkflow identified by `id` and
-        encode it as a json string that can be imported back into Galaxy
-
-        This has slightly different information than the above. In particular,
-        it does not attempt to decode forms and build UIs, it just stores
-        the raw state.
-        """
-
-        # Get workflow.
-        stored = self.get_stored_workflow(trans, id, check_ownership=False, check_accessible=True)
-
-        # Stream workflow to file.
-        stored_dict = self._workflow_to_dict(trans, stored)
-        if not stored_dict:
-            # This workflow has a tool that's missing from the distribution
-            trans.response.status = 400
-            return "Workflow cannot be exported due to missing tools."
-        sname = stored.name
-        sname = "".join(c in FILENAME_VALID_CHARS and c or "_" for c in sname)[0:150]
-        trans.response.headers["Content-Disposition"] = f'attachment; filename="Galaxy-Workflow-{sname}.ga"'
-        trans.response.set_content_type("application/galaxy-archive")
-        return stored_dict
 
     @web.expose
     def build_from_current_history(

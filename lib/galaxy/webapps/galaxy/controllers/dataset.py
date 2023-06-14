@@ -72,15 +72,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
     def __init__(self, app: StructuredApp):
         super().__init__(app)
 
-    def _get_job_for_dataset(self, trans, dataset_id):
-        """
-        Return the job for the given dataset. This will throw an error if the
-        dataset is either nonexistent or inaccessible to the user.
-        """
-        hda = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(self.decode_id(dataset_id))
-        assert hda and self._can_access_dataset(trans, hda)
-        return hda.creating_job
-
     def _can_access_dataset(self, trans, dataset_association, allow_admin=True, additional_roles=None):
         roles = trans.get_current_user_roles()
         if additional_roles:
@@ -88,40 +79,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         return (allow_admin and trans.user_is_admin) or trans.app.security_agent.can_access_dataset(
             roles, dataset_association.dataset
         )
-
-    @web.expose
-    def stdout(self, trans, dataset_id=None, **kwargs):
-        trans.response.set_content_type("text/plain")
-        stdout = ""
-        try:
-            job = self._get_job_for_dataset(trans, dataset_id)
-            stdout = job.stdout
-        except Exception:
-            stdout = "Invalid dataset ID or you are not allowed to access this dataset"
-        return smart_str(stdout)
-
-    @web.expose
-    # TODO: Migrate stderr and stdout to use _get_job_for_dataset; it wasn't tested.
-    def stderr(self, trans, dataset_id=None, **kwargs):
-        trans.response.set_content_type("text/plain")
-        stderr = ""
-        try:
-            job = self._get_job_for_dataset(trans, dataset_id)
-            stderr = job.stderr
-        except Exception:
-            stderr = "Invalid dataset ID or you are not allowed to access this dataset"
-        return smart_str(stderr)
-
-    @web.expose
-    def exit_code(self, trans, dataset_id=None, **kwargs):
-        trans.response.set_content_type("text/plain")
-        exit_code = ""
-        try:
-            job = self._get_job_for_dataset(trans, dataset_id)
-            exit_code = job.exit_code
-        except Exception:
-            exit_code = "Invalid dataset ID or you are not allowed to access this dataset"
-        return exit_code
 
     @web.expose
     def default(self, trans, dataset_id=None, **kwd):
@@ -171,25 +128,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 "The dataset you are attempting to view is in paused state. One of the inputs for the job that creates this dataset has failed."
             )
         return data
-
-    @web.expose
-    @web.json
-    def transfer_status(self, trans, dataset_id, filename=None):
-        """Primarily used for the S3ObjectStore - get the status of data transfer
-        if the file is not in cache"""
-        data = self._check_dataset(trans, dataset_id)
-        if isinstance(data, str):
-            return data
-        log.debug(f"Checking transfer status for dataset {data.dataset.id}...")
-
-        # Pulling files in extra_files_path into cache is not handled via this
-        # method but that's primarily because those files are typically linked to
-        # through tool's output page anyhow so tying a JavaScript event that will
-        # call this method does not seem doable?
-        if data.dataset.external_filename:
-            return True
-        else:
-            return trans.app.object_store.file_ready(data.dataset)
 
     @web.expose
     def display(
@@ -533,40 +471,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             f"Dataset imported. <br>You can <a href='{url_for('/')}'>start using the dataset</a> or {referer_message}."
         )
         return trans.show_message(message, type=status, use_panels=True)
-
-    @web.expose
-    @web.json
-    @web.require_login("use Galaxy datasets")
-    def get_name_and_link_async(self, trans, id=None):
-        """Returns dataset's name and link."""
-        decoded_id = self.decode_id(id)
-        dataset = self.hda_manager.get_accessible(decoded_id, trans.user)
-        dataset = self.hda_manager.error_if_uploading(dataset)
-        return_dict = {
-            "name": dataset.name,
-            "link": url_for(
-                controller="dataset",
-                action="display_by_username_and_slug",
-                username=dataset.history.user.username,
-                slug=trans.security.encode_id(dataset.id),
-            ),
-        }
-        return return_dict
-
-    @web.expose
-    def get_embed_html_async(self, trans, id):
-        """Returns HTML for embedding a dataset in a page."""
-        decoded_id = self.decode_id(id)
-        dataset = self.hda_manager.get_accessible(decoded_id, trans.user)
-        dataset = self.hda_manager.error_if_uploading(dataset)
-        if dataset:
-            return f"Embedded Dataset '{dataset.name}'"
-
-    @web.expose
-    @web.require_login("use Galaxy datasets")
-    def set_accessible_async(self, trans, id=None, accessible=False):
-        """Does nothing because datasets do not have an importable/accessible attribute. This method could potentially set another attribute."""
-        return
 
     @web.expose
     def display_by_username_and_slug(self, trans, username, slug, filename=None, preview=True, **kwargs):

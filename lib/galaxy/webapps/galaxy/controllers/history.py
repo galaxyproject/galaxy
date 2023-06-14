@@ -653,44 +653,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         return trans.show_ok_message("Your jobs have been resumed.", refresh_frames=refresh_frames)
         # TODO: used in index.mako
 
-    @web.expose
-    @web.json
-    @web.require_login("get history name and link")
-    def get_name_and_link_async(self, trans, id=None):
-        """Returns history's name and link."""
-        history = self.history_manager.get_accessible(self.decode_id(id), trans.user, current_history=trans.history)
-        if self.slug_builder.create_item_slug(trans.sa_session, history):
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
-        return_dict = {
-            "name": history.name,
-            "link": url_for(
-                controller="history",
-                action="display_by_username_and_slug",
-                username=history.user.username,
-                slug=history.slug,
-            ),
-        }
-        return return_dict
-        # TODO: used in page/editor.mako
-
-    @web.expose
-    @web.require_login("set history's accessible flag")
-    def set_accessible_async(self, trans, id=None, accessible=False):
-        """Set history's importable attribute and slug."""
-        history = self.history_manager.get_mutable(self.decode_id(id), trans.user, current_history=trans.history)
-        # Only set if importable value would change; this prevents a change in the update_time unless attribute really changed.
-        importable = accessible in ["True", "true", "t", "T"]
-        if history and history.importable != importable:
-            if importable:
-                self._make_item_accessible(trans.sa_session, history)
-            else:
-                history.importable = importable
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
-        return
-        # TODO: used in page/editor.mako
-
     @web.legacy_expose_api
     @web.require_login("rename histories")
     def rename(self, trans, payload=None, **kwd):
