@@ -83,10 +83,6 @@ class UsesCeleryTasks:
             "task_default_queue": "galaxy.internal",
         }
 
-    @pytest.fixture(scope="session", autouse=True)
-    def celery_worker_pool(self):
-        return "threads"
-
 
 class UsesApiTestCaseMixin:
     url: str
