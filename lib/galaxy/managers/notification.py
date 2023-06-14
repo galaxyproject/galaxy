@@ -299,62 +299,60 @@ class NotificationManager:
         deleted_associations_count = 0
         execution_options_for_delete = {"synchronize_session": "fetch"}
         with self.sa_session.begin():
-            is_favorite_and_not_deleted = and_(
-                UserNotificationAssociation.favorite.is_(True),
+            is_not_deleted = and_(
                 UserNotificationAssociation.deleted.is_(False),
             )
             has_expired = Notification.expiration_time <= self._now
 
-            # Find those notification ids that have expired excluding those that somebody has marked as favorite
-            non_favorite_expired_notifications_query = (
+            # Find those notification ids that have expired
+            non_expired_notifications_query = (
                 select(Notification.id)
                 .where(has_expired)
-                .where(~Notification.user_notification_associations.any(is_favorite_and_not_deleted))
+                .where(~Notification.user_notification_associations.any(is_not_deleted))
             )
-            non_favorite_expired_notification_ids = (
-                self.sa_session.execute(non_favorite_expired_notifications_query).scalars().fetchall()
+            non_expired_notification_ids = (
+                self.sa_session.execute(non_expired_notifications_query).scalars().fetchall()
             )
 
-            # Delete all notifications and associations that have expired and nobody has marked as favorite
-            delete_expired_non_favorite_associations_query = delete(UserNotificationAssociation).where(
-                UserNotificationAssociation.notification_id.in_(non_favorite_expired_notification_ids)
+            # Delete all notifications and associations that have expired
+            delete_expired_associations_query = delete(UserNotificationAssociation).where(
+                UserNotificationAssociation.notification_id.in_(non_expired_notification_ids)
             )
             result = self.sa_session.execute(
-                delete_expired_non_favorite_associations_query, execution_options=execution_options_for_delete
+                delete_expired_associations_query, execution_options=execution_options_for_delete
             )
             deleted_associations_count += result.rowcount
 
-            delete_expired_non_favorite_notifications_query = delete(Notification).where(
-                Notification.id.in_(non_favorite_expired_notification_ids)
+            delete_expired_notifications_query = delete(Notification).where(
+                Notification.id.in_(non_expired_notification_ids)
             )
             result = self.sa_session.execute(
-                delete_expired_non_favorite_notifications_query, execution_options=execution_options_for_delete
+                delete_expired_notifications_query, execution_options=execution_options_for_delete
             )
             deleted_notifications_count += result.rowcount
 
-            # Find those notification ids that have expired but somebody has marked as favorite
-            favorite_expired_notifications_query = (
+            # Find those notification ids that have expired
+            expired_notifications_query = (
                 select(Notification.id)
                 .where(has_expired)
-                .where(Notification.user_notification_associations.any(is_favorite_and_not_deleted))
+                .where(Notification.user_notification_associations.any(is_not_deleted))
             )
-            favorite_expired_notification_ids = self.sa_session.execute(favorite_expired_notifications_query).scalars()
+            expired_notification_ids = self.sa_session.execute(expired_notifications_query).scalars()
 
-            # Delete those associations that did expire and are not marked as favorite
-            non_favorite_expired_associations_query = (
+            # Delete those associations that did expire
+            expired_associations_query = (
                 select(UserNotificationAssociation)
-                .where(UserNotificationAssociation.favorite.is_(False))
-                .where(UserNotificationAssociation.notification_id.in_(favorite_expired_notification_ids))
+                .where(UserNotificationAssociation.notification_id.in_(expired_notification_ids))
             )
-            delete_non_favorite_expired_associations_query = delete(UserNotificationAssociation).where(
+            delete_expired_associations_query = delete(UserNotificationAssociation).where(
                 UserNotificationAssociation.id.in_(
                     select(UserNotificationAssociation.id).select_from(
-                        non_favorite_expired_associations_query.subquery()
+                        expired_associations_query.subquery()
                     )
                 )
             )
             result = self.sa_session.execute(
-                delete_non_favorite_expired_associations_query, execution_options=execution_options_for_delete
+                delete_expired_associations_query, execution_options=execution_options_for_delete
             )
             deleted_associations_count += result.rowcount
 
