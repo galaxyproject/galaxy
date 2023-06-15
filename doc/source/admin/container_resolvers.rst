@@ -4,10 +4,10 @@
 Containers in Galaxy
 ====================
 
-Galaxy can run tools using containers using ``docker`` or ``singularity``.
+Galaxy can run tools inside containers using ``docker`` or ``singularity``.
 The containers can be either explicit or mulled (also called multi package containers).
 The former are given by ``<container>`` requirements pointing to a specific container.
-The later are containers built for a set of requirements of type package.
+The latter are containers built for a set of requirements of type ``package``.
 Mulled containers are described by a hash that is unique for a set of
 packages and versions (for mulled v2), e.g. 
 ``mulled-v2-0d814cbcd5aa81b280ecadbee9e4aba8d9ab33f7:0fb38379c04f2a8a345a2c8f74b190ea9a51b6f3-0``
@@ -15,7 +15,7 @@ packages and versions (for mulled v2), e.g.
 of single packages simply the package name and version are used instead of the hashes,
 e.g. ``ucsc-liftover:357--h446ed27_4``.
 
-The bioconda and the Galaxy project provide infrastructure to create mulled
+Bioconda and the Galaxy project provide infrastructure to create mulled
 containers and to make them globally available on the ``quay.io/biocontainers``
 container registry.
 
@@ -25,7 +25,7 @@ container registry.
    repository. Mulled containers are added automatically to this repository for all tools
    in tool repositories that are crawled by the 
    `planemo monitor <https://github.com/galaxyproject/planemo-monitor>`_ repository
-   (which includes for instance IUC and many other tool repositories).
+   (which includes for instance tools-iuc and several other tool repositories).
 
 Container Resolvers in Galaxy
 -----------------------------
@@ -55,8 +55,8 @@ Alternatively, if the execution environment specifies
 `require_container <https://github.com/galaxyproject/galaxy/blob/0742d6e27702c60d1b8fe358ae03a267e3f252c3/lib/galaxy/config/sample/job_conf.sample.yml#L528>`_
 the job fails in this case.
 
-Besides determining a container description some container resolvers
-also cache/build containers.
+Besides determining a container description, some container resolvers
+also cache and/or build containers.
 
 Configuration:
 --------------
@@ -121,7 +121,7 @@ container resolvers are ignored (and may be omitted).
 
 Note that, for the execution with ``singularity`` Galaxy relies mostly on
 docker containers that are either executed directly or are converted
-to singularity images. An exception are for instance explicit container
+to singularity images. An exception is for instance explicit container
 requirements of ``type="singularity"``.
 
 2. mulled vs explicit
@@ -152,7 +152,7 @@ See also :ref:`additional_resolver_types`.
 """""""""""""""""""""""
 
 While non-cached resolvers will yield a container description pointing to an online
-available docker container cached resolvers will store container images on disk and
+available docker container, cached resolvers will store container images on disk and
 use those. 
 
 This distinction is the weakest: some (by name) non-cached container resolvers
@@ -174,10 +174,10 @@ directory.
    Using a cached docker resolver has no additional value on distributed compute
    systems since the cache is only available locally. 
    Therefore an additional ``docker inspect ... ; [ $? -ne 0 ] && docker pull ...``
-   command is used in each job script. Thereby a the container will be cached
+   command is used in each job script. Thereby a container will be cached
    after the tool run even if no cached container resolver was used.
    Clearly admins need to take care of docker caches of the main and compute nodes.
-   For distributed compute systems built in techniques of docker may be useful:
+   For distributed compute systems, built-in techniques of docker may be useful:
    https://docs.docker.com/registry/recipes/mirror/.
 
 .. _function_of_the_resolve_function_of_the_main_resolver_types:
@@ -187,7 +187,7 @@ Function and use of the ``resolve`` function of the main resolver types:
 
 The resolve function is called when 
 
-1. listing the the container tab in the dependency admin UI (using ``api/container_resolvers/toolbox``)
+1. listing the container tab in the dependency admin UI (using ``api/container_resolvers/toolbox``)
 2. triggering a build from the admin UI (using ``api/container_resolvers/toolbox/install``)
 3. when a job is prepared 
 
@@ -271,7 +271,7 @@ to the name of the cached image).
 
 .. note::
 
-    In contrast to the uncached explicit resolver the uncached mulled resolvers
+    In contrast to the uncached explicit resolver, the uncached mulled resolvers
     do cache images, but the returned container description by default points to
     the uncached URI (if the default of ``auto_install=True`` is used; otherwise
     the cached image is used).
@@ -328,7 +328,7 @@ Parameters:
   Applies only to the resolvers listed in `Additional resolver types`_.
 - ``auto_install``: defaults to ``True``. 
   Applies to ``mulled``, ``mulled_singularity``, ``build_mulled``, and ``build_mulled_singularity``.
-  For the non-building resolvers this controls if a contained description pointing to the
+  For the non-building resolvers this controls if a container description pointing to the
   cached image shall be returned (``auto_install==False``). For the building
   resolvers the parameter controls if the container should be built
   also if the resolve function is called with ``install=False`` (e.g. when listing
@@ -342,23 +342,23 @@ Parameters:
 
 - ``cache_directory``: applies to singularity container resolvers that allow to
   cache images and sets the directory where to save images.
-  If not set containers are saved in ``"database/container_cache/singularity/[explicit|mulled]"``.
+  If not set, containers are saved in ``"database/container_cache/singularity/[explicit|mulled]"``.
 - ``cache_directory_cacher_type``: ``"uncached"`` (default) or ``"dir_mtime"``.
   The singularity resolvers iterate over the contents of the cache directory. The contents
   of the directory can be accessed uncached (in which case the file listing is computed for each access)
   or cached (then the listing is computed only if the mtime of the cache dir changes and on first access).
   (applies to all singularity resolvers that can cache images, except explicit_singularity)
 
-Note on the built in caching capabilities of singularity and docker
+Note on the built-in caching capabilities of singularity and docker
 -------------------------------------------------------------------
 
-It is important to note that docker as well as singularity have their own builtin
+It is important to note that docker as well as singularity have their own built-in
 caching mechanism.
 
-In case of docker a ``docker pull`` (e.g. executed from a container resolver) or
+In case of docker, a ``docker pull`` (e.g. executed from a container resolver) or
 ``docker run`` (e.g. executed on the compute node running the job) will add the
 image to the **local** image cache.
-Galaxy's docker container resolvers rely on docker's built it image cache,
+Galaxy's docker container resolvers rely on docker's built-in image cache,
 i.e. they query the image cache on the node that is executing Galaxy.
 If the nodes that execute jobs are different from the node executing Galaxy
 it's important to note that these nodes will have independent caches that
@@ -374,8 +374,8 @@ admins might want to control.
    docker container resolvers creates these image tarballs.
 
 Also singularity has its own caching mechanism and caches by default to ``$HOME/.singularity``.
-It may be cleaned regularly using ``singularity cache`` or be disabled by using the
-``SINGULARITY_DISABLE_CACHE``. Environment variable.
+It can be cleaned regularly using the ``singularity cache`` command, or disabled by using the
+``SINGULARITY_DISABLE_CACHE`` environment variable.
 
 Setting up Galaxy using docker / singularity on distributed compute resources
 (in particular in real user setups) requires careful planning.
