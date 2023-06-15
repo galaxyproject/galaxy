@@ -421,7 +421,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
             target_format=target_format,
         )
 
-    def cancel_invocation(self, trans, decoded_invocation_id):
+    def cancel_invocation(self, trans, decoded_invocation_id: int):
         workflow_invocation = self.get_invocation(trans, decoded_invocation_id)
         cancelled = workflow_invocation.cancel()
 
@@ -430,9 +430,21 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
             trans.sa_session.add(workflow_invocation)
             with transaction(trans.sa_session):
                 trans.sa_session.commit()
-        else:
-            # TODO: More specific exception?
-            raise exceptions.MessageException("Cannot cancel an inactive workflow invocation.")
+
+        for step in workflow_invocation.steps:
+            for job in step.jobs:
+                job.mark_deleted()
+                trans.sa_session.add(job)
+            if step.implicit_collection_jobs:
+                for icjja in step.implicit_collection_jobs.jobs:
+                    icjja.job.mark_deleted()
+                    trans.sa_session.add(icjja.job)
+
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
+
+        for invocation in workflow_invocation.subworkflow_invocations:
+            self.cancel_invocation(trans, invocation.subworkflow_invocation_id)
 
         return workflow_invocation
 

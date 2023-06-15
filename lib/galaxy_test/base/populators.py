@@ -1697,6 +1697,11 @@ class BaseWorkflowPopulator(BasePopulator):
         api_asserts.assert_status_code_is(response, 200)
         return response.json()
 
+    def cancel_invocation(self, invocation_id: str):
+        response = self._delete(f"invocations/{invocation_id}")
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
+
     def history_invocations(self, history_id: str) -> List[Dict[str, Any]]:
         history_invocations_response = self._get("invocations", {"history_id": history_id})
         api_asserts.assert_status_code_is(history_invocations_response, 200)
@@ -2078,6 +2083,13 @@ class BaseWorkflowPopulator(BasePopulator):
                 workflow_request["inputs_by"] = "step_uuid"
 
         return workflow_request, history_id, workflow_id
+
+    def get_invocation_jobs(self, invocation_id: str) -> List[Dict[str, Any]]:
+        jobs_response = self._get("jobs", data={"invocation_id": invocation_id})
+        api_asserts.assert_status_code_is(jobs_response, 200)
+        jobs = jobs_response.json()
+        assert isinstance(jobs, list)
+        return jobs
 
     def wait_for_invocation_and_jobs(
         self, history_id: str, workflow_id: str, invocation_id: str, assert_ok: bool = True

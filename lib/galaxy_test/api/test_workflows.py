@@ -4040,6 +4040,63 @@ input1:
             message = invocation["messages"][0]
             assert message["reason"] == "user_request"
 
+    @skip_without_tool("collection_creates_dynamic_nested")
+    def test_cancel_workflow_invocation_deletes_jobs(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  list_input:
+    type: collection
+    collection_type: list
+steps:
+  first_step:
+    tool_id: cat_data_and_sleep
+    in:
+      input1: list_input
+    state:
+      sleep_time: 60
+  subworkflow_step:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        list_input:
+          type: collection
+          collection_type: list
+      steps:
+        intermediate_step:
+          tool_id: identifier_multiple
+          in:
+            input1: list_input
+      subworkflow:
+    in:
+      list_input: first_step/out_file1
+test_data:
+  list_input:
+    collection_type: list
+    elements:
+      - identifier: 1
+        content: A
+      - identifier: 2
+        content: B
+""",
+                history_id=history_id,
+                wait=False,
+            )
+            # wait_for_invocation just waits until scheduling complete, not jobs or subworkflow invocations
+            self.workflow_populator.wait_for_invocation("null", summary.invocation_id, assert_ok=True)
+            invocation_before_cancellation = self.workflow_populator.get_invocation(summary.invocation_id)
+            assert invocation_before_cancellation["state"] == "scheduled"
+            subworkflow_invocation_id = invocation_before_cancellation["steps"][2]["subworkflow_invocation_id"]
+            self.workflow_populator.cancel_invocation(summary.invocation_id)
+            invocation_jobs = self.workflow_populator.get_invocation_jobs(summary.invocation_id)
+            for job in invocation_jobs:
+                assert job["state"] == "deleted" or job["state"] == "deleted_new"
+            subworkflow_invocation_jobs = self.workflow_populator.get_invocation_jobs(subworkflow_invocation_id)
+            for job in subworkflow_invocation_jobs:
+                assert job["state"] == "deleted" or job["state"] == "deleted_new"
+
     def test_workflow_failed_output_not_found(self, history_id):
         summary = self._run_workflow(
             """
