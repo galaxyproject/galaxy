@@ -999,7 +999,7 @@ export interface paths {
          *
          * - It will not be returned in the list of notifications, but admins can still access it as long as it is not expired.
          * - It will be eventually removed from the database by a background task after the expiration time.
-         * - Deleted notifications will be permanently deleted when the expiration time is reached even if they were marked as favorite.
+         * - Deleted notifications will be permanently deleted when the expiration time is reached.
          */
         delete: operations["delete_user_notification_api_notifications__notification_id__delete"];
     };
@@ -8251,11 +8251,6 @@ export interface components {
              */
             deleted?: boolean;
             /**
-             * Favorite
-             * @description Whether the notification should be marked as favorite by the user. If not set, the notification will not be changed.
-             */
-            favorite?: boolean;
-            /**
              * Seen
              * @description Whether the notification should be marked as seen by the user. If not set, the notification will not be changed.
              */
@@ -14054,7 +14049,7 @@ export interface operations {
          *
          * - It will not be returned in the list of notifications, but admins can still access it as long as it is not expired.
          * - It will be eventually removed from the database by a background task after the expiration time.
-         * - Deleted notifications will be permanently deleted when the expiration time is reached even if they were marked as favorite.
+         * - Deleted notifications will be permanently deleted when the expiration time is reached.
          */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
