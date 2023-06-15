@@ -16,7 +16,8 @@ class TestPagesIndex(SeleniumTestCase):
         self._assert_showing_n_pages(1)
         self.components.pages.dropdown(id=page_id).wait_for_visible()
         self.page_index_click_option("Delete", page_id)
-        self.accept_alert()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.components.pages.delete_modal_confirm(id=page_id).wait_for_and_click()
         self.components.pages.dropdown(id=page_id).wait_for_absent_or_hidden()
         self._assert_showing_n_pages(0)
 

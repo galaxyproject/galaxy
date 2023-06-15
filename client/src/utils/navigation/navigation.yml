@@ -494,6 +494,7 @@ pages:
     dropdown: '[data-page-dropdown*="${id}"]'
     index_table: "#page-table"
     index_rows: "#page-table > tbody > tr:not(.b-table-empty-row, [style*='display: none'])"
+    delete_modal_confirm: '#delete-page-modal-${id}___BV_modal_footer_ .btn-primary'
 
   editor:
     selectors:
