@@ -120,6 +120,7 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
             size="sm"
             class="rounded-0 text-decoration-none"
             :disabled="!showControls"
+            data-description="storage dashboard button"
             @click="onDashboard">
             <icon icon="database" />
             <span>{{ niceHistorySize }}</span>
@@ -148,6 +149,7 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
                     variant="link"
                     size="sm"
                     class="rounded-0 text-decoration-none"
+                    data-description="show active items button"
                     @click="setFilter('')">
                     <span class="fa fa-map-marker" />
                     <span>{{ numItemsActive }}</span>
@@ -160,6 +162,7 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
                     size="sm"
                     class="rounded-0 text-decoration-none"
                     :pressed="getCurrentFilterVal('deleted') !== false"
+                    data-description="include deleted items button"
                     @click="setFilter('deleted')">
                     <icon icon="trash" />
                     <span>{{ numItemsDeleted }}</span>
@@ -172,6 +175,7 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
                     size="sm"
                     class="rounded-0 text-decoration-none"
                     :pressed="getCurrentFilterVal('visible') !== true"
+                    data-description="include hidden items button"
                     @click="setFilter('visible')">
                     <icon icon="eye-slash" />
                     <span>{{ numItemsHidden }}</span>

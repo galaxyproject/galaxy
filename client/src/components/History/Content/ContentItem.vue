@@ -9,7 +9,7 @@
         @keydown="onKeyDown">
         <div class="p-1 cursor-pointer" draggable @dragstart="onDragStart" @click.stop="onClick">
             <div class="d-flex justify-content-between">
-                <span class="p-1 font-weight-bold">
+                <span class="p-1 font-weight-bold" data-description="content item header info">
                     <b-button v-if="selectable" class="selector p-0" @click.stop="$emit('update:selected', !selected)">
                         <icon v-if="selected" fixed-width size="lg" :icon="['far', 'check-square']" />
                         <icon v-else fixed-width size="lg" :icon="['far', 'square']" />
