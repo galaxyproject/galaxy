@@ -98,6 +98,7 @@ from sqlalchemy.orm import (
     reconstructor,
     registry,
     relationship,
+    validates,
 )
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.orm.decl_api import DeclarativeMeta
@@ -618,6 +619,11 @@ class User(Base, Dictifiable, RepresentById):
         self.purged = False
         self.active = False
         self.username = username
+
+    @validates('username')
+    def validate_username(self, key, username):
+        if not username == ready_name_for_url(username):
+            raise ValueError(f"Username '{username}' contains unsupported characters.")
 
     @property
     def extra_preferences(self):

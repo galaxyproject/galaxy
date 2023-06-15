@@ -1,3 +1,5 @@
+import pytest
+
 from galaxy.auth.providers.alwaysreject import AlwaysReject
 from galaxy.auth.providers.localdb import LocalDB
 from galaxy.model import User
@@ -23,3 +25,15 @@ def test_localdb():
         pass
     else:
         raise Exception("Password policy validation failed")
+
+
+def test_invalid_chars_in_username():
+    with pytest.raises(ValueError) as e:
+        User(email="testmail@somewhere.com", username="tester@")
+    with pytest.raises(ValueError) as e:
+        User(email="testmail@somewhere.com", username="tester+something")
+    with pytest.raises(ValueError) as e:
+        User(email="testmail@somewhere.com", username="tester.something")
+    with pytest.raises(ValueError) as e:
+        User(email="testmail@somewhere.com", username="tester_test")
+    User(email="testmail@somewhere.com", username="tester-test")
