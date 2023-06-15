@@ -114,8 +114,8 @@ Note that there is no ``cached_explicit`` resolver.
 Galaxy can execute tools in containers using ``docker`` or ``singularity``.
 The corresponding container resolvers yield container descriptions suitable
 for the corresponding "executor", i.e., docker (singularity, resp.)
-container resolvers will resolve a container only in compute environments
-with enabled docker (singularity, resp.). Thus, if only compute environments
+container resolvers will resolve a container only in execution environments
+with enabled docker (singularity, resp.). Thus, if only execution environments
 with docker (resp. singularity) are present then singularity (resp. docker)
 container resolvers are ignored (and may be omitted).
 
@@ -202,9 +202,9 @@ in case 2 and case 3 (but see https://github.com/galaxyproject/tools-iuc/pull/52
 
    This becomes relevant (e.g.) for setups specifying either:
 
-   a.  container resolver config(s) only per compute environment (i.e. no global
+   a.  container resolver config(s) only per execution environment (i.e. no global
        container resolver config) or
-   b.  different global and compute environment container resolver config(s)
+   b.  different global and execution environment container resolver config(s)
 
    In case a) the default container config will be used which contains docker
    and singularity container resolvers (see `container_resolvers.yml.sample <https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/config/sample/container_resolvers.yml.sample>`_).
