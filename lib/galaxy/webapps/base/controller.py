@@ -1383,12 +1383,6 @@ class SharableMixin:
         """Display item by username and slug."""
         raise NotImplementedError()
 
-    @web.json
-    @web.require_login("get item name and link")
-    def get_name_and_link_async(self, trans, id=None):
-        """Returns item's name and link."""
-        raise NotImplementedError()
-
     def get_item(self, trans, id):
         """Return item based on id."""
         raise NotImplementedError()

@@ -332,34 +332,8 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             return new_annotation
 
     @web.expose
-    def get_embed_html_async(self, trans, id):
-        """Returns HTML for embedding a workflow in a page."""
-
-        # TODO: user should be able to embed any item he has access to. see display_by_username_and_slug for security code.
-        stored = self.get_stored_workflow(trans, id)
-        if stored:
-            return f"Embedded Workflow '{stored.name}'"
-
-    @web.expose
-    @web.json
     @web.require_login("use Galaxy workflows")
-    def get_name_and_link_async(self, trans, id=None):
-        """Returns workflow's name and link."""
-        stored = self.get_stored_workflow(trans, id)
-        return_dict = {
-            "name": stored.name,
-            "link": url_for(
-                controller="workflow",
-                action="display_by_username_and_slug",
-                username=stored.user.username,
-                slug=stored.slug,
-            ),
-        }
-        return return_dict
-
-    @web.expose
-    @web.require_login("use Galaxy workflows")
-    def gen_image(self, trans, id):
+    def gen_image(self, trans, id, **kwargs):
         stored = self.get_stored_workflow(trans, id, check_ownership=True)
         try:
             svg = self._workflow_to_svg_canvas(trans, stored)
@@ -416,7 +390,9 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             }
 
     @web.json
-    def save_workflow_as(self, trans, workflow_name, workflow_data, workflow_annotation="", from_tool_form=False):
+    def save_workflow_as(
+        self, trans, workflow_name, workflow_data, workflow_annotation="", from_tool_form=False, **kwargs
+    ):
         """
         Creates a new workflow based on Save As command. It is a new workflow, but
         is created with workflow_data already present.
@@ -469,7 +445,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
     @web.expose
     @web.json
     @web.require_login("edit workflows")
-    def editor(self, trans, id=None, workflow_id=None, version=None):
+    def editor(self, trans, id=None, workflow_id=None, version=None, **kwargs):
         """
         Render the main workflow editor interface. The canvas is embedded as
         an iframe (necessary for scrolling to work properly), which is
@@ -556,7 +532,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         return editor_config
 
     @web.json
-    def load_workflow(self, trans, id, version=None):
+    def load_workflow(self, trans, id, version=None, **kwargs):
         """
         Get the latest Workflow for the StoredWorkflow identified by `id` and
         encode it as a json string that can be read by the workflow editor
@@ -568,7 +544,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         return workflow_contents_manager.workflow_to_dict(trans, stored, style="editor", version=version)
 
     @web.json_pretty
-    def for_direct_import(self, trans, id):
+    def for_direct_import(self, trans, id, **kwargs):
         """
         Get the latest Workflow for the StoredWorkflow identified by `id` and
         encode it as a json string that can be imported back into Galaxy
@@ -584,7 +560,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
     def export_to_file(self, trans, id):
         """
         Get the latest Workflow for the StoredWorkflow identified by `id` and
-        encode it as a json string that can be imported back into Galaxy
+        export it to a JSON file that can be imported back into Galaxy.
 
         This has slightly different information than the above. In particular,
         it does not attempt to decode forms and build UIs, it just stores
@@ -616,6 +592,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         workflow_name=None,
         dataset_names=None,
         dataset_collection_names=None,
+        **kwargs,
     ):
         user = trans.get_user()
         history = trans.get_history()
