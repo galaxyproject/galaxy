@@ -300,73 +300,22 @@ class NotificationManager:
         """
         Permanently removes from the database all notifications (and user associations) that have expired.
         """
-        deleted_notifications_count = 0
-        deleted_associations_count = 0
-        execution_options_for_delete = {"synchronize_session": "fetch"}
-        is_not_deleted = and_(
-            UserNotificationAssociation.deleted.is_(False),
-        )
-        has_expired = Notification.expiration_time <= self._now
+        notification_has_expired = Notification.expiration_time <= self._now
 
-        # Find those notification ids that have expired
-        non_expired_notifications_query = (
-            select(Notification.id)
-            .where(has_expired)
-            .where(~Notification.user_notification_associations.any(is_not_deleted))
+        expired_notifications_stmt = select(Notification.id).where(notification_has_expired)
+        delete_stmt = delete(UserNotificationAssociation).where(
+            UserNotificationAssociation.notification_id.in_(expired_notifications_stmt.subquery())
         )
-        non_expired_notification_ids = self.sa_session.execute(non_expired_notifications_query).scalars().fetchall()
+        result = self.sa_session.execute(delete_stmt, execution_options={"synchronize_session": False})
+        deleted_associations_count = result.rowcount
 
-        # Delete all notifications and associations that have expired
-        delete_expired_associations_query = delete(UserNotificationAssociation).where(
-            UserNotificationAssociation.notification_id.in_(non_expired_notification_ids)
-        )
-        result = self.sa_session.execute(
-            delete_expired_associations_query, execution_options=execution_options_for_delete
-        )
-        deleted_associations_count += result.rowcount
+        delete_stmt = delete(Notification).where(notification_has_expired)
+        result = self.sa_session.execute(delete_stmt)
+        deleted_notifications_count = result.rowcount
 
-        delete_expired_notifications_query = delete(Notification).where(
-            Notification.id.in_(non_expired_notification_ids)
-        )
-        result = self.sa_session.execute(
-            delete_expired_notifications_query, execution_options=execution_options_for_delete
-        )
-        deleted_notifications_count += result.rowcount
-
-        # Find those notification ids that have expired
-        expired_notifications_query = (
-            select(Notification.id)
-            .where(has_expired)
-            .where(Notification.user_notification_associations.any(is_not_deleted))
-        )
-        expired_notification_ids = self.sa_session.execute(expired_notifications_query).scalars()
-
-        # Delete those associations that did expire
-        expired_associations_query = select(UserNotificationAssociation).where(
-            UserNotificationAssociation.notification_id.in_(expired_notification_ids)
-        )
-        delete_expired_associations_query = delete(UserNotificationAssociation).where(
-            UserNotificationAssociation.id.in_(
-                select(UserNotificationAssociation.id).select_from(expired_associations_query.subquery())
-            )
-        )
-        result = self.sa_session.execute(
-            delete_expired_associations_query, execution_options=execution_options_for_delete
-        )
-        deleted_associations_count += result.rowcount
-
-        # Delete broadcasted
-        delete_expired_broadcasted_notifications_query = (
-            delete(Notification)
-            .where(has_expired)
-            .where(Notification.category == MandatoryNotificationCategory.broadcast)
-        )
-        result = self.sa_session.execute(
-            delete_expired_broadcasted_notifications_query, execution_options=execution_options_for_delete
-        )
-        deleted_notifications_count += result.rowcount
         with transaction(self.sa_session):
             self.sa_session.commit()
+
         return CleanupResultSummary(deleted_notifications_count, deleted_associations_count)
 
     def _create_notification_model(self, payload: NotificationCreateData):
