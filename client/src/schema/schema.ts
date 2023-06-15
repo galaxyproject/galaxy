@@ -13340,6 +13340,9 @@ export interface operations {
     create_api_tool_data_post: {
         /** Import a data manager bundle */
         parameters?: {
+            query?: {
+                tool_data_file_path?: Record<string, never>;
+            };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
                 "run-as"?: string;
