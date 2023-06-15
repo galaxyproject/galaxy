@@ -25,6 +25,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faColumns, faSignInAlt, faArrowDown } from "@fortawesome/free-solid-svg-icons";
 import { faListAlt } from "@fortawesome/free-regular-svg-icons";
 import { useInfiniteScroll } from "@vueuse/core";
+import isEqual from "lodash.isequal";
 
 const validFilters = {
     name: contains("name"),
@@ -81,10 +82,20 @@ onMounted(async () => {
     await nextTick();
     scrollableDiv.value = document.querySelector(".history-selector-modal-list");
     useInfiniteScroll(scrollableDiv.value, () => loadMore());
-    if (props.multiple) {
-        selectedHistories.value = [...pinnedHistories.value];
-    }
 });
+
+// retain previously selected histories when you reopen the modal in multi view
+watch(
+    () => propShowModal.value,
+    (show) => {
+        if (props.multiple && show) {
+            selectedHistories.value = [...pinnedHistories.value];
+        }
+    },
+    {
+        immediate: true,
+    }
+);
 
 onUnmounted(() => {
     // Remove the infinite scrolling behavior
@@ -196,7 +207,13 @@ async function loadMore(noScroll = false) {
 
 <template>
     <div>
-        <b-modal ref="modal" v-model="propShowModal" class="history-selector-modal" v-bind="$attrs" v-on="$listeners">
+        <b-modal
+            ref="modal"
+            v-model="propShowModal"
+            class="history-selector-modal"
+            v-bind="$attrs"
+            static
+            v-on="$listeners">
             <template v-slot:modal-title>
                 <Heading h2 inline size="sm">{{ localize(title) }}</Heading>
             </template>
@@ -228,7 +245,7 @@ async function loadMore(noScroll = false) {
                                 <b-badge v-b-tooltip pill :title="localize('Amount of items in history')">
                                     {{ history.count }} {{ localize("items") }}
                                 </b-badge>
-                                <b-badge v-b-tooltip pill :title="localize('Last edited')">
+                                <b-badge v-if="history.update_time" v-b-tooltip pill :title="localize('Last edited')">
                                     <UtcDate :date="history.update_time" mode="elapsed" />
                                 </b-badge>
                             </div>
@@ -305,10 +322,10 @@ async function loadMore(noScroll = false) {
                 <b-button
                     v-if="multiple"
                     v-localize
-                    :disabled="selectedHistories.length === 0"
+                    :disabled="selectedHistories.length === 0 || isEqual(selectedHistories, pinnedHistories)"
                     variant="primary"
                     @click="selectHistories">
-                    Add Selected
+                    Change Selected
                 </b-button>
                 <span v-else v-localize> Click a history to switch to it </span>
             </template>

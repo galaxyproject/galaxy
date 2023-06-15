@@ -143,7 +143,7 @@
         </nav>
 
         <SelectorModal
-            v-if="showSwitchModal"
+            v-show="showSwitchModal"
             id="selector-history-modal"
             :histories="histories"
             :additional-options="['center', 'multi']"

@@ -39,6 +39,12 @@ onMounted(async () => {
     loadingPinnedHistories.value = false;
 });
 
+/**
+ * From the incoming list, pin histories that are not already pinned and
+ * unpin histories that are not in the incoming list.
+ * This is a mechanism to allow users to select or deselect histories in modal.
+ * @param histories the incoming list of histories to pin
+ */
 function addHistoriesToList(histories: { id: string }[]) {
     // Unpin histories that are already pinned but not in the incoming list
     const historiesToUnpin = selectedHistories.value.filter(
@@ -94,7 +100,7 @@ function updateFilter(newFilter: string) {
             <span v-localize class="font-weight-bold">No History found.</span>
         </b-alert>
         <SelectorModal
-            v-if="showSelectModal"
+            v-show="showSelectModal"
             :multiple="true"
             :histories="histories"
             :additional-options="['center', 'set-current']"
