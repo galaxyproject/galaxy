@@ -33,18 +33,15 @@ const urlShare = computed(() => `${props.root}pages/sharing?id=${props.page.id}`
 const urlView = computed(() => `${props.root}published/page?id=${props.page.id}`);
 const readOnly = computed(() => props.page.shared || props.published || unref(isAnonymous));
 
-function onDelete() {
-    const confirmationMessage = _l(`Are you sure you want to delete page`) + ` "${props.page.title}"?`;
-    if (window.confirm(confirmationMessage)) {
-        deletePage(props.page.id)
-            .then((response) => {
-                emit("onRemove", props.page.id);
-                emit("onSuccess");
-            })
-            .catch((error) => {
-                emit("onError", error);
-            });
-    }
+function onDelete(page_id: string) {
+    deletePage(page_id)
+        .then((response) => {
+            emit("onRemove", page_id);
+            emit("onSuccess");
+        })
+        .catch((error) => {
+            emit("onError", error);
+        });
 }
 </script>
 <template>
@@ -76,10 +73,21 @@ function onDelete() {
                 <span class="fa fa-share-alt fa-fw mr-1" />
                 <span>Control sharing</span>
             </a>
-            <a v-if="!readOnly" class="dropdown-item dropdown-item-delete" href="#" @click.prevent="onDelete">
+            <a
+                v-if="!readOnly"
+                v-b-modal="`delete-page-modal-${props.page.id}`"
+                class="dropdown-item dropdown-item-delete">
                 <span class="fa fa-trash fa-fw mr-1" />
                 <span>Delete</span>
             </a>
+            <b-modal
+                :id="`delete-page-modal-${props.page.id}`"
+                hide-backdrop
+                title="Confirm page deletion"
+                title-tag="h2"
+                @ok="onDelete(props.page.id)">
+                <p v-localize>Really delete the page titled: "{{ props.page.title }}"?</p>
+            </b-modal>
         </div>
     </div>
 </template>

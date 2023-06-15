@@ -4,9 +4,7 @@ import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 import { PiniaVuePlugin, createPinia } from "pinia";
 import { createTestingPinia } from "@pinia/testing";
-import { mockFetcher } from "@/schema/__mocks__";
 import { useUserStore } from "@/stores/userStore";
-import flushPromises from "flush-promises";
 
 import PageDropdown from "./PageDropdown.vue";
 
@@ -92,66 +90,6 @@ describe("PageDropdown.vue", () => {
 
         it("should have only single option", () => {
             expect(pageOptions().length).toBe(1);
-        });
-    });
-
-    describe("clicking page deletion on owned page", () => {
-        const pinia = createPinia();
-        let confirmRequest: boolean;
-
-        async function mountAndDelete() {
-            const propsData = {
-                root: "/rootprefixdelete/",
-                page: PAGE_DATA_OWNED,
-            };
-            wrapper = shallowMount(PageDropdown, {
-                propsData,
-                localVue,
-                pinia: pinia,
-            });
-            const userStore = useUserStore();
-            userStore.currentUser = { email: "my@email", id: "1", tags_used: [] };
-            wrapper.find(".page-dropdown").trigger("click");
-            await wrapper.vm.$nextTick();
-            wrapper.find(".dropdown-item-delete").trigger("click");
-            await flushPromises();
-        }
-
-        beforeEach(async () => {
-            confirmRequest = true;
-            global.confirm = jest.fn(() => confirmRequest);
-        });
-
-        afterEach(() => {
-            mockFetcher.clearMocks();
-        });
-
-        it("should fire deletion API request upon confirmation", async () => {
-            mockFetcher.path("/api/pages/{id}").method("delete").mock({ status: 204 });
-            await mountAndDelete();
-            const emitted = wrapper.emitted();
-            expect(emitted["onRemove"][0][0]).toEqual("page1235");
-            expect(emitted["onSuccess"]).toBeTruthy();
-        });
-
-        it("should not fire deletion API request if not confirmed", async () => {
-            confirmRequest = false;
-            await mountAndDelete();
-            const emitted = wrapper.emitted();
-            expect(emitted["onRemove"]).toBeFalsy();
-            expect(emitted["onSuccess"]).toBeFalsy();
-        });
-
-        it("should emit an error on API fail", async () => {
-            mockFetcher
-                .path("/api/pages/{id}")
-                .method("delete")
-                .mock(() => {
-                    throw Error("mock error");
-                });
-            await mountAndDelete();
-            const emitted = wrapper.emitted();
-            expect(emitted["onError"]).toBeTruthy();
         });
     });
 });
