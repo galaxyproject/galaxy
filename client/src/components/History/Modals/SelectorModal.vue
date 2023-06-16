@@ -12,7 +12,7 @@ import {
 } from "bootstrap-vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import UtcDate from "@/components/UtcDate.vue";
-import { computed, nextTick, onMounted, onUnmounted, ref, watch, type PropType, type Ref } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch, type PropType, type Ref } from "vue";
 import localize from "@/utils/localization";
 import Heading from "@/components/Common/Heading.vue";
 import type { components } from "@/schema";
@@ -79,7 +79,6 @@ const validFilter = computed(() => filter.value && filter.value.length > 2);
 const allLoaded = computed(() => totalHistoryCount.value <= filtered.value.length);
 
 onMounted(async () => {
-    await nextTick();
     useInfiniteScroll(scrollableDiv.value, () => loadMore());
 });
 
