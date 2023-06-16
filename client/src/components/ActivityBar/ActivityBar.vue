@@ -1,11 +1,11 @@
-<script setup>
-import { storeToRefs } from "pinia";
+<script setup lang="ts">
 import draggable from "vuedraggable";
-import { ref } from "vue";
+import { ref, type Ref } from "vue";
+import { storeToRefs } from "pinia";
 import { useUserStore } from "@/stores/userStore";
-import { useActivityStore } from "@/stores/activityStore";
+import { useActivityStore, type Activity } from "@/stores/activityStore";
 import { useRoute } from "vue-router/composables";
-import { convertDropData } from "@/stores/activitySetup.js";
+import { convertDropData } from "@/stores/activitySetup";
 import { useEventStore } from "@/stores/eventStore";
 import ContextMenu from "@/components/Common/ContextMenu.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
@@ -25,11 +25,13 @@ const eventStore = useEventStore();
 const activityStore = useActivityStore();
 const { isAnonymous } = storeToRefs(userStore);
 
+const emit = defineEmits(["dragstart"]);
+
 // sync built-in activities with cached activities
 activityStore.sync();
 
 // activities from store
-const activities = ref(activityStore.getAll());
+const { activities } = storeToRefs(activityStore);
 
 // context menu references
 const contextMenuVisible = ref(false);
@@ -37,8 +39,8 @@ const contextMenuX = ref(0);
 const contextMenuY = ref(0);
 
 // drag references
-const dragTarget = ref(null);
-const dragItem = ref(null);
+const dragTarget: Ref<EventTarget | null> = ref(null);
+const dragItem: Ref<Activity | null> = ref(null);
 
 // drag state
 const isDragging = ref(false);
@@ -46,57 +48,53 @@ const isDragging = ref(false);
 /**
  * Checks if the route of an activitiy is currently being visited and panels are collapsed
  */
-function isActiveRoute(activityTo) {
+function isActiveRoute(activityTo: string) {
     return route.path === activityTo && isActiveSideBar("");
 }
 
 /**
  * Checks if a panel has been expanded
  */
-function isActiveSideBar(menuKey) {
+function isActiveSideBar(menuKey: string) {
     return userStore.toggledSideBar === menuKey;
-}
-
-/**
- * Triggered by vue-draggable when the list of activities has changed
- */
-function onChange() {
-    activityStore.setAll(activities);
 }
 
 /**
  * Evaluates the drop data and keeps track of the drop area
  */
-function onDragEnter(evt) {
+function onDragEnter(evt: MouseEvent) {
     const eventData = eventStore.getDragData();
     if (eventData) {
         dragTarget.value = evt.target;
         dragItem.value = convertDropData(eventData);
+        emit("dragstart", dragItem.value);
+    } else {
+        dragItem.value = null;
     }
 }
 
 /**
  * Removes the dragged activity when exiting the drop area
  */
-function onDragLeave(evt) {
+function onDragLeave(evt: MouseEvent) {
     if (dragItem.value && dragTarget.value == evt.target) {
         const dragId = dragItem.value.id;
-        const activitiesTemp = activities.value.filter((a) => a.id !== dragId);
-        activities.value = activitiesTemp;
+        activities.value = activities.value.filter((a) => a.id !== dragId);
     }
 }
 
 /**
  * Insert the dragged item into the activities list
  */
-function onDragOver(evt) {
-    const target = evt.target.closest(".activity-item");
+function onDragOver(evt: MouseEvent) {
+    const target = (evt.target as HTMLElement).closest(".activity-item");
     if (target && dragItem.value) {
         const targetId = target.id;
         const targetIndex = activities.value.findIndex((a) => `activity-${a.id}` === targetId);
         if (targetIndex !== -1) {
-            const dragId = dragItem.value.id;
-            if (activities.value[targetIndex].id !== dragId) {
+            const dragId: string = dragItem.value.id;
+            const targetActivity = activities.value[targetIndex];
+            if (targetActivity && targetActivity.id !== dragId) {
                 const activitiesTemp = activities.value.filter((a) => a.id !== dragId);
                 activitiesTemp.splice(targetIndex, 0, dragItem.value);
                 activities.value = activitiesTemp;
@@ -108,14 +106,14 @@ function onDragOver(evt) {
 /**
  * Tracks the state of activities which expand or collapse the sidepanel
  */
-function onToggleSidebar(toggle) {
+function onToggleSidebar(toggle: string) {
     userStore.toggleSideBar(toggle);
 }
 
 /**
  * Positions and displays the context menu
  */
-function toggleContextMenu(evt) {
+function toggleContextMenu(evt: MouseEvent) {
     if (evt && !contextMenuVisible.value) {
         evt.preventDefault();
         contextMenuVisible.value = true;
@@ -128,14 +126,14 @@ function toggleContextMenu(evt) {
 </script>
 
 <template>
-    <div
-        class="d-flex"
-        @contextmenu="toggleContextMenu"
-        @drop.prevent="onChange"
-        @dragover.prevent="onDragOver"
-        @dragenter.prevent="onDragEnter"
-        @dragleave.prevent="onDragLeave">
-        <div class="activity-bar d-flex flex-column no-highlight">
+    <div class="d-flex">
+        <div
+            class="activity-bar d-flex flex-column no-highlight"
+            data-description="activity bar"
+            @contextmenu="toggleContextMenu"
+            @dragover.prevent="onDragOver"
+            @dragenter.prevent="onDragEnter"
+            @dragleave.prevent="onDragLeave">
             <b-nav vertical class="flex-nowrap p-1 h-100 vertical-overflow">
                 <draggable
                     :list="activities"
@@ -144,7 +142,6 @@ function toggleContextMenu(evt) {
                     chosen-class="activity-chosen-class"
                     drag-class="activity-drag-class"
                     ghost-class="activity-chosen-class"
-                    @change="onChange"
                     @start="isDragging = true"
                     @end="isDragging = false">
                     <div v-for="(activity, activityIndex) in activities" :key="activityIndex">
@@ -186,9 +183,11 @@ function toggleContextMenu(evt) {
                 <ActivityItem
                     id="activity-settings"
                     icon="cog"
+                    :is-active="isActiveRoute('/user')"
                     title="Settings"
                     tooltip="Edit preferences"
-                    to="/user" />
+                    to="/user"
+                    @click="onToggleSidebar()" />
             </b-nav>
         </div>
         <FlexPanel v-if="isActiveSideBar('tools')" key="tools" side="left" :collapsible="false">
