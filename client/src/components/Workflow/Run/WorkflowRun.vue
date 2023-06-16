@@ -95,7 +95,7 @@ export default {
         };
     },
     computed: {
-        ...mapState(useHistoryStore, ["currentHistoryId"]),
+        ...mapState(useHistoryStore, ["currentHistoryId", "getHistoryById"]),
         ...mapState(useHistoryItemsStore, ["getLastUpdateTime"]),
         historyStatusKey() {
             return `${this.currentHistoryId}_${this.getLastUpdateTime}`;
@@ -114,6 +114,10 @@ export default {
     methods: {
         handleInvocations(invocations) {
             this.invocations = invocations;
+            // make sure any new histories are added to historyStore
+            this.invocations.forEach((invocation) => {
+                this.getHistoryById(invocation.history_id);
+            });
         },
         handleSubmissionError(error) {
             this.submissionError = errorMessageAsString(error);

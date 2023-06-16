@@ -462,6 +462,21 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         ]
         return rval
 
+    def count(
+        self,
+        trans: ProvidesHistoryContext,
+    ):
+        """
+        Returns number of histories for the current user.
+        """
+        current_user = self.user_manager.current_user(trans)
+        if self.user_manager.is_anonymous(current_user):
+            current_history = self.manager.get_current(trans)
+            if not current_history:
+                return 0
+            return 1
+        return len(current_user.active_histories)
+
     def published(
         self,
         trans: ProvidesHistoryContext,

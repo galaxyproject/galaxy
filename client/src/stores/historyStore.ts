@@ -9,6 +9,7 @@ import {
     deleteHistoryById,
     getCurrentHistoryFromServer,
     getHistoryByIdFromServer,
+    getHistoryCount,
     getHistoryList,
     secureHistoryOnServer,
     setCurrentHistoryOnServer,
@@ -18,10 +19,13 @@ import { useUserLocalStorage } from "@/composables/userLocalStorage";
 
 export type HistorySummary = components["schemas"]["HistorySummary"];
 
+const PAGINATION_LIMIT = 10;
 const isLoadingHistory = new Set();
 
 export const useHistoryStore = defineStore("historyStore", () => {
     const historiesLoading = ref(false);
+    const historiesOffset = ref(0);
+    const totalHistoryCount = ref(0);
     const pinnedHistories = useUserLocalStorage<{ id: string }[]>("history-store-pinned-histories", []);
     const storedCurrentHistoryId = ref<string | null>(null);
     const storedFilterTexts = ref<{ [key: string]: string }>({});
@@ -37,7 +41,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
 
     const currentHistory = computed(() => {
         if (storedCurrentHistoryId.value !== null) {
-            return storedHistories.value[storedCurrentHistoryId.value];
+            return getHistoryById.value(storedCurrentHistoryId.value);
         }
         return null;
     });
@@ -58,15 +62,19 @@ export const useHistoryStore = defineStore("historyStore", () => {
         }
     });
 
+    /** Returns history from storedHistories, will load history if not in store */
     const getHistoryById = computed(() => {
         return (historyId: string) => {
+            if (!storedHistories.value[historyId]) {
+                loadHistoryById(historyId);
+            }
             return storedHistories.value[historyId] ?? null;
         };
     });
 
     const getHistoryNameById = computed(() => {
         return (historyId: string) => {
-            const history = storedHistories.value[historyId];
+            const history = getHistoryById.value(historyId);
             if (history) {
                 return history.name;
             } else {
@@ -121,7 +129,9 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     function pinHistory(historyId: string) {
-        pinnedHistories.value.push({ id: historyId });
+        if (pinnedHistories.value.findIndex((item) => item.id == historyId) == -1) {
+            pinnedHistories.value.push({ id: historyId });
+        }
     }
 
     function unpinHistory(historyId: string) {
@@ -143,11 +153,13 @@ export const useHistoryStore = defineStore("historyStore", () => {
 
     async function copyHistory(history: HistorySummary, name: string, copyAll: boolean) {
         const newHistory = (await cloneHistory(history, name, copyAll)) as HistorySummary;
+        await handleTotalCountChange(1);
         return setCurrentHistory(newHistory.id);
     }
 
     async function createNewHistory() {
         const newHistory = await createAndSelectNewHistory();
+        await handleTotalCountChange(1);
         return selectHistory(newHistory as HistorySummary);
     }
 
@@ -166,6 +178,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
             await createNewHistory();
         }
         Vue.delete(storedHistories.value, deletedHistory.id);
+        await handleTotalCountChange(1, true);
     }
 
     async function loadCurrentHistory() {
@@ -173,27 +186,64 @@ export const useHistoryStore = defineStore("historyStore", () => {
         selectHistory(history as HistorySummary);
     }
 
-    async function loadHistories() {
+    /**
+     * This function handles the cases where a history has been created
+     * or removed (to set pagination offset and fetch updated history count)
+     *
+     * @param count How many histories have been added/removed
+     * @param reduction Whether it is a reduction or addition (default)
+     */
+    async function handleTotalCountChange(count = 0, reduction = false) {
+        historiesOffset.value += !reduction ? count : -count;
+        await loadTotalHistoryCount();
+    }
+
+    async function loadTotalHistoryCount() {
+        await getHistoryCount().then((count) => (totalHistoryCount.value = count));
+    }
+
+    /** TODO:
+     * - not handling filters with pagination for now
+     *   "pausing" pagination at the existing offset if a filter exists
+     */
+    async function loadHistories(paginate = true, queryString?: string) {
         if (!historiesLoading.value) {
             setHistoriesLoading(true);
-            await getHistoryList()
-                .then((histories) => setHistories(histories))
+            let limit: number | null = null;
+            if (!queryString || queryString == "") {
+                if (paginate) {
+                    await loadTotalHistoryCount();
+                    if (historiesOffset.value >= totalHistoryCount.value) {
+                        setHistoriesLoading(false);
+                        return;
+                    }
+                    limit = PAGINATION_LIMIT;
+                } else {
+                    historiesOffset.value = 0;
+                }
+            }
+            const offset = queryString ? 0 : historiesOffset.value;
+            await getHistoryList(offset, limit, queryString)
+                .then(async (histories) => {
+                    setHistories(histories);
+                    if (paginate && !queryString && historiesOffset.value == offset) {
+                        await handleTotalCountChange(histories.length);
+                    }
+                })
                 .catch((error) => console.warn(error))
-                .finally(() => {
-                    setHistoriesLoading(false);
-                });
+                .finally(() => setHistoriesLoading(false));
         }
     }
 
     async function loadHistoryById(historyId: string) {
         if (!isLoadingHistory.has(historyId)) {
+            isLoadingHistory.add(historyId);
             await getHistoryByIdFromServer(historyId)
                 .then((history) => setHistory(history as HistorySummary))
                 .catch((error: Error) => console.warn(error))
                 .finally(() => {
                     isLoadingHistory.delete(historyId);
                 });
-            isLoadingHistory.add(historyId);
         }
     }
 
@@ -233,5 +283,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         secureHistory,
         updateHistory,
         historiesLoading,
+        historiesOffset,
+        totalHistoryCount,
     };
 });

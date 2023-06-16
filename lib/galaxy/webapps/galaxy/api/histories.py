@@ -132,6 +132,16 @@ class FastAPIHistories:
         )
 
     @router.get(
+        "/api/histories/count",
+        summary="Returns number of histories for the current user.",
+    )
+    def count(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> int:
+        return self.service.count(trans)
+
+    @router.get(
         "/api/histories/deleted",
         summary="Returns deleted histories for the current user.",
     )
