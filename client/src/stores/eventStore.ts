@@ -6,7 +6,7 @@
 import { ref, type Ref } from "vue";
 import { defineStore } from "pinia";
 
-type EventData = { [key: string]: unknown };
+export type EventData = { [key: string]: unknown };
 
 export const useEventStore = defineStore("eventStore", () => {
     const dragData: Ref<EventData | null> = ref(null);

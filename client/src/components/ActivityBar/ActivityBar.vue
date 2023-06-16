@@ -1,13 +1,12 @@
-<script setup>
-import { storeToRefs } from "pinia";
+<script setup lang="ts">
 import draggable from "vuedraggable";
-import { ref } from "vue";
+import { ref, type Ref } from "vue";
 import { storeToRefs } from "pinia";
 import { useUserStore } from "@/stores/userStore";
-import { useActivityStore } from "@/stores/activityStore";
+import { useActivityStore, type Activity } from "@/stores/activityStore";
 import { useRoute } from "vue-router/composables";
-import { convertDropData } from "@/stores/activitySetup.js";
-import { useEventStore } from "@/stores/eventStore";
+import { convertDropData } from "@/stores/activitySetup";
+import { useEventStore, type EventData } from "@/stores/eventStore";
 import ContextMenu from "@/components/Common/ContextMenu.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import { useConfig } from "@/composables/config";
@@ -40,8 +39,8 @@ const contextMenuX = ref(0);
 const contextMenuY = ref(0);
 
 // drag references
-const dragTarget = ref(null);
-const dragItem = ref(null);
+const dragTarget: Ref<EventTarget | null> = ref(null);
+const dragItem: Ref<Activity | null> = ref(null);
 
 // drag state
 const isDragging = ref(false);
@@ -49,21 +48,21 @@ const isDragging = ref(false);
 /**
  * Checks if the route of an activitiy is currently being visited and panels are collapsed
  */
-function isActiveRoute(activityTo) {
+function isActiveRoute(activityTo: string) {
     return route.path === activityTo && isActiveSideBar("");
 }
 
 /**
  * Checks if a panel has been expanded
  */
-function isActiveSideBar(menuKey) {
+function isActiveSideBar(menuKey: string) {
     return userStore.toggledSideBar === menuKey;
 }
 
 /**
  * Evaluates the drop data and keeps track of the drop area
  */
-function onDragEnter(evt) {
+function onDragEnter(evt: Event) {
     const eventData = eventStore.getDragData();
     if (eventData) {
         dragTarget.value = evt.target;
@@ -77,23 +76,25 @@ function onDragEnter(evt) {
 /**
  * Removes the dragged activity when exiting the drop area
  */
-function onDragLeave(evt) {
+function onDragLeave(evt: Event) {
     if (dragItem.value && dragTarget.value == evt.target) {
-        activities.value = activities.value.filter((a) => a.id !== dragItem.value.id);
+        const dragId = dragItem.value.id;
+        activities.value = activities.value.filter((a) => a.id !== dragId);
     }
 }
 
 /**
  * Insert the dragged item into the activities list
  */
-function onDragOver(evt) {
-    const target = evt.target.closest(".activity-item");
+function onDragOver(evt: Event) {
+    const target = (evt.target as HTMLElement).closest(".activity-item");
     if (target && dragItem.value) {
         const targetId = target.id;
         const targetIndex = activities.value.findIndex((a) => `activity-${a.id}` === targetId);
         if (targetIndex !== -1) {
-            const dragId = dragItem.value.id;
-            if (activities.value[targetIndex].id !== dragId) {
+            const dragId: string = dragItem.value.id;
+            const targetActivity = activities.value[targetIndex];
+            if (targetActivity && targetActivity.id !== dragId) {
                 const activitiesTemp = activities.value.filter((a) => a.id !== dragId);
                 activitiesTemp.splice(targetIndex, 0, dragItem.value);
                 activities.value = activitiesTemp;
@@ -105,14 +106,14 @@ function onDragOver(evt) {
 /**
  * Tracks the state of activities which expand or collapse the sidepanel
  */
-function onToggleSidebar(toggle) {
+function onToggleSidebar(toggle: string) {
     userStore.toggleSideBar(toggle);
 }
 
 /**
  * Positions and displays the context menu
  */
-function toggleContextMenu(evt) {
+function toggleContextMenu(evt: MouseEvent) {
     if (evt && !contextMenuVisible.value) {
         evt.preventDefault();
         contextMenuVisible.value = true;

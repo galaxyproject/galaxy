@@ -1,6 +1,8 @@
 /**
  * List of built-in activities
  */
+import { type Activity } from "@/stores/activityStore";
+import { type EventData } from "@/stores/eventStore";
 
 export const Activities = [
     {
@@ -82,7 +84,7 @@ export const Activities = [
     },
 ];
 
-export function convertDropData(data) {
+export function convertDropData(data: EventData): Activity | null {
     if (data.history_content_type === "dataset") {
         return {
             description: "Displays this dataset.",
@@ -90,7 +92,7 @@ export function convertDropData(data) {
             id: `dataset-${data.id}`,
             mutable: true,
             optional: true,
-            title: data.name,
+            title: data.name as string,
             tooltip: "View your dataset",
             to: `/datasets/${data.id}/preview`,
             visible: true,
@@ -98,15 +100,16 @@ export function convertDropData(data) {
     }
     if (data.model_class === "StoredWorkflow") {
         return {
-            description: data.description,
+            description: data.description as string,
             icon: "fa-play",
             id: `workflow-${data.id}`,
             mutable: true,
             optional: true,
-            title: data.name,
-            tooltip: data.name,
+            title: data.name as string,
+            tooltip: data.name as string,
             to: `/workflows/run?id=${data.id}`,
             visible: true,
         };
     }
+    return null;
 }
