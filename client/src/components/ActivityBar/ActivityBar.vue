@@ -183,9 +183,11 @@ function toggleContextMenu(evt: MouseEvent) {
                 <ActivityItem
                     id="activity-settings"
                     icon="cog"
+                    :is-active="isActiveRoute('/user')"
                     title="Settings"
                     tooltip="Edit preferences"
-                    to="/user" />
+                    to="/user"
+                    @click="onToggleSidebar()" />
             </b-nav>
         </div>
         <FlexPanel v-if="isActiveSideBar('tools')" key="tools" side="left" :collapsible="false">
