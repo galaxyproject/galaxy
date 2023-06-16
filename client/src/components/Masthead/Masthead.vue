@@ -1,4 +1,5 @@
 <script setup>
+import { storeToRefs } from "pinia";
 import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
 import MastheadItem from "./MastheadItem";
 import { loadWebhookMenuItems } from "./_webhooks";
@@ -7,10 +8,17 @@ import { withPrefix } from "utils/redirect";
 import { getActiveTab } from "./utilities";
 import { watch, ref, reactive } from "vue";
 import { onMounted, onBeforeMount } from "vue";
+import { useConfig } from "@/composables/config";
 import { useRoute } from "vue-router/composables";
+import { useUserStore } from "@/stores/userStore";
 import { useEntryPointStore } from "stores/entryPointStore";
+import NotificationsBell from "@/components/Notifications/NotificationsBell.vue";
+
+const { isAnonymous, showActivityBar } = storeToRefs(useUserStore());
 
 const route = useRoute();
+const { config } = useConfig();
+
 const emit = defineEmits(["open-url"]);
 
 const props = defineProps({
@@ -128,6 +136,11 @@ onMounted(() => {
                 :active-tab="activeTab"
                 @open-url="emit('open-url', $event)" />
             <masthead-item v-if="windowTab" :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
+            <BNavItem
+                v-if="!isAnonymous && config.enable_notification_system && !showActivityBar"
+                id="notifications-bell">
+                <NotificationsBell tooltip-placement="bottom" />
+            </BNavItem>
         </b-navbar-nav>
         <quota-meter />
     </b-navbar>

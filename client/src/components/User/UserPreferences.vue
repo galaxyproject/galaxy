@@ -36,6 +36,12 @@
             description="Access your current API key or create a new one."
             to="/user/api_key" />
         <user-preferences-element
+            id="edit-preferences-notifications"
+            icon="fa-bell"
+            title="Manage Notifications"
+            description="Manage your notification settings."
+            to="/user/notifications/preferences" />
+        <user-preferences-element
             id="edit-preferences-cloud-auth"
             icon="fa-cloud"
             title="Manage Cloud Authorization"
@@ -77,12 +83,6 @@
                 <ThemeSelector />
             </b-collapse>
         </user-preferences-element>
-        <user-preferences-element
-            id="edit-preferences-notifications"
-            icon="fa-plus-square-o"
-            title="Enable notifications"
-            description="Allow push and tab notifcations on job completion. To disable, revoke the site notification privilege in your browser."
-            @click="toggleNotifications" />
         <ConfigProvider v-slot="{ config }">
             <user-preferences-element
                 v-if="!config.single_user"
@@ -205,22 +205,6 @@ export default {
         });
     },
     methods: {
-        toggleNotifications() {
-            if (window.Notification) {
-                Notification.requestPermission().then(function (permission) {
-                    //If the user accepts, let's create a notification
-                    if (permission === "granted") {
-                        new Notification("Notifications enabled", {
-                            icon: "static/favicon.ico",
-                        });
-                    } else {
-                        alert("Notifications disabled, please re-enable through browser settings.");
-                    }
-                });
-            } else {
-                alert("Notifications are not supported by this browser.");
-            }
-        },
         makeDataPrivate() {
             const Galaxy = getGalaxyInstance();
             if (

@@ -5138,4 +5138,35 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_notification_system``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enables the Notification System integrated in Galaxy.
+    Users can receive automatic notifications when a certain resource
+    is shared with them or when some long running operations have
+    finished, etc.
+    The system allows notification scheduling and expiration, and
+    users can opt-out of specific notification categories or channels.
+    Admins can schedule and broadcast notifications that will be
+    visible to all users, including special server-wide announcements
+    such as scheduled maintenance, high load warnings, and event
+    announcements, to name a few examples.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``expired_notifications_cleanup_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The interval in seconds between attempts to delete all expired
+    notifications from the database (every 24 hours by default). Runs
+    in a Celery task.
+:Default: ``86400``
+:Type: int
+
+
 

@@ -736,6 +736,7 @@ class User(Base, Dictifiable, RepresentById):
     stored_workflows = relationship(
         "StoredWorkflow", back_populates="user", primaryjoin=(lambda: User.id == StoredWorkflow.user_id)  # type: ignore[has-type]
     )
+    all_notifications = relationship("UserNotificationAssociation", back_populates="user")
     non_private_roles = relationship(
         "UserRoleAssociation",
         viewonly=True,
@@ -2714,6 +2715,54 @@ class UserGroupAssociation(Base, RepresentById):
         add_object_to_object_session(self, user)
         self.user = user
         self.group = group
+
+
+class Notification(Base, Dictifiable, RepresentById):
+    __tablename__ = "notification"
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    publication_time = Column(
+        DateTime, default=now
+    )  # The date of publication, can be a future date to allow scheduling
+    expiration_time = Column(
+        DateTime, default=now() + timedelta(days=30 * 6)
+    )  # The expiration date, expired notifications will be permanently removed from DB regularly
+    source = Column(String(32), index=True)  # Who (or what) generated the notification
+    category = Column(
+        String(64), index=True
+    )  # Category of the notification, defines its contents. Used for filtering, un/subscribing, etc
+    variant = Column(
+        String(16), index=True
+    )  # Defines the 'importance' of the notification ('info', 'warning', 'urgent', etc.). Used for filtering, highlight rendering, etc
+    content = Column(JSONType)  # Structured content in JSON. Depending on the category of the notification
+
+    user_notification_associations = relationship("UserNotificationAssociation", back_populates="notification")
+
+    def __init__(self, source: str, category: str, variant: str, content):
+        self.source = source
+        self.category = category
+        self.variant = variant
+        self.content = content
+
+
+class UserNotificationAssociation(Base, RepresentById):
+    __tablename__ = "user_notification_association"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("galaxy_user.id"), index=True)
+    notification_id = Column(Integer, ForeignKey("notification.id"), index=True)
+    seen_time = Column(DateTime, nullable=True)
+    deleted = Column(Boolean, index=True, default=False)
+    update_time = Column(DateTime, default=now, onupdate=now)
+
+    user = relationship("User", back_populates="all_notifications")
+    notification = relationship("Notification", back_populates="user_notification_associations")
+
+    def __init__(self, user, notification):
+        self.user = user
+        self.notification = notification
 
 
 def is_hda(d):

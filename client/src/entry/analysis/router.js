@@ -37,6 +37,7 @@ import HistoryPublished from "components/History/HistoryPublished";
 import HistoryPublishedList from "components/History/HistoryPublishedList";
 import HistoryInvocations from "components/Workflow/HistoryInvocations";
 import HistoryMultipleView from "components/History/Multiple/MultipleView";
+import NotificationsList from "components/Notifications/NotificationsList.vue";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools";
 import InvocationReport from "components/Workflow/InvocationReport";
 import JobDetails from "components/JobInformation/JobDetails";
@@ -62,6 +63,7 @@ import WorkflowImport from "components/Workflow/WorkflowImport";
 import WorkflowList from "components/Workflow/WorkflowList";
 import WorkflowPublished from "components/Workflow/WorkflowPublished";
 import { APIKey } from "components/User/APIKey";
+import { NotificationsPreferences } from "components/User/Notifications";
 import { CloudAuth } from "components/User/CloudAuth";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
 import { HistoryExport } from "components/HistoryExport/index";
@@ -85,6 +87,12 @@ function redirectLoggedIn() {
     const Galaxy = getGalaxyInstance();
     if (Galaxy.user.id) {
         return "/";
+    }
+}
+
+function redirectIf(condition, path) {
+    if (condition) {
+        return path;
     }
 }
 
@@ -379,6 +387,16 @@ export function getRouter(Galaxy) {
                     {
                         path: "user/external_ids",
                         component: ExternalIdentities,
+                        redirect: redirectAnon(),
+                    },
+                    {
+                        path: "user/notifications",
+                        component: NotificationsList,
+                        redirect: redirectIf(!Galaxy.config.enable_notification_system, "/") || redirectAnon(),
+                    },
+                    {
+                        path: "user/notifications/preferences",
+                        component: NotificationsPreferences,
                         redirect: redirectAnon(),
                     },
                     {
