@@ -107,10 +107,6 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
         self.home()
         self.history_panel_create_new_with_name(name)
 
-    def publish_current_history(self):
-        self.click_history_option_sharing()
-        self.make_accessible_and_publishable()
-
     def _login(self):
         self.home()
         self.submit_login(self.user1_email, retries=3)
@@ -135,12 +131,12 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
 
         self.create_history(self.history1_name)
         self.history_panel_add_tags(self.history1_tags)
-        self.publish_current_history()
+        self.current_history_publish()
 
         self.create_history(self.history3_name)
         self.history_panel_add_tags(self.history3_tags)
         self.set_history_annotation(self.history3_annot)
-        self.publish_current_history()
+        self.current_history_publish()
 
         self.logout_if_needed()
 
@@ -148,4 +144,4 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
 
         self.create_history(self.history2_name)
         self.history_panel_add_tags(self.history2_tags)
-        self.publish_current_history()
+        self.current_history_publish()
