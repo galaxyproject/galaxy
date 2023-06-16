@@ -1493,6 +1493,7 @@ class NavigatesGalaxy(HasDriver):
         self.tool_set_value("slug", slug)
         self.screenshot_if(screenshot_name)
         self.components.pages.submit.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
         return name
 
     def tool_parameter_div(self, expanded_parameter_id):
