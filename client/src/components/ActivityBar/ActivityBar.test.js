@@ -4,7 +4,14 @@ import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 import { useActivityStore } from "@/stores/activityStore";
 import { useEventStore } from "@/stores/eventStore";
+import { useConfig } from "@/composables/config";
 import mountTarget from "./ActivityBar.vue";
+
+jest.mock("composables/config");
+useConfig.mockReturnValue({
+    config: {},
+    isLoaded: true,
+});
 
 jest.mock("vue-router/composables", () => ({
     useRoute: jest.fn(() => ({})),
