@@ -416,7 +416,7 @@ class JobSearch:
                     c = aliased(model.HistoryDatasetAssociation)
                     d = aliased(model.JobParameter)
                     e = aliased(model.HistoryDatasetAssociationHistory)
-                    stmt = select([model.HistoryDatasetAssociation.id]).where(
+                    stmt = select(model.HistoryDatasetAssociation.id).where(
                         model.HistoryDatasetAssociation.id == e.history_dataset_association_id
                     )
                     name_condition = []
@@ -789,7 +789,7 @@ def summarize_jobs_to_dict(sa_session, jobs_source):
                 model.ImplicitCollectionJobsJobAssociation.table.join(model.Job)
             )
             statement = (
-                select([model.Job.state, func.count("*")])
+                select(model.Job.state, func.count("*"))
                 .select_from(join)
                 .where(model.ImplicitCollectionJobs.id == jobs_source.id)
                 .group_by(model.Job.state)

@@ -857,7 +857,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
         q_time.stop()
         query1time = q_time.time_elapsed()
 
-        users = sa.select([model.User.table.c.email], from_obj=[model.User.table])
+        users = sa.select(model.User.table.c.email).select_from(model.User.table)
 
         all_jobs_per_user = sa.select(
             (

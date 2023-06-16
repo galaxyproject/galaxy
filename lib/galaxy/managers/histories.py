@@ -417,7 +417,7 @@ class HistoryStorageCleanerManager(StorageCleanerManager):
         }
 
     def get_discarded_summary(self, user: model.User) -> CleanableItemsSummary:
-        stmt = select([func.sum(model.History.disk_size), func.count(model.History.id)]).where(
+        stmt = select(func.sum(model.History.disk_size), func.count(model.History.id)).where(
             model.History.user_id == user.id,
             model.History.deleted == true(),
             model.History.purged == false(),
