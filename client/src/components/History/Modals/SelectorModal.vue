@@ -80,7 +80,6 @@ const allLoaded = computed(() => totalHistoryCount.value <= filtered.value.lengt
 
 onMounted(async () => {
     await nextTick();
-    scrollableDiv.value = document.querySelector(".history-selector-modal-list");
     useInfiniteScroll(scrollableDiv.value, () => loadMore());
 });
 
@@ -225,7 +224,7 @@ async function loadMore(noScroll = false) {
             <b-badge v-if="filter && !validFilter" class="alert-danger w-100">Search string too short!</b-badge>
             <b-alert v-else-if="!busy && hasNoResults" variant="danger" show>No histories found.</b-alert>
 
-            <div class="history-selector-modal-list">
+            <div ref="scrollableDiv" class="history-selector-modal-list">
                 <b-list-group>
                     <b-list-group-item
                         v-for="history in filtered"
