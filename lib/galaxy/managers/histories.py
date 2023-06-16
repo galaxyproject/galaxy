@@ -373,9 +373,11 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
 
         **Important**: The caller is responsible for passing a valid `archive_export_id` that belongs to the given history.
         """
-        with self.session().begin():
-            history.archived = True
-            history.archive_export_id = archive_export_id
+        history.archived = True
+        history.archive_export_id = archive_export_id
+        with transaction(self.session()):
+            self.session().commit()
+
         return history
 
     def restore_archived_history(self, history: model.History, force: bool = False):
@@ -394,8 +396,11 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
                 "Please try importing it back as a new copy from the associated archive export record instead. "
                 "You can still force the un-archiving of the purged history by setting the 'force' parameter."
             )
-        with self.session().begin():
-            history.archived = False
+
+        history.archived = False
+        with transaction(self.session()):
+            self.session().commit()
+
         return history
 
 
