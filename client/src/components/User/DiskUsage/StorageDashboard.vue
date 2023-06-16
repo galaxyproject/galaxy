@@ -48,6 +48,7 @@ function goToHistoriesOverview() {
         <disk-usage-summary class="m-3" />
         <icon-card
             class="mx-auto mb-3"
+            data-description="free space card"
             :title="texts.freeSpace.title"
             :description="texts.freeSpace.description"
             :icon="texts.freeSpace.icon"
@@ -56,6 +57,7 @@ function goToHistoriesOverview() {
 
         <icon-card
             class="mx-auto mb-3"
+            data-description="explore usage card"
             :title="texts.explore.title"
             :description="texts.explore.description"
             :icon="texts.explore.icon"
