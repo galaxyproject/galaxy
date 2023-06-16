@@ -6,7 +6,7 @@ import { useUserStore } from "@/stores/userStore";
 import { useActivityStore, type Activity } from "@/stores/activityStore";
 import { useRoute } from "vue-router/composables";
 import { convertDropData } from "@/stores/activitySetup";
-import { useEventStore, type EventData } from "@/stores/eventStore";
+import { useEventStore } from "@/stores/eventStore";
 import ContextMenu from "@/components/Common/ContextMenu.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import { useConfig } from "@/composables/config";
@@ -62,7 +62,7 @@ function isActiveSideBar(menuKey: string) {
 /**
  * Evaluates the drop data and keeps track of the drop area
  */
-function onDragEnter(evt: Event) {
+function onDragEnter(evt: MouseEvent) {
     const eventData = eventStore.getDragData();
     if (eventData) {
         dragTarget.value = evt.target;
@@ -76,7 +76,7 @@ function onDragEnter(evt: Event) {
 /**
  * Removes the dragged activity when exiting the drop area
  */
-function onDragLeave(evt: Event) {
+function onDragLeave(evt: MouseEvent) {
     if (dragItem.value && dragTarget.value == evt.target) {
         const dragId = dragItem.value.id;
         activities.value = activities.value.filter((a) => a.id !== dragId);
@@ -86,7 +86,7 @@ function onDragLeave(evt: Event) {
 /**
  * Insert the dragged item into the activities list
  */
-function onDragOver(evt: Event) {
+function onDragOver(evt: MouseEvent) {
     const target = (evt.target as HTMLElement).closest(".activity-item");
     if (target && dragItem.value) {
         const targetId = target.id;
