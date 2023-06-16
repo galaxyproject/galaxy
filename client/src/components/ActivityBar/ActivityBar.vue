@@ -26,6 +26,8 @@ const eventStore = useEventStore();
 const activityStore = useActivityStore();
 const { isAnonymous } = storeToRefs(userStore);
 
+const emit = defineEmits(["dragstart"]);
+
 // sync built-in activities with cached activities
 activityStore.sync();
 
@@ -66,6 +68,7 @@ function onDragEnter(evt) {
     if (eventData) {
         dragTarget.value = evt.target;
         dragItem.value = convertDropData(eventData);
+        emit("dragstart", dragItem.value);
     } else {
         dragItem.value = null;
     }
@@ -125,6 +128,7 @@ function toggleContextMenu(evt) {
     <div class="d-flex">
         <div
             class="activity-bar d-flex flex-column no-highlight"
+            data-description="activity bar"
             @contextmenu="toggleContextMenu"
             @dragover.prevent="onDragOver"
             @dragenter.prevent="onDragEnter"
