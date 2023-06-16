@@ -317,6 +317,7 @@ class Meryldb(CompressedArchive):
             log.warning("%s, sniff Exception: %s", self, e)
         return False
 
+
 class Visium(CompressedArchive):
     """Visium is a tar.gz archive with at least a 'Spatial' subfolder, a filtered h5 file and a raw h5 file."""
 
@@ -324,9 +325,9 @@ class Visium(CompressedArchive):
 
     def sniff(self, filename: str) -> bool:
         """
-            Check data structure:
-            Contains h5 files
-            Contains spatial folder
+        Check data structure:
+        Contains h5 files
+        Contains spatial folder
         """
         try:
             if filename and tarfile.is_tarfile(filename):
