@@ -2,6 +2,7 @@
 import { storeToRefs } from "pinia";
 import draggable from "vuedraggable";
 import { ref } from "vue";
+import { storeToRefs } from "pinia";
 import { useUserStore } from "@/stores/userStore";
 import { useActivityStore } from "@/stores/activityStore";
 import { useRoute } from "vue-router/composables";
@@ -29,7 +30,7 @@ const { isAnonymous } = storeToRefs(userStore);
 activityStore.sync();
 
 // activities from store
-const activities = ref(activityStore.getAll());
+const { activities } = storeToRefs(activityStore);
 
 // context menu references
 const contextMenuVisible = ref(false);
@@ -55,13 +56,6 @@ function isActiveRoute(activityTo) {
  */
 function isActiveSideBar(menuKey) {
     return userStore.toggledSideBar === menuKey;
-}
-
-/**
- * Triggered by vue-draggable when the list of activities has changed or an item has been dropped
- */
-function onChange() {
-    activityStore.setAll(activities);
 }
 
 /**
@@ -132,7 +126,6 @@ function toggleContextMenu(evt) {
         <div
             class="activity-bar d-flex flex-column no-highlight"
             @contextmenu="toggleContextMenu"
-            @drop.prevent="onChange"
             @dragover.prevent="onDragOver"
             @dragenter.prevent="onDragEnter"
             @dragleave.prevent="onDragLeave">
@@ -144,7 +137,6 @@ function toggleContextMenu(evt) {
                     chosen-class="activity-chosen-class"
                     drag-class="activity-drag-class"
                     ghost-class="activity-chosen-class"
-                    @change="onChange"
                     @start="isDragging = true"
                     @end="isDragging = false">
                     <div v-for="(activity, activityIndex) in activities" :key="activityIndex">
