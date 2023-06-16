@@ -1049,6 +1049,13 @@ class NavigatesGalaxy(HasDriver):
         text_area_elem.clear()
         text_area_elem.send_keys(json)
 
+    def workflow_editor_set_license(self, license: str) -> None:
+        editor = self.components.workflow_editor
+        editor.edit_license_link.wait_for_and_click()
+        select = editor.license_select.wait_for_select()
+        select.select_by_value(license)
+        editor.license_save.wait_for_and_click()
+
     def workflow_editor_click_option(self, option_label):
         self.workflow_editor_click_options()
         menu_element = self.workflow_editor_options_menu_element()

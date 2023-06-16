@@ -93,6 +93,22 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
         self.assert_wf_name_is(name)
 
     @selenium_test
+    def test_edit_license(self):
+        editor = self.components.workflow_editor
+        name = self.workflow_create_new()
+        editor.canvas_body.wait_for_visible()
+        editor.license_selector.wait_for_visible()
+        editor.license_selector.assert_no_axe_violations_with_impact_of_at_least("serious")
+        editor.license_selector.assert_data_value("license", "null")
+
+        self.workflow_editor_set_license("MIT")
+        self.workflow_editor_click_save()
+
+        self.workflow_index_open_with_name(name)
+        editor.license_selector.wait_for_visible()
+        editor.license_selector.assert_data_value("license", "MIT")
+
+    @selenium_test
     def test_optional_select_data_field(self):
         editor = self.components.workflow_editor
         workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SELECT_FROM_OPTIONAL_DATASET)
