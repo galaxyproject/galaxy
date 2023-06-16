@@ -1,17 +1,26 @@
 <template>
     <div v-if="currentUser && history" class="d-flex flex-column h-100">
-        <b-alert v-if="history.purged" variant="info" show>This history has been purged.</b-alert>
-        <div v-else class="flex-row flex-grow-0">
+        <b-alert v-if="history.purged" variant="info" show data-description="history is purged">
+            This history has been purged.
+        </b-alert>
+        <div v-else class="flex-row flex-grow-0 pb-3">
             <b-button
                 v-if="currentUser.id == history.user_id"
                 size="sm"
                 variant="outline-info"
                 title="Switch to this history"
-                :disabled="currentHistory.id == history.id"
+                :disabled="currentHistory?.id == history?.id"
+                data-description="switch to history button"
                 @click="setCurrentHistory(history.id)">
                 Switch to this history
             </b-button>
-            <b-button v-else v-b-modal:copy-history-modal size="sm" variant="outline-info" title="Import this history">
+            <b-button
+                v-else
+                v-b-modal:copy-history-modal
+                size="sm"
+                variant="outline-info"
+                title="Import this history"
+                data-description="import history button">
                 Import this history
             </b-button>
         </div>
@@ -26,6 +35,7 @@
             :history="history"
             :writable="currentUser.id == history.user_id"
             :show-controls="false"
+            filterable
             @view-collection="onViewCollection" />
         <CopyModal id="copy-history-modal" :history="history" />
     </div>

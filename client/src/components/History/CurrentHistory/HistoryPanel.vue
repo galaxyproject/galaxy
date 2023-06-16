@@ -28,7 +28,7 @@
                 @dragleave.prevent="onDragLeave">
                 <slot name="navigation" :history="history" />
                 <HistoryFilters
-                    v-if="showControls"
+                    v-if="filterable"
                     class="content-operations-filters mx-3"
                     :filter-text.sync="filterText"
                     :show-advanced.sync="showAdvanced"
