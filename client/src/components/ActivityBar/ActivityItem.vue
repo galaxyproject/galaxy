@@ -71,7 +71,7 @@ function onClick(evt: MouseEvent): void {
                     </span>
                     <span class="position-relative">
                         <div class="nav-icon">
-                            <span v-if="indicator" class="indicator" />
+                            <span v-if="indicator" class="nav-indicator" />
                             <FontAwesomeIcon :icon="icon" />
                         </div>
                         <TextShort v-if="title" :text="title" class="nav-title" />
@@ -101,6 +101,16 @@ function onClick(evt: MouseEvent): void {
     font-size: 1rem;
 }
 
+.nav-indicator {
+    position: absolute;
+    top: 0px;
+    left: 2.2rem;
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    background: $brand-danger;
+}
+
 .nav-item {
     display: flex;
     align-items: center;
@@ -127,16 +137,6 @@ function onClick(evt: MouseEvent): void {
     width: 4rem;
     margin-top: 0.5rem;
     font-size: 0.7rem;
-}
-
-.indicator {
-    position: absolute;
-    top: -0.2rem;
-    right: -0.1rem;
-    width: 0.6rem;
-    height: 0.6rem;
-    border-radius: 50%;
-    background: $brand-danger;
 }
 
 .progress {

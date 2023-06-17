@@ -21,7 +21,9 @@ const emit = defineEmits<{
 }>();
 
 const tooltip = computed(() =>
-    totalUnreadCount ? `You have ${totalUnreadCount} unread notifications` : "You have no unread notifications"
+    totalUnreadCount.value > 0
+        ? `You have ${totalUnreadCount.value} unread notifications`
+        : "You have no unread notifications"
 );
 </script>
 
