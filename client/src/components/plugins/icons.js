@@ -2,6 +2,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import {
     faArrowUp,
+    faBell,
     faBolt,
     faBurn,
     faChartArea,
@@ -51,6 +52,7 @@ import {
 
 library.add(
     faArrowUp,
+    faBell,
     faBolt,
     faBurn,
     faChartArea,

@@ -14,8 +14,8 @@ interface Option {
 export interface Props {
     id: string;
     title?: string;
-    indicator?: boolean;
     icon?: string | object;
+    indicator?: boolean;
     isActive?: boolean;
     tooltip?: string;
     tooltipPlacement?: string;
@@ -28,6 +28,7 @@ export interface Props {
 const props = withDefaults(defineProps<Props>(), {
     title: undefined,
     icon: "question",
+    indicator: false,
     isActive: false,
     options: undefined,
     progressPercentage: 0,
@@ -70,7 +71,7 @@ function onClick(evt: MouseEvent): void {
                     </span>
                     <span class="position-relative">
                         <div class="nav-icon">
-                            <span v-if="indicator" class="indicator"> </span>
+                            <span v-if="indicator" class="nav-indicator" />
                             <FontAwesomeIcon :icon="icon" />
                         </div>
                         <TextShort v-if="title" :text="title" class="nav-title" />
@@ -98,6 +99,16 @@ function onClick(evt: MouseEvent): void {
 .nav-icon {
     @extend .nav-item;
     font-size: 1rem;
+}
+
+.nav-indicator {
+    position: absolute;
+    top: 0px;
+    left: 2.2rem;
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    background: $brand-danger;
 }
 
 .nav-item {
