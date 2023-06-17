@@ -179,7 +179,15 @@ function toggleContextMenu(evt: MouseEvent) {
                 </draggable>
             </b-nav>
             <b-nav vertical class="flex-nowrap p-1">
-                <NotificationItem v-if="!isAnonymous && config.enable_notification_system" tooltip-placement="right" />
+                <NotificationItem
+                    v-if="!isAnonymous && config.enable_notification_system"
+                    id="activity-notifications"
+                    icon="bell"
+                    :is-active="isActiveRoute('/user/notifications')"
+                    title="Notifications"
+                    tooltip="Show notifications"
+                    to="/user/notifications"
+                    @click="onToggleSidebar()" />
                 <ActivityItem
                     id="activity-settings"
                     icon="cog"
