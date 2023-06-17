@@ -71,8 +71,7 @@ function onClick(evt: MouseEvent): void {
                     </span>
                     <span class="position-relative">
                         <div class="nav-icon">
-                            <span v-if="indicator > 9" class="nav-indicator">9+</span>
-                            <span v-else-if="indicator > 0" class="nav-indicator">{{ indicator }}</span>
+                            <span v-if="indicator > 0" class="nav-indicator">{{ Math.min(indicator, 99) }}</span>
                             <FontAwesomeIcon :icon="icon" />
                         </div>
                         <TextShort v-if="title" :text="title" class="nav-title" />
