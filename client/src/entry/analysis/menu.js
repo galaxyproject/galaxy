@@ -237,6 +237,12 @@ export function fetchMenu(options = {}) {
                 url: "/interactivetool_entry_points/list",
             });
         }
+        if (Galaxy.config.enable_notification_system) {
+            userTab.menu.push({
+                title: _l("Notifications"),
+                url: "/user/notifications",
+            });
+        }
         userTab.menu.push({ divider: true });
         userTab.menu.push({
             title: _l("Sign Out"),

@@ -108,11 +108,33 @@ export async function setCurrentHistoryOnServer(historyId) {
 
 /**
  * Get list of histories from server and return them.
+ * @param {Number} offset to start from (default = 0)
+ * @param {Number | null} limit of histories to load (default = null; in which case no limit)
+ * @param {String} queryString to append to url in the form `q=filter&qv=val&q=...`
  * @return {Promise.<Array>} list of histories
  */
-export async function getHistoryList() {
-    const url = "api/histories";
-    const response = await axios.get(prependPath(url), { params: stdHistoryParams });
+export async function getHistoryList(offset = 0, limit = null, queryString = "") {
+    const params = `view=summary&order=update_time&offset=${offset}`;
+    let url = `api/histories?${params}`;
+    if (limit !== null) {
+        url += `&limit=${limit}`;
+    }
+    if (queryString !== "") {
+        url += `&${queryString}`;
+    }
+    const response = await axios.get(prependPath(url));
+    return doResponse(response);
+}
+
+/**
+ * Get number of histories for current user from server and return them.
+ * @return {Promise.<Number>} number of histories
+ */
+export async function getHistoryCount() {
+    // This url is temp. for this PR, waiting on:
+    // https://github.com/galaxyproject/galaxy/pull/16075
+    const url = "api/histories/count";
+    const response = await axios.get(prependPath(url));
     return doResponse(response);
 }
 

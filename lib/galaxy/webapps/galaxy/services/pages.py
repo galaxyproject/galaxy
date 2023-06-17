@@ -8,6 +8,7 @@ from galaxy.managers.markdown_util import (
     internal_galaxy_markdown_to_pdf,
     to_basic_markdown,
 )
+from galaxy.managers.notification import NotificationManager
 from galaxy.managers.pages import (
     PageManager,
     PageSerializer,
@@ -50,11 +51,12 @@ class PagesService(ServiceBase):
         manager: PageManager,
         serializer: PageSerializer,
         short_term_storage_allocator: ShortTermStorageAllocator,
+        notification_manager: NotificationManager,
     ):
         super().__init__(security)
         self.manager = manager
         self.serializer = serializer
-        self.shareable_service = ShareableService(self.manager, self.serializer)
+        self.shareable_service = ShareableService(self.manager, self.serializer, notification_manager)
         self.short_term_storage_allocator = short_term_storage_allocator
 
     def index(

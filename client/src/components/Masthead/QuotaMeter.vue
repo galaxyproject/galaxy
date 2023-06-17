@@ -1,12 +1,24 @@
 <template>
     <div>
         <div v-if="!hasQuota" class="quota-text d-flex align-items-center">
-            <b-link v-b-tooltip.hover.left to="/storage" :disabled="isAnonymous" class="ml-auto" :title="title">
+            <b-link
+                v-b-tooltip.hover.left
+                to="/storage"
+                :disabled="isAnonymous"
+                class="ml-auto"
+                :title="title"
+                data-description="storage dashboard link">
                 {{ usingString + " " + totalUsageString }}
             </b-link>
         </div>
         <div v-else class="quota-meter d-flex align-items-center">
-            <b-link v-b-tooltip.hover.left class="quota-progress" :disabled="isAnonymous" to="/storage" :title="title">
+            <b-link
+                v-b-tooltip.hover.left
+                class="quota-progress"
+                :disabled="isAnonymous"
+                to="/storage"
+                :title="title"
+                data-description="storage dashboard link">
                 <b-progress :max="100">
                     <b-progress-bar aria-label="Quota usage" :value="usage" :variant="variant" />
                 </b-progress>

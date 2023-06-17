@@ -426,26 +426,8 @@ class VisualizationController(
         return
 
     @web.expose
-    @web.require_login("use Galaxy visualizations")
-    def set_accessible_async(self, trans, id=None, accessible=False):
-        """Set visualization's importable attribute and slug."""
-        visualization = self.get_visualization(trans, id)
-
-        # Only set if importable value would change; this prevents a change in the update_time unless attribute really changed.
-        importable = accessible in ["True", "true", "t", "T"]
-        if visualization and visualization.importable != importable:
-            if importable:
-                self._make_item_accessible(trans.sa_session, visualization)
-            else:
-                visualization.importable = importable
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
-
-        return
-
-    @web.expose
     @web.require_login("share Galaxy visualizations")
-    def imp(self, trans, id):
+    def imp(self, trans, id, **kwargs):
         """Import a visualization into user's workspace."""
         # Set referer message.
         referer = trans.request.referer
@@ -515,29 +497,8 @@ class VisualizationController(
             )
         )
 
-    @web.expose
     @web.json
-    @web.require_login("get item name and link")
-    def get_name_and_link_async(self, trans, id=None):
-        """Returns visualization's name and link."""
-        visualization = self.get_visualization(trans, id, check_ownership=False, check_accessible=True)
-
-        if self.slug_builder.create_item_slug(trans.sa_session, visualization):
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
-        return_dict = {
-            "name": visualization.title,
-            "link": web.url_for(
-                controller="visualization",
-                action="display_by_username_and_slug",
-                username=visualization.user.username,
-                slug=visualization.slug,
-            ),
-        }
-        return return_dict
-
-    @web.json
-    def save(self, trans, vis_json=None, type=None, id=None, title=None, dbkey=None, annotation=None):
+    def save(self, trans, vis_json=None, type=None, id=None, title=None, dbkey=None, annotation=None, **kwargs):
         """
         Save a visualization; if visualization does not have an ID, a new
         visualization is created. Returns JSON of visualization.
@@ -773,7 +734,7 @@ class VisualizationController(
         return trans.fill_template("visualization/trackster.mako", config={"app": app, "bundle": "extended"})
 
     @web.expose
-    def circster(self, trans, id=None, hda_ldda=None, dataset_id=None, dbkey=None):
+    def circster(self, trans, id=None, hda_ldda=None, dataset_id=None, dbkey=None, **kwargs):
         """
         Display a circster visualization.
         """
@@ -834,7 +795,7 @@ class VisualizationController(
         return trans.fill_template("visualization/trackster.mako", config={"app": app, "bundle": "extended"})
 
     @web.expose
-    def sweepster(self, trans, id=None, hda_ldda=None, dataset_id=None, regions=None):
+    def sweepster(self, trans, id=None, hda_ldda=None, dataset_id=None, regions=None, **kwargs):
         """
         Displays a sweepster visualization using the incoming parameters. If id is available,
         get the visualization with the given id; otherwise, create a new visualization using

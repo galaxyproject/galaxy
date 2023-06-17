@@ -182,6 +182,16 @@ class NavigatesGalaxy(HasDriver):
     def build_url(self, url: str, for_selenium: bool = True) -> str:
         """Build URL to the target Galaxy."""
 
+    @abstractmethod
+    def screenshot(self, label: str) -> None:
+        """Take a screenshot of the current browser with the specified label."""
+
+    def screenshot_if(self, label: Optional[str]) -> Optional[str]:
+        target = None
+        if label:
+            target = self.screenshot(label)
+        return target
+
     default_password = DEFAULT_PASSWORD
     wait_types = WAIT_TYPES
     # set to True to reload each invocation (good for interactive test building)
@@ -361,6 +371,10 @@ class NavigatesGalaxy(HasDriver):
     def current_history_id(self) -> str:
         return self.current_history()["id"]
 
+    def current_history_publish(self):
+        self.click_history_option_sharing()
+        self.make_accessible_and_publishable()
+
     def latest_history_item(self):
         history_contents = self.history_contents()
         assert len(history_contents) > 0
@@ -487,7 +501,8 @@ class NavigatesGalaxy(HasDriver):
         except SeleniumTimeoutException as e:
             history_item = self.wait_for_visible(history_item_selector)
             current_state = "UNKNOWN"
-            classes = history_item.get_attribute("class").split(" ")
+            raw_class_str = history_item.get_attribute("class") or ""
+            classes = raw_class_str.split(" ")
             for clazz in classes:
                 if clazz.startswith("state-"):
                     current_state = clazz[len("state-") :]
@@ -1034,6 +1049,13 @@ class NavigatesGalaxy(HasDriver):
         text_area_elem.clear()
         text_area_elem.send_keys(json)
 
+    def workflow_editor_set_license(self, license: str) -> None:
+        editor = self.components.workflow_editor
+        editor.edit_license_link.wait_for_and_click()
+        select = editor.license_select.wait_for_select()
+        select.select_by_value(license)
+        editor.license_save.wait_for_and_click()
+
     def workflow_editor_click_option(self, option_label):
         self.workflow_editor_click_options()
         menu_element = self.workflow_editor_options_menu_element()
@@ -1149,9 +1171,7 @@ class NavigatesGalaxy(HasDriver):
             self.components.libraries.folder.select_import_dir_item(name=name).wait_for_and_click()
         self.components.libraries.folder.import_dir_btn.wait_for_and_click()
 
-    def create_new_library(self, login=True):
-        if login:
-            self.admin_login()
+    def create_new_library(self):
         self.libraries_open()
         self.name = self._get_random_name(prefix="testcontents")
         self.libraries_index_create(self.name)
@@ -1261,8 +1281,8 @@ class NavigatesGalaxy(HasDriver):
         self.libraries_dataset_import(self.navigation.libraries.folder.labels.from_import_dir)
         self.select_dataset_from_lib_import_modal(filenames)
 
-    def navigate_to_new_library(self, login=True):
-        self.create_new_library(login)
+    def navigate_to_new_library(self):
+        self.create_new_library()
         self.libraries_open_with_name(self.name)
 
     def wait_for_overlays_cleared(self):
@@ -1399,8 +1419,8 @@ class NavigatesGalaxy(HasDriver):
     def tagging_add(self, tags, auto_closes=True, parent_selector=""):
         for i, tag in enumerate(tags):
             if auto_closes or i == 0:
-                tag_area = f"{parent_selector}.multiselect input[type='text']"
-                tag_area = self.wait_for_selector_clickable(tag_area)
+                tag_area_selector = f"{parent_selector}.multiselect input[type='text']"
+                tag_area = self.wait_for_selector_clickable(tag_area_selector)
                 tag_area.click()
 
             tag_area.send_keys(tag)

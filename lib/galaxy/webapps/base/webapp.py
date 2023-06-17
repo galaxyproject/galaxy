@@ -33,6 +33,7 @@ from galaxy.exceptions import (
     ConfigurationError,
     MalformedId,
     MessageException,
+    RequestParameterMissingException,
 )
 from galaxy.managers import context
 from galaxy.managers.session import GalaxySessionManager
@@ -190,7 +191,19 @@ class WebApplication(base.WebApplication):
             directories=paths, module_directory=galaxy_app.config.template_cache_path, collection_size=500
         )
 
-    def handle_controller_exception(self, e, trans, **kwargs):
+    def handle_controller_exception(self, e, trans, method, **kwargs):
+        if isinstance(e, TypeError):
+            method_signature = inspect.signature(method)
+            required_parameters = {
+                p.name
+                for p in method_signature.parameters.values()
+                if p.name != "trans" and p.default is inspect._empty
+            }
+            missing_required_parameters = required_parameters.difference(kwargs)
+            if missing_required_parameters:
+                e = RequestParameterMissingException(
+                    f"Required parameter(s) {', '.join(missing_required_parameters)} not provided in request."
+                )
         if isinstance(e, MessageException):
             # In the case of a controller exception, sanitize to make sure
             # unsafe html input isn't reflected back to the user

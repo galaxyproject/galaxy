@@ -205,7 +205,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
         return {"message": "Success.", "redirect": self.__get_redirect_url(redirect)}
 
     @web.expose
-    def resend_verification(self, trans):
+    def resend_verification(self, trans, **kwargs):
         """
         Exposed function for use outside of the class. E.g. when user click on the resend link in the masthead.
         """

@@ -6,7 +6,8 @@
             data-toggle="dropdown"
             :data-workflow-dropdown="workflow.id"
             draggable
-            @dragstart="onDragStart">
+            @dragstart="onDragStart"
+            @dragend="onDragEnd">
             <Icon icon="caret-down" class="fa-lg" />
             <span class="workflow-dropdown-name">{{ workflow.name }}</span>
         </b-link>

@@ -19,13 +19,13 @@
                 </b-button>
 
                 <b-button
-                    v-b-modal.selector-history-modal
                     v-b-tooltip.bottom.hover
                     data-description="switch to another history"
                     size="sm"
                     variant="link"
                     :disabled="isAnonymous"
-                    :title="userTitle('Switch to history')">
+                    :title="userTitle('Switch to history')"
+                    @click="showSwitchModal = !showSwitchModal">
                     <Icon fixed-width icon="exchange-alt" />
                 </b-button>
 
@@ -45,7 +45,7 @@
                             <b-spinner v-if="historiesLoading" small />
                             <span>Fetching histories from server</span>
                         </div>
-                        <span v-else>You have {{ histories.length }} histories.</span>
+                        <span v-else>You have {{ totalHistoryCount }} histories.</span>
                     </b-dropdown-text>
 
                     <b-dropdown-item
@@ -143,9 +143,11 @@
         </nav>
 
         <SelectorModal
+            v-show="showSwitchModal"
             id="selector-history-modal"
             :histories="histories"
             :additional-options="['center', 'multi']"
+            :show-modal.sync="showSwitchModal"
             @selectHistory="setCurrentHistory($event.id)" />
 
         <CopyModal id="copy-current-history-modal" :history="history" />
@@ -192,8 +194,14 @@ export default {
         title: { type: String, default: "Histories" },
         historiesLoading: { type: Boolean, default: false },
     },
+    data() {
+        return {
+            showSwitchModal: false,
+        };
+    },
     computed: {
         ...mapState(useUserStore, ["isAnonymous"]),
+        ...mapState(useHistoryStore, ["totalHistoryCount"]),
     },
     methods: {
         ...mapActions(useHistoryStore, ["createNewHistory", "deleteHistory", "secureHistory", "setCurrentHistory"]),

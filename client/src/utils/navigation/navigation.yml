@@ -47,6 +47,9 @@ masthead:
 
     logged_in_only: '.loggedin-only'
     logged_out_only: '.loggedout-only'
+    storage_dashboard_link:
+      selector: 'storage dashboard link'
+      type: data-description
 
   labels:
     # top-level menus
@@ -323,6 +326,11 @@ history_storage:
   selectors:
     _: '.history-storage-overview'
 
+storage_dashboard:
+  selectors:
+    free_space_link: '[data-description="free space card"] button'
+    explore_usage_link: '[data-description="explore usage card"] button'
+
 edit_dataset_attributes:
   selectors:
     database_build_dropdown: '[data-label="Database/Build"]'
@@ -501,12 +509,18 @@ pages:
       save: '#save-button'
       embed_dataset: '.toolTitle .title-link[data-tool-id="history_dataset_embedded"]'
       embed_workflow_display: '.toolTitle .title-link[data-tool-id="workflow_display"]'
+      history_link: '.toolTitle .title-link[data-tool-id="history_link"]'
       dataset_selector:
         type: xpath
         selector: '//span[text() = "1: 1.fasta"]'
       workflow_selection: .selection-dialog-modal [role="row"][data-pk="${id}"]
+      history_selection: .selection-dialog-modal [role="row"][data-pk="${id}"]
       embed_dialog_add_button: '.pages-embed .buttons #button-0'
       markdown_editor: '.markdown-textarea'
+
+  view:
+    selectors:
+      history_link: '[data-description="history import link"][data-history-id="${history_id}"]'
 
 login:
   selectors:
@@ -659,6 +673,18 @@ workflow_editor:
     canvas_body: '#workflow-canvas'
     edit_annotation: '#workflow-annotation'
     edit_name: '#workflow-name'
+    license_selector:
+      selector: 'license selector'
+      type: data-description
+    edit_license_link:
+      selector: 'edit license link'
+      type: data-description
+    license_select:
+      selector: 'license select'
+      type: data-description
+    license_save:
+      selector: 'license save'
+      type: data-description
     tool_menu: '.toolMenuContainer'
     tool_menu_section_link: '.tool-menu-section-${section_name} a span'
     tool_menu_item_link: 'a.tool-menu-item-${item_name}'

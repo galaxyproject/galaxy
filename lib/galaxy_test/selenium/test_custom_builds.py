@@ -6,6 +6,12 @@ from .framework import (
 
 
 class TestCustomBuilds(SharedStateSeleniumTestCase):
+    user_email: str
+    build_name1: str
+    build_name2: str
+    build_key1: str
+    build_key2: str
+
     @selenium_test
     def test_build_add(self):
         self._login()

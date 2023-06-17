@@ -410,6 +410,10 @@ export interface paths {
          */
         post: operations["create_api_histories_post"];
     };
+    "/api/histories/count": {
+        /** Returns number of histories for the current user. */
+        get: operations["count_api_histories_count_get"];
+    };
     "/api/histories/deleted": {
         /** Returns deleted histories for the current user. */
         get: operations["index_deleted_api_histories_deleted_get"];
@@ -912,6 +916,96 @@ export interface paths {
          * @description Record any metrics sent and return some status object.
          */
         post: operations["create_api_metrics_post"];
+    };
+    "/api/notifications": {
+        /**
+         * Returns the list of notifications associated with the user.
+         * @description Anonymous users cannot receive personal notifications, only broadcasted notifications.
+         *
+         * You can use the `limit` and `offset` parameters to paginate through the notifications.
+         */
+        get: operations["get_user_notifications_api_notifications_get"];
+        /** Updates a list of notifications with the requested values in a single request. */
+        put: operations["update_user_notifications_api_notifications_put"];
+        /**
+         * Sends a notification to a list of recipients (users, groups or roles).
+         * @description Sends a notification to a list of recipients (users, groups or roles).
+         */
+        post: operations["send_notification_api_notifications_post"];
+        /** Deletes a list of notifications received by the user in a single request. */
+        delete: operations["delete_user_notifications_api_notifications_delete"];
+    };
+    "/api/notifications/broadcast": {
+        /**
+         * Returns all currently active broadcasted notifications.
+         * @description Only Admin users can access inactive notifications (scheduled or recently expired).
+         */
+        get: operations["get_all_broadcasted_api_notifications_broadcast_get"];
+        /**
+         * Broadcasts a notification to every user in the system.
+         * @description Broadcasted notifications are a special kind of notification that are always accessible to all users, including anonymous users.
+         * They are typically used to display important information such as maintenance windows or new features.
+         * These notifications are displayed differently from regular notifications, usually in a banner at the top or bottom of the page.
+         *
+         * Broadcasted notifications can include action links that are displayed as buttons.
+         * This allows users to easily perform tasks such as filling out surveys, accepting legal agreements, or accessing new tutorials.
+         *
+         * Some key features of broadcasted notifications include:
+         * - They are not associated with a specific user, so they cannot be deleted or marked as read.
+         * - They can be scheduled to be displayed in the future or to expire after a certain time.
+         * - By default, broadcasted notifications are published immediately and expire six months after publication.
+         * - Only admins can create, edit, reschedule, or expire broadcasted notifications as needed.
+         */
+        post: operations["broadcast_notification_api_notifications_broadcast_post"];
+    };
+    "/api/notifications/broadcast/{notification_id}": {
+        /**
+         * Returns the information of a specific broadcasted notification.
+         * @description Only Admin users can access inactive notifications (scheduled or recently expired).
+         */
+        get: operations["get_broadcasted_api_notifications_broadcast__notification_id__get"];
+        /**
+         * Updates the state of a broadcasted notification.
+         * @description Only Admins can update broadcasted notifications. This is useful to reschedule, edit or expire broadcasted notifications.
+         */
+        put: operations["update_broadcasted_notification_api_notifications_broadcast__notification_id__put"];
+    };
+    "/api/notifications/preferences": {
+        /**
+         * Returns the current user's preferences for notifications.
+         * @description Anonymous users cannot have notification preferences. They will receive only broadcasted notifications.
+         */
+        get: operations["get_notification_preferences_api_notifications_preferences_get"];
+        /**
+         * Updates the user's preferences for notifications.
+         * @description Anonymous users cannot have notification preferences. They will receive only broadcasted notifications.
+         *
+         * - Can be used to completely enable/disable notifications for a particular type (category)
+         * or to enable/disable a particular channel on each category.
+         */
+        put: operations["update_notification_preferences_api_notifications_preferences_put"];
+    };
+    "/api/notifications/status": {
+        /**
+         * Returns the current status summary of the user's notifications since a particular date.
+         * @description Anonymous users cannot receive personal notifications, only broadcasted notifications.
+         */
+        get: operations["get_notifications_status_api_notifications_status_get"];
+    };
+    "/api/notifications/{notification_id}": {
+        /** Displays information about a notification received by the user. */
+        get: operations["show_notification_api_notifications__notification_id__get"];
+        /** Updates the state of a notification received by the user. */
+        put: operations["update_user_notification_api_notifications__notification_id__put"];
+        /**
+         * Deletes a notification received by the user.
+         * @description When a notification is deleted, it is not immediately removed from the database, but marked as deleted.
+         *
+         * - It will not be returned in the list of notifications, but admins can still access it as long as it is not expired.
+         * - It will be eventually removed from the database by a background task after the expiration time.
+         * - Deleted notifications will be permanently deleted when the expiration time is reached.
+         */
+        delete: operations["delete_user_notification_api_notifications__notification_id__delete"];
     };
     "/api/object_stores": {
         /** Get a list of (currently only concrete) object stores configured with this Galaxy instance. */
@@ -1478,6 +1572,23 @@ export interface components {
             url: string;
         };
         /**
+         * ActionLink
+         * @description An action link to be displayed in the notification as a button.
+         */
+        ActionLink: {
+            /**
+             * Action name
+             * @description The name of the action, will be the button title.
+             */
+            action_name: string;
+            /**
+             * Link
+             * Format: uri
+             * @description The link to be opened when the button is clicked.
+             */
+            link: string;
+        };
+        /**
          * AsyncFile
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -1584,6 +1695,130 @@ export interface components {
             history_id: Record<string, never>;
             /** Targets */
             targets: Record<string, never>;
+        };
+        /**
+         * BroadcastNotificationContent
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        BroadcastNotificationContent: {
+            /**
+             * Action links
+             * @description The optional action links (buttons) to be displayed in the notification.
+             */
+            action_links?: components["schemas"]["ActionLink"][];
+            /**
+             * Category
+             * @default broadcast
+             * @enum {string}
+             */
+            category?: "broadcast";
+            /**
+             * Message
+             * @description The message of the notification (supports Markdown).
+             */
+            message: string;
+            /**
+             * Subject
+             * @description The subject of the notification.
+             */
+            subject: string;
+        };
+        /**
+         * BroadcastNotificationCreateRequest
+         * @description A notification create request specific for broadcasting.
+         */
+        BroadcastNotificationCreateRequest: {
+            /**
+             * Category
+             * @default broadcast
+             * @enum {string}
+             */
+            category?: "broadcast";
+            /**
+             * Content
+             * @description The content of the broadcast notification. Broadcast notifications are displayed prominently to all users and can contain action links to redirect the user to a specific page.
+             */
+            content: components["schemas"]["BroadcastNotificationContent"];
+            /**
+             * Expiration time
+             * Format: date-time
+             * @description The time when the notification should expire. By default it will expire after 6 months. Expired notifications will be permanently deleted.
+             */
+            expiration_time?: string;
+            /**
+             * Publication time
+             * Format: date-time
+             * @description The time when the notification should be published. Notifications can be created and then scheduled to be published at a later time.
+             */
+            publication_time?: string;
+            /**
+             * Source
+             * @description The source of the notification. Represents the agent that created the notification. E.g. 'galaxy' or 'admin'.
+             */
+            source: string;
+            /**
+             * Variant
+             * @description The variant of the notification. Represents the intent or relevance of the notification. E.g. 'info' or 'urgent'.
+             */
+            variant: components["schemas"]["NotificationVariant"];
+        };
+        /**
+         * BroadcastNotificationListResponse
+         * @description A list of broadcast notifications.
+         */
+        BroadcastNotificationListResponse: components["schemas"]["BroadcastNotificationResponse"][];
+        /**
+         * BroadcastNotificationResponse
+         * @description A notification response specific for broadcasting.
+         */
+        BroadcastNotificationResponse: {
+            /**
+             * Category
+             * @default broadcast
+             * @enum {string}
+             */
+            category?: "broadcast";
+            content: components["schemas"]["BroadcastNotificationContent"];
+            /**
+             * Create time
+             * Format: date-time
+             * @description The time when the notification was created.
+             */
+            create_time: string;
+            /**
+             * Expiration time
+             * Format: date-time
+             * @description The time when the notification will expire. If not set, the notification will never expire. Expired notifications will be permanently deleted.
+             */
+            expiration_time?: string;
+            /**
+             * ID
+             * @description The encoded ID of the notification.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Publication time
+             * Format: date-time
+             * @description The time when the notification was published. Notifications can be created and then published at a later time.
+             */
+            publication_time: string;
+            /**
+             * Source
+             * @description The source of the notification. Represents the agent that created the notification. E.g. 'galaxy' or 'admin'.
+             */
+            source: string;
+            /**
+             * Update time
+             * Format: date-time
+             * @description The time when the notification was last updated.
+             */
+            update_time: string;
+            /**
+             * Variant
+             * @description The variant of the notification. Represents the intent or relevance of the notification. E.g. 'info' or 'urgent'.
+             */
+            variant: components["schemas"]["NotificationVariant"];
         };
         /**
          * BulkOperationItemError
@@ -5677,6 +5912,14 @@ export interface components {
             name: string;
         };
         /**
+         * MandatoryNotificationCategory
+         * @description These notification categories cannot be opt-out by the user.
+         *
+         * The user will always receive notifications from these categories.
+         * @enum {string}
+         */
+        MandatoryNotificationCategory: "broadcast";
+        /**
          * MaterializeDatasetInstanceAPIRequest
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -5695,6 +5938,28 @@ export interface components {
              * @description The source of the content. Can be other history element to be copied or library elements.
              */
             source: components["schemas"]["DatasetSourceType"];
+        };
+        /**
+         * MessageNotificationContent
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        MessageNotificationContent: {
+            /**
+             * Category
+             * @default message
+             * @enum {string}
+             */
+            category?: "message";
+            /**
+             * Message
+             * @description The message of the notification (supports Markdown).
+             */
+            message: string;
+            /**
+             * Subject
+             * @description The subject of the notification.
+             */
+            subject: string;
         };
         /**
          * MetadataFile
@@ -5895,6 +6160,313 @@ export interface components {
              * @default false
              */
             to_posix_lines?: boolean;
+        };
+        /**
+         * NewSharedItemNotificationContent
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        NewSharedItemNotificationContent: {
+            /**
+             * Category
+             * @default new_shared_item
+             * @enum {string}
+             */
+            category?: "new_shared_item";
+            /**
+             * Item name
+             * @description The name of the shared item.
+             */
+            item_name: string;
+            /**
+             * Item type
+             * @description The type of the shared item.
+             * @enum {string}
+             */
+            item_type: "history" | "workflow" | "visualization" | "page";
+            /**
+             * Owner name
+             * @description The name of the owner of the shared item.
+             */
+            owner_name: string;
+            /**
+             * Slug
+             * @description The slug of the shared item. Used for the link to the item.
+             */
+            slug: string;
+        };
+        /**
+         * NotificationBroadcastUpdateRequest
+         * @description A notification update request specific for broadcasting.
+         */
+        NotificationBroadcastUpdateRequest: {
+            /**
+             * Content
+             * @description The content of the broadcast notification. Broadcast notifications are displayed prominently to all users and can contain action links to redirect the user to a specific page.
+             */
+            content?: components["schemas"]["BroadcastNotificationContent"];
+            /**
+             * Expiration time
+             * Format: date-time
+             * @description The time when the notification should expire. By default it will expire after 6 months. Expired notifications will be permanently deleted.
+             */
+            expiration_time?: string;
+            /**
+             * Publication time
+             * Format: date-time
+             * @description The time when the notification should be published. Notifications can be created and then scheduled to be published at a later time.
+             */
+            publication_time?: string;
+            /**
+             * Source
+             * @description The source of the notification. Represents the agent that created the notification.
+             */
+            source?: string;
+            /**
+             * Variant
+             * @description The variant of the notification. Used to express the importance of the notification.
+             */
+            variant?: components["schemas"]["NotificationVariant"];
+        };
+        /**
+         * NotificationCategorySettings
+         * @description The settings for a notification category.
+         */
+        NotificationCategorySettings: {
+            /**
+             * Channels
+             * @description The channels that the user wants to receive notifications from for this category.
+             * @default {
+             *   "push": true
+             * }
+             */
+            channels?: components["schemas"]["NotificationChannelSettings"];
+            /**
+             * Enabled
+             * @description Whether the user wants to receive notifications for this category.
+             * @default true
+             */
+            enabled?: boolean;
+        };
+        /**
+         * NotificationChannelSettings
+         * @description The settings for each channel of a notification category.
+         */
+        NotificationChannelSettings: {
+            /**
+             * Push
+             * @description Whether the user wants to receive push notifications in the browser for this category.
+             * @default true
+             */
+            push?: boolean;
+        };
+        /**
+         * NotificationCreateData
+         * @description Basic common fields for all notification create requests.
+         */
+        NotificationCreateData: {
+            /**
+             * Category
+             * @description The category of the notification. Represents the type of the notification. E.g. 'message' or 'new_shared_item'.
+             */
+            category:
+                | components["schemas"]["MandatoryNotificationCategory"]
+                | components["schemas"]["PersonalNotificationCategory"];
+            /**
+             * Content
+             * @description The content of the notification. The structure depends on the category.
+             */
+            content:
+                | components["schemas"]["MessageNotificationContent"]
+                | components["schemas"]["NewSharedItemNotificationContent"]
+                | components["schemas"]["BroadcastNotificationContent"];
+            /**
+             * Expiration time
+             * Format: date-time
+             * @description The time when the notification should expire. By default it will expire after 6 months. Expired notifications will be permanently deleted.
+             */
+            expiration_time?: string;
+            /**
+             * Publication time
+             * Format: date-time
+             * @description The time when the notification should be published. Notifications can be created and then scheduled to be published at a later time.
+             */
+            publication_time?: string;
+            /**
+             * Source
+             * @description The source of the notification. Represents the agent that created the notification. E.g. 'galaxy' or 'admin'.
+             */
+            source: string;
+            /**
+             * Variant
+             * @description The variant of the notification. Represents the intent or relevance of the notification. E.g. 'info' or 'urgent'.
+             */
+            variant: components["schemas"]["NotificationVariant"];
+        };
+        /**
+         * NotificationCreateRequest
+         * @description Contains the recipients and the notification to create.
+         */
+        NotificationCreateRequest: {
+            /**
+             * Notification
+             * @description The notification to create. The structure depends on the category.
+             */
+            notification: components["schemas"]["NotificationCreateData"];
+            /**
+             * Recipients
+             * @description The recipients of the notification. Can be a combination of users, groups and roles.
+             */
+            recipients: components["schemas"]["NotificationRecipients"];
+        };
+        /**
+         * NotificationCreatedResponse
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        NotificationCreatedResponse: {
+            /**
+             * Notification
+             * @description The notification that was created. The structure depends on the category.
+             */
+            notification: components["schemas"]["NotificationResponse"];
+            /**
+             * Total notifications sent
+             * @description The total number of notifications that were sent to the recipients.
+             */
+            total_notifications_sent: number;
+        };
+        /**
+         * NotificationRecipients
+         * @description The recipients of a notification. Can be a combination of users, groups and roles.
+         */
+        NotificationRecipients: {
+            /**
+             * Group IDs
+             * @description The list of encoded group IDs of the groups that should receive the notification.
+             * @default []
+             */
+            group_ids?: string[];
+            /**
+             * Role IDs
+             * @description The list of encoded role IDs of the roles that should receive the notification.
+             * @default []
+             */
+            role_ids?: string[];
+            /**
+             * User IDs
+             * @description The list of encoded user IDs of the users that should receive the notification.
+             * @default []
+             */
+            user_ids?: string[];
+        };
+        /**
+         * NotificationResponse
+         * @description Basic common fields for all notification responses.
+         */
+        NotificationResponse: {
+            /**
+             * Category
+             * @description The category of the notification. Represents the type of the notification. E.g. 'message' or 'new_shared_item'.
+             */
+            category:
+                | components["schemas"]["MandatoryNotificationCategory"]
+                | components["schemas"]["PersonalNotificationCategory"];
+            /**
+             * Content
+             * @description The content of the notification. The structure depends on the category.
+             */
+            content:
+                | components["schemas"]["MessageNotificationContent"]
+                | components["schemas"]["NewSharedItemNotificationContent"]
+                | components["schemas"]["BroadcastNotificationContent"];
+            /**
+             * Create time
+             * Format: date-time
+             * @description The time when the notification was created.
+             */
+            create_time: string;
+            /**
+             * Expiration time
+             * Format: date-time
+             * @description The time when the notification will expire. If not set, the notification will never expire. Expired notifications will be permanently deleted.
+             */
+            expiration_time?: string;
+            /**
+             * ID
+             * @description The encoded ID of the notification.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Publication time
+             * Format: date-time
+             * @description The time when the notification was published. Notifications can be created and then published at a later time.
+             */
+            publication_time: string;
+            /**
+             * Source
+             * @description The source of the notification. Represents the agent that created the notification. E.g. 'galaxy' or 'admin'.
+             */
+            source: string;
+            /**
+             * Update time
+             * Format: date-time
+             * @description The time when the notification was last updated.
+             */
+            update_time: string;
+            /**
+             * Variant
+             * @description The variant of the notification. Represents the intent or relevance of the notification. E.g. 'info' or 'urgent'.
+             */
+            variant: components["schemas"]["NotificationVariant"];
+        };
+        /**
+         * NotificationStatusSummary
+         * @description A summary of the notification status for a user. Contains only updates since a particular timestamp.
+         */
+        NotificationStatusSummary: {
+            /**
+             * Broadcasts
+             * @description The list of updated broadcasts.
+             */
+            broadcasts: components["schemas"]["BroadcastNotificationResponse"][];
+            /**
+             * Notifications
+             * @description The list of updated notifications for the user.
+             */
+            notifications: components["schemas"]["UserNotificationResponse"][];
+            /**
+             * Total unread count
+             * @description The total number of unread notifications for the user.
+             */
+            total_unread_count: number;
+        };
+        /**
+         * NotificationVariant
+         * @description The notification variant communicates the intent or relevance of the notification.
+         * @enum {string}
+         */
+        NotificationVariant: "info" | "warning" | "urgent";
+        /**
+         * NotificationsBatchRequest
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        NotificationsBatchRequest: {
+            /**
+             * Notification IDs
+             * @description The list of encoded notification IDs of the notifications that should be updated.
+             */
+            notification_ids: string[];
+        };
+        /**
+         * NotificationsBatchUpdateResponse
+         * @description The response of a batch update request.
+         */
+        NotificationsBatchUpdateResponse: {
+            /**
+             * Updated count
+             * @description The number of notifications that were updated.
+             */
+            updated_count: number;
         };
         /**
          * ObjectExportTaskResponse
@@ -6263,6 +6835,13 @@ export interface components {
              */
             to_posix_lines?: boolean;
         };
+        /**
+         * PersonalNotificationCategory
+         * @description These notification categories can be opt-out by the user and will be
+         * displayed in the notification preferences.
+         * @enum {string}
+         */
+        PersonalNotificationCategory: "message" | "new_shared_item";
         /**
          * PrepareStoreDownloadPayload
          * @description Base model definition with common configuration used by all derived models.
@@ -7420,6 +7999,35 @@ export interface components {
             operation?: components["schemas"]["QuotaOperation"];
         };
         /**
+         * UpdateUserNotificationPreferencesRequest
+         * @description Contains the new notification preferences of a user.
+         * @example {
+         *   "preferences": {
+         *     "message": {
+         *       "channels": {
+         *         "push": true
+         *       },
+         *       "enabled": true
+         *     },
+         *     "new_shared_item": {
+         *       "channels": {
+         *         "push": true
+         *       },
+         *       "enabled": true
+         *     }
+         *   }
+         * }
+         */
+        UpdateUserNotificationPreferencesRequest: {
+            /**
+             * Preferences
+             * @description The new notification preferences of the user.
+             */
+            preferences: {
+                [key: string]: components["schemas"]["NotificationCategorySettings"] | undefined;
+            };
+        };
+        /**
          * UrlDataElement
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -7551,6 +8159,142 @@ export interface components {
              * @description User username
              */
             username: string;
+        };
+        /**
+         * UserNotificationListResponse
+         * @description A list of user notifications.
+         */
+        UserNotificationListResponse: components["schemas"]["UserNotificationResponse"][];
+        /**
+         * UserNotificationPreferences
+         * @description Contains the full notification preferences of a user.
+         * @example {
+         *   "preferences": {
+         *     "message": {
+         *       "channels": {
+         *         "push": true
+         *       },
+         *       "enabled": true
+         *     },
+         *     "new_shared_item": {
+         *       "channels": {
+         *         "push": true
+         *       },
+         *       "enabled": true
+         *     }
+         *   }
+         * }
+         */
+        UserNotificationPreferences: {
+            /**
+             * Preferences
+             * @description The notification preferences of the user.
+             */
+            preferences: {
+                [key: string]: components["schemas"]["NotificationCategorySettings"] | undefined;
+            };
+        };
+        /**
+         * UserNotificationResponse
+         * @description A notification response specific to the user.
+         */
+        UserNotificationResponse: {
+            /**
+             * Category
+             * @description The category of the notification. Represents the type of the notification. E.g. 'message' or 'new_shared_item'.
+             */
+            category: components["schemas"]["PersonalNotificationCategory"];
+            /**
+             * Content
+             * @description The content of the notification. The structure depends on the category.
+             */
+            content:
+                | components["schemas"]["MessageNotificationContent"]
+                | components["schemas"]["NewSharedItemNotificationContent"]
+                | components["schemas"]["BroadcastNotificationContent"];
+            /**
+             * Create time
+             * Format: date-time
+             * @description The time when the notification was created.
+             */
+            create_time: string;
+            /**
+             * Deleted
+             * @description Whether the notification is marked as deleted by the user. Deleted notifications don't show up in the notification list.
+             */
+            deleted: boolean;
+            /**
+             * Expiration time
+             * Format: date-time
+             * @description The time when the notification will expire. If not set, the notification will never expire. Expired notifications will be permanently deleted.
+             */
+            expiration_time?: string;
+            /**
+             * ID
+             * @description The encoded ID of the notification.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Publication time
+             * Format: date-time
+             * @description The time when the notification was published. Notifications can be created and then published at a later time.
+             */
+            publication_time: string;
+            /**
+             * Seen time
+             * Format: date-time
+             * @description The time when the notification was seen by the user. If not set, the notification was not seen yet.
+             */
+            seen_time?: string;
+            /**
+             * Source
+             * @description The source of the notification. Represents the agent that created the notification. E.g. 'galaxy' or 'admin'.
+             */
+            source: string;
+            /**
+             * Update time
+             * Format: date-time
+             * @description The time when the notification was last updated.
+             */
+            update_time: string;
+            /**
+             * Variant
+             * @description The variant of the notification. Represents the intent or relevance of the notification. E.g. 'info' or 'urgent'.
+             */
+            variant: components["schemas"]["NotificationVariant"];
+        };
+        /**
+         * UserNotificationUpdateRequest
+         * @description A notification update request specific to the user.
+         */
+        UserNotificationUpdateRequest: {
+            /**
+             * Deleted
+             * @description Whether the notification should be marked as deleted by the user. If not set, the notification will not be changed.
+             */
+            deleted?: boolean;
+            /**
+             * Seen
+             * @description Whether the notification should be marked as seen by the user. If not set, the notification will not be changed.
+             */
+            seen?: boolean;
+        };
+        /**
+         * UserNotificationsBatchUpdateRequest
+         * @description A batch update request specific for user notifications.
+         */
+        UserNotificationsBatchUpdateRequest: {
+            /**
+             * Changes
+             * @description The changes that should be applied to the notifications. Only the fields that are set will be changed.
+             */
+            changes: components["schemas"]["UserNotificationUpdateRequest"];
+            /**
+             * Notification IDs
+             * @description The list of encoded notification IDs of the notifications that should be updated.
+             */
+            notification_ids: string[];
         };
         /**
          * UserQuota
@@ -9923,6 +10667,29 @@ export interface operations {
                         | components["schemas"]["HistorySummary"]
                         | components["schemas"]["HistoryDetailed"]
                         | Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    count_api_histories_count_get: {
+        /** Returns number of histories for the current user. */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": number;
                 };
             };
             /** @description Validation Error */
@@ -12926,6 +13693,423 @@ export interface operations {
                     "application/json": Record<string, never>;
                 };
             };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_user_notifications_api_notifications_get: {
+        /**
+         * Returns the list of notifications associated with the user.
+         * @description Anonymous users cannot receive personal notifications, only broadcasted notifications.
+         *
+         * You can use the `limit` and `offset` parameters to paginate through the notifications.
+         */
+        parameters?: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["UserNotificationListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_user_notifications_api_notifications_put: {
+        /** Updates a list of notifications with the requested values in a single request. */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserNotificationsBatchUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["NotificationsBatchUpdateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_notification_api_notifications_post: {
+        /**
+         * Sends a notification to a list of recipients (users, groups or roles).
+         * @description Sends a notification to a list of recipients (users, groups or roles).
+         */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["NotificationCreatedResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_user_notifications_api_notifications_delete: {
+        /** Deletes a list of notifications received by the user in a single request. */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationsBatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["NotificationsBatchUpdateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_all_broadcasted_api_notifications_broadcast_get: {
+        /**
+         * Returns all currently active broadcasted notifications.
+         * @description Only Admin users can access inactive notifications (scheduled or recently expired).
+         */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["BroadcastNotificationListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    broadcast_notification_api_notifications_broadcast_post: {
+        /**
+         * Broadcasts a notification to every user in the system.
+         * @description Broadcasted notifications are a special kind of notification that are always accessible to all users, including anonymous users.
+         * They are typically used to display important information such as maintenance windows or new features.
+         * These notifications are displayed differently from regular notifications, usually in a banner at the top or bottom of the page.
+         *
+         * Broadcasted notifications can include action links that are displayed as buttons.
+         * This allows users to easily perform tasks such as filling out surveys, accepting legal agreements, or accessing new tutorials.
+         *
+         * Some key features of broadcasted notifications include:
+         * - They are not associated with a specific user, so they cannot be deleted or marked as read.
+         * - They can be scheduled to be displayed in the future or to expire after a certain time.
+         * - By default, broadcasted notifications are published immediately and expire six months after publication.
+         * - Only admins can create, edit, reschedule, or expire broadcasted notifications as needed.
+         */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BroadcastNotificationCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["NotificationCreatedResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_broadcasted_api_notifications_broadcast__notification_id__get: {
+        /**
+         * Returns the information of a specific broadcasted notification.
+         * @description Only Admin users can access inactive notifications (scheduled or recently expired).
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                notification_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["BroadcastNotificationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_broadcasted_notification_api_notifications_broadcast__notification_id__put: {
+        /**
+         * Updates the state of a broadcasted notification.
+         * @description Only Admins can update broadcasted notifications. This is useful to reschedule, edit or expire broadcasted notifications.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                notification_id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationBroadcastUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: never;
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_notification_preferences_api_notifications_preferences_get: {
+        /**
+         * Returns the current user's preferences for notifications.
+         * @description Anonymous users cannot have notification preferences. They will receive only broadcasted notifications.
+         */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["UserNotificationPreferences"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_notification_preferences_api_notifications_preferences_put: {
+        /**
+         * Updates the user's preferences for notifications.
+         * @description Anonymous users cannot have notification preferences. They will receive only broadcasted notifications.
+         *
+         * - Can be used to completely enable/disable notifications for a particular type (category)
+         * or to enable/disable a particular channel on each category.
+         */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateUserNotificationPreferencesRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["UserNotificationPreferences"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_notifications_status_api_notifications_status_get: {
+        /**
+         * Returns the current status summary of the user's notifications since a particular date.
+         * @description Anonymous users cannot receive personal notifications, only broadcasted notifications.
+         */
+        parameters: {
+            query: {
+                since: string;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["NotificationStatusSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    show_notification_api_notifications__notification_id__get: {
+        /** Displays information about a notification received by the user. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                notification_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["UserNotificationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_user_notification_api_notifications__notification_id__put: {
+        /** Updates the state of a notification received by the user. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                notification_id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserNotificationUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: never;
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_user_notification_api_notifications__notification_id__delete: {
+        /**
+         * Deletes a notification received by the user.
+         * @description When a notification is deleted, it is not immediately removed from the database, but marked as deleted.
+         *
+         * - It will not be returned in the list of notifications, but admins can still access it as long as it is not expired.
+         * - It will be eventually removed from the database by a background task after the expiration time.
+         * - Deleted notifications will be permanently deleted when the expiration time is reached.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                notification_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: never;
             /** @description Validation Error */
             422: {
                 content: {

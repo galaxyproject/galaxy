@@ -112,6 +112,19 @@ class SmartTarget:
     def assert_disabled(self, **kwds):
         self._has_driver.assert_disabled(self._target, **kwds)
 
+    def data_value(self, attribute: str):
+        full_attribute = f"data-{attribute}"
+        attribute_value = (
+            self._has_driver.driver.find_element(*self._target.element_locator).get_attribute(full_attribute) or ""
+        )
+        return attribute_value
+
+    def assert_data_value(self, attribute: str, expected_value: str):
+        actual_value = self.data_value(attribute)
+        if actual_value != expected_value:
+            message = f"Expected data-{attribute} to have value [{expected_value}] but had value [{actual_value}]"
+            raise AssertionError(message)
+
     def has_class(self, class_name):
         classes_str = self._has_driver.driver.find_element(*self._target.element_locator).get_attribute("class") or ""
         return class_name in classes_str.split(" ")

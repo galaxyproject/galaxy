@@ -638,7 +638,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         return trans.show_error_message("Cannot purge deleted datasets from this session.")
 
     @web.expose
-    def resume_paused_jobs(self, trans, current=False, ids=None):
+    def resume_paused_jobs(self, trans, current=False, ids=None, **kwargs):
         """Resume paused jobs the active history -- this does not require a logged in user."""
         if not ids and string_as_bool(current):
             histories = [trans.get_history()]
@@ -652,44 +652,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             trans.sa_session.commit()
         return trans.show_ok_message("Your jobs have been resumed.", refresh_frames=refresh_frames)
         # TODO: used in index.mako
-
-    @web.expose
-    @web.json
-    @web.require_login("get history name and link")
-    def get_name_and_link_async(self, trans, id=None):
-        """Returns history's name and link."""
-        history = self.history_manager.get_accessible(self.decode_id(id), trans.user, current_history=trans.history)
-        if self.slug_builder.create_item_slug(trans.sa_session, history):
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
-        return_dict = {
-            "name": history.name,
-            "link": url_for(
-                controller="history",
-                action="display_by_username_and_slug",
-                username=history.user.username,
-                slug=history.slug,
-            ),
-        }
-        return return_dict
-        # TODO: used in page/editor.mako
-
-    @web.expose
-    @web.require_login("set history's accessible flag")
-    def set_accessible_async(self, trans, id=None, accessible=False):
-        """Set history's importable attribute and slug."""
-        history = self.history_manager.get_mutable(self.decode_id(id), trans.user, current_history=trans.history)
-        # Only set if importable value would change; this prevents a change in the update_time unless attribute really changed.
-        importable = accessible in ["True", "true", "t", "T"]
-        if history and history.importable != importable:
-            if importable:
-                self._make_item_accessible(trans.sa_session, history)
-            else:
-                history.importable = importable
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
-        return
-        # TODO: used in page/editor.mako
 
     @web.legacy_expose_api
     @web.require_login("rename histories")
@@ -739,7 +701,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     # ------------------------------------------------------------------------- current history
     @web.expose
     @web.require_login("switch to a history")
-    def switch_to_history(self, trans, hist_id=None):
+    def switch_to_history(self, trans, hist_id=None, **kwargs):
         """Change the current user's current history to one with `hist_id`."""
         # remains for backwards compat
         self.set_as_current(trans, id=hist_id)
@@ -757,7 +719,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     # @web.require_login( "switch to a history" )
     @web.json
     @web.do_not_cache
-    def set_as_current(self, trans, id):
+    def set_as_current(self, trans, id, **kwargs):
         """Change the current user's current history to one with `id`."""
         try:
             history = self.history_manager.get_mutable(self.decode_id(id), trans.user, current_history=trans.history)
@@ -769,7 +731,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
 
     @web.json
     @web.do_not_cache
-    def current_history_json(self, trans, since=None):
+    def current_history_json(self, trans, since=None, **kwargs):
         """Return the current user's current history in a serialized, dictionary form."""
         history = trans.get_history(most_recent=True, create=True)
         if since and history.update_time <= isoparse(since):
@@ -779,7 +741,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         return self.history_data(trans, history)
 
     @web.json
-    def create_new_current(self, trans, name=None):
+    def create_new_current(self, trans, name=None, **kwargs):
         """Create a new, current history for the current user"""
         new_history = trans.new_history(name)
         return self.history_data(trans, new_history)
