@@ -6,7 +6,7 @@ import ActivityItem from "components/ActivityBar/ActivityItem.vue";
 
 const { entryPoints } = storeToRefs(useEntryPointStore());
 
-const totalCount = computed(() => entryPoints.value.length)
+const totalCount = computed(() => entryPoints.value.length);
 
 export interface Props {
     id: string;
@@ -28,6 +28,7 @@ const emit = defineEmits<{
         v-if="totalCount > 0"
         :id="id"
         :icon="icon"
+        :indicator="totalCount"
         :is-active="isActive"
         :title="title"
         :tooltip="`There are ${totalCount} active interactive tools.`"

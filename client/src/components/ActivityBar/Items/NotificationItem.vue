@@ -31,7 +31,7 @@ const tooltip = computed(() =>
     <ActivityItem
         :id="id"
         :icon="icon"
-        :indicator="!!totalUnreadCount"
+        :indicator="totalUnreadCount"
         :is-active="isActive"
         :title="title"
         :tooltip="tooltip"

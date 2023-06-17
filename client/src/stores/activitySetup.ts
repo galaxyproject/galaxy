@@ -11,7 +11,7 @@ export const Activities = [
         id: "interactivetools",
         mutable: false,
         optional: true,
-        title: "Active Tools",
+        title: "Interactive Tools",
         tooltip: "Show active interactive tools",
         to: "/interactivetool_entry_points/list",
         visible: true,
