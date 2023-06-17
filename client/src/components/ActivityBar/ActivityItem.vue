@@ -72,7 +72,7 @@ function onClick(evt: MouseEvent): void {
                     <span class="position-relative">
                         <div class="nav-icon">
                             <span v-if="indicator > 9" class="nav-indicator">9+</span>
-                            <span v-else-if="indicator > 0" class="nav-indicator">&nbsp;{{ indicator }}</span>
+                            <span v-else-if="indicator > 0" class="nav-indicator">{{ indicator }}</span>
                             <FontAwesomeIcon :icon="icon" />
                         </div>
                         <TextShort v-if="title" :text="title" class="nav-title" />
@@ -103,17 +103,19 @@ function onClick(evt: MouseEvent): void {
 }
 
 .nav-indicator {
+    align-items: center;
     background: $brand-danger;
     border-radius: 50%;
     color: $brand-light;
+    display: flex;
     font-size: 0.7rem;
     font-weight: bold;
+    justify-content: center;
     left: 2.2rem;
-    height: 1.1rem;
-    padding: 0.1rem;
+    height: 1.2rem;
     position: absolute;
     top: -0.3rem;
-    width: 1.1rem;
+    width: 1.2rem;
 }
 
 .nav-item {
