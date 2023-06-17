@@ -14,6 +14,7 @@ import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
 import WorkflowBox from "@/components/Panels/WorkflowBox.vue";
 import ActivityItem from "./ActivityItem.vue";
 import ActivitySettings from "./ActivitySettings.vue";
+import InteractiveItem from "./Items/InteractiveItem.vue";
 import UploadItem from "./Items/UploadItem.vue";
 import NotificationItem from "./Items/NotificationItem.vue";
 
@@ -146,13 +147,23 @@ function toggleContextMenu(evt: MouseEvent) {
                     @end="isDragging = false">
                     <div v-for="(activity, activityIndex) in activities" :key="activityIndex">
                         <div v-if="activity.visible">
-                            <upload-item
+                            <UploadItem
                                 v-if="activity.id === 'upload'"
                                 :id="`activity-${activity.id}`"
                                 :key="activity.id"
                                 :icon="activity.icon"
                                 :title="activity.title"
                                 :tooltip="activity.tooltip"
+                                @click="onToggleSidebar()" />
+                            <InteractiveItem
+                                v-else-if="activity.id === 'interactivetools'"
+                                :id="`activity-${activity.id}`"
+                                :key="activity.id"
+                                :icon="activity.icon"
+                                :is-active="isActiveRoute(activity.to)"
+                                :title="activity.title"
+                                :tooltip="activity.tooltip"
+                                :to="activity.to"
                                 @click="onToggleSidebar()" />
                             <ActivityItem
                                 v-else-if="['tools', 'workflows'].includes(activity.id)"
