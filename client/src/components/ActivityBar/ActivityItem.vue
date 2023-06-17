@@ -128,6 +128,16 @@ function onClick(evt: MouseEvent): void {
     font-size: 0.7rem;
 }
 
+.indicator {
+    position: absolute;
+    top: -0.2rem;
+    right: -0.1rem;
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    background: $brand-danger;
+}
+
 .progress {
     background: transparent;
     border-radius: $border-radius-extralarge;
