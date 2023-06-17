@@ -7,7 +7,7 @@ import { type EventData } from "@/stores/eventStore";
 export const Activities = [
     {
         description: "Displays currently active interactive tools (ITs).",
-        icon: "fa-tools",
+        icon: "fa-laptop",
         id: "interactivetools",
         mutable: false,
         optional: true,
