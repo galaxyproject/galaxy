@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { storeToRefs } from "pinia";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import ActivityItem from "components/ActivityBar/ActivityItem.vue";
@@ -10,7 +11,6 @@ export interface Props {
     title: string;
     icon: string;
     isActive: boolean;
-    tooltip: string;
     to: string;
 }
 
@@ -19,13 +19,17 @@ defineProps<Props>();
 const emit = defineEmits<{
     (e: "click"): void;
 }>();
+
+const tooltip = computed(() =>
+    totalUnreadCount ? `You have ${totalUnreadCount} unread notifications` : "You have no unread notifications"
+);
 </script>
 
 <template>
     <ActivityItem
         :id="id"
         :icon="icon"
-        :indicator="totalUnreadCount"
+        :indicator="!!totalUnreadCount"
         :is-active="isActive"
         :title="title"
         :tooltip="tooltip"

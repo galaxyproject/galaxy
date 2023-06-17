@@ -185,7 +185,6 @@ function toggleContextMenu(evt: MouseEvent) {
                     icon="bell"
                     :is-active="isActiveRoute('/user/notifications')"
                     title="Notifications"
-                    tooltip="Show notifications"
                     to="/user/notifications"
                     @click="onToggleSidebar()" />
                 <ActivityItem
