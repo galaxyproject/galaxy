@@ -108,7 +108,6 @@ function onClick(evt: MouseEvent): void {
     color: $brand-light;
     display: flex;
     font-size: 0.7rem;
-    font-weight: bold;
     justify-content: center;
     left: 2.2rem;
     height: 1.2rem;
