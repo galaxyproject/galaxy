@@ -2,6 +2,7 @@
 import draggable from "vuedraggable";
 import { ref, type Ref } from "vue";
 import { storeToRefs } from "pinia";
+import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 import { useActivityStore, type Activity } from "@/stores/activityStore";
 import { useRoute } from "vue-router/composables";
@@ -9,13 +10,12 @@ import { convertDropData } from "@/stores/activitySetup";
 import { useEventStore } from "@/stores/eventStore";
 import ContextMenu from "@/components/Common/ContextMenu.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
-import { useConfig } from "@/composables/config";
-import ActivityItem from "./ActivityItem.vue";
-import UploadItem from "./Items/UploadItem.vue";
-import ActivitySettings from "./ActivitySettings.vue";
-import WorkflowBox from "@/components/Panels/WorkflowBox.vue";
 import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
-import NotificationsBell from "@/components/Notifications/NotificationsBell.vue";
+import WorkflowBox from "@/components/Panels/WorkflowBox.vue";
+import ActivityItem from "./ActivityItem.vue";
+import ActivitySettings from "./ActivitySettings.vue";
+import UploadItem from "./Items/UploadItem.vue";
+import NotificationItem from "./Items/NotificationItem.vue";
 
 const { config } = useConfig();
 
@@ -179,7 +179,7 @@ function toggleContextMenu(evt: MouseEvent) {
                 </draggable>
             </b-nav>
             <b-nav vertical class="flex-nowrap p-1">
-                <NotificationsBell v-if="!isAnonymous && config.enable_notification_system" tooltip-placement="right" />
+                <NotificationItem v-if="!isAnonymous && config.enable_notification_system" tooltip-placement="right" />
                 <ActivityItem
                     id="activity-settings"
                     icon="cog"
