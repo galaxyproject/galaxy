@@ -497,7 +497,7 @@ pages:
     submit: '#submit'
     drop: '.page-dropdown'
     edit: '.dropdown-item-edit'
-    view: '.dropdown-item-view'
+    drop_view: '.dropdown-item-view'
     export: '.markdown-pdf-export'
     dropdown: '[data-page-dropdown*="${id}"]'
     index_table: "#page-table"

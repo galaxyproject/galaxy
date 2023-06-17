@@ -1191,7 +1191,7 @@ class NavigatesGalaxy(HasDriver):
         self.home()
         self.navigate_to_pages()
         self.components.pages.drop.wait_for_and_click()
-        self.components.pages.view.wait_for_and_click()
+        self.components.pages.drop_view.wait_for_and_click()
         if screenshot_name:
             self.sleep_for(self.wait_types.UX_RENDER)
             self.screenshot(screenshot_name)

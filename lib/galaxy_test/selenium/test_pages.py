@@ -43,7 +43,6 @@ class TestPages(SeleniumTestCase):
         problem_workflow_2_id = workflow_populator.upload_yaml_workflow(
             WORKFLOW_WITH_BAD_COLUMN_PARAMETER, exact_tools=True
         )
-
         self.navigate_to_pages()
         self.create_page_and_edit()
         editor = self._page_editor
@@ -66,13 +65,13 @@ class TestPages(SeleniumTestCase):
         self.current_history_publish()
         history_id = self.current_history_id()
         self.navigate_to_pages()
-        name = self.create_page_and_edit()
+        self.create_page_and_edit()
         editor = self._page_editor
         editor.history_link.wait_for_and_click()
         editor.history_selection(id=history_id).wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         editor.save.wait_for_and_click()
-        self.page_open_with_name(name, "page_view_with_history_link")
+        self.page_open_and_screenshot("page_view_with_history_link")
         view = self.components.pages.view
         view.history_link(history_id=history_id).wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
