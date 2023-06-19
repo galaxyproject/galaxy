@@ -13175,7 +13175,7 @@ export interface operations {
     index_api_jobs_get: {
         /** Index */
         parameters?: {
-            /** @description If true, and requestor is an admin, will return external job id and user email. This is only available to admins. */
+            /** @description If true, and requester is an admin, will return external job id and user email. This is only available to admins. */
             /** @description an encoded user id to restrict query to, must be own id if not admin user */
             /** @description Determines columns to return. Defaults to 'collection'. */
             /** @description Limit listing of jobs to those that are updated after specified date (e.g. '2014-01-01') */
