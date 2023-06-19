@@ -60,6 +60,16 @@ LimitQueryParam: Optional[int] = Query(
     description="The maximum number of items to return.",
 )
 
+OrderQueryParam: Optional[str] = Query(
+    default=None,
+    title="Order",
+    description=(
+        "String containing one of the valid ordering attributes followed (optionally) "
+        "by '-asc' or '-dsc' for ascending and descending order respectively. "
+        "Orders can be stacked as a comma-separated list of values."
+    ),
+)
+
 
 def parse_serialization_params(
     view: Optional[str] = None,
@@ -99,16 +109,7 @@ def get_filter_query_params(
     qv: Optional[List[str]] = FilterValueQueryParam,
     offset: Optional[int] = OffsetQueryParam,
     limit: Optional[int] = LimitQueryParam,
-    order: Optional[str] = Query(
-        default=None,
-        title="Order",
-        description=(
-            "String containing one of the valid ordering attributes followed (optionally) "
-            "by '-asc' or '-dsc' for ascending and descending order respectively. "
-            "Orders can be stacked as a comma-separated list of values."
-        ),
-        example="name-dsc,create_time",
-    ),
+    order: Optional[str] = OrderQueryParam,
 ) -> FilterQueryParams:
     """
     This function is meant to be used as a Dependency.

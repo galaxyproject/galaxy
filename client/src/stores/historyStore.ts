@@ -15,6 +15,7 @@ import {
     setCurrentHistoryOnServer,
     updateHistoryFields,
 } from "@/stores/services/history.services";
+import * as ArchiveServices from "@/stores/services/historyArchive.services";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 
 export type HistorySummary = components["schemas"]["HistorySummary"];
@@ -32,7 +33,9 @@ export const useHistoryStore = defineStore("historyStore", () => {
     const storedHistories = ref<{ [key: string]: HistorySummary }>({});
 
     const histories = computed(() => {
-        return Object.values(storedHistories.value).sort(sortByObjectProp("name"));
+        return Object.values(storedHistories.value)
+            .filter((h) => !h.archived)
+            .sort(sortByObjectProp("name"));
     });
 
     const getFirstHistoryId = computed(() => {
@@ -252,6 +255,28 @@ export const useHistoryStore = defineStore("historyStore", () => {
         setHistory(securedHistory as HistorySummary);
     }
 
+    async function archiveHistoryById(historyId: string, archiveExportId?: string, purgeHistory = false) {
+        const history = await ArchiveServices.archiveHistoryById(historyId, archiveExportId, purgeHistory);
+        setHistory(history as HistorySummary);
+        if (!history.archived) {
+            return;
+        }
+        // If the current history is archived, we need to switch to another one as it is
+        // no longer part of the active histories.
+        const nextHistoryId = getNextAvailableHistoryId([historyId]);
+        if (nextHistoryId) {
+            return setCurrentHistory(nextHistoryId);
+        } else {
+            return createNewHistory();
+        }
+    }
+
+    async function unarchiveHistoryById(historyId: string, force?: boolean) {
+        const history = await ArchiveServices.unarchiveHistoryById(historyId, force);
+        setHistory(history as HistorySummary);
+        return history;
+    }
+
     async function updateHistory({ id, ...update }: HistorySummary) {
         const savedHistory = await updateHistoryFields(id, update);
         setHistory(savedHistory as HistorySummary);
@@ -282,6 +307,8 @@ export const useHistoryStore = defineStore("historyStore", () => {
         loadHistoryById,
         secureHistory,
         updateHistory,
+        archiveHistoryById,
+        unarchiveHistoryById,
         historiesLoading,
         historiesOffset,
         totalHistoryCount,

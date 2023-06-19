@@ -98,6 +98,15 @@
 
                     <b-dropdown-item
                         :disabled="isAnonymous"
+                        data-description="archive history"
+                        :title="userTitle('Archive this History')"
+                        @click="$router.push(`/histories/${history.id}/archive`)">
+                        <Icon fixed-width icon="archive" class="mr-1" />
+                        <span v-localize>Archive History</span>
+                    </b-dropdown-item>
+
+                    <b-dropdown-item
+                        :disabled="isAnonymous"
                         :title="userTitle('Convert History to Workflow')"
                         @click="iframeRedirect('/workflow/build_from_current_history')">
                         <Icon fixed-width icon="file-export" class="mr-1" />

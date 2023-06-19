@@ -48,7 +48,9 @@ from galaxy.schema import (
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
+    AnyArchivedHistoryView,
     AnyHistoryView,
+    ArchiveHistoryRequestPayload,
     AsyncFile,
     AsyncTaskResultSummary,
     CreateHistoryFromStore,
@@ -156,7 +158,9 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
                 raise glx_exceptions.AdminRequiredException(message)
         else:
             filters += [model.History.user == current_user]
-        # and any sent in from the query string
+        # exclude archived histories
+        filters += [model.History.archived == false()]
+        # and apply any other filters
         filters += self.filters.parse_filters(filter_params)
         order_by = self._build_order_by(filter_query_params.order)
 
@@ -670,3 +674,122 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
 
     def _build_order_by(self, order: Optional[str]):
         return self.build_order_by(self.manager, order or DEFAULT_ORDER_BY)
+
+    def archive_history(
+        self,
+        trans: ProvidesHistoryContext,
+        history_id: DecodedDatabaseIdField,
+        payload: Optional[ArchiveHistoryRequestPayload] = None,
+    ) -> AnyArchivedHistoryView:
+        """Marks the history with the given id as archived and optionally associates it with the given archive export record in the payload.
+
+        Archived histories are not part of the active histories of the user, so they won't be shown to the user by default.
+        """
+        if trans.anonymous:
+            raise glx_exceptions.AuthenticationRequired("Only registered users can archive histories.")
+
+        history = self.manager.get_owned(history_id, trans.user)
+        if history.archived:
+            raise glx_exceptions.Conflict("History is already archived.")
+
+        archive_export_id = payload.archive_export_id if payload else None
+        if archive_export_id:
+            export_record = self.history_export_manager.get_task_export_by_id(archive_export_id)
+            self._ensure_export_record_can_be_associated_with_history_archival(history_id, export_record)
+            # After this point, the export record is valid and can be associated with the history archival
+        purge_history = payload.purge_history if payload else False
+        if purge_history:
+            if archive_export_id is None:
+                raise glx_exceptions.RequestParameterMissingException(
+                    "Cannot purge history without an export record. A valid archive_export_id is required."
+                )
+            self.manager.purge(history)
+        history = self.manager.archive_history(history, archive_export_id=archive_export_id)
+        return self._serialize_archived_history(trans, history)
+
+    def _ensure_export_record_can_be_associated_with_history_archival(
+        self, history_id: int, export_record: model.StoreExportAssociation
+    ):
+        if export_record.object_id != history_id or export_record.object_type != "history":
+            raise glx_exceptions.RequestParameterInvalidException(
+                "The given archive export record does not belong to this history."
+            )
+        export_metadata = self.history_export_manager.get_record_metadata(export_record)
+        if export_metadata is None:
+            log.error(
+                f"Trying to archive history [{history_id}] with an export record. "
+                f"But the given archive export record [{export_record.id}] does not have the required metadata."
+            )
+            raise glx_exceptions.RequestParameterInvalidException(
+                "The given archive export record does not have the required metadata."
+            )
+        if not export_metadata.is_ready():
+            raise glx_exceptions.RequestParameterInvalidException(
+                "The given archive export record must be ready before it can be used to archive a history. "
+                "Please wait for the export to finish and try again."
+            )
+        if export_metadata.is_short_term():
+            raise glx_exceptions.RequestParameterInvalidException(
+                "The given archive export record is temporal, only persistent sources can be used to archive a history."
+            )
+        # TODO: should we also ensure the export was requested to include files with `include_files`, `include_hidden`, etc.?
+
+    def restore_archived_history(
+        self,
+        trans: ProvidesHistoryContext,
+        history_id: DecodedDatabaseIdField,
+        force: Optional[bool] = False,
+    ) -> AnyHistoryView:
+        if trans.anonymous:
+            raise glx_exceptions.AuthenticationRequired("Only registered users can access archived histories.")
+
+        history = self.manager.get_owned(history_id, trans.user)
+        history = self.manager.restore_archived_history(history, force=force or False)
+        return self._serialize_archived_history(trans, history)
+
+    def get_archived_histories(
+        self,
+        trans: ProvidesHistoryContext,
+        serialization_params: SerializationParams,
+        filter_query_params: FilterQueryParams,
+        include_total_matches: bool = False,
+    ) -> Tuple[List[AnyArchivedHistoryView], Optional[int]]:
+        if trans.anonymous:
+            raise glx_exceptions.AuthenticationRequired("Only registered users can have or access archived histories.")
+
+        filters = self.filters.parse_query_filters(filter_query_params)
+        filters += [
+            model.History.user == trans.user,
+            model.History.archived == true(),
+        ]
+        total_matches = self.manager.count(filters=filters) if include_total_matches else None
+        order_by = self._build_order_by(filter_query_params.order)
+        histories = self.manager.list(
+            filters=filters, order_by=order_by, limit=filter_query_params.limit, offset=filter_query_params.offset
+        )
+
+        histories = [self._serialize_archived_history(trans, history, serialization_params) for history in histories]
+        return histories, total_matches
+
+    def _serialize_archived_history(
+        self,
+        trans: ProvidesHistoryContext,
+        history: model.History,
+        serialization_params: Optional[SerializationParams] = None,
+    ):
+        if serialization_params is None:
+            serialization_params = SerializationParams(default_view="summary")
+        archived_history = self.serializer.serialize_to_view(
+            history, user=trans.user, trans=trans, **serialization_params.dict()
+        )
+        export_record_data = self._get_export_record_data(history)
+        archived_history["export_record_data"] = export_record_data.dict() if export_record_data else None
+        return archived_history
+
+    def _get_export_record_data(self, history: model.History) -> Optional[WriteStoreToPayload]:
+        if history.archive_export_id:
+            export_record = self.history_export_manager.get_task_export_by_id(history.archive_export_id)
+            export_metadata = self.history_export_manager.get_record_metadata(export_record)
+            if export_metadata and isinstance(export_metadata.request_data.payload, WriteStoreToPayload):
+                return export_metadata.request_data.payload
+        return None

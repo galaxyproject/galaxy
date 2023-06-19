@@ -14,6 +14,7 @@ const expectedOptions = [
     "Delete this History",
     "Export Tool Citations",
     "Export History to File",
+    "Archive History",
     "Extract Workflow",
     "Show Invocations",
     "Share or Publish",

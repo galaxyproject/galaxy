@@ -368,6 +368,41 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
                 else:
                     log.warning(f"User without permissions tried to make dataset with id: {dataset.id} public")
 
+    def archive_history(self, history: model.History, archive_export_id: Optional[int]):
+        """Marks the history with the given id as archived and optionally associates it with the given archive export record.
+
+        **Important**: The caller is responsible for passing a valid `archive_export_id` that belongs to the given history.
+        """
+        history.archived = True
+        history.archive_export_id = archive_export_id
+        with transaction(self.session()):
+            self.session().commit()
+
+        return history
+
+    def restore_archived_history(self, history: model.History, force: bool = False):
+        """Marks the history with the given id as not archived anymore.
+
+        Only un-archives the history if it is not associated with an archive export record. You can force the un-archiving
+        in this case by passing `force=True`.
+
+        Please note that histories that are associated with an archive export are usually purged after export, so un-archiving them
+        will not restore the datasets that were in the history before it was archived. You will need to import the archive export
+        record to restore the history and its datasets as a new copy.
+        """
+        if history.archive_export_id is not None and history.purged and not force:
+            raise glx_exceptions.RequestParameterInvalidException(
+                "Cannot restore an archived (and purged) history that is associated with an archive export record. "
+                "Please try importing it back as a new copy from the associated archive export record instead. "
+                "You can still force the un-archiving of the purged history by setting the 'force' parameter."
+            )
+
+        history.archived = False
+        with transaction(self.session()):
+            self.session().commit()
+
+        return history
+
 
 class HistoryStorageCleanerManager(StorageCleanerManager):
     def __init__(self, history_manager: HistoryManager):
@@ -460,20 +495,23 @@ class HistoryExportManager:
         )
         return [self._serialize_task_export(export, history) for export in export_associations]
 
+    def get_task_export_by_id(self, store_export_id: int) -> model.StoreExportAssociation:
+        return self.export_tracker.get_export_association(store_export_id)
+
     def create_export_association(self, history_id: int) -> model.StoreExportAssociation:
         return self.export_tracker.create_export_association(object_id=history_id, object_type=self.export_object_type)
+
+    def get_record_metadata(self, export: model.StoreExportAssociation) -> Optional[ExportObjectMetadata]:
+        json_metadata = export.export_metadata
+        export_metadata = ExportObjectMetadata.parse_raw(json_metadata) if json_metadata else None
+        return export_metadata
 
     def _serialize_task_export(self, export: model.StoreExportAssociation, history: model.History):
         task_uuid = export.task_uuid
         export_date = export.create_time
         history_has_changed = history.update_time > export_date
-        json_metadata = export.export_metadata
-        export_metadata = ExportObjectMetadata.parse_raw(json_metadata) if json_metadata else None
-        is_ready = (
-            export_metadata is not None
-            and export_metadata.result_data is not None
-            and export_metadata.result_data.success
-        )
+        export_metadata = self.get_record_metadata(export)
+        is_ready = export_metadata is not None and export_metadata.is_ready()
         is_export_up_to_date = is_ready and not history_has_changed
         return {
             "id": export.id,
@@ -559,6 +597,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
                 "name",
                 "deleted",
                 "purged",
+                "archived",
                 "count",
                 "url",
                 # TODO: why these?

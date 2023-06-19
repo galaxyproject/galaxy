@@ -48,6 +48,14 @@ class StoreExportTracker:
         with transaction(self.session):
             self.session.commit()
 
+    def get_export_association(self, export_association_id: int) -> StoreExportAssociation:
+        try:
+            stmt = select(StoreExportAssociation).where(StoreExportAssociation.id == export_association_id)
+            export_association: StoreExportAssociation = self.session.execute(stmt).scalars().one()
+        except NoResultFound:
+            raise ObjectNotFound("Cannot get export association. Reason: Export association not found")
+        return export_association
+
     def get_object_exports(
         self, object_id: int, object_type: ExportObjectType, limit: Optional[int] = None, offset: Optional[int] = None
     ) -> List[StoreExportAssociation]:

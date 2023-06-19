@@ -91,6 +91,7 @@ module.exports = {
             rules: {
                 ...baseRules,
                 "@typescript-eslint/no-throw-literal": "error",
+                "@typescript-eslint/ban-ts-comment": "warn",
             },
             parser: "@typescript-eslint/parser",
             parserOptions: {

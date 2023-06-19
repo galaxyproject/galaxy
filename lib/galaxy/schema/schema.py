@@ -1038,6 +1038,11 @@ class HistorySummary(HistoryBase):
         title="Purged",
         description="Whether this item has been permanently removed.",
     )
+    archived: bool = Field(
+        ...,
+        title="Archived",
+        description="Whether this item has been archived and is no longer active.",
+    )
     url: RelativeUrl = RelativeUrlField
     published: bool = Field(
         ...,
@@ -1537,6 +1542,14 @@ class ExportObjectMetadata(Model):
     request_data: ExportObjectRequestMetadata
     result_data: Optional[ExportObjectResultMetadata]
 
+    def is_short_term(self):
+        """Whether the export is a short term export."""
+        return isinstance(self.request_data.payload, ShortTermStoreExportPayload)
+
+    def is_ready(self):
+        """Whether the export has finished and it's ready to be used."""
+        return self.result_data is not None and self.result_data.success
+
 
 class ObjectExportTaskResponse(ObjectExportResponseBase):
     task_uuid: UUID4 = Field(
@@ -1555,6 +1568,55 @@ class JobExportHistoryArchiveListResponse(Model):
 class ExportTaskListResponse(Model):
     __root__: List[ObjectExportTaskResponse]
     __accept_type__ = "application/vnd.galaxy.task.export+json"
+
+
+class ArchiveHistoryRequestPayload(Model):
+    archive_export_id: Optional[DecodedDatabaseIdField] = Field(
+        default=None,
+        title="Export Record ID",
+        description=(
+            "The encoded ID of the export record to associate with this history archival."
+            "This is used to be able to recover the history from the export record."
+        ),
+    )
+    purge_history: bool = Field(
+        default=False,
+        title="Purge History",
+        description="Whether to purge the history after archiving it. It requires an `archive_export_id` to be set.",
+    )
+
+
+class ExportRecordData(WriteStoreToPayload):
+    """Data of an export record associated with a history that was archived."""
+
+    # Initially this is just a WriteStoreToPayload, but we may want to add more data to
+    # this in the future to support more complex export scenarios or target destinations.
+    pass
+
+
+class ExportAssociationData(Model):
+    export_record_data: Optional[ExportRecordData] = Field(
+        default=None,
+        title="Export Record Data",
+        description="The export record data associated with this archived history. Used to recover the history.",
+    )
+
+
+class ArchivedHistorySummary(HistorySummary, ExportAssociationData):
+    pass
+
+
+class ArchivedHistoryDetailed(HistoryDetailed, ExportAssociationData):
+    pass
+
+
+AnyArchivedHistoryView = Union[
+    ArchivedHistorySummary,
+    ArchivedHistoryDetailed,
+    # Any will cover those cases in which only specific `keys` are requested
+    # otherwise the validation will fail because the required fields are not returned
+    Any,
+]
 
 
 class LabelValuePair(Model):

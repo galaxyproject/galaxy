@@ -6,26 +6,58 @@ type ExportObjectRequestMetadata = components["schemas"]["ExportObjectRequestMet
 export type StoreExportPayload = components["schemas"]["StoreExportPayload"];
 export type ObjectExportTaskResponse = components["schemas"]["ObjectExportTaskResponse"];
 
-export class ExportParamsModel {
+export interface ExportParams {
+    readonly modelStoreFormat: string;
+    readonly includeFiles: boolean;
+    readonly includeDeleted: boolean;
+    readonly includeHidden: boolean;
+}
+
+export interface ExportRecord {
+    readonly id: string;
+    readonly isReady: boolean;
+    readonly isPreparing: boolean;
+    readonly isUpToDate: boolean;
+    readonly hasFailed: boolean;
+    readonly date: Date;
+    readonly elapsedTime: string;
+    readonly taskUUID: string;
+    readonly importUri?: string;
+    readonly canReimport: boolean;
+    readonly stsDownloadId?: string;
+    readonly isStsDownload: boolean;
+    readonly canDownload: boolean;
+    readonly modelStoreFormat: string;
+    readonly exportParams?: ExportParams;
+    readonly duration?: number;
+    readonly canExpire: boolean;
+    readonly isPermanent: boolean;
+    readonly expirationDate?: Date;
+    readonly expirationElapsedTime?: string;
+    readonly hasExpired: boolean;
+    readonly errorMessage?: string;
+}
+
+export class ExportParamsModel implements ExportParams {
     private _params: StoreExportPayload;
     constructor(data: StoreExportPayload = {}) {
         this._params = data;
     }
 
     get modelStoreFormat() {
-        return this._params?.model_store_format;
+        return this._params?.model_store_format ?? "tgz";
     }
 
     get includeFiles() {
-        return this._params?.include_files;
+        return Boolean(this._params?.include_files);
     }
 
     get includeDeleted() {
-        return this._params?.include_deleted;
+        return Boolean(this._params?.include_deleted);
     }
 
     get includeHidden() {
-        return this._params?.include_hidden;
+        return Boolean(this._params?.include_hidden);
     }
 
     public equals(otherExportParams?: ExportParamsModel) {
@@ -41,9 +73,9 @@ export class ExportParamsModel {
     }
 }
 
-export class ExportRecordModel {
+export class ExportRecordModel implements ExportRecord {
     private _data: ObjectExportTaskResponse;
-    private _expirationDate?: Date | null;
+    private _expirationDate?: Date;
     private _requestMetadata?: ExportObjectRequestMetadata;
     private _exportParameters?: ExportParamsModel;
 
@@ -54,6 +86,10 @@ export class ExportRecordModel {
         this._exportParameters = this._requestMetadata?.payload
             ? new ExportParamsModel(this._requestMetadata?.payload)
             : undefined;
+    }
+
+    get id() {
+        return this._data.id;
     }
 
     get isReady() {
@@ -109,7 +145,7 @@ export class ExportRecordModel {
     }
 
     get modelStoreFormat() {
-        return this.exportParams?.modelStoreFormat;
+        return this.exportParams?.modelStoreFormat ?? "tgz";
     }
 
     get exportParams() {
@@ -125,9 +161,13 @@ export class ExportRecordModel {
         return this.isStsDownload && Boolean(this.duration);
     }
 
+    get isPermanent() {
+        return !this.canExpire;
+    }
+
     get expirationDate() {
         if (this._expirationDate === undefined) {
-            this._expirationDate = this.duration ? new Date(this.date.getTime() + this.duration * 1000) : null;
+            this._expirationDate = this.duration ? new Date(this.date.getTime() + this.duration * 1000) : undefined;
         }
         return this._expirationDate;
     }
@@ -135,11 +175,11 @@ export class ExportRecordModel {
     get expirationElapsedTime() {
         return this.canExpire && this.expirationDate
             ? formatDistanceToNow(this.expirationDate, { addSuffix: true })
-            : null;
+            : undefined;
     }
 
     get hasExpired() {
-        return this.canExpire && this.expirationDate && Date.now() > this.expirationDate.getTime();
+        return Boolean(this.canExpire && this.expirationDate && Date.now() > this.expirationDate.getTime());
     }
 
     get errorMessage() {
