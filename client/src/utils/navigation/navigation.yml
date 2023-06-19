@@ -498,6 +498,8 @@ pages:
     drop: '.page-dropdown'
     drop_edit: '.dropdown-item-edit'
     drop_view: '.dropdown-item-view'
+    create_title_input: '#form-element-title input'
+    create_slug_input: '#form-element-slug input'
     export: '.markdown-pdf-export'
     dropdown: '[data-page-dropdown*="${id}"]'
     index_table: "#page-table"
