@@ -21,6 +21,12 @@ defineProps<Props>();
 const emit = defineEmits<{
     (e: "click"): void;
 }>();
+
+const tooltip = computed(() =>
+    totalCount.value === 1
+        ? `You have 1 running interactive tool`
+        : `You have ${totalCount.value} running interactive tools`
+);
 </script>
 
 <template>
@@ -31,7 +37,7 @@ const emit = defineEmits<{
         :indicator="totalCount"
         :is-active="isActive"
         :title="title"
-        :tooltip="`There are ${totalCount} active interactive tools.`"
+        :tooltip="tooltip"
         :to="to"
         @click="emit('click')" />
 </template>
