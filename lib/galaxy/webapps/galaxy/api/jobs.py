@@ -79,7 +79,7 @@ StateQueryParam = Query(
 UserDetailsQueryParam: bool = Query(
     default=False,
     title="Include user details",
-    description="If true, and requestor is an admin, will return external job id and user email. This is only available to admins.",
+    description="If true, and requester is an admin, will return external job id and user email. This is only available to admins.",
 )
 
 UserIdQueryParam: Optional[DecodedDatabaseIdField] = Query(

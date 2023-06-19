@@ -69,6 +69,8 @@ import { CloudAuth } from "components/User/CloudAuth";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
 import { HistoryExport } from "components/HistoryExport/index";
 import HistoryExportTasks from "components/History/Export/HistoryExport";
+import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
+import HistoryArchive from "@/components/History/Archiving/HistoryArchive.vue";
 
 Vue.use(VueRouter);
 
@@ -270,6 +272,10 @@ export function getRouter(Galaxy) {
                         props: true,
                     },
                     {
+                        path: "histories/archived",
+                        component: HistoryArchive,
+                    },
+                    {
                         path: "histories/:actionId",
                         component: GridHistory,
                         props: true,
@@ -280,6 +286,11 @@ export function getRouter(Galaxy) {
                         get component() {
                             return Galaxy.config.enable_celery_tasks ? HistoryExportTasks : HistoryExport;
                         },
+                        props: true,
+                    },
+                    {
+                        path: "histories/:historyId/archive",
+                        component: HistoryArchiveWizard,
                         props: true,
                     },
                     {
