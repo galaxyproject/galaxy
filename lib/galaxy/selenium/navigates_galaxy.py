@@ -1500,13 +1500,14 @@ class NavigatesGalaxy(HasDriver):
     def create_page_and_edit(self, name=None, slug=None, screenshot_name=None):
         name = self.create_page(name=name, slug=slug, screenshot_name=screenshot_name)
         self.components.pages.drop.wait_for_and_click()
-        self.components.pages.edit.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.components.pages.drop_edit.wait_for_and_click()
         self.components.pages.editor.markdown_editor.wait_for_visible()
         return name
 
     def create_page(self, name=None, slug=None, screenshot_name=None):
         self.components.pages.create.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.sleep_for(self.wait_types.UX_RENDER)
         name = name or self._get_random_name(prefix="page")
         slug = slug = self._get_random_name(prefix="pageslug")
         self.tool_set_value("title", name)

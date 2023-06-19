@@ -65,7 +65,7 @@ function onDelete(page_id: string) {
                 <span class="fa fa-edit fa-fw mr-1" />
                 <span>Edit content</span>
             </a>
-            <a v-if="!readOnly" class="dropdown-item dropdown-item-edit-attributes" :href="urlEditAttributes">
+            <a v-if="!readOnly" class="dropdown-item dropdown-item-attributes" :href="urlEditAttributes">
                 <span class="fa fa-pencil fa-fw mr-1" />
                 <span>Edit attributes</span>
             </a>
