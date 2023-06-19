@@ -12,6 +12,7 @@ describe("ActivityItem", () => {
             propsData: {
                 id: "activity-test-id",
                 icon: "activity-test-icon",
+                indicator: 0,
                 progressPercentage: 0,
                 progressStatus: null,
                 title: "activity-test-title",
@@ -40,5 +41,19 @@ describe("ActivityItem", () => {
         await wrapper.setProps({ progressStatus: "danger" });
         expect(reference.find(".bg-success").exists()).toBeFalsy();
         expect(reference.find(".bg-danger").exists()).toBeTruthy();
+    });
+
+    it("rendering indicator", async () => {
+        const reference = wrapper.find("[id='activity-test-id']");
+        const indicatorSelector = "[data-description='activity indicator']";
+        const noindicator = reference.find(indicatorSelector);
+        expect(noindicator.exists()).toBeFalsy();
+        await wrapper.setProps({ indicator: 1 });
+        const indicator = reference.find(indicatorSelector);
+        expect(indicator.exists()).toBeTruthy();
+        expect(indicator.text()).toBe("1");
+        await wrapper.setProps({ indicator: 1000 });
+        const maxindicator = reference.find(indicatorSelector);
+        expect(maxindicator.text()).toBe("99");
     });
 });
