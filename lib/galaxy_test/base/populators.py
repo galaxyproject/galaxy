@@ -1484,6 +1484,7 @@ class BaseDatasetPopulator(BasePopulator):
         sharing_response = self._put(f"pages/{page_id}/publish")
         assert sharing_response.status_code == 200
         return sharing_response.json()
+
     def wait_for_export_task_on_record(self, export_record):
         if export_record["preparing"]:
             assert export_record["task_uuid"]
