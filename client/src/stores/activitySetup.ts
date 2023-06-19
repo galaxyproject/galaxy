@@ -6,6 +6,17 @@ import { type EventData } from "@/stores/eventStore";
 
 export const Activities = [
     {
+        description: "Displays currently active interactive tools (ITs), if these are enabled by the administrator.",
+        icon: "fa-laptop",
+        id: "interactivetools",
+        mutable: false,
+        optional: true,
+        title: "Interactive Tools",
+        tooltip: "Show active interactive tools",
+        to: "/interactivetool_entry_points/list",
+        visible: true,
+    },
+    {
         description: "Opens a data dialog, allowing uploads from URL, pasted content or disk.",
         icon: "upload",
         id: "upload",

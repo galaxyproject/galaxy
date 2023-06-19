@@ -15,7 +15,7 @@ export interface Props {
     id: string;
     title?: string;
     icon?: string | object;
-    indicator?: boolean;
+    indicator?: number;
     isActive?: boolean;
     tooltip?: string;
     tooltipPlacement?: string;
@@ -28,7 +28,7 @@ export interface Props {
 const props = withDefaults(defineProps<Props>(), {
     title: undefined,
     icon: "question",
-    indicator: false,
+    indicator: 0,
     isActive: false,
     options: undefined,
     progressPercentage: 0,
@@ -71,7 +71,9 @@ function onClick(evt: MouseEvent): void {
                     </span>
                     <span class="position-relative">
                         <div class="nav-icon">
-                            <span v-if="indicator" class="nav-indicator" />
+                            <span v-if="indicator > 0" class="nav-indicator" data-description="activity indicator">
+                                {{ Math.min(indicator, 99) }}
+                            </span>
                             <FontAwesomeIcon :icon="icon" />
                         </div>
                         <TextShort v-if="title" :text="title" class="nav-title" />
@@ -79,7 +81,7 @@ function onClick(evt: MouseEvent): void {
                 </b-nav-item>
             </div>
         </template>
-        <div class="px-2 py-1">
+        <div class="text-center px-2 py-1">
             <small v-if="tooltip">{{ tooltip | l }}</small>
             <small v-else>No tooltip available for this item</small>
             <div v-if="options" class="nav-options p-1">
@@ -102,13 +104,18 @@ function onClick(evt: MouseEvent): void {
 }
 
 .nav-indicator {
-    position: absolute;
-    top: 0px;
-    left: 2.2rem;
-    width: 0.6rem;
-    height: 0.6rem;
-    border-radius: 50%;
+    align-items: center;
     background: $brand-danger;
+    border-radius: 50%;
+    color: $brand-light;
+    display: flex;
+    font-size: 0.7rem;
+    justify-content: center;
+    left: 2.2rem;
+    height: 1.2rem;
+    position: absolute;
+    top: -0.3rem;
+    width: 1.2rem;
 }
 
 .nav-item {

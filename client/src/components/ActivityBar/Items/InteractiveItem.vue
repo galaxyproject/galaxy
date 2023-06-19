@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { storeToRefs } from "pinia";
-import { useNotificationsStore } from "@/stores/notificationsStore";
+import { useEntryPointStore } from "@/stores/entryPointStore";
 import ActivityItem from "components/ActivityBar/ActivityItem.vue";
 
-const { totalUnreadCount } = storeToRefs(useNotificationsStore());
+const { entryPoints } = storeToRefs(useEntryPointStore());
+
+const totalCount = computed(() => entryPoints.value.length);
 
 export interface Props {
     id: string;
@@ -21,17 +23,18 @@ const emit = defineEmits<{
 }>();
 
 const tooltip = computed(() =>
-    totalUnreadCount.value > 0
-        ? `You have ${totalUnreadCount.value} unread notifications`
-        : "You have no unread notifications"
+    totalCount.value === 1
+        ? `You currently have 1 active interactive tool`
+        : `You currently have ${totalCount.value} active interactive tools`
 );
 </script>
 
 <template>
     <ActivityItem
+        v-if="totalCount > 0"
         :id="id"
         :icon="icon"
-        :indicator="totalUnreadCount"
+        :indicator="totalCount"
         :is-active="isActive"
         :title="title"
         :tooltip="tooltip"
