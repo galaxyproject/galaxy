@@ -81,7 +81,7 @@ function onClick(evt: MouseEvent): void {
                 </b-nav-item>
             </div>
         </template>
-        <div class="px-2 py-1">
+        <div class="text-center px-2 py-1">
             <small v-if="tooltip">{{ tooltip | l }}</small>
             <small v-else>No tooltip available for this item</small>
             <div v-if="options" class="nav-options p-1">
