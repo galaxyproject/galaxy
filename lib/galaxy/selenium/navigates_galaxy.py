@@ -1506,14 +1506,16 @@ class NavigatesGalaxy(HasDriver):
         return name
 
     def create_page(self, name=None, slug=None, screenshot_name=None):
-        self.components.pages.create.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_RENDER)
         name = name or self._get_random_name(prefix="page")
         slug = slug = self._get_random_name(prefix="pageslug")
+        self.components.pages.create.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.screenshot("before_title_input")
         self.components.pages.create_title_input.wait_for_and_send_keys(name)
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.screenshot("before_slug_input")
         self.components.pages.create_slug_input.wait_for_and_send_keys(slug)
-        # self.tool_set_value("title", name)
-        # self.tool_set_value("slug", slug)
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot_if(screenshot_name)
         self.components.pages.submit.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
