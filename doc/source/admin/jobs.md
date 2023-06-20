@@ -117,7 +117,7 @@ The images used for containers can either be specified explicitly in the ``<dest
 using a ``<container>`` tag or a mulled (multi package) container is implied for the set 
 of packages specified by the tool's ``<requirement>`` tags. 
 In either case the container to be used is determined using container resolvers that can be specified
-globally for an instance of locally per instance, see [Container resolvers](container_resolvers.md).
+globally for an instance of locally per instance, see [Container resolvers](container_resolvers).
 
 ### Running jobs on a Kubernetes cluster via Pulsar
 

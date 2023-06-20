@@ -710,7 +710,7 @@ galaxy:
   # container resolvers to use when discovering containers for Galaxy.
   # If this is set to None, the default container resolvers loaded is
   # determined by enable_mulled_containers. For available options see
-  # https://docs.galaxyproject.org/en/master/admin/container_resolvers.rst.
+  # https://docs.galaxyproject.org/en/master/admin/container_resolvers.html
   #container_resolvers_config_file: null
 
   # Rather than specifying a container_resolvers_config_file, the

@@ -933,7 +933,6 @@ class TestCondaFallBackAndRequireContainer(DockerContainerResolverTestCase, Cont
                 {"id": "upload1", "environment": "local_upload"},
             ],
         }
-        # config["job_config"]["execution"]["environments"]["local_docker"]["require_container"] = True
         config["container_resolvers"] = cls.container_resolvers_config
 
 
