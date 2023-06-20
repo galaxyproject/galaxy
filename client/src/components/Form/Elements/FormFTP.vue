@@ -25,6 +25,7 @@
                         <th v-show="model.collection" class="_has_collection">
                             <div
                                 class="upload-ftp-select-all"
+                                id="upload-ftp-select-all"
                                 :ftp-id="'*'"
                                 :class="selectAllStatus"
                                 @click="selectAll"></div>
@@ -65,7 +66,6 @@
 
 <script>
 import _ from "underscore";
-import $ from "jquery"; //TODO remove
 import { getGalaxyInstance } from "app";
 import Utils from "utils/utils";
 import UploadUtils from "mvc/upload/upload-utils";
@@ -154,28 +154,26 @@ export default {
             }
             this.waiting = false;
         },
-
         _renderRow: function (file) {
             var self = this;
             var options = this.model.checkbox;
-            var $it = $(this._templateRow(file.path));
-            var $icon = $it.find(".icon");
-            this.$body.append($it);
+            var it = this._templateRow(file.path);
+            var icon = it.getElementsByClassName("icon")[0];
+            this.$body.append(it);
             if (this.collection) {
                 var index = this.filesTarget[file.path];
-                $icon.addClass(index === undefined ? options.add : options.remove);
-                $it.on("click", () => {
-                    self._updateCheckboxes($icon, file);
-                    self._refresh();
+                icon.classList.add(...(index === undefined ? options.add : options.remove).split(' '));
+                it.addEventListener("click", () => {
+                    self._updateCheckboxes(icon, file);
+                    self._refreshCheckboxes();
                 });
             } else {
-                $it.on("click", () => {
+                it.addEventListener("click", () => {
                     options.onchange(file);
                 });
             }
-            return $icon;
+            return icon;
         },
-
         _buildFtpIndex: function () {
             this.filesTarget = {};
             if (this.collection) {
@@ -186,54 +184,47 @@ export default {
                 });
             }
         },
-
         selectAll: function () {
             var files = this.filesSource;
-            var add = $(".upload-ftp-select-all").hasClass(this.model.checkbox.add); //TODO needs DOM boundary
+            var add = (this.$el.getElementsByClassName('upload-ftp-select-all')[0].classList.value).includes(this.model.checkbox.add);
             for (var f in files) {
                 var file = files[f];
                 var index = this.filesTarget[file.path];
                 if ((index === undefined && add) || (index !== undefined && !add)) {
-                    this._updateCheckboxes($(this._templateRow(file.path)).find(".icon"), file);
+                    this._updateCheckboxes(this._templateRow(file.path).getElementsByClassName("icon")[0], file);
                 }
             }
-            this._refresh();
+            this._refreshCheckboxes();
         },
-
         onRowClick: function (file) {
             var self = this;
-            var $it = $(this._templateRow(file.path)); //TODO needs to be replaced
-            var $icon = $it.find(".icon");
+            var it = (this._templateRow(file.path));
+            var icon = it.getElementsByClassName("icon")[0];
             if (this.collection) {
-                this._updateCheckboxes($icon, file);
+                this._updateCheckboxes(icon, file);
             } else {
                 this.model.onchange(file);
             }
-            self._refresh();
+            self._refreshCheckboxes();
         },
-
         _templateRow: function (rowId) {
-            return $(`[ftp-id="${rowId}"]`);
+            return this.$el.querySelector(`[ftp-id="${rowId}"]`);
         },
-
-        /** Handle collection changes */
-        _updateCheckboxes: function ($icon, file) {
+        _updateCheckboxes: function (icon, file) {
             var options = this.model.checkbox;
-            $icon.removeClass(options.add);
+            icon.classList.remove(...options.add.split(' '));
             var index = this.filesTarget[file.path];
             if (index === undefined) {
                 var indexNew = this.model.onadd(this.model.upload_box, file);
-                $icon.addClass(options.remove); //TODO replace this jQuery for the check/uncheck box with Vue.js
+                icon.classList.add(...options.remove.split(' '));
                 this.filesTarget[file.path] = indexNew;
             } else {
                 this.model.onremove(this.model.collection, index);
-                $icon.addClass(options.add);
+                icon.classList.add(...options.add.split(' '));
                 delete this.filesTarget[file.path];
             }
         },
-
-        /** Refresh select all button state */
-        _refresh: function () {
+        _refreshCheckboxes: function () {
             var counts = _.reduce(
                 this.filesTarget,
                 (memo, element) => {
@@ -242,24 +233,21 @@ export default {
                 },
                 0
             );
-            $(".upload-ftp-select-all").removeClass(this.model.checkbox.add);
-            $(".upload-ftp-select-all").removeClass(this.model.checkbox.remove);
-            $(".upload-ftp-select-all").removeClass(this.model.checkbox.partial);
+            this.clearCheckbox("upload-ftp-select-all");
             if (counts === 0) {
-                $(".upload-ftp-select-all").addClass(this.model.checkbox.add);
+                this.$el.getElementsByClassName('upload-ftp-select-all')[0].classList.add(...this.model.checkbox.add.split(' '));
             } else {
-                $(".upload-ftp-select-all").addClass(
-                    counts == this.rows.length ? this.model.checkbox.remove : this.model.checkbox.partial
-                );
+                this.$el.getElementsByClassName('upload-ftp-select-all')[0].classList.add(...(counts == this.rows.length ? this.model.checkbox.remove : this.model.checkbox.partial).split(' '));
             }
         },
-
-        /** Check if file is selected */
         isSelected: function (file) {
             return this.filesTarget[file.path] !== undefined;
         },
-
-        /** Convert bytes to string */
+        clearCheckbox(strClass) {
+            this.$el.getElementsByClassName(strClass)[0].classList.remove(...this.model.checkbox.add.split(' '));
+            this.$el.getElementsByClassName(strClass)[0].classList.remove(...this.model.checkbox.remove.split(' '));
+            this.$el.getElementsByClassName(strClass)[0].classList.remove(...this.model.checkbox.partial.split(' '));
+        },
         bytesToString: function (bytes, si) {
             return Utils.bytesToString(bytes, si);
         },
