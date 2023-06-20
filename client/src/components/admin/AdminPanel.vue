@@ -79,6 +79,11 @@ export default {
                             title: "Local Data",
                             route: "/admin/data_manager",
                         },
+                        {
+                            id: "admin-link-notifications",
+                            title: "Notifications",
+                            route: "/admin/notifications",
+                        },
                     ],
                 },
                 {

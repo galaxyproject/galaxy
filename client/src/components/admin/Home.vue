@@ -43,6 +43,12 @@
                 - Manage the reference (and other) data that is stored within Tool Data Tables. See
                 <a href="https://galaxyproject.org/admin/tools/data-managers" target="_blank">wiki</a> for details.
             </li>
+            <li>
+                <strong>
+                    <router-link to="/admin/notifications">Notifications and Broadcasts</router-link>
+                </strong>
+                - Manage the notifications and broadcast messages that are displayed to users.
+            </li>
         </ul>
 
         <Heading h2 icon="fa-user" size="md">User Management</Heading>

@@ -5,6 +5,9 @@ import DataManagerJob from "components/admin/DataManager/DataManagerJob";
 import DataManagerJobs from "components/admin/DataManager/DataManagerJobs";
 import DataManagerTable from "components/admin/DataManager/DataManagerTable";
 import DataManagerView from "components/admin/DataManager/DataManagerView";
+import NotificationsManagement from "components/admin/Notifications/NotificationsManagement";
+import BroadcastForm from "components/admin/Notifications/BroadcastForm.vue";
+import NotificationForm from "components/admin/Notifications/NotificationForm.vue";
 import DataTables from "components/admin/DataTables";
 import DataTypes from "components/admin/DataTypes";
 import ToolboxDependencies from "components/admin/Dependencies/Landing";
@@ -92,6 +95,31 @@ export default [
                         props: true,
                     },
                 ],
+            },
+
+            // notifications and broadcasts
+            {
+                path: "notifications",
+                component: NotificationsManagement,
+            },
+
+            {
+                path: "notifications/create_new_broadcast",
+                name: "NewBroadcast",
+                component: BroadcastForm,
+            },
+
+            {
+                path: "notifications/edit_broadcast/:id",
+                name: "EditBroadcast",
+                component: BroadcastForm,
+                props: true,
+            },
+
+            {
+                path: "notifications/create_new_notification",
+                name: "NewNotification",
+                component: NotificationForm,
             },
 
             // grids
