@@ -8,10 +8,10 @@
 # Explicit container resolvers
 # ============================
 
-# get a container description (URI) for an explict docker container requirement
+# get a container description (URI) for an explicit docker container requirement
 - type: explicit
 
-# get a container description (URI) for an explict singularity container requirement
+# get a container description (URI) for an explicit singularity container requirement
 - type: explicit_singularity
 
 # get a cached container description (path) for singularity
@@ -88,7 +88,7 @@
 - type: mulled_singularity
   namespace: biocontainers
   # In addition to the arguments of `mulled` there are cache_directory
-  # and cache_directory_cacher_type. See the description at `cached_explict_mulled`
+  # and cache_directory_cacher_type. See the description at `cached_explicit_mulled`
   # and note the minor different in the default for the directory
   #cache_directory: database/container_cache/singularity/mulled
   #cache_directory_cacher_type: uncached
