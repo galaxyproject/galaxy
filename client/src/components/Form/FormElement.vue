@@ -291,7 +291,7 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 :options="attrs.options"
                 :multiple="attrs.multiple" />
             <FormDialog
-                v-else-if="props.type == 'data_dialog'"
+                v-else-if="props.type === 'data_dialog'"
                 :id="id"
                 v-model="currentValue"
                 :multiple="attrs.multiple === 'true'" />
