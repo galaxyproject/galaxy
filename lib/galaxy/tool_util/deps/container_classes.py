@@ -176,8 +176,8 @@ class Volume:
         self.source, self.target, self.mode = Volume.parse_volume_str(rawstr)
         self.container_type = container_type
 
-    @classmethod
-    def parse_volume_str(cls, rawstr: str) -> Tuple[str, str, str]:
+    @staticmethod
+    def parse_volume_str(rawstr: str) -> Tuple[str, str, str]:
         """
         >>> Volume.parse_volume_str('A:B:rw')
         ('A', 'B', 'rw')

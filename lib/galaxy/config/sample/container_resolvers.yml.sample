@@ -1,4 +1,4 @@
-# Sample file for container resolvers. Resolvers that are may be used by default
+# Sample file for container resolvers. Resolvers that are potentially used by default
 # are uncommented (comments describe under which premises they are in the
 # defaults).
 
@@ -88,8 +88,8 @@
 - type: mulled_singularity
   namespace: biocontainers
   # In addition to the arguments of `mulled` there are cache_directory
-  # and cache_directory_cacher_type. See the description at `cached_explicit_mulled`
-  # and note the minor different in the default for the directory
+  # and cache_directory_cacher_type. See the description at `cached_explicit_singularity`
+  # and note the minor difference in the default for the directory
   #cache_directory: database/container_cache/singularity/mulled
   #cache_directory_cacher_type: uncached
 
@@ -126,8 +126,8 @@
 #-type: requires_galaxy_environment_singularity
   #identifier: A_VALID_CONTAINER_IDENTIFIER
 
-# mapping container resolver allows to specify a list of mappings from map tools
-# (tool_id) to containers (identifier).
+# The mapping container resolver allows to specify a list of mappings from tools
+# (tool_id) to containers (type and identifier).
 
 #-type: mapping
   #mappings:
