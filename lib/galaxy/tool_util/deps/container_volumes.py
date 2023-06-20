@@ -3,12 +3,13 @@ from abc import (
     ABCMeta,
     abstractmethod,
 )
+from typing import Optional
 
 
 class ContainerVolume(metaclass=ABCMeta):
     valid_modes = frozenset({"ro", "rw"})
 
-    def __init__(self, path, host_path=None, mode=None):
+    def __init__(self, path: str, host_path: Optional[str] = None, mode: Optional[str] = None):
         self.path = path
         self.host_path = host_path
         self.mode = mode
@@ -16,7 +17,7 @@ class ContainerVolume(metaclass=ABCMeta):
             raise ValueError(f"Invalid container volume mode: {mode}")
 
     @abstractmethod
-    def from_str(cls, as_str):
+    def from_str(cls, as_str: str) -> "ContainerVolume":
         """Classmethod to convert from this container type's string representation.
 
         :param  as_str: string representation of volume
@@ -24,17 +25,17 @@ class ContainerVolume(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def __str__(self):
+    def __str__(self) -> str:
         """Return this container type's string representation of the volume."""
 
     @property
-    def mode_is_valid(self):
+    def mode_is_valid(self) -> bool:
         return self.mode in self.valid_modes
 
 
 class DockerVolume(ContainerVolume):
     @classmethod
-    def from_str(cls, as_str):
+    def from_str(cls, as_str: str) -> "DockerVolume":
         """Construct an instance from a string as would be passed to `docker run --volume`.
 
         A string in the format ``<host_path>:<mode>`` is supported for legacy purposes even though it is not valid
@@ -59,8 +60,8 @@ class DockerVolume(ContainerVolume):
             kwds["mode"] = parts[2]
         return cls(**kwds)
 
-    def __str__(self):
-        volume_str = ":".join(filter(lambda x: x is not None, (self.host_path, self.path, self.mode)))
+    def __str__(self) -> str:
+        volume_str = ":".join(x for x in (self.host_path, self.path, self.mode) if x is not None)
         if "$" not in volume_str:
             volume_for_cmd_line = shlex.quote(volume_str)
         else:

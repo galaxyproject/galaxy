@@ -1,3 +1,17 @@
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    TYPE_CHECKING,
+)
+
+from requests import Session
+from typing_extensions import (
+    NotRequired,
+    TypedDict,
+)
+
 from galaxy import exceptions
 from galaxy.util import (
     asbool,
@@ -8,6 +22,11 @@ from .resolvers import (
     ContainerDependency,
     NullDependency,
 )
+
+if TYPE_CHECKING:
+    from galaxy.structured_app import StructuredApp
+    from galaxy.tool_util.deps.container_resolvers import ResolutionCache
+    from .container_resolvers import ContainerResolver
 
 
 class DependencyResolversView:
@@ -331,31 +350,24 @@ class DependencyResolversView:
 class ContainerResolutionView:
     """ """
 
-    def __init__(self, app):
+    def __init__(self, app: "StructuredApp"):
         self._app = app
 
-    def index(self):
+    def index(self) -> List[Dict[str, Any]]:
         return [r.to_dict() for r in self._container_resolvers]
 
-    def show(self, index):
-        return self._container_resolver(index).to_dict()
+    def show(self, index: str) -> Dict[str, Any]:
+        return self._container_resolver(int(index)).to_dict()
 
-    def resolve(self, index=None, **kwds):
-        find_best_kwds = {
-            "install": False,
-            "enabled_container_types": ["docker", "singularity"],
-            "resolution_cache": kwds.get("resolution_cache"),
-            "session": kwds.get("session"),
-        }
-
-        if index is not None:
-            find_best_kwds["index"] = int(index)
-        if "container_type" in kwds:
-            find_best_kwds["enabled_container_types"] = [kwds["container_type"]]
-        if "resolver_type" in kwds:
-            find_best_kwds["resolver_type"] = kwds["resolver_type"]
-        if "install" in kwds:
-            find_best_kwds["install"] = asbool(kwds["install"])
+    def resolve(self, index: Optional[str] = None, **kwds) -> Dict[str, Any]:
+        class ResolveKwds(TypedDict):
+            install: bool
+            enabled_container_types: List["str"]
+            tool_info: "ToolInfo"
+            resolution_cache: NotRequired["ResolutionCache"]
+            session: NotRequired["Session"]
+            index: NotRequired[int]
+            resolver_type: NotRequired[str]
 
         tool_info_kwds = {}
         tool_id = kwds["tool_id"]
@@ -373,7 +385,22 @@ class ContainerResolutionView:
             tool_info_kwds["tool_id"] = tool.id
             tool_info_kwds["tool_version"] = tool.version
 
-        find_best_kwds["tool_info"] = ToolInfo(**tool_info_kwds)
+        find_best_kwds = ResolveKwds(
+            install=False, enabled_container_types=["docker", "singularity"], tool_info=ToolInfo(**tool_info_kwds)
+        )
+
+        if "resolution_cache" in kwds:
+            find_best_kwds["resolution_cache"] = kwds["resolution_cache"]
+        if "session" in kwds:
+            find_best_kwds["session"] = kwds["session"]
+        if index is not None:
+            find_best_kwds["index"] = int(index)
+        if "container_type" in kwds:
+            find_best_kwds["enabled_container_types"] = [kwds["container_type"]]
+        if "resolver_type" in kwds:
+            find_best_kwds["resolver_type"] = kwds["resolver_type"]
+        if "install" in kwds:
+            find_best_kwds["install"] = asbool(kwds["install"])
 
         # Consider implementing 'search' to match dependency resolution API.
         resolved_container_description = self._app.container_finder.resolve(**find_best_kwds)
@@ -386,7 +413,7 @@ class ContainerResolutionView:
             status = NullDependency().to_dict()
         return {"tool_id": kwds["tool_id"], "status": status, "requirements": requirements.to_dict()}
 
-    def resolve_toolbox(self, **kwds):
+    def resolve_toolbox(self, **kwds) -> List[Dict[str, Any]]:
         rval = []
         resolve_kwds = kwds.copy()
         tool_ids = pop_tool_ids(resolve_kwds)
@@ -402,15 +429,14 @@ class ContainerResolutionView:
         return rval
 
     @property
-    def _container_resolvers(self):
+    def _container_resolvers(self) -> List["ContainerResolver"]:
         return self._app.container_finder.default_container_registry.container_resolvers
 
-    def _container_resolver(self, index):
-        index = int(index)
+    def _container_resolver(self, index: int):
         return self._container_resolvers[index]
 
 
-def pop_tool_ids(kwds):
+def pop_tool_ids(kwds: Dict[str, Any]) -> Optional[List[str]]:
     tool_ids = None
     if "tool_ids" in kwds:
         tool_ids = listify(kwds.pop("tool_ids"))

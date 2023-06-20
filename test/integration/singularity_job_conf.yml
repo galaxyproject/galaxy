@@ -12,6 +12,7 @@ execution:
       singularity_enabled: true
       # Since tests run in /tmp/ , we apparently need to forbid the default mounting of /tmp
       singularity_run_extra_arguments: '--no-mount tmp'
+      require_container: true
     local_upload:
       runner: local
 

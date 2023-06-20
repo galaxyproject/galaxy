@@ -10,8 +10,7 @@ from galaxy.tool_util.deps.requirements import ContainerDescription
         ("docker://mulled-abc", "docker://mulled-abc"),
         ("/Cache/mulled-abc", "/Cache/mulled-abc"),
         ("/Cache/mUlled-abc", "/Cache/mulled-abc"),
-        ("", None),
-        (None, None),
+        ("", ""),
     ],
 )
 def test_container_description(identifier, expected_identifier):

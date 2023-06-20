@@ -1,7 +1,6 @@
-<tool id="mulled_example_explicit" name="mulled_example_explicit" version="0.1.0">
+<tool id="explicit_container" name="explicit_container" version="0.1.0">
     <requirements>
-        <requirement type="package" version="0.7.15">bwa</requirement>
-        <container type="docker">quay.io/biocontainers/bwa:0.7.15--0</container>
+        <container type="docker">quay.io/biocontainers/bwa:0.7.17--h7132678_9</container>
     </requirements>
     <stdio>
         <exit_code range="2:" />
@@ -20,10 +19,7 @@ touch "\${TMPDIR:-/tmp}/job_tmpdir"
     </outputs>
     <tests>
     </tests>
-    <xrefs>
-        <xref type="bioconductor">dada2</xref>
-    </xrefs>
     <help><![CDATA[
-TODO: Fill in help.
+        TODO: Fill in help.
     ]]></help>
 </tool>
