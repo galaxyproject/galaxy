@@ -318,6 +318,29 @@ class Meryldb(CompressedArchive):
         return False
 
 
+class Visium(CompressedArchive):
+    """Visium is a tar.gz archive with at least a 'Spatial' subfolder, a filtered h5 file and a raw h5 file."""
+
+    file_ext = "visium.tar.gz"
+
+    def sniff(self, filename: str) -> bool:
+        """
+        Check data structure:
+        Contains h5 files
+        Contains spatial folder
+        """
+        try:
+            if filename and tarfile.is_tarfile(filename):
+                with tarfile.open(filename, "r") as temptar:
+                    _tar_content = temptar.getnames()
+                    if "spatial" in _tar_content:
+                        if len([_ for _ in _tar_content if _.endswith("matrix.h5")]) == 2:
+                            return True
+        except Exception as e:
+            log.warning("%s, sniff Exception: %s", self, e)
+        return False
+
+
 class Bref3(Binary):
     """Bref3 format is a binary format for storing phased, non-missing genotypes for a list of samples."""
 
