@@ -9,7 +9,10 @@ from galaxy.managers import (
     histories,
 )
 from galaxy.util import asbool
-from galaxy.web import expose_api
+from galaxy.web import (
+    expose_api,
+    expose_api_anonymous_and_sessionless,
+)
 from . import (
     BaseGalaxyAPIController,
     depends,
@@ -26,12 +29,12 @@ class PluginsController(BaseGalaxyAPIController):
     hda_manager: hdas.HDAManager = depends(hdas.HDAManager)
     history_manager: histories.HistoryManager = depends(histories.HistoryManager)
 
-    @expose_api
+    @expose_api_anonymous_and_sessionless
     def index(self, trans, **kwargs):
         """
         GET /api/plugins:
         """
-        registry = self._get_registry(trans)
+        registry = self._get_registry()
         dataset_id = kwargs.get("dataset_id")
         if dataset_id is not None:
             hda = self.hda_manager.get_accessible(self.decode_id(dataset_id), trans.user)
@@ -45,7 +48,7 @@ class PluginsController(BaseGalaxyAPIController):
         """
         GET /api/plugins/{id}:
         """
-        registry = self._get_registry(trans)
+        registry = self._get_registry()
         history_id = kwargs.get("history_id")
         if history_id is not None:
             history = self.history_manager.get_owned(
@@ -59,7 +62,7 @@ class PluginsController(BaseGalaxyAPIController):
             result = registry.get_plugin(id).to_dict()
         return result
 
-    def _get_registry(self, trans):
-        if not trans.app.visualizations_registry:
+    def _get_registry(self):
+        if not self.app.visualizations_registry:
             raise exceptions.MessageException("The visualization registry has not been configured.")
-        return trans.app.visualizations_registry
+        return self.app.visualizations_registry
