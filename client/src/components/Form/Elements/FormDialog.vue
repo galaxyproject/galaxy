@@ -11,7 +11,7 @@ library.add(faFolderOpen);
 
 interface DataDialogProps {
     id: string;
-    multiple: boolean;
+    multiple?: boolean;
     value?: Array<string> | string;
 }
 
