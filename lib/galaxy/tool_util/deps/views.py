@@ -373,8 +373,6 @@ class ContainerResolutionView:
         tool_id = kwds["tool_id"]
         tool = self._app.toolbox.tools_by_id[tool_id]
 
-        for container in tool.containers:
-            print(f"ContainerResolutionView.resolve {tool} {container.to_dict()}")
         requirements = tool.tool_requirements
         tool_info_kwds = dict(requirements=requirements)
         requirements_only = asbool(kwds.get("requirements_only", False))
