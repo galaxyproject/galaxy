@@ -2,9 +2,9 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faFolderOpen } from "@fortawesome/free-solid-svg-icons";
-import DataDialog from "../../DataDialog/DataDialog.vue";
+import DataDialog from "@/components/DataDialog/DataDialog.vue";
 import { onMounted } from "vue";
-import { getCurrentGalaxyHistory } from "../../../utils/data";
+import { getCurrentGalaxyHistory } from "@/utils/data";
 import { reactive } from "vue";
 
 library.add(faFolderOpen);
