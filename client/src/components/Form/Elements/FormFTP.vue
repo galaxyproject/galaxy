@@ -65,7 +65,6 @@
 </template>
 
 <script>
-import _ from "underscore";
 import { getGalaxyInstance } from "app";
 import Utils from "utils/utils";
 import UploadUtils from "mvc/upload/upload-utils";
@@ -107,7 +106,7 @@ export default {
         },
     },
     created() {
-        this.model = _.extend(this.model, this.options);
+        this.model = Object.assign(this.model, this.options);
         this.model.collection = this.collection;
         const Galaxy = getGalaxyInstance();
         if (Galaxy.config.enable_oidc) {
@@ -137,7 +136,7 @@ export default {
                     this.$el.querySelector(".upload-ftp-warning").style.display = "none";
                 });
                 var size = 0;
-                _.each(files, (file) => {
+                files.forEach(file => {
                     self.rows.push(file);
                     size += file.size;
                 });
@@ -225,14 +224,7 @@ export default {
             }
         },
         _refreshCheckboxes: function () {
-            var counts = _.reduce(
-                this.filesTarget,
-                (memo, element) => {
-                    element !== undefined && memo++;
-                    return memo;
-                },
-                0
-            );
+            var counts = Object.keys(this.filesTarget).length;
             this.clearCheckbox("upload-ftp-select-all");
             if (counts === 0) {
                 this.$el.getElementsByClassName('upload-ftp-select-all')[0].classList.add(...this.model.checkbox.add.split(' '));
@@ -252,7 +244,7 @@ export default {
             return Utils.bytesToString(bytes, si);
         },
         escape(filepath) {
-            return _.escape(filepath);
+            return encodeURI(filepath);
         },
     },
 };
