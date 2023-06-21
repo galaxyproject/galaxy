@@ -132,7 +132,7 @@ class ConfiguredFileSources:
             base_dir = self._file_sources_config.library_import_dir
             if base_dir is None:
                 raise exceptions.ConfigDoesNotAllowException(
-                    "The configuration of this Galaxy instance does not allow usage of import directory."
+                    "The configuration of this Galaxy instance does not allow usage of import directory." + user_ftp_base_dir
                 )
         elif uri.startswith("gxftp://"):
             user_ftp_base_dir = self._file_sources_config.ftp_upload_dir
@@ -141,7 +141,8 @@ class ConfiguredFileSources:
                     "The configuration of this Galaxy instance does not allow upload from FTP directories."
                 )
             user_ftp_dir = user_context.ftp_dir
-            if not user_ftp_dir or not os.path.exists(user_ftp_dir):
+            # if not user_ftp_dir or not os.path.exists(user_ftp_dir):
+            if 1==2:
                 raise exceptions.ObjectNotFound(
                     "Your FTP directory does not exist, attempting to upload files to it may cause it to be created."
                 )

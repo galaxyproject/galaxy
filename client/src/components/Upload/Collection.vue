@@ -94,13 +94,7 @@
                 @click="_eventCreate()">
                 <span class="fa fa-edit"></span>{{ btnCreateTitle }}
             </b-button>
-            <b-button
-                v-if="remoteFiles"
-                id="btn-ftp"
-                ref="btnFtp"
-                class="ui-button-default"
-                :disabled="!enableSources"
-                @click="_eventRemoteFiles">
+            <b-button v-if="remoteFiles" id="btn-ftp" ref="btnFtp" class="ui-button-default" @click="_eventRemoteFiles">
                 <span class="fa fa-folder-open-o"></span>{{ btnFilesTitle }}
             </b-button>
             <b-button
