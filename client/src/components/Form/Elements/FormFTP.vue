@@ -19,46 +19,37 @@
                 <span class="upload-icon fa fa-hdd-o" />
                 <span class="upload-ftp-disk">{{ bytesToString(totalSize, true) }}</span>
             </span>
-            <table class="grid" style="float: left">
-                <thead>
-                    <tr>
-                        <th v-show="model.collection" class="_has_collection">
-                            <div
-                                class="upload-ftp-select-all"
-                                id="upload-ftp-select-all"
-                                :ftp-id="'*'"
-                                :class="selectAllStatus"
-                                @click="selectAll"></div>
-                        </th>
-                        <th>Name</th>
-                        <th>Size</th>
-                        <th>Created</th>
-                    </tr>
-                </thead>
-                <tbody class="upload-ftp-body">
-                    <tr
-                        v-for="(file, index) in filesSource"
-                        :key="file.path"
-                        :ftp-id="file.path"
-                        :ftp-index="index"
-                        class="upload-ftp-row"
-                        @click="onRowClick(file)">
-                        <td class="_has_collection">
-                            <div
-                                class="icon"
-                                :class="{
-                                    [model.checkbox.add]: !isSelected(file),
-                                    [model.checkbox.remove]: isSelected(file),
-                                }"></div>
-                        </td>
-                        <td class="ftp-name">
-                            {{ escape(file.path) }}
-                        </td>
-                        <td class="ftp-size">{{ bytesToString(file.size) }}</td>
-                        <td class="ftp-time">{{ file.ctime }}</td>
-                    </tr>
-                </tbody>
-            </table>
+            <b-table
+                id="ftp-table"
+                class="grid"
+                hover
+                no-sort-reset
+                no-local-sorting
+                :items="filesSource"
+                :fields="fields"
+                @row-clicked="onRowClicked">
+                <template v-slot:head(check)>
+                    <b-checkbox
+                        id="upload-ftp-select-all"
+                        class="upload-ftp-select-all"
+                        :ftp-id="'*'"
+                        @click="selectAll"></b-checkbox>
+                </template>
+                <template v-slot:cell(check)="{ item }">
+                    <div>
+                        <b-checkbox v-model="item.check"></b-checkbox>
+                    </div>
+                </template>
+                <template v-slot:cell(name)="data">
+                    {{ escape(data.item.name) }}
+                </template>
+                <template v-slot:cell(size)="data">
+                    {{ bytesToString(data.item.size) }}
+                </template>
+                <template v-slot:cell(ctime)="data">
+                    {{ data.item.ctime }}
+                </template>
+            </b-table>
         </div>
         <div v-show="filesSource.length === 0" class="upload-ftp-warning warningmessage">no files.</div>
     </div>
@@ -87,6 +78,22 @@ export default {
                 collection: null,
             },
             filesSource: [],
+            fields: [
+                { key: "check" },
+                {
+                    key: "Name",
+                    sortable: false,
+                },
+                {
+                    key: "Size",
+                    sortable: false,
+                },
+                {
+                    key: "Ctime",
+                    label: "Created",
+                    sortable: false,
+                },
+            ],
             filesTarget: {},
             totalSize: 0,
             waiting: true,
@@ -117,6 +124,9 @@ export default {
         UploadUtils.getRemoteFiles(
             (files) => {
                 this.filesSource = files;
+                Object.values(this.filesSource).forEach((element) => {
+                    // element["check"] = false;
+                });
                 this._buildFtpIndex();
                 this._renderTable();
             },
@@ -136,42 +146,17 @@ export default {
                     this.$el.querySelector(".upload-ftp-warning").style.display = "none";
                 });
                 var size = 0;
-                files.forEach(file => {
+                files.forEach((file) => {
                     self.rows.push(file);
                     size += file.size;
                 });
                 this.totalSize = size;
-                if (this.collection) {
-                    this.$nextTick(() => {
-                        this.$el.querySelector("._has_collection").style.display = "table-cell";
-                    });
-                }
             } else {
                 this.$nextTick(() => {
                     this.$el.querySelector(".upload-ftp-warning").style.display = "block";
                 });
             }
             this.waiting = false;
-        },
-        _renderRow: function (file) {
-            var self = this;
-            var options = this.model.checkbox;
-            var it = this._templateRow(file.path);
-            var icon = it.getElementsByClassName("icon")[0];
-            this.$body.append(it);
-            if (this.collection) {
-                var index = this.filesTarget[file.path];
-                icon.classList.add(...(index === undefined ? options.add : options.remove).split(' '));
-                it.addEventListener("click", () => {
-                    self._updateCheckboxes(icon, file);
-                    self._refreshCheckboxes();
-                });
-            } else {
-                it.addEventListener("click", () => {
-                    options.onchange(file);
-                });
-            }
-            return icon;
         },
         _buildFtpIndex: function () {
             this.filesTarget = {};
@@ -185,7 +170,9 @@ export default {
         },
         selectAll: function () {
             var files = this.filesSource;
-            var add = (this.$el.getElementsByClassName('upload-ftp-select-all')[0].classList.value).includes(this.model.checkbox.add);
+            var add = this.$el
+                .getElementsByClassName("upload-ftp-select-all")[0]
+                .classList.value.includes(this.model.checkbox.add);
             for (var f in files) {
                 var file = files[f];
                 var index = this.filesTarget[file.path];
@@ -193,52 +180,30 @@ export default {
                     this._updateCheckboxes(this._templateRow(file.path).getElementsByClassName("icon")[0], file);
                 }
             }
-            this._refreshCheckboxes();
         },
-        onRowClick: function (file) {
-            var self = this;
-            var it = (this._templateRow(file.path));
-            var icon = it.getElementsByClassName("icon")[0];
-            if (this.collection) {
-                this._updateCheckboxes(icon, file);
-            } else {
-                this.model.onchange(file);
-            }
-            self._refreshCheckboxes();
+        onRowClicked(item, index) {
+            this.toggleDetails(item, index);
+            this._updateCheckboxes(item);
+        },
+        toggleDetails(item, index) {
+            // item.check = !item.check;
+            this.filesSource[index].check = !this.filesSource[index].check;
         },
         _templateRow: function (rowId) {
             return this.$el.querySelector(`[ftp-id="${rowId}"]`);
         },
-        _updateCheckboxes: function (icon, file) {
-            var options = this.model.checkbox;
-            icon.classList.remove(...options.add.split(' '));
+        _updateCheckboxes: function (file) {
             var index = this.filesTarget[file.path];
             if (index === undefined) {
                 var indexNew = this.model.onadd(this.model.upload_box, file);
-                icon.classList.add(...options.remove.split(' '));
                 this.filesTarget[file.path] = indexNew;
             } else {
                 this.model.onremove(this.model.collection, index);
-                icon.classList.add(...options.add.split(' '));
                 delete this.filesTarget[file.path];
-            }
-        },
-        _refreshCheckboxes: function () {
-            var counts = Object.keys(this.filesTarget).length;
-            this.clearCheckbox("upload-ftp-select-all");
-            if (counts === 0) {
-                this.$el.getElementsByClassName('upload-ftp-select-all')[0].classList.add(...this.model.checkbox.add.split(' '));
-            } else {
-                this.$el.getElementsByClassName('upload-ftp-select-all')[0].classList.add(...(counts == this.rows.length ? this.model.checkbox.remove : this.model.checkbox.partial).split(' '));
             }
         },
         isSelected: function (file) {
             return this.filesTarget[file.path] !== undefined;
-        },
-        clearCheckbox(strClass) {
-            this.$el.getElementsByClassName(strClass)[0].classList.remove(...this.model.checkbox.add.split(' '));
-            this.$el.getElementsByClassName(strClass)[0].classList.remove(...this.model.checkbox.remove.split(' '));
-            this.$el.getElementsByClassName(strClass)[0].classList.remove(...this.model.checkbox.partial.split(' '));
         },
         bytesToString: function (bytes, si) {
             return Utils.bytesToString(bytes, si);
