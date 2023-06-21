@@ -204,7 +204,7 @@ class CustosAuthnz(IdentityProvider):
                     ):
                         user = existing_user
                     else:
-                        message = f"There already exists a user with email {email}.  To associate this external login, you must first be logged in as that existing account."
+                        message = f"There already exists a user with email {email}. To associate this external login, you must first be logged in as that existing account."
                         log.info(message)
                         login_redirect_url = (
                             f"{login_redirect_url}login/start"
