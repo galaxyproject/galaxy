@@ -323,6 +323,9 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
                 "cache.data_dir": self.config.mulled_resolution_cache_data_dir,
                 "cache.lock_dir": self.config.mulled_resolution_cache_lock_dir,
                 "cache.expire": self.config.mulled_resolution_cache_expire,
+                "cache.url": self.config.mulled_resolution_cache_url,
+                "cache.table_name": self.config.mulled_resolution_cache_table_name,
+                "cache.schema_name": self.config.mulled_resolution_cache_schema_name,
             }
             mulled_resolution_cache = CacheManager(**parse_cache_config_options(cache_opts)).get_cache(
                 "mulled_resolution"

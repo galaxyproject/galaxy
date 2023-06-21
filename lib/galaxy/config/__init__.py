@@ -139,6 +139,15 @@ LOGGING_CONFIG_DEFAULT: Dict[str, Any] = {
 }
 """Default value for logging configuration, passed to :func:`logging.config.dictConfig`"""
 
+DEPENDENT_CONFIG_DEFAULTS: Dict[str, str] = {
+    "mulled_resolution_cache_url": "database_connection",
+    "citation_cache_url": "database_connection",
+    "biotools_service_cache_url": "database_connection",
+}
+"""Config parameters whose default is the value of another config parameter
+This should be moved to a .yml config file.
+"""
+
 VERSION_JSON_FILE = "version.json"
 DEFAULT_EMAIL_FROM_LOCAL_PART = "galaxy-no-reply"
 DISABLED_FLAG = "disabled"  # Used to mark a config option as disabled
@@ -731,6 +740,20 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self._override_tempdir(kwargs)
         self._configure_sqlalchemy20_warnings(kwargs)
         self._process_config(kwargs)
+        self._set_dependent_defaults()
+
+    def _set_dependent_defaults(self):
+        """Set values of unset parameters which take their default values from other parameters"""
+        for dependent_config_param, config_param in DEPENDENT_CONFIG_DEFAULTS.items():
+            try:
+                if getattr(self, dependent_config_param) is None:
+                    setattr(self, dependent_config_param, getattr(self, config_param))
+            except AttributeError:
+                raise Exception(
+                    "One or more invalid config parameter names specified in "
+                    "DEPENDENT_CONFIG_DEFAULTS, "
+                    f"{dependent_config_param}, {config_param}"
+                )
 
     def _configure_sqlalchemy20_warnings(self, kwargs):
         """
