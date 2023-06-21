@@ -17,6 +17,7 @@ interface StatelessTagsProps {
     clickable?: boolean;
     useToggleLink?: boolean;
     maxVisibleTags?: number;
+    placeholder?: string;
 }
 
 const props = withDefaults(defineProps<StatelessTagsProps>(), {
@@ -25,6 +26,7 @@ const props = withDefaults(defineProps<StatelessTagsProps>(), {
     clickable: false,
     useToggleLink: true,
     maxVisibleTags: 5,
+    placeholder: "Add Tags",
 });
 
 const emit = defineEmits<{
@@ -117,8 +119,8 @@ function onTagClicked(tag: string) {
         <Multiselect
             v-if="!disabled"
             ref="multiselectElement"
-            placeholder="Add Tags"
             open-direction="bottom"
+            :placeholder="props.placeholder"
             :value="tags"
             :options="userTags"
             :multiple="true"
@@ -145,7 +147,7 @@ function onTagClicked(tag: string) {
 
             <template v-slot:caret>
                 <b-button v-if="!editing" class="toggle-button" variant="link" tabindex="-1" @click="openMultiselect">
-                    Add Tags
+                    {{ props.placeholder }}
                     <FontAwesomeIcon icon="fa-tags" />
                 </b-button>
             </template>
