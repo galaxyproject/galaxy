@@ -1215,10 +1215,11 @@ class NavigatesGalaxy(HasDriver):
         self.libraries_index_search_for(name)
         self.libraries_index_table_elements()[0].find_element(By.CSS_SELECTOR, "td a").click()
 
-    def page_open_with_name(self, name, screenshot_name):
+    def page_open_and_screenshot(self, screenshot_name):
         self.home()
         self.navigate_to_pages()
-        self.click_grid_popup_option(name, "View")
+        self.components.pages.drop.wait_for_and_click()
+        self.components.pages.drop_view.wait_for_and_click()
         if screenshot_name:
             self.sleep_for(self.wait_types.UX_RENDER)
             self.screenshot(screenshot_name)
@@ -1526,20 +1527,26 @@ class NavigatesGalaxy(HasDriver):
 
     def create_page_and_edit(self, name=None, slug=None, screenshot_name=None):
         name = self.create_page(name=name, slug=slug, screenshot_name=screenshot_name)
-        self.click_grid_popup_option(name, "Edit content")
+        self.components.pages.drop.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.components.pages.drop_edit.wait_for_and_click()
         self.components.pages.editor.markdown_editor.wait_for_visible()
         return name
 
     def create_page(self, name=None, slug=None, screenshot_name=None):
-        self.components.pages.create.wait_for_and_click()
         name = name or self._get_random_name(prefix="page")
         slug = slug = self._get_random_name(prefix="pageslug")
-        self.tool_set_value("title", name)
-        self.tool_set_value("slug", slug)
-        self.screenshot_if(screenshot_name)
-        # Sometimes 'submit' button not yet hooked up?
+        self.components.pages.create.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.screenshot("before_title_input")
+        self.components.pages.create_title_input.wait_for_and_send_keys(name)
         self.sleep_for(self.wait_types.UX_RENDER)
+        self.screenshot("before_slug_input")
+        self.components.pages.create_slug_input.wait_for_and_send_keys(slug)
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.screenshot_if(screenshot_name)
         self.components.pages.submit.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
         return name
 
     def tool_parameter_div(self, expanded_parameter_id):

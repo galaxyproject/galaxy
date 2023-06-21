@@ -493,12 +493,18 @@ history_import:
 
 pages:
   selectors:
-    create: '.manage-table-actions .action-button'
+    create: '#page-create'
     submit: '#submit'
+    drop: '.page-dropdown'
+    drop_edit: '.dropdown-item-edit'
+    drop_view: '.dropdown-item-view'
+    create_title_input: '#form-element-title input'
+    create_slug_input: '#form-element-slug input'
     export: '.markdown-pdf-export'
     dropdown: '[data-page-dropdown*="${id}"]'
     index_table: "#page-table"
     index_rows: "#page-table > tbody > tr:not(.b-table-empty-row, [style*='display: none'])"
+    delete_modal_confirm: '#delete-page-modal-${id}___BV_modal_footer_ .btn-primary'
 
   editor:
     selectors:

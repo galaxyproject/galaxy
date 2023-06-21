@@ -1253,7 +1253,7 @@ class InvocationIndexQueryPayload(Model):
     sort_by: Optional[InvocationSortByEnum] = Field(
         title="Sort By", description="Sort Workflow Invocations by this attribute"
     )
-    sort_desc: bool = Field(default=False, descritpion="Sort in descending order?")
+    sort_desc: bool = Field(default=False, description="Sort in descending order?")
     include_terminal: bool = Field(default=True, description="Set to false to only include terminal Invocations.")
     limit: Optional[int] = Field(
         default=100,
@@ -1262,20 +1262,19 @@ class InvocationIndexQueryPayload(Model):
     offset: Optional[int] = Field(default=0, description="Number of invocations to skip")
 
 
-class PageSortByEnum(str, Enum):
-    create_time = "create_time"
-    update_time = "update_time"
+PageSortByEnum = Literal["update_time", "title", "username"]
 
 
 class PageIndexQueryPayload(Model):
     deleted: bool = False
+    show_published: Optional[bool] = None
+    show_shared: Optional[bool] = None
     user_id: Optional[DecodedDatabaseIdField] = None
-    sort_by: PageSortByEnum = PageSortByEnum.update_time
-    sort_desc: bool = Field(default=True, descritpion="Sort in descending order?")
-    show_published: bool = True
-    show_shared: bool = False
-    limit: int = 500
-    offset: int = 0
+    sort_by: PageSortByEnum = Field("update_time", title="Sort By", description="Sort pages by this attribute.")
+    sort_desc: Optional[bool] = Field(default=False, title="Sort descending", description="Sort in descending order.")
+    search: Optional[str] = Field(default=None, title="Filter text", description="Freetext to search.")
+    limit: Optional[int] = Field(default=100, lt=1000, title="Limit", description="Maximum number of pages to return.")
+    offset: Optional[int] = Field(default=0, title="Offset", description="Number of pages to skip.")
 
 
 class CreateHistoryPayload(Model):
@@ -3320,7 +3319,7 @@ class PageSummaryBase(Model):
     title: str = Field(
         ...,  # Required
         title="Title",
-        description="The name of the page",
+        description="The name of the page.",
     )
     slug: str = Field(
         ...,  # Required
@@ -3409,7 +3408,7 @@ class PageSummary(PageSummaryBase):
     email_hash: str = Field(
         ...,  # Required
         title="Encoded email",
-        description="The encoded email of the user",
+        description="The encoded email of the user.",
     )
     published: bool = Field(
         ...,  # Required
@@ -3436,6 +3435,9 @@ class PageSummary(PageSummaryBase):
         title="List of revisions",
         description="The history with the encoded ID of each revision of the Page.",
     )
+    create_time: Optional[datetime] = CreateTimeField
+    update_time: Optional[datetime] = UpdateTimeField
+    tags: TagCollection
 
 
 class PageDetails(PageSummary):

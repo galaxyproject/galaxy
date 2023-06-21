@@ -1,4 +1,5 @@
 import logging
+from typing import Tuple
 
 from galaxy import exceptions
 from galaxy.celery.tasks import prepare_pdf_download
@@ -58,7 +59,9 @@ class PagesService(ServiceBase):
         self.shareable_service = ShareableService(self.manager, self.serializer, notification_manager)
         self.short_term_storage_allocator = short_term_storage_allocator
 
-    def index(self, trans, payload: PageIndexQueryPayload) -> PageSummaryList:
+    def index(
+        self, trans, payload: PageIndexQueryPayload, include_total_count: bool = False
+    ) -> Tuple[PageSummaryList, int]:
         """Return a list of Pages viewable by the user
 
         :param deleted: Display deleted pages
@@ -67,13 +70,16 @@ class PagesService(ServiceBase):
         :returns:   dictionaries containing summary or detailed Page information
         """
         if not trans.user_is_admin:
-            user_id = trans.user.id
+            user_id = trans.user and trans.user.id
             if payload.user_id and payload.user_id != user_id:
                 raise exceptions.AdminRequiredException("Only admins can index the pages of others")
 
-        pages, _ = self.manager.index_query(trans, payload)
-        return PageSummaryList.construct(
-            __root__=[trans.security.encode_all_ids(p.to_dict(), recursive=True) for p in pages]
+        pages, total_matches = self.manager.index_query(trans, payload, include_total_count)
+        return (
+            PageSummaryList.construct(
+                __root__=[trans.security.encode_all_ids(p.to_dict(), recursive=True) for p in pages]
+            ),
+            total_matches,
         )
 
     def create(self, trans, payload: CreatePagePayload) -> PageSummary:
@@ -88,11 +94,12 @@ class PagesService(ServiceBase):
 
     def delete(self, trans, id: DecodedDatabaseIdField):
         """
-        Deletes a page (or marks it as deleted)
+        Mark page as deleted
+
+        :param  id:    ID of the page to be deleted
         """
         page = base.get_object(trans, id, "Page", check_ownership=True)
 
-        # Mark a page as deleted
         page.deleted = True
         with transaction(trans.sa_session):
             trans.sa_session.commit()

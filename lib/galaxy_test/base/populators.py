@@ -1446,7 +1446,7 @@ class BaseDatasetPopulator(BasePopulator):
         self, slug: str = "mypage", title: str = "MY PAGE", content_format: str = "html", content: Optional[str] = None
     ) -> Dict[str, Any]:
         page_response = self.new_page_raw(slug=slug, title=title, content_format=content_format, content=content)
-        page_response.raise_for_status()
+        api_asserts.assert_status_code_is(page_response, 200)
         return page_response.json()
 
     def new_page_raw(
@@ -1508,6 +1508,11 @@ class BaseDatasetPopulator(BasePopulator):
         response = self._get(f"histories/{history_id}/exports", headers=headers)
         api_asserts.assert_status_code_is_ok(response)
         return response.json()
+
+    def make_page_public(self, page_id: str) -> Dict[str, Any]:
+        sharing_response = self._put(f"pages/{page_id}/publish")
+        assert sharing_response.status_code == 200
+        return sharing_response.json()
 
     def wait_for_export_task_on_record(self, export_record):
         if export_record["preparing"]:
