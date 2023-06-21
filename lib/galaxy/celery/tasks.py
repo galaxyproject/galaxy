@@ -388,10 +388,11 @@ def import_data_bundle(
     src: str,
     uri: Optional[str] = None,
     id: Optional[int] = None,
+    tool_data_file_path: Optional[str] = None,
 ):
     if src == "uri":
         assert uri
-        tool_data_import_manager.import_data_bundle_by_uri(config, uri)
+        tool_data_import_manager.import_data_bundle_by_uri(config, uri, tool_data_file_path=tool_data_file_path)
     else:
         assert id
         dataset: model.DatasetInstance
@@ -399,7 +400,7 @@ def import_data_bundle(
             dataset = hda_manager.by_id(id)
         else:
             dataset = ldda_manager.by_id(id)
-        tool_data_import_manager.import_data_bundle_by_dataset(config, dataset)
+        tool_data_import_manager.import_data_bundle_by_dataset(config, dataset, tool_data_file_path=tool_data_file_path)
 
 
 @galaxy_task(action="pruning history audit table")
