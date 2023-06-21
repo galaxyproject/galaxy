@@ -614,11 +614,9 @@ def invocation_job_source_iter(sa_session, invocation_id):
     join = model.WorkflowInvocationStep.table.join(model.WorkflowInvocation)
     statement = (
         select(
-            [
-                model.WorkflowInvocationStep.job_id,
-                model.WorkflowInvocationStep.implicit_collection_jobs_id,
-                model.WorkflowInvocationStep.state,
-            ]
+            model.WorkflowInvocationStep.job_id,
+            model.WorkflowInvocationStep.implicit_collection_jobs_id,
+            model.WorkflowInvocationStep.state,
         )
         .select_from(join)
         .where(model.WorkflowInvocation.id == invocation_id)

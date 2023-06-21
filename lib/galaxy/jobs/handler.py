@@ -866,7 +866,7 @@ class JobHandlerQueue(BaseJobHandlerQueue):
             rval.update(cached)
             result = self.sa_session.execute(
                 select(
-                    [model.Job.table.c.destination_id, func.count(model.Job.table.c.destination_id).label("job_count")]
+                    model.Job.table.c.destination_id, func.count(model.Job.table.c.destination_id).label("job_count")
                 )
                 .where(
                     and_(
@@ -887,11 +887,9 @@ class JobHandlerQueue(BaseJobHandlerQueue):
             self.user_job_count_per_destination = {}
             result = self.sa_session.execute(
                 select(
-                    [
-                        model.Job.table.c.user_id,
-                        model.Job.table.c.destination_id,
-                        func.count(model.Job.table.c.user_id).label("job_count"),
-                    ]
+                    model.Job.table.c.user_id,
+                    model.Job.table.c.destination_id,
+                    func.count(model.Job.table.c.user_id).label("job_count"),
                 )
                 .where(and_(model.Job.table.c.state.in_((model.Job.states.QUEUED, model.Job.states.RUNNING))))
                 .group_by(model.Job.table.c.user_id, model.Job.table.c.destination_id)
@@ -987,7 +985,7 @@ class JobHandlerQueue(BaseJobHandlerQueue):
             self.total_job_count_per_destination = {}
             result = self.sa_session.execute(
                 select(
-                    [model.Job.table.c.destination_id, func.count(model.Job.table.c.destination_id).label("job_count")]
+                    model.Job.table.c.destination_id, func.count(model.Job.table.c.destination_id).label("job_count")
                 )
                 .where(and_(model.Job.table.c.state.in_((model.Job.states.QUEUED, model.Job.states.RUNNING))))
                 .group_by(model.Job.table.c.destination_id)

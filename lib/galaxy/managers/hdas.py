@@ -385,12 +385,10 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
     ) -> List[StoredItem]:
         stmt = (
             select(
-                [
-                    model.HistoryDatasetAssociation.id,
-                    model.HistoryDatasetAssociation.name,
-                    model.HistoryDatasetAssociation.update_time,
-                    model.Dataset.total_size,
-                ]
+                model.HistoryDatasetAssociation.id,
+                model.HistoryDatasetAssociation.name,
+                model.HistoryDatasetAssociation.update_time,
+                model.Dataset.total_size,
             )
             .select_from(model.HistoryDatasetAssociation)
             .join(model.Dataset, model.HistoryDatasetAssociation.table.c.dataset_id == model.Dataset.id)

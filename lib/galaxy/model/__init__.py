@@ -3296,12 +3296,10 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         )
         distinct_datasets = (
             select(
-                [
-                    # use labels here to better access from the query above
-                    HistoryDatasetAssociation.table.c.history_id.label("history_id"),
-                    Dataset.total_size.label("dataset_size"),
-                    Dataset.id.label("dataset_id"),
-                ]
+                # use labels here to better access from the query above
+                HistoryDatasetAssociation.table.c.history_id.label("history_id"),
+                Dataset.total_size.label("dataset_size"),
+                Dataset.id.label("dataset_id"),
             )
             .where(HistoryDatasetAssociation.table.c.purged != true())
             .where(Dataset.table.c.purged != true())
