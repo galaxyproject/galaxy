@@ -59,7 +59,7 @@ def transaction(session: Union[scoped_session, Session, "SessionlessContext"]):
 class ModelMapping(Bunch):
     def __init__(self, model_modules, engine):
         self.engine = engine
-        self._SessionLocal = sessionmaker(autoflush=False, autocommit=False)
+        self._SessionLocal = sessionmaker(autoflush=False, autocommit=True)
         versioned_session(self._SessionLocal)
         context = scoped_session(self._SessionLocal, scopefunc=self.request_scopefunc)
         # For backward compatibility with "context.current"
