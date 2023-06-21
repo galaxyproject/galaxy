@@ -956,7 +956,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         if (
             pod
             and "terminated" in pod["status"]["containerStatuses"][0]["state"]
-            and pod["status"]["containerStatuses"][0]["state"].get("exitCode")
+            and pod["status"]["containerStatuses"][0]["state"]["terminated"].get("exitCode")
         ):
             return True
 
