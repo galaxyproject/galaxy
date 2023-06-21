@@ -329,6 +329,7 @@ function onTagClicked(tag: string) {
         .multiselect__option--selected {
             .multiselect-option {
                 color: $brand-primary;
+                background-color: $brand-secondary;
 
                 .info:not(.highlighted) {
                     display: inline-block;
