@@ -18,6 +18,7 @@ interface StatelessTagsProps {
     useToggleLink?: boolean;
     maxVisibleTags?: number;
     placeholder?: string;
+    noPadding?: boolean;
 }
 
 const props = withDefaults(defineProps<StatelessTagsProps>(), {
@@ -115,7 +116,7 @@ function onTagClicked(tag: string) {
 </script>
 
 <template>
-    <div class="stateless-tags px-1">
+    <div class="stateless-tags" :class="{ 'px-1': !props.noPadding }">
         <Multiselect
             v-if="!disabled"
             ref="multiselectElement"
@@ -175,7 +176,7 @@ function onTagClicked(tag: string) {
             </template>
         </Multiselect>
 
-        <div v-else class="pl-1 pb-2">
+        <div v-else :class="{ 'pl-1': !props.noPadding, 'pb-2': !props.noPadding }">
             <div class="d-inline">
                 <Tag
                     v-for="tag in trimmedTags"
