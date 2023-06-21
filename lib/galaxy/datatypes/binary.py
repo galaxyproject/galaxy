@@ -3562,7 +3562,7 @@ class MongoDBArchive(CompressedArchive):
                                     version_match.group(1).decode("utf-8")
                                 ).strip()
         except Exception as e:
-            log.warning("%s,(CompressedArchive set_meta Exception: %s", self, util.unicodify(e))
+            log.warning(f"{self} CompressedArchive set_meta Exception: {util.unicodify(e)}"
 
     def sniff(self, filename: str) -> bool:
         if filename and tarfile.is_tarfile(filename):
