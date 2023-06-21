@@ -20,7 +20,7 @@
                     </tr>
                     <tr>
                         <td>Filesize</td>
-                        <td id="filesize" v-html="bytesToString(dataset.file_size)"></td>
+                        <td id="filesize" v-html="Utils.bytesToString(dataset.file_size)"></td>
                     </tr>
                     <tr>
                         <td>Dbkey</td>
