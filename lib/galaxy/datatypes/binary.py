@@ -3573,7 +3573,7 @@ class MongoDBArchive(CompressedArchive):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = f"MongoDB Archive ({nice_size(dataset.get_size())})"
-            dataset.blurb = "MongoDB version %s" % (dataset.metadata.version or "unknown")
+            dataset.blurb = f'MongoDB version {dataset.metadata.version or "unknown"}'
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
