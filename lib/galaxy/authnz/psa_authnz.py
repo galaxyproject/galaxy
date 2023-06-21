@@ -1,6 +1,10 @@
 import json
+import logging
+import time
 
+import jwt
 import requests
+from msal import ConfidentialClientApplication
 from social_core.actions import (
     do_auth,
     do_complete,
@@ -35,7 +39,7 @@ BACKENDS = {
     "globus": "social_core.backends.globus.GlobusOpenIdConnect",
     "elixir": "social_core.backends.elixir.ElixirOpenIdConnect",
     "okta": "social_core.backends.okta_openidconnect.OktaOpenIdConnect",
-    "azure": "social_core.backends.azuread_tenant.AzureADTenantOAuth2",
+    "azure": "social_core.backends.azuread_tenant.AzureADV2TenantOAuth2",
 }
 
 BACKENDS_NAME = {
@@ -43,7 +47,7 @@ BACKENDS_NAME = {
     "globus": "globus",
     "elixir": "elixir",
     "okta": "okta-openidconnect",
-    "azure": "azuread-tenant-oauth2",
+    "azure": "azuread-v2-tenant-oauth2",
 }
 
 AUTH_PIPELINE = (
@@ -122,6 +126,7 @@ class PSAAuthnz(IdentityProvider):
         self.config[setting_name("AUTH_EXTRA_ARGUMENTS")] = {"access_type": "offline"}
         self.config["KEY"] = oidc_backend_config.get("client_id")
         self.config["SECRET"] = oidc_backend_config.get("client_secret")
+        self.config["TENANT_ID"] = oidc_backend_config.get("tenant_id")
         self.config["redirect_uri"] = oidc_backend_config.get("redirect_uri")
         self.config["EXTRA_SCOPES"] = oidc_backend_config.get("extra_scopes")
         if oidc_backend_config.get("prompt") is not None:
@@ -142,6 +147,40 @@ class PSAAuthnz(IdentityProvider):
 
     def _login_user(self, backend, user, social_user):
         self.config["user"] = user
+
+    def refresh_azure(self, user_authnz_token):
+        logging.getLogger("msal").setLevel(logging.WARN)
+        old_extra_data = user_authnz_token.extra_data
+        app = ConfidentialClientApplication(
+            self.config["KEY"],
+            self.config["SECRET"],
+            authority="https://login.microsoftonline.com/" + self.config["TENANT_ID"],
+        )
+        extra_data = app.acquire_token_by_refresh_token(
+            old_extra_data["refresh_token"], scopes=["https://graph.microsoft.com/.default"]
+        )
+        decoded_token = jwt.decode(extra_data["id_token"], options={"verify_signature": False})
+        if "auth_time" not in extra_data:
+            extra_data["auth_time"] = decoded_token["iat"]
+        expires = decoded_token["exp"]
+        extra_data["expires"] = int(expires - time.time())
+        user_authnz_token.set_extra_data(extra_data)
+
+    def refresh(self, trans, user_authnz_token):
+        if not user_authnz_token or not user_authnz_token.extra_data:
+            return False
+        # refresh tokens if they reached their half lifetime
+        if int(user_authnz_token.extra_data["auth_time"]) + int(user_authnz_token.extra_data["expires"]) / 2 <= int(
+            time.time()
+        ):
+            on_the_fly_config(trans.sa_session)
+            if self.config["provider"] == "azure":
+                self.refresh_azure(user_authnz_token)
+            else:
+                strategy = Strategy(trans.request, trans.session, Storage, self.config)
+                user_authnz_token.refresh_token(strategy)
+            return True
+        return False
 
     def authenticate(self, trans):
         on_the_fly_config(trans.sa_session)
@@ -171,6 +210,7 @@ class PSAAuthnz(IdentityProvider):
             user=trans.user,
             state=state_token,
         )
+
         return redirect_url, self.config.get("user", None)
 
     def disconnect(self, provider, trans, disconnect_redirect_url=None, association_id=None):

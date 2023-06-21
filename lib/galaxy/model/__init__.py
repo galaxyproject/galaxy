@@ -939,6 +939,40 @@ ON CONFLICT
                 with engine.connect() as conn, conn.begin():
                     conn.execute(statement, params)
 
+    def _get_social_auth(self, provider_backend):
+        if not self.social_auth:
+            return None
+        for auth in self.social_auth:
+            if auth.provider == provider_backend and auth.extra_data:
+                return auth
+        return None
+
+    def _get_custos_auth(self, provider_backend):
+        if not self.custos_auth:
+            return None
+        for auth in self.custos_auth:
+            if auth.provider == provider_backend and auth.refresh_token:
+                return auth
+        return None
+
+    def get_oidc_tokens(self, provider_backend):
+        tokens = {"id": None, "access": None, "refresh": None}
+        auth = self._get_social_auth(provider_backend)
+        if auth:
+            tokens["access"] = auth.extra_data.get("access_token", None)
+            tokens["refresh"] = auth.extra_data.get("refresh_token", None)
+            tokens["id"] = auth.extra_data.get("id_token", None)
+            return tokens
+
+        # no social auth found, check custos auth
+        auth = self._get_custos_auth(provider_backend)
+        if auth:
+            tokens["access"] = auth.access_token
+            tokens["refresh"] = auth.refresh_token
+            tokens["id"] = auth.id_token
+
+        return tokens
+
     @property
     def nice_total_disk_usage(self):
         """

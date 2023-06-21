@@ -161,6 +161,8 @@ class AuthnzManager:
             rtv["icon"] = config_xml.find("icon").text
         if config_xml.find("extra_scopes") is not None:
             rtv["extra_scopes"] = listify(config_xml.find("extra_scopes").text)
+        if config_xml.find("tenant_id") is not None:
+            rtv["tenant_id"] = config_xml.find("tenant_id").text
         if config_xml.find("pkce_support") is not None:
             rtv["pkce_support"] = asbool(config_xml.find("pkce_support").text)
 
@@ -316,6 +318,31 @@ class AuthnzManager:
             log.warning(msg)
             raise exceptions.ItemAccessibilityException(msg)
         return qres
+
+    def refresh_expiring_oidc_tokens_for_provider(self, trans, auth):
+        try:
+            success, message, backend = self._get_authnz_backend(auth.provider)
+            if success is False:
+                msg = f"An error occurred when refreshing user token on `{auth.provider}` identity provider: {message}"
+                log.error(msg)
+                return False
+            refreshed = backend.refresh(trans, auth)
+            if refreshed:
+                log.debug(f"Refreshed user token via `{auth.provider}` identity provider")
+            return True
+        except Exception as e:
+            msg = f"An error occurred when refreshing user token: {e}"
+            log.error(msg)
+            return False
+
+    def refresh_expiring_oidc_tokens(self, trans, user=None):
+        user = trans.user or user
+        if not isinstance(user, model.User):
+            return
+        for auth in user.custos_auth or []:
+            self.refresh_expiring_oidc_tokens_for_provider(trans, auth)
+        for auth in user.social_auth or []:
+            self.refresh_expiring_oidc_tokens_for_provider(trans, auth)
 
     def authenticate(self, provider, trans, idphint=None):
         """

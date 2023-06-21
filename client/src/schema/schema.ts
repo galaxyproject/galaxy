@@ -883,6 +883,13 @@ export interface paths {
          */
         get: operations["show_api_jobs__id__get"];
     };
+    "/api/jobs/{job_id}/oidc-tokens": {
+        /**
+         * Get a fresh OIDC token
+         * @description Allows remote job running mechanisms to get a fresh OIDC token that can be used on remote side to authorize user. It is not meant to represent part of Galaxy's stable, user facing API
+         */
+        get: operations["get_token_api_jobs__job_id__oidc_tokens_get"];
+    };
     "/api/libraries": {
         /**
          * Returns a list of summary data for all libraries.
@@ -13749,6 +13756,41 @@ export interface operations {
             200: {
                 content: {
                     "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_token_api_jobs__job_id__oidc_tokens_get: {
+        /**
+         * Get a fresh OIDC token
+         * @description Allows remote job running mechanisms to get a fresh OIDC token that can be used on remote side to authorize user. It is not meant to represent part of Galaxy's stable, user facing API
+         */
+        parameters: {
+            /** @description A key used to authenticate this request as acting onbehalf or a job runner for the specified job */
+            /** @description OIDC provider name */
+            query: {
+                job_key: string;
+                provider: string;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                job_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "text/plain": string;
                 };
             };
             /** @description Validation Error */

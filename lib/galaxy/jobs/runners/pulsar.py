@@ -107,6 +107,10 @@ PULSAR_PARAM_SPECS = dict(
         map=specs.to_str_or_none,
         default=None,
     ),
+    secret=dict(
+        map=specs.to_str_or_none,
+        default=None,
+    ),
     pulsar_config=dict(
         map=specs.to_str_or_none,
         default=None,
@@ -610,7 +614,12 @@ class PulsarJobRunner(AsynchronousJobRunner):
         if self.app.config.nginx_upload_job_files_path:
             endpoint_base = "%s" + self.app.config.nginx_upload_job_files_path + "?job_id=%s&job_key=%s"
         files_endpoint = endpoint_base % (self.galaxy_url, encoded_job_id, job_key)
-        get_client_kwds = dict(job_id=str(job_id), files_endpoint=files_endpoint, env=env)
+        secret = job_destination_params.get("job_secret_base", "jobs_token")
+        job_key = self.app.security.encode_id(job_id, kind=secret)
+        token_endpoint = f"{self.galaxy_url}/api/jobs/{encoded_job_id}/oidc-tokens?job_key={job_key}"
+        get_client_kwds = dict(
+            job_id=str(job_id), files_endpoint=files_endpoint, token_endpoint=token_endpoint, env=env
+        )
         # Turn MutableDict into standard dict for pulsar consumption
         job_destination_params = dict(job_destination_params.items())
         return self.client_manager.get_client(job_destination_params, **get_client_kwds)
