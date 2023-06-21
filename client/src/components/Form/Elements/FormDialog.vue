@@ -3,9 +3,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faFolderOpen } from "@fortawesome/free-solid-svg-icons";
 import DataDialog from "@/components/DataDialog/DataDialog.vue";
-import { onMounted } from "vue";
+import { onMounted, ref, reactive } from "vue";
 import { getCurrentGalaxyHistory } from "@/utils/data";
-import { reactive } from "vue";
 
 library.add(faFolderOpen);
 
@@ -31,10 +30,7 @@ onMounted(() => {
     });
 });
 
-const initialODD = false;
-const openDataDialog = reactive({
-    value: initialODD,
-});
+const openDataDialog = ref(false);
 
 const dataSelected = reactive({
     value: props.value,
@@ -53,16 +49,16 @@ function onData(result: Array<string> | string) {
 
 <template>
     <div class="d-flex">
-        <span @click="openDataDialog.value = true">
+        <button @click="openDataDialog = true">
             <font-awesome-icon icon="folder-open" :title="title" />
-            <input v-model="dataSelected.value" disabled class="ui-input float-left" />
-        </span>
+        </button>
+        <input v-model="dataSelected.value" disabled class="ui-input float-left" />
         <DataDialog
-            v-if="openDataDialog.value"
+            v-if="openDataDialog"
             :history="localHistoryId.value"
             :multiple="multiple"
-            @onCancel="openDataDialog.value = false"
-            @onUpload="openDataDialog.value = false"
+            @onCancel="openDataDialog = false"
+            @onUpload="openDataDialog = false"
             @onOk="onData" />
     </div>
 </template>
