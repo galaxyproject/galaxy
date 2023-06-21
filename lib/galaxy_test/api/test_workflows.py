@@ -4092,10 +4092,10 @@ test_data:
             self.workflow_populator.cancel_invocation(summary.invocation_id)
             invocation_jobs = self.workflow_populator.get_invocation_jobs(summary.invocation_id)
             for job in invocation_jobs:
-                assert job["state"] == "deleted" or job["state"] == "deleted_new"
+                assert job["state"] == "deleted" or job["state"] == "deleting"
             subworkflow_invocation_jobs = self.workflow_populator.get_invocation_jobs(subworkflow_invocation_id)
             for job in subworkflow_invocation_jobs:
-                assert job["state"] == "deleted" or job["state"] == "deleted_new"
+                assert job["state"] == "deleted" or job["state"] == "deleting"
 
     def test_workflow_failed_output_not_found(self, history_id):
         summary = self._run_workflow(

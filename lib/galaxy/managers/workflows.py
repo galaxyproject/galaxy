@@ -31,6 +31,7 @@ from sqlalchemy import (
     or_,
     select,
     true,
+    update,
 )
 from sqlalchemy.orm import (
     aliased,
@@ -431,14 +432,26 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
             with transaction(trans.sa_session):
                 trans.sa_session.commit()
 
-        for step in workflow_invocation.steps:
-            for job in step.jobs:
-                job.mark_deleted()
-                trans.sa_session.add(job)
-            if step.implicit_collection_jobs:
-                for icjja in step.implicit_collection_jobs.jobs:
-                    icjja.job.mark_deleted()
-                    trans.sa_session.add(icjja.job)
+        job_subq = (
+            trans.sa_session.query(model.Job.id)
+            .join(model.WorkflowInvocationStep)
+            .filter(model.WorkflowInvocationStep.workflow_invocation_id == decoded_invocation_id)
+            .filter(~model.Job.table.c.state.in_(model.Job.terminal_states))
+            .with_for_update().scalar_subquery()
+        )
+        trans.sa_session.execute(update(model.Job.table).where(model.Job.id == job_subq).values({"state": model.Job.states.DELETING}))
+
+        job_collection_subq = (
+            trans.sa_session.query(model.Job.id)
+            .join(model.ImplicitCollectionJobsJobAssociation)
+            .join(model.ImplicitCollectionJobs)
+            .join(model.WorkflowInvocationStep, model.WorkflowInvocationStep.implicit_collection_jobs_id == model.ImplicitCollectionJobs.id)
+            .filter(model.WorkflowInvocationStep.workflow_invocation_id == decoded_invocation_id)
+            .filter(~model.Job.table.c.state.in_(model.Job.terminal_states))
+            .with_for_update().subquery()
+        )
+
+        trans.sa_session.execute(update(model.Job.table).where(model.Job.table.c.id.in_(job_collection_subq)).values({"state": model.Job.states.DELETING}))
 
         with transaction(trans.sa_session):
             trans.sa_session.commit()

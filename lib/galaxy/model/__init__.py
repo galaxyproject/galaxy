@@ -1366,7 +1366,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
 
     states = JobState
 
-    terminal_states = [states.OK, states.ERROR, states.DELETED]
+    terminal_states = [states.OK, states.ERROR, states.DELETED, states.DELETING]
     #: job states where the job hasn't finished and the model may still change
     non_ready_states = [
         states.NEW,
