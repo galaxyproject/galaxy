@@ -9,14 +9,8 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 const router = useRouter();
 library.add(faPlus);
 
-interface PageIndexActionsProps {
-    root: string;
-}
-
-const props = defineProps<PageIndexActionsProps>();
-
 function create() {
-    router.push(`${props.root}pages/create`);
+    router.push("/pages/create");
 }
 </script>
 <template>

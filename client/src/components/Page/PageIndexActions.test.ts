@@ -13,11 +13,7 @@ describe("PageIndexActions.vue", () => {
     };
 
     beforeEach(async () => {
-        const propsData = {
-            root: "/rootprefix/",
-        };
         wrapper = shallowMount(PageIndexActions, {
-            propsData,
             mocks: {
                 $router: mockRouter,
             },
@@ -29,7 +25,7 @@ describe("PageIndexActions.vue", () => {
         it("should create a page when create is clicked", async () => {
             await wrapper.find("#page-create").trigger("click");
             expect(mockRouter.push).toHaveBeenCalledTimes(1);
-            expect(mockRouter.push).toHaveBeenCalledWith("/rootprefix/pages/create");
+            expect(mockRouter.push).toHaveBeenCalledWith("/pages/create");
         });
     });
 });
