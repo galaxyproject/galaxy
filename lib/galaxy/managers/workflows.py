@@ -439,6 +439,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
             .filter(~model.Job.table.c.state.in_(model.Job.terminal_states))
             .with_for_update().scalar_subquery()
         )
+        log.debug("CANCEL STEP JOBS")
         trans.sa_session.execute(update(model.Job.table).where(model.Job.id == job_subq).values({"state": model.Job.states.DELETING}))
 
         job_collection_subq = (
@@ -451,7 +452,8 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
             .with_for_update().subquery()
         )
 
-        trans.sa_session.execute(update(model.Job.table).where(model.Job.table.c.id.in_(job_collection_subq)).values({"state": model.Job.states.DELETING}))
+        log.debug("CANCEL STEP IMPLICIT JOBS")
+        trans.sa_session.execute(update(model.Job.table).where(model.Job.table.c.id.in_(job_collection_subq.element)).values({"state": model.Job.states.DELETING}))
 
         with transaction(trans.sa_session):
             trans.sa_session.commit()
