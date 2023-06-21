@@ -267,7 +267,7 @@ def preprocess_volumes(volumes_raw_str: str, container_type: str) -> List[str]:
 
     Removes volumes that have the same target directory which is not allowed
     (for docker and singularity). Volumes that are specified later in the volumes_raw_str
-    are favoured which allows admins to averwrite defaults.
+    are favoured which allows admins to overwrite defaults.
 
     >>> preprocess_volumes("", DOCKER_CONTAINER_TYPE)
     []
@@ -287,6 +287,8 @@ def preprocess_volumes(volumes_raw_str: str, container_type: str) -> List[str]:
     ['/x:/a/b:ro', '/y:/a/b/c:ro']
     >>> preprocess_volumes("/x:/a/b:default_ro,/y:/a/b/c:rw", SINGULARITY_CONTAINER_TYPE)
     ['/x:/a/b', '/y:/a/b/c']
+    >>> preprocess_volumes("/x:/x,/y:/x", SINGULARITY_CONTAINER_TYPE)
+    ['/y:/x']
     """
 
     if not volumes_raw_str:
@@ -304,8 +306,9 @@ def preprocess_volumes(volumes_raw_str: str, container_type: str) -> List[str]:
                         mode = "rw"
         volume.mode = mode
 
-    # remove duplicate directories
-    return list(dict.fromkeys(str(v) for v in volumes))
+    # remove duplicate targets
+    target_to_volume = {v.target: str(v) for v in volumes}
+    return list(target_to_volume.values())
 
 
 class HasDockerLikeVolumes:
