@@ -744,11 +744,19 @@ workflow_editor:
       type: xpath
       selector: >
         //li[@class="multiselect__element"]//span[text()="${datatype}"]
-    add_tags:
+    add_tags_button:
+      type: xpath
+      selector: >
+        //div[@data-label='Add Tags']//button
+    add_tags_input:
       type: xpath
       selector: >
         //div[@data-label='Add Tags']//input
-    remove_tags:
+    remove_tags_button:
+      type: xpath
+      selector: >
+        //div[@data-label='Remove Tags']//button
+    remove_tags_input:
       type: xpath
       selector: >
         //div[@data-label='Remove Tags']//input

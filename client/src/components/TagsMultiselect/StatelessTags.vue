@@ -17,6 +17,8 @@ interface StatelessTagsProps {
     clickable?: boolean;
     useToggleLink?: boolean;
     maxVisibleTags?: number;
+    placeholder?: string;
+    noPadding?: boolean;
 }
 
 const props = withDefaults(defineProps<StatelessTagsProps>(), {
@@ -25,6 +27,7 @@ const props = withDefaults(defineProps<StatelessTagsProps>(), {
     clickable: false,
     useToggleLink: true,
     maxVisibleTags: 5,
+    placeholder: "Add Tags",
 });
 
 const emit = defineEmits<{
@@ -113,12 +116,12 @@ function onTagClicked(tag: string) {
 </script>
 
 <template>
-    <div class="stateless-tags px-1">
+    <div class="stateless-tags" :class="{ 'px-1': !props.noPadding }">
         <Multiselect
             v-if="!disabled"
             ref="multiselectElement"
-            placeholder="Add Tags"
             open-direction="bottom"
+            :placeholder="props.placeholder"
             :value="tags"
             :options="userTags"
             :multiple="true"
@@ -145,7 +148,7 @@ function onTagClicked(tag: string) {
 
             <template v-slot:caret>
                 <b-button v-if="!editing" class="toggle-button" variant="link" tabindex="-1" @click="openMultiselect">
-                    Add Tags
+                    {{ props.placeholder }}
                     <FontAwesomeIcon icon="fa-tags" />
                 </b-button>
             </template>
@@ -173,7 +176,7 @@ function onTagClicked(tag: string) {
             </template>
         </Multiselect>
 
-        <div v-else class="pl-1 pb-2">
+        <div v-else :class="{ 'pl-1': !props.noPadding, 'pb-2': !props.noPadding }">
             <div class="d-inline">
                 <Tag
                     v-for="tag in trimmedTags"
@@ -327,6 +330,7 @@ function onTagClicked(tag: string) {
         .multiselect__option--selected {
             .multiselect-option {
                 color: $brand-primary;
+                background-color: $brand-secondary;
 
                 .info:not(.highlighted) {
                     display: inline-block;

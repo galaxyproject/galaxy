@@ -12,6 +12,7 @@ import FormOptionalText from "./Elements/FormOptionalText.vue";
 import FormRulesEdit from "./Elements/FormRulesEdit.vue";
 import FormUpload from "./Elements/FormUpload.vue";
 import FormDrilldown from "./Elements/FormDrilldown/FormDrilldown.vue";
+import FormTags from "./Elements/FormTags.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref, computed, useAttrs } from "vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -285,6 +286,10 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 :data-label="props.title"
                 :type="props.type ?? (attrs.options ? 'select' : 'text')"
                 :attributes="attrs" />
+            <FormTags
+                v-else-if="props.type === 'tags'"
+                v-model="currentValue"
+                :placeholder="props.attributes?.placeholder" />
             <FormInput v-else :id="props.id" v-model="currentValue" :area="attrs['area']" />
         </div>
 

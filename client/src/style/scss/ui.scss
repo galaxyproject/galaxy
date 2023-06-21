@@ -436,3 +436,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
         text-decoration: underline;
     }
 }
+
+.overflow-x-hidden {
+    overflow-x: hidden !important;
+}
