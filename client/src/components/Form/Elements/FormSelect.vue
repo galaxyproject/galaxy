@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, watch, type ComputedRef } from "vue";
 import Multiselect from "vue-multiselect";
+import { useMultiselect } from "@/composables/useMultiselect";
 
 type SelectValue = string | null;
+const { ariaExpanded, onOpen, onClose } = useMultiselect();
 
 interface SelectOption {
     label: string;
@@ -148,9 +150,12 @@ onMounted(() => {
         :options="formattedOptions"
         :multiple="multiple"
         :selected-label="selectedLabel"
+        :aria-expanded="ariaExpanded"
         placeholder="Select value"
         select-label="Click to select"
         track-by="value"
-        label="label" />
+        label="label"
+        @open="onOpen"
+        @close="onClose" />
     <b-alert v-else v-localize variant="warning" show> No options available. </b-alert>
 </template>

@@ -334,7 +334,13 @@ storage_dashboard:
 edit_dataset_attributes:
   selectors:
     database_build_dropdown: '[data-label="Database/Build"]'
-    save_btn: '#dataset-attributes-default-save'
+
+    _: '[aria-labelledby="dataset-attributes-heading"]'
+    name_input: '[aria-labelledby="dataset-attributes-heading"] input#name'
+    info_input: '[aria-labelledby="dataset-attributes-heading"] textarea#info'
+    annotation_input: '[aria-labelledby="dataset-attributes-heading"] textarea#annotation'
+    save_button: '#dataset-attributes-default-save'
+    alert: '.dataset-attributes-alert'
 
   dbkey_dropdown_results:
     selectors:

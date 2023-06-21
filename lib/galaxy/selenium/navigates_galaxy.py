@@ -17,6 +17,7 @@ from typing import (
     Any,
     cast,
     Dict,
+    NamedTuple,
     Optional,
     Union,
 )
@@ -51,6 +52,12 @@ RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT = 10
 GALAXY_MAIN_FRAME_ID = "galaxy_main"
 
 WaitType = collections.namedtuple("WaitType", ["name", "default_length"])
+
+
+class HistoryEntry(NamedTuple):
+    id: str
+    hid: str
+    history_content_type: str
 
 
 # Default wait times should make sense for a development server under low
@@ -375,10 +382,29 @@ class NavigatesGalaxy(HasDriver):
         self.click_history_option_sharing()
         self.make_accessible_and_publishable()
 
-    def latest_history_item(self):
+    def latest_history_entry(self):
+        entry_dict = self._latest_history_item()
+        if entry_dict is None:
+            return None
+        else:
+            return HistoryEntry(
+                id=entry_dict["id"],
+                hid=entry_dict["hid"],
+                history_content_type=entry_dict["history_content_type"],
+            )
+
+    def latest_history_item(self) -> Dict[str, Any]:
+        return_value = self._latest_history_item()
+        assert return_value, "Attempted to get latest history item on empty history."
+        return return_value
+
+    def _latest_history_item(self) -> Optional[Dict[str, Any]]:
         history_contents = self.history_contents()
-        assert len(history_contents) > 0
-        return history_contents[-1]
+        if len(history_contents) > 0:
+            entry_dict = history_contents[-1]
+            return entry_dict
+        else:
+            return None
 
     def wait_for_history(self, assert_ok=True):
         def history_becomes_terminal(driver):
@@ -713,6 +739,15 @@ class NavigatesGalaxy(HasDriver):
     def hover_over(self, target):
         action_chains = self.action_chains()
         action_chains.move_to_element(target).perform()
+
+    def perform_single_upload(self, test_path, **kwd) -> HistoryEntry:
+        before_latest_history_item = self.latest_history_entry()
+        self._perform_upload(test_path=test_path, **kwd)
+        after_latest_history_item = self.latest_history_entry()
+        assert after_latest_history_item
+        if before_latest_history_item is not None:
+            assert before_latest_history_item.id != after_latest_history_item.id
+        return after_latest_history_item
 
     def perform_upload(self, test_path, **kwd):
         self._perform_upload(test_path=test_path, **kwd)
@@ -1747,6 +1782,11 @@ class NavigatesGalaxy(HasDriver):
         dataset_selector = self.history_panel_wait_for_hid_state(1, "ok", multi_history_panel=True)
         self.wait_for_and_click(dataset_selector)
         self.history_panel_wait_for_hid_state(1, "ok", multi_history_panel=True)
+
+    def history_panel_item_edit(self, hid):
+        item = self.history_panel_item_component(hid=hid)
+        item.edit_button.wait_for_and_click()
+        self.components.edit_dataset_attributes._.wait_for_visible()
 
     def history_panel_item_view_dataset_details(self, hid):
         item = self.history_panel_item_component(hid=hid)

@@ -200,10 +200,12 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 </b-button>
 
                 <span v-if="props.title" class="ui-form-title-text ml-1">
-                    {{ props.title }}
+                    <label :for="props.id">{{ props.title }}</label>
                 </span>
             </span>
-            <span v-else-if="props.title" class="ui-form-title-text">{{ props.title }}</span>
+            <span v-else-if="props.title" class="ui-form-title-text"
+                ><label :for="props.id">{{ props.title }}</label></span
+            >
 
             <span
                 v-if="isRequired && isRequiredType && props.title"
