@@ -305,16 +305,7 @@ def preprocess_volumes(volumes_raw_str: str, container_type: str) -> List[str]:
         volume.mode = mode
 
     # remove duplicate directories
-    targets: Dict[str, Volume] = dict()
-    i = len(volumes) - 1
-    while i > -1:
-        if volumes[i].target in targets:
-            log.debug(f"{volumes[i]} removed in favour of {targets[volumes[i].target]}")
-            del volumes[i]
-        else:
-            targets[volumes[i].target] = volumes[i]
-        i -= 1
-    return [str(v) for v in volumes]
+    return list(dict.fromkeys(str(v) for v in volumes))
 
 
 class HasDockerLikeVolumes:
