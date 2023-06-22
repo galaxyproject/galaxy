@@ -11,7 +11,9 @@ from typing import (
 
 from sqlalchemy import (
     and_,
+    asc,
     false,
+    func,
     not_,
     or_,
     true,
@@ -208,6 +210,8 @@ class LibraryManager:
                 prefetched_ids["allowed_library_add_ids"] = allowed_library_add_ids
                 prefetched_ids["allowed_library_modify_ids"] = allowed_library_modify_ids
                 prefetched_ids["allowed_library_manage_ids"] = allowed_library_manage_ids
+        sort_column = getattr(Library, "name")
+        query = query.order_by(asc(func.lower(sort_column)))
         return query, prefetched_ids
 
     def secure(self, trans, library: Library, check_accessible: bool = True) -> Library:
