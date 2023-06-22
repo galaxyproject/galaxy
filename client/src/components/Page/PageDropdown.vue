@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import _l from "@/utils/localization";
+import { useRouter } from "vue-router/composables";
 import { computed, unref } from "vue";
 import { deletePage } from "./services";
 import { storeToRefs } from "pinia";
@@ -8,6 +9,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
 
+const router = useRouter();
 library.add(faCaretDown);
 
 interface Page {
@@ -18,7 +20,6 @@ interface Page {
 }
 interface PageDropdownProps {
     page: Page;
-    root: string;
     published?: Boolean;
 }
 
@@ -27,10 +28,10 @@ const { isAnonymous } = storeToRefs(useUserStore());
 
 const emit = defineEmits(["onRemove", "onSuccess", "onError"]);
 
-const urlEdit = computed(() => `${props.root}pages/editor?id=${props.page.id}`);
-const urlEditAttributes = computed(() => `${props.root}pages/edit?id=${props.page.id}`);
-const urlShare = computed(() => `${props.root}pages/sharing?id=${props.page.id}`);
-const urlView = computed(() => `${props.root}published/page?id=${props.page.id}`);
+const urlView = computed(() => `/published/page?id=${props.page.id}`);
+const urlEdit = computed(() => `/pages/editor?id=${props.page.id}`);
+const urlEditAttributes = computed(() => `/pages/edit?id=${props.page.id}`);
+const urlShare = computed(() => `/pages/sharing?id=${props.page.id}`);
 const readOnly = computed(() => props.page.shared || props.published || unref(isAnonymous));
 
 function onDelete(page_id: string) {
@@ -42,6 +43,10 @@ function onDelete(page_id: string) {
         .catch((error) => {
             emit("onError", error);
         });
+}
+
+function pushUrl(url: string) {
+    router.push(url);
 }
 </script>
 <template>
@@ -57,19 +62,31 @@ function onDelete(page_id: string) {
         </b-link>
         <p v-if="props.page.description">{{ props.page.description }}</p>
         <div class="dropdown-menu" aria-labelledby="page-dropdown">
-            <a class="dropdown-item dropdown-item-view" :href="urlView">
+            <a class="dropdown-item dropdown-item-view" href="javascript:void(0)" @click="pushUrl(urlView)">
                 <span class="fa fa-eye fa-fw mr-1" />
                 <span>View</span>
             </a>
-            <a v-if="!readOnly" class="dropdown-item dropdown-item-edit" :href="urlEdit">
+            <a
+                v-if="!readOnly"
+                class="dropdown-item dropdown-item-edit"
+                href="javascript:void(0)"
+                @click="pushUrl(urlEdit)">
                 <span class="fa fa-edit fa-fw mr-1" />
                 <span>Edit content</span>
             </a>
-            <a v-if="!readOnly" class="dropdown-item dropdown-item-attributes" :href="urlEditAttributes">
+            <a
+                v-if="!readOnly"
+                class="dropdown-item dropdown-item-attributes"
+                href="javascript:void(0)"
+                @click="pushUrl(urlEditAttributes)">
                 <span class="fa fa-pencil fa-fw mr-1" />
                 <span>Edit attributes</span>
             </a>
-            <a v-if="!readOnly" class="dropdown-item dropdown-item-share" :href="urlShare">
+            <a
+                v-if="!readOnly"
+                class="dropdown-item dropdown-item-share"
+                href="javascript:void(0)"
+                @click="pushUrl(urlShare)">
                 <span class="fa fa-share-alt fa-fw mr-1" />
                 <span>Control sharing</span>
             </a>
