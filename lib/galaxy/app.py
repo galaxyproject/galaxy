@@ -581,6 +581,8 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
 
         self._configure_tool_shed_registry()
         self._register_singleton(tool_shed_registry.Registry, self.tool_shed_registry)
+        # Tool Data Tables
+        self._configure_tool_data_tables(from_shed_config=False)
 
     def _configure_tool_shed_registry(self) -> None:
         # Set up the tool sheds registry
@@ -633,8 +635,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         )
         self.api_keys_manager = self._register_singleton(ApiKeyManager)
 
-        # Tool Data Tables
-        self._configure_tool_data_tables(from_shed_config=False)
         # Load dbkey / genome build manager
         self._configure_genome_builds(data_table_name="__dbkeys__", load_old_style=True)
 
