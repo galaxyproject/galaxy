@@ -17,7 +17,7 @@ export interface paths {
         post: operations["get_api_cloud_storage_get_post"];
     };
     "/api/cloud/storage/send": {
-        /** Sends given dataset(s) in a given history to a given cloud-based bucket. Each dataset is named using the label assigned to the dataset in the given history (see `HistoryDatasetAssociation.name`). If no dataset ID is given, this API sends all the datasets belonging to a given history to a given cloud-based bucket. */
+        /** Sends given dataset(s) in a given history to a given cloud-based bucket. */
         post: operations["send_api_cloud_storage_send_post"];
     };
     "/api/configuration": {
@@ -3755,6 +3755,22 @@ export interface components {
             /** Items From */
             items_from?: string;
             src: components["schemas"]["Src"];
+        };
+        /**
+         * FailedJob
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        FailedJob: {
+            /**
+             * Error
+             * @description A descriptive error message.
+             */
+            error: string;
+            /**
+             * Object
+             * @description The name of object is queued to be created
+             */
+            object: string;
         };
         /**
          * FetchDataPayload
@@ -8013,6 +8029,22 @@ export interface components {
          */
         StoredItemOrderBy: "name-asc" | "name-dsc" | "size-asc" | "size-dsc" | "update_time-asc" | "update_time-dsc";
         /**
+         * SuccessfulJob
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        SuccessfulJob: {
+            /**
+             * Job ID
+             * @description The ID of the queued send job.
+             */
+            job_id: string;
+            /**
+             * Object
+             * @description The name of object is queued to be created
+             */
+            object: string;
+        };
+        /**
          * SuitableConverter
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -8043,6 +8075,38 @@ export interface components {
          * @description Collection of converters that can be used on a particular dataset collection.
          */
         SuitableConverters: components["schemas"]["SuitableConverter"][];
+        /**
+         * SummaryGetObjects
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        SummaryGetObjects: {
+            /**
+             * Datasets
+             * @description A list of datasets created for the fetched files.
+             */
+            datasets: Record<string, never>[];
+        };
+        /**
+         * SummarySendDatasets
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        SummarySendDatasets: {
+            /**
+             * Bucket
+             * @description The name of bucket to which the listed datasets are queued to be sent
+             */
+            bucket_name: string;
+            /**
+             * Failed datasets
+             * @description The datasets for which Galaxy failed to create (and queue) send job
+             */
+            failed_dataset_labels: components["schemas"]["FailedJob"][];
+            /**
+             * Send datasets
+             * @description The datasets for which Galaxy succeeded to create (and queue) send job
+             */
+            sent_dataset_labels: components["schemas"]["SuccessfulJob"][];
+        };
         /**
          * TagCollection
          * @description The collection of tags associated with an item.
@@ -8997,7 +9061,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>[];
+                    "application/json": components["schemas"]["SummaryGetObjects"];
                 };
             };
             /** @description Validation Error */
@@ -9009,7 +9073,7 @@ export interface operations {
         };
     };
     send_api_cloud_storage_send_post: {
-        /** Sends given dataset(s) in a given history to a given cloud-based bucket. Each dataset is named using the label assigned to the dataset in the given history (see `HistoryDatasetAssociation.name`). If no dataset ID is given, this API sends all the datasets belonging to a given history to a given cloud-based bucket. */
+        /** Sends given dataset(s) in a given history to a given cloud-based bucket. */
         parameters?: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -9025,9 +9089,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": {
-                        [key: string]: (Record<string, never>[] | string) | undefined;
-                    };
+                    "application/json": components["schemas"]["SummarySendDatasets"];
                 };
             };
             /** @description Validation Error */
