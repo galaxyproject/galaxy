@@ -15,6 +15,7 @@ import pebble
 from celery import (
     Celery,
     shared_task,
+    Task,
 )
 from celery.signals import (
     worker_init,
@@ -22,6 +23,7 @@ from celery.signals import (
 )
 from kombu import serialization
 
+from galaxy.celery.base_task import GalaxyTaskBeforeStart
 from galaxy.config import Configuration
 from galaxy.main_config import find_config
 from galaxy.util import ExecutionTimer
@@ -65,6 +67,21 @@ class GalaxyCelery(Celery):
         if module.startswith("galaxy.celery.tasks"):
             module = f"galaxy{module[19:]}"
         return module
+
+
+class GalaxyTask(Task):
+    """
+    Custom celery task used to limit number of tasks executions per user
+    per second.
+    """
+
+    def before_start(self, task_id, args, kwargs):
+        """
+        Set appropriate before start object from DI container.
+        """
+        app = get_galaxy_app()
+        assert app
+        app[GalaxyTaskBeforeStart](self, task_id, args, kwargs)
 
 
 def set_thread_app(app):
@@ -144,7 +161,7 @@ def galaxy_task(*args, action=None, **celery_task_kwd):
         celery_task_kwd["serializer"] = PYDANTIC_AWARE_SERIALIZER_NAME
 
     def decorate(func: Callable):
-        @shared_task(**celery_task_kwd)
+        @shared_task(base=GalaxyTask, **celery_task_kwd)
         @wraps(func)
         def wrapper(*args, **kwds):
             app = get_galaxy_app()
