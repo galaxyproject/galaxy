@@ -631,7 +631,8 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
             DependencyResolversView, DependencyResolversView(self)
         )
         self.test_data_resolver = self._register_singleton(
-            TestDataResolver, TestDataResolver(file_dirs=self.config.tool_test_data_directories)
+            TestDataResolver,
+            TestDataResolver(file_dirs=",".join([self.config.tool_test_data_directories, "url-location"])),
         )
         self.api_keys_manager = self._register_singleton(ApiKeyManager)
 
