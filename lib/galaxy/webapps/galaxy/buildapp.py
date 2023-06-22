@@ -310,23 +310,6 @@ def populate_api_routes(webapp, app):
     _add_item_tags_controller(
         webapp, name_prefix="history_content_", path_prefix="/api/histories/{history_id}/contents/{history_content_id}"
     )
-    webapp.mapper.connect(
-        "cloud_storage", "/api/cloud/storage/", controller="cloud", action="index", conditions=dict(method=["GET"])
-    )
-    webapp.mapper.connect(
-        "cloud_storage_get",
-        "/api/cloud/storage/get",
-        controller="cloud",
-        action="get",
-        conditions=dict(method=["POST"]),
-    )
-    webapp.mapper.connect(
-        "cloud_storage_send",
-        "/api/cloud/storage/send",
-        controller="cloud",
-        action="send",
-        conditions=dict(method=["POST"]),
-    )
 
     _add_item_tags_controller(webapp, name_prefix="history_", path_prefix="/api/histories/{history_id}")
     _add_item_tags_controller(webapp, name_prefix="workflow_", path_prefix="/api/workflows/{workflow_id}")
