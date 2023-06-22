@@ -5,7 +5,7 @@
                 <font-awesome-icon icon="home" />
             </b-button>
             <b-button
-                v-if="currentUser.is_admin"
+                v-if="currentUser && currentUser.is_admin"
                 id="create-new-lib"
                 v-b-toggle.collapse-2
                 title="Create new folder"
@@ -15,7 +15,7 @@
             </b-button>
             <SearchField :typing-delay="0" @updateSearch="searchValue($event)" />
             <b-form-checkbox
-                v-if="currentUser.is_admin"
+                v-if="currentUser && currentUser.is_admin"
                 v-localize
                 class="mr-1"
                 @input="toggle_include_deleted($event)">
@@ -124,7 +124,7 @@
                     </div>
                 </b-button>
                 <b-button
-                    v-if="currentUser.is_admin && !row.item.deleted"
+                    v-if="currentUser && currentUser.is_admin && !row.item.deleted"
                     size="sm"
                     class="lib-btn permission_library_btn"
                     :title="'Permissions of ' + row.item.name"
@@ -133,7 +133,7 @@
                     Manage
                 </b-button>
                 <b-button
-                    v-if="currentUser.is_admin && row.item.editMode && !row.item.deleted"
+                    v-if="currentUser && currentUser.is_admin && row.item.editMode && !row.item.deleted"
                     size="sm"
                     class="lib-btn delete-lib-btn"
                     :title="`Delete ${row.item.name}`"
