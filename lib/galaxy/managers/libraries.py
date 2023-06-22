@@ -210,8 +210,7 @@ class LibraryManager:
                 prefetched_ids["allowed_library_add_ids"] = allowed_library_add_ids
                 prefetched_ids["allowed_library_modify_ids"] = allowed_library_modify_ids
                 prefetched_ids["allowed_library_manage_ids"] = allowed_library_manage_ids
-        sort_column = getattr(Library, "name")
-        query = query.order_by(asc(func.lower(sort_column)))
+        query = query.order_by(asc(func.lower(Library.name)))
         return query, prefetched_ids
 
     def secure(self, trans, library: Library, check_accessible: bool = True) -> Library:
