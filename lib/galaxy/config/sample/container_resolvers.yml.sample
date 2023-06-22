@@ -27,61 +27,50 @@
 # if ``enable_mulled_containers`` is set in ``galaxy.yml`` (which is the default).
 
 # get a container description to a cached mulled docker container
-# - checks in the docker cache if the image is there
 - type: cached_mulled
+  # This resolver type will check the image cache for `quay.io/NAMESPACE/containername`
+  # The image cache can be populated by `mulled_*` resolvers or
+  # with a manual `docker pull quay.io/NAMESPACE/containername`.
   namespace: biocontainers
 - type: cached_mulled
   namespace: local
-  # This container resolver has two arguments
-  # the resolver will check the image cache for `quay.io/NAMESPACE/containername`
-  # so if one (or another container resolver) did a
-  # `docker pull quay.io/NAMESPACE/containername` then the image should be found
-  # Note the local namespace is currently "abused" to refer to locally built
-  # images (since there is no quay.io/local/)
+  # The local namespace refers to locally built images that are prefixed with quay.io/local/.
   #namespace: biocontainers
   # the version of the mulled hashing function (v2/v1)
   #hash_func: v2
 
 
 # get a container description for a cached mulled singularity container
-# - checks in the local cache directory if the image file exists and returns the path if so
+# checks if the image file exists in `cache_directory`
 - type: cached_mulled_singularity
   namespace: biocontainers
-- type: cached_mulled_singularity
-  namespace: local
-  # NOTE that the default container config specifies the namespace, but it is
-  # currently not used in the code, i.e. the two resolvers are redundant
   #
   #cache_directory: database/container_cache/singularity/mulled
   #
   # the method for caching directory listings (not the method for image caching)
-  # can be uncached, dir_mtime (the latter only determines the directory listing
-  # if the mtime of the directory changed)
-  # cache_directory_cacher_type: uncached
-  #
-  # the version of the mulled hashing function (v2/v1)
-  #hash_func: v2
+  # can be uncached or dir_mtime (the latter only determines the directory listing
+  # if the modification time of the directory changed)
+  #cache_directory_cacher_type: uncached
 
-# Build a mulled container description to quay.io/NAMESPACE/MULLED_HASH where the
+- type: cached_mulled_singularity
+  namespace: local
+  #cache_directory_cacher_type: uncached
+
+# Resolves container images from quay.io/NAMESPACE/MULLED_HASH where the
 # mulled hash describes which packages and versions should be in the container
 #
-# if the corresponding CLI (docker) is available also the image
-# will be pulled, i.e. the image will be in dockers image cache
+# If the docker CLI is available the image will be pulled.
 #
-# depending on the value of auto_install the container resolver will point
-# to the cached image or quay.io/NAMESPACE/MULLED_HASH
-# Note that this makes no difference for docker.
+# These resolvers are generally listed after the cached_* resolvers, so that images
+# are not pulled if they are already cached.
 - type: mulled
   namespace: biocontainers
-  # see `cached_mulled`
-  #namespace: biocontainers
-  # see `cached_mulled`
-  #hash_func: v2
+  #
   # If true return quay.io/NAMESPACE/MULLED_HASH otherwise to the cached image
   # which is also quay.io/NAMESPACE/MULLED_HASH in case of docker
   #auto_install: true
 
-# Nearly the same as mulled, but
+# Differences with the docker `mulled` resolver are
 # - when pulling the image file will be stored in the configured cache dir
 # - if auto_install is True the result will point to the cached image file
 # and to quay.io/NAMESPACE/MULLED_HASH otherwise
@@ -89,7 +78,7 @@
   namespace: biocontainers
   # In addition to the arguments of `mulled` there are cache_directory
   # and cache_directory_cacher_type. See the description at `cached_explicit_singularity`
-  # and note the minor difference in the default for the directory
+  # and note the minor difference in the default for `cache_directory`
   #cache_directory: database/container_cache/singularity/mulled
   #cache_directory_cacher_type: uncached
 

@@ -166,17 +166,15 @@ an entry in the docker image cache (on the local node) whereas for
 singularity an image file is created in the specified ``cache_directory``.
 On distributed systems ``cache_directory`` needs to be accessible on all
 compute nodes.
-For singularity admins should also take care of the ``APPTAINER_CACHEDIR``
+For singularity, admins should also take care of the ``APPTAINER_CACHEDIR``
 directory.
 
 .. note::
 
-   Using a cached docker resolver has no additional value on distributed compute
-   systems since the cache is only available locally. 
-   Therefore an additional ``docker inspect ... ; [ $? -ne 0 ] && docker pull ...``
-   command is used in each job script. Thereby a container will be cached
-   after the tool run even if no cached container resolver was used.
-   Clearly admins need to take care of docker caches of the main and compute nodes.
+   An additional ``docker inspect ... ; [ $? -ne 0 ] && docker pull ...``
+   command is used in each job script to ensure that images are available on a compute node.
+   Thereby a container will be cached after the tool run even if no cached container resolver was used.
+   Admins need to take care of docker caches of the main and compute nodes.
    For distributed compute systems, built-in techniques of docker may be useful:
    https://docs.docker.com/registry/recipes/mirror/.
 
