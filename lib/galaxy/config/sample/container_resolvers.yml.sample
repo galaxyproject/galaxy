@@ -61,10 +61,6 @@
 #
 # If the docker CLI is available the image will be pulled.
 #
-# If auto_install is set to true the container resolver pull the image and point
-# to the cached image, otherwise the reference to quay.io/NAMESPACE/MULLED_HASH is passed
-# on to the job script, where the image can be pulled.
-#
 # These resolvers are generally listed after the cached_* resolvers, so that images
 # are not pulled if they are already cached.
 - type: mulled
