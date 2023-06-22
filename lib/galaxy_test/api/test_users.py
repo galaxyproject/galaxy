@@ -158,7 +158,10 @@ class TestUsersApi(ApiTestCase):
             # Delete user API key
             response = self._delete(f"users/{user_id}/api_key")
             self._assert_status_code_is(response, 204)
-            # No API key anymore, so the detailed request returns unauthorized
+            # No API key anymore, so the detailed request returns no content 204 with admin key
+            response = self._get(f"users/{user_id}/api_key/detailed", admin=True)
+            self._assert_status_code_is(response, 204)
+            # No API key anymore, so the detailed request returns unauthorized 401 with user key
             response = self._get(f"users/{user_id}/api_key/detailed")
             self._assert_status_code_is(response, 401)
             # create new as admin
