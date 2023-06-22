@@ -1,4 +1,5 @@
 from typing import (
+    Any,
     List,
     Optional,
     Union,
@@ -10,6 +11,7 @@ from pydantic import (
 )
 from typing_extensions import Literal
 
+# from galaxy.model import Dataset
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import Model
 
@@ -90,4 +92,69 @@ class CloudDatasets(Model):
         default=False,
         title="Spaces to tabs",
         description="A boolean value. If set to 'True', and an object with same name of the dataset to be sent already exist in the bucket, Galaxy replaces the existing object with the dataset to be sent. If set to 'False', Galaxy appends datetime to the dataset name to prevent overwriting an existing object.",
+    )
+
+
+class FailedJob(Model):
+    object: str = Field(
+        default=Required,
+        title="Object",
+        description="The name of object is queued to be created",
+    )
+    error: str = Field(
+        default=Required,
+        title="Error",
+        description="A descriptive error message.",
+    )
+
+
+class SuccessfulJob(Model):
+    object: str = Field(
+        default=Required,
+        title="Object",
+        description="The name of object is queued to be created",
+    )
+    job_id: str = Field(
+        default=Required,
+        title="Job ID",
+        description="The ID of the queued send job.",
+    )
+
+
+class SummarySendDatasets(Model):
+    sent_dataset_labels: List[SuccessfulJob] = Field(
+        default=Required,
+        title="Send datasets",
+        description="The datasets for which Galaxy succeeded to create (and queue) send job",
+    )
+    failed_dataset_labels: List[FailedJob] = Field(
+        default=Required,
+        title="Failed datasets",
+        description="The datasets for which Galaxy failed to create (and queue) send job",
+    )
+    bucket_name: str = Field(
+        default=Required,
+        title="Bucket",
+        description="The name of bucket to which the listed datasets are queued to be sent",
+    )
+
+
+class SummaryGetObjects(Model):
+    datasets: List[Any] = Field(
+        default=Required,
+        title="Datasets",
+        description="A list of datasets created for the fetched files.",
+    )
+
+
+class StatusCode(Model):
+    detail: str = Field(
+        default=Required,
+        title="Detail",
+        description="The detail to expand on the status code",
+    )
+    status: int = Field(
+        default=Required,
+        title="Code",
+        description="The actual status code",
     )
