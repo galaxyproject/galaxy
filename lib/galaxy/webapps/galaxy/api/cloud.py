@@ -3,16 +3,12 @@ API operations on Cloud-based storages, such as Amazon Simple Storage Service (S
 """
 
 import logging
-from typing import (
-    Any,
-    Dict,
-    List,
-    Union,
-)
+from typing import Union
 
 from fastapi import (
     Body,
-    HTTPException,
+    Response,
+    status,
 )
 from pydantic import Required
 
@@ -23,6 +19,9 @@ from galaxy.schema.cloud import (
     CloudDatasets,
     CloudObjects,
     InputArguments,
+    StatusCode,
+    SummaryGetObjects,
+    SummarySendDatasets,
 )
 from galaxy.webapps.galaxy.api import (
     depends,
@@ -46,9 +45,11 @@ class FastAPICloudController:
     )
     def index(
         self,
+        response: Response,
     ):
         # TODO: This can be implemented leveraging PluggedMedia objects (part of the user-based object store project)
-        raise HTTPException(status_code=501)
+        response.status_code = status.HTTP_501_NOT_IMPLEMENTED
+        return StatusCode(detail="Not yet implemented.", status=501)
 
     @router.post(
         "/api/cloud/storage/get",
@@ -58,7 +59,7 @@ class FastAPICloudController:
         self,
         payload: CloudObjects = Body(default=Required),
         trans: ProvidesHistoryContext = DependsOnTrans,
-    ) -> List[Dict[Any, Any]]:
+    ) -> SummaryGetObjects:
         input_args: Union[InputArguments, dict] = payload.input_args or {}
         datasets = self.cloud_manager.get(
             trans=trans,
@@ -71,17 +72,17 @@ class FastAPICloudController:
         rtv = []
         for dataset in datasets:
             rtv.append(self.datasets_serializer.serialize_to_view(dataset, view="summary"))
-        return rtv
+        return SummaryGetObjects(datasets=rtv)
 
     @router.post(
         "/api/cloud/storage/send",
-        summary="Sends given dataset(s) in a given history to a given cloud-based bucket. Each dataset is named using the label assigned to the dataset in the given history (see `HistoryDatasetAssociation.name`). If no dataset ID is given, this API sends all the datasets belonging to a given history to a given cloud-based bucket.",
+        summary="Sends given dataset(s) in a given history to a given cloud-based bucket.",
     )
     def send(
         self,
-        payload: CloudDatasets,
+        payload: CloudDatasets = Body(default=Required),
         trans: ProvidesHistoryContext = DependsOnTrans,
-    ) -> Dict[str, Union[List[Any], str]]:
+    ) -> SummarySendDatasets:
         log.info(
             msg="Received api/send request for `{}` datasets using authnz with id `{}`, and history `{}`."
             "".format(
@@ -99,8 +100,4 @@ class FastAPICloudController:
             dataset_ids=payload.dataset_ids,
             overwrite_existing=payload.overwrite_existing,
         )
-        return {
-            "sent_dataset_labels": sent,
-            "failed_dataset_labels": failed,
-            "bucket_name": payload.bucket,
-        }
+        return SummarySendDatasets(sent_dataset_labels=sent, failed_dataset_labels=failed, bucket_name=payload.bucket)
