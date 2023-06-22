@@ -41,7 +41,6 @@ class UsersService(ServiceBase):
                 trans.app,
                 "recalculate_user_disk_usage",
                 kwargs={
-                    "object_store": trans.app.object_store,
                     "user_id": trans.user.id,
                 },
             )
