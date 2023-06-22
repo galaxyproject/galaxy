@@ -1696,6 +1696,7 @@ def test_data_iter(required_files):
             dbkey=extra.get("dbkey", DEFAULT_DBKEY),
             location=extra.get("location", None),
             md5=extra.get("md5", None),
+            checksum=extra.get("checksum", None),
         )
         edit_attributes = extra.get("edit_attributes", [])
 
