@@ -398,7 +398,10 @@ def lint_inputs(tool_xml, lint_ctx):
                     node=validator,
                 )
             if vtype in ["dataset_metadata_equal"]:
-                if not ("value" in validator.attrib or "value_json" in validator.attrib) or "metadata_name" not in validator.attrib:
+                if (
+                    not ("value" in validator.attrib or "value_json" in validator.attrib)
+                    or "metadata_name" not in validator.attrib
+                ):
                     lint_ctx.error(
                         f"Parameter [{param_name}]: '{vtype}' validators need to define the 'value'/'value_json' and 'metadata_name' attributes",
                         node=validator,
