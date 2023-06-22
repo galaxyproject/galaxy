@@ -50,6 +50,7 @@
             hover
             :fields="fields"
             :items="librariesList"
+            :sort-by.sync="sortBy"
             :per-page="perPage"
             :current-page="currentPage"
             show-empty
@@ -237,6 +238,7 @@ export default {
             titleDelete: _l("Delete"),
             titlePerPage: _l("per page"),
             titleTotal: _l("total"),
+            sortBy: "name",
         };
     },
     computed: {
