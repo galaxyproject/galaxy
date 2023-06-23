@@ -77,7 +77,8 @@
 </template>
 
 <script>
-import Utils from "utils/utils";
+import { bytesToString } from "utils/utils";
+import { withPrefix } from "utils/redirect";
 import UtcDate from "components/UtcDate";
 import DecodedId from "../DecodedId";
 import { DatasetProvider } from "components/providers";
@@ -100,10 +101,10 @@ export default {
     },
     methods: {
         bytesToString(raw_size) {
-            return Utils.bytesToString(raw_size, false);
+            return bytesToString(raw_size, false);
         },
         prefixedUrl(url) {
-            return window.options?.root.replace(/\/$/, "") + url;
+            return withPrefix(url);
         },
     },
 };
