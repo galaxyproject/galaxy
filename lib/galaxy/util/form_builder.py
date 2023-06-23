@@ -113,8 +113,8 @@ class SelectField(BaseField):
             raise Exception(f"Unknown display type: {display}")
         self.display = display
 
-    def add_option(self, text, value, selected=False):
-        self.options.append((text, value, selected))
+    def add_option(self, label, value, selected=False):
+        self.options.append((str(label), value, selected))
 
     def to_dict(self):
         d = super().to_dict()
