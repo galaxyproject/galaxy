@@ -1065,16 +1065,6 @@ galaxy:
   # for that object store entry.
   #object_store_cache_size: -1
 
-  # Default cache path for caching object stores if cache not configured
-  # for that object store entry.
-  # The value of this option will be resolved with respect to
-  # <cache_dir>.
-  #object_store_cache_path: object_store_cache
-
-  # Default cache size for caching object stores if cache not configured
-  # for that object store entry.
-  #object_store_cache_size: -1
-
   # What Dataset attribute is used to reference files in an ObjectStore
   # implementation, this can be 'uuid' or 'id'. The default will depend
   # on how the object store is configured, starting with 20.05 Galaxy
@@ -1283,7 +1273,7 @@ galaxy:
   # `geographical_server_location_code` value is invalid or unsupported.
   # To see a full list of supported locations, visit
   # https://galaxyproject.org/admin/carbon_emissions
-  geographical_server_location_code: US-NY
+  #geographical_server_location_code: GLOBAL
 
   # The actual name of the location corressponding to the
   # `geographical_server_location_code`. To see a full list of supported
