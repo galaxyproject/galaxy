@@ -1311,25 +1311,49 @@ mapping:
         required: false
         desc: |
           This flag enables carbon emissions estimates for every job based on its runtime metrics.
-          CPU, RAM and runtime usage is used to determine an estimate value.
-          Please note: all values are only estimates.
+          CPU and RAM usage and the total job runtime are used to determine an estimate value.
+          These estimates and are based off of the work of the Green Algorithms Project and
+          the United States Environmental Protection Agency (EPA).
+          Visit https://www.green-algorithms.org/ and https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator.
+          for more detals.
 
-      geographical_server_location:
+      carbon_intensity:
+        type: float
+        default: 475.0
+        required: false
+        desc: |
+          Specifies the carbon intensity correlating with the `geographical_server_location_code` value you have set.
+          Defaults to the current global value of 475 if not set, or if `geographical_server_location_code` is invalid
+          or unsupported.
+
+      geographical_server_location_code:
         type: str
         default: "GLOBAL"
         required: false
         desc: |
           The estimated geographical location of the server hosting your galaxy instance given as an ISO 3166 code.
           This is used to make carbon emissions estimates more accurate as the location effects the
-          carbon intensity values used in the estimate calculation.
+          carbon intensity values used in the estimate calculation. This defaults to "GLOBAL" if not set or the
+          `geographical_server_location_code` value is invalid or unsupported. To see a full list of supported locations,
+          visit https://galaxyproject.org/admin/carbon_emissions
+
+      geographical_server_location_name:
+        type: str
+        default: "GLOBAL"
+        required: false
+        desc: |
+          The actual name of the location corressponding to the `geographical_server_location_code`.
+          To see a full list of supported locations, visit https://galaxyproject.org/admin/carbon_emissions
 
       power_usage_effectiveness:
         type: int
         default: 1.67
         required: false
         desc: |
-          The estimated power usage effectivness of the data centre housing the sever your galaxy
+          The estimated power usage effectivness of the data centre housing the server your galaxy
           instance is running on. This can make carbon emissions estimates more accurate.
+          For more information on how to calculate a PUE value, visit
+          https://en.wikipedia.org/wiki/Power_usage_effectiveness
 
       interactivetools_enable:
         type: bool

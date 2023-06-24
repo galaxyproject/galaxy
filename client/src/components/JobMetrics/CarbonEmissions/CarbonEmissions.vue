@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import BarChart from "./BarChart.vue";
 import CarbonEmissionsCard from "./CarbonEmissionCard.vue";
-import { countryCarbonIntensity } from './countryToCarbonIntensity.js';
 import { computed, unref } from "vue";
 import { faQuestionCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -24,30 +23,14 @@ interface CarbonEmissionsProps {
     jobRuntimeInSeconds: number;
     coresAllocated: number;
     powerUsageEffectiveness: number;
-    geographicalServerLocation: string;
+    geographicalServerLocationName: string;
     memoryAllocatedInMebibyte?: number;
+    carbonIntensity: number;
 }
 
 const props = withDefaults(defineProps<CarbonEmissionsProps>(), {
     memoryAllocatedInMebibyte: 0,
 });
-
-const carbonIntensityForLocation = computed(() => {
-    const locationCode = props.geographicalServerLocation.toUpperCase();
-    const value = countryCarbonIntensity.find(({ location }) => locationCode === location);
-    if (!value) {
-      return {
-        name: "Global",
-        carbonIntensity: carbonEmissionsConstants.worldwideCarbonIntensity
-      }
-    }
-
-
-    return {
-      name: value.name,
-      carbonIntensity: value.carbonIntensity
-    };
-})
 
 const carbonEmissions = computed(() => {
     const memoryPowerUsed = carbonEmissionsConstants.memoryPowerUsage;
@@ -69,7 +52,7 @@ const carbonEmissions = computed(() => {
     const totalEnergyNeeded = (runtimeInHours * totalPowerNeeded) / 1000;
 
     // Carbon emissions (carbon intensity is in grams/kWh so emissions results are in grams of CO2)
-    const carbonIntensity = unref(carbonIntensityForLocation).carbonIntensity;
+    const carbonIntensity = props.carbonIntensity
     const cpuCarbonEmissions = energyNeededCPU * carbonIntensity;
     const memoryCarbonEmissions = energyNeededMemory * carbonIntensity;
     const totalCarbonEmissions = totalEnergyNeeded * carbonIntensity;
@@ -350,13 +333,13 @@ function getEnergyNeededText(energyNeededInKiloWattHours: number) {
                 </table>
 
                 <p class="p-0 m-0">
-                    <span v-if="geographicalServerLocation === 'GLOBAL'">
+                    <span v-if="geographicalServerLocationName === 'GLOBAL'">
                       <strong>1.</strong> Based off of the global carbon intensity value of {{ carbonEmissionsConstants.worldwideCarbonIntensity }}.
                     </span>
                     <span v-else>
                       <strong>1.</strong> based off of this galaxy instance's configured location of 
-                      <strong>{{ carbonIntensityForLocation.name }}</strong>, which has a carbon intensity 
-                      value of {{ carbonIntensityForLocation.carbonIntensity }} gCO2/kWh.
+                      <strong>{{ geographicalServerLocationName }}</strong>, which has a carbon intensity 
+                      value of {{ carbonIntensity }} gCO2/kWh.
                     </span>
 
                     <br />

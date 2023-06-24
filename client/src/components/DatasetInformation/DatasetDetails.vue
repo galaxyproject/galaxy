@@ -22,7 +22,8 @@
                             <job-metrics
                                 v-if="config"
                                 :dataset-id="datasetId" 
-                                :geographical-server-location="config.geographical_server_location"
+                                :carbon-intensity="config.carbon_intensity" 
+                                :geographical-server-location-name="config.geographical_server_location_name"
                                 :power-usage-effectiveness="config.power_usage_effectiveness"
                                 :should-show-aws-estimate="config.aws_estimate"
                                 :should-show-carbon-emissions-estimates="config.carbon_emissions_estimates" />

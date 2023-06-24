@@ -30,9 +30,13 @@ const props = defineProps({
        type: Number,
        default: worldwidePowerUsageEffectiveness
     },
-    geographicalServerLocation: {
+    geographicalServerLocationName: {
        type: String,
        default: "GLOBAL"
+    },
+    carbonIntensity: {
+       type: Number,
+       required: true
     },
     shouldShowAwsEstimate: {
         type: Boolean,
@@ -196,7 +200,8 @@ const estimatedServerInstance = computed(() => {
 
         <CarbonEmissions
             v-if="shouldShowCarbonEmissionsEstimates && estimatedServerInstance && jobRuntimeInSeconds && coresAllocated"
-            :geographical-server-location="geographicalServerLocation"
+            :carbon-intensity="carbonIntensity"
+            :geographical-server-location-name="geographicalServerLocationName"
             :power-usage-effectiveness="powerUsageEffectiveness"
             :estimated-server-instance="estimatedServerInstance"
             :job-runtime-in-seconds="jobRuntimeInSeconds"

@@ -682,49 +682,52 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         "tool_data_table_config_path",
         "tool_config_file",
     }
-    database_connection: str
-    tool_path: str
-    tool_data_path: str
-    new_file_path: str
-    drmaa_external_runjob_script: str
-    track_jobs_in_database: bool
-    monitor_thread_join_timeout: int
-    manage_dependency_relationships: bool
-    enable_tool_shed_check: bool
-    builds_file_path: str
-    len_file_path: str
-    integrated_tool_panel_config: str
-    toolbox_filter_base_modules: List[str]
-    tool_filters: List[str]
-    tool_label_filters: List[str]
-    tool_section_filters: List[str]
-    user_tool_filters: List[str]
-    user_tool_section_filters: List[str]
-    user_tool_label_filters: List[str]
-    password_expiration_period: timedelta
-    shed_tool_data_path: str
-    hours_between_check: int
-    galaxy_data_manager_data_path: str
-    use_remote_user: bool
-    preserve_python_environment: str
-    email_from: Optional[str]
-    workflow_resource_params_mapper: str
-    sanitize_allowlist_file: str
+
     allowed_origin_hostnames: List[str]
-    trust_jupyter_notebook_conversion: bool
-    user_library_import_symlink_allowlist: List[str]
-    user_library_import_dir_auto_creation: bool
+    builds_file_path: str
+    carbon_intensity: float
     container_resolvers_config_file: str
-    tool_dependency_dir: Optional[str]
-    involucro_path: str
-    mulled_channels: List[str]
-    nginx_upload_store: str
-    tus_upload_store: str
-    pretty_datetime_format: str
-    visualization_plugins_directory: str
+    database_connection: str
+    drmaa_external_runjob_script: str
+    email_from: Optional[str]
+    enable_tool_shed_check: bool
+    galaxy_data_manager_data_path: str
     galaxy_infrastructure_url: str
+    geographical_server_location_name: str
+    hours_between_check: int
+    integrated_tool_panel_config: str
+    involucro_path: str
+    len_file_path: str
+    manage_dependency_relationships: bool
+    monitor_thread_join_timeout: int
+    mulled_channels: List[str]
+    new_file_path: str
+    nginx_upload_store: str
+    password_expiration_period: timedelta
+    preserve_python_environment: str
+    pretty_datetime_format: str
+    sanitize_allowlist_file: str
+    shed_tool_data_path: str
     themes: Dict[str, Dict[str, str]]
     themes_by_host: Dict[str, Dict[str, Dict[str, str]]]
+    tool_data_path: str
+    tool_dependency_dir: Optional[str]
+    tool_filters: List[str]
+    tool_label_filters: List[str]
+    tool_path: str
+    tool_section_filters: List[str]
+    toolbox_filter_base_modules: List[str]
+    track_jobs_in_database: bool
+    trust_jupyter_notebook_conversion: bool
+    tus_upload_store: str
+    use_remote_user: bool
+    user_library_import_dir_auto_creation: bool
+    user_library_import_symlink_allowlist: List[str]
+    user_tool_filters: List[str]
+    user_tool_label_filters: List[str]
+    user_tool_section_filters: List[str]
+    visualization_plugins_directory: str
+    workflow_resource_params_mapper: str
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -812,6 +815,35 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             log.error("Error loading Galaxy extra version JSON file %s - details not loaded.", json_file)
         else:
             self.version_extra = extra_info
+
+        # Carbon emissions configuration
+        configured_geographical_server_location_code = kwargs.get("geographical_server_location_code", "")
+        carbon_emissions_dir = self._in_root_dir(
+                os.path.join("lib", "galaxy", "carbon_emissions", "carbon_intensity.csv")
+        )
+        locations = self._load_list_from_file(self._in_root_dir(carbon_emissions_dir))[2:]
+        did_find_location = False
+
+        for location in locations:
+            data = location.split(',')
+            location_code, location_name = data[0], data[2]
+
+            is_region = len(location_code) > 2
+            if (is_region):
+                region_name = data[3]
+                location_name = "{} ({})".format(region_name, location_name)
+
+            if location_code == configured_geographical_server_location_code:
+                did_find_location = True
+                self.geographical_server_location_name = location_name
+                self.carbon_intensity = float(data[4])
+                break
+
+        if not did_find_location:
+            log.warn("No corresponding location name exists for location code: %s.", configured_geographical_server_location_code)
+            log.info("Using global defualt values for location name and carbon intensity...")
+            self.geographical_server_location_name = "GLOBAL"
+            self.carbon_intensity = 475.0
 
         # Database related configuration
         self.check_migrate_databases = string_as_bool(kwargs.get("check_migrate_databases", True))
