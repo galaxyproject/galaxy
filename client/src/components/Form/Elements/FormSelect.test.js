@@ -55,6 +55,9 @@ describe("FormSelect", () => {
         await wrapper.setProps({ value: "value_1" });
         const selectedValue = wrapper.find(".multiselect__option--selected");
         expect(selectedValue.text()).toBe("label_1");
+        selectedValue.trigger("click");
+        const nullValue = wrapper.emitted().input[0][0];
+        expect(nullValue).toBe(null);
         await wrapper.setProps({ value: null });
         const unselectDefault = wrapper.find(".multiselect__option--selected");
         expect(unselectDefault.text()).toBe("Nothing selected");
