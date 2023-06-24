@@ -819,17 +819,17 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         # Carbon emissions configuration
         configured_geographical_server_location_code = kwargs.get("geographical_server_location_code", "")
         carbon_emissions_dir = self._in_root_dir(
-                os.path.join("lib", "galaxy", "carbon_emissions", "carbon_intensity.csv")
+            os.path.join("lib", "galaxy", "carbon_emissions", "carbon_intensity.csv")
         )
         locations = self._load_list_from_file(self._in_root_dir(carbon_emissions_dir))[2:]
         did_find_location = False
 
         for location in locations:
-            data = location.split(',')
+            data = location.split(",")
             location_code, location_name = data[0], data[2]
 
             is_region = len(location_code) > 2
-            if (is_region):
+            if is_region:
                 region_name = data[3]
                 location_name = "{} ({})".format(region_name, location_name)
 
@@ -840,7 +840,10 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                 break
 
         if not did_find_location:
-            log.warn("No corresponding location name exists for location code: %s.", configured_geographical_server_location_code)
+            log.warn(
+                "No corresponding location name exists for location code: %s.",
+                configured_geographical_server_location_code,
+            )
             log.info("Using global defualt values for location name and carbon intensity...")
             self.geographical_server_location_name = "GLOBAL"
             self.carbon_intensity = 475.0

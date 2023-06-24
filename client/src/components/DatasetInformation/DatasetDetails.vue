@@ -21,8 +21,8 @@
                             <inheritance-chain :dataset-id="datasetId" :dataset-name="dataset.name" />
                             <job-metrics
                                 v-if="config"
-                                :dataset-id="datasetId" 
-                                :carbon-intensity="config.carbon_intensity" 
+                                :dataset-id="datasetId"
+                                :carbon-intensity="config.carbon_intensity"
                                 :geographical-server-location-name="config.geographical_server_location_name"
                                 :power-usage-effectiveness="config.power_usage_effectiveness"
                                 :should-show-aws-estimate="config.aws_estimate"

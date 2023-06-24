@@ -52,7 +52,7 @@ const carbonEmissions = computed(() => {
     const totalEnergyNeeded = (runtimeInHours * totalPowerNeeded) / 1000;
 
     // Carbon emissions (carbon intensity is in grams/kWh so emissions results are in grams of CO2)
-    const carbonIntensity = props.carbonIntensity
+    const carbonIntensity = props.carbonIntensity;
     const cpuCarbonEmissions = energyNeededCPU * carbonIntensity;
     const memoryCarbonEmissions = energyNeededMemory * carbonIntensity;
     const totalCarbonEmissions = totalEnergyNeeded * carbonIntensity;
@@ -334,23 +334,24 @@ function getEnergyNeededText(energyNeededInKiloWattHours: number) {
 
                 <p class="p-0 m-0">
                     <span v-if="geographicalServerLocationName === 'GLOBAL'">
-                      <strong>1.</strong> Based off of the global carbon intensity value of {{ carbonEmissionsConstants.worldwideCarbonIntensity }}.
+                        <strong>1.</strong> Based off of the global carbon intensity value of
+                        {{ carbonEmissionsConstants.worldwideCarbonIntensity }}.
                     </span>
                     <span v-else>
-                      <strong>1.</strong> based off of this galaxy instance's configured location of 
-                      <strong>{{ geographicalServerLocationName }}</strong>, which has a carbon intensity 
-                      value of {{ carbonIntensity }} gCO2/kWh.
+                        <strong>1.</strong> based off of this galaxy instance's configured location of
+                        <strong>{{ geographicalServerLocationName }}</strong
+                        >, which has a carbon intensity value of {{ carbonIntensity }} gCO2/kWh.
                     </span>
 
                     <br />
 
                     <span v-if="powerUsageEffectiveness === carbonEmissionsConstants.worldwidePowerUsageEffectiveness">
-                      <strong>2.</strong> Using the global default power usage effectiveness value 
-                      of {{ carbonEmissionsConstants.worldwidePowerUsageEffectiveness }}.
+                        <strong>2.</strong> Using the global default power usage effectiveness value of
+                        {{ carbonEmissionsConstants.worldwidePowerUsageEffectiveness }}.
                     </span>
                     <span v-else>
-                      <strong>2.</strong> using the galaxy instance's configured power usage effectiveness ratio value of
-                      of {{ powerUsageEffectiveness }}.
+                        <strong>2.</strong> using the galaxy instance's configured power usage effectiveness ratio value
+                        of of {{ powerUsageEffectiveness }}.
                     </span>
 
                     <br />
