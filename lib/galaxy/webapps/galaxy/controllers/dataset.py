@@ -215,7 +215,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                                 "name": name,
                                 "label": spec.desc,
                                 "options": attributes.options,
-                                "value": attributes.value if attributes.multiple else [attributes.value],
+                                "value": attributes.value,
                             }
                         )
                     elif type(attributes) is form_builder.TextField:

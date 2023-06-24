@@ -193,8 +193,7 @@ export default {
                 evt.preventDefault();
                 // encode spaces in tool.id
                 const toolId = tool.id;
-                const toolVersion = tool.version;
-                this.$router.push(`/?tool_id=${encodeURIComponent(toolId)}&version=${toolVersion}`);
+                this.$router.push(`/?tool_id=${encodeURIComponent(toolId)}&version=latest`);
             }
         },
         onToggle() {

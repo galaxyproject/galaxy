@@ -381,6 +381,7 @@ class MetadataElementSpec:
         no_value=None,
         visible=True,
         set_in_upload=False,
+        optional=False,
         **kwargs,
     ):
         self.name = name
@@ -389,6 +390,7 @@ class MetadataElementSpec:
         self.no_value = no_value
         self.visible = visible
         self.set_in_upload = set_in_upload
+        self.optional = optional
         # Catch-all, allows for extra attributes to be set
         self.__dict__.update(kwargs)
         # set up param last, as it uses values set above
