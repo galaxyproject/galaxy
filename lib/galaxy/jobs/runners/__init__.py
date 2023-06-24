@@ -30,6 +30,7 @@ from galaxy.jobs.runners.util.job_script import (
     job_script,
     write_script,
 )
+from galaxy.model.base import transaction
 from galaxy.tool_util.deps.dependencies import (
     JobInfo,
     ToolInfo,
@@ -133,41 +134,42 @@ class BaseJobRunner:
     def run_next(self):
         """Run the next item in the work queue (a job waiting to run)"""
         while self._should_stop is False:
-            try:
-                (method, arg) = self.work_queue.get(timeout=1)
-            except Empty:
-                continue
-            if method is STOP_SIGNAL:
-                return
-            # id and name are collected first so that the call of method() is the last exception.
-            try:
-                if isinstance(arg, AsynchronousJobState):
-                    job_id = arg.job_wrapper.get_id_tag()
-                else:
-                    # arg should be a JobWrapper/TaskWrapper
-                    job_id = arg.get_id_tag()
-            except Exception:
-                job_id = UNKNOWN
-            try:
-                name = method.__name__
-            except Exception:
-                name = UNKNOWN
-            try:
-                action_str = f"galaxy.jobs.runners.{self.__class__.__name__.lower()}.{name}"
-                action_timer = self.app.execution_timer_factory.get_timer(
-                    f"internals.{action_str}", "job runner action %s for job ${job_id} executed" % (action_str)
-                )
-                method(arg)
-                log.trace(action_timer.to_str(job_id=job_id))
-            except Exception:
-                log.exception(f"({job_id}) Unhandled exception calling {name}")
-                if not isinstance(arg, JobState):
-                    job_state = JobState(job_wrapper=arg, job_destination={})
-                else:
-                    job_state = arg
-                if method != self.fail_job:
-                    # Prevent fail_job cycle in the work_queue
-                    self.work_queue.put((self.fail_job, job_state))
+            with self.app.model.session():  # Create a Session instance and ensure it's closed.
+                try:
+                    (method, arg) = self.work_queue.get(timeout=1)
+                except Empty:
+                    continue
+                if method is STOP_SIGNAL:
+                    return
+                # id and name are collected first so that the call of method() is the last exception.
+                try:
+                    if isinstance(arg, AsynchronousJobState):
+                        job_id = arg.job_wrapper.get_id_tag()
+                    else:
+                        # arg should be a JobWrapper/TaskWrapper
+                        job_id = arg.get_id_tag()
+                except Exception:
+                    job_id = UNKNOWN
+                try:
+                    name = method.__name__
+                except Exception:
+                    name = UNKNOWN
+                try:
+                    action_str = f"galaxy.jobs.runners.{self.__class__.__name__.lower()}.{name}"
+                    action_timer = self.app.execution_timer_factory.get_timer(
+                        f"internals.{action_str}", "job runner action %s for job ${job_id} executed" % (action_str)
+                    )
+                    method(arg)
+                    log.trace(action_timer.to_str(job_id=job_id))
+                except Exception:
+                    log.exception(f"({job_id}) Unhandled exception calling {name}")
+                    if not isinstance(arg, JobState):
+                        job_state = JobState(job_wrapper=arg, job_destination={})
+                    else:
+                        job_state = arg
+                    if method != self.fail_job:
+                        # Prevent fail_job cycle in the work_queue
+                        self.work_queue.put((self.fail_job, job_state))
 
     # Causes a runner's `queue_job` method to be called from a worker thread
     def put(self, job_wrapper: "MinimalJobWrapper"):
@@ -613,7 +615,8 @@ class BaseJobRunner:
 
             # Flush with streams...
             self.sa_session.add(job)
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
 
             if not job_ok:
                 job_runner_state = JobState.runner_states.TOOL_DETECT_ERROR

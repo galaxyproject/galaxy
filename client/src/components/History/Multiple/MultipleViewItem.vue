@@ -1,5 +1,10 @@
 <template>
-    <div id="list-item" class="d-flex flex-column align-items-center w-100">
+    <div v-if="!getHistory" class="container">
+        <div class="row align-items-center h-100">
+            <LoadingSpan class="mx-auto" message="Loading History" />
+        </div>
+    </div>
+    <div v-else id="list-item" class="d-flex flex-column align-items-center w-100">
         <CollectionPanel
             v-if="selectedCollections.length && selectedCollections[0].history_id === source.id"
             :history="getHistory"
@@ -40,11 +45,13 @@ import { mapActions, mapState } from "pinia";
 import { useHistoryStore } from "@/stores/historyStore";
 import HistoryPanel from "components/History/CurrentHistory/HistoryPanel";
 import CollectionPanel from "components/History/CurrentCollection/CollectionPanel";
+import LoadingSpan from "components/LoadingSpan";
 
 export default {
     components: {
         HistoryPanel,
         CollectionPanel,
+        LoadingSpan,
     },
     props: {
         source: {

@@ -9,6 +9,7 @@ from galaxy import (
     managers,
 )
 from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.model.base import transaction
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import expose_api
@@ -43,7 +44,8 @@ class BaseAnnotationsController(BaseGalaxyAPIController, UsesStoredWorkflowMixin
             new_annotation = sanitize_html(new_annotation)
 
             self.add_item_annotation(trans.sa_session, trans.user, item, new_annotation)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             return new_annotation
         return ""
 

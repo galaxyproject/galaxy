@@ -1,8 +1,21 @@
 /**
  * List of built-in activities
  */
+import { type Activity } from "@/stores/activityStore";
+import { type EventData } from "@/stores/eventStore";
 
 export const Activities = [
+    {
+        description: "Displays currently active interactive tools (ITs), if these are enabled by the administrator.",
+        icon: "fa-laptop",
+        id: "interactivetools",
+        mutable: false,
+        optional: true,
+        title: "Interactive Tools",
+        tooltip: "Show active interactive tools",
+        to: "/interactivetool_entry_points/list",
+        visible: true,
+    },
     {
         description: "Opens a data dialog, allowing uploads from URL, pasted content or disk.",
         icon: "upload",
@@ -26,25 +39,14 @@ export const Activities = [
         visible: true,
     },
     {
-        description: "Displays a panel to search and access available workflows.",
+        description: "Displays a panel to search and access workflows.",
         icon: "sitemap",
         id: "workflows",
         mutable: false,
         optional: true,
-        title: "Workflow",
-        to: null,
-        tooltip: "Display an advanced search field for workflows.",
-        visible: true,
-    },
-    {
-        description: "Displays a panel to search and access available workflows.",
-        icon: "sitemap",
-        id: "workflow",
-        mutable: false,
-        optional: true,
         title: "Workflows",
-        to: "/workflows/list/",
-        tooltip: "Display an advanced search field for workflows.",
+        to: "/workflows/list",
+        tooltip: "Search and run workflows",
         visible: true,
     },
     {
@@ -93,4 +95,32 @@ export const Activities = [
     },
 ];
 
-export default Activities;
+export function convertDropData(data: EventData): Activity | null {
+    if (data.history_content_type === "dataset") {
+        return {
+            description: "Displays this dataset.",
+            icon: "fa-file",
+            id: `dataset-${data.id}`,
+            mutable: true,
+            optional: true,
+            title: data.name as string,
+            tooltip: "View your dataset",
+            to: `/datasets/${data.id}/preview`,
+            visible: true,
+        };
+    }
+    if (data.model_class === "StoredWorkflow") {
+        return {
+            description: data.description as string,
+            icon: "fa-play",
+            id: `workflow-${data.id}`,
+            mutable: true,
+            optional: true,
+            title: data.name as string,
+            tooltip: data.name as string,
+            to: `/workflows/run?id=${data.id}`,
+            visible: true,
+        };
+    }
+    return null;
+}

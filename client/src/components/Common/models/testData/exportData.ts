@@ -91,10 +91,10 @@ export const FAILED_DOWNLOAD_RESPONSE: ObjectExportTaskResponse = {
 };
 
 export const FILE_SOURCE_STORE_RESPONSE: ObjectExportTaskResponse = {
-    id: "FAKE_RECENT_DOWNLOAD_ID",
+    id: "FAKE_FILE_SOURCE_EXPORT_ID",
     ready: true,
     preparing: false,
-    up_to_date: true,
+    up_to_date: false,
     task_uuid: "35563335-e275-4520-80e8-885793279095",
     create_time: RECENT_EXPORT_DATE,
     export_metadata: {
@@ -103,6 +103,37 @@ export const FILE_SOURCE_STORE_RESPONSE: ObjectExportTaskResponse = {
     },
 };
 
+export const RECENT_FILE_SOURCE_STORE_RESPONSE: ObjectExportTaskResponse = {
+    ...FILE_SOURCE_STORE_RESPONSE,
+    id: "FAKE_RECENT_FILE_SOURCE_EXPORT_ID",
+    up_to_date: true,
+};
+
+export const FAILED_FILE_SOURCE_STORE_RESPONSE: ObjectExportTaskResponse = {
+    ...FILE_SOURCE_STORE_RESPONSE,
+    id: "FAKE_FAILED_FILE_SOURCE_EXPORT_ID",
+    export_metadata: {
+        request_data: FAKE_FILE_SOURCE_REQUEST_DATA,
+        result_data: FAILED_EXPORT_RESULT_DATA,
+    },
+};
+
+export const IN_PROGRESS_FILE_SOURCE_STORE_RESPONSE: ObjectExportTaskResponse = {
+    ...FILE_SOURCE_STORE_RESPONSE,
+    id: "FAKE_IN_PROGRESS_FILE_SOURCE_EXPORT_ID",
+    ready: false,
+    preparing: true,
+    export_metadata: {
+        request_data: FAKE_FILE_SOURCE_REQUEST_DATA,
+        result_data: undefined,
+    },
+};
+
 export const EXPIRED_STS_DOWNLOAD_RECORD = new ExportRecordModel(EXPIRED_STS_DOWNLOAD_RESPONSE);
-export const FILE_SOURCE_STORE_RECORD = new ExportRecordModel(FILE_SOURCE_STORE_RESPONSE);
 export const RECENT_STS_DOWNLOAD_RECORD = new ExportRecordModel(RECENT_STS_DOWNLOAD_RESPONSE);
+export const FAILED_DOWNLOAD_RECORD = new ExportRecordModel(FAILED_DOWNLOAD_RESPONSE);
+
+export const FILE_SOURCE_STORE_RECORD = new ExportRecordModel(FILE_SOURCE_STORE_RESPONSE);
+export const RECENT_FILE_SOURCE_STORE_RECORD = new ExportRecordModel(RECENT_FILE_SOURCE_STORE_RESPONSE);
+export const FAILED_FILE_SOURCE_STORE_RECORD = new ExportRecordModel(FAILED_FILE_SOURCE_STORE_RESPONSE);
+export const IN_PROGRESS_FILE_SOURCE_STORE_RECORD = new ExportRecordModel(IN_PROGRESS_FILE_SOURCE_STORE_RESPONSE);

@@ -24,6 +24,7 @@ from galaxy.managers.context import (
 )
 from galaxy.managers.histories import HistoryManager
 from galaxy.model import PostJobAction
+from galaxy.model.base import transaction
 from galaxy.schema.fetch_data import (
     FetchDataFormPayload,
     FetchDataPayload,
@@ -187,7 +188,8 @@ class ToolsService(ServiceBase):
                     new_pja_flush = True
 
         if new_pja_flush:
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
 
         return self._handle_inputs_output_to_api_response(trans, tool, target_history, vars)
 

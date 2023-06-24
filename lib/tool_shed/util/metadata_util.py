@@ -7,6 +7,7 @@ from typing import (
 
 from sqlalchemy import and_
 
+from galaxy.model.base import transaction
 from galaxy.tool_shed.util.hg_util import (
     INITIAL_CHANGELOG_HASH,
     reversed_lower_upper_bounded_changelog,
@@ -146,7 +147,9 @@ def get_metadata_revisions(app, repository, sort_revisions=True, reverse=False, 
                 rev = changeset2rev(repo_path, repository_metadata.changeset_revision)
                 repository_metadata.numeric_revision = rev
                 sa_session.add(repository_metadata)
-                sa_session.flush()
+                session = sa_session()
+                with transaction(session):
+                    session.commit()
             except Exception:
                 rev = -1
         else:
@@ -269,7 +272,9 @@ def repository_metadata_by_changeset_revision(
         # Delete all records older than the last one updated.
         for repository_metadata in all_metadata_records[1:]:
             sa_session.delete(repository_metadata)
-            sa_session.flush()
+            session = sa_session()
+            with transaction(session):
+                session.commit()
         return all_metadata_records[0]
     elif all_metadata_records:
         return all_metadata_records[0]

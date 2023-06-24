@@ -713,7 +713,7 @@ Example:
 ```
 
 Read more about configuring Galaxy to run Docker jobs
-[here](https://galaxyproject.org/admin/tools/docker/).
+[here](https://docs.galaxyproject.org/en/master/admin/container_resolvers.html).
 ]]></xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
@@ -1720,7 +1720,15 @@ it may be inconvenient to upload the entiry file and this can be used instead.
     <xs:attribute name="decompress" type="PermissiveBoolean">
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
-When this attribute is true and ``compare`` is set to ``diff``, try to decompress files if needed. This flag is useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip will be automatically decompressed. This is available in Galaxy since release 17.05 and was introduced in [pull request #3550](https://github.com/galaxyproject/galaxy/pull/3550).
+If this attribute is true then try to decompress files if needed. This applies to
+test assertions expressed with ``assert_contents`` or ``compare`` set to anything
+but ``sim_size``. 
+This flag is useful for testing compressed outputs that are non-deterministic
+despite having deterministic decompressed contents. By default, only files compressed
+with bz2, gzip and zip will be automatically decompressed.
+Note, for specifying assertions for compressed as well as decompressed output
+the corresponding output tag can be specified multiple times.
+This is available in Galaxy since release 17.05 and was introduced in [pull request #3550](https://github.com/galaxyproject/galaxy/pull/3550).
 ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
@@ -2344,6 +2352,11 @@ $attribute_list::5
     </xs:annotation>
     <xs:attributeGroup ref="AssertAttributeN"/>
     <xs:attributeGroup ref="AssertAttributeNegate"/>
+    <xs:attribute name="sep" type="xs:string" default="&#009;">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Separator defining columns, default: tab</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="comment" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Comment character(s) used to skip comment lines (which should not be used for counting columns)</xs:documentation>
@@ -4978,7 +4991,7 @@ only used if ``multiple`` is set to ``true``.]]></xs:documentation>
       <xs:annotation>
         <xs:documentation xml:lang="en">If ``true``, keep columns matching the
 value, if ``false`` discard columns matching the value. Used when ``type`` is
-either ``static_value``, ``regexp`` or ``param_value``.</xs:documentation>
+either ``static_value``, ``regexp`` or ``param_value``. Default: true</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string">

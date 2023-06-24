@@ -40,6 +40,9 @@ class IdentityProvider:
         """
         raise NotImplementedError()
 
+    def refresh(self, trans, token):
+        raise NotImplementedError()
+
     def authenticate(self, provider, trans):
         """Runs for authentication process. Checks the database if a
         valid identity exists in the database; if yes, then the  user

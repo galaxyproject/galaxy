@@ -21,7 +21,11 @@
 bedtools --version > '$out_file1' &&
 echo "Moo" >> '$out_file1' &&
 samtools >> '$out_file1' 2>&1 &&
-echo "Cow" >> '$out_file1'
+echo "Cow" >> '$out_file1' &&
+
+touch "\${TMP:-/tmp}/job_tmp" &&
+touch "\${TEMP:-/tmp}/job_temp" &&
+touch "\${TMPDIR:-/tmp}/job_tmpdir"
     ]]></command>
     <inputs>
         <param name="input1" type="data" optional="true" />

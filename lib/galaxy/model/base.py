@@ -2,6 +2,7 @@
 Shared model and mapping code between Galaxy and Tool Shed, trying to
 generalize to generic database connections.
 """
+import contextlib
 import os
 import threading
 from contextvars import ContextVar
@@ -12,15 +13,21 @@ from inspect import (
 from typing import (
     Dict,
     Type,
+    TYPE_CHECKING,
+    Union,
 )
 
 from sqlalchemy import event
 from sqlalchemy.orm import (
     scoped_session,
+    Session,
     sessionmaker,
 )
 
 from galaxy.util.bunch import Bunch
+
+if TYPE_CHECKING:
+    from galaxy.model.store import SessionlessContext
 
 # Create a ContextVar with mutable state, this allows sync tasks in the context
 # of a request (which run within a threadpool) to see changes to the ContextVar
@@ -28,6 +35,24 @@ from galaxy.util.bunch import Bunch
 # for details
 _request_state: Dict[str, str] = {}
 REQUEST_ID = ContextVar("request_id", default=_request_state.copy())
+
+
+@contextlib.contextmanager
+def transaction(session: Union[scoped_session, Session, "SessionlessContext"]):
+    """Start a new transaction only if one is not present."""
+    # temporary hack; need to fix access to scoped_session callable, not proxy
+    if isinstance(session, scoped_session):
+        session = session()
+    # hack: this could be model.store.SessionlessContext; then we don't need to do anything
+    elif not isinstance(session, Session):
+        yield
+        return  # exit: can't use as a Session
+
+    if not session.in_transaction():
+        with session.begin():
+            yield
+    else:
+        yield
 
 
 # TODO: Refactor this to be a proper class, not a bunch.

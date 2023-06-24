@@ -130,6 +130,9 @@ class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.citation_cache_lock_dir = self._in_root_dir(
             kwargs.get("citation_cache_lock_dir", "database/tool_shed_citations/locks")
         )
+        self.citation_cache_url = kwargs.get("citation_cache_lock_dir", None)
+        self.citation_cache_schema_name = kwargs.get("citation_cache_schema_name", None)
+        self.citation_cache_table_name = kwargs.get("citation_cache_table_name", None)
         self.password_expiration_period = timedelta(days=int(self.password_expiration_period))
 
         # Security/Policy Compliance

@@ -21,6 +21,7 @@ from galaxy.model import (
     LibraryDatasetDatasetAssociation,
     WorkflowRequestInputParameter,
 )
+from galaxy.model.base import transaction
 from galaxy.model.dataset_collections.builder import CollectionBuilder
 from galaxy.model.none_like import NoneDataset
 from galaxy.objectstore import ObjectStorePopulator
@@ -687,7 +688,8 @@ class DefaultToolAction(ToolAction):
             session = trans.sa_session()
             try:
                 session.expire_on_commit = False
-                session.flush()
+                with transaction(session):
+                    session.commit()
             finally:
                 session.expire_on_commit = True
             self._remap_job_on_rerun(
@@ -717,13 +719,15 @@ class DefaultToolAction(ToolAction):
             job.set_state(app.model.Job.states.OK)
             job.info = f"Redirected to: {redirect_url}"
             trans.sa_session.add(job)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             trans.response.send_redirect(redirect_url)
         else:
             if flush_job:
                 # Set HID and add to history.
                 job_flush_timer = ExecutionTimer()
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
                 log.info(f"Flushed transaction for job {job.log_str()} {job_flush_timer}")
 
         return job, out_data, history

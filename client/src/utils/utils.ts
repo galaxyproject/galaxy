@@ -355,6 +355,38 @@ export function wait(milliseconds: number) {
     });
 }
 
+/**
+ * Merges two arrays of objects with unique id values into a single array.
+ * If an object with the same id exists in both arrays, the object from the
+ * newList will overwrite the object from the oldList. The merged array will
+ * be sorted by the sortKey in the sortDirection.
+ * @param oldList The original array of objects.
+ * @param newList The array of objects to merge into the original array.
+ * @param sortKey If provided, the merged array will be sorted by this key.
+ * @param sortDirection If sortKey is provided, the merged array will be sorted in this direction.
+ * @returns An array of merged objects.
+ */
+export function mergeObjectListsById<T extends { id: string; [key: string]: any }>(
+    oldList: T[],
+    newList: T[],
+    sortKey: string | null = null,
+    sortDirection: "asc" | "desc" = "desc"
+): T[] {
+    const idToObjMap: { [key: string]: T } = oldList.reduce((acc, obj) => ({ ...acc, [obj.id]: obj }), {});
+
+    newList.forEach((obj) => {
+        idToObjMap[obj.id] = obj;
+    });
+
+    const mergedList = Object.values(idToObjMap);
+
+    if (sortKey) {
+        mergedList.sort((a, b) => (a[sortKey] < b[sortKey] ? -1 : 1) * (sortDirection === "asc" ? 1 : -1));
+    }
+
+    return mergedList;
+}
+
 export default {
     cssLoadFile,
     get,
@@ -372,4 +404,5 @@ export default {
     setWindowTitle,
     waitForElementToBePresent,
     wait,
+    mergeObjectListsById,
 };

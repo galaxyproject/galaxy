@@ -7,6 +7,7 @@ from typing import Type
 from sqlalchemy.sql.expression import func
 
 from galaxy.model import ItemRatingAssociation
+from galaxy.model.base import transaction
 from . import base
 
 log = logging.getLogger(__name__)
@@ -54,7 +55,9 @@ class RatableManagerMixin:
 
         self.session().add(rating)
         if flush:
-            self.session().flush()
+            session = self.session()
+            with transaction(session):
+                session.commit()
         return rating
 
     # TODO?: all ratings for a user

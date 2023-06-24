@@ -11,6 +11,7 @@ from sqlalchemy.sql.expression import (
 )
 
 from galaxy import web
+from galaxy.model.base import transaction
 from galaxy.webapps.base.controller import (
     BaseUIController,
     UsesTagsMixin,
@@ -21,27 +22,8 @@ log = logging.getLogger(__name__)
 
 class TagsController(BaseUIController, UsesTagsMixin):
     @web.expose
-    @web.require_login("edit item tags")
-    def get_tagging_elt_async(self, trans, item_id, item_class, elt_context=""):
-        """
-        Returns HTML for editing an item's tags.
-        """
-        item = self._get_item(trans, item_class, trans.security.decode_id(item_id))
-        if not item:
-            return trans.show_error_message(f"No item of class {item_class} with id {item_id} ")
-        return trans.fill_template(
-            "/tagging_common.mako",
-            tag_type="individual",
-            user=trans.user,
-            tagged_item=item,
-            elt_context=elt_context,
-            tag_click_fn="default_tag_click_fn",
-            use_toggle_link=False,
-        )
-
-    @web.expose
     @web.require_login("add tag to an item")
-    def add_tag_async(self, trans, item_id=None, item_class=None, new_tag=None, context=None):
+    def add_tag_async(self, trans, item_id=None, item_class=None, new_tag=None, context=None, **kwargs):
         """
         Add tag to an item.
         """
@@ -49,14 +31,15 @@ class TagsController(BaseUIController, UsesTagsMixin):
         item = self._get_item(trans, item_class, trans.security.decode_id(item_id))
         user = trans.user
         self.get_tag_handler(trans).apply_item_tags(user, item, new_tag)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         # Log.
         params = dict(item_id=item.id, item_class=item_class, tag=new_tag)
         trans.log_action(user, "tag", context, params)
 
     @web.expose
     @web.require_login("remove tag from an item")
-    def remove_tag_async(self, trans, item_id=None, item_class=None, tag_name=None, context=None):
+    def remove_tag_async(self, trans, item_id=None, item_class=None, tag_name=None, context=None, **kwargs):
         """
         Remove tag from an item.
         """
@@ -64,28 +47,15 @@ class TagsController(BaseUIController, UsesTagsMixin):
         item = self._get_item(trans, item_class, trans.security.decode_id(item_id))
         user = trans.user
         self.get_tag_handler(trans).remove_item_tag(user, item, tag_name)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         # Log.
         params = dict(item_id=item.id, item_class=item_class, tag=tag_name)
         trans.log_action(user, "untag", context, params)
 
-    # Retag an item. All previous tags are deleted and new tags are applied.
-    @web.expose
-    @web.require_login("Apply a new set of tags to an item; previous tags are deleted.")
-    def retag_async(self, trans, item_id=None, item_class=None, new_tags=None):
-        """
-        Apply a new set of tags to an item; previous tags are deleted.
-        """
-        # Apply tags.
-        item = self._get_item(trans, item_class, trans.security.decode_id(item_id))
-        user = trans.user
-        self.get_tag_handler(trans).delete_item_tags(user, item)
-        self.get_tag_handler(trans).apply_item_tags(user, item, new_tags)
-        trans.sa_session.flush()
-
     @web.expose
     @web.require_login("get autocomplete data for an item's tags")
-    def tag_autocomplete_data(self, trans, q=None, limit=None, timestamp=None, item_id=None, item_class=None):
+    def tag_autocomplete_data(self, trans, q=None, limit=None, timestamp=None, item_id=None, item_class=None, **kwargs):
         """
         Get autocomplete data for an item's tags.
         """

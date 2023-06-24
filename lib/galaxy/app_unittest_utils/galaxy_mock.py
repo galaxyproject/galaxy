@@ -31,6 +31,7 @@ from galaxy.model import tags
 from galaxy.model.base import (
     ModelMapping,
     SharedModelMapping,
+    transaction,
 )
 from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.model.scoped_session import galaxy_scoped_session
@@ -252,6 +253,7 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.integrated_tool_panel_config = None
         self.vault_config_file = kwargs.get("vault_config_file")
         self.max_discovered_files = 10000
+        self.enable_notification_system = True
 
     @property
     def config_dict(self):
@@ -314,7 +316,8 @@ class MockTrans:
         if self.galaxy_session:
             self.galaxy_session.user = user
             self.sa_session.add(self.galaxy_session)
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
         self.__user = user
 
     user = property(get_user, set_user)

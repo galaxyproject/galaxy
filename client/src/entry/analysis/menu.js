@@ -216,6 +216,10 @@ export function fetchMenu(options = {}) {
                     hidden: Galaxy.config.single_user,
                 },
                 {
+                    title: _l("Archived Histories"),
+                    url: "/histories/archived",
+                },
+                {
                     title: _l("Pages"),
                     url: "/pages/list",
                 },
@@ -235,6 +239,12 @@ export function fetchMenu(options = {}) {
             userTab.menu.push({
                 title: _l("Active InteractiveTools"),
                 url: "/interactivetool_entry_points/list",
+            });
+        }
+        if (Galaxy.config.enable_notification_system) {
+            userTab.menu.push({
+                title: _l("Notifications"),
+                url: "/user/notifications",
             });
         }
         userTab.menu.push({ divider: true });

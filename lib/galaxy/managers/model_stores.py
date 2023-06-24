@@ -10,6 +10,7 @@ from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.export_tracker import StoreExportTracker
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.users import UserManager
+from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.model.store import (
     DirectoryModelExportStore,
@@ -100,7 +101,8 @@ class ModelStoreManager:
             export_store.export_history(history, include_hidden=include_hidden, include_deleted=include_deleted)
         job = self._sa_session.query(model.Job).get(job_id)
         job.state = model.Job.states.NEW
-        self._sa_session.flush()
+        with transaction(self._sa_session):
+            self._sa_session.commit()
         self._job_manager.enqueue(job)
 
     def prepare_history_download(self, request: GenerateHistoryDownload):

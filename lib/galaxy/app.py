@@ -43,6 +43,7 @@ from galaxy.managers.interactivetool import InteractiveToolManager
 from galaxy.managers.jobs import JobSearch
 from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.library_datasets import LibraryDatasetsManager
+from galaxy.managers.notification import NotificationManager
 from galaxy.managers.roles import RoleManager
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.tasks import (
@@ -322,6 +323,9 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
                 "cache.data_dir": self.config.mulled_resolution_cache_data_dir,
                 "cache.lock_dir": self.config.mulled_resolution_cache_lock_dir,
                 "cache.expire": self.config.mulled_resolution_cache_expire,
+                "cache.url": self.config.mulled_resolution_cache_url,
+                "cache.table_name": self.config.mulled_resolution_cache_table_name,
+                "cache.schema_name": self.config.mulled_resolution_cache_schema_name,
             }
             mulled_resolution_cache = CacheManager(**parse_cache_config_options(cache_opts)).get_cache(
                 "mulled_resolution"
@@ -540,6 +544,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self.library_datasets_manager = self._register_singleton(LibraryDatasetsManager)
         self.role_manager = self._register_singleton(RoleManager)
         self.job_manager = self._register_singleton(JobManager)
+        self.notification_manager = self._register_singleton(NotificationManager)
 
         self.task_manager = self._register_abstract_singleton(
             AsyncTasksManager, CeleryAsyncTasksManager  # type: ignore[type-abstract]  # https://github.com/python/mypy/issues/4717
@@ -576,6 +581,8 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
 
         self._configure_tool_shed_registry()
         self._register_singleton(tool_shed_registry.Registry, self.tool_shed_registry)
+        # Tool Data Tables
+        self._configure_tool_data_tables(from_shed_config=False)
 
     def _configure_tool_shed_registry(self) -> None:
         # Set up the tool sheds registry
@@ -628,8 +635,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         )
         self.api_keys_manager = self._register_singleton(ApiKeyManager)
 
-        # Tool Data Tables
-        self._configure_tool_data_tables(from_shed_config=False)
         # Load dbkey / genome build manager
         self._configure_genome_builds(data_table_name="__dbkeys__", load_old_style=True)
 

@@ -4,6 +4,7 @@ from typing import (
 )
 
 from galaxy.model import User
+from galaxy.model.base import transaction
 from galaxy.structured_app import BasicSharedApp
 
 if TYPE_CHECKING:
@@ -31,7 +32,8 @@ class ApiKeyManager:
         new_key.key = guid
         sa_session = self.app.model.context
         sa_session.add(new_key)
-        sa_session.flush()
+        with transaction(sa_session):
+            sa_session.commit()
         return new_key
 
     def get_or_create_api_key(self, user: User) -> str:
@@ -51,4 +53,5 @@ class ApiKeyManager:
         for api_key in api_keys:
             api_key.deleted = True
             sa_session.add(api_key)
-        sa_session.flush()
+        with transaction(sa_session):
+            sa_session.commit()

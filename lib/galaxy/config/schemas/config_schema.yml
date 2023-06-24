@@ -570,7 +570,7 @@ mapping:
           container resolvers to use when discovering containers for Galaxy. If
           this is set to None, the default container resolvers loaded is
           determined by enable_mulled_containers.
-          For available options see config/container_resolvers_conf.xml.sample.
+          For available options see https://docs.galaxyproject.org/en/master/admin/container_resolvers.html
 
       container_resolvers:
         type: seq
@@ -905,6 +905,33 @@ mapping:
           bio.tools web service request related caching. The lock directory to point
           beaker cache at.
 
+      biotools_service_cache_url:
+        type: str
+        required: false
+        desc: |
+          When biotools_service_cache_type = ext:database, this is
+          the url of the database used by beaker for
+          bio.tools web service request related caching.
+          The application config code will set it to the
+          value of database_connection if this is not set.
+
+      biotools_service_cache_table_name:
+        type: str
+        default: beaker_cache
+        required: false
+        desc: |
+          When biotools_service_cache_type = ext:database, this is
+          the database table name used by beaker for
+          bio.tools web service request related caching.
+
+      biotools_service_cache_schema_name:
+        type: str
+        required: false
+        desc: |
+          When biotools_service_cache_type = ext:database, this is
+          the database table name used by beaker for
+          bio.tools web service request related caching.
+
       citation_cache_type:
         type: str
         default: file
@@ -933,6 +960,32 @@ mapping:
           Citation related caching.  Tool citations information maybe fetched from
           external sources such as https://doi.org/ by Galaxy - the following
           parameters can be used to control the caching used to store this information.
+
+      citation_cache_url:
+        type: str
+        required: false
+        desc: |
+          When citation_cache_type = ext:database, this is
+          the url of the database used by beaker for citation
+          caching. The application config code will set it to the
+          value of database_connection if this is not set.
+
+      citation_cache_table_name:
+        type: str
+        default: beaker_cache
+        required: false
+        desc: |
+          When citation_cache_type = ext:database, this is
+          the database table name used by beaker for
+          citation related caching.
+
+      citation_cache_schema_name:
+        type: str
+        required: false
+        desc: |
+          When citation_cache_type = ext:database, this is
+          the database schema name of the table used by beaker for
+          citation related caching.
 
       mulled_resolution_cache_type:
         type: str
@@ -964,6 +1017,32 @@ mapping:
         required: false
         desc: |
           Seconds until the beaker cache is considered old and a new value is created.
+
+      mulled_resolution_cache_url:
+        type: str
+        required: false
+        desc: |
+          When mulled_resolution_cache_type = ext:database, this is
+          the url of the database used by beaker for caching mulled resolution
+          requests. The application config code will set it to the
+          value of database_connection if this is not set.
+
+      mulled_resolution_cache_table_name:
+        type: str
+        default: beaker_cache
+        required: false
+        desc: |
+          When mulled_resolution_cache_type = ext:database, this is
+          the database table name used by beaker for
+          caching mulled resolution requests.
+
+      mulled_resolution_cache_schema_name:
+        type: str
+        required: false
+        desc: |
+          When mulled_resolution_cache_type = ext:database, this is
+          the database schema name of the table used by beaker for
+          caching mulled resolution requests.
 
       object_store_config_file:
         type: str
@@ -3841,3 +3920,23 @@ mapping:
         required: false
         desc: |
           Message to display on the export citations tool page
+
+      enable_notification_system:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enables the Notification System integrated in Galaxy.
+
+          Users can receive automatic notifications when a certain resource is shared with them or when some long running operations have finished, etc.
+
+          The system allows notification scheduling and expiration, and users can opt-out of specific notification categories or channels.
+
+          Admins can schedule and broadcast notifications that will be visible to all users, including special server-wide announcements such as scheduled maintenance, high load warnings, and event announcements, to name a few examples.
+
+      expired_notifications_cleanup_interval:
+        type: int
+        required: false
+        default: 86400
+        desc: |
+          The interval in seconds between attempts to delete all expired notifications from the database (every 24 hours by default). Runs in a Celery task.

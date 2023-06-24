@@ -6,6 +6,7 @@ import io
 import json
 import logging
 import os
+import re
 import shutil
 import struct
 import subprocess
@@ -312,6 +313,29 @@ class Meryldb(CompressedArchive):
                     # 64 data files ad 64 indices + 2 folders
                     if len(_tar_content) == 130:
                         if len([_ for _ in _tar_content if _.endswith(".merylIndex")]) == 64:
+                            return True
+        except Exception as e:
+            log.warning("%s, sniff Exception: %s", self, e)
+        return False
+
+
+class Visium(CompressedArchive):
+    """Visium is a tar.gz archive with at least a 'Spatial' subfolder, a filtered h5 file and a raw h5 file."""
+
+    file_ext = "visium.tar.gz"
+
+    def sniff(self, filename: str) -> bool:
+        """
+        Check data structure:
+        Contains h5 files
+        Contains spatial folder
+        """
+        try:
+            if filename and tarfile.is_tarfile(filename):
+                with tarfile.open(filename, "r") as temptar:
+                    _tar_content = temptar.getnames()
+                    if "spatial" in _tar_content:
+                        if len([_ for _ in _tar_content if _.endswith("matrix.h5")]) == 2:
                             return True
         except Exception as e:
             log.warning("%s, sniff Exception: %s", self, e)
@@ -3515,6 +3539,90 @@ class PostgresqlArchive(CompressedArchive):
             return dataset.peek
         except Exception:
             return f"PostgreSQL Archive ({nice_size(dataset.get_size())})"
+
+
+class MongoDBArchive(CompressedArchive):
+    """
+    Class describing a Mongo database packed into a tar archive
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('mongodb_fake.tar.bz2')
+    >>> MongoDBArchive().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.fast5.tar')
+    >>> MongoDBArchive().sniff(fname)
+    False
+    """
+
+    MetadataElement(
+        name="version",
+        default=None,
+        param=MetadataParameter,
+        desc="MongoDB database version",
+        readonly=True,
+        visible=True,
+    )
+    file_ext = "mongodb"
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
+        try:
+            if dataset and tarfile.is_tarfile(dataset.file_name):
+                with tarfile.open(dataset.file_name, "r") as temptar:
+                    metrics_file = next(
+                        filter(lambda x: x.startswith("mongo_db/diagnostic.data/metrics"), temptar.getnames()), None
+                    )
+
+                    if metrics_file:
+                        md_version_file = temptar.extractfile(metrics_file)
+
+                        if md_version_file:
+                            vchunk = md_version_file.read(500)
+
+                            version_match = re.match(b".*version\x00\x06\x00\x00\x00([0-9.]+).*", vchunk)
+
+                            if version_match:
+                                dataset.metadata.version = util.unicodify(
+                                    version_match.group(1).decode("utf-8")
+                                ).strip()
+        except Exception as e:
+            log.warning("%s CompressedArchive set_meta Exception: %s", self, e)
+
+    def sniff(self, filename: str) -> bool:
+        if filename and tarfile.is_tarfile(filename):
+            with tarfile.open(filename, "r") as temptar:
+                return "mongo_db/_mdb_catalog.wt" in temptar.getnames()
+        return False
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        if not dataset.dataset.purged:
+            dataset.peek = f"MongoDB Archive ({nice_size(dataset.get_size())})"
+            dataset.blurb = f'MongoDB version {dataset.metadata.version or "unknown"}'
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def display_peek(self, dataset: DatasetProtocol) -> str:
+        try:
+            return dataset.peek
+        except Exception:
+            return f"MongoDB Archive ({nice_size(dataset.get_size())})"
+
+
+class GeneNoteBook(MongoDBArchive):
+    """
+    Class describing a bzip2-compressed GeneNoteBook archive
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('mongodb_fake.tar.bz2')
+    >>> GeneNoteBook().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.fast5.tar.gz')
+    >>> GeneNoteBook().sniff(fname)
+    False
+    """
+
+    file_ext = "genenotebook"
 
 
 class Fast5Archive(CompressedArchive):

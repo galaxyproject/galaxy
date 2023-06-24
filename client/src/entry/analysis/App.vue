@@ -38,10 +38,13 @@
         <Toast ref="toastRef" />
         <ConfirmDialog ref="confirmDialogRef" />
         <UploadModal ref="uploadModal" />
+        <BroadcastsOverlay />
+        <DragGhost />
     </div>
 </template>
 <script>
 import Alert from "@/components/Alert.vue";
+import DragGhost from "@/components/DragGhost.vue";
 import Modal from "mvc/ui/ui-modal";
 import Masthead from "components/Masthead/Masthead.vue";
 import { getGalaxyInstance } from "app";
@@ -60,14 +63,18 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { setToastComponentRef } from "composables/toast";
 import { setConfirmDialogComponentRef } from "composables/confirmDialog";
 import { setGlobalUploadModal } from "composables/globalUploadModal";
+import { useNotificationsStore } from "@/stores/notificationsStore";
+import BroadcastsOverlay from "@/components/Notifications/Broadcasts/BroadcastsOverlay.vue";
 
 export default {
     components: {
         Alert,
+        DragGhost,
         Masthead,
         Toast,
         ConfirmDialog,
         UploadModal,
+        BroadcastsOverlay,
     },
     setup() {
         const userStore = useUserStore();
@@ -133,6 +140,9 @@ export default {
         this.Galaxy.currHistoryPanel = new HistoryPanelProxy();
         this.Galaxy.modal = new Modal.View();
         this.Galaxy.frame = this.windowManager;
+        if (this.Galaxy.config.enable_notification_system) {
+            this.startNotificationsPolling();
+        }
     },
     created() {
         window.onbeforeunload = () => {
@@ -142,6 +152,10 @@ export default {
         };
     },
     methods: {
+        startNotificationsPolling() {
+            const notificationsStore = useNotificationsStore();
+            notificationsStore.startPollingNotifications();
+        },
         openUrl(urlObj) {
             if (!urlObj.target) {
                 this.$router.push(urlObj.url);

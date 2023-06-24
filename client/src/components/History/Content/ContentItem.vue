@@ -7,9 +7,9 @@
         tabindex="0"
         role="button"
         @keydown="onKeyDown">
-        <div class="p-1 cursor-pointer" draggable @dragstart="onDragStart" @click.stop="onClick">
+        <div class="p-1 cursor-pointer" draggable @dragstart="onDragStart" @dragend="onDragEnd" @click.stop="onClick">
             <div class="d-flex justify-content-between">
-                <span class="p-1 font-weight-bold">
+                <span class="p-1 font-weight-bold" data-description="content item header info">
                     <b-button v-if="selectable" class="selector p-0" @click.stop="$emit('update:selected', !selected)">
                         <icon v-if="selected" fixed-width size="lg" :icon="['far', 'check-square']" />
                         <icon v-else fixed-width size="lg" :icon="['far', 'square']" />
@@ -112,6 +112,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faArrowCircleUp, faArrowCircleDown, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
 import { useEntryPointStore } from "stores/entryPointStore";
+import { clearDrag, setDrag } from "@/utils/setDrag.js";
 
 library.add(faArrowCircleUp, faArrowCircleDown, faCheckCircle);
 export default {
@@ -234,9 +235,10 @@ export default {
             }
         },
         onDragStart(evt) {
-            evt.dataTransfer.dropEffect = "move";
-            evt.dataTransfer.effectAllowed = "move";
-            evt.dataTransfer.setData("text", JSON.stringify([this.item]));
+            setDrag(evt, this.item);
+        },
+        onDragEnd: function () {
+            clearDrag();
         },
         onEdit() {
             this.$router.push(this.itemUrls.edit);

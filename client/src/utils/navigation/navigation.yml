@@ -47,6 +47,9 @@ masthead:
 
     logged_in_only: '.loggedin-only'
     logged_out_only: '.loggedout-only'
+    storage_dashboard_link:
+      selector: 'storage dashboard link'
+      type: data-description
 
   labels:
     # top-level menus
@@ -313,14 +316,31 @@ history_panel:
     pagination_next: '.list-pagination button.next'
     pagination_previous: '.list-pagination button.prev'
 
+    storage_overview: '.history-storage-overview-button'
+
   text:
     tooltip_name: 'Rename history...'
     new_name: 'Unnamed history'
 
+history_storage:
+  selectors:
+    _: '.history-storage-overview'
+
+storage_dashboard:
+  selectors:
+    free_space_link: '[data-description="free space card"] button'
+    explore_usage_link: '[data-description="explore usage card"] button'
+
 edit_dataset_attributes:
   selectors:
     database_build_dropdown: '[data-label="Database/Build"]'
-    save_btn: '#dataset-attributes-default-save'
+
+    _: '[aria-labelledby="dataset-attributes-heading"]'
+    name_input: '[aria-labelledby="dataset-attributes-heading"] input#name'
+    info_input: '[aria-labelledby="dataset-attributes-heading"] textarea#info'
+    annotation_input: '[aria-labelledby="dataset-attributes-heading"] textarea#annotation'
+    save_button: '#dataset-attributes-default-save'
+    alert: '.dataset-attributes-alert'
 
   dbkey_dropdown_results:
     selectors:
@@ -479,24 +499,36 @@ history_import:
 
 pages:
   selectors:
-    create: '.manage-table-actions .action-button'
+    create: '#page-create'
     submit: '#submit'
+    drop: '.page-dropdown'
+    drop_edit: '.dropdown-item-edit'
+    drop_view: '.dropdown-item-view'
+    create_title_input: '#form-element-title input'
+    create_slug_input: '#form-element-slug input'
     export: '.markdown-pdf-export'
     dropdown: '[data-page-dropdown*="${id}"]'
     index_table: "#page-table"
     index_rows: "#page-table > tbody > tr:not(.b-table-empty-row, [style*='display: none'])"
+    delete_modal_confirm: '#delete-page-modal-${id}___BV_modal_footer_ .btn-primary'
 
   editor:
     selectors:
       save: '#save-button'
       embed_dataset: '.toolTitle .title-link[data-tool-id="history_dataset_embedded"]'
       embed_workflow_display: '.toolTitle .title-link[data-tool-id="workflow_display"]'
+      history_link: '.toolTitle .title-link[data-tool-id="history_link"]'
       dataset_selector:
         type: xpath
         selector: '//span[text() = "1: 1.fasta"]'
       workflow_selection: .selection-dialog-modal [role="row"][data-pk="${id}"]
+      history_selection: .selection-dialog-modal [role="row"][data-pk="${id}"]
       embed_dialog_add_button: '.pages-embed .buttons #button-0'
       markdown_editor: '.markdown-textarea'
+
+  view:
+    selectors:
+      history_link: '[data-description="history import link"][data-history-id="${history_id}"]'
 
 login:
   selectors:
@@ -649,6 +681,18 @@ workflow_editor:
     canvas_body: '#workflow-canvas'
     edit_annotation: '#workflow-annotation'
     edit_name: '#workflow-name'
+    license_selector:
+      selector: 'license selector'
+      type: data-description
+    edit_license_link:
+      selector: 'edit license link'
+      type: data-description
+    license_select:
+      selector: 'license select'
+      type: data-description
+    license_save:
+      selector: 'license save'
+      type: data-description
     tool_menu: '.toolMenuContainer'
     tool_menu_section_link: '.tool-menu-section-${section_name} a span'
     tool_menu_item_link: 'a.tool-menu-item-${item_name}'
@@ -706,11 +750,19 @@ workflow_editor:
       type: xpath
       selector: >
         //li[@class="multiselect__element"]//span[text()="${datatype}"]
-    add_tags:
+    add_tags_button:
+      type: xpath
+      selector: >
+        //div[@data-label='Add Tags']//button
+    add_tags_input:
       type: xpath
       selector: >
         //div[@data-label='Add Tags']//input
-    remove_tags:
+    remove_tags_button:
+      type: xpath
+      selector: >
+        //div[@data-label='Remove Tags']//button
+    remove_tags_input:
       type: xpath
       selector: >
         //div[@data-label='Remove Tags']//input

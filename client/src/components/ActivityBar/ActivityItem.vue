@@ -2,6 +2,7 @@
 import { useRouter } from "vue-router/composables";
 import Popper from "@/components/Popper/Popper.vue";
 import TextShort from "@/components/Common/TextShort.vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 const router = useRouter();
 
@@ -12,10 +13,12 @@ interface Option {
 
 export interface Props {
     id: string;
-    title: string;
-    icon?: string;
+    title?: string;
+    icon?: string | object;
+    indicator?: number;
     isActive?: boolean;
     tooltip?: string;
+    tooltipPlacement?: string;
     progressPercentage?: number;
     progressStatus?: string;
     options?: Option[];
@@ -23,13 +26,16 @@ export interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+    title: undefined,
     icon: "question",
+    indicator: 0,
     isActive: false,
-    options: null,
+    options: undefined,
     progressPercentage: 0,
-    progressStatus: null,
-    to: null,
-    tooltip: null,
+    progressStatus: undefined,
+    to: undefined,
+    tooltip: undefined,
+    tooltipPlacement: "right",
 });
 
 const emit = defineEmits<{
@@ -37,19 +43,18 @@ const emit = defineEmits<{
 }>();
 
 function onClick(evt: MouseEvent): void {
+    emit("click");
     if (props.to) {
         router.push(props.to);
     }
-    emit("click");
 }
 </script>
 
 <template>
-    <Popper reference-is="span" popper-is="span" placement="right">
+    <Popper reference-is="span" popper-is="span" :placement="tooltipPlacement">
         <template v-slot:reference>
-            <div @click="onClick">
+            <div :id="id" class="activity-item" @click="onClick">
                 <b-nav-item
-                    :id="id"
                     class="position-relative my-1 p-2"
                     :class="{ 'nav-item-active': isActive }"
                     :aria-label="title | l">
@@ -66,14 +71,17 @@ function onClick(evt: MouseEvent): void {
                     </span>
                     <span class="position-relative">
                         <div class="nav-icon">
-                            <icon :icon="icon" />
+                            <span v-if="indicator > 0" class="nav-indicator" data-description="activity indicator">
+                                {{ Math.min(indicator, 99) }}
+                            </span>
+                            <FontAwesomeIcon :icon="icon" />
                         </div>
-                        <TextShort :text="title" class="nav-title" />
+                        <TextShort v-if="title" :text="title" class="nav-title" />
                     </span>
                 </b-nav-item>
             </div>
         </template>
-        <div class="px-2 py-1">
+        <div class="text-center px-2 py-1">
             <small v-if="tooltip">{{ tooltip | l }}</small>
             <small v-else>No tooltip available for this item</small>
             <div v-if="options" class="nav-options p-1">
@@ -93,6 +101,21 @@ function onClick(evt: MouseEvent): void {
 .nav-icon {
     @extend .nav-item;
     font-size: 1rem;
+}
+
+.nav-indicator {
+    align-items: center;
+    background: $brand-danger;
+    border-radius: 50%;
+    color: $brand-light;
+    display: flex;
+    font-size: 0.7rem;
+    justify-content: center;
+    left: 2.2rem;
+    height: 1.2rem;
+    position: absolute;
+    top: -0.3rem;
+    width: 1.2rem;
 }
 
 .nav-item {

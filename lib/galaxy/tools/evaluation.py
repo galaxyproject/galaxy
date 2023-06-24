@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 import shlex
 import string
 import tempfile
@@ -15,6 +16,7 @@ from typing import (
 )
 
 from galaxy import model
+from galaxy.authnz.util import provider_name_to_backend
 from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.job_execution.setup import ensure_configs_directory
 from galaxy.model.deferred import (
@@ -650,6 +652,9 @@ class ToolEvaluator:
                 else:
                     environment_variable_template = ""
                 is_template = False
+            elif inject and inject.startswith("oidc_"):
+                environment_variable_template = self.get_oidc_token(inject)
+                is_template = False
             else:
                 is_template = True
             with tempfile.NamedTemporaryFile(dir=directory, prefix="tool_env_", delete=False) as temp:
@@ -679,6 +684,24 @@ class ToolEvaluator:
             for tmp_directory_var in self.tool.tmp_directory_vars:
                 environment_variable = dict(name=tmp_directory_var, value=f'"{tmp_dir}"', raw=True)
                 environment_variables.append(environment_variable)
+
+    def get_oidc_token(self, inject):
+        if not self._user:
+            return "token-unavailable"
+
+        p = re.compile("^oidc_(id|access|refresh)_token_(.*)$")
+        match = p.match(inject)
+        provider_backend = None
+        if match:
+            token_type = match.group(1)
+            provider_backend = provider_name_to_backend(match.group(2))
+        if not match or not provider_backend:
+            return "token-unavailable"
+
+        tokens = self._user.get_oidc_tokens(provider_backend)
+        environment_variable_template = tokens[token_type] or "token-unavailable"
+
+        return environment_variable_template
 
     def _build_param_file(self):
         """

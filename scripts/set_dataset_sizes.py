@@ -7,6 +7,7 @@ import sys
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 
 import galaxy.config
+from galaxy.model.base import transaction
 from galaxy.model.mapping import init_models_from_config
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.util.script import (
@@ -32,6 +33,7 @@ if __name__ == "__main__":
     print("Loading Galaxy model...")
     model, object_store = init()
     sa_session = model.context.current
+    session = sa_session()
 
     set = 0
     dataset_count = sa_session.query(model.Dataset).count()
@@ -44,12 +46,14 @@ if __name__ == "__main__":
             dataset.set_total_size()
             set += 1
             if not set % 1000:
-                sa_session.flush()
+                with transaction(session):
+                    session.commit()
         new_percent = int(float(i) / dataset_count * 100)
         if new_percent != percent:
             percent = new_percent
             print("\rCompleted %i%%" % percent, end=" ")
             sys.stdout.flush()
-    sa_session.flush()
+    with transaction(session):
+        session.commit()
     print("\rCompleted 100%")
     object_store.shutdown()

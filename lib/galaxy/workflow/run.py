@@ -18,6 +18,7 @@ from galaxy.model import (
     WorkflowInvocation,
     WorkflowInvocationStep,
 )
+from galaxy.model.base import transaction
 from galaxy.schema.invocation import (
     CancelReason,
     FailureReason,
@@ -111,7 +112,8 @@ def __invoke(
 
     # Be sure to update state of workflow_invocation.
     trans.sa_session.add(workflow_invocation)
-    trans.sa_session.flush()
+    with transaction(trans.sa_session):
+        trans.sa_session.commit()
 
     return outputs, workflow_invocation
 

@@ -631,7 +631,29 @@ export default {
             }
         },
         initialFiltersSet: function () {
-            this.changeFilters("illumina");
+            let illumina = 0;
+            let dot12s = 0;
+            let Rs = 0;
+            //should we limit the forEach? What if there are 1000s of elements?
+            this.initialElements.forEach((element) => {
+                if (element.name.includes(".1.fastq") || element.name.includes(".2.fastq")) {
+                    dot12s++;
+                } else if (element.name.includes("_R1") || element.name.includes("_R2")) {
+                    Rs++;
+                } else if (element.name.includes("_1") || element.name.includes("_2")) {
+                    illumina++;
+                }
+            });
+
+            if (illumina > dot12s && illumina > Rs) {
+                this.changeFilters("illumina");
+            } else if (dot12s > illumina && dot12s > Rs) {
+                this.changeFilters("dot12s");
+            } else if (Rs > illumina && Rs > dot12s) {
+                this.changeFilters("Rs");
+            } else {
+                this.changeFilters("illumina");
+            }
         },
         /** add ids to dataset objs in initial list if none */
         _ensureElementIds: function () {

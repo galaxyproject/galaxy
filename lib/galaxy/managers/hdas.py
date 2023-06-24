@@ -40,6 +40,7 @@ from galaxy.managers import (
     taggable,
     users,
 )
+from galaxy.model.base import transaction
 from galaxy.model.deferred import materializer_factory
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.schema.schema import DatasetSourceType
@@ -161,7 +162,9 @@ class HDAManager(
 
         self.session().add(hda)
         if flush:
-            self.session().flush()
+            session = self.session()
+            with transaction(session):
+                session.commit()
         return hda
 
     def materialize(self, request: MaterializeDatasetInstanceTaskRequest) -> None:
@@ -180,7 +183,9 @@ class HDAManager(
         history = self.app.history_manager.by_id(request.history_id)
         new_hda = materializer.ensure_materialized(dataset_instance, target_history=history)
         history.add_dataset(new_hda, set_hid=True)
-        self.session().flush()
+        session = self.session()
+        with transaction(session):
+            session.commit()
 
     def copy(
         self, item: Any, history=None, hide_copy: bool = False, flush: bool = True, **kwargs: Any
@@ -204,7 +209,9 @@ class HDAManager(
         if flush:
             if history:
                 history.add_pending_items()
-            object_session(copy).flush()
+            session = object_session(copy)
+            with transaction(session):
+                session.commit()
 
         return copy
 
@@ -237,7 +244,9 @@ class HDAManager(
         if quota_amount_reduction and quota_source_info.use:
             user.adjust_total_disk_usage(-quota_amount_reduction, quota_source_info.label)
             # TODO: don't flush above if we're going to re-flush here
-            object_session(user).flush()
+            session = object_session(user)
+            with transaction(session):
+                session.commit()
 
     # .... states
     def error_if_uploading(self, hda):
@@ -412,19 +421,23 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
         errors: List[StorageItemCleanupError] = []
         dataset_ids_to_remove: Set[int] = set()
 
-        with self.hda_manager.session().begin():
-            for hda_id in item_ids:
-                try:
-                    hda: model.HistoryDatasetAssociation = self.hda_manager.get_owned(hda_id, user)
-                    hda.deleted = True
-                    quota_amount = int(hda.quota_amount(user))
-                    hda.purge_usage_from_quota(user, hda.dataset.quota_source_info)
-                    hda.purged = True
-                    dataset_ids_to_remove.add(hda.dataset.id)
-                    success_item_count += 1
-                    total_free_bytes += quota_amount
-                except BaseException as e:
-                    errors.append(StorageItemCleanupError(item_id=hda_id, error=str(e)))
+        for hda_id in item_ids:
+            try:
+                hda: model.HistoryDatasetAssociation = self.hda_manager.get_owned(hda_id, user)
+                hda.deleted = True
+                quota_amount = int(hda.quota_amount(user))
+                hda.purge_usage_from_quota(user, hda.dataset.quota_source_info)
+                hda.purged = True
+                dataset_ids_to_remove.add(hda.dataset.id)
+                success_item_count += 1
+                total_free_bytes += quota_amount
+            except BaseException as e:
+                errors.append(StorageItemCleanupError(item_id=hda_id, error=str(e)))
+
+        if success_item_count:
+            session = self.hda_manager.session()
+            with transaction(session):
+                session.commit()
 
         self._request_full_delete_all(dataset_ids_to_remove)
 

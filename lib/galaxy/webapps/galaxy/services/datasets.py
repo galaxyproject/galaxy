@@ -39,6 +39,7 @@ from galaxy.managers.history_contents import (
     HistoryContentsManager,
 )
 from galaxy.managers.lddas import LDDAManager
+from galaxy.model.base import transaction
 from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
@@ -610,7 +611,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         dataset_id: DecodedDatabaseIdField,
     ) -> DatasetTextContentDetails:
         """Returns dataset content as Text."""
-        user = self.get_authenticated_user(trans)
+        user = trans.user
         hda = self.hda_manager.get_accessible(dataset_id, user)
         hda = self.hda_manager.error_if_uploading(hda)
         truncated, dataset_data = self.hda_manager.text_data(hda, preview=True)
@@ -712,7 +713,8 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                 )
 
         if success_count:
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
         return DeleteDatasetBatchResult.construct(success_count=success_count, errors=errors)
 
     def get_structured_content(

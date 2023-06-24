@@ -108,7 +108,10 @@ from galaxy_test.base.decorators import (
 )
 from galaxy_test.base.json_schema_utils import JsonSchemaValidator
 from . import api_asserts
-from .api import ApiTestInteractor
+from .api import (
+    ApiTestInteractor,
+    HasAnonymousGalaxyInteractor,
+)
 from .api_util import random_name
 
 FILE_URL = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed"
@@ -143,15 +146,17 @@ def flakey(method):
     return wrapped_method
 
 
-def skip_without_tool(tool_id):
+def skip_without_tool(tool_id: str):
     """Decorate an API test method as requiring a specific tool.
 
     Have test framework skip the test case if the tool is unavailable.
     """
 
     def method_wrapper(method):
-        def get_tool_ids(api_test_case):
-            index = api_test_case.galaxy_interactor.get("tools", data=dict(in_panel=False))
+        def get_tool_ids(api_test_case: HasAnonymousGalaxyInteractor):
+            interactor = api_test_case.anonymous_galaxy_interactor
+            index = interactor.get("tools", data=dict(in_panel=False))
+            api_asserts.assert_status_code_is_ok(index, "Failed to fetch toolbox for target Galaxy.")
             tools = index.json()
             # In panels by default, so flatten out sections...
             tool_ids = [itemgetter("id")(_) for _ in tools]
@@ -169,8 +174,11 @@ def skip_without_tool(tool_id):
 
 def skip_without_asgi(method):
     @wraps(method)
-    def wrapped_method(api_test_case, *args, **kwd):
-        config = api_test_case.galaxy_interactor.get("configuration").json()
+    def wrapped_method(api_test_case: HasAnonymousGalaxyInteractor, *args, **kwd):
+        interactor = api_test_case.anonymous_galaxy_interactor
+        config_response = interactor.get("configuration")
+        api_asserts.assert_status_code_is_ok(config_response, "Failed to fetch configuration for target Galaxy.")
+        config = config_response.json()
         asgi_enabled = config.get("asgi_enabled", False)
         if not asgi_enabled:
             raise unittest.SkipTest("ASGI not enabled, skipping test")
@@ -179,15 +187,16 @@ def skip_without_asgi(method):
     return wrapped_method
 
 
-def skip_without_datatype(extension):
+def skip_without_datatype(extension: str):
     """Decorate an API test method as requiring a specific datatype.
 
     Have test framework skip the test case if the datatype is unavailable.
     """
 
-    def has_datatype(api_test_case):
-        index_response = api_test_case.galaxy_interactor.get("datatypes")
-        assert index_response.status_code == 200, "Failed to fetch datatypes for target Galaxy."
+    def has_datatype(api_test_case: HasAnonymousGalaxyInteractor):
+        interactor = api_test_case.anonymous_galaxy_interactor
+        index_response = interactor.get("datatypes", anon=True)
+        api_asserts.assert_status_code_is_ok(index_response, "Failed to fetch datatypes for target Galaxy.")
         datatypes = index_response.json()
         assert isinstance(datatypes, list)
         return extension in datatypes
@@ -196,6 +205,26 @@ def skip_without_datatype(extension):
         @wraps(method)
         def wrapped_method(api_test_case, *args, **kwargs):
             _raise_skip_if(not has_datatype(api_test_case))
+            method(api_test_case, *args, **kwargs)
+
+        return wrapped_method
+
+    return method_wrapper
+
+
+def skip_without_visualization_plugin(plugin_name: str):
+    def has_plugin(api_test_case: HasAnonymousGalaxyInteractor):
+        interactor = api_test_case.anonymous_galaxy_interactor
+        index_response = interactor.get("plugins", anon=True)
+        api_asserts.assert_status_code_is_ok(index_response, "Failed to fetch visualizations for target Galaxy.")
+        plugins = index_response.json()
+        assert isinstance(plugins, list)
+        return plugin_name in [p["name"] for p in plugins]
+
+    def method_wrapper(method):
+        @wraps(method)
+        def wrapped_method(api_test_case, *args, **kwargs):
+            _raise_skip_if(not has_plugin(api_test_case))
             method(api_test_case, *args, **kwargs)
 
         return wrapped_method
@@ -1417,7 +1446,7 @@ class BaseDatasetPopulator(BasePopulator):
         self, slug: str = "mypage", title: str = "MY PAGE", content_format: str = "html", content: Optional[str] = None
     ) -> Dict[str, Any]:
         page_response = self.new_page_raw(slug=slug, title=title, content_format=content_format, content=content)
-        page_response.raise_for_status()
+        api_asserts.assert_status_code_is(page_response, 200)
         return page_response.json()
 
     def new_page_raw(
@@ -1479,6 +1508,41 @@ class BaseDatasetPopulator(BasePopulator):
         response = self._get(f"histories/{history_id}/exports", headers=headers)
         api_asserts.assert_status_code_is_ok(response)
         return response.json()
+
+    def make_page_public(self, page_id: str) -> Dict[str, Any]:
+        sharing_response = self._put(f"pages/{page_id}/publish")
+        assert sharing_response.status_code == 200
+        return sharing_response.json()
+
+    def wait_for_export_task_on_record(self, export_record):
+        if export_record["preparing"]:
+            assert export_record["task_uuid"]
+            self.wait_on_task_id(export_record["task_uuid"])
+
+    def archive_history(
+        self, history_id: str, export_record_id: Optional[str] = None, purge_history: Optional[bool] = False
+    ) -> Response:
+        payload = (
+            {
+                "archive_export_id": export_record_id,
+                "purge_history": purge_history,
+            }
+            if export_record_id is not None or purge_history is not None
+            else None
+        )
+        archive_response = self._post(f"histories/{history_id}/archive", data=payload, json=True)
+        return archive_response
+
+    def restore_archived_history(self, history_id: str, force: Optional[bool] = None) -> Response:
+        restore_response = self._put(f"histories/{history_id}/archive/restore{f'?force={force}' if force else ''}")
+        return restore_response
+
+    def get_archived_histories(self, query: Optional[str] = None) -> List[Dict[str, Any]]:
+        if query:
+            query = f"?{query}"
+        index_response = self._get(f"histories/archived{query if query else ''}")
+        index_response.raise_for_status()
+        return index_response.json()
 
 
 class GalaxyInteractorHttpMixin:

@@ -113,7 +113,7 @@ class ToolDataImportManager:
         self.file_sources = app.file_sources
         self.tool_data_tables = app.tool_data_tables
 
-    def import_data_bundle_by_uri(self, config, uri: str):
+    def import_data_bundle_by_uri(self, config, uri: str, tool_data_file_path=None):
         # an admin-only task - so allow file:// uris
         if uri.startswith("file://"):
             target = uri[len("file://") :]
@@ -126,17 +126,19 @@ class ToolDataImportManager:
             what="data import",  # An alternative to this is sticking this in the bundle, only used for logging.
             data_manager_path=config.galaxy_data_manager_data_path,
             target_config_file=config.data_manager_config_file,
+            tool_data_file_path=tool_data_file_path,
         )
         self.tool_data_tables.import_bundle(
             target,
             options,
         )
 
-    def import_data_bundle_by_dataset(self, config, dataset: DatasetInstance):
+    def import_data_bundle_by_dataset(self, config, dataset: DatasetInstance, tool_data_file_path=None):
         options = BundleProcessingOptions(
             what="data import",  # An alternative to this is sticking this in the bundle, only used for logging.
             data_manager_path=config.galaxy_data_manager_data_path,
             target_config_file=config.data_manager_config_file,
+            tool_data_file_path=tool_data_file_path,
         )
         self.tool_data_tables.import_bundle(
             dataset.extra_files_path,

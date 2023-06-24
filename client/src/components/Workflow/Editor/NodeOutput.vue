@@ -16,8 +16,14 @@ import { assertDefined, ensureDefined } from "@/utils/assertions";
 import type { UseElementBoundingReturn, UseScrollReturn } from "@vueuse/core";
 import { useRelativePosition } from "./composables/relativePosition";
 import { NULL_COLLECTION_TYPE_DESCRIPTION, type CollectionTypeDescriptor } from "./modules/collectionTypeDescription";
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
+import { faPlus, faMinus } from "@fortawesome/free-solid-svg-icons";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 type ElementBounding = UnwrapRef<UseElementBoundingReturn>;
+
+library.add(faPlus, faMinus);
 
 const props = defineProps<{
     output: OutputTerminalSource;
@@ -266,28 +272,60 @@ const outputDetails = computed(() => {
 onBeforeUnmount(() => {
     stateStore.deleteOutputTerminalPosition(props.stepId, props.output.name);
 });
+
+const addTagsAction = computed(() => {
+    return props.postJobActions[`TagDatasetAction${props.output.name}`]?.action_arguments?.tags?.split(",") ?? [];
+});
+
+const removeTagsAction = computed(() => {
+    return props.postJobActions[`RemoveTagDatasetAction${props.output.name}`]?.action_arguments?.tags?.split(",") ?? [];
+});
 </script>
+
 <template>
-    <div :class="rowClass" :data-output-name="output.name">
-        <div
-            v-if="showCalloutActiveOutput"
-            v-b-tooltip
-            class="callout-terminal"
-            title="Checked outputs will become primary workflow outputs and are available as subworkflow outputs."
-            @keyup="onToggleActive"
-            @click="onToggleActive">
-            <i :class="['mark-terminal', activeClass]" />
+    <div class="d-flex" :class="rowClass" :data-output-name="output.name">
+        <div class="d-flex flex-column w-100">
+            <div class="d-flex flex-row">
+                <div
+                    v-if="showCalloutActiveOutput"
+                    v-b-tooltip
+                    class="callout-terminal"
+                    title="Checked outputs will become primary workflow outputs and are available as subworkflow outputs."
+                    @keyup="onToggleActive"
+                    @click="onToggleActive">
+                    <i :class="['mark-terminal', activeClass]" />
+                </div>
+                <div
+                    v-if="showCalloutVisible"
+                    v-b-tooltip
+                    class="callout-terminal"
+                    :title="visibleHint"
+                    @keyup="onToggleVisible"
+                    @click="onToggleVisible">
+                    <i :class="['mark-terminal', visibleClass]" />
+                </div>
+                {{ label }}
+            </div>
+
+            <div
+                v-if="addTagsAction.length > 0"
+                v-b-tooltip.left
+                class="d-flex align-items-center overflow-x-hidden"
+                title="These tags will be added to the output dataset">
+                <FontAwesomeIcon icon="fa-plus" class="mr-1" />
+                <StatelessTags disabled no-padding :value="addTagsAction" />
+            </div>
+
+            <div
+                v-if="removeTagsAction.length > 0"
+                v-b-tooltip.left
+                class="d-flex align-items-center overflow-x-hidden"
+                title="These tags will be removed from the output dataset">
+                <FontAwesomeIcon icon="fa-minus" class="mr-1" />
+                <StatelessTags disabled no-padding :value="removeTagsAction" />
+            </div>
         </div>
-        <div
-            v-if="showCalloutVisible"
-            v-b-tooltip
-            class="callout-terminal"
-            :title="visibleHint"
-            @keyup="onToggleVisible"
-            @click="onToggleVisible">
-            <i :class="['mark-terminal', visibleClass]" />
-        </div>
-        {{ label }}
+
         <draggable-wrapper
             :id="id"
             ref="el"

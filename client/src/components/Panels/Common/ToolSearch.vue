@@ -1,3 +1,141 @@
+<script setup lang="ts">
+import { computed, ref, onMounted, onUnmounted, type PropType, type Ref } from "vue";
+import { flattenTools } from "../utilities.js";
+import DelayedInput from "@/components/Common/DelayedInput.vue";
+import _l from "@/utils/localization";
+import { useRouter } from "vue-router/composables";
+import { getGalaxyInstance } from "@/app";
+
+const router = useRouter();
+
+const KEYS = { exact: 3, name: 2, description: 1, combined: 0 };
+const FAVORITES = ["#favs", "#favorites", "#favourites"];
+const MIN_QUERY_LENGTH = 3;
+
+interface Tool {
+    name?: string;
+}
+interface FilterSettings {
+    [key: string]: any;
+    name?: string;
+    section?: string;
+    id?: string;
+    help?: string;
+}
+
+const props = defineProps({
+    currentPanelView: {
+        type: String,
+        required: true,
+    },
+    enableAdvanced: {
+        type: Boolean,
+        default: false,
+    },
+    placeholder: {
+        type: String,
+        default: "search tools",
+    },
+    query: {
+        type: String,
+        default: null,
+    },
+    queryPending: {
+        type: Boolean,
+        default: false,
+    },
+    showAdvanced: {
+        type: Boolean,
+        default: false,
+    },
+    toolbox: {
+        type: Array as PropType<Tool[]>,
+        required: true,
+    },
+});
+
+const emit = defineEmits<{
+    (e: "update:show-advanced", showAdvanced: boolean): void;
+    (e: "onResults", filtered: string[] | null, closestValue: string | null): void;
+    (e: "onQuery", query: string): void;
+}>();
+
+const filterSettings: Ref<FilterSettings> = ref({});
+const showHelp: Ref<boolean> = ref(false);
+const searchWorker: Ref<Worker | undefined> = ref(undefined);
+
+const sectionNames = computed(() => {
+    return props.toolbox.map((section) =>
+        section.name !== undefined && section.name !== "Uncategorized" ? section.name : ""
+    );
+});
+const sectionLabel = computed(() => {
+    return props.currentPanelView === "default" ? "section" : "ontology";
+});
+const toolsList = computed(() => {
+    return flattenTools(props.toolbox);
+});
+
+onMounted(() => {
+    searchWorker.value = new Worker(new URL("../toolSearch.worker.js", import.meta.url));
+    const Galaxy = getGalaxyInstance();
+    const favoritesResults = Galaxy?.user.getFavorites().tools;
+
+    searchWorker.value.onmessage = ({ data }) => {
+        const { type, payload, query, closestTerm } = data;
+        if (type === "searchToolsByKeysResult" && query === props.query) {
+            emit("onResults", payload, closestTerm);
+        } else if (type === "clearFilterResult") {
+            emit("onResults", null, null);
+        } else if (type === "favoriteToolsResult") {
+            emit("onResults", favoritesResults, null);
+        }
+    };
+});
+
+onUnmounted(() => {
+    searchWorker.value?.terminate();
+});
+
+function checkQuery(q: string) {
+    filterSettings.value["name"] = q;
+    emit("onQuery", q);
+    if (q && q.length >= MIN_QUERY_LENGTH) {
+        if (FAVORITES.includes(q)) {
+            post({ type: "favoriteTools" });
+        } else {
+            post({
+                type: "searchToolsByKeys",
+                payload: {
+                    tools: toolsList.value,
+                    keys: KEYS,
+                    query: q,
+                },
+            });
+        }
+    } else {
+        post({ type: "clearFilter" });
+    }
+}
+
+function post(message: object) {
+    searchWorker.value?.postMessage(message);
+}
+
+function onSearch() {
+    for (const [filter, value] of Object.entries(filterSettings.value)) {
+        if (!value) {
+            delete filterSettings.value[filter];
+        }
+    }
+    router.push({ path: "/tools/list", query: filterSettings.value });
+}
+
+function onToggle(toggleAdvanced: boolean) {
+    emit("update:show-advanced", toggleAdvanced);
+}
+</script>
+
 <template>
     <div>
         <small v-if="showAdvanced">Filter by name:</small>
@@ -5,6 +143,7 @@
             :class="!showAdvanced && 'mb-3'"
             :query="query"
             :delay="100"
+            :loading="queryPending"
             :show-advanced="showAdvanced"
             :enable-advanced="enableAdvanced"
             :placeholder="showAdvanced ? 'any name' : placeholder"
@@ -30,13 +169,13 @@
             <small class="mt-1">Filter by help text:</small>
             <b-form-input v-model="filterSettings['help']" size="sm" placeholder="any help text" />
             <div class="mt-3">
-                <b-button class="mr-1" size="sm" variant="primary" @click="onSearch">
+                <b-button class="mr-1 filter-search-btn" size="sm" variant="primary" @click="onSearch">
                     <icon icon="search" />
-                    <span>{{ "Search" | localize }}</span>
+                    <span>{{ _l("Search") }}</span>
                 </b-button>
                 <b-button size="sm" @click="onToggle(false)">
                     <icon icon="redo" />
-                    <span>{{ "Cancel" | localize }}</span>
+                    <span>{{ _l("Cancel") }}</span>
                 </b-button>
                 <b-button title="Search Help" size="sm" @click="showHelp = true">
                     <icon icon="question" />
@@ -93,95 +232,3 @@
         </div>
     </div>
 </template>
-
-<script>
-import { getGalaxyInstance } from "app";
-import DelayedInput from "components/Common/DelayedInput";
-import { flattenTools, searchToolsByKeys } from "../utilities.js";
-
-export default {
-    name: "ToolSearch",
-    components: {
-        DelayedInput,
-    },
-    props: {
-        currentPanelView: {
-            type: String,
-            required: true,
-        },
-        enableAdvanced: {
-            type: Boolean,
-            default: false,
-        },
-        placeholder: {
-            type: String,
-            default: "search tools",
-        },
-        query: {
-            type: String,
-            default: null,
-        },
-        showAdvanced: {
-            type: Boolean,
-            default: false,
-        },
-        toolbox: {
-            type: Array,
-            required: true,
-        },
-    },
-    data() {
-        return {
-            favorites: ["#favs", "#favorites", "#favourites"],
-            minQueryLength: 3,
-            filterSettings: {},
-            showHelp: false,
-        };
-    },
-    computed: {
-        favoritesResults() {
-            const Galaxy = getGalaxyInstance();
-            return Galaxy.user.getFavorites().tools;
-        },
-        sectionNames() {
-            return this.toolbox.map((section) =>
-                section.name !== undefined && section.name !== "Uncategorized" ? section.name : ""
-            );
-        },
-        sectionLabel() {
-            return this.currentPanelView === "default" ? "section" : "ontology";
-        },
-        toolsList() {
-            return flattenTools(this.toolbox);
-        },
-    },
-    methods: {
-        checkQuery(q) {
-            this.filterSettings["name"] = q;
-            this.$emit("onQuery", q);
-            if (q && q.length >= this.minQueryLength) {
-                if (this.favorites.includes(q)) {
-                    this.$emit("onResults", this.favoritesResults);
-                } else {
-                    // keys with sorting order
-                    const keys = { exact: 4, name: 3, hyphenated: 2, description: 1, combined: 0 };
-                    this.$emit("onResults", searchToolsByKeys(this.toolsList, keys, q));
-                }
-            } else {
-                this.$emit("onResults", null);
-            }
-        },
-        onSearch() {
-            for (const [filter, value] of Object.entries(this.filterSettings)) {
-                if (!value) {
-                    delete this.filterSettings[filter];
-                }
-            }
-            this.$router.push({ path: "/tools/list", query: this.filterSettings });
-        },
-        onToggle(toggleAdvanced) {
-            this.$emit("update:show-advanced", toggleAdvanced);
-        },
-    },
-};
-</script>

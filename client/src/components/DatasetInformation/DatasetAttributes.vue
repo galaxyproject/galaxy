@@ -1,7 +1,7 @@
 <template>
     <div aria-labelledby="dataset-attributes-heading">
         <h1 id="dataset-attributes-heading" v-localize class="h-lg">Edit Dataset Attributes</h1>
-        <b-alert v-if="messageText" :variant="messageVariant" show>
+        <b-alert v-if="messageText" class="dataset-attributes-alert" :variant="messageVariant" show>
             {{ messageText | l }}
         </b-alert>
         <DatasetAttributesProvider :id="datasetId" v-slot="{ result, loading }" @error="onError">

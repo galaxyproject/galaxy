@@ -1,10 +1,13 @@
 <template>
     <div>
         <b-link
+            aria-expanded="false"
             class="workflow-dropdown font-weight-bold"
             data-toggle="dropdown"
             :data-workflow-dropdown="workflow.id"
-            aria-expanded="false">
+            draggable
+            @dragstart="onDragStart"
+            @dragend="onDragEnd">
             <Icon icon="caret-down" class="fa-lg" />
             <span class="workflow-dropdown-name">{{ workflow.name }}</span>
         </b-link>
@@ -94,7 +97,7 @@ import { withPrefix } from "utils/redirect";
 import TextSummary from "components/Common/TextSummary";
 import { mapState } from "pinia";
 import { useUserStore } from "@/stores/userStore";
-
+import { setDrag, clearDrag } from "@/utils/setDrag.js";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown, faSignature, faTimes, faEdit } from "@fortawesome/free-solid-svg-icons";
 
@@ -215,6 +218,12 @@ export default {
                 .catch((error) => {
                     this.$emit("onError", error);
                 });
+        },
+        onDragStart: function (evt) {
+            setDrag(evt, this.workflow);
+        },
+        onDragEnd: function () {
+            clearDrag();
         },
         onRename: function () {
             const id = this.workflow.id;

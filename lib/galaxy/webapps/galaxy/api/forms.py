@@ -5,6 +5,7 @@ import logging
 
 from galaxy import web
 from galaxy.forms.forms import form_factory
+from galaxy.model.base import transaction
 from galaxy.util import XML
 from galaxy.webapps.base.controller import url_for
 from . import BaseGalaxyAPIController
@@ -74,7 +75,8 @@ class FormDefinitionAPIController(BaseGalaxyAPIController):
             # enhance to allow creating from more than just xml
         form_definition = form_factory.from_elem(XML(xml_text))
         trans.sa_session.add(form_definition)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         encoded_id = trans.security.encode_id(form_definition.id)
         item = form_definition.to_dict(
             view="element",

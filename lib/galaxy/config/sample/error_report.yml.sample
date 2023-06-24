@@ -88,3 +88,12 @@
 #   gitlab_labels:
 #     - Label1
 #     - Label2
+
+# Slack error reporting backend. You'll need to create an "app" which is added
+# to your workspace, and configure it for a Webhook URL with a specific channel.
+# Then upon activation it will send a new message for each error report to your slack.
+# See https://api.slack.com/messaging/webhooks for more information.
+# - type: slack
+#   verbose: false
+#   user_submission: true
+#   webhook_url: "https://hooks.slack.com/services/..."

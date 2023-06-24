@@ -53,7 +53,10 @@ from galaxy.model import (
     HistoryDatasetAssociation,
     Role,
 )
-from galaxy.model.base import ModelMapping
+from galaxy.model.base import (
+    ModelMapping,
+    transaction,
+)
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.tasks import RequestUser
 from galaxy.security.idencoding import IdEncodingHelper
@@ -109,7 +112,8 @@ class ProvidesAppContext:
             except Exception:
                 action.session_id = None
             self.sa_session.add(action)
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
 
     def log_event(self, message, tool_id=None, **kwargs):
         """
@@ -140,7 +144,8 @@ class ProvidesAppContext:
             except Exception:
                 event.session_id = None
             self.sa_session.add(event)
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
 
     @property
     def sa_session(self) -> galaxy_scoped_session:

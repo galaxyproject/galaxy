@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, watch, type ComputedRef } from "vue";
 import Multiselect from "vue-multiselect";
+import { useMultiselect } from "@/composables/useMultiselect";
 
-type SelectValue = string | null;
+type SelectValue = string | number | null;
+const { ariaExpanded, onOpen, onClose } = useMultiselect();
 
 interface SelectOption {
     label: string;
@@ -13,8 +15,8 @@ const props = withDefaults(
     defineProps<{
         multiple?: boolean;
         optional?: boolean;
-        options: Array<[string, string]>;
-        value?: Array<string> | string;
+        options: Array<[string, SelectValue]>;
+        value?: Array<SelectValue> | string | number;
     }>(),
     {
         multiple: false,
@@ -46,7 +48,7 @@ const deselectLabel: ComputedRef<string> = computed(() => {
  * select component into an array of objects
  */
 const formattedOptions: ComputedRef<Array<SelectOption>> = computed(() => {
-    const result: Array<SelectOption> = props.options.map((option: [string, string]) => ({
+    const result: Array<SelectOption> = props.options.map((option) => ({
         label: option[0],
         value: option[1],
     }));
@@ -107,7 +109,7 @@ const currentValue = computed({
                 emit("input", null);
             }
         } else {
-            emit("input", val.value);
+            emit("input", val ? val.value : null);
         }
     },
 });
@@ -148,9 +150,12 @@ onMounted(() => {
         :options="formattedOptions"
         :multiple="multiple"
         :selected-label="selectedLabel"
+        :aria-expanded="ariaExpanded"
         placeholder="Select value"
         select-label="Click to select"
         track-by="value"
-        label="label" />
+        label="label"
+        @open="onOpen"
+        @close="onClose" />
     <b-alert v-else v-localize variant="warning" show> No options available. </b-alert>
 </template>

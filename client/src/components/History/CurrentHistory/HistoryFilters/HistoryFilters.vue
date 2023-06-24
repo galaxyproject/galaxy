@@ -22,8 +22,8 @@
                     title="Show Advanced Filter"
                     aria-label="Show advanced filter"
                     @click="onToggle">
-                    <icon v-if="showAdvanced" icon="angle-double-up" />
-                    <icon v-else icon="angle-double-down" />
+                    <icon v-if="showAdvanced" fixed-width icon="angle-double-up" />
+                    <icon v-else fixed-width icon="angle-double-down" />
                 </b-button>
                 <b-button
                     v-b-tooltip.hover
@@ -33,7 +33,7 @@
                     aria-label="Clear filters"
                     data-description="clear filters"
                     @click="updateFilter('')">
-                    <icon icon="times" />
+                    <icon fixed-width icon="times" />
                 </b-button>
             </b-input-group-append>
         </b-input-group>

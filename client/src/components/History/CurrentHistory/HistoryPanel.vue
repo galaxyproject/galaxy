@@ -28,7 +28,7 @@
                 @dragleave.prevent="onDragLeave">
                 <slot name="navigation" :history="history" />
                 <HistoryFilters
-                    v-if="showControls"
+                    v-if="filterable"
                     class="content-operations-filters mx-3"
                     :filter-text.sync="filterText"
                     :show-advanced.sync="showAdvanced"
@@ -90,7 +90,7 @@
                             <LoadingSpan message="Processing operation" />
                         </b-alert>
                         <div v-else-if="itemsLoaded.length === 0">
-                            <HistoryEmpty v-if="queryDefault" class="m-2" />
+                            <HistoryEmpty v-if="queryDefault" :writable="writable" class="m-2" />
                             <b-alert v-else-if="formattedSearchError" class="m-2" variant="danger" show>
                                 Error in filter:
                                 <a href="javascript:void(0)" @click="showAdvanced = true">
@@ -429,7 +429,7 @@ export default {
             }
         },
         onError(error) {
-            Toast.error(error);
+            Toast.error(`${error}`);
         },
         updateFilterVal(newFilter, newVal) {
             this.filterText = FilterClass.setFilterValue(this.filterText, newFilter, newVal);

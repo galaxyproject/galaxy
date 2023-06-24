@@ -11,6 +11,7 @@ from typing import (
 
 from sqlalchemy.orm import scoped_session
 
+from galaxy.model.base import transaction
 from .base import (
     Deserializer,
     FunctionFilterParsersType,
@@ -63,7 +64,9 @@ class AnnotatableManagerMixin:
 
         annotation_obj = item.add_item_annotation(self.session(), user, item, annotation)
         if flush:
-            self.session().flush()
+            session = self.session()
+            with transaction(session):
+                session.commit()
         return annotation_obj
 
     def _user_annotation(self, item, user):
@@ -72,7 +75,9 @@ class AnnotatableManagerMixin:
     def _delete_annotation(self, item, user, flush=True):
         returned = item.delete_item_annotation(self.session(), user, item)
         if flush:
-            self.session().flush()
+            session = self.session()
+            with transaction(session):
+                session.commit()
         return returned
 
 

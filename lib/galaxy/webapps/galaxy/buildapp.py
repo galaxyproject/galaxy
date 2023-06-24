@@ -201,6 +201,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/admin/reset_metadata")
     webapp.add_client_route("/admin/roles")
     webapp.add_client_route("/admin/forms")
+    webapp.add_client_route("/admin/notifications")
     webapp.add_client_route("/admin/groups")
     webapp.add_client_route("/admin/repositories")
     webapp.add_client_route("/admin/sanitize_allow")
@@ -217,6 +218,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/tours")
     webapp.add_client_route("/tours/{tour_id}")
     webapp.add_client_route("/user")
+    webapp.add_client_route("/user/notifications{path:.*?}")
     webapp.add_client_route("/user/{form_id}")
     webapp.add_client_route("/welcome/new")
     webapp.add_client_route("/visualizations")
@@ -238,7 +240,9 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/histories/list")
     webapp.add_client_route("/histories/import")
     webapp.add_client_route("/histories/{history_id}/export")
+    webapp.add_client_route("/histories/{history_id}/archive")
     webapp.add_client_route("/histories/{history_id}/invocations")
+    webapp.add_client_route("/histories/archived")
     webapp.add_client_route("/histories/list_published")
     webapp.add_client_route("/histories/list_shared")
     webapp.add_client_route("/histories/rename")
@@ -1056,6 +1060,7 @@ def populate_api_routes(webapp, app):
         path_prefix="/api/jobs/{job_id}",
         parent_resources=dict(member_name="job", collection_name="jobs"),
     )
+
     webapp.mapper.resource(
         "port",
         "ports",

@@ -1038,6 +1038,11 @@ class HistorySummary(HistoryBase):
         title="Purged",
         description="Whether this item has been permanently removed.",
     )
+    archived: bool = Field(
+        ...,
+        title="Archived",
+        description="Whether this item has been archived and is no longer active.",
+    )
     url: RelativeUrl = RelativeUrlField
     published: bool = Field(
         ...,
@@ -1248,7 +1253,7 @@ class InvocationIndexQueryPayload(Model):
     sort_by: Optional[InvocationSortByEnum] = Field(
         title="Sort By", description="Sort Workflow Invocations by this attribute"
     )
-    sort_desc: bool = Field(default=False, descritpion="Sort in descending order?")
+    sort_desc: bool = Field(default=False, description="Sort in descending order?")
     include_terminal: bool = Field(default=True, description="Set to false to only include terminal Invocations.")
     limit: Optional[int] = Field(
         default=100,
@@ -1257,20 +1262,19 @@ class InvocationIndexQueryPayload(Model):
     offset: Optional[int] = Field(default=0, description="Number of invocations to skip")
 
 
-class PageSortByEnum(str, Enum):
-    create_time = "create_time"
-    update_time = "update_time"
+PageSortByEnum = Literal["update_time", "title", "username"]
 
 
 class PageIndexQueryPayload(Model):
     deleted: bool = False
+    show_published: Optional[bool] = None
+    show_shared: Optional[bool] = None
     user_id: Optional[DecodedDatabaseIdField] = None
-    sort_by: PageSortByEnum = PageSortByEnum.update_time
-    sort_desc: bool = Field(default=True, descritpion="Sort in descending order?")
-    show_published: bool = True
-    show_shared: bool = False
-    limit: int = 500
-    offset: int = 0
+    sort_by: PageSortByEnum = Field("update_time", title="Sort By", description="Sort pages by this attribute.")
+    sort_desc: Optional[bool] = Field(default=False, title="Sort descending", description="Sort in descending order.")
+    search: Optional[str] = Field(default=None, title="Filter text", description="Freetext to search.")
+    limit: Optional[int] = Field(default=100, lt=1000, title="Limit", description="Maximum number of pages to return.")
+    offset: Optional[int] = Field(default=0, title="Offset", description="Number of pages to skip.")
 
 
 class CreateHistoryPayload(Model):
@@ -1537,6 +1541,14 @@ class ExportObjectMetadata(Model):
     request_data: ExportObjectRequestMetadata
     result_data: Optional[ExportObjectResultMetadata]
 
+    def is_short_term(self):
+        """Whether the export is a short term export."""
+        return isinstance(self.request_data.payload, ShortTermStoreExportPayload)
+
+    def is_ready(self):
+        """Whether the export has finished and it's ready to be used."""
+        return self.result_data is not None and self.result_data.success
+
 
 class ObjectExportTaskResponse(ObjectExportResponseBase):
     task_uuid: UUID4 = Field(
@@ -1555,6 +1567,55 @@ class JobExportHistoryArchiveListResponse(Model):
 class ExportTaskListResponse(Model):
     __root__: List[ObjectExportTaskResponse]
     __accept_type__ = "application/vnd.galaxy.task.export+json"
+
+
+class ArchiveHistoryRequestPayload(Model):
+    archive_export_id: Optional[DecodedDatabaseIdField] = Field(
+        default=None,
+        title="Export Record ID",
+        description=(
+            "The encoded ID of the export record to associate with this history archival."
+            "This is used to be able to recover the history from the export record."
+        ),
+    )
+    purge_history: bool = Field(
+        default=False,
+        title="Purge History",
+        description="Whether to purge the history after archiving it. It requires an `archive_export_id` to be set.",
+    )
+
+
+class ExportRecordData(WriteStoreToPayload):
+    """Data of an export record associated with a history that was archived."""
+
+    # Initially this is just a WriteStoreToPayload, but we may want to add more data to
+    # this in the future to support more complex export scenarios or target destinations.
+    pass
+
+
+class ExportAssociationData(Model):
+    export_record_data: Optional[ExportRecordData] = Field(
+        default=None,
+        title="Export Record Data",
+        description="The export record data associated with this archived history. Used to recover the history.",
+    )
+
+
+class ArchivedHistorySummary(HistorySummary, ExportAssociationData):
+    pass
+
+
+class ArchivedHistoryDetailed(HistoryDetailed, ExportAssociationData):
+    pass
+
+
+AnyArchivedHistoryView = Union[
+    ArchivedHistorySummary,
+    ArchivedHistoryDetailed,
+    # Any will cover those cases in which only specific `keys` are requested
+    # otherwise the validation will fail because the required fields are not returned
+    Any,
+]
 
 
 class LabelValuePair(Model):
@@ -3258,7 +3319,7 @@ class PageSummaryBase(Model):
     title: str = Field(
         ...,  # Required
         title="Title",
-        description="The name of the page",
+        description="The name of the page.",
     )
     slug: str = Field(
         ...,  # Required
@@ -3347,7 +3408,7 @@ class PageSummary(PageSummaryBase):
     email_hash: str = Field(
         ...,  # Required
         title="Encoded email",
-        description="The encoded email of the user",
+        description="The encoded email of the user.",
     )
     published: bool = Field(
         ...,  # Required
@@ -3374,6 +3435,9 @@ class PageSummary(PageSummaryBase):
         title="List of revisions",
         description="The history with the encoded ID of each revision of the Page.",
     )
+    create_time: Optional[datetime] = CreateTimeField
+    update_time: Optional[datetime] = UpdateTimeField
+    tags: TagCollection
 
 
 class PageDetails(PageSummary):

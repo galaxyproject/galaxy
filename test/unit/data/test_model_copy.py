@@ -13,6 +13,7 @@ from galaxy.model import (
     HistoryDatasetAssociation,
     User,
 )
+from galaxy.model.base import transaction
 from galaxy.model.metadata import MetadataTempFile
 from galaxy.objectstore.unittest_utils import (
     Config as TestConfig,
@@ -37,7 +38,9 @@ def test_history_dataset_copy(num_datasets=NUM_DATASETS, include_metadata_file=I
             hda_path = test_config.write("moo", "test_metadata_original_%d" % i)
             _create_hda(model, object_store, old_history, hda_path, include_metadata_file=include_metadata_file)
 
-        model.context.flush()
+        session = model.context
+        with transaction(session):
+            session.commit()
 
         history_copy_timer = ExecutionTimer()
         new_history = old_history.copy(target_user=old_history.user)
@@ -78,7 +81,10 @@ def test_history_collection_copy(list_size=NUM_DATASETS):
             history_dataset_collection.user = old_history.user
             model.context.add(history_dataset_collection)
 
-            model.context.flush()
+            session = model.context
+            with transaction(session):
+                session.commit()
+
             old_history.add_dataset_collection(history_dataset_collection)
             history_dataset_collection.add_item_annotation(
                 model.context,
@@ -87,7 +93,10 @@ def test_history_collection_copy(list_size=NUM_DATASETS):
                 "annotation #%d" % history_dataset_collection.hid,
             )
 
-        model.context.flush()
+        session = model.context
+        with transaction(session):
+            session.commit()
+
         annotation_str = history_dataset_collection.get_item_annotation_str(
             model.context, old_history.user, history_dataset_collection
         )
@@ -132,7 +141,9 @@ def _setup_mapping_and_user():
         u = User(email="historycopy@example.com", password="password")
         h1 = History(name="HistoryCopyHistory1", user=u)
         model.context.add_all([u, h1])
-        model.context.flush()
+        session = model.context
+        with transaction(session):
+            session.commit()
         yield test_config, object_store, model, h1
 
 
@@ -151,7 +162,8 @@ def _create_hda(
     hda = HistoryDatasetAssociation(extension="bam", create_dataset=True, sa_session=sa_session)
     hda.visible = visible
     sa_session.add(hda)
-    sa_session.flush([hda])
+    with transaction(sa_session):
+        sa_session.commit()
     object_store.update_from_file(hda, file_name=path, create=True)
     if include_metadata_file:
         hda.metadata.from_JSON_dict(json_dict={"bam_index": MetadataTempFile.from_JSON({"kwds": {}, "filename": path})})

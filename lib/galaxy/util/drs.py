@@ -9,7 +9,10 @@ from typing import (
 import requests
 
 from galaxy import exceptions
-from galaxy.files import FileSourceDictifiable
+from galaxy.files import (
+    ConfiguredFileSources,
+    FileSourceDictifiable,
+)
 from galaxy.files.sources import FilesSourceOptions
 from galaxy.files.sources.http import HTTPFilesSourceProperties
 from galaxy.files.uris import stream_url_to_file
@@ -109,10 +112,15 @@ def fetch_drs_to_file(
         else:
             opts.extra_props = {}
         try:
+            file_sources = (
+                user_context.file_sources
+                if user_context
+                else ConfiguredFileSources.from_dict(None, load_stock_plugins=True)
+            )
             stream_url_to_file(
                 access_url,
                 target_path=str(target_path),
-                file_sources=user_context.file_sources,
+                file_sources=file_sources,
                 user_context=user_context,
                 file_source_opts=opts,
             )

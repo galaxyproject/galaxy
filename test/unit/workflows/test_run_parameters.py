@@ -1,4 +1,5 @@
 from galaxy import model
+from galaxy.model.base import transaction
 from galaxy.workflow.run_request import (
     _normalize_inputs,
     _normalize_step_parameters,
@@ -116,7 +117,9 @@ def __workflow_fixure(trans):
         tool_id="cat1",
         order_index=4,
     )
-    trans.app.model.context.flush()
+    session = trans.app.model.context
+    with transaction(session):
+        session.commit()
     # Expunge and reload to ensure step state is as expected from database.
     workflow_id = workflow.id
     trans.app.model.context.expunge_all()

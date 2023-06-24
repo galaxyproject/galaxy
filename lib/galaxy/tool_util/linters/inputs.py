@@ -1,5 +1,6 @@
 """This module contains a linting functions for tool inputs."""
 import re
+from typing import TYPE_CHECKING
 
 from galaxy.util import string_as_bool
 from ._util import (
@@ -7,6 +8,10 @@ from ._util import (
     is_valid_cheetah_placeholder,
 )
 from ..parser.util import _parse_name
+
+if TYPE_CHECKING:
+    from galaxy.tool_util.lint import LintContext
+    from galaxy.tool_util.parser import ToolSource
 
 FILTER_TYPES = [
     "data_meta",
@@ -115,8 +120,12 @@ PARAM_TYPE_CHILD_COMBINATIONS = [
 ]
 
 
-def lint_inputs(tool_xml, lint_ctx):
+def lint_inputs(tool_source: "ToolSource", lint_ctx: "LintContext"):
     """Lint parameters in a tool's inputs block."""
+    tool_xml = getattr(tool_source, "xml_tree", None)
+    if tool_xml is None:
+        return
+    profile = tool_source.parse_profile()
     datasource = is_datasource(tool_xml)
     input_names = set()
     inputs = tool_xml.findall("./inputs//param")
@@ -325,6 +334,20 @@ def lint_inputs(tool_xml, lint_ctx):
                 )
             if len(set(select_options_values)) != len(select_options_values):
                 lint_ctx.error(f"Select parameter [{param_name}] has multiple options with the same value", node=param)
+
+        if param_type == "boolean":
+            truevalue = param_attrib.get("truevalue", "true")
+            falsevalue = param_attrib.get("falsevalue", "false")
+            problematic_booleans_allowed = profile < "23.1"
+            lint_level = lint_ctx.warn if problematic_booleans_allowed else lint_ctx.error
+            if truevalue == falsevalue:
+                lint_level(
+                    f"Boolean parameter [{param_name}] needs distinct 'truevalue' and 'falsevalue' values.", node=param
+                )
+            if truevalue.lower() == "false":
+                lint_level(f"Boolean parameter [{param_name}] has invalid truevalue [{truevalue}].", node=param)
+            if falsevalue.lower() == "true":
+                lint_level(f"Boolean parameter [{param_name}] has invalid falsevalue [{falsevalue}].", node=param)
 
         if param_type in ["select", "data_column", "drill_down"]:
             multiple = string_as_bool(param_attrib.get("multiple", "false"))

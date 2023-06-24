@@ -52,7 +52,7 @@ export const useUserStore = defineStore(
         function loadUser() {
             if (!loadPromise) {
                 loadPromise = getCurrentUser()
-                    .then((user) => {
+                    .then(async (user) => {
                         const historyStore = useHistoryStore();
                         currentUser.value = { ...user, isAnonymous: !user.email };
                         currentPreferences.value = user?.preferences ?? null;
@@ -62,8 +62,9 @@ export const useUserStore = defineStore(
                                 user?.preferences?.favorites ?? { tools: [] }
                             );
                         }
-                        historyStore.loadCurrentHistory();
-                        historyStore.loadHistories();
+                        await historyStore.loadCurrentHistory();
+                        // load first few histories for user to start pagination
+                        await historyStore.loadHistories();
                     })
                     .catch((e) => {
                         console.error("Failed to load user", e);
@@ -108,7 +109,7 @@ export const useUserStore = defineStore(
         function toggleActivityBar() {
             showActivityBar.value = !showActivityBar.value;
         }
-        function toggleSideBar(currentOpen: string) {
+        function toggleSideBar(currentOpen = "") {
             toggledSideBar.value = toggledSideBar.value === currentOpen ? "" : currentOpen;
         }
 

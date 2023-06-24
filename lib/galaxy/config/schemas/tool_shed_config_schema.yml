@@ -520,6 +520,25 @@ mapping:
           external sources such as https://doi.org/ by Galaxy - the following
           parameters can be used to control the caching used to store this information.
 
+      citation_cache_url:
+        type: str
+        required: false
+        desc: |
+          Url to database used by beaker for citation related caching.
+
+      citation_cache_table_name:
+        type: str
+        default: beaker_cache
+        required: false
+        desc: |
+          Database table used by beaker for citation related caching.
+
+      citation_cache_schema_name:
+        type: str
+        required: false
+        desc: |
+          Schema of database table used by beaker for citation related caching.
+
       log_actions:
         type: bool
         default: false

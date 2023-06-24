@@ -15,6 +15,7 @@ from galaxy import (
     exceptions,
     util,
 )
+from galaxy.model.base import transaction
 from galaxy.structured_app import StructuredApp
 from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import (
     InstalledRepositoryMetadataManager,
@@ -158,8 +159,12 @@ class InstallRepositoryManager:
         )
         if tool_shed_status_dict:
             tool_shed_repository.tool_shed_status = tool_shed_status_dict
-        self.install_model.context.add(tool_shed_repository)
-        self.install_model.context.flush()
+
+        session = self.install_model.context
+        session.add(tool_shed_repository)
+        with transaction(session):
+            session.commit()
+
         if "sample_files" in irmm_metadata_dict:
             sample_files = irmm_metadata_dict.get("sample_files", [])
             tool_index_sample_files = stdtm.get_tool_index_sample_files(sample_files)
@@ -548,7 +553,11 @@ class InstallRepositoryManager:
         install_options=None,
     ):
         tool_panel_section_mapping = tool_panel_section_mapping or {}
-        self.app.install_model.context.flush()
+
+        session = self.app.install_model.context
+        with transaction(session):
+            session.commit()
+
         if tool_panel_section_key:
             _, tool_section = self.app.toolbox.get_section(tool_panel_section_key)
             if tool_section is None:
@@ -843,8 +852,11 @@ class InstallRepositoryManager:
         """
         tool_shed_repository.status = status
         tool_shed_repository.error_message = error_message
-        self.install_model.context.add(tool_shed_repository)
-        self.install_model.context.flush()
+
+        session = self.install_model.context
+        session.add(tool_shed_repository)
+        with transaction(session):
+            session.commit()
 
 
 class RepositoriesInstalledException(exceptions.RequestParameterInvalidException):

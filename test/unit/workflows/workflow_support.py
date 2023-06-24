@@ -5,6 +5,7 @@ import yaml
 from galaxy import model
 from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.managers.workflows import WorkflowsManager
+from galaxy.model.base import transaction
 from galaxy.workflow.modules import module_factory
 
 
@@ -20,7 +21,8 @@ class MockTrans:
         workflow.stored_workflow = stored_workflow
         stored_workflow.user = self.user
         self.sa_session.add(stored_workflow)
-        self.sa_session.flush()
+        with transaction(self.sa_session):
+            self.sa_session.commit()
         return stored_workflow
 
     @property
