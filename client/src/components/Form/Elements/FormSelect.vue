@@ -109,7 +109,7 @@ const currentValue = computed({
                 emit("input", null);
             }
         } else {
-            emit("input", val.value);
+            emit("input", val ? val.value : null);
         }
     },
 });
