@@ -314,7 +314,11 @@ ExtraRepoInfo = Dict[str, List]
 #     ]
 # }
 
-EmptyDict = TypedDict("EmptyDict", {})
+
+class EmptyDict(TypedDict):
+    pass
+
+
 LegacyInstallInfoTuple = Tuple[
     Optional[Dict], Union[RepositoryMetadataInstallInfoDict, EmptyDict], Union[ExtraRepoInfo, EmptyDict]
 ]
