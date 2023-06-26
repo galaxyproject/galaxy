@@ -1430,6 +1430,10 @@ export interface paths {
          */
         post: operations["set_beacon_api_users__user_id__beacon_post"];
     };
+    "/api/users/{user_id}/theme/{theme}": {
+        /** Sets the user's theme choice. */
+        put: operations["set_theme_api_users__user_id__theme__theme__put"];
+    };
     "/api/users/{user_id}/usage": {
         /** Return the user's quota usage summary broken down by quota source */
         get: operations["get_user_usage_api_users__user_id__usage_get"];
@@ -8850,6 +8854,17 @@ export interface components {
             quota_source_label?: string;
             /** Total Disk Usage */
             total_disk_usage: number;
+        };
+        /**
+         * UserTheme
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        UserTheme: {
+            /**
+             * user_theme
+             * @description The theme of the users GUI
+             */
+            theme: string;
         };
         /** ValidationError */
         ValidationError: {
@@ -16707,6 +16722,35 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["UserBeaconSetting"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_theme_api_users__user_id__theme__theme__put: {
+        /** Sets the user's theme choice. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the user to get. */
+            /** @description The theme of the GUI */
+            path: {
+                user_id: string;
+                theme: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["UserTheme"];
                 };
             };
             /** @description Validation Error */
