@@ -9,15 +9,24 @@ export interface paths {
         get: operations["get_api_key_api_authenticate_baseauth_get"];
     };
     "/api/cloud/storage": {
-        /** Lists cloud-based buckets (e.g., S3 bucket, Azure blob) user has defined. Is not yet implemented */
+        /**
+         * Lists cloud-based buckets (e.g., S3 bucket, Azure blob) user has defined. Is not yet implemented
+         * @deprecated
+         */
         get: operations["index_api_cloud_storage_get"];
     };
     "/api/cloud/storage/get": {
-        /** Gets given objects from a given cloud-based bucket to a Galaxy history. */
+        /**
+         * Gets given objects from a given cloud-based bucket to a Galaxy history.
+         * @deprecated
+         */
         post: operations["get_api_cloud_storage_get_post"];
     };
     "/api/cloud/storage/send": {
-        /** Sends given dataset(s) in a given history to a given cloud-based bucket. */
+        /**
+         * Sends given dataset(s) in a given history to a given cloud-based bucket.
+         * @deprecated
+         */
         post: operations["send_api_cloud_storage_send_post"];
     };
     "/api/configuration": {
@@ -9034,7 +9043,10 @@ export interface operations {
         };
     };
     index_api_cloud_storage_get: {
-        /** Lists cloud-based buckets (e.g., S3 bucket, Azure blob) user has defined. Is not yet implemented */
+        /**
+         * Lists cloud-based buckets (e.g., S3 bucket, Azure blob) user has defined. Is not yet implemented
+         * @deprecated
+         */
         responses: {
             /** @description Successful Response */
             200: {
@@ -9045,7 +9057,10 @@ export interface operations {
         };
     };
     get_api_cloud_storage_get_post: {
-        /** Gets given objects from a given cloud-based bucket to a Galaxy history. */
+        /**
+         * Gets given objects from a given cloud-based bucket to a Galaxy history.
+         * @deprecated
+         */
         parameters?: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -9073,7 +9088,10 @@ export interface operations {
         };
     };
     send_api_cloud_storage_send_post: {
-        /** Sends given dataset(s) in a given history to a given cloud-based bucket. */
+        /**
+         * Sends given dataset(s) in a given history to a given cloud-based bucket.
+         * @deprecated
+         */
         parameters?: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
