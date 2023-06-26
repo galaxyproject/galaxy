@@ -42,6 +42,7 @@ class FastAPICloudController:
     @router.get(
         "/api/cloud/storage",
         summary="Lists cloud-based buckets (e.g., S3 bucket, Azure blob) user has defined. Is not yet implemented",
+        deprecated=True,
     )
     def index(
         self,
@@ -54,6 +55,7 @@ class FastAPICloudController:
     @router.post(
         "/api/cloud/storage/get",
         summary="Gets given objects from a given cloud-based bucket to a Galaxy history.",
+        deprecated=True,
     )
     def get(
         self,
@@ -77,6 +79,7 @@ class FastAPICloudController:
     @router.post(
         "/api/cloud/storage/send",
         summary="Sends given dataset(s) in a given history to a given cloud-based bucket.",
+        deprecated=True,
     )
     def send(
         self,
