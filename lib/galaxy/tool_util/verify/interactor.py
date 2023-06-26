@@ -315,7 +315,7 @@ class GalaxyInteractorApi:
 
     def verify_output_dataset(self, history_id, hda_id, outfile, attributes, tool_id, tool_version=None):
         fetcher = self.__dataset_fetcher(history_id)
-        test_data_downloader = self.__test_data_downloader(tool_id, tool_version)
+        test_data_downloader = self.__test_data_downloader(tool_id, tool_version, attributes)
         verify_hid(
             outfile,
             hda_id=hda_id,
@@ -846,11 +846,34 @@ class GalaxyInteractorApi:
             test_user = self._post("users", data, key=admin_key).json()
         return test_user
 
-    def __test_data_downloader(self, tool_id, tool_version=None):
-        def test_data_download(filename, mode="file"):
+    def __test_data_downloader(self, tool_id, tool_version=None, attributes: Optional[dict] = None):
+        location = None
+
+        def test_data_download_from_galaxy(filename, mode="file"):
             return self.test_data_download(tool_id, filename, mode=mode, tool_version=tool_version)
 
-        return test_data_download
+        def test_data_download_from_location(filename: str):
+            # try to find the file in the test data directories first
+            local_path = self._find_in_test_data_directories(filename)
+            if local_path and os.path.exists(local_path):
+                with open(local_path, mode="rb") as f:
+                    return f.read()
+            # if not found, try to download it from the location to the test data directory
+            # to be reused in subsequent tests
+            if local_path:
+                util.download_to_file(location, local_path)
+                with open(local_path, mode="rb") as f:
+                    return f.read()
+            # otherwise, download it to a temporary file
+            with tempfile.NamedTemporaryFile() as file_handle:
+                util.download_to_file(location, file_handle.name)
+                return file_handle.file.read()
+
+        if attributes:
+            location = self._ensure_valid_location_in(attributes)
+            if location:
+                return test_data_download_from_location
+        return test_data_download_from_galaxy
 
     def __dataset_fetcher(self, history_id):
         def fetcher(hda_id, base_name=None):
@@ -1716,7 +1739,6 @@ def test_data_iter(required_files):
             ftype=extra.get("ftype", DEFAULT_FTYPE),
             dbkey=extra.get("dbkey", DEFAULT_DBKEY),
             location=extra.get("location", None),
-            md5=extra.get("md5", None),
         )
         edit_attributes = extra.get("edit_attributes", [])
 
