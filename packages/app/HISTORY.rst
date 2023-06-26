@@ -3,11 +3,28 @@ History
 
 .. to_doc
 
------------
-23.0.3.dev0
------------
+-------------------
+23.0.3 (2023-06-26)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Bump galaxy-release-util version to 0.1.2 by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16241 <https://github.com/galaxyproject/galaxy/pull/16241>`_
+
+============
+Enhancements
+============
+
+* When importing tool data bundles, use the first loc file for the matching table by `@natefoo <https://github.com/natefoo>`_ in `#16247 <https://github.com/galaxyproject/galaxy/pull/16247>`_
+
+=============
+Other changes
+=============
+
+* Forward port of slugify username received from oidc by `@nuwang <https://github.com/nuwang>`_ in `#16271 <https://github.com/galaxyproject/galaxy/pull/16271>`_
 
 -------------------
 23.0.2 (2023-06-13)
@@ -36,6 +53,7 @@ Enhancements
 Bug fixes
 =========
 
+* 
 * Display DCE in job parameter component, allow rerunning with DCE input by `@mvdbeek <https://github.com/mvdbeek>`_ in `#15744 <https://github.com/galaxyproject/galaxy/pull/15744>`_
 * Fix mixed outputs_to_working_directory pulsar destinations by `@mvdbeek <https://github.com/mvdbeek>`_ in `#15927 <https://github.com/galaxyproject/galaxy/pull/15927>`_
 * Update Gravity to 1.0.3 by `@natefoo <https://github.com/natefoo>`_ in `#15939 <https://github.com/galaxyproject/galaxy/pull/15939>`_

@@ -3,11 +3,11 @@ History
 
 .. to_doc
 
------------
-23.0.3.dev0
------------
+-------------------
+23.0.3 (2023-06-26)
+-------------------
 
-
+No recorded changes since last release
 
 -------------------
 23.0.2 (2023-06-13)
@@ -29,6 +29,7 @@ Enhancements
 Enhancements
 ============
 
+* 
 * Add support for launching workflows via Tutorial Mode by `@hexylena <https://github.com/hexylena>`_ in `#15684 <https://github.com/galaxyproject/galaxy/pull/15684>`_
 
 -------------------
