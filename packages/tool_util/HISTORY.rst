@@ -3,11 +3,29 @@ History
 
 .. to_doc
 
----------
-23.1.dev0
----------
+-------
+23.1rc1
+-------
 
 
+
+-------------------
+23.0.3 (2023-06-26)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* xsd: add missing `sep` attribute for `has_n_columns` by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#16262 <https://github.com/galaxyproject/galaxy/pull/16262>`_
+* Missing init prevents models.py being bundled into tool_util by `@nuwang <https://github.com/nuwang>`_ in `#16308 <https://github.com/galaxyproject/galaxy/pull/16308>`_
+
+============
+Enhancements
+============
+
+* When importing tool data bundles, use the first loc file for the matching table by `@natefoo <https://github.com/natefoo>`_ in `#16247 <https://github.com/galaxyproject/galaxy/pull/16247>`_
 
 -------------------
 23.0.2 (2023-06-13)
@@ -30,6 +48,7 @@ Bug fixes
 Bug fixes
 =========
 
+* 
 * Fix assertion linting to not fail on byte suffixes by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#15873 <https://github.com/galaxyproject/galaxy/pull/15873>`_
 * Fix ``get_test_from_anaconda()`` and ``base_image_for_targets()`` functions by `@nsoranzo <https://github.com/nsoranzo>`_ in `#16125 <https://github.com/galaxyproject/galaxy/pull/16125>`_
 * Fix test search for mulled container hashes by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16170 <https://github.com/galaxyproject/galaxy/pull/16170>`_

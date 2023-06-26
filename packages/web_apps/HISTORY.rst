@@ -3,11 +3,28 @@ History
 
 .. to_doc
 
----------
-23.1.dev0
----------
+-------
+23.1rc1
+-------
 
 
+
+-------------------
+23.0.3 (2023-06-26)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix converting Enum value to str for Python 3.11 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#16284 <https://github.com/galaxyproject/galaxy/pull/16284>`_
+
+============
+Enhancements
+============
+
+* When importing tool data bundles, use the first loc file for the matching table by `@natefoo <https://github.com/natefoo>`_ in `#16247 <https://github.com/galaxyproject/galaxy/pull/16247>`_
 
 -------------------
 23.0.2 (2023-06-13)
