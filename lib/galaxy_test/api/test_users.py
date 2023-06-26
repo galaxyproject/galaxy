@@ -237,6 +237,17 @@ class TestUsersApi(ApiTestCase):
         search_response = get(url).json()
         assert "cat1" in search_response
 
+    @requires_new_user
+    def test_set_theme(self):
+        user = self._setup_user(TEST_USER_EMAIL)
+        with self._different_user(email=TEST_USER_EMAIL):
+            url = self._api_url(f"users/{user['id']}/theme/test_theme")
+            theme_response = self._put(url)
+            self._assert_status_code_is_ok(theme_response)
+            url = self._api_url("users/current")
+            updated_theme = self._get(url).json()["preferences"]["theme"]
+            assert updated_theme == "test_theme"
+
     def __url(self, action, user):
         return self._api_url(f"users/{user['id']}/{action}", params=dict(key=self.master_api_key))
 
