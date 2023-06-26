@@ -96,9 +96,9 @@ https://help.github.com/en/github/getting-started-with-github/git-and-github-lea
    in particular start your message with a short imperative sentence on a single
    line, possibly followed by a blank line and a more detailed explanation.
 
-   In the detailed explanation it's good to include relevant external references
-   (e.g. GitHub issue fixed) using full URLs, and errors or tracebacks the
-   commit is supposed to fix.
+   In the detailed explanation it's good to include relevant references (e.g.
+   any GitHub issue being fixed) using full URLs, and errors or tracebacks the
+   commit is meant to fix.
    You can use the Markdown syntax for lists and code highlighting, wrapping the
    explanation text at 72 characters when possible.
 
@@ -118,7 +118,7 @@ https://help.github.com/en/github/getting-started-with-github/git-and-github-lea
    * How to test the changes, if you haven't included specific tests already.
 
 9. The pull request should pass all the continuous integration tests which are
-   automatically started by GitHub using e.g. Travis CI.
+   automatically started by GitHub.
 
 10. Your pull request will be handled according to [some
     rules](doc/source/project/organization.rst#handling-pull-requests).
@@ -167,6 +167,19 @@ https://help.github.com/en/github/getting-started-with-github/git-and-github-lea
 - Python [docstrings](http://www.python.org/dev/peps/pep-0257/) need to be in
   [reStructured Text (RST)](https://docutils.sourceforge.io/rst.html) format and
   compatible with [Sphinx](https://www.sphinx-doc.org).
+- String formatting should normally be done using
+  [formatted string literals (f-strings)](https://docs.python.org/3/tutorial/inputoutput.html#formatted-string-literals),
+  except:
+  - when the format string is kept in a separate variable, in which case the
+    [string ``format()`` method](https://docs.python.org/3/tutorial/inputoutput.html#the-string-format-method)
+    should be used;
+  - when [formatting a log message](https://docs.python.org/3/library/logging.html#logging.Logger.debug),
+    in which case it's better to use a
+    [`printf`-style](https://docs.python.org/3/library/stdtypes.html#old-string-formatting)
+    message format string and pass its arguments to the logging method
+    separately. This is a bit more efficient than using f-strings and allows for
+    better log aggregation. For more information, see this
+    [blog post](https://dev.to/izabelakowal/what-is-the-best-string-formatting-technique-for-logging-in-python-d1d).
 
 ## Documentation
 
