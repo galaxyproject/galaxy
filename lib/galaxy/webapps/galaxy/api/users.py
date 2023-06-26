@@ -18,6 +18,7 @@ from fastapi import (
     status,
 )
 from markupsafe import escape
+from pydantic import Required
 from sqlalchemy import (
     false,
     or_,
@@ -47,6 +48,7 @@ from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     AsyncTaskResultSummary,
     UserBeaconSetting,
+    UserTheme,
 )
 from galaxy.security.validate_user_input import (
     validate_email,
@@ -83,6 +85,7 @@ log = logging.getLogger(__name__)
 router = Router(tags=["users"])
 
 FlexibleUserIdType = Union[DecodedDatabaseIdField, Literal["current"]]
+ThemePathParam: str = Path(default=Required, title="Theme", description="The theme of the GUI")
 UserIdPathParam: DecodedDatabaseIdField = Path(..., title="User ID", description="The ID of the user to get.")
 APIKeyPathParam: str = Path(..., title="API Key", description="The API key of the user.")
 FlexibleUserIdPathParam: FlexibleUserIdType = Path(
@@ -258,6 +261,22 @@ class FastAPIUsers:
             trans.sa_session.commit()
 
         return payload
+
+    @router.put(
+        "/api/users/{user_id}/theme/{theme}",
+        summary="Sets the user's theme choice.",
+    )
+    def set_theme(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_id: DecodedDatabaseIdField = UserIdPathParam,
+        theme: str = ThemePathParam,
+    ) -> UserTheme:
+        user = self.service._get_user(trans, user_id)
+        user.preferences["theme"] = theme
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
+        return UserTheme(theme=theme)
 
 
 class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin):
@@ -844,23 +863,6 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             raise exceptions.ObjectAttributeInvalidException(
                 f"This type is not supported. Given object_type: {object_type}"
             )
-
-    @expose_api
-    def set_theme(self, trans, id: str, theme: str, payload=None, **kwd) -> str:
-        """Sets the user's theme choice.
-        PUT /api/users/{id}/theme/{theme}
-
-        :param id: the encoded id of the user
-        :type  id: str
-        :param theme: the theme identifier/name that the user has selected as preference
-        :type  theme: str
-        """
-        payload = payload or {}
-        user = self._get_user(trans, id)
-        user.preferences["theme"] = theme
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
-        return theme
 
     @expose_api
     def get_password(self, trans, id, payload=None, **kwd):
