@@ -1544,17 +1544,10 @@ of ``type`` ``data``.</xs:documentation>
 Please use this option only when is not possible to include the files in the `test-data` folder, since
 this is more error prone due to external factors like remote availability.
 You can use it in two ways:
-- In combination with `value` it will look for the input file specified in `value`, if it's not available on disk it will
-download the file pointed by `location` using the same name as in `value` and then use it as input.
-- Specifiying the `location` without a `value`, it will download the file and use it as an alias of `value`. The name of the file
-will be infered from the last component of the location URL. For example, `location="https://my_url/my_file.txt"` will be equivalent to `value="my_file.txt"`.
-If you specify a `checksum`, it will be also used to check the integrity of the download.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="checksum" type="xs:string" gxdocs:added="23.1">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">If specified in combination with `location`, after downloading the test input file, the checksum should match the value specified
-here. This value should have the form ``hash_type$hash_value`` (e.g. ``sha1$8156d7ca0f46ed7abac98f82e36cfaddb2aca041``).</xs:documentation>
+- Specifiying the `location` without a `value`, it will directly upload the input file to Galaxy from the location URL (same as regular pasted URL upload).
+- In combination with `value` it will look for the input file specified in `value` in the test data directory, if it's not available on disk it will
+use the `location` to upload the input as the previous case.
+</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
