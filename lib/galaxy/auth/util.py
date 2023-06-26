@@ -9,6 +9,7 @@ from galaxy.util import (
     parse_xml,
     parse_xml_string,
     plugin_config,
+    ready_name_for_url,
     string_as_bool,
 )
 
@@ -76,7 +77,7 @@ def get_authenticators(auth_config_file, auth_config_file_set):
 def parse_auth_results(trans, auth_results, options):
     auth_return = {}
     auth_result, auto_email, auto_username = auth_results[:3]
-    auto_username = str(auto_username).lower()
+    auto_username = ready_name_for_url(str(auto_username).lower())
     # make username unique
     max_retries = int(options.get("max-retries", "10"))
     try_number = 0
