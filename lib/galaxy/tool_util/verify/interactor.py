@@ -42,6 +42,10 @@ from galaxy.tool_util.parser.interface import (
     TestCollectionOutputDef,
 )
 from galaxy.util.bunch import Bunch
+from galaxy.util.hash_util import (
+    memory_bound_hexdigest,
+    parse_checksum_hash,
+)
 from . import verify
 from .asserts import verify_assertions
 from .wait import wait_on
@@ -848,6 +852,7 @@ class GalaxyInteractorApi:
 
     def __test_data_downloader(self, tool_id, tool_version=None, attributes: Optional[dict] = None):
         location = None
+        checksum = attributes.get("checksum") if attributes else None
 
         def test_data_download_from_galaxy(filename, mode="file"):
             return self.test_data_download(tool_id, filename, mode=mode, tool_version=tool_version)
@@ -862,11 +867,13 @@ class GalaxyInteractorApi:
             # to be reused in subsequent tests
             if local_path:
                 util.download_to_file(location, local_path)
+                self._verify_checksum(local_path, checksum)
                 with open(local_path, mode="rb") as f:
                     return f.read()
             # otherwise, download it to a temporary file
             with tempfile.NamedTemporaryFile() as file_handle:
                 util.download_to_file(location, file_handle.name)
+                self._verify_checksum(file_handle.name, checksum)
                 return file_handle.file.read()
 
         if attributes:
@@ -874,6 +881,16 @@ class GalaxyInteractorApi:
             if location:
                 return test_data_download_from_location
         return test_data_download_from_galaxy
+
+    def _verify_checksum(self, file_path: str, checksum: Optional[str] = None):
+        if checksum is None:
+            return
+        hash_function, expected_hash_value = parse_checksum_hash(checksum)
+        calculated_hash_value = memory_bound_hexdigest(hash_func_name=hash_function, path=file_path)
+        if calculated_hash_value != expected_hash_value:
+            raise AssertionError(
+                f"Failed to verify checksum with [{hash_function}] - expected [{expected_hash_value}] got [{calculated_hash_value}]"
+            )
 
     def __dataset_fetcher(self, history_id):
         def fetcher(hda_id, base_name=None):
