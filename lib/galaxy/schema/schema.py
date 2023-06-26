@@ -25,6 +25,7 @@ from pydantic import (
     Extra,
     Field,
     Json,
+    Required,
     UUID4,
 )
 from typing_extensions import (
@@ -291,6 +292,14 @@ class GroupModel(Model):
         ...,  # Required
         title="Name",
         description="The name of the group.",
+    )
+
+
+class UserTheme(Model):
+    theme: str = Field(
+        default=Required,
+        title="user_theme",
+        description="The theme of the users GUI",
     )
 
 
