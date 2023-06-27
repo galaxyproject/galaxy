@@ -14,7 +14,7 @@ const props = withDefaults(defineProps<UtcDateProps>(), {
 const parsedDate = computed(() => parseISO(`${props.date}Z`));
 const elapsedTime = computed(() => formatDistanceToNow(parsedDate.value, { addSuffix: true }));
 const fullISO = computed(() => parsedDate.value.toISOString());
-const pretty = computed(() => `${format(parsedDate.value, "eeee MMM do H:mm:ss yyyy zz")}`);
+const pretty = computed(() => format(parsedDate.value, "eeee MMM do H:mm:ss yyyy zz"));
 </script>
 
 <template>
