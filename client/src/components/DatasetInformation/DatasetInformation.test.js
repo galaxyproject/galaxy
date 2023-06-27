@@ -66,7 +66,7 @@ describe("DatasetInformation/DatasetInformation", () => {
     it("Date should be formatted", async () => {
         const date = datasetInfoTable.find(".utc-time").text();
         const parsedDate = parseISO(`${datasetResponse.create_time}Z`);
-        const formattedDate = `${format(parsedDate, "eeee MMM do H:mm:ss yyyy zz")}`;
+        const formattedDate = format(parsedDate, "eeee MMM do H:mm:ss yyyy zz");
         expect(date).toBe(formattedDate);
     });
 
