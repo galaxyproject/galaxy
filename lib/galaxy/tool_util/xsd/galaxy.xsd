@@ -1544,9 +1544,8 @@ of ``type`` ``data``.</xs:documentation>
 Please use this option only when is not possible to include the files in the `test-data` folder, since
 this is more error prone due to external factors like remote availability.
 You can use it in two ways:
-- Specifiying the `location` without a `value`, it will directly upload the input file to Galaxy from the location URL (same as regular pasted URL upload).
-- In combination with `value` it will look for the input file specified in `value` in the test data directory, if it's not available on disk it will
-use the `location` to upload the input as the previous case.
+- If only ``location`` is given (and `value` is absent), the input file will be uploaded directly to Galaxy from the URL specified by the ``location``  (same as regular pasted URL upload).
+- If ``location`` as well as ``value`` are given, the input file specified in ``value`` will be used from the tes data directory, if it's not available on disk it will use the ``location`` to upload the input as the previous case.
 </xs:documentation>
       </xs:annotation>
     </xs:attribute>
