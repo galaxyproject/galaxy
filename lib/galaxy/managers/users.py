@@ -275,7 +275,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             return schema.BootstrapAdminUser()
         sa_session = sa_session or self.app.model.session
         try:
-            provided_key = sa_session.query(self.app.model.APIKeys).filter(self.app.model.APIKeys.key == api_key).one()
+            provided_key = sa_session.query(self.app.model.APIKeys).filter_by(key=api_key, deleted=False).one()
         except NoResultFound:
             raise exceptions.AuthenticationFailed("Provided API key is not valid.")
         if provided_key.user.deleted:
