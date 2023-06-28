@@ -18,7 +18,7 @@ function onSkipBoolean(value: boolean) {
     if (props.step.when && value === false) {
         emit("onUpdateStep", { ...props.step, when: undefined });
     } else if (value === true && !props.step.when) {
-        const when = "${inputs.when}";
+        const when = "$(inputs.when)";
         const newStep = {
             ...props.step,
             when,

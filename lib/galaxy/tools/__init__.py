@@ -1355,30 +1355,12 @@ class Tool(Dictifiable):
         if not test_data:
             # Fallback to Galaxy test data directory for builtin tools, tools
             # under development, and some older ToolShed published tools that
-            # used stock test data. Also possible remote test data using `location`.
+            # used stock test data.
             try:
-                test_data_context = self._find_test_data_context(filename)
-                test_data = self.app.test_data_resolver.get_filename(filename, test_data_context)
+                test_data = self.app.test_data_resolver.get_filename(filename)
             except TestDataNotFoundError:
                 test_data = None
         return test_data
-
-    def _find_test_data_context(self, filename: str):
-        """Returns the attributes (context) associated with a required file for test inputs or outputs."""
-        # We are returning the attributes of the first test input or output that matches the filename
-        # Could there be multiple different test data files with the same filename and different attributes?
-        # I hope not... otherwise we need a way to match a test file with its test definition.
-        for test in self.tests:
-            # Check for input context attributes
-            for required_file in test.required_files:
-                if len(required_file) > 1 and required_file[0] == filename:
-                    return required_file[1]
-            # Check for outputs context attributes too
-            for output in test.outputs:
-                value = output.get("value", None)
-                if value and value == filename:
-                    return output.get("attributes")
-        return None
 
     def __walk_test_data(self, dir, filename):
         for root, dirs, _ in os.walk(dir):
