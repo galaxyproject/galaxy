@@ -14,6 +14,7 @@ from typing import (
 from fastapi import (
     Body,
     Path,
+    Query,
     Response,
     status,
 )
@@ -86,6 +87,7 @@ router = Router(tags=["users"])
 
 FlexibleUserIdType = Union[DecodedDatabaseIdField, Literal["current"]]
 ThemePathParam: str = Path(default=Required, title="Theme", description="The theme of the GUI")
+UserDeleted: bool = Query(default=None, title="Deleted User", description="Indicates if the user is deleted")
 UserIdPathParam: DecodedDatabaseIdField = Path(..., title="User ID", description="The ID of the user to get.")
 APIKeyPathParam: str = Path(..., title="API Key", description="The API key of the user.")
 FlexibleUserIdPathParam: FlexibleUserIdType = Path(
@@ -278,6 +280,47 @@ class FastAPIUsers:
             trans.sa_session.commit()
         return UserTheme(theme=theme)
 
+    @router.get(
+        "/api/users/deleted/{user_id}",
+        name="get_deleted_user",
+        summary="Display information about a deleted user",
+    )
+    def show_deleted(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_id: DecodedDatabaseIdField = UserIdPathParam,
+    ):
+        user = get_user_full(trans=trans, deleted=True, user_id=user_id)
+        if user is not None:
+            return self.user_serializer.serialize_to_view(user, view="detailed")
+        else:
+            return self.service.user_manager.anon_user_api_value(trans)
+
+    @router.get(
+        "/api/users/current",
+        name="get_current_user",
+        description="Display information about current user",
+    )
+    @router.get(
+        "/api/users/{user_id}",
+        name="get_user",
+        summary="Display information about a specified user",
+    )
+    def show(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_id: Union[Literal["current"], DecodedDatabaseIdField] = FlexibleUserIdPathParam,
+        deleted: Optional[bool] = UserDeleted,
+    ):
+        if deleted:
+            user = get_user_full(trans=trans, deleted=True, user_id=user_id)
+        else:
+            user = get_user_full(trans=trans, deleted=False, user_id=user_id)
+        if user is not None:
+            return self.user_serializer.serialize_to_view(user, view="detailed")
+        else:
+            return self.service.user_manager.anon_user_api_value(trans)
+
 
 class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin):
     user_manager: users.UserManager = depends(users.UserManager)
@@ -367,20 +410,6 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             # TODO: move into api_values
             rval.append(item)
         return rval
-
-    @expose_api_anonymous
-    def show(self, trans: ProvidesUserContext, id, **kwd):
-        """
-        GET /api/users/{encoded_id}
-        GET /api/users/deleted/{encoded_id}
-        GET /api/users/current
-        Displays information about a user.
-        """
-        user = self._get_user_full(trans, id, **kwd)
-        if user is not None:
-            return self.user_serializer.serialize_to_view(user, view="detailed")
-        else:
-            return self.anon_user_api_value(trans)
 
     def _get_user_full(self, trans, user_id, **kwd):
         """Return referenced user or None if anonymous user is referenced."""
