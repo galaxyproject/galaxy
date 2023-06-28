@@ -204,6 +204,9 @@ def evaluate_value_from_expressions(progress, step, execution_state, extra_step_
             step_state[key] = to_cwl(value)
 
     if when_expression is not None:
+        if when_expression == "${inputs.when}":
+            # Fallback for workflows defined on 23.0
+            when_expression = "$(inputs.when)"
         try:
             as_cwl_value = do_eval(
                 when_expression,
