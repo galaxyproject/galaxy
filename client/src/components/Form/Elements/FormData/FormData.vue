@@ -3,12 +3,26 @@ import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 
 const $emit = defineEmits(["input"]);
 
+interface DataOption {
+    id: string;
+    keep: boolean;
+    hid: string;
+    name: string;
+    src: string;
+    tags: Array<string>;
+}
+
+interface DataOptions {
+    hda: Array<[string, DataOption]>;
+    hdca: Array<[string, DataOption]>;
+}
+
 const props = withDefaults(
     defineProps<{
         multiple?: boolean;
         optional?: boolean;
-        options: Array<[string, string]>;
-        value?: Array<string> | string;
+        options: DataOptions;
+        value?: Array<DataOption>;
         extensions?: Array<string>;
         type?: string;
         flavor?: string;
@@ -19,7 +33,7 @@ const props = withDefaults(
         optional: false,
         value: null,
         extensions: () => [],
-        type: null,
+        type: "data",
         flavor: null,
         tag: null,
     }
