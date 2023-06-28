@@ -139,11 +139,11 @@ describe("InvocationsList.vue", () => {
             wrapper = mount(InvocationsList, {
                 propsData,
                 computed: {
-                    getWorkflowNameByInstanceId: (state) => (id) => "workflow name",
+                    getStoredWorkflowNameByInstanceId: (state) => (id) => "workflow name",
                     getStoredWorkflowIdByInstanceId: (state) => (id) => {
                         return "workflowId";
                     },
-                    getWorkflowByInstanceId: (state) => (id) => {
+                    getStoredWorkflowByInstanceId: (state) => (id) => {
                         return { id: "workflowId" };
                     },
                     getHistoryById: (state) => (id) => {
@@ -216,8 +216,8 @@ describe("InvocationsList.vue", () => {
             wrapper = mount(InvocationsList, {
                 propsData,
                 computed: {
-                    getWorkflowNameByInstanceId: (state) => (id) => "workflow name",
-                    getWorkflowByInstanceId: (state) => (id) => {
+                    getStoredWorkflowNameByInstanceId: (state) => (id) => "workflow name",
+                    getStoredWorkflowByInstanceId: (state) => (id) => {
                         return { id: "workflowId" };
                     },
                     getHistoryById: (state) => (id) => {
