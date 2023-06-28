@@ -46,8 +46,13 @@ const baseRules = {
     "vuejs-accessibility/no-static-element-interactions": "warn",
     "vuejs-accessibility/tabindex-no-positive": "error",
 
-    // Auto-sorting configuration via 'perfectionist' plugin.
-    "perfectionist/sort-imports": "error",
+    // import and export sorting and linting.
+    "simple-import-sort/imports": "error",
+    "simple-import-sort/exports": "error",
+    "import/first": "error",
+    "import/newline-after-import": "error",
+    "import/no-duplicates": "error"
+
 };
 
 const baseExtends = [
@@ -56,6 +61,10 @@ const baseExtends = [
     "plugin:vue/recommended",
     "plugin:vuejs-accessibility/recommended",
 ];
+
+const basePlugins = [
+    "simple-import-sort", "import"
+]
 
 module.exports = {
     root: true,
@@ -67,7 +76,7 @@ module.exports = {
     },
     rules: baseRules,
     ignorePatterns: ["dist", "src/libs", "src/nls", "src/legacy"],
-    plugins: ["perfectionist"],
+    plugins: basePlugins,
     overrides: [
         {
             files: ["**/*.test.js", "**/*.test.ts", "**/tests/jest/**"],
@@ -105,7 +114,7 @@ module.exports = {
                 extraFileExtensions: [".vue"],
                 project: "./tsconfig.json",
             },
-            plugins: ["@typescript-eslint"],
+            plugins: [...basePlugins, "@typescript-eslint"],
         },
     ],
 };
