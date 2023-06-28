@@ -282,7 +282,8 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 :multiple="attrs.multiple"
                 :optional="attrs.optional"
                 :options="attrs.options"
-                :tag="attrs.tag" />
+                :tag="attrs.tag"
+                :type="props.type" />
             <FormDrilldown
                 v-else-if="props.type === 'drill_down'"
                 :id="id"
