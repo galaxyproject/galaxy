@@ -6,13 +6,13 @@ import { getLocalVue } from "tests/jest/helpers";
 import mockInvocationData from "./test/json/invocation.json";
 import { parseISO, formatDistanceToNow } from "date-fns";
 
-import { createPinia } from "pinia";
+import { createTestingPinia } from "@pinia/testing";
 
 import "jest-location-mock";
 
 const localVue = getLocalVue();
 
-const pinia = createPinia();
+const pinia = createTestingPinia();
 describe("InvocationsList.vue", () => {
     let axiosMock;
     let wrapper;
