@@ -607,6 +607,20 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         with transaction(session):
             session.commit()
 
+    # TODO: move to more basal, common resource than this
+    def anon_user_api_value(self, trans):
+        """Return data for an anonymous user, truncated to only usage and quota_percent"""
+        if not trans.user and not trans.history:
+            # Can't return info about this user, may not have a history yet.
+            return {}
+        usage = trans.app.quota_agent.get_usage(trans, history=trans.history)
+        percent = trans.app.quota_agent.get_percent(trans=trans, usage=usage)
+        return {
+            "total_disk_usage": int(usage),
+            "nice_total_disk_usage": util.nice_size(usage),
+            "quota_percent": percent,
+        }
+
 
 class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
     model_manager_class = UserManager
