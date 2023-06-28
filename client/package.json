@@ -165,7 +165,6 @@
     "eslint": "^8.43.0",
     "eslint-plugin-compat": "^4.1.4",
     "eslint-plugin-import": "^2.27.5",
-    "eslint-plugin-simple-import-sort": "^10.0.0",
     "eslint-plugin-vue": "^9.15.1",
     "eslint-plugin-vuejs-accessibility": "^2.1.0",
     "expose-loader": "^4.0.0",
