@@ -47,12 +47,28 @@ const baseRules = {
     "vuejs-accessibility/tabindex-no-positive": "error",
 
     // import and export sorting and linting.
-    "simple-import-sort/imports": "error",
-    "simple-import-sort/exports": "error",
     "import/first": "error",
     "import/newline-after-import": "error",
-    "import/no-duplicates": "error"
-
+    "import/no-duplicates": "error",
+    "import/order": [
+        "error",
+        {
+            "newlines-between": "always",
+            pathGroups: [
+                {
+                    group: "builtin",
+                    pattern: "{.,@}/**/*.{css,scss}",
+                    position: "before",
+                },
+                {
+                    pattern: "@/**",
+                    group: "internal",
+                },
+            ],
+            alphabetize: { order: "asc", caseInsensitive: true },
+            warnOnUnassignedImports: true,
+        },
+    ],
 };
 
 const baseExtends = [
@@ -62,9 +78,7 @@ const baseExtends = [
     "plugin:vuejs-accessibility/recommended",
 ];
 
-const basePlugins = [
-    "simple-import-sort", "import"
-]
+const basePlugins = ["simple-import-sort", "import"];
 
 module.exports = {
     root: true,
