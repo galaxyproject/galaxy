@@ -45,9 +45,12 @@
                     @click.stop="swapRowDetails(data)" />
             </template>
             <template v-slot:cell(workflow_id)="data">
-                <div v-b-tooltip.hover.top :title="getWorkflowNameByInstanceId(data.item.workflow_id)" class="truncate">
+                <div
+                    v-b-tooltip.hover.top
+                    :title="getStoredWorkflowNameByInstanceId(data.item.workflow_id)"
+                    class="truncate">
                     <b-link href="#" @click.stop="swapRowDetails(data)">
-                        <b>{{ getWorkflowNameByInstanceId(data.item.workflow_id) }}</b>
+                        <b>{{ getStoredWorkflowNameByInstanceId(data.item.workflow_id) }}</b>
                     </b-link>
                 </div>
             </template>
@@ -91,7 +94,7 @@ import { invocationsProvider } from "components/providers/InvocationsProvider";
 import WorkflowInvocationState from "components/WorkflowInvocationState/WorkflowInvocationState";
 import WorkflowRunButton from "./WorkflowRunButton.vue";
 import UtcDate from "components/UtcDate";
-import { useWorkflowStore } from "stores/workflowStore";
+import { useWorkflowStore } from "@/stores/workflowStore";
 import paginationMixin from "./paginationMixin";
 
 export default {
@@ -134,9 +137,9 @@ export default {
     },
     computed: {
         ...mapState(useWorkflowStore, [
-            "getWorkflowNameByInstanceId",
-            "getWorkflowByInstanceId",
+            "getStoredWorkflowByInstanceId",
             "getStoredWorkflowIdByInstanceId",
+            "getStoredWorkflowNameByInstanceId",
         ]),
         ...mapState(useHistoryStore, ["getHistoryById", "getHistoryNameById"]),
         title() {
@@ -178,21 +181,18 @@ export default {
             if (invocations) {
                 const historyIds = new Set();
                 const workflowIds = new Set();
-                invocations.map((invocation) => {
+                invocations.forEach((invocation) => {
                     historyIds.add(invocation.history_id);
                     workflowIds.add(invocation.workflow_id);
                 });
                 historyIds.forEach((history_id) => this.getHistoryById(history_id) || this.loadHistoryById(history_id));
-                workflowIds.forEach(
-                    (workflow_id) =>
-                        this.getWorkflowByInstanceId(workflow_id) || this.fetchWorkflowForInstanceId(workflow_id)
-                );
+                workflowIds.forEach((workflow_id) => this.fetchWorkflowForInstanceIdCached(workflow_id));
             }
         },
     },
     methods: {
         ...mapActions(useHistoryStore, ["loadHistoryById"]),
-        ...mapActions(useWorkflowStore, ["fetchWorkflowForInstanceId"]),
+        ...mapActions(useWorkflowStore, ["fetchWorkflowForInstanceIdCached"]),
         async provider(ctx) {
             ctx.root = this.root;
             const extraParams = this.ownerGrid ? {} : { include_terminal: false };
