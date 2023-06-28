@@ -1994,7 +1994,7 @@
     how to calculate a PUE value, visit
     https://en.wikipedia.org/wiki/Power_usage_effectiveness
 :Default: ``1.67``
-:Type: int
+:Type: float
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~

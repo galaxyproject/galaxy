@@ -1425,7 +1425,7 @@ mapping:
           To see a full list of supported locations, visit https://galaxyproject.org/admin/carbon_emissions
 
       power_usage_effectiveness:
-        type: int
+        type: float
         default: 1.67
         required: false
         desc: |

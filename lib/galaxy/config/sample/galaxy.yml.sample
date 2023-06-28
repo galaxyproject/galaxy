@@ -1285,7 +1285,7 @@ galaxy:
   # emissions estimates more accurate. For more information on how to
   # calculate a PUE value, visit
   # https://en.wikipedia.org/wiki/Power_usage_effectiveness
-  #power_usage_effectiveness: 1
+  #power_usage_effectiveness: 1.67
 
   # Enable InteractiveTools.
   #interactivetools_enable: false
