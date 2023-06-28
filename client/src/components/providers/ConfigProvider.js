@@ -6,7 +6,7 @@
  */
 
 import Vue from "vue"; // this module's Vue is different from store/index.js' Vue
-import Vuex, { mapActions,mapGetters } from "vuex";
+import Vuex, { mapActions, mapGetters } from "vuex";
 
 Vue.use(Vuex);
 
