@@ -729,7 +729,15 @@ class User(Base, Dictifiable, RepresentById):
     )
     # Add type hint (will this work w/SA?)
     api_keys: "List[APIKeys]" = relationship(
-        "APIKeys", back_populates="user", order_by=lambda: desc(APIKeys.create_time)
+        "APIKeys",
+        back_populates="user",
+        order_by=lambda: desc(APIKeys.create_time),
+        primaryjoin=(
+            lambda: and_(
+                User.id == APIKeys.user_id,  # type: ignore[attr-defined]
+                not_(APIKeys.deleted == true()),  # type: ignore[has-type]
+            )
+        ),
     )
     data_manager_histories = relationship("DataManagerHistoryAssociation", back_populates="user")
     roles = relationship("UserRoleAssociation", back_populates="user")
