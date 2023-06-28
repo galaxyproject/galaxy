@@ -18,6 +18,7 @@ TEST_USER_EMAIL = "user_for_users_index_test@bx.psu.edu"
 TEST_USER_EMAIL_DELETE = "user_for_delete_test@bx.psu.edu"
 TEST_USER_EMAIL_PURGE = "user_for_purge_test@bx.psu.edu"
 TEST_USER_EMAIL_UNDELETE = "user_for_undelete_test@bx.psu.edu"
+TEST_USER_EMAIL_SHOW = "user_for_show_test@bx.psu.edu"
 
 
 class TestUsersApi(ApiTestCase):
@@ -247,6 +248,29 @@ class TestUsersApi(ApiTestCase):
             url = self._api_url("users/current")
             updated_theme = self._get(url).json()["preferences"]["theme"]
             assert updated_theme == "test_theme"
+
+    @requires_admin
+    @requires_new_user
+    def test_show_delete(self):
+        user = self._setup_user(TEST_USER_EMAIL_SHOW)
+        url = self._api_url(f"users/{user['id']}")
+        response_1 = self._get(url, admin=True).json()
+        self._delete(f"users/{user['id']}", admin=True)
+
+        # Both request should return the same user
+        response_2 = self._get(f"users/deleted/{user['id']}", admin=True).json()
+        payload = {"deleted": "True"}
+        response_3 = self._get(f"users/{user['id']}", payload, admin=True).json()
+        assert response_1["id"] == response_2["id"] == response_3["id"]
+        assert response_2 == response_3
+
+    def test_show_current(self):
+        user_id = self._get_current_user_id()
+        url = self._api_url(f"users/{user_id}")
+        specified_user = self._get(url).json()
+        url = self._api_url("users/current")
+        current_user = self._get(url).json()
+        assert specified_user == current_user
 
     def __url(self, action, user):
         return self._api_url(f"users/{user['id']}/{action}", params=dict(key=self.master_api_key))
