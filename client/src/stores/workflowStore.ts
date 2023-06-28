@@ -34,6 +34,10 @@ export const useWorkflowStore = defineStore("workflowStore", () => {
     // stores in progress promises to avoid overlapping requests
     const workflowDetailPromises = new Map<string, Promise<unknown>>();
 
+    /**
+     * Fetches workflow details, avoiding multiple fetches occurring simultaneously
+     * @param workflowId instance id of workflow to fetch
+     */
     async function fetchWorkflowForInstanceId(workflowId: string) {
         const promise = workflowDetailPromises.get(workflowId);
 
@@ -56,6 +60,10 @@ export const useWorkflowStore = defineStore("workflowStore", () => {
         workflowDetailPromises.delete(workflowId);
     }
 
+    /**
+     * Fetches workflow details only if they are not already in the store
+     * @param workflowId instance id of workflow to maybe fetch
+     */
     async function fetchWorkflowForInstanceIdCached(workflowId: string) {
         if (!Object.keys(workflowsByInstanceId.value).includes(workflowId)) {
             await fetchWorkflowForInstanceId(workflowId);
