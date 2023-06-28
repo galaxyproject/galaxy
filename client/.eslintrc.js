@@ -56,11 +56,6 @@ const baseRules = {
             "newlines-between": "always",
             pathGroups: [
                 {
-                    group: "builtin",
-                    pattern: "{.,@}/**/*.{css,scss}",
-                    position: "before",
-                },
-                {
                     pattern: "@/**",
                     group: "internal",
                 },
@@ -78,7 +73,7 @@ const baseExtends = [
     "plugin:vuejs-accessibility/recommended",
 ];
 
-const basePlugins = ["simple-import-sort", "import"];
+const basePlugins = ["import"];
 
 module.exports = {
     root: true,
