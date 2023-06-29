@@ -267,6 +267,41 @@ class Model(BaseModel):
                 del properties[prop_key_to_remove]
 
 
+class AnonUserModel(Model):
+    total_disk_usage: int = Field(
+        default=Required,
+        title="Total disk usage",
+        description="Size of all non-purged, unique datasets of the user in bytes.",
+    )
+    nice_total_disk_usage: str = Field(
+        default=Required,
+        title="Nice total disc usage",
+        description="Size of all non-purged, unique datasets of the user in a nice format.",
+    )
+    quota_percent: int = Field(
+        default=Required,
+        title="Storage quota",
+        description="Percentage of the storage quota applicable to the user.",
+    )
+
+
+class DetailedUserModel(Model):
+    preferences: Dict[Any, Any] = Field(default=Required)
+    is_admin: bool = Field(default=Required)
+    quota_percent: Any = Field(default=Required)
+    total_disk_usage: float = Field(default=Required)
+    nice_total_disk_usage: str = Field(default=Required)
+    tags_used: List[str] = Field(default=Required)
+    deleted: bool = Field(default=Required)
+    id: str = Field(default=Required)
+    email: str = Field(default=Required)
+    preferred_object_store_id: Any = Field(default=Required)
+    username: str = Field(default=Required)
+    quota_bytes: Any = Field(default=Required)
+    quota: str = Field(default=Required)
+    purged: bool = Field(default=Required)
+
+
 class UserModel(Model):
     """User in a transaction context."""
 
