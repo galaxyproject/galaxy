@@ -272,12 +272,29 @@ class FastAPIUsers:
         trans: ProvidesUserContext = DependsOnTrans,
         user_id: DecodedDatabaseIdField = UserIdPathParam,
         theme: str = ThemePathParam,
-    ) -> UserTheme:
+    ) -> str:
         user = self.service._get_user(trans, user_id)
         user.preferences["theme"] = theme
         with transaction(trans.sa_session):
             trans.sa_session.commit()
-        return UserTheme(theme=theme)
+        return theme
+
+    @expose_api
+    def set_theme(self, trans, id: str, theme: str, payload=None, **kwd) -> str:
+        """Sets the user's theme choice.
+        PUT /api/users/{id}/theme/{theme}
+
+        :param id: the encoded id of the user
+        :type  id: str
+        :param theme: the theme identifier/name that the user has selected as preference
+        :type  theme: str
+        """
+        payload = payload or {}
+        user = self._get_user(trans, id)
+        user.preferences["theme"] = theme
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
+        return theme
 
     @router.get(
         "/api/users/deleted/{user_id}",
