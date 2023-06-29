@@ -50,7 +50,6 @@ from galaxy.schema.schema import (
     DetailedUserModel,
     FlexibleUserIdType,
     UserBeaconSetting,
-    UserTheme,
 )
 from galaxy.security.validate_user_input import (
     validate_email,

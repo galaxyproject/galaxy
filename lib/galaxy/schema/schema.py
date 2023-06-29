@@ -333,14 +333,6 @@ class GroupModel(Model):
     )
 
 
-class UserTheme(Model):
-    theme: str = Field(
-        default=Required,
-        title="user_theme",
-        description="The theme of the users GUI",
-    )
-
-
 class JobSourceType(str, Enum):
     """Available types of job sources (model classes) that produce dataset collections."""
 
