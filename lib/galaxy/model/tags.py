@@ -13,6 +13,10 @@ from sqlalchemy.sql import select
 from sqlalchemy.sql.expression import func
 
 import galaxy.model
+from galaxy.exceptions import (
+    AuthenticationRequired,
+    ItemOwnershipException,
+)
 from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.util import (
@@ -131,6 +135,7 @@ class TagHandler:
 
     def remove_item_tag(self, user, item, tag_name):
         """Remove a tag from an item."""
+        self._ensure_user_owns_item(user, item)
         # Get item tag association.
         item_tag_assoc = self._get_item_tag_assoc(user, item, tag_name)
         # Remove association.
@@ -143,6 +148,7 @@ class TagHandler:
 
     def delete_item_tags(self, user, item):
         """Delete tags from an item."""
+        self._ensure_user_owns_item(user, item)
         # Delete item-tag associations.
         for tag in item.tags:
             if tag.id:
@@ -150,6 +156,18 @@ class TagHandler:
                 self.sa_session.delete(tag)
         # Delete tags from item.
         del item.tags[:]
+
+    def _ensure_user_owns_item(self, user, item):
+        """Raises exception if user does not own item.
+        Notice that even admin users cannot directly modify tags on items they do not own.
+        To modify tags on items they don't own, admin users must impersonate the item's owner.
+        """
+        if user is None:
+            raise AuthenticationRequired("Must be logged in to manage tags.")
+        history = getattr(item, "history", None)
+        is_owner = getattr(item, "user", None) == user or getattr(history, "user", None) == user
+        if not is_owner:
+            raise ItemOwnershipException("User does not own item.")
 
     def item_has_tag(self, user, item, tag):
         """Returns true if item is has a given tag."""
@@ -167,6 +185,7 @@ class TagHandler:
         return False
 
     def apply_item_tag(self, user, item, name, value=None, flush=True):
+        self._ensure_user_owns_item(user, item)
         # Use lowercase name for searching/creating tag.
         if name is None:
             return
@@ -203,6 +222,7 @@ class TagHandler:
 
     def apply_item_tags(self, user, item, tags_str, flush=True):
         """Apply tags to an item."""
+        self._ensure_user_owns_item(user, item)
         # Parse tags.
         parsed_tags = self.parse_tags(tags_str)
         # Apply each tag.
