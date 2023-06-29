@@ -33,7 +33,7 @@ const formattedToolHelp = computed(() => {
 </script>
 
 <script>
-// eslint-disable import/first
+/* eslint-disable import/first */
 import { library } from "@fortawesome/fontawesome-svg-core";
 import {
     faWrench,
@@ -45,6 +45,8 @@ import {
     faExclamationTriangle,
     faUser,
 } from "@fortawesome/free-solid-svg-icons";
+/* eslint-enable import/first */
+
 library.add(faWrench, faExternalLinkAlt, faCheck, faTimes, faAngleDown, faAngleUp, faExclamationTriangle, faUser);
 </script>
 

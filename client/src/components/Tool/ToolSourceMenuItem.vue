@@ -21,6 +21,7 @@ const props = defineProps({
 /* eslint-disable import/first */
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEye } from "@fortawesome/free-regular-svg-icons";
+/* eslint-enable import/first */
 
 library.add(faEye);
 </script>

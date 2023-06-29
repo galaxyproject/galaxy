@@ -33,9 +33,10 @@ watch([isCompleted, hasFailed, requestHasFailed], ([newIsCompleted, newHasFailed
 </script>
 
 <script>
-// eslint-disable import/first
+/* eslint-disable import/first */
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCloudUploadAlt, faSpinner, faCheckCircle, faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
+/* eslint-enable import/first */
 
 library.add(faCloudUploadAlt, faSpinner, faCheckCircle, faExclamationCircle);
 </script>

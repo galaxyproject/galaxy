@@ -21,6 +21,7 @@ const availableVersions = computed(() => [...props.versions].reverse());
 /* eslint-disable import/first */
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheck, faCubes, faCube } from "@fortawesome/free-solid-svg-icons";
+/* eslint-enable import/first */
 
 library.add(faCheck, faCubes, faCube);
 </script>

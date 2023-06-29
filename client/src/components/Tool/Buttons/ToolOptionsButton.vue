@@ -66,10 +66,11 @@ function onLink() {
 </script>
 
 <script>
-// eslint-disable import/first
+/* eslint-disable import/first */
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown, faLink, faDownload, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { faCopy } from "@fortawesome/free-regular-svg-icons";
+/* eslint-enable import/first */
 
 library.add(faCaretDown, faLink, faDownload, faExternalLinkAlt, faCopy);
 </script>

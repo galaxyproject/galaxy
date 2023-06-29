@@ -66,6 +66,7 @@ async function onRemoveFavorite() {
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faStar as fasStar } from "@fortawesome/free-solid-svg-icons";
 import { faStar as farStar } from "@fortawesome/free-regular-svg-icons";
+/* eslint-enable import/first */
 
 library.add(fasStar, farStar);
 </script>
