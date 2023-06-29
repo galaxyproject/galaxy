@@ -49,20 +49,20 @@
 </template>
 
 <script>
-import Alert from "components/Alert";
-import DatasetStorage from "components/Dataset/DatasetStorage/DatasetStorage";
-import DatasetInformation from "components/DatasetInformation/DatasetInformation";
-import JobDependencies from "components/JobDependencies/JobDependencies";
-import JobDestinationParams from "components/JobDestinationParams/JobDestinationParams";
-import JobInformation from "components/JobInformation/JobInformation";
-import JobMetrics from "components/JobMetrics/JobMetrics";
-import JobParameters from "components/JobParameters/JobParameters";
-import LoadingSpan from "components/LoadingSpan";
-import { DatasetProvider } from "components/providers";
-import ConfigProvider from "components/providers/ConfigProvider";
-import { JobDetailsProvider } from "components/providers/JobProvider";
 import { mapState } from "pinia";
 
+import Alert from "@/components/Alert";
+import DatasetStorage from "@/components/Dataset/DatasetStorage/DatasetStorage";
+import DatasetInformation from "@/components/DatasetInformation/DatasetInformation";
+import JobDependencies from "@/components/JobDependencies/JobDependencies";
+import JobDestinationParams from "@/components/JobDestinationParams/JobDestinationParams";
+import JobInformation from "@/components/JobInformation/JobInformation";
+import JobMetrics from "@/components/JobMetrics/JobMetrics";
+import JobParameters from "@/components/JobParameters/JobParameters";
+import LoadingSpan from "@/components/LoadingSpan";
+import { DatasetProvider } from "@/components/providers";
+import ConfigProvider from "@/components/providers/ConfigProvider";
+import { JobDetailsProvider } from "@/components/providers/JobProvider";
 import { useUserStore } from "@/stores/userStore";
 
 import InheritanceChain from "../InheritanceChain/InheritanceChain";
