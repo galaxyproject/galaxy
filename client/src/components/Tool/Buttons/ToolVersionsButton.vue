@@ -1,6 +1,10 @@
 <script setup>
 import { computed } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCheck, faCubes, faCube } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faCheck, faCubes, faCube);
 const props = defineProps({
     version: {
         type: String,
@@ -15,15 +19,6 @@ const props = defineProps({
 const emit = defineEmits(["onChangeVersion"]);
 
 const availableVersions = computed(() => [...props.versions].reverse());
-</script>
-
-<script>
-/* eslint-disable import/first */
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCheck, faCubes, faCube } from "@fortawesome/free-solid-svg-icons";
-/* eslint-enable import/first */
-
-library.add(faCheck, faCubes, faCube);
 </script>
 
 <template>
