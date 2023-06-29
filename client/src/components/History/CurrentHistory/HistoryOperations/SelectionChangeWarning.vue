@@ -16,8 +16,10 @@
 
 <script>
 import { mapState, mapActions } from "pinia";
-import { useUserFlagsStore } from "@/stores/userFlagsStore";
 import { BAlert, BLink, BProgress } from "bootstrap-vue";
+
+import { useUserFlagsStore } from "@/stores/userFlagsStore";
+
 export default {
     components: {
         "b-alert": BAlert,

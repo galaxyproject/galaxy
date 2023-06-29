@@ -1,12 +1,12 @@
-import WorkflowRun from "./WorkflowRun.vue";
 import { shallowMount, createLocalVue } from "@vue/test-utils";
 import { watchForChange } from "tests/jest/helpers";
 import { createTestingPinia } from "@pinia/testing";
 import { PiniaVuePlugin } from "pinia";
 
+import WorkflowRun from "./WorkflowRun.vue";
 import sampleRunData1 from "./testdata/run1.json";
-
 import { getRunData } from "./services";
+
 jest.mock("./services");
 
 getRunData.mockImplementation(async () => {

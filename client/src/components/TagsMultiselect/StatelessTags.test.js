@@ -3,6 +3,7 @@ import { mount } from "@vue/test-utils";
 import { useUserTags } from "composables/user";
 import { useToast } from "composables/toast";
 import { computed } from "vue";
+
 import StatelessTags from "./StatelessTags";
 
 const autocompleteTags = ["#named_user_tag", "abc", "my_tag"];

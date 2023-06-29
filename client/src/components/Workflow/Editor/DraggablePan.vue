@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { PropType, UnwrapRef } from "vue";
-import Draggable from "./Draggable.vue";
 import type { UseElementBoundingReturn } from "@vueuse/core";
+
+import Draggable from "./Draggable.vue";
 
 const props = defineProps({
     rootOffset: {

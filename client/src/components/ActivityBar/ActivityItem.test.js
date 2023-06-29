@@ -1,5 +1,6 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
+
 import mountTarget from "./ActivityItem.vue";
 
 const localVue = getLocalVue();

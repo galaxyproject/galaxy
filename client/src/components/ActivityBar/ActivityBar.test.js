@@ -2,10 +2,12 @@ import { createTestingPinia } from "@pinia/testing";
 import { PiniaVuePlugin } from "pinia";
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
+
+import mountTarget from "./ActivityBar.vue";
+
 import { useActivityStore } from "@/stores/activityStore";
 import { useEventStore } from "@/stores/eventStore";
 import { useConfig } from "@/composables/config";
-import mountTarget from "./ActivityBar.vue";
 
 jest.mock("composables/config");
 useConfig.mockReturnValue({

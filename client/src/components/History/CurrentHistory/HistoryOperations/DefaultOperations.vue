@@ -44,6 +44,7 @@
 <script>
 import { unhideAllHiddenContent, deleteAllHiddenContent, purgeAllDeletedContent } from "components/History/model/crud";
 import { iframeRedirect } from "components/plugins/legacyNavigation";
+
 import { usesDetailedHistoryMixin } from "../usesDetailedHistoryMixin.js";
 
 export default {

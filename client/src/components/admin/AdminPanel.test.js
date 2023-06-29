@@ -1,5 +1,6 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
+
 import MountTarget from "./AdminPanel.vue";
 
 const localVue = getLocalVue(true);

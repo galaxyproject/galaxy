@@ -2,11 +2,12 @@ import { mount } from "@vue/test-utils";
 import { getLocalVue, mockModule } from "tests/jest/helpers";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import FormTool from "./FormTool";
 import MockConfigProvider from "components/providers/MockConfigProvider";
 import Vuex from "vuex";
 import { configStore } from "store/configStore";
 import { createTestingPinia } from "@pinia/testing";
+
+import FormTool from "./FormTool";
 
 const localVue = getLocalVue();
 

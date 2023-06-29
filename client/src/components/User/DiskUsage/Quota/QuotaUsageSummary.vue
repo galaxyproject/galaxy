@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { bytesToString } from "@/utils/utils";
 import { computed } from "vue";
+
 import type { QuotaUsage } from "./model";
 import QuotaUsageBar from "./QuotaUsageBar.vue";
+
+import { bytesToString } from "@/utils/utils";
 
 interface QuotaUsageSummaryProps {
     quotaUsages: QuotaUsage[];

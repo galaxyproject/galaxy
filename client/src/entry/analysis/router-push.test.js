@@ -1,4 +1,5 @@
 import { getGalaxyInstance } from "app/singleton";
+
 import { patchRouterPush } from "./router-push";
 
 // mock Galaxy object

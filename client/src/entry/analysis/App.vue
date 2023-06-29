@@ -43,8 +43,6 @@
     </div>
 </template>
 <script>
-import Alert from "@/components/Alert.vue";
-import DragGhost from "@/components/DragGhost.vue";
 import Modal from "mvc/ui/ui-modal";
 import Masthead from "components/Masthead/Masthead.vue";
 import { getGalaxyInstance } from "app";
@@ -58,11 +56,14 @@ import ConfirmDialog from "components/ConfirmDialog";
 import UploadModal from "components/Upload/UploadModal.vue";
 import { ref } from "vue";
 import { storeToRefs } from "pinia";
-import { useUserStore } from "@/stores/userStore";
-import { useHistoryStore } from "@/stores/historyStore";
 import { setToastComponentRef } from "composables/toast";
 import { setConfirmDialogComponentRef } from "composables/confirmDialog";
 import { setGlobalUploadModal } from "composables/globalUploadModal";
+
+import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
+import DragGhost from "@/components/DragGhost.vue";
+import Alert from "@/components/Alert.vue";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import BroadcastsOverlay from "@/components/Notifications/Broadcasts/BroadcastsOverlay.vue";
 

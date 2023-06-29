@@ -1,4 +1,5 @@
 import { safeAssign } from "utils/safeAssign";
+
 import { ResourceProviders } from "./ResourceProviders";
 import { BaseModel } from "./BaseModel";
 

@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 import prettyBytes from "pretty-bytes";
-import { useUserStore } from "@/stores/userStore";
 import { formatDistanceToNowStrict } from "date-fns";
 import { toRef, ref, computed, onMounted } from "vue";
+import { useRouter } from "vue-router/composables";
+
 import { useDetailedHistory } from "./usesDetailedHistory.js";
-import { useConfig } from "@/composables/config";
-import { HistoryFilters } from "@/components/History/HistoryFilters.js";
 import PreferredStorePopover from "./PreferredStorePopover.vue";
 import SelectPreferredStore from "./SelectPreferredStore.vue";
 
-import { useRouter } from "vue-router/composables";
+import { useUserStore } from "@/stores/userStore";
+import { useConfig } from "@/composables/config";
+import { HistoryFilters } from "@/components/History/HistoryFilters.js";
+
+
 
 interface HistoryBase {
     id: string;

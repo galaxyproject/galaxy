@@ -44,8 +44,9 @@ import BootstrapVue from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestion } from "@fortawesome/free-solid-svg-icons";
-import MarkdownToolBox from "./MarkdownToolBox";
 import FlexPanel from "components/Panels/FlexPanel";
+
+import MarkdownToolBox from "./MarkdownToolBox";
 import MarkdownHelp from "./MarkdownHelp";
 
 Vue.use(BootstrapVue);

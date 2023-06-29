@@ -2,8 +2,9 @@ import Vuex from "vuex";
 import createCache from "vuex-cache";
 import { useUserStore } from "stores/userStore";
 import { PiniaVuePlugin, createPinia } from "pinia";
-import JobDestinationParams from "./JobDestinationParams";
 import { shallowMount, createLocalVue } from "@vue/test-utils";
+
+import JobDestinationParams from "./JobDestinationParams";
 import jobDestinationResponse from "./testData/jobDestinationResponse";
 
 const JOB_ID = "foo_job_id";

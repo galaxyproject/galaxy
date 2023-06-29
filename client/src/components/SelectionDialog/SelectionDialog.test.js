@@ -1,5 +1,6 @@
-import SelectionDialog from "./SelectionDialog.vue";
 import { mount, createLocalVue } from "@vue/test-utils";
+
+import SelectionDialog from "./SelectionDialog.vue";
 
 const mockOptions = {
     callback: () => {},

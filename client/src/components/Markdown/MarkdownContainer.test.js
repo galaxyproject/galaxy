@@ -4,6 +4,7 @@ import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 import MockAdapter from "axios-mock-adapter";
 import { withPrefix } from "utils/redirect";
+
 import MountTarget from "./MarkdownContainer.vue";
 
 // mock routes

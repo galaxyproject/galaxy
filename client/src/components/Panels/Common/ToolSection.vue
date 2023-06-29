@@ -48,12 +48,13 @@
 </template>
 
 <script>
+import ariaAlert from "utils/ariaAlert";
+import { useConfig } from "composables/config";
+
 import Tool from "./Tool";
 import ToolPanelLabel from "./ToolPanelLabel";
-import ariaAlert from "utils/ariaAlert";
 import ToolPanelLinks from "./ToolPanelLinks";
 
-import { useConfig } from "composables/config";
 
 export default {
     name: "ToolSection",

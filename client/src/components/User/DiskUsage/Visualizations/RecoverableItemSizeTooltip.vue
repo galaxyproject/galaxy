@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { bytesToString } from "@/utils/utils";
-import type { DataValuePoint } from "./Charts";
 import { computed } from "vue";
+
+import type { DataValuePoint } from "./Charts";
+
+import { bytesToString } from "@/utils/utils";
 
 interface RecoverableItemSizeTooltipProps {
     data: DataValuePoint;

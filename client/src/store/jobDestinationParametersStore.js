@@ -1,10 +1,10 @@
-export const state = {
-    jobDestinationParametersByJobId: {},
-};
-
 import Vue from "vue";
 import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
+
+export const state = {
+    jobDestinationParametersByJobId: {},
+};
 
 const getters = {
     jobDestinationParams: (state) => (jobId) => {

@@ -1,9 +1,9 @@
 import BootstrapVue from "bootstrap-vue";
+import { mount , createLocalVue } from "@vue/test-utils";
+
 import JobStep from "./JobStep";
-import { mount } from "@vue/test-utils";
 import jobs from "./test/json/jobs.json";
 
-import { createLocalVue } from "@vue/test-utils";
 
 // create an extended `Vue` constructor
 const localVue = createLocalVue();

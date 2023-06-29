@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import axios from "axios";
 import { computed, ref, onMounted } from "vue";
+
+import WorkflowTree from "./WorkflowTree.vue";
+
 import { withPrefix } from "@/utils/redirect";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-import WorkflowTree from "./WorkflowTree.vue";
 import { isEmpty } from "@/utils/utils";
 
 interface WorkflowDisplayProps {

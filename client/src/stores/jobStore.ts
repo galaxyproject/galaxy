@@ -5,8 +5,9 @@
 
 import { defineStore } from "pinia";
 import Vue from "vue";
-import { getAppRoot } from "@/onload/loadConfig";
 import axios from "axios";
+
+import { getAppRoot } from "@/onload/loadConfig";
 
 /* interfaces */
 interface Job {

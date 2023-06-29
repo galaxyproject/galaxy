@@ -1,4 +1,5 @@
 import { getSelectableObjectStores } from "./services";
+
 jest.mock("./services");
 
 const OBJECT_STORES = [

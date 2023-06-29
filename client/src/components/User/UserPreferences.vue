@@ -124,7 +124,6 @@
 import Vue from "vue";
 import { mapState } from "pinia";
 import BootstrapVue from "bootstrap-vue";
-import ThemeSelector from "./ThemeSelector.vue";
 import { getGalaxyInstance } from "app";
 import { withPrefix } from "utils/redirect";
 import _l from "utils/localization";
@@ -133,6 +132,8 @@ import QueryStringParsing from "utils/query-string-parsing";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
 import ConfigProvider from "components/providers/ConfigProvider";
 import { userLogoutAll } from "utils/logout";
+
+import ThemeSelector from "./ThemeSelector.vue";
 import UserDeletion from "./UserDeletion";
 import UserActivityBarSettings from "./UserActivityBarSettings";
 import UserPreferencesElement from "./UserPreferencesElement";
@@ -140,6 +141,7 @@ import UserPreferredObjectStore from "./UserPreferredObjectStore";
 
 import "@fortawesome/fontawesome-svg-core";
 import UserBeaconSettings from "./UserBeaconSettings";
+
 import { useUserStore } from "@/stores/userStore";
 
 Vue.use(BootstrapVue);

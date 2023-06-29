@@ -1,11 +1,14 @@
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
-import Node from "./Node.vue";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { createTestingPinia } from "@pinia/testing";
-import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
+
+import Node from "./Node.vue";
 import { mockOffset } from "./test_fixtures";
+
+import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
+
 
 jest.mock("app");
 

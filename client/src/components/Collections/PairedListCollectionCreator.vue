@@ -408,10 +408,10 @@
 </template>
 <script>
 import _l from "utils/localization";
+
 import mixin from "./common/mixin";
-import UnpairedDatasetElementView from "./UnpairedDatasetElementView";
+
 import levenshteinDistance from "utils/levenshtein";
-import PairedElementView from "./PairedElementView";
 import STATES from "mvc/dataset/states";
 import naturalSort from "utils/natural-sort";
 import "splitpanes/dist/splitpanes.css";
@@ -419,6 +419,9 @@ import { Splitpanes, Pane } from "splitpanes";
 import draggable from "vuedraggable";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+
+import PairedElementView from "./PairedElementView";
+import UnpairedDatasetElementView from "./UnpairedDatasetElementView";
 
 Vue.use(BootstrapVue);
 export default {

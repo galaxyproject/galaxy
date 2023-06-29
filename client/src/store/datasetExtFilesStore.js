@@ -1,10 +1,10 @@
-export const state = {
-    datasetExtFilesById: {},
-};
-
 import Vue from "vue";
 import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
+
+export const state = {
+    datasetExtFilesById: {},
+};
 
 const getters = {
     getDatasetExtFiles: (state) => (history_dataset_id) => {

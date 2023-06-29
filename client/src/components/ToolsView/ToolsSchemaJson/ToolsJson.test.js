@@ -1,11 +1,13 @@
-import ToolsJson from "./ToolsJson";
 // test response
-import testToolsListResponse from "../testData/toolsList";
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 import flushPromises from "flush-promises";
+
+import testToolsListResponse from "../testData/toolsList";
+
+import ToolsJson from "./ToolsJson";
 
 const localVue = getLocalVue();
 

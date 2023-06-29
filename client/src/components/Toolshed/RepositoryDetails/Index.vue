@@ -66,9 +66,11 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { Services } from "../services";
 import ConfigProvider from "components/providers/ConfigProvider";
 import ToolPanelViewProvider from "components/providers/ToolPanelViewProvider";
+
+import { Services } from "../services";
+
 import InstallationSettings from "./InstallationSettings.vue";
 import InstallationActions from "./InstallationActions.vue";
 import RepositoryTools from "./RepositoryTools.vue";

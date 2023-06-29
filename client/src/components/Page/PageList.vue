@@ -80,20 +80,21 @@
 <script>
 import _l from "utils/localization";
 import { getAppRoot } from "onload/loadConfig";
-import { updateTags } from "./services";
 import { pagesProvider } from "components/providers/PageProvider";
 import StatelessTags from "components/TagsMultiselect/StatelessTags";
-import PageDropdown from "./PageDropdown";
 import UtcDate from "components/UtcDate";
 import paginationMixin from "components/Workflow/paginationMixin";
 import filtersMixin from "components/Indices/filtersMixin";
-import PageIndexActions from "./PageIndexActions";
 import CopyToClipboard from "components/CopyToClipboard";
 import IndexFilter from "components/Indices/IndexFilter";
-import { withPrefix, absPath } from "@/utils/redirect";
 import { getGalaxyInstance } from "app";
-
 import SharingIndicators from "components/Indices/SharingIndicators";
+
+import PageIndexActions from "./PageIndexActions";
+import PageDropdown from "./PageDropdown";
+import { updateTags } from "./services";
+
+import { withPrefix, absPath } from "@/utils/redirect";
 
 const helpHtml = `<div>
 <p>This textbox can be used to filter the pages displayed.

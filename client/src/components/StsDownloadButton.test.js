@@ -2,9 +2,10 @@ import MockConfigProvider from "components/providers/MockConfigProvider";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
-import StsDownloadButton from "./StsDownloadButton";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
+
+import StsDownloadButton from "./StsDownloadButton";
 
 import "jest-location-mock";
 

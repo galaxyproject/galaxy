@@ -18,10 +18,12 @@
 </template>
 
 <script>
-import { getToolPredictions } from "./modules/services";
-import { getCompatibleRecommendations } from "./modules/utilities";
 import LoadingSpan from "components/LoadingSpan";
 import _l from "utils/localization";
+
+import { getToolPredictions } from "./modules/services";
+import { getCompatibleRecommendations } from "./modules/utilities";
+
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 export default {

@@ -44,6 +44,7 @@ import BootstrapVue from "bootstrap-vue";
 import { withPrefix } from "utils/redirect";
 import { urlData } from "utils/url";
 import LoadingSpan from "components/LoadingSpan";
+
 Vue.use(BootstrapVue);
 
 export default {

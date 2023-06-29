@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { STATES } from "./states";
 import { computed } from "vue";
+
+import { STATES } from "./states";
 import type { States, HelpText } from "./stateTypes";
 
 const props = defineProps({

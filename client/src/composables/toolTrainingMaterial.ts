@@ -1,5 +1,7 @@
-import { useConfig } from "./config";
 import { computed, ref, watch, type Ref } from "vue";
+
+import { useConfig } from "./config";
+
 import { escapeRegExp } from "@/utils/regExp";
 
 type TrainingDetails = {

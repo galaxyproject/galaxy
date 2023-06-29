@@ -1,8 +1,10 @@
 <script setup>
+import { computed, watch, ref } from "vue";
+
 import { useCurrentTheme } from "@/composables/user";
 import { useConfig } from "@/composables/config";
-import { computed, watch, ref } from "vue";
 import { withPrefix } from "@/utils/redirect";
+
 const { currentTheme, setCurrentTheme } = useCurrentTheme();
 const { config, isLoaded } = useConfig();
 

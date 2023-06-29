@@ -25,11 +25,12 @@ import { BButton } from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faDownload, faSpinner } from "@fortawesome/free-solid-svg-icons";
-library.add(faDownload, faSpinner);
 import ConfigProvider from "components/providers/ConfigProvider";
 import { Toast } from "composables/toast";
 import axios from "axios";
 import { withPrefix } from "utils/redirect";
+
+library.add(faDownload, faSpinner);
 export default {
     components: {
         ConfigProvider,

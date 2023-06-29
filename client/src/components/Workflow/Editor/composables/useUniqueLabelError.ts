@@ -1,5 +1,6 @@
-import type { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { ref } from "vue";
+
+import type { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 export function useUniqueLabelError(
     workflowStateStore: ReturnType<typeof useWorkflowStepStore>,

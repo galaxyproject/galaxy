@@ -1,5 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
+import { BAlert, BButton, BButtonGroup, BBadge, BPagination, BListGroup, BListGroupItem } from "bootstrap-vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { faUndo, faCopy, faEye } from "@fortawesome/free-solid-svg-icons";
+import { useRouter } from "vue-router/composables";
+
 import localize from "@/utils/localization";
 import UtcDate from "@/components/UtcDate.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -11,11 +17,6 @@ import {
     reimportHistoryFromExportRecordAsync,
     type ArchivedHistorySummary,
 } from "@/stores/services/historyArchive.services";
-import { BAlert, BButton, BButtonGroup, BBadge, BPagination, BListGroup, BListGroupItem } from "bootstrap-vue";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faUndo, faCopy, faEye } from "@fortawesome/free-solid-svg-icons";
-import { useRouter } from "vue-router/composables";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useToast } from "@/composables/toast";
 import { useConfirmDialog } from "@/composables/confirmDialog";

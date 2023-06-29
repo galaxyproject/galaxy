@@ -1,6 +1,7 @@
 import Backbone from "backbone";
 import Utils from "utils/utils";
 import { Visualization } from "mvc/visualization/visualization-model";
+
 const MATCH_GROUP = /^groups_([0-9]+)\|([\w]+)/;
 
 export default Backbone.Model.extend({

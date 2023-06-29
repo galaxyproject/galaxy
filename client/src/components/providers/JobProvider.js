@@ -2,8 +2,8 @@ import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 import { SingleQueryProvider } from "components/providers/SingleQueryProvider";
 import { rethrowSimple } from "utils/simple-error";
-import { stateIsTerminal } from "./utils";
-import { cleanPaginationParameters } from "./utils";
+
+import { stateIsTerminal , cleanPaginationParameters } from "./utils";
 
 async function jobDetails({ jobId }) {
     const url = `${getAppRoot()}api/jobs/${jobId}?full=True`;

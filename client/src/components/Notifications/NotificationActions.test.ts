@@ -3,7 +3,9 @@ import flushPromises from "flush-promises";
 import { getLocalVue } from "@tests/jest/helpers";
 import { createTestingPinia } from "@pinia/testing";
 import { mount, type Wrapper } from "@vue/test-utils";
+
 import NotificationActions from "./NotificationActions.vue";
+
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import type { UserNotification } from "@/components/Notifications/index";
 import { generateMessageNotification, generateNewSharedItemNotification } from "@/components/Notifications/test-utils";

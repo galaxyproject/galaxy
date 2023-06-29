@@ -10,22 +10,24 @@ import {
     BButtonGroup,
     BButton,
 } from "bootstrap-vue";
-import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
-import UtcDate from "@/components/UtcDate.vue";
 import { computed, onMounted, onUnmounted, ref, watch, type PropType, type Ref } from "vue";
-import localize from "@/utils/localization";
-import Heading from "@/components/Common/Heading.vue";
-import type { components } from "@/schema";
 import { useRouter } from "vue-router/composables";
-import { useHistoryStore } from "@/stores/historyStore";
-import { useUserStore } from "@/stores/userStore";
-import Filtering, { contains, expandNameTag } from "@/utils/filtering";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faColumns, faSignInAlt, faArrowDown } from "@fortawesome/free-solid-svg-icons";
 import { faListAlt } from "@fortawesome/free-regular-svg-icons";
 import { useInfiniteScroll } from "@vueuse/core";
 import isEqual from "lodash.isequal";
+
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
+import UtcDate from "@/components/UtcDate.vue";
+import localize from "@/utils/localization";
+import Heading from "@/components/Common/Heading.vue";
+import type { components } from "@/schema";
+import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
+import Filtering, { contains, expandNameTag } from "@/utils/filtering";
+
 
 const validFilters = {
     name: contains("name"),

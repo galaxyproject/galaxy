@@ -8,9 +8,10 @@
  * TODO: convert the associated python endpoint to a legit json REST service
  */
 
-import { createTag } from "../model";
 import { Subject } from "rxjs";
 import { map, filter, debounceTime, switchMap, distinctUntilChanged } from "rxjs/operators";
+
+import { createTag } from "../model";
 
 export class TagService {
     constructor({ id, itemClass, context, debounceInterval = 150 }) {

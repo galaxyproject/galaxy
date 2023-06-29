@@ -53,9 +53,10 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { errorMessageAsString } from "utils/simple-error";
 import LoadingSpan from "components/LoadingSpan";
-import ExportLink from "./ExportLink.vue";
 import { waitOnJob } from "components/JobStates/wait";
 import JobError from "components/JobInformation/JobError";
+
+import ExportLink from "./ExportLink.vue";
 
 Vue.use(BootstrapVue);
 

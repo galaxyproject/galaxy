@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import axios from "axios";
+
 import type { Steps } from "@/stores/workflowStepStore";
 import { getAppRoot } from "@/onload/loadConfig";
 

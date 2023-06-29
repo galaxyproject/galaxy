@@ -5,8 +5,9 @@ import { computed, ref, watch } from "vue";
 import Heading from "components/Common/Heading";
 import LoadingSpan from "components/LoadingSpan";
 import DebouncedInput from "components/DebouncedInput";
-import { getPublishedHistories, updateTags } from "./services";
 import Filtering, { contains, expandNameTag } from "utils/filtering";
+
+import { getPublishedHistories, updateTags } from "./services";
 
 const validFilters = {
     name: contains("name"),

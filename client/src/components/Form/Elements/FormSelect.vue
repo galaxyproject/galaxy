@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, watch, type ComputedRef } from "vue";
 import Multiselect from "vue-multiselect";
+
 import { useMultiselect } from "@/composables/useMultiselect";
 
 type SelectValue = string | number | null;

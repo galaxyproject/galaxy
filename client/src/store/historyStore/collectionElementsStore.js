@@ -8,6 +8,7 @@
 import Vue from "vue";
 import { LastQueue } from "utils/promise-queue";
 import { urlData } from "utils/url";
+
 import { mergeArray } from "./model/utilities";
 
 const limit = 100;

@@ -1,8 +1,9 @@
 import { shallowMount } from "@vue/test-utils";
-import Index from "./Index.vue";
 import { getLocalVue } from "tests/jest/helpers";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
+
+import Index from "./Index.vue";
 
 const TEST_PLUGINS_URL = "/api/remote_files/plugins";
 

@@ -3,8 +3,9 @@ import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
-import SelectionOperations from "./SelectionOperations.vue";
 import MockConfigProvider from "components/providers/MockConfigProvider";
+
+import SelectionOperations from "./SelectionOperations.vue";
 
 const localVue = getLocalVue();
 

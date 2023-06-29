@@ -86,15 +86,17 @@
 
 <script>
 import { mapState } from "pinia";
-import { useUserStore } from "@/stores/userStore";
-import DatasetErrorDetails from "./DatasetErrorDetails";
 import FormElement from "components/Form/FormElement";
 import { DatasetProvider } from "components/providers";
 import { JobDetailsProvider, JobProblemProvider } from "components/providers/JobProvider";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBug } from "@fortawesome/free-solid-svg-icons";
+
+import DatasetErrorDetails from "./DatasetErrorDetails";
 import { sendErrorReport } from "./services";
+
+import { useUserStore } from "@/stores/userStore";
 
 library.add(faBug);
 

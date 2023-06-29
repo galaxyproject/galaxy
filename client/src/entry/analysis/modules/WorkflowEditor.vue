@@ -13,6 +13,7 @@
 import { urlData } from "utils/url";
 import Query from "utils/query-string-parsing";
 import Editor from "components/Workflow/Editor/Index";
+
 export default {
     components: {
         Editor,

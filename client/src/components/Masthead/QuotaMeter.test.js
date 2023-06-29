@@ -1,10 +1,11 @@
 import Vuex from "vuex";
 import { createPinia } from "pinia";
-import QuotaMeter from "./QuotaMeter.vue";
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 import { configStore } from "store/configStore";
 import { useUserStore } from "stores/userStore";
+
+import QuotaMeter from "./QuotaMeter.vue";
 
 const localVue = getLocalVue();
 

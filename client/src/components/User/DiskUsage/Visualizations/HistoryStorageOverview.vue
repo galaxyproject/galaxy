@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import localize from "@/utils/localization";
-import type { DataValuePoint } from "./Charts";
 import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router/composables";
+
+import type { DataValuePoint } from "./Charts";
 import BarChart from "./Charts/BarChart.vue";
 import { bytesLabelFormatter, bytesValueFormatter } from "./Charts/formatters";
 import {
@@ -12,9 +13,10 @@ import {
 } from "./service";
 import RecoverableItemSizeTooltip from "./RecoverableItemSizeTooltip.vue";
 import SelectedItemActions from "./SelectedItemActions.vue";
+
+import localize from "@/utils/localization";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import Heading from "@/components/Common/Heading.vue";
-import { useRouter } from "vue-router/composables";
 import { useToast } from "@/composables/toast";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useHistoryStore } from "@/stores/historyStore";

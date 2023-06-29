@@ -262,20 +262,22 @@
 <script>
 import Vue from "vue";
 import { mapState } from "pinia";
-import { useUserStore } from "@/stores/userStore";
 import { sanitize } from "dompurify";
 import { getAppRoot } from "onload/loadConfig";
 import UtcDate from "components/UtcDate";
 import BootstrapVue from "bootstrap-vue";
-import { Services } from "./services";
 import Utils from "utils/utils";
 import linkifyHtml from "linkify-html";
-import { fields } from "./table-fields";
 import { Toast } from "composables/toast";
-import FolderTopBar from "./TopToolbar/FolderTopBar";
 import { initFolderTableIcons } from "components/Libraries/icons";
 import { MAX_DESCRIPTION_LENGTH, DEFAULT_PER_PAGE } from "components/Libraries/library-utils";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+
+import FolderTopBar from "./TopToolbar/FolderTopBar";
+import { fields } from "./table-fields";
+import { Services } from "./services";
+
+import { useUserStore } from "@/stores/userStore";
 
 initFolderTableIcons();
 

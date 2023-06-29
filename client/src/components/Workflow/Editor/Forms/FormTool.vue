@@ -53,17 +53,22 @@
 </template>
 
 <script>
-import FormDisplay from "@/components/Form/FormDisplay.vue";
-import ToolCard from "@/components/Tool/ToolCard.vue";
-import FormSection from "./FormSection.vue";
-import FormElement from "@/components/Form/FormElement.vue";
-import FormConditional from "./FormConditional.vue";
 import Utils from "utils/utils";
-import Heading from "@/components/Common/Heading.vue";
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+import { toRef } from "vue";
+
 import { useUniqueLabelError } from "../composables/useUniqueLabelError";
 import { useStepProps } from "../composables/useStepProps";
-import { toRef } from "vue";
+
+import FormSection from "./FormSection.vue";
+import FormConditional from "./FormConditional.vue";
+
+import FormDisplay from "@/components/Form/FormDisplay.vue";
+import ToolCard from "@/components/Tool/ToolCard.vue";
+import FormElement from "@/components/Form/FormElement.vue";
+import Heading from "@/components/Common/Heading.vue";
+import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+
+
 
 export default {
     components: {

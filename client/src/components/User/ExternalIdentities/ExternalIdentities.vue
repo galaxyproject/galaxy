@@ -94,11 +94,12 @@
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
-import svc from "./service";
 import { userLogout } from "utils/logout";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin.vue";
 import { sanitize } from "dompurify";
 import { Toast } from "composables/toast";
+
+import svc from "./service";
 
 Vue.use(BootstrapVue);
 

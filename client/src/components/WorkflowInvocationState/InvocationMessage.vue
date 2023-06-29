@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
+
 import type { InvocationMessageResponseModel } from "./invocationMessageModel";
+
+import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
 import WorkflowInvocationStep from "@/components/WorkflowInvocationState/WorkflowInvocationStep.vue";
 import JobInformation from "@/components/JobInformation/JobInformation.vue";

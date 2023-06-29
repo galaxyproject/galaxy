@@ -1,7 +1,8 @@
+import { ref, watch, type Ref, computed } from "vue";
+
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { terminalFactory } from "@/components/Workflow/Editor/modules/terminals";
 import type { Step, TerminalSource } from "@/stores/workflowStepStore";
-import { ref, watch, type Ref, computed } from "vue";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 export function useTerminal(

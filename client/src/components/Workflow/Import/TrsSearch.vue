@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import axios from "axios";
-import TrsTool from "./TrsTool.vue";
-import { Services } from "../services";
-import { withPrefix } from "@/utils/redirect";
 import { computed, ref, watch, type Ref } from "vue";
-import { getRedirectOnImportPath } from "../redirectPath";
-import LoadingSpan from "@/components/LoadingSpan.vue";
-import TrsServerSelection from "./TrsServerSelection.vue";
 import { useRouter } from "vue-router/composables";
 import { BCard } from "bootstrap-vue";
+
+import { getRedirectOnImportPath } from "../redirectPath";
+import { Services } from "../services";
+
+import TrsServerSelection from "./TrsServerSelection.vue";
+import TrsTool from "./TrsTool.vue";
 import type { TrsSelection } from "./types";
+
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import { withPrefix } from "@/utils/redirect";
 
 type TrsSearchData = {
     id: string;

@@ -8,8 +8,9 @@ import Templates from "mvc/grid/grid-template";
 import PopupMenu from "mvc/ui/popup-menu";
 import LoadingIndicator from "ui/loading-indicator";
 import { init_refresh_on_change } from "onload/globalInits/init_refresh_on_change";
-import store from "../../store";
 import slugify from "slugify";
+
+import store from "../../store";
 
 // This is necessary so that, when nested arrays are used in ajax/post/get methods, square brackets ('[]') are
 // not appended to the identifier of a nested array.

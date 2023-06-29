@@ -64,17 +64,20 @@ import { mapState } from "pinia";
 import BootstrapVue from "bootstrap-vue";
 import axios from "axios";
 import { prependPath } from "utils/redirect";
-import { useHistoryStore } from "@/stores/historyStore";
 import { errorMessageAsString } from "utils/simple-error";
-import DatabaseEditTab from "./DatabaseEditTab";
-import SuitableConvertersTab from "./SuitableConvertersTab";
-import { DbKeyProvider, SuitableConvertersProvider, DatatypesProvider } from "../../providers";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faDatabase, faTable, faBars, faUser, faCog } from "@fortawesome/free-solid-svg-icons";
 import ConfigProvider from "components/providers/ConfigProvider";
-import ChangeDatatypeTab from "./ChangeDatatypeTab";
+
+import { DbKeyProvider, SuitableConvertersProvider, DatatypesProvider } from "../../providers";
 import LoadingSpan from "../../LoadingSpan.vue";
+
+import ChangeDatatypeTab from "./ChangeDatatypeTab";
+import SuitableConvertersTab from "./SuitableConvertersTab";
+import DatabaseEditTab from "./DatabaseEditTab";
+
+import { useHistoryStore } from "@/stores/historyStore";
 
 library.add(faDatabase, faTable, faBars, faUser, faCog);
 

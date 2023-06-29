@@ -1,11 +1,13 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
-import { setupSelectableMock } from "@/components/ObjectStore/mockServices";
-setupSelectableMock();
-
 import flushPromises from "flush-promises";
 
 import WorkflowSelectPreferredObjectStore from "./WorkflowSelectPreferredObjectStore.vue";
+
+import { setupSelectableMock } from "@/components/ObjectStore/mockServices";
+import { ROOT_COMPONENT } from "@/utils/navigation";
+
+setupSelectableMock();
 
 const localVue = getLocalVue(true);
 
@@ -16,8 +18,6 @@ function mountComponent() {
     });
     return wrapper;
 }
-
-import { ROOT_COMPONENT } from "@/utils/navigation";
 
 const PREFERENCES = ROOT_COMPONENT.preferences;
 

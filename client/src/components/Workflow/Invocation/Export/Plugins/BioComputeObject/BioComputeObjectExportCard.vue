@@ -93,6 +93,7 @@
 import { getRootFromIndexLink } from "onload";
 import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
+
 const getUrl = (path) => getRootFromIndexLink() + path;
 export default {
     props: {

@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import UtcDate from "@/components/UtcDate.vue";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import AsyncButton from "@/components/Common/AsyncButton.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BInputGroup, BCol, BRow, BButton } from "bootstrap-vue";
 import { faHourglassHalf } from "@fortawesome/free-solid-svg-icons";
+
+import AsyncButton from "@/components/Common/AsyncButton.vue";
+import UtcDate from "@/components/UtcDate.vue";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import type { UserNotification } from "@/components/Notifications";
 

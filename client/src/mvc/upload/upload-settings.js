@@ -2,6 +2,7 @@
 import $ from "jquery";
 import _ from "underscore";
 import Backbone from "backbone";
+
 export default Backbone.View.extend({
     options: {
         class_check: "fa-check-square-o",

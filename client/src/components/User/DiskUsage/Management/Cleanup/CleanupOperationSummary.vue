@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import localize from "@/utils/localization";
-import { wait } from "@/utils/utils";
 import { computed, ref, onMounted, watchEffect } from "vue";
 import { BAlert, BCard, BCardText, BLink } from "bootstrap-vue";
-import LoadingSpan from "@/components/LoadingSpan.vue";
+
 import type { CleanableSummary, CleanupOperation } from "./model";
+
+import localize from "@/utils/localization";
+import { wait } from "@/utils/utils";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+
 
 interface CleanupOperationSummaryProps {
     operation: CleanupOperation;

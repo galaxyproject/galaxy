@@ -79,6 +79,11 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { UntypedParameters } from "components/Workflow/Editor/modules/parameters";
 import LintSection from "components/Workflow/Editor/LintSection";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faMagic, faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
+import { storeToRefs } from "pinia";
+
 import {
     getDisconnectedInputs,
     getUntypedParameters,
@@ -89,12 +94,9 @@ import {
     fixUnlabeledOutputs,
     fixUntypedParameter,
 } from "./modules/linting";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faMagic, faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
+
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
-import { storeToRefs } from "pinia";
 
 Vue.use(BootstrapVue);
 

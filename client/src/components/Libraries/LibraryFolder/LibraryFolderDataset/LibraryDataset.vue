@@ -129,7 +129,6 @@
 
 <script>
 import { mapState } from "pinia";
-import { useUserStore } from "@/stores/userStore";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faUsers, faRedo, faPencilAlt, faBook, faDownload, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { faSave } from "@fortawesome/free-regular-svg-icons";
@@ -144,6 +143,8 @@ import { fieldTitles } from "components/Libraries/LibraryFolder/LibraryFolderDat
 import { DbKeyProvider, DatatypesProvider } from "components/providers";
 import SingleItemSelector from "components/SingleItemSelector";
 import { buildFields } from "components/Libraries/library-utils";
+
+import { useUserStore } from "@/stores/userStore";
 
 library.add(faUsers, faRedo, faBook, faDownload, faPencilAlt, faTimes, faSave);
 

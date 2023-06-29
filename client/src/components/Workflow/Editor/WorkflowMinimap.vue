@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, unref, watch } from "vue";
+import { useDraggable, type UseElementBoundingReturn } from "@vueuse/core";
+import type { Ref } from "vue";
+
+import { AxisAlignedBoundingBox, Transform } from "./modules/geometry";
+
 import { useAnimationFrame } from "@/composables/sensors/animationFrame";
 import { useAnimationFrameThrottle } from "@/composables/throttle";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
-import { AxisAlignedBoundingBox, Transform } from "./modules/geometry";
-import { useDraggable, type UseElementBoundingReturn } from "@vueuse/core";
-
 import type { Step, Steps } from "@/stores/workflowStepStore";
-import type { Ref } from "vue";
+
 
 const props = defineProps<{
     steps: Steps;

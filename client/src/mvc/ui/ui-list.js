@@ -2,6 +2,7 @@ import $ from "jquery";
 import Backbone from "backbone";
 import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
+
 var View = Backbone.View.extend({
     initialize: function (options) {
         this.options = options;

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { BCard, BCardText } from "bootstrap-vue";
+
 import IncludedBadge from "./IncludedBadge.vue";
+
 import type { ExportRecord } from "@/components/Common/models/exportRecordModel";
 
 const props = defineProps<{

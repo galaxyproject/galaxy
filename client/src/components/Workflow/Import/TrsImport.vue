@@ -1,16 +1,20 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
+import { computed, ref, watch, type Ref } from "vue";
+import { useRouter } from "vue-router/composables";
+
+import { Services } from "../services";
+import { getRedirectOnImportPath } from "../redirectPath";
+
 import TrsTool from "./TrsTool.vue";
 import TrsUrlImport from "./TrsUrlImport.vue";
-import { Toast } from "@/composables/toast";
-import { Services } from "../services";
-import { useUserStore } from "@/stores/userStore";
-import { computed, ref, watch, type Ref } from "vue";
-import { getRedirectOnImportPath } from "../redirectPath";
-import LoadingSpan from "@/components/LoadingSpan.vue";
 import TrsServerSelection from "./TrsServerSelection.vue";
-import { useRouter } from "vue-router/composables";
 import type { TrsSelection, TrsTool as TrsToolInterface } from "./types";
+
+import { Toast } from "@/composables/toast";
+import { useUserStore } from "@/stores/userStore";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+
 
 const props = defineProps({
     queryTrsServer: {

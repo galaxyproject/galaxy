@@ -14,6 +14,7 @@ import Vue from "vue";
 import VueRx from "vue-rx";
 import { mapActions } from "vuex";
 import { map } from "rxjs/operators";
+
 import StatelessTags from "./StatelessTags";
 import { diffTags } from "./model";
 import { TagService } from "./tagService";

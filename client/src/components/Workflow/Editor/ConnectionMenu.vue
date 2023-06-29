@@ -22,14 +22,16 @@
     </b-list-group>
 </template>
 <script setup lang="ts">
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { computed, onMounted, ref, watch, type ComputedRef } from "vue";
+
 import {
     type OutputTerminals,
     type InputTerminalsAndInvalid,
     terminalFactory,
     type InputTerminals,
 } from "./modules/terminals";
+
+import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { useFocusWithin } from "@/composables/useActiveElement";
 import { assertDefined } from "@/utils/assertions";
 

@@ -84,15 +84,16 @@
 
 <script>
 import { mapActions, mapState } from "pinia";
-import { useHistoryStore } from "@/stores/historyStore";
-
 import { getGalaxyInstance } from "app";
 import { invocationsProvider } from "components/providers/InvocationsProvider";
 import WorkflowInvocationState from "components/WorkflowInvocationState/WorkflowInvocationState";
-import WorkflowRunButton from "./WorkflowRunButton.vue";
 import UtcDate from "components/UtcDate";
 import { useWorkflowStore } from "stores/workflowStore";
+
+import WorkflowRunButton from "./WorkflowRunButton.vue";
 import paginationMixin from "./paginationMixin";
+
+import { useHistoryStore } from "@/stores/historyStore";
 
 export default {
     components: {

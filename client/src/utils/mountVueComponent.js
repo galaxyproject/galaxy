@@ -5,8 +5,9 @@
 import Vue from "vue";
 import Vuex from "vuex";
 import BootstrapVue from "bootstrap-vue";
-import store from "../store";
 import { eventHubPlugin, localizationPlugin, vueRxShortcutPlugin, iconPlugin } from "components/plugins";
+
+import store from "../store";
 
 Vue.use(Vuex);
 

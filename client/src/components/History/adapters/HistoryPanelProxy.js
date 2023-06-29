@@ -5,9 +5,10 @@
 import Backbone from "backbone";
 import { useHistoryStore } from "stores/historyStore";
 import { useHistoryItemsStore } from "stores/history/historyItemsStore";
-import { buildCollectionModal } from "./buildCollectionModal";
 import { createDatasetCollection } from "components/History/model/queries";
 import { watchHistory } from "store/historyStore/model/watchHistory";
+
+import { buildCollectionModal } from "./buildCollectionModal";
 
 // extend existing current history panel
 export class HistoryPanelProxy {

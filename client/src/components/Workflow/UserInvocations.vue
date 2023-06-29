@@ -4,8 +4,9 @@
 </template>
 <script>
 import { mapState } from "pinia";
-import { useUserStore } from "@/stores/userStore";
 import InvocationsList from "components/Workflow/InvocationsList";
+
+import { useUserStore } from "@/stores/userStore";
 
 export default {
     components: {

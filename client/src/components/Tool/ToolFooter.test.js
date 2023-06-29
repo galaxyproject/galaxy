@@ -3,6 +3,7 @@ import MockAdapter from "axios-mock-adapter";
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 import flushPromises from "flush-promises";
+
 import ToolFooter from "./ToolFooter";
 
 const localVue = getLocalVue(true);

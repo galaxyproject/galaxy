@@ -104,9 +104,10 @@
 import _l from "utils/localization";
 import _ from "underscore";
 import UploadRow from "mvc/upload/default/default-row";
+import { BButton } from "bootstrap-vue";
+
 import UploadBoxMixin from "./UploadBoxMixin";
 import { uploadModelsToPayload } from "./helpers";
-import { BButton } from "bootstrap-vue";
 
 export default {
     components: { BButton },

@@ -20,7 +20,9 @@
 <script>
 import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
+
 import Message from "../Message.vue";
+
 import BaseGrid from "./BaseGrid.vue";
 
 export default {

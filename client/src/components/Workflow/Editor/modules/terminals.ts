@@ -1,16 +1,18 @@
-import {
-    getConnectionId,
-    useConnectionStore,
-    type Connection,
-    type ConnectionId,
-} from "@/stores/workflowConnectionStore";
 import EventEmitter from "events";
+
 import {
     NULL_COLLECTION_TYPE_DESCRIPTION,
     ANY_COLLECTION_TYPE_DESCRIPTION,
     CollectionTypeDescription,
     type CollectionTypeDescriptor,
 } from "./collectionTypeDescription";
+
+import {
+    getConnectionId,
+    useConnectionStore,
+    type Connection,
+    type ConnectionId,
+} from "@/stores/workflowConnectionStore";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import type {
     DataStepInput,

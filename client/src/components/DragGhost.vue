@@ -4,6 +4,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faPaperPlane } from "@fortawesome/free-solid-svg-icons";
 import { useEventStore } from "stores/eventStore";
+
 import TextShort from "@/components/Common/TextShort.vue";
 
 library.add(faPaperPlane);

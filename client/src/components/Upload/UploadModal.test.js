@@ -1,14 +1,15 @@
 import { createPinia } from "pinia";
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
-import UploadModal from "./UploadModal";
-import UploadModalContent from "./UploadModalContent";
 import { mount } from "@vue/test-utils";
 import { getLocalVue, mockModule } from "tests/jest/helpers";
 import { configStore } from "store/configStore";
 import Vuex from "vuex";
 import { useUserStore } from "stores/userStore";
 import { useHistoryStore } from "stores/historyStore";
+
+import UploadModalContent from "./UploadModalContent";
+import UploadModal from "./UploadModal";
 
 jest.mock("app");
 

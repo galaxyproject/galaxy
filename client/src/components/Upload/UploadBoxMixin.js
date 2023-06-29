@@ -4,15 +4,16 @@ import Select2 from "components/Select2";
 import Popover from "mvc/ui/ui-popover";
 import UploadExtension from "mvc/upload/upload-extension";
 import UploadModel from "mvc/upload/upload-model";
-import UploadWrapper from "./UploadWrapper";
-import { defaultNewFileName, uploadModelsToPayload } from "./helpers";
 import UploadFtp from "mvc/upload/upload-ftp";
-import LazyLimited from "./lazy-limited";
-import { findExtension } from "./utils";
 import { filesDialog, refreshContentsWrapper } from "utils/data";
 import { getAppRoot } from "onload";
 import { UploadQueue } from "utils/uploadbox";
 import axios from "axios";
+
+import { findExtension } from "./utils";
+import LazyLimited from "./lazy-limited";
+import { defaultNewFileName, uploadModelsToPayload } from "./helpers";
+import UploadWrapper from "./UploadWrapper";
 
 const localize = _l;
 

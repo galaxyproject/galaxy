@@ -2,6 +2,7 @@
 import _ from "underscore";
 import Backbone from "backbone";
 import Popover from "mvc/ui/ui-popover";
+
 export default Backbone.View.extend({
     initialize: function (options) {
         this.model = new Backbone.Model(options);

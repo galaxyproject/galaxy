@@ -5,6 +5,7 @@
 import Query from "utils/query-string-parsing";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
 import FormGeneric from "components/Form/FormGeneric";
+
 export default {
     components: {
         FormGeneric,

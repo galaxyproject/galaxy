@@ -59,6 +59,7 @@ import { Services } from "components/Workflow/services";
 import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import LicenseSelector from "components/License/LicenseSelector";
 import CreatorEditor from "components/SchemaOrg/CreatorEditor";
+
 import { UntypedParameters } from "./modules/parameters";
 
 Vue.use(BootstrapVue);

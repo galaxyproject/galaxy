@@ -1,9 +1,10 @@
-export const state = {
-    collectionAttributes: {},
-};
 import Vue from "vue";
 import { prependPath } from "utils/redirect";
 import axios from "axios";
+
+export const state = {
+    collectionAttributes: {},
+};
 
 const getters = {
     getCollectionAttributes: (state) => (collectionId) => {

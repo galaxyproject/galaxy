@@ -7,12 +7,11 @@
 
 <script>
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BLink } from "bootstrap-vue";
-import { VBTooltip } from "bootstrap-vue";
-
+import { BLink , VBTooltip } from "bootstrap-vue";
 import { faStar } from "@fortawesome/free-solid-svg-icons";
 import { faStar as farStar } from "@fortawesome/free-regular-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
+
 library.add(faStar, farStar);
 
 const CHECKED_DESCRIPTION = "Remove bookmark";

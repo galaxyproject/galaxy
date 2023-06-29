@@ -22,9 +22,10 @@
 
 <script>
 import axios from "axios";
-import SelectionDialogMixin from "./SelectionDialogMixin";
 import { getGalaxyInstance } from "app";
 import { errorMessageAsString } from "utils/simple-error";
+
+import SelectionDialogMixin from "./SelectionDialogMixin";
 
 export default {
     mixins: [SelectionDialogMixin],

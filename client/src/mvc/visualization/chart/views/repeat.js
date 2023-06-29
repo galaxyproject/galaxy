@@ -4,8 +4,9 @@ import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
 import Utils from "utils/utils";
-import Portlet from "./portlet";
 import Ui from "mvc/ui/ui-misc";
+
+import Portlet from "./portlet";
 
 export var View = Backbone.View.extend({
     initialize: function (options) {

@@ -7,6 +7,7 @@ import Backbone from "backbone";
 import Utils from "utils/utils";
 import { keyedColorScheme } from "utils/color";
 import Buttons from "mvc/ui/ui-buttons";
+
 var View = Backbone.View.extend({
     initialize: function (options) {
         this.data = [];

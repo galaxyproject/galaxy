@@ -80,8 +80,10 @@
 import { bytesToString } from "utils/utils";
 import { withPrefix } from "utils/redirect";
 import UtcDate from "components/UtcDate";
-import DecodedId from "../DecodedId";
 import { DatasetProvider } from "components/providers";
+
+import DecodedId from "../DecodedId";
+
 import DatasetSources from "./DatasetSources";
 import DatasetHashes from "./DatasetHashes";
 

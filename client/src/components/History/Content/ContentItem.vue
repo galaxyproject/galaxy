@@ -102,16 +102,19 @@
 
 <script>
 import StatelessTags from "components/TagsMultiselect/StatelessTags";
-import { STATES, HIERARCHICAL_COLLECTION_JOB_STATES } from "./model/states";
-import CollectionDescription from "./Collection/CollectionDescription";
-import ContentOptions from "./ContentOptions";
-import DatasetDetails from "./Dataset/DatasetDetails";
 import { updateContentFields } from "components/History/model/queries";
-import { JobStateSummary } from "./Collection/JobStateSummary";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faArrowCircleUp, faArrowCircleDown, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
 import { useEntryPointStore } from "stores/entryPointStore";
+
+import { STATES, HIERARCHICAL_COLLECTION_JOB_STATES } from "./model/states";
+import CollectionDescription from "./Collection/CollectionDescription";
+import ContentOptions from "./ContentOptions";
+import DatasetDetails from "./Dataset/DatasetDetails";
+import { JobStateSummary } from "./Collection/JobStateSummary";
+
+
 import { clearDrag, setDrag } from "@/utils/setDrag.js";
 
 library.add(faArrowCircleUp, faArrowCircleDown, faCheckCircle);

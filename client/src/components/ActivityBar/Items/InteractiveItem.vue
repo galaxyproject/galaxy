@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { storeToRefs } from "pinia";
-import { useEntryPointStore } from "@/stores/entryPointStore";
 import ActivityItem from "components/ActivityBar/ActivityItem.vue";
+
+import { useEntryPointStore } from "@/stores/entryPointStore";
 
 const { entryPoints } = storeToRefs(useEntryPointStore());
 

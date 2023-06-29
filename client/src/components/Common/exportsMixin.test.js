@@ -1,8 +1,10 @@
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
-import exportsMixin from "./exportsMixin";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
+
+import exportsMixin from "./exportsMixin";
+
 const TEST_PLUGINS_URL = "/api/remote_files/plugins";
 
 const localVue = getLocalVue();

@@ -3,9 +3,10 @@
  * environments such as the existing python scripts and Backbone views.
  */
 
-import Tags from "./Tags";
 import { mountVueComponent } from "utils/mountVueComponent";
 import { redirectToUrl } from "utils/redirect";
+
+import Tags from "./Tags";
 import { TagService } from "./tagService";
 import { BackboneTagService } from "./backboneTagService";
 

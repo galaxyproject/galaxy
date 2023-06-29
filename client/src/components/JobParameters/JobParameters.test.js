@@ -4,10 +4,11 @@ import { createPinia } from "pinia";
 import MockAdapter from "axios-mock-adapter";
 import { mount, createLocalVue } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import JobParameters from "./JobParameters";
-import paramResponse from "./parameters-response.json";
 import raw from "components/providers/test/json/Dataset.json";
 import { configStore } from "store/configStore";
+
+import JobParameters from "./JobParameters";
+import paramResponse from "./parameters-response.json";
 
 const JOB_ID = "foo";
 const DatasetProvider = {

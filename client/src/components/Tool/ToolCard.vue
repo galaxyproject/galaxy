@@ -1,6 +1,5 @@
 <script setup>
 import { storeToRefs } from "pinia";
-import { useUserStore } from "@/stores/userStore";
 import FormMessage from "components/Form/FormMessage";
 import ToolFavoriteButton from "components/Tool/Buttons/ToolFavoriteButton.vue";
 import ToolVersionsButton from "components/Tool/Buttons/ToolVersionsButton.vue";
@@ -8,12 +7,15 @@ import ToolOptionsButton from "components/Tool/Buttons/ToolOptionsButton.vue";
 import ToolFooter from "components/Tool/ToolFooter";
 import ToolHelp from "components/Tool/ToolHelp";
 import Heading from "components/Common/Heading";
+import { getAppRoot } from "onload/loadConfig";
+import { computed, ref, watch } from "vue";
+
 import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore";
 import ToolTargetPreferredObjectStorePopover from "./ToolTargetPreferredObjectStorePopover";
-import { getAppRoot } from "onload/loadConfig";
 import ToolTutorialRecommendations from "./ToolTutorialRecommendations.vue";
 
-import { computed, ref, watch } from "vue";
+
+import { useUserStore } from "@/stores/userStore";
 
 const props = defineProps({
     id: {

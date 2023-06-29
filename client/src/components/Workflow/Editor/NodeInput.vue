@@ -28,14 +28,17 @@
 </template>
 
 <script>
-import { useConnectionStore, getConnectionId } from "@/stores/workflowConnectionStore";
 import { computed, inject, ref, toRefs, watchEffect, watch } from "vue";
 import { storeToRefs } from "pinia";
+
 import { useTerminal } from "./composables/useTerminal";
+import { useRelativePosition } from "./composables/relativePosition";
+
+import { useConnectionStore, getConnectionId } from "@/stores/workflowConnectionStore";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { terminalFactory, ConnectionAcceptable } from "@/components/Workflow/Editor/modules/terminals";
-import { useRelativePosition } from "./composables/relativePosition";
+
 
 export default {
     props: {

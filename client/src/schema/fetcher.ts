@@ -1,8 +1,10 @@
 import { Fetcher } from "openapi-typescript-fetch";
+import type { Middleware } from "openapi-typescript-fetch";
+
+import type { paths } from "./schema";
+
 import { getAppRoot } from "@/onload/loadConfig";
 import { rethrowSimple } from "@/utils/simple-error";
-import type { paths } from "./schema";
-import type { Middleware } from "openapi-typescript-fetch";
 
 const rethrowSimpleMiddleware: Middleware = async (url, init, next) => {
     try {

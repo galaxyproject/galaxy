@@ -151,21 +151,23 @@ import { deleteContent, updateContentFields } from "components/History/model/que
 import ExpandedItems from "components/History/Content/ExpandedItems";
 import SelectedItems from "components/History/Content/SelectedItems";
 import ListingLayout from "components/History/Layout/ListingLayout";
+import { HistoryFilters as FilterClass } from "components/History/HistoryFilters";
+import { getOperatorForAlias } from "utils/filtering";
+import { rewatchHistory } from "store/historyStore/model/watchHistory";
+import { copyDataset } from "components/Dataset/services";
+
 import HistoryCounter from "./HistoryCounter";
 import HistoryOperations from "./HistoryOperations/HistoryOperations";
 import HistoryDetails from "./HistoryDetails";
 import HistoryDropZone from "./HistoryDropZone";
 import HistoryEmpty from "./HistoryEmpty";
 import HistoryFilters from "./HistoryFilters/HistoryFilters";
-import { HistoryFilters as FilterClass } from "components/History/HistoryFilters";
-import { getOperatorForAlias } from "utils/filtering";
 import HistoryMessages from "./HistoryMessages";
 import HistorySelectionOperations from "./HistoryOperations/SelectionOperations";
 import HistorySelectionStatus from "./HistoryOperations/SelectionStatus";
 import SelectionChangeWarning from "./HistoryOperations/SelectionChangeWarning";
 import OperationErrorDialog from "./HistoryOperations/OperationErrorDialog";
-import { rewatchHistory } from "store/historyStore/model/watchHistory";
-import { copyDataset } from "components/Dataset/services";
+
 
 export default {
     components: {

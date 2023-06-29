@@ -1,14 +1,14 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
+import { getAppRoot } from "onload/loadConfig";
+
+import { Services } from "../services";
+
 import Monitor from "./Monitor";
 
 jest.mock("app");
-
-import { getAppRoot } from "onload/loadConfig";
 jest.mock("onload/loadConfig");
 getAppRoot.mockImplementation(() => "/");
-
-import { Services } from "../services";
 jest.mock("../services");
 
 Services.mockImplementation(() => {

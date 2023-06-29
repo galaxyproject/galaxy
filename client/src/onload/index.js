@@ -12,22 +12,23 @@ import "./publicPath";
 // Default Font
 import "@fontsource/atkinson-hyperlegible";
 
+// Client-side configuration variables (based on environment)
+import config from "config";
+
+// Custom Icons
+import { library } from "@fortawesome/fontawesome-svg-core";
+
+import customIconPack from "@/assets/icons.json";
+
 // Module exports appear as objects on window.config in the browser
 export { standardInit } from "./standardInit";
 export { initializations$, addInitialization, prependInitialization, clearInitQueue } from "./initQueue";
 export { config$, set as setConfig, get as getConfig, getAppRoot } from "./loadConfig";
 export { getRootFromIndexLink } from "./getRootFromIndexLink";
 
-// Client-side configuration variables (based on environment)
-import config from "config";
-
 if (!config.testBuild === true) {
     console.log(`Galaxy Client '${config.name}' build, dated ${config.buildTimestamp}`);
     console.debug("Full configuration:", config);
 }
-
-// Custom Icons
-import customIconPack from "@/assets/icons.json";
-import { library } from "@fortawesome/fontawesome-svg-core";
 
 library.add(customIconPack);

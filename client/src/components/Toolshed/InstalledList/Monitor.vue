@@ -31,6 +31,7 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+
 import { Services } from "../services";
 import InstallationActions from "../RepositoryDetails/InstallationActions";
 

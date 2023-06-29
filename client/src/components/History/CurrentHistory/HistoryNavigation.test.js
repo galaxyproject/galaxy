@@ -2,6 +2,7 @@ import { createPinia } from "pinia";
 import { shallowMount } from "@vue/test-utils";
 import { useUserStore } from "stores/userStore";
 import { getLocalVue } from "tests/jest/helpers";
+
 import HistoryNavigation from "./HistoryNavigation";
 
 const localVue = getLocalVue();

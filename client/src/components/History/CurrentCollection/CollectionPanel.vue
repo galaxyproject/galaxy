@@ -45,11 +45,12 @@
 import { CollectionElementsProvider } from "components/providers/storeProviders";
 import { updateContentFields } from "components/History/model/queries";
 import ContentItem from "components/History/Content/ContentItem";
+import ExpandedItems from "components/History/Content/ExpandedItems";
+import ListingLayout from "components/History/Layout/ListingLayout";
+
 import CollectionNavigation from "./CollectionNavigation";
 import CollectionOperations from "./CollectionOperations";
 import CollectionDetails from "./CollectionDetails";
-import ExpandedItems from "components/History/Content/ExpandedItems";
-import ListingLayout from "components/History/Layout/ListingLayout";
 
 export default {
     components: {

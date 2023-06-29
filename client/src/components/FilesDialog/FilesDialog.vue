@@ -57,16 +57,19 @@
 
 <script>
 import Vue from "vue";
-import { getGalaxyInstance } from "../../app";
 import SelectionDialogMixin from "components/SelectionDialog/SelectionDialogMixin";
 import { selectionStates } from "components/SelectionDialog/selectionStates";
 import { UrlTracker } from "components/DataDialog/utilities";
 import { isSubPath } from "components/FilesDialog/utilities";
-import { Services } from "./services";
-import { Model } from "./model";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretLeft } from "@fortawesome/free-solid-svg-icons";
+
+import { getGalaxyInstance } from "../../app";
+
+import { Model } from "./model";
+import { Services } from "./services";
+
 import { errorMessageAsString } from "@/utils/simple-error";
 
 library.add(faCaretLeft);

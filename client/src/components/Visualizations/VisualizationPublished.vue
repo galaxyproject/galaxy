@@ -10,6 +10,7 @@
 import { urlData } from "utils/url";
 import CenterFrame from "entry/analysis/modules/CenterFrame";
 import Published from "components/Common/Published";
+
 export default {
     components: {
         CenterFrame,

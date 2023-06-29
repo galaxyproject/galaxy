@@ -109,8 +109,15 @@
 
 <script setup lang="ts">
 import type { PropType, Ref } from "vue";
-import Vue, { reactive } from "vue";
+import Vue, { reactive , computed, ref } from "vue";
 import BootstrapVue from "bootstrap-vue";
+import type { UseElementBoundingReturn, UseScrollReturn, VueInstance } from "@vueuse/core";
+import { faCodeBranch } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+
+import type { OutputTerminals } from "./modules/terminals";
+
 import WorkflowIcons from "@/components/Workflow/icons";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import { getGalaxyInstance } from "@/app";
@@ -118,18 +125,14 @@ import Recommendations from "@/components/Workflow/Editor/Recommendations.vue";
 import NodeInput from "@/components/Workflow/Editor/NodeInput.vue";
 import NodeOutput from "@/components/Workflow/Editor/NodeOutput.vue";
 import DraggableWrapper from "@/components/Workflow/Editor/DraggablePan.vue";
-import { computed, ref } from "vue";
 import { useNodePosition } from "@/components/Workflow/Editor/composables/useNodePosition";
 import { useWorkflowStateStore, type TerminalPosition, type XYPosition } from "@/stores/workflowEditorStateStore";
 import type { Step } from "@/stores/workflowStepStore";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
-import type { UseElementBoundingReturn, UseScrollReturn, VueInstance } from "@vueuse/core";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
-import { faCodeBranch } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import type { OutputTerminals } from "./modules/terminals";
+
+
 
 Vue.use(BootstrapVue);
 

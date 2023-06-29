@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, type Ref } from "vue";
 import { useRouter } from "vue-router/composables";
+
 import _l from "@/utils/localization";
 import { createWorkflowQuery } from "@/components/Panels/utilities";
 

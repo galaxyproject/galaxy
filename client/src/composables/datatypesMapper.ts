@@ -1,5 +1,4 @@
 import { ref } from "vue";
-
 import type { Ref } from "vue";
 
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";

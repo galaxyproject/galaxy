@@ -261,7 +261,6 @@
 <script>
 import Vue from "vue";
 import { mapState } from "pinia";
-import { useUserStore } from "@/stores/userStore";
 import BootstrapVue from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -274,7 +273,10 @@ import Multiselect from "vue-multiselect";
 import { copy } from "utils/clipboard";
 import ConfigProvider from "components/providers/ConfigProvider";
 import { errorMessageAsString } from "utils/simple-error";
+
 import ErrorMessage from "./ErrorMessage";
+
+import { useUserStore } from "@/stores/userStore";
 
 Vue.use(BootstrapVue);
 library.add(faCopy, faEdit, faUserPlus, faUserSlash, faCaretDown, faCaretUp);

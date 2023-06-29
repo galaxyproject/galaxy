@@ -10,10 +10,11 @@
 </template>
 
 <script setup lang="ts">
-import FormElement from "@/components/Form/FormElement.vue";
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { computed, ref } from "vue";
 import type { Ref } from "vue";
+
+import FormElement from "@/components/Form/FormElement.vue";
+import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import type { Step } from "@/stores/workflowStepStore";
 
 const props = withDefaults(

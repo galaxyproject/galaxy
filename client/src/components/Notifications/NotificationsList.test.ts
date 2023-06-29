@@ -3,9 +3,11 @@ import flushPromises from "flush-promises";
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "@tests/jest/helpers";
 import { createTestingPinia } from "@pinia/testing";
-import { mergeObjectListsById } from "@/utils/utils";
+
 import NotificationsList from "./NotificationsList.vue";
 import { generateNotificationsList } from "./test-utils";
+
+import { mergeObjectListsById } from "@/utils/utils";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 
 const localVue = getLocalVue(true);

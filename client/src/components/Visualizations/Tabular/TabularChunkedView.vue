@@ -2,8 +2,9 @@
 import axios from "axios";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { parse } from "csv-parse/sync";
-import { getAppRoot } from "@/onload/loadConfig";
 import { useWindowScroll } from "@vueuse/core";
+
+import { getAppRoot } from "@/onload/loadConfig";
 
 interface TabularChunk {
     ck_data: string;

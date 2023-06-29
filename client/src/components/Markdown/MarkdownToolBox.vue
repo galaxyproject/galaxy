@@ -48,8 +48,9 @@ import Vue from "vue";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
 import ToolSection from "components/Panels/Common/ToolSection";
-import MarkdownDialog from "./MarkdownDialog";
 import { getAppRoot } from "onload/loadConfig";
+
+import MarkdownDialog from "./MarkdownDialog";
 
 Vue.use(BootstrapVue);
 

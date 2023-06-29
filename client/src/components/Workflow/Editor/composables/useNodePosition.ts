@@ -1,5 +1,6 @@
 import { useElementBounding } from "@vueuse/core";
 import { onUnmounted, unref, watch, type ComputedRef, type Ref } from "vue";
+
 import type { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 
 export function useNodePosition(

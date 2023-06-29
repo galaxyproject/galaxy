@@ -1,4 +1,3 @@
-import PageList from "./PageList.vue";
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 import axios from "axios";
@@ -7,6 +6,8 @@ import flushPromises from "flush-promises";
 import { PiniaVuePlugin } from "pinia";
 import { createTestingPinia } from "@pinia/testing";
 import { parseISO, formatDistanceToNow } from "date-fns";
+
+import PageList from "./PageList.vue";
 
 jest.mock("app");
 

@@ -32,12 +32,13 @@
 </template>
 
 <script>
-import ThingViewerMixin from "./ThingViewerMixin";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 
 // maybe faUsers instead of faBuilding?
 import { faExternalLinkAlt, faBuilding } from "@fortawesome/free-solid-svg-icons";
+
+import ThingViewerMixin from "./ThingViewerMixin";
 
 library.add(faExternalLinkAlt, faBuilding);
 

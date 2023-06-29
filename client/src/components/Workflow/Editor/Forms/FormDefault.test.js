@@ -1,8 +1,9 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
-import FormDefault from "./FormDefault";
 import { createTestingPinia } from "@pinia/testing";
 import { PiniaVuePlugin } from "pinia";
+
+import FormDefault from "./FormDefault";
 
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);

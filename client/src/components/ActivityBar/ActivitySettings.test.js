@@ -2,9 +2,11 @@ import { createTestingPinia } from "@pinia/testing";
 import { PiniaVuePlugin } from "pinia";
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
+
+import mountTarget from "./ActivitySettings.vue";
+
 import { Activities } from "@/stores/activitySetup";
 import { useActivityStore } from "@/stores/activityStore";
-import mountTarget from "./ActivitySettings.vue";
 
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);

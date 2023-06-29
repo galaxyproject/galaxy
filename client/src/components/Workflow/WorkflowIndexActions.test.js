@@ -1,10 +1,11 @@
-import WorkflowIndexActions from "./WorkflowIndexActions";
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 import { ROOT_COMPONENT } from "utils/navigation";
 import VueRouter from "vue-router";
 import { PiniaVuePlugin } from "pinia";
 import { createTestingPinia } from "@pinia/testing";
+
+import WorkflowIndexActions from "./WorkflowIndexActions";
 
 import "jest-location-mock";
 

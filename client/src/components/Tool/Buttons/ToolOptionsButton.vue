@@ -1,11 +1,19 @@
 <script setup>
 import { computed, ref } from "vue";
-import { copyLink, copyId, downloadTool, openLink } from "../utilities";
 import { storeToRefs } from "pinia";
 import Webhooks from "utils/webhooks";
-import { useUserStore } from "@/stores/userStore";
 import ToolSourceMenuItem from "components/Tool/ToolSourceMenuItem";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+</script>
+
+<script>
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCaretDown, faLink, faDownload, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
+import { faCopy } from "@fortawesome/free-regular-svg-icons";
+
+import { copyLink, copyId, downloadTool, openLink } from "../utilities";
+
+import { useUserStore } from "@/stores/userStore";
 
 const { currentUser } = storeToRefs(useUserStore());
 
@@ -62,12 +70,6 @@ function onDownload() {
 function onLink() {
     openLink(props.sharableUrl);
 }
-</script>
-
-<script>
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCaretDown, faLink, faDownload, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
-import { faCopy } from "@fortawesome/free-regular-svg-icons";
 
 library.add(faCaretDown, faLink, faDownload, faExternalLinkAlt, faCopy);
 </script>

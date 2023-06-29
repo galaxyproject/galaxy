@@ -2,8 +2,6 @@ import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
 import { mount } from "@vue/test-utils";
 import { getLocalVue, mockModule } from "tests/jest/helpers";
-import ToolForm from "./ToolForm";
-import MockConfigProvider from "../providers/MockConfigProvider";
 import MockCurrentHistory from "components/providers/MockCurrentHistory";
 import Vue from "vue";
 import Vuex from "vuex";
@@ -11,6 +9,10 @@ import { createPinia } from "pinia";
 import { configStore } from "store/configStore";
 import { useUserStore } from "stores/userStore";
 import { useHistoryStore } from "stores/historyStore";
+
+import MockConfigProvider from "../providers/MockConfigProvider";
+
+import ToolForm from "./ToolForm";
 
 const localVue = getLocalVue();
 const pinia = createPinia();

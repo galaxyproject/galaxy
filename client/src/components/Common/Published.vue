@@ -30,7 +30,9 @@
 <script>
 import { StatelessTags } from "components/Tags";
 import LoadingSpan from "components/LoadingSpan";
+
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
+
 export default {
     components: {
         FlexPanel,

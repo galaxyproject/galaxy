@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { watch, ref } from "vue";
+
+import { getObjectStoreDetails } from "./services";
+import type { ConcreteObjectStoreModel } from "./types";
+
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DescribeObjectStore from "@/components/ObjectStore/DescribeObjectStore.vue";
-import { getObjectStoreDetails } from "./services";
-import { watch, ref } from "vue";
-import type { ConcreteObjectStoreModel } from "./types";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 interface ShowSelectObjectStoreProps {

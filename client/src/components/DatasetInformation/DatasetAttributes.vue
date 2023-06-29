@@ -102,6 +102,7 @@ import { DatasetAttributesProvider } from "components/providers/DatasetProvider"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBars, faCog, faDatabase, faExchangeAlt, faRedo, faSave, faUser } from "@fortawesome/free-solid-svg-icons";
+
 import { setAttributes } from "./services";
 
 library.add(faBars, faCog, faDatabase, faExchangeAlt, faRedo, faSave, faUser);

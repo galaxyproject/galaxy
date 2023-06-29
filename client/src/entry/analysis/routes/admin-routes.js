@@ -1,5 +1,4 @@
 import { getGalaxyInstance } from "app";
-
 import Admin from "entry/analysis/modules/Admin";
 import Home from "components/admin/Home";
 import ActiveInvocations from "components/admin/ActiveInvocations";

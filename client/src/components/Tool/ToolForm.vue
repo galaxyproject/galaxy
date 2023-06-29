@@ -102,23 +102,26 @@
 
 <script>
 import { getGalaxyInstance } from "app";
-import { useUserStore } from "@/stores/userStore";
-import { useHistoryStore } from "@/stores/historyStore";
 import { useHistoryItemsStore } from "stores/history/historyItemsStore";
 import { useJobStore } from "stores/jobStore";
 import { mapState, mapActions } from "pinia";
-import { getToolFormData, updateToolFormData, submitJob } from "./services";
-import { allowCachedJobs } from "./utilities";
 import { refreshContentsWrapper } from "utils/data";
-import ToolCard from "./ToolCard";
 import ButtonSpinner from "components/Common/ButtonSpinner";
 import ConfigProvider from "components/providers/ConfigProvider";
 import LoadingSpan from "components/LoadingSpan";
 import FormDisplay from "components/Form/FormDisplay";
 import FormElement from "components/Form/FormElement";
 import ToolEntryPoints from "components/ToolEntryPoints/ToolEntryPoints";
-import ToolRecommendation from "../ToolRecommendation";
 import Heading from "components/Common/Heading";
+
+import ToolRecommendation from "../ToolRecommendation";
+
+import ToolCard from "./ToolCard";
+import { allowCachedJobs } from "./utilities";
+import { getToolFormData, updateToolFormData, submitJob } from "./services";
+
+import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
 
 export default {
     components: {

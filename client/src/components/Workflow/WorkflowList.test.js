@@ -1,4 +1,3 @@
-import Workflows from "../Workflow/WorkflowList";
 import { mount } from "@vue/test-utils";
 import { useUserTags } from "composables/user";
 import { computed } from "vue";
@@ -9,6 +8,8 @@ import flushPromises from "flush-promises";
 import { parseISO, formatDistanceToNow } from "date-fns";
 import { PiniaVuePlugin } from "pinia";
 import { createTestingPinia } from "@pinia/testing";
+
+import Workflows from "../Workflow/WorkflowList";
 import Tag from "../TagsMultiselect/Tag";
 
 const localVue = getLocalVue();

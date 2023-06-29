@@ -18,12 +18,13 @@
 </template>
 
 <script>
-import JobInformation from "./JobInformation.vue";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+
+import JobInformation from "./JobInformation.vue";
 
 library.add(faInfoCircle);
 Vue.use(BootstrapVue);

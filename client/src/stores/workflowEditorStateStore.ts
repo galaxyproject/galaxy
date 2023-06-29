@@ -1,8 +1,9 @@
 import Vue, { reactive } from "vue";
 import type { UnwrapRef } from "vue";
 import { defineStore } from "pinia";
-import type { OutputTerminals } from "@/components/Workflow/Editor/modules/terminals";
 import type { UseElementBoundingReturn } from "@vueuse/core";
+
+import type { OutputTerminals } from "@/components/Workflow/Editor/modules/terminals";
 
 export interface InputTerminalPosition {
     endX: number;

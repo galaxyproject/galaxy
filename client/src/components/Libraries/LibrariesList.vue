@@ -184,18 +184,19 @@
 import _l from "utils/localization";
 import Vue from "vue";
 import { mapState } from "pinia";
-import { useUserStore } from "@/stores/userStore";
 import { getAppRoot } from "onload/loadConfig";
 import BootstrapVue from "bootstrap-vue";
-import { Services } from "./services";
-import { fields } from "./table-fields";
 import { Toast } from "composables/toast";
 import { initLibrariesIcons } from "components/Libraries/icons";
 import { MAX_DESCRIPTION_LENGTH, DEFAULT_PER_PAGE, onError } from "components/Libraries/library-utils";
 import LibraryEditField from "components/Libraries/LibraryEditField";
 import SearchField from "components/Libraries/LibraryFolder/SearchField";
-
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+
+import { fields } from "./table-fields";
+import { Services } from "./services";
+
+import { useUserStore } from "@/stores/userStore";
 
 initLibrariesIcons();
 

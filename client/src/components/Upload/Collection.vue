@@ -122,9 +122,10 @@ import _ from "underscore";
 import { getGalaxyInstance } from "app";
 import { refreshContentsWrapper } from "utils/data";
 import UploadRow from "mvc/upload/collection/collection-row";
+import { BButton } from "bootstrap-vue";
+
 import UploadBoxMixin from "./UploadBoxMixin";
 import { uploadModelsToPayload } from "./helpers";
-import { BButton } from "bootstrap-vue";
 
 export default {
     components: { BButton },

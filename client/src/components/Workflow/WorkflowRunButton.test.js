@@ -1,7 +1,8 @@
-import WorkflowRunButton from "./WorkflowRunButton";
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 import { ROOT_COMPONENT } from "utils/navigation";
+
+import WorkflowRunButton from "./WorkflowRunButton";
 
 import "jest-location-mock";
 

@@ -32,13 +32,14 @@
 </template>
 <script>
 import LoadingSpan from "components/LoadingSpan";
+import JOB_STATES_MODEL from "utils/job-states-model";
+import mixin from "components/JobStates/mixin";
+import { mapGetters, mapActions } from "vuex";
+
 import { cancelWorkflowScheduling } from "./services";
 import WorkflowInvocationSummary from "./WorkflowInvocationSummary.vue";
 import WorkflowInvocationDetails from "./WorkflowInvocationDetails.vue";
 import WorkflowInvocationExportOptions from "./WorkflowInvocationExportOptions.vue";
-import JOB_STATES_MODEL from "utils/job-states-model";
-import mixin from "components/JobStates/mixin";
-import { mapGetters, mapActions } from "vuex";
 
 export default {
     components: {

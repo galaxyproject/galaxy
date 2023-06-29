@@ -9,12 +9,15 @@
 
 /* jquery and _ are exposed via expose-loader while several external plugins rely on these */
 import $ from "jquery"; // eslint-disable-line no-unused-vars
-import _ from "underscore"; // eslint-disable-line no-unused-vars
+import _ from "underscore";
+import { TracksterUIView } from "viz/trackster";
+import Circster from "viz/circster";
+
+// Previously "chart"
+import Client from "mvc/visualization/chart/chart-client"; // eslint-disable-line no-unused-vars
 
 export { getGalaxyInstance, setGalaxyInstance } from "app";
-import { TracksterUIView } from "viz/trackster";
 export { TracksterUI } from "viz/trackster";
-import Circster from "viz/circster";
 export { PhylovizView as phyloviz } from "viz/phyloviz";
 export { SweepsterVisualization, SweepsterVisualizationView } from "viz/sweepster";
 export { createTabularDatasetChunkedView } from "mvc/dataset/data";
@@ -35,9 +38,6 @@ export function circster(options) {
 export { show_in_overlay, hide_modal, show_message, show_modal, Modal } from "layout/modal";
 export { make_popupmenu, make_popup_menus } from "ui/popupmenu";
 export { default as async_save_text } from "utils/async-save-text";
-
-// Previously "chart"
-import Client from "mvc/visualization/chart/chart-client";
 export function chart(options) {
     return new Client(options);
 }

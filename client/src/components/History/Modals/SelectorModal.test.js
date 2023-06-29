@@ -3,10 +3,11 @@ import axios from "axios";
 import { createPinia } from "pinia";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import SelectorModal from "./SelectorModal";
 import { getLocalVue } from "tests/jest/helpers";
 import { useHistoryStore } from "stores/historyStore";
 import { BListGroupItem } from "bootstrap-vue";
+
+import SelectorModal from "./SelectorModal";
 
 const localVue = getLocalVue();
 

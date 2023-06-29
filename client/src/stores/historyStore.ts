@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import Vue, { computed, ref } from "vue";
+
 import type { components } from "@/schema";
 import { sortByObjectProp } from "@/utils/sorting";
 import { HistoryFilters } from "@/components/History/HistoryFilters";

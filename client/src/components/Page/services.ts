@@ -1,4 +1,5 @@
 import type { FetchArgType } from "openapi-typescript-fetch";
+
 import { fetcher } from "@/schema";
 
 /** Page request helper **/

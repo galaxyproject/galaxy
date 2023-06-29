@@ -7,7 +7,6 @@ import Vuex from "vuex";
 import createCache from "vuex-cache";
 import VuexPersistence from "vuex-persist";
 import localForage from "localforage";
-
 import config from "config";
 
 import { gridSearchStore } from "./gridSearchStore";

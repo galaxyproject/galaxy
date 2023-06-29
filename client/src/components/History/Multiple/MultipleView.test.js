@@ -4,10 +4,11 @@ import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import MockAdapter from "axios-mock-adapter";
 import { getLocalVue } from "tests/jest/helpers";
-import MultipleView from "./MultipleView";
 import MockUserHistories from "components/providers/MockUserHistories";
 import { useUserStore } from "stores/userStore";
 import { useHistoryStore } from "stores/historyStore";
+
+import MultipleView from "./MultipleView";
 
 const COUNT = 8;
 const USER_ID = "test-user-id";

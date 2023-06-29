@@ -1,13 +1,13 @@
+import Vue from "vue";
+import { getAppRoot } from "onload/loadConfig";
+import axios from "axios";
+import { filterTools, createWhooshQuery } from "components/Panels/utilities";
+
 export const state = {
     toolById: {},
     toolResults: [],
     allTools: [],
 };
-
-import Vue from "vue";
-import { getAppRoot } from "onload/loadConfig";
-import axios from "axios";
-import { filterTools, createWhooshQuery } from "components/Panels/utilities";
 
 const getters = {
     getToolForId: (state) => (toolId) => {

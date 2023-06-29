@@ -1,9 +1,11 @@
 import { createPinia } from "pinia";
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
-import DatasetError from "./DatasetError";
 import { useUserStore } from "stores/userStore";
+
 import MockProvider from "../providers/MockProvider";
+
+import DatasetError from "./DatasetError";
 
 jest.mock("components/providers", () => {
     return {}; // stubbed below

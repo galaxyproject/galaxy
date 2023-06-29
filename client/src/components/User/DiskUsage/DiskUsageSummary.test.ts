@@ -1,12 +1,15 @@
 import { createPinia } from "pinia";
 import { mount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
+import { getLocalVue } from "tests/jest/helpers";
+
+import DiskUsageSummary from "./DiskUsageSummary.vue";
+
 import { useUserStore } from "@/stores/userStore";
 import MockConfigProvider from "@/components/providers/MockConfigProvider";
 import MockCurrentUser from "@/components/providers/MockCurrentUser";
 import MockProvider from "@/components/providers/MockProvider";
-import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
-import DiskUsageSummary from "./DiskUsageSummary.vue";
+
 
 const localVue = getLocalVue();
 

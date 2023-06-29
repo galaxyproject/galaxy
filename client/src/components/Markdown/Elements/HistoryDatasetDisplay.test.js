@@ -2,8 +2,9 @@ import axios from "axios";
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 import MockAdapter from "axios-mock-adapter";
-import HistoryDatasetDisplay from "./HistoryDatasetDisplay.vue";
 import { typesAndMappingResponse } from "components/Datatypes/test_fixtures";
+
+import HistoryDatasetDisplay from "./HistoryDatasetDisplay.vue";
 
 const localVue = getLocalVue();
 

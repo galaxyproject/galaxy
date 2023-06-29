@@ -6,6 +6,7 @@ import Utils from "utils/utils";
 import UploadExtension from "mvc/upload/upload-extension";
 import UploadBoxRow from "mvc/upload/uploadbox-row";
 import Select from "mvc/ui/ui-select";
+
 export default UploadBoxRow.extend({
     initialize: function (app, options) {
         var self = this;

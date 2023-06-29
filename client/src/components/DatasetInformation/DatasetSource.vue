@@ -20,8 +20,9 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCopy, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { copy } from "utils/clipboard";
-import DatasetSourceTransform from "./DatasetSourceTransform";
 import _l from "utils/localization";
+
+import DatasetSourceTransform from "./DatasetSourceTransform";
 
 library.add(faCopy, faExternalLinkAlt);
 

@@ -5,6 +5,7 @@
 <script>
 import { getAppRoot } from "onload";
 import GridView from "mvc/grid/grid-view";
+
 export default {
     props: {
         urlBase: {

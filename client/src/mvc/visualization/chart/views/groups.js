@@ -5,10 +5,11 @@ import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import Utils from "utils/utils";
-import Repeat from "./repeat";
 import { visitInputs } from "components/Form/utilities";
 import FormDisplay from "components/Form/FormDisplay";
 import { replaceChildrenWithComponent } from "utils/mountVueComponent";
+
+import Repeat from "./repeat";
 
 var GroupView = Backbone.View.extend({
     initialize: function (app, options) {

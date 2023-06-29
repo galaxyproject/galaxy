@@ -1,4 +1,3 @@
-import WorkflowDropdown from "./WorkflowDropdown";
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 import axios from "axios";
@@ -7,6 +6,8 @@ import flushPromises from "flush-promises";
 import { ROOT_COMPONENT } from "utils/navigation";
 import { PiniaVuePlugin, createPinia } from "pinia";
 import { useUserStore } from "stores/userStore";
+
+import WorkflowDropdown from "./WorkflowDropdown";
 
 const localVue = getLocalVue(true);
 localVue.use(PiniaVuePlugin);

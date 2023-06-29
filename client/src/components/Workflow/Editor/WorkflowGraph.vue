@@ -46,24 +46,26 @@
     </div>
 </template>
 <script setup lang="ts">
+import { computed, provide, reactive, ref, watch, type Ref, type PropType, watchEffect } from "vue";
+import { useElementBounding, useScroll } from "@vueuse/core";
+import { storeToRefs } from "pinia";
+
+import { useD3Zoom } from "./composables/d3Zoom";
+import type { OutputTerminals } from "./modules/terminals";
+import { minZoom, maxZoom } from "./modules/zoomLevels";
+import { useViewportBoundingBox } from "./composables/viewportBoundingBox";
+import AdaptiveGrid from "./AdaptiveGrid.vue";
+
 import ZoomControl from "@/components/Workflow/Editor/ZoomControl.vue";
 import WorkflowNode from "@/components/Workflow/Editor/Node.vue";
 import WorkflowEdges from "@/components/Workflow/Editor/WorkflowEdges.vue";
 import WorkflowMinimap from "@/components/Workflow/Editor/WorkflowMinimap.vue";
-import { computed, provide, reactive, ref, watch, type Ref, type PropType, watchEffect } from "vue";
-import { useElementBounding, useScroll } from "@vueuse/core";
-import { storeToRefs } from "pinia";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
-import type { TerminalPosition } from "@/stores/workflowEditorStateStore";
+import type { TerminalPosition , XYPosition } from "@/stores/workflowEditorStateStore";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useWorkflowStepStore, type Step } from "@/stores/workflowStepStore";
-import { useD3Zoom } from "./composables/d3Zoom";
-import type { XYPosition } from "@/stores/workflowEditorStateStore";
-import type { OutputTerminals } from "./modules/terminals";
 import { assertDefined } from "@/utils/assertions";
-import { minZoom, maxZoom } from "./modules/zoomLevels";
-import { useViewportBoundingBox } from "./composables/viewportBoundingBox";
-import AdaptiveGrid from "./AdaptiveGrid.vue";
+
 
 const emit = defineEmits(["transform", "graph-offset", "onRemove", "scrollTo"]);
 const props = defineProps({

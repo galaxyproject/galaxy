@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import ConfigurationMarkdown from "./ConfigurationMarkdown.vue";
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
+
+import ConfigurationMarkdown from "./ConfigurationMarkdown.vue";
+
 import type { components } from "@/schema";
 import "./badgeIcons";
 

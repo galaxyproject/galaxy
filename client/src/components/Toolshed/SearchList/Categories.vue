@@ -17,8 +17,9 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { Services } from "../services";
 import LoadingSpan from "components/LoadingSpan";
+
+import { Services } from "../services";
 
 Vue.use(BootstrapVue);
 

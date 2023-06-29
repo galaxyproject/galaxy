@@ -1,6 +1,7 @@
 import { setActivePinia, createPinia } from "pinia";
 
-import { useWorkflowStepStore, type TerminalSource } from "@/stores/workflowStepStore";
+import { simpleSteps, advancedSteps } from "../test_fixtures";
+
 import {
     terminalFactory,
     InputCollectionTerminal,
@@ -12,15 +13,17 @@ import {
     producesAcceptableDatatype,
     InvalidOutputTerminal,
 } from "./terminals";
-import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
-import { useConnectionStore } from "@/stores/workflowConnectionStore";
-import type { DataOutput, Steps, Step } from "@/stores/workflowStepStore";
 import {
     ANY_COLLECTION_TYPE_DESCRIPTION,
     CollectionTypeDescription,
     NULL_COLLECTION_TYPE_DESCRIPTION,
 } from "./collectionTypeDescription";
-import { simpleSteps, advancedSteps } from "../test_fixtures";
+
+import { useWorkflowStepStore, type TerminalSource , DataOutput, Steps, Step } from "@/stores/workflowStepStore";
+import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
+import { useConnectionStore } from "@/stores/workflowConnectionStore";
+
+
 
 function setupAdvanced() {
     const terminals: { [index: string]: { [index: string]: ReturnType<typeof terminalFactory> } } = {};

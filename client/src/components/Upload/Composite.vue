@@ -63,9 +63,10 @@ import _l from "utils/localization";
 import _ from "underscore";
 import { refreshContentsWrapper } from "utils/data";
 import UploadRow from "mvc/upload/composite/composite-row";
+import { submitUpload } from "utils/uploadbox";
+
 import UploadBoxMixin from "./UploadBoxMixin";
 import { uploadModelsToPayload } from "./helpers";
-import { submitUpload } from "utils/uploadbox";
 
 export default {
     mixins: [UploadBoxMixin],

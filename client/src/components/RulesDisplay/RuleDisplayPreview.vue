@@ -12,6 +12,7 @@
 
 <script>
 import RuleDefs from "components/RuleBuilder/rule-definitions";
+
 export default {
     props: {
         rule: {

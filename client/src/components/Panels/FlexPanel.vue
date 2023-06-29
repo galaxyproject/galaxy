@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faChevronLeft, faChevronRight, faGripLinesVertical } from "@fortawesome/free-solid-svg-icons";
 import { useDraggable } from "@vueuse/core";
 import { LastQueue } from "utils/promise-queue";
+
 import { determineWidth } from "./utilities";
 
 const lastQueue = new LastQueue(10);

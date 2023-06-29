@@ -39,12 +39,12 @@
 </template>
 
 <script>
-import ThingViewerMixin from "./ThingViewerMixin";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faUser, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
-
 import { faOrcid } from "@fortawesome/free-brands-svg-icons";
+
+import ThingViewerMixin from "./ThingViewerMixin";
 
 library.add(faOrcid, faUser, faExternalLinkAlt);
 

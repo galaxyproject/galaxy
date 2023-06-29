@@ -1,12 +1,11 @@
-import FilesDialog from "./FilesDialog";
 import SelectionDialog from "components/SelectionDialog/SelectionDialog";
 import DataDialogTable from "components/SelectionDialog/DataDialogTable";
 import { shallowMount, createLocalVue } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { BButton } from "bootstrap-vue";
+import BootstrapVue, { BButton } from "bootstrap-vue";
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
+import { selectionStates } from "components/SelectionDialog/selectionStates";
 
 import {
     ftpId,
@@ -22,7 +21,7 @@ import {
     subsubdirectoryResponse,
     someErrorText,
 } from "./testingData";
-import { selectionStates } from "components/SelectionDialog/selectionStates";
+import FilesDialog from "./FilesDialog";
 
 jest.mock("app");
 

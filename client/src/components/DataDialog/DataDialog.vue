@@ -42,11 +42,13 @@
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import SelectionDialogMixin from "components/SelectionDialog/SelectionDialogMixin";
+import { getAppRoot } from "onload/loadConfig";
+import { useGlobalUploadModal } from "composables/globalUploadModal";
+
 import { UrlTracker } from "./utilities";
 import { Model } from "./model";
 import { Services } from "./services";
-import { getAppRoot } from "onload/loadConfig";
-import { useGlobalUploadModal } from "composables/globalUploadModal";
+
 import { errorMessageAsString } from "@/utils/simple-error";
 
 Vue.use(BootstrapVue);

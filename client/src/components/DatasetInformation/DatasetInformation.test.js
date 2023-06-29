@@ -2,11 +2,12 @@ import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
-import DatasetInformation from "./DatasetInformation";
-import datasetResponse from "./testData/datasetResponse";
 import flushPromises from "flush-promises";
 import { parseISO } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
+
+import datasetResponse from "./testData/datasetResponse";
+import DatasetInformation from "./DatasetInformation";
 
 const HDA_ID = "FOO_HDA_ID";
 

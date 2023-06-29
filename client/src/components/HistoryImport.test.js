@@ -1,10 +1,11 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue, wait } from "tests/jest/helpers";
-import HistoryImport from "./HistoryImport.vue";
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
 import flushPromises from "flush-promises";
 import { waitOnJob } from "components/JobStates/wait";
+
+import HistoryImport from "./HistoryImport.vue";
 
 const localVue = getLocalVue();
 const TEST_JOB_ID = "job123789";

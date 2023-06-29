@@ -1,12 +1,16 @@
 import { expect, jest } from "@jest/globals";
-
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
-import { PiniaVuePlugin } from "pinia";
-import { setActivePinia } from "pinia";
+import { PiniaVuePlugin , setActivePinia } from "pinia";
 import { createTestingPinia } from "@pinia/testing";
 
 import Index from "./Index.vue";
+import { loadWorkflow, getVersions } from "./modules/services";
+import { getStateUpgradeMessages } from "./modules/utilities";
+
+import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
+import { getAppRoot } from "@/onload/loadConfig";
+import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);
@@ -18,12 +22,6 @@ jest.mock("onload/loadConfig");
 jest.mock("./modules/utilities");
 
 jest.mock("app");
-
-import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
-import { loadWorkflow, getVersions } from "./modules/services";
-import { getStateUpgradeMessages } from "./modules/utilities";
-import { getAppRoot } from "@/onload/loadConfig";
-import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 
 const mockGetAppRoot = getAppRoot as jest.Mocked<typeof getAppRoot>;
 const mockGetStateUpgradeMessages = getStateUpgradeMessages as jest.Mock<typeof getStateUpgradeMessages>;

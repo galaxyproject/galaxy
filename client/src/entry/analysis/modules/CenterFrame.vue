@@ -12,6 +12,7 @@
 </template>
 <script>
 import { withPrefix } from "utils/redirect";
+
 export default {
     props: {
         id: {

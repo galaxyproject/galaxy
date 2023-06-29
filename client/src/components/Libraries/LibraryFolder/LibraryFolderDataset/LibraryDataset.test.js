@@ -3,9 +3,11 @@ import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 import { getAppRoot } from "onload/loadConfig";
-import { Services } from "../services";
-import LibraryDataset from "./LibraryDataset";
 import { useUserStore } from "stores/userStore";
+
+import { Services } from "../services";
+
+import LibraryDataset from "./LibraryDataset";
 import cannotManageDatasetResponse from "./testData/cannotManageDataset.json";
 import cannotModifyDatasetResponse from "./testData/cannotModifyDataset.json";
 import restrictedDatasetResponse from "./testData/restrictedDataset.json";

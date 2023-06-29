@@ -3,6 +3,7 @@ import $ from "jquery";
 import _ from "underscore";
 import Utils from "utils/utils";
 import UploadBoxRow from "mvc/upload/uploadbox-row";
+
 export default UploadBoxRow.extend({
     initialize: function (app, options) {
         var self = this;

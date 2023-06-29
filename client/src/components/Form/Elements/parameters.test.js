@@ -1,4 +1,5 @@
 import Ui from "mvc/ui/ui-misc";
+
 import ParameterFactory from "./parameters";
 
 jest.mock("app");

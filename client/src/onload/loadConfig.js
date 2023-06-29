@@ -22,6 +22,7 @@
 
 import { BehaviorSubject, Subject } from "rxjs";
 import { debounceTime, scan, filter } from "rxjs/operators";
+
 import { getRootFromIndexLink } from "./getRootFromIndexLink";
 import { defaultConfigs } from "./defaultConfigs";
 

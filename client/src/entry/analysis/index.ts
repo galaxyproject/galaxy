@@ -1,8 +1,10 @@
 import Vue, { provide } from "vue";
 import { PiniaVuePlugin, createPinia } from "pinia";
 import piniaPluginPersistedstate from "pinia-plugin-persistedstate";
+
 import App from "./App.vue";
 import { getRouter } from "./router";
+
 import { addInitialization, standardInit } from "@/onload";
 import store from "@/store";
 

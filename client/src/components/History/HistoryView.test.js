@@ -4,10 +4,11 @@ import { useUserStore } from "stores/userStore";
 import { useHistoryStore } from "stores/historyStore";
 import { getLocalVue } from "tests/jest/helpers";
 import flushPromises from "flush-promises";
-import HistoryView from "./HistoryView";
 import { getHistoryByIdFromServer, setCurrentHistoryOnServer } from "stores/services/history.services";
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
+
+import HistoryView from "./HistoryView";
 
 const localVue = getLocalVue();
 jest.mock("stores/services/history.services");

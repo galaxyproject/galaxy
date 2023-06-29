@@ -49,7 +49,6 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import PermissionsInputField from "components/Libraries/LibraryPermissions/PermissionsInputField";
 import PermissionsHeader from "components/Libraries/LibraryPermissions/PermissionsHeader";
 import { extractRoles } from "components/Libraries/library-utils";
-
 import { initPermissionsIcons } from "components/Libraries/icons";
 
 Vue.use(BootstrapVue);

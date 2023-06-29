@@ -1,8 +1,9 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
+import { useConfig } from "composables/config";
+
 import ToolSection from "./ToolSection";
 
-import { useConfig } from "composables/config";
 
 jest.mock("composables/config");
 useConfig.mockReturnValue({

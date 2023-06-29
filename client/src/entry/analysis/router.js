@@ -2,7 +2,7 @@ import Vue from "vue";
 import VueRouter from "vue-router";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
-import { patchRouterPush } from "./router-push";
+
 
 // these modules are mounted below the masthead.
 import Analysis from "entry/analysis/modules/Analysis";
@@ -69,6 +69,9 @@ import { CloudAuth } from "components/User/CloudAuth";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
 import { HistoryExport } from "components/HistoryExport/index";
 import HistoryExportTasks from "components/History/Export/HistoryExport";
+
+import { patchRouterPush } from "./router-push";
+
 import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
 import HistoryArchive from "@/components/History/Archiving/HistoryArchive.vue";
 

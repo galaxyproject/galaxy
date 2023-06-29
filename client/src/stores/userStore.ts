@@ -1,5 +1,6 @@
 import { computed, ref } from "vue";
 import { defineStore } from "pinia";
+
 import { useHistoryStore } from "@/stores/historyStore";
 import {
     addFavoriteToolQuery,

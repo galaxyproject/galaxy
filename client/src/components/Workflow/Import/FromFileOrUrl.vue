@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import axios, { type AxiosError } from "axios";
 import { computed, ref, type Ref } from "vue";
-import { withPrefix } from "@/utils/redirect";
-import { getRedirectOnImportPath } from "../redirectPath";
-import LoadingSpan from "@/components/LoadingSpan.vue";
 import { useRouter } from "vue-router/composables";
+
+import { getRedirectOnImportPath } from "../redirectPath";
+
+import { withPrefix } from "@/utils/redirect";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+
 
 const loading = ref(false);
 const sourceURL: Ref<string | null> = ref(null);

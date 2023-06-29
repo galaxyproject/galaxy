@@ -51,8 +51,10 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+
 import { getCitations } from "./services";
 import Citation from "./Citation";
+
 import { useConfig } from "@/composables/config";
 
 Vue.use(BootstrapVue);

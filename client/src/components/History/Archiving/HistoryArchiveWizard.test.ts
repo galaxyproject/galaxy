@@ -5,8 +5,10 @@ import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { createTestingPinia } from "@pinia/testing";
 import { setActivePinia } from "pinia";
-import { useHistoryStore, type HistorySummary } from "@/stores/historyStore";
+
 import HistoryArchiveWizard from "./HistoryArchiveWizard.vue";
+
+import { useHistoryStore, type HistorySummary } from "@/stores/historyStore";
 
 jest.mock("@/composables/config", () => ({
     useConfig: jest.fn(() => ({

@@ -11,6 +11,7 @@ import {
     faClock,
     faLink,
 } from "@fortawesome/free-solid-svg-icons";
+
 import { ExportRecordModel } from "./models/exportRecordModel";
 
 library.add(faExclamationCircle, faExclamationTriangle, faCheckCircle, faClock, faLink);

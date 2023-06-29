@@ -64,11 +64,12 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { getAppRoot } from "onload/loadConfig";
 import { getCurrentGalaxyHistory } from "utils/data";
-import MarkdownSelector from "./MarkdownSelector";
-import MarkdownVisualization from "./MarkdownVisualization";
 import DataDialog from "components/DataDialog/DataDialog";
 import DatasetCollectionDialog from "components/SelectionDialog/DatasetCollectionDialog";
 import BasicSelectionDialog from "components/SelectionDialog/BasicSelectionDialog";
+
+import MarkdownVisualization from "./MarkdownVisualization";
+import MarkdownSelector from "./MarkdownSelector";
 
 Vue.use(BootstrapVue);
 

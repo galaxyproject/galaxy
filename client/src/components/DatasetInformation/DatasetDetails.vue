@@ -50,13 +50,11 @@
 
 <script>
 import { mapState } from "pinia";
-import { useUserStore } from "@/stores/userStore";
 import DatasetInformation from "components/DatasetInformation/DatasetInformation";
 import JobInformation from "components/JobInformation/JobInformation";
 import JobDestinationParams from "components/JobDestinationParams/JobDestinationParams";
 import LoadingSpan from "components/LoadingSpan";
 import DatasetStorage from "components/Dataset/DatasetStorage/DatasetStorage";
-import InheritanceChain from "../InheritanceChain/InheritanceChain";
 import JobParameters from "components/JobParameters/JobParameters";
 import JobMetrics from "components/JobMetrics/JobMetrics";
 import JobDependencies from "components/JobDependencies/JobDependencies";
@@ -64,6 +62,10 @@ import { DatasetProvider } from "components/providers";
 import { JobDetailsProvider } from "components/providers/JobProvider";
 import ConfigProvider from "components/providers/ConfigProvider";
 import Alert from "components/Alert";
+
+import InheritanceChain from "../InheritanceChain/InheritanceChain";
+
+import { useUserStore } from "@/stores/userStore";
 
 export default {
     components: {

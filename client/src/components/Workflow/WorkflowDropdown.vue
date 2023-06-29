@@ -92,14 +92,16 @@
     </div>
 </template>
 <script>
-import { Services } from "./services";
 import { withPrefix } from "utils/redirect";
 import TextSummary from "components/Common/TextSummary";
 import { mapState } from "pinia";
-import { useUserStore } from "@/stores/userStore";
-import { setDrag, clearDrag } from "@/utils/setDrag.js";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown, faSignature, faTimes, faEdit } from "@fortawesome/free-solid-svg-icons";
+
+import { Services } from "./services";
+
+import { setDrag, clearDrag } from "@/utils/setDrag.js";
+import { useUserStore } from "@/stores/userStore";
 
 library.add(faCaretDown);
 library.add(faSignature);

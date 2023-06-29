@@ -75,14 +75,13 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestion, faCopy, faAngleDoubleDown, faAngleDoubleUp } from "@fortawesome/free-solid-svg-icons";
-
-library.add(faQuestion, faCopy, faAngleDoubleDown, faAngleDoubleUp);
-
 import { getCitations } from "components/Citation/services";
 import Citation from "components/Citation/Citation";
 import License from "components/License/License";
 import Creators from "components/SchemaOrg/Creators";
 import { copy } from "utils/clipboard";
+
+library.add(faQuestion, faCopy, faAngleDoubleDown, faAngleDoubleUp);
 
 export default {
     components: {

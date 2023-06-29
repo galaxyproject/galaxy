@@ -3,10 +3,11 @@ import { mount } from "@vue/test-utils";
 import { getLocalVue, mockModule } from "tests/jest/helpers";
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
-import ToolCard from "./ToolCard";
 import Vuex from "vuex";
 import { configStore } from "store/configStore";
 import { useUserStore } from "stores/userStore";
+
+import ToolCard from "./ToolCard";
 
 const localVue = getLocalVue();
 

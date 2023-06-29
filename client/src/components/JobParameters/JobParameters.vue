@@ -47,10 +47,11 @@
 <script>
 import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
-
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+
 import JobOutputs from "../JobInformation/JobOutputs";
+
 import JobParametersArrayValue from "./JobParametersArrayValue";
 
 Vue.use(BootstrapVue);

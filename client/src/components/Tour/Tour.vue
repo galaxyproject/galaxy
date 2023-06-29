@@ -44,8 +44,10 @@
 </template>
 
 <script>
-import TourStep from "./TourStep";
 import { mapActions, mapState } from "pinia";
+
+import TourStep from "./TourStep";
+
 import { useUserStore } from "@/stores/userStore";
 import { useHistoryStore } from "@/stores/historyStore";
 

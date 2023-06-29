@@ -1,13 +1,14 @@
 import { expect, jest } from "@jest/globals";
-
 import { mount, shallowMount, createWrapper } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 import { PiniaVuePlugin, createPinia } from "pinia";
 import { createTestingPinia } from "@pinia/testing";
+
+import PageDropdown from "./PageDropdown.vue";
+
 import { mockFetcher } from "@/schema/__mocks__";
 import { useUserStore } from "@/stores/userStore";
 
-import PageDropdown from "./PageDropdown.vue";
 
 import "jest-location-mock";
 

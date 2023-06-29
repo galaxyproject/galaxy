@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { BButton } from "bootstrap-vue";
-import { bytesToString } from "@/utils/utils";
-import localize from "@/utils/localization";
-import type { DataValuePoint } from "./Charts";
 import { computed } from "vue";
 import { faChartBar, faUndo, faTrash, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
+
+import type { DataValuePoint } from "./Charts";
+
+import localize from "@/utils/localization";
+import { bytesToString } from "@/utils/utils";
 
 type ItemTypes = "history" | "dataset";
 

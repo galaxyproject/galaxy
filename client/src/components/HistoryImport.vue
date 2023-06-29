@@ -77,7 +77,7 @@
 <script>
 import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
-import Vue from "vue";
+import Vue, { ref, watch } from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -88,8 +88,8 @@ import { errorMessageAsString } from "utils/simple-error";
 import LoadingSpan from "components/LoadingSpan";
 import JobError from "components/JobInformation/JobError";
 import { Services } from "components/FilesDialog/services";
-import { ref, watch } from "vue";
 import { refDebounced } from "@vueuse/core";
+
 import ExternalLink from "./ExternalLink";
 
 library.add(faFolderOpen);

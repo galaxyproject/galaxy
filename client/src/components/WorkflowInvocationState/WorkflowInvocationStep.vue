@@ -89,11 +89,12 @@ import { mapCacheActions } from "vuex-cache";
 import { mapGetters, mapActions as vuexMapActions } from "vuex";
 import { mapState, mapActions } from "pinia";
 import WorkflowIcons from "components/Workflow/icons";
-import JobStep from "./JobStep";
-import ParameterStep from "./ParameterStep";
 import GenericHistoryItem from "components/History/Content/GenericItem";
 import { InvocationStepProvider } from "components/providers";
 import LoadingSpan from "components/LoadingSpan";
+
+import ParameterStep from "./ParameterStep";
+import JobStep from "./JobStep";
 
 export default {
     components: {

@@ -31,6 +31,7 @@ import JobError from "components/JobInformation/JobError";
 import ExportForm from "components/Common/ExportForm";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+
 Vue.use(BootstrapVue);
 
 export default {

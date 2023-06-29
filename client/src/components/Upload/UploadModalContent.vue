@@ -29,13 +29,15 @@
 import Backbone from "backbone";
 import UploadUtils from "mvc/upload/upload-utils";
 import { getDatatypesMapper } from "components/Datatypes";
+import LoadingSpan from "components/LoadingSpan";
+import { BTabs, BTab } from "bootstrap-vue";
+
 import Composite from "./Composite";
 import Collection from "./Collection";
 import Default from "./Default";
 import RulesInput from "./RulesInput";
-import LoadingSpan from "components/LoadingSpan";
 import { uploadModelsToPayload } from "./helpers";
-import { BTabs, BTab } from "bootstrap-vue";
+
 
 export default {
     components: {

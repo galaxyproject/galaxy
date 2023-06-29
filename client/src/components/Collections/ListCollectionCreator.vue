@@ -199,6 +199,7 @@
 <script>
 import mixin from "./common/mixin";
 import DatasetCollectionElementView from "./ListDatasetCollectionElementView";
+
 import _l from "utils/localization";
 import STATES from "mvc/dataset/states";
 import "ui/hoverhighlight";
