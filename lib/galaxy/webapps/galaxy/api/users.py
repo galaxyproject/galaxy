@@ -46,7 +46,9 @@ from galaxy.model.base import transaction
 from galaxy.schema import APIKeyModel
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
+    AnonUserModel,
     AsyncTaskResultSummary,
+    DetailedUserModel,
     UserBeaconSetting,
     UserTheme,
 )
@@ -287,12 +289,13 @@ class FastAPIUsers:
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
         user_id: DecodedDatabaseIdField = UserIdPathParam,
-    ):
+    ) -> Union[AnonUserModel, DetailedUserModel]:
         user = self.service._get_user_full(trans=trans, deleted=True, user_id=user_id)
         if user is not None:
-            return self.user_serializer.serialize_to_view(user, view="detailed")
-        else:
-            return self.service._anon_user_api_value(trans)
+            user_response = self.user_serializer.serialize_to_view(user, view="detailed")
+            return DetailedUserModel(**user_response)
+        anon_response = self.service._anon_user_api_value(trans)
+        return AnonUserModel(**anon_response)
 
     @router.get(
         "/api/users/current",
@@ -309,15 +312,16 @@ class FastAPIUsers:
         trans: ProvidesHistoryContext = DependsOnTrans,
         user_id: Union[Literal["current"], DecodedDatabaseIdField] = FlexibleUserIdPathParam,
         deleted: Optional[bool] = UserDeleted,
-    ):
+    ) -> Union[AnonUserModel, DetailedUserModel]:
         if deleted:
             user = self.service._get_user_full(trans=trans, deleted=True, user_id=user_id)
         else:
             user = self.service._get_user_full(trans=trans, deleted=False, user_id=user_id)
         if user is not None:
-            return self.user_serializer.serialize_to_view(user, view="detailed")
-        else:
-            return self.service._anon_user_api_value(trans)
+            user_response = self.user_serializer.serialize_to_view(user, view="detailed")
+            return DetailedUserModel(**user_response)
+        anon_response = self.service._anon_user_api_value(trans)
+        return AnonUserModel(**anon_response)
 
 
 class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin):
