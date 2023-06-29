@@ -47,30 +47,33 @@ const baseRules = {
     "vuejs-accessibility/tabindex-no-positive": "error",
 
     // import and export sorting and linting.
+    "simple-import-sort/imports": "error",
+    "simple-import-sort/exports": "error",
     "import/first": "error",
     "import/newline-after-import": "error",
     "import/no-duplicates": "error",
-    "import/order": [
-        "error",
-        {
-            "newlines-between": "always",
-            groups: ["builtin", "external", "internal", "parent", "sibling", "index"],
-            pathGroups: [
-                {
-                    pattern: "@/**",
-                    group: "internal",
-                },
-                {
-                    pattern: "@tests/**",
-                    group: "internal",
-                },
-            ],
-            alphabetize: { order: "asc", caseInsensitive: true },
-            // Eventually we want this to be true; we should be avoiding
-            // side-effect-only imports other than css.
-            // warnOnUnassignedImports: true,
-        },
-    ],
+    // simple-import-sort actually does this better.
+    // "import/order": [
+    //     "error",
+    //     {
+    //         "newlines-between": "always",
+    //         groups: ["builtin", "external", "internal", "parent", "sibling", "index"],
+    //         pathGroups: [
+    //             {
+    //                 pattern: "@/**",
+    //                 group: "internal",
+    //             },
+    //             {
+    //                 pattern: "@tests/**",
+    //                 group: "internal",
+    //             },
+    //         ],
+    //         alphabetize: { order: "asc", caseInsensitive: true },
+    //         // Eventually we want this to be true; we should be avoiding
+    //         // side-effect-only imports other than css.
+    //         // warnOnUnassignedImports: true,
+    //     },
+    // ],
 };
 
 const baseExtends = [
@@ -80,7 +83,7 @@ const baseExtends = [
     "plugin:vuejs-accessibility/recommended",
 ];
 
-const basePlugins = ["import"];
+const basePlugins = ["simple-import-sort", "import"];
 
 module.exports = {
     root: true,
