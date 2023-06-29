@@ -34,10 +34,9 @@ from galaxy import (
 )
 from galaxy.exceptions import ObjectInvalid
 from galaxy.managers import (
-    base as managers_base,
     users,
 )
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import ProvidesHistoryContext, ProvidesUserContext
 from galaxy.model import (
     User,
     UserAddress,
@@ -196,7 +195,7 @@ class FastAPIUsers:
         trans: ProvidesUserContext = DependsOnTrans,
         user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
     ) -> List[UserQuotaUsage]:
-        user = get_user_full(trans, user_id, False)
+        user = self.service._get_user_full(trans, user_id, False)
         if user:
             rval = self.user_serializer.serialize_disk_usage(user)
             return rval
@@ -214,7 +213,7 @@ class FastAPIUsers:
         user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
         label: str = QuotaSourceLabelPathParam,
     ) -> Optional[UserQuotaUsage]:
-        user = get_user_full(trans, user_id, False)
+        user = self.service._get_user_full(trans, user_id, False)
         effective_label: Optional[str] = label
         if label == "__null__":
             effective_label = None
@@ -286,14 +285,14 @@ class FastAPIUsers:
     )
     def show_deleted(
         self,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: ProvidesHistoryContext = DependsOnTrans,
         user_id: DecodedDatabaseIdField = UserIdPathParam,
     ):
-        user = get_user_full(trans=trans, deleted=True, user_id=user_id)
+        user = self.service._get_user_full(trans=trans, deleted=True, user_id=user_id)
         if user is not None:
             return self.user_serializer.serialize_to_view(user, view="detailed")
         else:
-            return self.service.user_manager.anon_user_api_value(trans)
+            return self.service._anon_user_api_value(trans)
 
     @router.get(
         "/api/users/current",
@@ -307,21 +306,22 @@ class FastAPIUsers:
     )
     def show(
         self,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: ProvidesHistoryContext = DependsOnTrans,
         user_id: Union[Literal["current"], DecodedDatabaseIdField] = FlexibleUserIdPathParam,
         deleted: Optional[bool] = UserDeleted,
     ):
         if deleted:
-            user = get_user_full(trans=trans, deleted=True, user_id=user_id)
+            user = self.service._get_user_full(trans=trans, deleted=True, user_id=user_id)
         else:
-            user = get_user_full(trans=trans, deleted=False, user_id=user_id)
+            user = self.service._get_user_full(trans=trans, deleted=False, user_id=user_id)
         if user is not None:
             return self.user_serializer.serialize_to_view(user, view="detailed")
         else:
-            return self.service.user_manager.anon_user_api_value(trans)
+            return self.service._anon_user_api_value(trans)
 
 
 class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin):
+    service: UsersService = depends(UsersService)
     user_manager: users.UserManager = depends(users.UserManager)
     user_serializer: users.UserSerializer = depends(users.UserSerializer)
     user_deserializer: users.UserDeserializer = depends(users.UserDeserializer)
@@ -414,7 +414,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         """Return referenced user or None if anonymous user is referenced."""
         deleted = kwd.get("deleted", "False")
         deleted = util.string_as_bool(deleted)
-        return get_user_full(trans, user_id, deleted)
+        return self.service._get_user_full(trans, user_id, deleted)
 
     @expose_api
     def create(self, trans: GalaxyWebTransaction, payload: dict, **kwd):
@@ -1200,32 +1200,3 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         if user != trans.user and not trans.user_is_admin:
             raise exceptions.InsufficientPermissionsException("Access denied.")
         return user
-
-
-def get_user_full(trans: ProvidesUserContext, user_id: Union[FlexibleUserIdType, str], deleted: bool) -> Optional[User]:
-    try:
-        # user is requesting data about themselves
-        if user_id == "current":
-            # ...and is anonymous - return usage and quota (if any)
-            if not trans.user:
-                return None
-
-            # ...and is logged in - return full
-            else:
-                user = trans.user
-        else:
-            user = managers_base.get_object(
-                trans,
-                user_id,
-                "User",
-                deleted=deleted,
-            )
-        # check that the user is requesting themselves (and they aren't del'd) unless admin
-        if not trans.user_is_admin:
-            if trans.user != user or user.deleted:
-                raise exceptions.RequestParameterInvalidException("Invalid user id specified")
-        return user
-    except exceptions.MessageException:
-        raise
-    except Exception:
-        raise exceptions.RequestParameterInvalidException("Invalid user id specified")

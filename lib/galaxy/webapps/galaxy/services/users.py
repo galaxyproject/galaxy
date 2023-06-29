@@ -1,16 +1,22 @@
-from typing import Optional
+from typing import Optional, Union
+from typing_extensions import Literal
 
 from galaxy import exceptions as glx_exceptions, util
 from galaxy.managers import api_keys
 from galaxy.managers.context import ProvidesHistoryContext, ProvidesUserContext
 from galaxy.managers.users import UserManager
+import galaxy.managers.base as managers_base
+from galaxy.model import User
 from galaxy.queue_worker import send_local_control_task
 from galaxy.schema import APIKeyModel
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.webapps.galaxy.services.base import (
     async_task_summary,
     ServiceBase,
 )
+
+FlexibleUserIdType = Union[DecodedDatabaseIdField, Literal["current"]]
 
 
 class UsersService(ServiceBase):
@@ -89,3 +95,36 @@ class UsersService(ServiceBase):
             "nice_total_disk_usage": util.nice_size(usage),
             "quota_percent": percent,
         }
+
+    def _get_user_full(
+        self,
+        trans: ProvidesUserContext,
+        user_id: Union[FlexibleUserIdType, str],
+        deleted: bool,
+    ) -> Optional[User]:
+        try:
+            # user is requesting data about themselves
+            if user_id == "current":
+                # ...and is anonymous - return usage and quota (if any)
+                if not trans.user:
+                    return None
+
+                # ...and is logged in - return full
+                else:
+                    user = trans.user
+            else:
+                user = managers_base.get_object(
+                    trans,
+                    user_id,
+                    "User",
+                    deleted=deleted,
+                )
+            # check that the user is requesting themselves (and they aren't del'd) unless admin
+            if not trans.user_is_admin:
+                if trans.user != user or user.deleted:
+                    raise glx_exceptions.RequestParameterInvalidException("Invalid user id specified")
+            return user
+        except glx_exceptions.MessageException:
+            raise
+        except Exception:
+            raise glx_exceptions.RequestParameterInvalidException("Invalid user id specified")
