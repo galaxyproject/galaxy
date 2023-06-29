@@ -38,7 +38,6 @@ import Default from "./Default";
 import RulesInput from "./RulesInput";
 import { uploadModelsToPayload } from "./helpers";
 
-
 export default {
     components: {
         Collection,

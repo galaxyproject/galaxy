@@ -7,7 +7,6 @@ import DiskUsageSummary from "./DiskUsageSummary.vue";
 import localize from "@/utils/localization";
 import IconCard from "@/components/IconCard.vue";
 
-
 const router = useRouter();
 
 const texts = reactive({

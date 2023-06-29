@@ -39,7 +39,6 @@ import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { terminalFactory, ConnectionAcceptable } from "@/components/Workflow/Editor/modules/terminals";
 
-
 export default {
     props: {
         input: {

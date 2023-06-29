@@ -1,6 +1,6 @@
 <script setup>
-import Vue, { ref, computed , getCurrentInstance } from "vue";
-import { VBPopoverPlugin, VBTooltipPlugin , BNavItem, BNavItemDropdown, BDropdownItem } from "bootstrap-vue";
+import Vue, { ref, computed, getCurrentInstance } from "vue";
+import { VBPopoverPlugin, VBTooltipPlugin, BNavItem, BNavItemDropdown, BDropdownItem } from "bootstrap-vue";
 import { withPrefix } from "utils/redirect";
 
 Vue.use(VBPopoverPlugin);

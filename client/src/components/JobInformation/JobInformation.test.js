@@ -7,7 +7,6 @@ import flushPromises from "flush-promises";
 import JobInformation from "./JobInformation";
 import jobResponse from "./testData/jobInformationResponse.json";
 
-
 jest.mock("app");
 
 const JOB_ID = "test_id";

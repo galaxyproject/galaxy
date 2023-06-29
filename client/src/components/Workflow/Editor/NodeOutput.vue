@@ -23,7 +23,6 @@ import {
 import { assertDefined, ensureDefined } from "@/utils/assertions";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
-
 type ElementBounding = UnwrapRef<UseElementBoundingReturn>;
 
 library.add(faPlus, faMinus);

@@ -3,20 +3,6 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref, computed } from "vue";
 import { useFormattedToolHelp } from "composables/formattedToolHelp";
 import ToolFavoriteButton from "components/Tool/Buttons/ToolFavoriteButton";
-</script>
-
-<script>
-import { library } from "@fortawesome/fontawesome-svg-core";
-import {
-    faWrench,
-    faExternalLinkAlt,
-    faCheck,
-    faTimes,
-    faAngleDown,
-    faAngleUp,
-    faExclamationTriangle,
-    faUser,
-} from "@fortawesome/free-solid-svg-icons";
 
 const props = defineProps({
     id: { type: String, required: true },
@@ -44,7 +30,21 @@ const formattedToolHelp = computed(() => {
         return "";
     }
 });
+</script>
 
+<script>
+// eslint-disable import/first
+import { library } from "@fortawesome/fontawesome-svg-core";
+import {
+    faWrench,
+    faExternalLinkAlt,
+    faCheck,
+    faTimes,
+    faAngleDown,
+    faAngleUp,
+    faExclamationTriangle,
+    faUser,
+} from "@fortawesome/free-solid-svg-icons";
 library.add(faWrench, faExternalLinkAlt, faCheck, faTimes, faAngleDown, faAngleUp, faExclamationTriangle, faUser);
 </script>
 

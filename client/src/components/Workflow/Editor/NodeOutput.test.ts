@@ -10,9 +10,6 @@ import { terminalFactory } from "./modules/terminals";
 import { useWorkflowStepStore, type Step, type Steps } from "@/stores/workflowStepStore";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 
-
-
-
 const localVue = getLocalVue();
 
 class ResizeObserver {

@@ -1,4 +1,4 @@
-import { mount , shallowMount } from "@vue/test-utils";
+import { mount, shallowMount } from "@vue/test-utils";
 import PairedListCollectionCreator from "components/Collections/PairedListCollectionCreator";
 import DATA from "@tests/test-data/paired-collection-creator.data.js";
 

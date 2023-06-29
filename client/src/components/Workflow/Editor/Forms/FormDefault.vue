@@ -73,7 +73,6 @@ import WorkflowIcons from "@/components/Workflow/icons";
 import { useWorkflowStepStore, type Step } from "@/stores/workflowStepStore";
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 
-
 const props = defineProps<{
     step: Step;
     datatypes: DatatypesMapperModel["datatypes"];

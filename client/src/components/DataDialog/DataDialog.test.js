@@ -6,7 +6,6 @@ import { Model } from "./model";
 import { UrlTracker } from "./utilities";
 import { Services } from "./services";
 
-
 jest.mock("app");
 
 const mockOptions = {

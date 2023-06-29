@@ -55,7 +55,6 @@ import Tool from "./Tool";
 import ToolPanelLabel from "./ToolPanelLabel";
 import ToolPanelLinks from "./ToolPanelLinks";
 
-
 export default {
     name: "ToolSection",
     components: {

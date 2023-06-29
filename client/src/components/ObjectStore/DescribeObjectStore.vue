@@ -9,7 +9,6 @@ import type { ConcreteObjectStoreModel } from "./types";
 import { QuotaSourceUsageProvider } from "@/components/User/DiskUsage/Quota/QuotaUsageProvider.js";
 import QuotaUsageBar from "@/components/User/DiskUsage/Quota/QuotaUsageBar.vue";
 
-
 interface Props {
     storageInfo: ConcreteObjectStoreModel;
     what: string;

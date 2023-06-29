@@ -9,12 +9,12 @@
 
 /* jquery and _ are exposed via expose-loader while several external plugins rely on these */
 import $ from "jquery"; // eslint-disable-line no-unused-vars
-import _ from "underscore";
+import _ from "underscore"; // eslint-disable-line no-unused-vars
 import { TracksterUIView } from "viz/trackster";
 import Circster from "viz/circster";
 
 // Previously "chart"
-import Client from "mvc/visualization/chart/chart-client"; // eslint-disable-line no-unused-vars
+import Client from "mvc/visualization/chart/chart-client";
 
 export { getGalaxyInstance, setGalaxyInstance } from "app";
 export { TracksterUI } from "viz/trackster";

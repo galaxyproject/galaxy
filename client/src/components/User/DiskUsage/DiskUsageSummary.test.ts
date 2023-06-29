@@ -10,7 +10,6 @@ import MockConfigProvider from "@/components/providers/MockConfigProvider";
 import MockCurrentUser from "@/components/providers/MockCurrentUser";
 import MockProvider from "@/components/providers/MockProvider";
 
-
 const localVue = getLocalVue();
 
 const quotaUsageSummaryComponentId = "quota-usage-summary";

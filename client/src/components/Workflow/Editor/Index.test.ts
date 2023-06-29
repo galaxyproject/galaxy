@@ -1,7 +1,7 @@
 import { expect, jest } from "@jest/globals";
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
-import { PiniaVuePlugin , setActivePinia } from "pinia";
+import { PiniaVuePlugin, setActivePinia } from "pinia";
 import { createTestingPinia } from "@pinia/testing";
 
 import Index from "./Index.vue";

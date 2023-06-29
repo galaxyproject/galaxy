@@ -33,7 +33,6 @@ import exportsMixin from "components/Common/exportsMixin";
 import ToLink from "./ToLink.vue";
 import ToRemoteFile from "./ToRemoteFile.vue";
 
-
 export default {
     components: {
         ToLink,

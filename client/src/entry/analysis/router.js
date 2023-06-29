@@ -3,7 +3,6 @@ import VueRouter from "vue-router";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 
-
 // these modules are mounted below the masthead.
 import Analysis from "entry/analysis/modules/Analysis";
 import Home from "entry/analysis/modules/Home";

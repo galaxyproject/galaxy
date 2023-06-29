@@ -2,7 +2,7 @@
 import { storeToRefs } from "pinia";
 import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
 import { withPrefix } from "utils/redirect";
-import { watch, ref, reactive , onMounted, onBeforeMount } from "vue";
+import { watch, ref, reactive, onMounted, onBeforeMount } from "vue";
 import { useRoute } from "vue-router/composables";
 import { useEntryPointStore } from "stores/entryPointStore";
 

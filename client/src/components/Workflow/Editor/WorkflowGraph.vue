@@ -61,11 +61,10 @@ import WorkflowNode from "@/components/Workflow/Editor/Node.vue";
 import WorkflowEdges from "@/components/Workflow/Editor/WorkflowEdges.vue";
 import WorkflowMinimap from "@/components/Workflow/Editor/WorkflowMinimap.vue";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
-import type { TerminalPosition , XYPosition } from "@/stores/workflowEditorStateStore";
+import type { TerminalPosition, XYPosition } from "@/stores/workflowEditorStateStore";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useWorkflowStepStore, type Step } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
-
 
 const emit = defineEmits(["transform", "graph-offset", "onRemove", "scrollTo"]);
 const props = defineProps({

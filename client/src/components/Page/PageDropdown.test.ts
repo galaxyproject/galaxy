@@ -9,7 +9,6 @@ import PageDropdown from "./PageDropdown.vue";
 import { mockFetcher } from "@/schema/__mocks__";
 import { useUserStore } from "@/stores/userStore";
 
-
 import "jest-location-mock";
 
 jest.mock("@/schema");

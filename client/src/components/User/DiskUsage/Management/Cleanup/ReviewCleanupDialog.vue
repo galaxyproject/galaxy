@@ -8,8 +8,6 @@ import localize from "@/utils/localization";
 import { bytesToString } from "@/utils/utils";
 import UtcDate from "@/components/UtcDate.vue";
 
-
-
 interface ReviewCleanupDialogProps {
     operation?: CleanupOperation;
     totalItems?: number;

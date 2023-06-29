@@ -1,5 +1,4 @@
 <script setup>
-
 import { ref, watch } from "vue";
 import { getAppRoot } from "onload";
 import { storeToRefs } from "pinia";

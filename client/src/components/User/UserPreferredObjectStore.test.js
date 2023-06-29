@@ -1,4 +1,3 @@
-
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 import axios from "axios";

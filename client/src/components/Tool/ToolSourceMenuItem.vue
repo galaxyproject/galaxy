@@ -2,13 +2,6 @@
 import { useConfig } from "composables/config";
 import { storeToRefs } from "pinia";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-
-</script>
-
-<script>
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faEye } from "@fortawesome/free-regular-svg-icons";
-
 import ToolSource from "./ToolSource.vue";
 
 import { useUserStore } from "@/stores/userStore";
@@ -22,6 +15,12 @@ const props = defineProps({
         required: true,
     },
 });
+</script>
+
+<script>
+/* eslint-disable import/first */
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faEye } from "@fortawesome/free-regular-svg-icons";
 
 library.add(faEye);
 </script>

@@ -8,7 +8,6 @@ import { getRedirectOnImportPath } from "../redirectPath";
 import { withPrefix } from "@/utils/redirect";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
-
 const loading = ref(false);
 const sourceURL: Ref<string | null> = ref(null);
 const sourceFile: Ref<string | null> = ref(null);

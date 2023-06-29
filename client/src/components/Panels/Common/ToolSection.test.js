@@ -4,7 +4,6 @@ import { useConfig } from "composables/config";
 
 import ToolSection from "./ToolSection";
 
-
 jest.mock("composables/config");
 useConfig.mockReturnValue({
     config: {

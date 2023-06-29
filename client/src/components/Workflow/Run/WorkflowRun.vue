@@ -56,7 +56,6 @@ import WorkflowRunForm from "./WorkflowRunForm";
 import WorkflowRunFormSimple from "./WorkflowRunFormSimple";
 import { WorkflowRunModel } from "./model";
 
-
 import { useHistoryStore } from "@/stores/historyStore";
 
 export default {

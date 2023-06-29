@@ -13,8 +13,6 @@ import { useUserStore } from "@/stores/userStore";
 import { useConfig } from "@/composables/config";
 import { HistoryFilters } from "@/components/History/HistoryFilters.js";
 
-
-
 interface HistoryBase {
     id: string;
     preferred_object_store_id: string;

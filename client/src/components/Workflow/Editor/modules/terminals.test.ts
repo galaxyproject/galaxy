@@ -19,11 +19,9 @@ import {
     NULL_COLLECTION_TYPE_DESCRIPTION,
 } from "./collectionTypeDescription";
 
-import { useWorkflowStepStore, type TerminalSource , DataOutput, Steps, Step } from "@/stores/workflowStepStore";
+import { useWorkflowStepStore, type TerminalSource, DataOutput, Steps, Step } from "@/stores/workflowStepStore";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
-
-
 
 function setupAdvanced() {
     const terminals: { [index: string]: { [index: string]: ReturnType<typeof terminalFactory> } } = {};

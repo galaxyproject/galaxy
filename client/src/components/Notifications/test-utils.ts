@@ -1,5 +1,5 @@
 import type { components } from "@/schema";
-import type { UserNotification , MessageNotification, SharedItemNotification } from "@/components/Notifications/index";
+import type { UserNotification, MessageNotification, SharedItemNotification } from "@/components/Notifications/index";
 
 type NotificationVariants = components["schemas"]["NotificationVariant"];
 type NewSharedItemNotificationContentItemType = components["schemas"]["NewSharedItemNotificationContent"]["item_type"];

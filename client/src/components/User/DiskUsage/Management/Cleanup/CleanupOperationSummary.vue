@@ -8,7 +8,6 @@ import localize from "@/utils/localization";
 import { wait } from "@/utils/utils";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
-
 interface CleanupOperationSummaryProps {
     operation: CleanupOperation;
     refreshOperationId?: string;

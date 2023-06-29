@@ -10,7 +10,6 @@ import { useAnimationFrameThrottle } from "@/composables/throttle";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import type { Step, Steps } from "@/stores/workflowStepStore";
 
-
 const props = defineProps<{
     steps: Steps;
     viewportBounds: UseElementBoundingReturn;

@@ -68,8 +68,6 @@ import FormElement from "@/components/Form/FormElement.vue";
 import Heading from "@/components/Common/Heading.vue";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
-
-
 export default {
     components: {
         FormDisplay,

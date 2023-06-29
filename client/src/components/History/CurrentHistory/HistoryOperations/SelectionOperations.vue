@@ -158,7 +158,7 @@ import {
     addTagsToSelectedContent,
     removeTagsFromSelectedContent,
 } from "components/History/model/crud";
-import { createDatasetCollection , getHistoryContent } from "components/History/model/queries";
+import { createDatasetCollection, getHistoryContent } from "components/History/model/queries";
 import { buildCollectionModal } from "components/History/adapters/buildCollectionModal";
 import { DbKeyProvider, DatatypesProvider } from "components/providers";
 import SingleItemSelector from "components/SingleItemSelector";

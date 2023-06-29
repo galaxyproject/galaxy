@@ -28,7 +28,6 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import Filtering, { contains, expandNameTag } from "@/utils/filtering";
 
-
 const validFilters = {
     name: contains("name"),
     tag: contains("tags", "tag", expandNameTag),

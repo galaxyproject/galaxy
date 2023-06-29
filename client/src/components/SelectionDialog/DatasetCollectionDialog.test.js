@@ -6,7 +6,6 @@ import { shallowMount, createLocalVue } from "@vue/test-utils";
 import DatasetCollectionDialog from "./DatasetCollectionDialog.vue";
 import SelectionDialog from "./SelectionDialog.vue";
 
-
 jest.mock("app");
 
 const mockOptions = {

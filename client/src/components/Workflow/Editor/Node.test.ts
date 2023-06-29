@@ -9,7 +9,6 @@ import { mockOffset } from "./test_fixtures";
 
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 
-
 jest.mock("app");
 
 const localVue = getLocalVue();

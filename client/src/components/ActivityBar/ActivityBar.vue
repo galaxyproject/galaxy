@@ -20,7 +20,6 @@ import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
 import WorkflowBox from "@/components/Panels/WorkflowBox.vue";
 
-
 const { config } = useConfig();
 
 const route = useRoute();

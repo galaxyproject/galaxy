@@ -72,7 +72,6 @@ import { mapGetters } from "vuex";
 
 import InvocationMessage from "@/components/WorkflowInvocationState/InvocationMessage.vue";
 
-
 const getUrl = (path) => getRootFromIndexLink() + path;
 
 export default {

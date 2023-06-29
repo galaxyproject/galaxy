@@ -109,7 +109,7 @@
 
 <script setup lang="ts">
 import type { PropType, Ref } from "vue";
-import Vue, { reactive , computed, ref } from "vue";
+import Vue, { reactive, computed, ref } from "vue";
 import BootstrapVue from "bootstrap-vue";
 import type { UseElementBoundingReturn, UseScrollReturn, VueInstance } from "@vueuse/core";
 import { faCodeBranch } from "@fortawesome/free-solid-svg-icons";
@@ -131,8 +131,6 @@ import type { Step } from "@/stores/workflowStepStore";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
-
-
 
 Vue.use(BootstrapVue);
 

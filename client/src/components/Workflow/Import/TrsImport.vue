@@ -15,7 +15,6 @@ import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
-
 const props = defineProps({
     queryTrsServer: {
         type: String,

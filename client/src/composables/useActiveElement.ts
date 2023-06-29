@@ -1,7 +1,7 @@
 // https://github.com/vueuse/vueuse/blob/main/packages/core/_configurable.ts
 import { computedWithControl } from "@vueuse/shared";
 import { isClient } from "@vueuse/shared";
-import { useEventListener , unrefElement } from "@vueuse/core";
+import { useEventListener, unrefElement } from "@vueuse/core";
 import { computed } from "vue";
 import type { MaybeElementRef, UseFocusWithinReturn, ConfigurableWindow } from "@vueuse/core";
 
