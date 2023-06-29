@@ -302,6 +302,9 @@ class DetailedUserModel(Model):
     purged: bool = Field(default=Required)
 
 
+FlexibleUserIdType = Union[DecodedDatabaseIdField, Literal["current"]]
+
+
 class UserModel(Model):
     """User in a transaction context."""
 

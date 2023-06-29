@@ -25,7 +25,6 @@ from sqlalchemy import (
     or_,
     true,
 )
-from typing_extensions import Literal
 
 from galaxy import (
     exceptions,
@@ -49,6 +48,7 @@ from galaxy.schema.schema import (
     AnonUserModel,
     AsyncTaskResultSummary,
     DetailedUserModel,
+    FlexibleUserIdType,
     UserBeaconSetting,
     UserTheme,
 )
@@ -85,7 +85,6 @@ log = logging.getLogger(__name__)
 
 router = Router(tags=["users"])
 
-FlexibleUserIdType = Union[DecodedDatabaseIdField, Literal["current"]]
 ThemePathParam: str = Path(default=Required, title="Theme", description="The theme of the GUI")
 UserDeleted: bool = Query(default=None, title="Deleted User", description="Indicates if the user is deleted")
 UserIdPathParam: DecodedDatabaseIdField = Path(..., title="User ID", description="The ID of the user to get.")
@@ -197,7 +196,7 @@ class FastAPIUsers:
         trans: ProvidesUserContext = DependsOnTrans,
         user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
     ) -> List[UserQuotaUsage]:
-        user = self.service._get_user_full(trans, user_id, False)
+        user = self.service.get_user_full(trans, user_id, False)
         if user:
             rval = self.user_serializer.serialize_disk_usage(user)
             return rval
@@ -215,7 +214,7 @@ class FastAPIUsers:
         user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
         label: str = QuotaSourceLabelPathParam,
     ) -> Optional[UserQuotaUsage]:
-        user = self.service._get_user_full(trans, user_id, False)
+        user = self.service.get_user_full(trans, user_id, False)
         effective_label: Optional[str] = label
         if label == "__null__":
             effective_label = None
@@ -290,12 +289,7 @@ class FastAPIUsers:
         trans: ProvidesHistoryContext = DependsOnTrans,
         user_id: DecodedDatabaseIdField = UserIdPathParam,
     ) -> Union[AnonUserModel, DetailedUserModel]:
-        user = self.service._get_user_full(trans=trans, deleted=True, user_id=user_id)
-        if user is not None:
-            user_response = self.user_serializer.serialize_to_view(user, view="detailed")
-            return DetailedUserModel(**user_response)
-        anon_response = self.service._anon_user_api_value(trans)
-        return AnonUserModel(**anon_response)
+        return self.service.show_user(trans=trans, user_id=user_id, deleted=True)
 
     @router.get(
         "/api/users/current",
@@ -310,18 +304,11 @@ class FastAPIUsers:
     def show(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        user_id: Union[Literal["current"], DecodedDatabaseIdField] = FlexibleUserIdPathParam,
+        user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
         deleted: Optional[bool] = UserDeleted,
     ) -> Union[AnonUserModel, DetailedUserModel]:
-        if deleted:
-            user = self.service._get_user_full(trans=trans, deleted=True, user_id=user_id)
-        else:
-            user = self.service._get_user_full(trans=trans, deleted=False, user_id=user_id)
-        if user is not None:
-            user_response = self.user_serializer.serialize_to_view(user, view="detailed")
-            return DetailedUserModel(**user_response)
-        anon_response = self.service._anon_user_api_value(trans)
-        return AnonUserModel(**anon_response)
+        user_deleted = deleted or False
+        return self.service.show_user(trans=trans, user_id=user_id, deleted=user_deleted)
 
 
 class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin):
@@ -418,7 +405,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         """Return referenced user or None if anonymous user is referenced."""
         deleted = kwd.get("deleted", "False")
         deleted = util.string_as_bool(deleted)
-        return self.service._get_user_full(trans, user_id, deleted)
+        return self.service.get_user_full(trans, user_id, deleted)
 
     @expose_api
     def create(self, trans: GalaxyWebTransaction, payload: dict, **kwd):

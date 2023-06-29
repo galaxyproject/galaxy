@@ -1,22 +1,23 @@
 from typing import Optional, Union
-from typing_extensions import Literal
 
 from galaxy import exceptions as glx_exceptions, util
 from galaxy.managers import api_keys
 from galaxy.managers.context import ProvidesHistoryContext, ProvidesUserContext
-from galaxy.managers.users import UserManager
+from galaxy.managers.users import (
+    UserManager,
+    UserSerializer,
+)
 import galaxy.managers.base as managers_base
 from galaxy.model import User
 from galaxy.queue_worker import send_local_control_task
 from galaxy.schema import APIKeyModel
-from galaxy.schema.fields import DecodedDatabaseIdField
+
+from galaxy.schema.schema import AnonUserModel, DetailedUserModel, FlexibleUserIdType
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.webapps.galaxy.services.base import (
     async_task_summary,
     ServiceBase,
 )
-
-FlexibleUserIdType = Union[DecodedDatabaseIdField, Literal["current"]]
 
 
 class UsersService(ServiceBase):
@@ -26,10 +27,17 @@ class UsersService(ServiceBase):
     and pydantic models to declare its parameters and return types.
     """
 
-    def __init__(self, security: IdEncodingHelper, user_manager: UserManager, api_key_manager: api_keys.ApiKeyManager):
+    def __init__(
+        self,
+        security: IdEncodingHelper,
+        user_manager: UserManager,
+        api_key_manager: api_keys.ApiKeyManager,
+        user_serializer: UserSerializer,
+    ):
         super().__init__(security)
         self.user_manager = user_manager
         self.api_key_manager = api_key_manager
+        self.user_serializer = user_serializer
 
     def recalculate_disk_usage(
         self,
@@ -90,16 +98,17 @@ class UsersService(ServiceBase):
             raise glx_exceptions.MessageException(err_msg="The user has no history, which should always be the case.")
         usage = trans.app.quota_agent.get_usage(trans, history=trans.history)
         percent = trans.app.quota_agent.get_percent(trans=trans, usage=usage)
+        usage = usage or 0
         return {
             "total_disk_usage": int(usage),
             "nice_total_disk_usage": util.nice_size(usage),
             "quota_percent": percent,
         }
 
-    def _get_user_full(
+    def get_user_full(
         self,
         trans: ProvidesUserContext,
-        user_id: Union[FlexibleUserIdType, str],
+        user_id: FlexibleUserIdType,
         deleted: bool,
     ) -> Optional[User]:
         try:
@@ -128,3 +137,16 @@ class UsersService(ServiceBase):
             raise
         except Exception:
             raise glx_exceptions.RequestParameterInvalidException("Invalid user id specified")
+
+    def show_user(
+        self,
+        trans: ProvidesHistoryContext,
+        user_id: FlexibleUserIdType,
+        deleted: bool,
+    ) -> Union[DetailedUserModel, AnonUserModel]:
+        user = self.get_user_full(trans=trans, deleted=deleted, user_id=user_id)
+        if user is not None:
+            user_response = self.user_serializer.serialize_to_view(user, view="detailed")
+            return DetailedUserModel(**user_response)
+        anon_response = self._anon_user_api_value(trans)
+        return AnonUserModel(**anon_response)
