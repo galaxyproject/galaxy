@@ -11,7 +11,6 @@ import Vue from "vue";
 import Vuex from "vuex";
 
 import MockConfigProvider from "../providers/MockConfigProvider";
-
 import ToolForm from "./ToolForm";
 
 const localVue = getLocalVue();

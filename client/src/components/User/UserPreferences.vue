@@ -142,7 +142,6 @@ import UserDeletion from "./UserDeletion";
 import UserPreferencesElement from "./UserPreferencesElement";
 import UserPreferredObjectStore from "./UserPreferredObjectStore";
 
-
 Vue.use(BootstrapVue);
 
 export default {

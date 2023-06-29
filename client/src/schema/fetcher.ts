@@ -1,6 +1,5 @@
-import { Fetcher } from "openapi-typescript-fetch";
 import type { Middleware } from "openapi-typescript-fetch";
-
+import { Fetcher } from "openapi-typescript-fetch";
 
 import { getAppRoot } from "@/onload/loadConfig";
 import { rethrowSimple } from "@/utils/simple-error";

@@ -1,7 +1,7 @@
 /**
  * Utilities file for Panel Searches (panel/client search + advanced/backend search)
  */
-import { orderBy, escapeRegExp } from "lodash";
+import { escapeRegExp, orderBy } from "lodash";
 import levenshteinDistance from "utils/levenshtein";
 
 const TOOLS_RESULTS_SORT_LABEL = "apiSort";

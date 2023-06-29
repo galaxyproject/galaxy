@@ -16,7 +16,7 @@ import { serverPath } from "utils/serverPath";
 
 import { defaultAppFactory } from "./defaultAppFactory";
 import { globalInits } from "./globalInits";
-import { initializations$, clearInitQueue } from "./initQueue";
+import { clearInitQueue, initializations$ } from "./initQueue";
 import { config$ } from "./loadConfig";
 
 /**

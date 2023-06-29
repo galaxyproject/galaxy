@@ -109,7 +109,7 @@ import FormElement from "components/Form/FormElement";
 import LoadingSpan from "components/LoadingSpan";
 import ConfigProvider from "components/providers/ConfigProvider";
 import ToolEntryPoints from "components/ToolEntryPoints/ToolEntryPoints";
-import { mapState, mapActions } from "pinia";
+import { mapActions, mapState } from "pinia";
 import { useHistoryItemsStore } from "stores/history/historyItemsStore";
 import { useJobStore } from "stores/jobStore";
 import { refreshContentsWrapper } from "utils/data";
@@ -118,11 +118,9 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
 import ToolRecommendation from "../ToolRecommendation";
-
-import { getToolFormData, updateToolFormData, submitJob } from "./services";
+import { getToolFormData, submitJob, updateToolFormData } from "./services";
 import ToolCard from "./ToolCard";
 import { allowCachedJobs } from "./utilities";
-
 
 export default {
     components: {

@@ -1,7 +1,6 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
-
 import type { UserNotification } from "@/components/Notifications";
 import type { components } from "@/schema";
 import {

@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faTags, faCheck, faTimes, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faPlus, faTags, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { ref, computed } from "vue";
 import type { Ref } from "vue";
+import { computed, ref } from "vue";
 import Multiselect from "vue-multiselect";
-
 
 import { useToast } from "@/composables/toast";
 import { useMultiselect } from "@/composables/useMultiselect";

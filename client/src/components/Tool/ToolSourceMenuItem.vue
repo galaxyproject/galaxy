@@ -9,7 +9,6 @@ import { useUserStore } from "@/stores/userStore";
 
 import ToolSource from "./ToolSource.vue";
 
-
 library.add(faEye);
 
 const { config } = useConfig(true);

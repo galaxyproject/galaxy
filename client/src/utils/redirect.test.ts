@@ -2,7 +2,6 @@ import { getAppRoot } from "@/onload/loadConfig";
 
 import { withPrefix } from "./redirect";
 
-
 jest.mock("@/onload/loadConfig");
 
 test("route prefix changes", async () => {

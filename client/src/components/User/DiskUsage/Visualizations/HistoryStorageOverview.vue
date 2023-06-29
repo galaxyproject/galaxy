@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import Heading from "@/components/Common/Heading.vue";
@@ -17,10 +17,9 @@ import SelectedItemActions from "./SelectedItemActions.vue";
 import {
     fetchHistoryContentsSizeSummary,
     type ItemSizeSummary,
-    undeleteDatasetById,
     purgeDatasetById,
+    undeleteDatasetById,
 } from "./service";
-
 
 const router = useRouter();
 const { success: successToast, error: errorToast } = useToast();

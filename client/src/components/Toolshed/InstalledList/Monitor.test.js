@@ -3,7 +3,6 @@ import { getAppRoot } from "onload/loadConfig";
 import { getLocalVue } from "tests/jest/helpers";
 
 import { Services } from "../services";
-
 import Monitor from "./Monitor";
 
 jest.mock("app");

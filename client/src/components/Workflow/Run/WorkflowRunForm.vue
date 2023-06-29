@@ -68,7 +68,6 @@ import { invokeWorkflow } from "./services";
 import WorkflowRunDefaultStep from "./WorkflowRunDefaultStep";
 import WorkflowRunInputStep from "./WorkflowRunInputStep";
 
-
 export default {
     components: {
         ButtonSpinner,

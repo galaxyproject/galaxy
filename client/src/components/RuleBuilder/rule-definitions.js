@@ -916,4 +916,4 @@ export default {
     MAPPING_TARGETS: MAPPING_TARGETS,
 };
 
-export { RULES, MAPPING_TARGETS };
+export { MAPPING_TARGETS, RULES };

@@ -1,22 +1,22 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faListAlt } from "@fortawesome/free-regular-svg-icons";
-import { faColumns, faSignInAlt, faArrowDown } from "@fortawesome/free-solid-svg-icons";
+import { faArrowDown, faColumns, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useInfiniteScroll } from "@vueuse/core";
 import {
-    BModal,
+    BBadge,
+    BButton,
+    BButtonGroup,
     BFormGroup,
     BFormInput,
     BListGroup,
     BListGroupItem,
-    BBadge,
-    BButtonGroup,
-    BButton,
+    BModal,
 } from "bootstrap-vue";
 import isEqual from "lodash.isequal";
 import { storeToRefs } from "pinia";
-import { computed, onMounted, onUnmounted, ref, watch, type PropType, type Ref } from "vue";
+import { computed, onMounted, onUnmounted, type PropType, type Ref, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import Heading from "@/components/Common/Heading.vue";

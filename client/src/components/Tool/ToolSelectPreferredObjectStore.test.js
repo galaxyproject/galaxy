@@ -2,7 +2,6 @@ import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
-
 import { setupSelectableMock } from "@/components/ObjectStore/mockServices";
 import { ROOT_COMPONENT } from "@/utils/navigation";
 

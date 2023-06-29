@@ -27,7 +27,6 @@
 import LoadingSpan from "components/LoadingSpan";
 import { mapActions } from "pinia";
 
-
 import { deleteContent, updateContentFields } from "@/components/History/model/queries";
 import { DatasetCollectionProvider, DatasetProvider } from "@/components/providers";
 import { DatasetCollectionElementProvider } from "@/components/providers/storeProviders";

@@ -1,6 +1,6 @@
 <script setup>
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCloudUploadAlt, faSpinner, faCheckCircle, faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
+import { faCheckCircle, faCloudUploadAlt, faExclamationCircle, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { useTaskMonitor } from "composables/taskMonitor";

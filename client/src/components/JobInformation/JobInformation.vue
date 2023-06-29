@@ -81,7 +81,6 @@ import { getAppRoot } from "onload/loadConfig";
 import JOB_STATES_MODEL from "utils/job-states-model";
 
 import DecodedId from "../DecodedId.vue";
-
 import CodeRow from "./CodeRow.vue";
 
 export default {

@@ -1,7 +1,7 @@
 import type { UseElementBoundingReturn } from "@vueuse/core";
 import { defineStore } from "pinia";
-import Vue, { reactive } from "vue";
 import type { UnwrapRef } from "vue";
+import Vue, { reactive } from "vue";
 
 import type { OutputTerminals } from "@/components/Workflow/Editor/modules/terminals";
 

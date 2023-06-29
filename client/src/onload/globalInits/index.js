@@ -11,9 +11,8 @@ import { make_popup_menus } from "ui/popupmenu";
 import { monitorInit } from "utils/installMonitor";
 
 import { prependInitialization } from "../initQueue";
-
 // specific initialization functions
-import { adjustIframeLinks, addIframeClass } from "./iframesAreTerrible";
+import { addIframeClass, adjustIframeLinks } from "./iframesAreTerrible";
 import { init_refresh_on_change } from "./init_refresh_on_change";
 import { initModals } from "./initModals";
 import { initSentry } from "./initSentry";

@@ -27,7 +27,7 @@
 
 <script>
 import Backbone from "backbone";
-import { BTabs, BTab } from "bootstrap-vue";
+import { BTab, BTabs } from "bootstrap-vue";
 import { getDatatypesMapper } from "components/Datatypes";
 import LoadingSpan from "components/LoadingSpan";
 import UploadUtils from "mvc/upload/upload-utils";

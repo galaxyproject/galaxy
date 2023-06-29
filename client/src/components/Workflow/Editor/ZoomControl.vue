@@ -2,7 +2,7 @@
 import BootstrapVue from "bootstrap-vue";
 import Vue, { computed } from "vue";
 
-import { getZoomInLevel, getZoomOutLevel, isMinZoom, isMaxZoom } from "./modules/zoomLevels";
+import { getZoomInLevel, getZoomOutLevel, isMaxZoom, isMinZoom } from "./modules/zoomLevels";
 
 Vue.use(BootstrapVue);
 

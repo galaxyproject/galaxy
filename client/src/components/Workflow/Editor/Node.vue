@@ -114,8 +114,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { UseElementBoundingReturn, UseScrollReturn, VueInstance } from "@vueuse/core";
 import BootstrapVue from "bootstrap-vue";
 import type { PropType, Ref } from "vue";
-import Vue, { reactive, computed, ref } from "vue";
-
+import Vue, { computed, reactive, ref } from "vue";
 
 import { getGalaxyInstance } from "@/app";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
@@ -127,7 +126,7 @@ import NodeOutput from "@/components/Workflow/Editor/NodeOutput.vue";
 import Recommendations from "@/components/Workflow/Editor/Recommendations.vue";
 import WorkflowIcons from "@/components/Workflow/icons";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
-import { useWorkflowStateStore, type TerminalPosition, type XYPosition } from "@/stores/workflowEditorStateStore";
+import { type TerminalPosition, useWorkflowStateStore, type XYPosition } from "@/stores/workflowEditorStateStore";
 import type { Step } from "@/stores/workflowStepStore";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 

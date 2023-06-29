@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, type Ref } from "vue";
+import { type Ref, ref, watch } from "vue";
 
 import Popper from "@/components/Popper/Popper.vue";
 

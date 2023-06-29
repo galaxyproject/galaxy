@@ -2,6 +2,17 @@
  * Top-level trackster code, used for creating/loading visualizations and user interface elements.
  */
 
+// import Utils from "utils/utils";
+import "libs/jquery/jquery.event.drag";
+import "libs/jquery/jquery.event.hover";
+import "jquery-mousewheel";
+import "libs/jquery/jquery-ui";
+import "libs/jquery/select2";
+import "libs/farbtastic";
+import "libs/jquery/jquery.form";
+import "libs/jquery/jquery.rating";
+import "ui/editable-text";
+
 import { getGalaxyInstance } from "app";
 import Backbone from "backbone";
 import $ from "jquery";
@@ -13,16 +24,6 @@ import _l from "utils/localization";
 import query_string from "utils/query-string-parsing";
 import tracks from "viz/trackster/tracks";
 import visualization from "viz/visualization";
-// import Utils from "utils/utils";
-import "libs/jquery/jquery.event.drag";
-import "libs/jquery/jquery.event.hover";
-import "jquery-mousewheel";
-import "libs/jquery/jquery-ui";
-import "libs/jquery/select2";
-import "libs/farbtastic";
-import "libs/jquery/jquery.form";
-import "libs/jquery/jquery.rating";
-import "ui/editable-text";
 
 //import "static/style/jquery-ui/smoothness/jquery-ui.css";
 //import "static/style/library.css";

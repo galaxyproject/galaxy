@@ -77,7 +77,6 @@ import { absPath, prependPath } from "@/utils/redirect";
 import DatasetDownload from "./DatasetDownload";
 import { downloadUrlMixin } from "./mixins.js";
 
-
 export default {
     components: {
         DatasetDownload,

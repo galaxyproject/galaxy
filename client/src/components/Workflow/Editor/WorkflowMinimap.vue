@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { useDraggable, type UseElementBoundingReturn } from "@vueuse/core";
-import { computed, onMounted, ref, unref, watch } from "vue";
 import type { Ref } from "vue";
-
+import { computed, onMounted, ref, unref, watch } from "vue";
 
 import { useAnimationFrame } from "@/composables/sensors/animationFrame";
 import { useAnimationFrameThrottle } from "@/composables/throttle";

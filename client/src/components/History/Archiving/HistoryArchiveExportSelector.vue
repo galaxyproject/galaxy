@@ -2,7 +2,6 @@
 import { BAlert, BButton, BFormCheckbox, BModal } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 
-
 import ExportToFileSourceForm from "@/components/Common/ExportForm.vue";
 import type { ExportRecord } from "@/components/Common/models/exportRecordModel";
 import { exportToFileSource, getExportRecords } from "@/components/History/Export/services";

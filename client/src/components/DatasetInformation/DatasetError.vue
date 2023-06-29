@@ -98,7 +98,6 @@ import { useUserStore } from "@/stores/userStore";
 import DatasetErrorDetails from "./DatasetErrorDetails";
 import { sendErrorReport } from "./services";
 
-
 library.add(faBug);
 
 export default {

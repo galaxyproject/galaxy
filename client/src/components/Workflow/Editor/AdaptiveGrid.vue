@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import type { UseElementBoundingReturn } from "@vueuse/core";
-import { computed, ref, watch, type Ref, onMounted } from "vue";
+import { computed, onMounted, type Ref, ref, watch } from "vue";
 
 import { useAnimationFrame } from "@/composables/sensors/animationFrame";
 
-import { Transform, type AxisAlignedBoundingBox } from "./modules/geometry";
-
+import { type AxisAlignedBoundingBox, Transform } from "./modules/geometry";
 
 const lineGap = 10;
 

@@ -1,28 +1,27 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faPlus, faMinus } from "@fortawesome/free-solid-svg-icons";
+import { faMinus, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { UseElementBoundingReturn, UseScrollReturn } from "@vueuse/core";
-import { ref, computed, watch, nextTick, toRefs, onBeforeUnmount, type Ref, type UnwrapRef } from "vue";
-
+import { computed, nextTick, onBeforeUnmount, type Ref, ref, toRefs, type UnwrapRef, watch } from "vue";
 
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import ConnectionMenu from "@/components/Workflow/Editor/ConnectionMenu.vue";
 import { useWorkflowStateStore, type XYPosition } from "@/stores/workflowEditorStateStore";
 import {
-    useWorkflowStepStore,
     type OutputTerminalSource,
-    type Step,
-    type PostJobActions,
     type PostJobAction,
+    type PostJobActions,
+    type Step,
+    useWorkflowStepStore,
 } from "@/stores/workflowStepStore";
 import { assertDefined, ensureDefined } from "@/utils/assertions";
 
 import { useRelativePosition } from "./composables/relativePosition";
 import { useTerminal } from "./composables/useTerminal";
 import DraggableWrapper from "./DraggablePan.vue";
-import { NULL_COLLECTION_TYPE_DESCRIPTION, type CollectionTypeDescriptor } from "./modules/collectionTypeDescription";
+import { type CollectionTypeDescriptor, NULL_COLLECTION_TYPE_DESCRIPTION } from "./modules/collectionTypeDescription";
 
 type ElementBounding = UnwrapRef<UseElementBoundingReturn>;
 

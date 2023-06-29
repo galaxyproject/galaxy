@@ -28,7 +28,7 @@ import UtcDate from "components/UtcDate";
 import _l from "utils/localization";
 import Vue from "vue";
 
-import { RULES, MAPPING_TARGETS } from "./rule-definitions";
+import { MAPPING_TARGETS, RULES } from "./rule-definitions";
 
 Vue.use(BootstrapVue);
 export default {

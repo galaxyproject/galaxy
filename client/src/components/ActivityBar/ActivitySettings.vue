@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faSquare } from "@fortawesome/free-regular-svg-icons";
-import { faCheckSquare, faTrash, faThumbtack } from "@fortawesome/free-solid-svg-icons";
+import { faCheckSquare, faThumbtack, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
-import { computed, ref, type Ref, type ComputedRef } from "vue";
+import { computed, type ComputedRef, type Ref, ref } from "vue";
 
 import DelayedInput from "@/components/Common/DelayedInput.vue";
-import { useActivityStore, type Activity } from "@/stores/activityStore";
+import { type Activity, useActivityStore } from "@/stores/activityStore";
 
 library.add({
     faCheckSquare,

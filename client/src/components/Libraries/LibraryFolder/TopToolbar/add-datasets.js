@@ -1,3 +1,5 @@
+import "libs/jquery/jstree";
+
 import { getGalaxyInstance } from "app";
 import Backbone from "backbone";
 import { Toast } from "composables/toast";
@@ -9,7 +11,6 @@ import _l from "utils/localization";
 
 import { updateProgress } from "./delete-selected";
 import mod_library_model from "./library-model";
-import "libs/jquery/jstree";
 
 var AddDatasets = Backbone.View.extend({
     options: null,

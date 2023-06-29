@@ -73,7 +73,7 @@
 
 <script>
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faQuestion, faCopy, faAngleDoubleDown, faAngleDoubleUp } from "@fortawesome/free-solid-svg-icons";
+import { faAngleDoubleDown, faAngleDoubleUp, faCopy, faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import Citation from "components/Citation/Citation";
 import { getCitations } from "components/Citation/services";

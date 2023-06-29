@@ -27,7 +27,7 @@
 </template>
 
 <script>
-import { BCard, BTabs, BTab } from "bootstrap-vue";
+import { BCard, BTab, BTabs } from "bootstrap-vue";
 import exportsMixin from "components/Common/exportsMixin";
 
 import ToLink from "./ToLink.vue";

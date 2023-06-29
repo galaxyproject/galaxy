@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faChartBar, faUndo, faTrash, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import { faChartBar, faInfoCircle, faTrash, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { computed } from "vue";
-
 
 import localize from "@/utils/localization";
 import { bytesToString } from "@/utils/utils";

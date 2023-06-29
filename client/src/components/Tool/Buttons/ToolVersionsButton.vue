@@ -1,6 +1,6 @@
 <script setup>
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCheck, faCubes, faCube } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faCube, faCubes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 

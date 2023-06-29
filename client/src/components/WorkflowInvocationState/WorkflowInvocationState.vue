@@ -34,7 +34,7 @@
 import mixin from "components/JobStates/mixin";
 import LoadingSpan from "components/LoadingSpan";
 import JOB_STATES_MODEL from "utils/job-states-model";
-import { mapGetters, mapActions } from "vuex";
+import { mapActions, mapGetters } from "vuex";
 
 import { cancelWorkflowScheduling } from "./services";
 import WorkflowInvocationDetails from "./WorkflowInvocationDetails.vue";

@@ -2,15 +2,12 @@
 import { computed, onMounted } from "vue";
 import { useRouter } from "vue-router/composables";
 
-
-
 import Webhook from "@/components/Common/Webhook.vue";
 import ToolEntryPoints from "@/components/ToolEntryPoints/ToolEntryPoints.vue";
 import { useConfig } from "@/composables/config";
 import { useJobStore } from "@/stores/jobStore";
 
 import ToolRecommendation from "../ToolRecommendation.vue";
-
 import ToolSuccessMessage from "./ToolSuccessMessage.vue";
 
 const { config } = useConfig(true);

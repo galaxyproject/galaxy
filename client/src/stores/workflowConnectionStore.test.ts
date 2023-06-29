@@ -1,9 +1,9 @@
-import { setActivePinia, createPinia } from "pinia";
+import { createPinia, setActivePinia } from "pinia";
 
-import { useConnectionStore, getTerminalId } from "@/stores/workflowConnectionStore";
 import type { Connection, InputTerminal, OutputTerminal } from "@/stores/workflowConnectionStore";
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+import { getTerminalId, useConnectionStore } from "@/stores/workflowConnectionStore";
 import type { NewStep } from "@/stores/workflowStepStore";
+import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 const workflowStepZero: NewStep = {
     input_connections: {},

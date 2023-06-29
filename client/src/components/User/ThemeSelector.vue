@@ -1,5 +1,5 @@
 <script setup>
-import { computed, watch, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { useConfig } from "@/composables/config";
 import { useCurrentTheme } from "@/composables/user";

@@ -4,7 +4,7 @@
  */
 
 import { defineStore } from "pinia";
-import { ref, type Ref } from "vue";
+import { type Ref, ref } from "vue";
 
 export type EventData = { [key: string]: unknown };
 

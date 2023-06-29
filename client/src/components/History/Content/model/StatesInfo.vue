@@ -2,7 +2,7 @@
 import { computed } from "vue";
 
 import { STATES } from "./states";
-import type { States, HelpText } from "./stateTypes";
+import type { HelpText, States } from "./stateTypes";
 
 const props = defineProps({
     showHelp: { type: Boolean, default: false },

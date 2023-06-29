@@ -1,4 +1,4 @@
-import { ref, watch, type Ref, computed } from "vue";
+import { computed, type Ref, ref, watch } from "vue";
 
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { terminalFactory } from "@/components/Workflow/Editor/modules/terminals";

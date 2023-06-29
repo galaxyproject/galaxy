@@ -41,7 +41,7 @@
 <script>
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faOrcid } from "@fortawesome/free-brands-svg-icons";
-import { faUser, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
+import { faExternalLinkAlt, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import ThingViewerMixin from "./ThingViewerMixin";

@@ -9,7 +9,6 @@ import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import Lint from "./Lint.vue";
 import { getUntypedWorkflowParameters } from "./modules/parameters";
 
-
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);
 

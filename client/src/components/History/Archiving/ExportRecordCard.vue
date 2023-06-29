@@ -5,7 +5,6 @@ import type { ExportRecord } from "@/components/Common/models/exportRecordModel"
 
 import IncludedBadge from "./IncludedBadge.vue";
 
-
 const props = defineProps<{
     exportRecord: ExportRecord;
 }>();

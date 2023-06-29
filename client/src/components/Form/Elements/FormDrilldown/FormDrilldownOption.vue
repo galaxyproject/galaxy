@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { BFormCheckbox, BFormRadio } from "bootstrap-vue";
-import { computed, onMounted, ref, type ComputedRef } from "vue";
+import { computed, type ComputedRef, onMounted, ref } from "vue";
 
 import FormDrilldownList from "./FormDrilldownList.vue";
 import { getAllValues, type Option } from "./utilities";

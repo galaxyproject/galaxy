@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BCol, BRow, BCard, BButton, BFormCheckbox } from "bootstrap-vue";
+import { BAlert, BButton, BCard, BCol, BFormCheckbox, BRow } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import AsyncButton from "@/components/Common/AsyncButton.vue";

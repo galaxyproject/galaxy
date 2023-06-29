@@ -3,7 +3,7 @@ import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
-import { setActivePinia, PiniaVuePlugin } from "pinia";
+import { PiniaVuePlugin, setActivePinia } from "pinia";
 import { useEntryPointStore } from "stores/entryPointStore";
 import { getLocalVue } from "tests/jest/helpers";
 

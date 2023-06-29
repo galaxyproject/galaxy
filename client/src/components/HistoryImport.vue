@@ -76,7 +76,7 @@
 
 <script>
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faFolderOpen, faUpload, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
+import { faExternalLinkAlt, faFolderOpen, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { refDebounced } from "@vueuse/core";
 import axios from "axios";

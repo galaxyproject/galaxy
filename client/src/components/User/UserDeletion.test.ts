@@ -5,7 +5,6 @@ import { ROOT_COMPONENT } from "@/utils/navigation/schema";
 
 import UserDeletion from "./UserDeletion.vue";
 
-
 const localVue = getLocalVue(true);
 
 const TEST_USER_ID = "myTestUserId";

@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BCollapse, BButton } from "bootstrap-vue";
+import { BButton, BCollapse } from "bootstrap-vue";
 import slugify from "slugify";
 import { computed } from "vue";
 

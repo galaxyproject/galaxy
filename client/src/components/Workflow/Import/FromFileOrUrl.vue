@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import axios, { type AxiosError } from "axios";
-import { computed, ref, type Ref } from "vue";
+import { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
-
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import { withPrefix } from "@/utils/redirect";

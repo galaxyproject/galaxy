@@ -7,9 +7,7 @@ import { getLocalVue } from "tests/jest/helpers";
 import { ROOT_COMPONENT } from "@/utils/navigation";
 
 import { setupSelectableMock } from "../../ObjectStore/mockServices";
-
 import SelectPreferredStore from "./SelectPreferredStore.vue";
-
 
 setupSelectableMock();
 

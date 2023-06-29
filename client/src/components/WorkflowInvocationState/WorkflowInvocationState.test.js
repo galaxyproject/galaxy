@@ -4,7 +4,6 @@ import { getLocalVue } from "tests/jest/helpers";
 import Vuex from "vuex";
 
 import invocationData from "../Workflow/test/json/invocation.json";
-
 import WorkflowInvocationState from "./WorkflowInvocationState";
 
 jest.mock("composables/config");

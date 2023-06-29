@@ -5,7 +5,6 @@ import { bytesToString } from "@/utils/utils";
 
 import type { DataValuePoint } from "./Charts";
 
-
 interface RecoverableItemSizeTooltipProps {
     data: DataValuePoint;
     isRecoverable: boolean;

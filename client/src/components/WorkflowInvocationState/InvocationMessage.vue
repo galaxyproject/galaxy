@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-
 import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
 import JobInformation from "@/components/JobInformation/JobInformation.vue";
 import WorkflowInvocationStep from "@/components/WorkflowInvocationState/WorkflowInvocationStep.vue";

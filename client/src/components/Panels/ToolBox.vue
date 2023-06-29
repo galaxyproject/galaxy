@@ -87,7 +87,7 @@ import FavoritesButton from "./Buttons/FavoritesButton";
 import PanelViewButton from "./Buttons/PanelViewButton";
 import ToolSearch from "./Common/ToolSearch";
 import ToolSection from "./Common/ToolSection";
-import { filterToolSections, filterTools, hasResults, hideToolsSection } from "./utilities";
+import { filterTools, filterToolSections, hasResults, hideToolsSection } from "./utilities";
 
 export default {
     components: {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, watch, type ComputedRef } from "vue";
+import { computed, type ComputedRef, onMounted, watch } from "vue";
 import Multiselect from "vue-multiselect";
 
 import { useMultiselect } from "@/composables/useMultiselect";

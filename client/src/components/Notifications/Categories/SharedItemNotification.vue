@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExternalLinkAlt, faRetweet } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BCol, BRow, BLink } from "bootstrap-vue";
+import { BCol, BLink, BRow } from "bootstrap-vue";
 import { computed } from "vue";
 
 import Heading from "@/components/Common/Heading.vue";

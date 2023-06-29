@@ -1,30 +1,29 @@
 import EventEmitter from "events";
 
-
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import {
-    getConnectionId,
-    useConnectionStore,
     type Connection,
     type ConnectionId,
+    getConnectionId,
+    useConnectionStore,
 } from "@/stores/workflowConnectionStore";
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import type {
-    DataStepInput,
-    DataOutput,
     CollectionOutput,
-    ParameterOutput,
     DataCollectionStepInput,
+    DataOutput,
+    DataStepInput,
+    ParameterOutput,
     ParameterStepInput,
     TerminalSource,
 } from "@/stores/workflowStepStore";
+import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 
 import {
-    NULL_COLLECTION_TYPE_DESCRIPTION,
     ANY_COLLECTION_TYPE_DESCRIPTION,
     CollectionTypeDescription,
     type CollectionTypeDescriptor,
+    NULL_COLLECTION_TYPE_DESCRIPTION,
 } from "./collectionTypeDescription";
 
 export class ConnectionAcceptable {

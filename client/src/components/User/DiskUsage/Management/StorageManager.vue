@@ -11,7 +11,6 @@ import CleanupResultDialog from "./Cleanup/CleanupResultDialog.vue";
 import type { CleanableItem, CleanupOperation, CleanupResult } from "./Cleanup/model";
 import ReviewCleanupDialog from "./Cleanup/ReviewCleanupDialog.vue";
 
-
 interface ModalDialog {
     openModal: () => void;
 }

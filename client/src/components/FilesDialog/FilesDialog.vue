@@ -68,10 +68,8 @@ import Vue from "vue";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { getGalaxyInstance } from "../../app";
-
 import { Model } from "./model";
 import { Services } from "./services";
-
 
 library.add(faCaretLeft);
 export default {

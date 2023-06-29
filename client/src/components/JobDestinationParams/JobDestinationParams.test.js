@@ -1,5 +1,5 @@
-import { shallowMount, createLocalVue } from "@vue/test-utils";
-import { PiniaVuePlugin, createPinia } from "pinia";
+import { createLocalVue, shallowMount } from "@vue/test-utils";
+import { createPinia, PiniaVuePlugin } from "pinia";
 import { useUserStore } from "stores/userStore";
 import Vuex from "vuex";
 import createCache from "vuex-cache";

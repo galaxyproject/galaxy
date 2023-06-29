@@ -1,10 +1,10 @@
 <script setup>
 import { library } from "@fortawesome/fontawesome-svg-core";
 import {
-    faExclamationCircle,
-    faExclamationTriangle,
     faCheckCircle,
     faClock,
+    faExclamationCircle,
+    faExclamationTriangle,
     faLink,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";

@@ -1,4 +1,4 @@
-import { hsluvToRgb, hsluvToHex } from "hsluv";
+import { hsluvToHex, hsluvToRgb } from "hsluv";
 import { hashFnv32a } from "utils/utils";
 
 /**

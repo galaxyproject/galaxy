@@ -1,6 +1,6 @@
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
-import { rethrowSimple, errorMessageAsString } from "utils/simple-error";
+import { errorMessageAsString, rethrowSimple } from "utils/simple-error";
 
 import { toSimple } from "./model";
 

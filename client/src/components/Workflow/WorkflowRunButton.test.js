@@ -1,10 +1,10 @@
+import "jest-location-mock";
+
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 import { ROOT_COMPONENT } from "utils/navigation";
 
 import WorkflowRunButton from "./WorkflowRunButton";
-
-import "jest-location-mock";
 
 const localVue = getLocalVue(true);
 const WORKFLOW_ID = "workflow_id123";

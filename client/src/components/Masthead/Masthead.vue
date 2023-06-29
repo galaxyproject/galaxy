@@ -3,7 +3,7 @@ import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { useEntryPointStore } from "stores/entryPointStore";
 import { withPrefix } from "utils/redirect";
-import { watch, ref, reactive, onMounted, onBeforeMount } from "vue";
+import { onBeforeMount, onMounted, reactive, ref, watch } from "vue";
 import { useRoute } from "vue-router/composables";
 
 import NotificationsBell from "@/components/Notifications/NotificationsBell.vue";
@@ -14,7 +14,6 @@ import { loadWebhookMenuItems } from "./_webhooks";
 import MastheadItem from "./MastheadItem";
 import QuotaMeter from "./QuotaMeter";
 import { getActiveTab } from "./utilities";
-
 
 const { isAnonymous, showActivityBar } = storeToRefs(useUserStore());
 

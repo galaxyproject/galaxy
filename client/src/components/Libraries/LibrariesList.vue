@@ -184,7 +184,7 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
 import { initLibrariesIcons } from "components/Libraries/icons";
-import { MAX_DESCRIPTION_LENGTH, DEFAULT_PER_PAGE, onError } from "components/Libraries/library-utils";
+import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH, onError } from "components/Libraries/library-utils";
 import LibraryEditField from "components/Libraries/LibraryEditField";
 import SearchField from "components/Libraries/LibraryFolder/SearchField";
 import { Toast } from "composables/toast";
@@ -197,7 +197,6 @@ import { useUserStore } from "@/stores/userStore";
 
 import { Services } from "./services";
 import { fields } from "./table-fields";
-
 
 initLibrariesIcons();
 

@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faHourglassHalf } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BInputGroup, BCol, BRow, BButton } from "bootstrap-vue";
+import { BButton, BCol, BInputGroup, BRow } from "bootstrap-vue";
 import { formatDistanceToNow, parseISO } from "date-fns";
 
 import AsyncButton from "@/components/Common/AsyncButton.vue";

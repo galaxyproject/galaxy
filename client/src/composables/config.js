@@ -1,4 +1,4 @@
-import { computed, onMounted, inject } from "vue";
+import { computed, inject, onMounted } from "vue";
 
 /* composable config wrapper */
 export function useConfig(fetchOnce = false) {

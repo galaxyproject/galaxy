@@ -41,7 +41,7 @@
 
 <script>
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faSave, faTimes, faEdit } from "@fortawesome/free-solid-svg-icons";
+import { faEdit, faSave, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";

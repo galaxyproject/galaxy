@@ -38,7 +38,6 @@ import CurrentCollection from "./CurrentCollection/CollectionPanel";
 import HistoryNavigation from "./CurrentHistory/HistoryNavigation";
 import HistoryPanel from "./CurrentHistory/HistoryPanel";
 
-
 export default {
     components: {
         HistoryPanel,

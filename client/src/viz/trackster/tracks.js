@@ -1,3 +1,5 @@
+import "ui/editable-text";
+
 import { getGalaxyInstance } from "app";
 import Backbone from "backbone";
 import $ from "jquery";
@@ -14,7 +16,6 @@ import slotting from "viz/trackster/slotting";
 import util from "viz/trackster/util";
 import visualization from "viz/visualization";
 import viz_views from "viz/viz_views";
-import "ui/editable-text";
 
 var extend = _.extend;
 

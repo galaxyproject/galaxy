@@ -3,7 +3,7 @@ import { SingleQueryProvider } from "components/providers/SingleQueryProvider";
 import { getAppRoot } from "onload/loadConfig";
 import { rethrowSimple } from "utils/simple-error";
 
-import { stateIsTerminal, cleanPaginationParameters } from "./utils";
+import { cleanPaginationParameters, stateIsTerminal } from "./utils";
 
 async function jobDetails({ jobId }) {
     const url = `${getAppRoot()}api/jobs/${jobId}?full=True`;

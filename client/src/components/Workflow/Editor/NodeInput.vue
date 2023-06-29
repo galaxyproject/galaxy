@@ -29,12 +29,11 @@
 
 <script>
 import { storeToRefs } from "pinia";
-import { computed, inject, ref, toRefs, watchEffect, watch } from "vue";
-
+import { computed, inject, ref, toRefs, watch, watchEffect } from "vue";
 
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
-import { terminalFactory, ConnectionAcceptable } from "@/components/Workflow/Editor/modules/terminals";
-import { useConnectionStore, getConnectionId } from "@/stores/workflowConnectionStore";
+import { ConnectionAcceptable, terminalFactory } from "@/components/Workflow/Editor/modules/terminals";
+import { getConnectionId, useConnectionStore } from "@/stores/workflowConnectionStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 
 import { useRelativePosition } from "./composables/relativePosition";

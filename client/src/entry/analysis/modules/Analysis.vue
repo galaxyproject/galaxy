@@ -1,7 +1,6 @@
 <script setup>
-import { computed, ref, onMounted, onUnmounted } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
-
 
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import HistoryIndex from "@/components/History/Index.vue";

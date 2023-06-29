@@ -103,7 +103,6 @@ import WorkflowDropdown from "./WorkflowDropdown";
 import WorkflowIndexActions from "./WorkflowIndexActions";
 import WorkflowRunButton from "./WorkflowRunButton.vue";
 
-
 const helpHtml = `<div>
     <p>This input can be used to filter the workflows displayed.</p>
 

@@ -12,7 +12,7 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 import { useConfig } from "@/composables/config";
 import { useFileSources } from "@/composables/fileSources";
 import { useToast } from "@/composables/toast";
-import { useHistoryStore, type HistorySummary } from "@/stores/historyStore";
+import { type HistorySummary, useHistoryStore } from "@/stores/historyStore";
 
 library.add(faArchive);
 

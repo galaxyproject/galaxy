@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { ref, type Ref } from "vue";
+import { type Ref, ref } from "vue";
 import { useRoute } from "vue-router/composables";
 import draggable from "vuedraggable";
-
 
 import ContextMenu from "@/components/Common/ContextMenu.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
@@ -11,7 +10,7 @@ import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
 import WorkflowBox from "@/components/Panels/WorkflowBox.vue";
 import { useConfig } from "@/composables/config";
 import { convertDropData } from "@/stores/activitySetup";
-import { useActivityStore, type Activity } from "@/stores/activityStore";
+import { type Activity, useActivityStore } from "@/stores/activityStore";
 import { useEventStore } from "@/stores/eventStore";
 import { useUserStore } from "@/stores/userStore";
 

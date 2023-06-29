@@ -6,10 +6,9 @@ import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { useHistoryStore, type HistorySummary } from "@/stores/historyStore";
+import { type HistorySummary, useHistoryStore } from "@/stores/historyStore";
 
 import HistoryArchiveWizard from "./HistoryArchiveWizard.vue";
-
 
 jest.mock("@/composables/config", () => ({
     useConfig: jest.fn(() => ({

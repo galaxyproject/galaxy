@@ -129,7 +129,6 @@ import Vue from "vue";
 
 import SearchField from "../SearchField";
 import { Services } from "../services";
-
 import mod_add_datasets from "./add-datasets";
 import { deleteSelectedItems } from "./delete-selected";
 import download from "./download";

@@ -1,19 +1,19 @@
 <script setup>
 import { library } from "@fortawesome/fontawesome-svg-core";
 import {
-    faWrench,
-    faExternalLinkAlt,
-    faCheck,
-    faTimes,
     faAngleDown,
     faAngleUp,
+    faCheck,
     faExclamationTriangle,
+    faExternalLinkAlt,
+    faTimes,
     faUser,
+    faWrench,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import ToolFavoriteButton from "components/Tool/Buttons/ToolFavoriteButton";
 import { useFormattedToolHelp } from "composables/formattedToolHelp";
-import { ref, computed } from "vue";
+import { computed, ref } from "vue";
 
 library.add(faWrench, faExternalLinkAlt, faCheck, faTimes, faAngleDown, faAngleUp, faExclamationTriangle, faUser);
 

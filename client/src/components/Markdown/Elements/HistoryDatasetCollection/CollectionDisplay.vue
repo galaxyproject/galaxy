@@ -50,7 +50,6 @@ import { copyCollection } from "components/Markdown/services";
 import { getAppRoot } from "onload/loadConfig";
 import { mapState } from "pinia";
 
-
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 

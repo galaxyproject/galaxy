@@ -6,7 +6,6 @@ import { bytesToString } from "@/utils/utils";
 import type { QuotaUsage } from "./model";
 import QuotaUsageBar from "./QuotaUsageBar.vue";
 
-
 interface QuotaUsageSummaryProps {
     quotaUsages: QuotaUsage[];
 }

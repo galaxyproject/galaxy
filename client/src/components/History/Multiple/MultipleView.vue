@@ -3,8 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
-import { computed, ref, onMounted, watchEffect, type Ref, type WatchStopHandle } from "vue";
-
+import { computed, onMounted, type Ref, ref, watchEffect, type WatchStopHandle } from "vue";
 
 import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";

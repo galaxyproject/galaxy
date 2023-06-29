@@ -18,7 +18,7 @@
 import Vue from "vue";
 
 import FormInputs from "./FormInputs";
-import { visitInputs, validateInputs, matchInputs } from "./utilities";
+import { matchInputs, validateInputs, visitInputs } from "./utilities";
 
 export default {
     components: {

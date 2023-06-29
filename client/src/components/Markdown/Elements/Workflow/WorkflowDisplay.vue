@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import axios from "axios";
-import { computed, ref, onMounted } from "vue";
-
+import { computed, onMounted, ref } from "vue";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import { withPrefix } from "@/utils/redirect";

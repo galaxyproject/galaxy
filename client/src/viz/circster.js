@@ -1,3 +1,5 @@
+import "libs/farbtastic";
+
 import { getGalaxyInstance } from "app";
 import Backbone from "backbone";
 import * as d3 from "d3v3";
@@ -10,7 +12,6 @@ import config from "utils/config";
 import _l from "utils/localization";
 import mod_utils from "utils/utils";
 import visualization from "viz/visualization";
-import "libs/farbtastic";
 
 /**
  * Utility class for working with SVG.

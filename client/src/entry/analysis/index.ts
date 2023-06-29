@@ -1,4 +1,4 @@
-import { PiniaVuePlugin, createPinia } from "pinia";
+import { createPinia, PiniaVuePlugin } from "pinia";
 import piniaPluginPersistedstate from "pinia-plugin-persistedstate";
 import Vue, { provide } from "vue";
 
@@ -7,7 +7,6 @@ import store from "@/store";
 
 import App from "./App.vue";
 import { getRouter } from "./router";
-
 
 Vue.use(PiniaVuePlugin);
 const pinia = createPinia();

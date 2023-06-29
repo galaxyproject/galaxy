@@ -6,7 +6,6 @@ import { useUserStore } from "stores/userStore";
 import { getLocalVue } from "tests/jest/helpers";
 
 import { Services } from "../services";
-
 import LibraryDataset from "./LibraryDataset";
 import cannotManageDatasetResponse from "./testData/cannotManageDataset.json";
 import cannotModifyDatasetResponse from "./testData/cannotModifyDataset.json";

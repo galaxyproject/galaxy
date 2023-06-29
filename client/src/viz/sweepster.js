@@ -6,7 +6,7 @@
 import Backbone from "backbone";
 import * as d3 from "d3v3";
 import $ from "jquery";
-import { show_modal, hide_modal } from "layout/modal";
+import { hide_modal, show_modal } from "layout/modal";
 import { Dataset } from "mvc/dataset/data";
 import mod_icon_btn from "mvc/ui/icon-button";
 import { getAppRoot } from "onload/loadConfig";

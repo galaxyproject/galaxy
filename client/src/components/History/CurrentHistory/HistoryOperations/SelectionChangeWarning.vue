@@ -16,7 +16,7 @@
 
 <script>
 import { BAlert, BLink, BProgress } from "bootstrap-vue";
-import { mapState, mapActions } from "pinia";
+import { mapActions, mapState } from "pinia";
 
 import { useUserFlagsStore } from "@/stores/userFlagsStore";
 

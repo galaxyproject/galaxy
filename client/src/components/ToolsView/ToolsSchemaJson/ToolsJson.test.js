@@ -6,7 +6,6 @@ import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
 import testToolsListResponse from "../testData/toolsList";
-
 import ToolsJson from "./ToolsJson";
 
 const localVue = getLocalVue();

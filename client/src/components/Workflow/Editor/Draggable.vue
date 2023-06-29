@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import type { ZoomTransform } from "d3-zoom";
-import { ref, inject, reactive, PropType } from "vue";
 import type { Ref } from "vue";
-
+import { inject, PropType, reactive, ref } from "vue";
 
 import { useAnimationFrameSize } from "@/composables/sensors/animationFrameSize";
 import { useAnimationFrameThrottle } from "@/composables/throttle";

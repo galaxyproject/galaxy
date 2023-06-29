@@ -67,7 +67,6 @@ import { useUserStore } from "@/stores/userStore";
 
 import InheritanceChain from "../InheritanceChain/InheritanceChain";
 
-
 export default {
     components: {
         Alert,

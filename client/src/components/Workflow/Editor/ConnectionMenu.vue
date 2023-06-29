@@ -22,18 +22,17 @@
     </b-list-group>
 </template>
 <script setup lang="ts">
-import { computed, onMounted, ref, watch, type ComputedRef } from "vue";
-
+import { computed, type ComputedRef, onMounted, ref, watch } from "vue";
 
 import { useFocusWithin } from "@/composables/useActiveElement";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 
 import {
-    type OutputTerminals,
-    type InputTerminalsAndInvalid,
-    terminalFactory,
     type InputTerminals,
+    type InputTerminalsAndInvalid,
+    type OutputTerminals,
+    terminalFactory,
 } from "./modules/terminals";
 
 const props = defineProps<{

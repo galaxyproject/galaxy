@@ -1,5 +1,5 @@
 import axios from "axios";
-import { filterTools, createWhooshQuery } from "components/Panels/utilities";
+import { createWhooshQuery, filterTools } from "components/Panels/utilities";
 import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 

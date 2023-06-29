@@ -51,7 +51,6 @@ import DatasetHistory from "./DatasetHistory";
 import DatasetName from "./DatasetName";
 import { copyDataset, getDatasets, updateTags } from "./services";
 
-
 export default {
     components: {
         DatasetHistory,

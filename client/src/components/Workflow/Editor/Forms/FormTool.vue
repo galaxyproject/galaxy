@@ -56,8 +56,6 @@
 import Utils from "utils/utils";
 import { toRef } from "vue";
 
-
-
 import Heading from "@/components/Common/Heading.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 import FormElement from "@/components/Form/FormElement.vue";
@@ -66,7 +64,6 @@ import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 import { useStepProps } from "../composables/useStepProps";
 import { useUniqueLabelError } from "../composables/useUniqueLabelError";
-
 import FormConditional from "./FormConditional.vue";
 import FormSection from "./FormSection.vue";
 

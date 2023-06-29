@@ -4,7 +4,6 @@ import { useUserStore } from "stores/userStore";
 import { getLocalVue } from "tests/jest/helpers";
 
 import MockProvider from "../providers/MockProvider";
-
 import DatasetError from "./DatasetError";
 
 jest.mock("components/providers", () => {

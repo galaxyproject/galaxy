@@ -1,11 +1,10 @@
 import { mount } from "@vue/test-utils";
-import { setActivePinia, PiniaVuePlugin, createPinia } from "pinia";
+import { createPinia, PiniaVuePlugin, setActivePinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 import FormOutputLabel from "./FormOutputLabel";
-
 
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);

@@ -8,7 +8,7 @@ import { useRouter } from "vue-router/composables";
 
 import Heading from "@/components/Common/Heading.vue";
 import { useMarkdown } from "@/composables/markdown";
-import { useBroadcastsStore, type BroadcastNotification } from "@/stores/broadcastsStore";
+import { type BroadcastNotification, useBroadcastsStore } from "@/stores/broadcastsStore";
 
 library.add(faInfoCircle, faTimes);
 

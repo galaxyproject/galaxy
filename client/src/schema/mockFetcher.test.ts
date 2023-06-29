@@ -2,7 +2,6 @@ import { fetcher } from "@/schema";
 
 import { mockFetcher } from "./__mocks__/fetcher";
 
-
 jest.mock("@/schema");
 
 mockFetcher.path("/api/configuration").method("get").mock("CONFIGURATION");

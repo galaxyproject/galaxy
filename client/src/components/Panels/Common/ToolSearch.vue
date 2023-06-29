@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted, type PropType, type Ref } from "vue";
+import { computed, onMounted, onUnmounted, type PropType, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
-
 
 import { getGalaxyInstance } from "@/app";
 import DelayedInput from "@/components/Common/DelayedInput.vue";

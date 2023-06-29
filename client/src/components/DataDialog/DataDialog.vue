@@ -51,7 +51,6 @@ import { Model } from "./model";
 import { Services } from "./services";
 import { UrlTracker } from "./utilities";
 
-
 Vue.use(BootstrapVue);
 
 export default {

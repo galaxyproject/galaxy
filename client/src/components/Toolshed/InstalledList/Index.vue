@@ -58,7 +58,6 @@ import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 
 import { Services } from "../services";
-
 import RepositoryDetails from "./Details";
 import Monitor from "./Monitor";
 

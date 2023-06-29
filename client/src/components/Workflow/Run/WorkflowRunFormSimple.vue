@@ -61,7 +61,6 @@ import { useUserStore } from "@/stores/userStore";
 import { invokeWorkflow } from "./services";
 import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration";
 
-
 export default {
     components: {
         ButtonSpinner,

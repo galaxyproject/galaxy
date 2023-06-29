@@ -1,6 +1,6 @@
 import type { FetchArgType } from "openapi-typescript-fetch";
 
-import { fetcher, type components } from "@/schema";
+import { type components, fetcher } from "@/schema";
 
 export type ArchivedHistorySummary = components["schemas"]["ArchivedHistorySummary"];
 export type ArchivedHistoryDetailed = components["schemas"]["ArchivedHistoryDetailed"];

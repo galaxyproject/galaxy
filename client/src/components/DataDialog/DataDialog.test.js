@@ -1,4 +1,4 @@
-import { shallowMount, createLocalVue } from "@vue/test-utils";
+import { createLocalVue, shallowMount } from "@vue/test-utils";
 import SelectionDialog from "components/SelectionDialog/SelectionDialog.vue";
 
 import DataDialog from "./DataDialog.vue";

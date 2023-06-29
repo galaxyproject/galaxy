@@ -1,3 +1,5 @@
+import "jest-location-mock";
+
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
@@ -6,8 +8,6 @@ import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
 import StsDownloadButton from "./StsDownloadButton";
-
-import "jest-location-mock";
 
 const localVue = getLocalVue();
 const NO_TASKS_CONFIG = {

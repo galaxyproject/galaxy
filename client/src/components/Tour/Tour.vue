@@ -46,7 +46,6 @@
 <script>
 import { mapActions, mapState } from "pinia";
 
-
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 

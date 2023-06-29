@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import Vue, { ref } from "vue";
 import type { PropType } from "vue";
+import Vue, { ref } from "vue";
 
 import type { components } from "@/schema";
 
 import ContentItem from "./ContentItem.vue";
-
 
 defineProps({
     dsc: {

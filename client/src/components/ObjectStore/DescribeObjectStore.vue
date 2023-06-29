@@ -9,7 +9,6 @@ import ObjectStoreBadges from "./ObjectStoreBadges.vue";
 import ObjectStoreRestrictionSpan from "./ObjectStoreRestrictionSpan.vue";
 import type { ConcreteObjectStoreModel } from "./types";
 
-
 interface Props {
     storageInfo: ConcreteObjectStoreModel;
     what: string;

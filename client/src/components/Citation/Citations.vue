@@ -57,7 +57,6 @@ import { useConfig } from "@/composables/config";
 import Citation from "./Citation";
 import { getCitations } from "./services";
 
-
 Vue.use(BootstrapVue);
 
 const outputFormats = Object.freeze({

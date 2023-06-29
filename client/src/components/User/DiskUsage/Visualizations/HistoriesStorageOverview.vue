@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import Heading from "@/components/Common/Heading.vue";
@@ -13,8 +13,7 @@ import BarChart from "./Charts/BarChart.vue";
 import { bytesLabelFormatter, bytesValueFormatter } from "./Charts/formatters";
 import RecoverableItemSizeTooltip from "./RecoverableItemSizeTooltip.vue";
 import SelectedItemActions from "./SelectedItemActions.vue";
-import { fetchAllHistoriesSizeSummary, type ItemSizeSummary, undeleteHistoryById, purgeHistoryById } from "./service";
-
+import { fetchAllHistoriesSizeSummary, type ItemSizeSummary, purgeHistoryById, undeleteHistoryById } from "./service";
 
 const router = useRouter();
 const { success: successToast, error: errorToast } = useToast();

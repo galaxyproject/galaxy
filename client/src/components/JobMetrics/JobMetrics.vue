@@ -6,7 +6,6 @@ import { useJobMetricsStore } from "@/stores/jobMetricsStore";
 import AwsEstimate from "./AwsEstimate.vue";
 import CarbonEmissions from "./CarbonEmissions/CarbonEmissions.vue";
 
-
 const props = defineProps({
     jobId: {
         type: String,

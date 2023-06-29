@@ -1,8 +1,8 @@
 import type { UseScrollReturn } from "@vueuse/core";
 import { select } from "d3-selection";
-import { zoom, zoomIdentity, type D3ZoomEvent } from "d3-zoom";
-import { ref, watch } from "vue";
+import { type D3ZoomEvent, zoom, zoomIdentity } from "d3-zoom";
 import type { Ref } from "vue";
+import { ref, watch } from "vue";
 
 import type { XYPosition } from "@/stores/workflowEditorStateStore";
 

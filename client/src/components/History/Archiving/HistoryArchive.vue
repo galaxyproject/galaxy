@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faUndo, faCopy, faEye } from "@fortawesome/free-solid-svg-icons";
+import { faCopy, faEye, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BButtonGroup, BBadge, BPagination, BListGroup, BListGroupItem } from "bootstrap-vue";
+import { BAlert, BBadge, BButton, BButtonGroup, BListGroup, BListGroupItem, BPagination } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -16,8 +16,8 @@ import { useToast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import * as ArchiveServices from "@/stores/services/historyArchive.services";
 import {
-    reimportHistoryFromExportRecordAsync,
     type ArchivedHistorySummary,
+    reimportHistoryFromExportRecordAsync,
 } from "@/stores/services/historyArchive.services";
 import localize from "@/utils/localization";
 

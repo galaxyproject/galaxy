@@ -161,8 +161,7 @@
 <script>
 import axios from "axios";
 import { storeToRefs } from "pinia";
-import Vue, { onUnmounted, computed, ref } from "vue";
-
+import Vue, { computed, onUnmounted, ref } from "vue";
 
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
@@ -184,7 +183,7 @@ import { defaultPosition } from "./composables/useDefaultStepPosition";
 import WorkflowLint from "./Lint.vue";
 import MessagesModal from "./MessagesModal.vue";
 import { fromSimple, toSimple } from "./modules/model";
-import { getModule, getVersions, saveWorkflow, loadWorkflow } from "./modules/services";
+import { getModule, getVersions, loadWorkflow, saveWorkflow } from "./modules/services";
 import { getStateUpgradeMessages } from "./modules/utilities";
 import WorkflowOptions from "./Options.vue";
 import RefactorConfirmationModal from "./RefactorConfirmationModal.vue";

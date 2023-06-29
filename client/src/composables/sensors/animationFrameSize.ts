@@ -1,4 +1,4 @@
-import { resolveUnref, type MaybeComputedRef } from "@vueuse/core";
+import { type MaybeComputedRef, resolveUnref } from "@vueuse/core";
 import { ref } from "vue";
 
 import { useAnimationFrameResizeObserver } from "./animationFrameResizeObserver";

@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { shallowMount, createLocalVue } from "@vue/test-utils";
+import { createLocalVue, shallowMount } from "@vue/test-utils";
 import { PiniaVuePlugin } from "pinia";
 import { watchForChange } from "tests/jest/helpers";
 

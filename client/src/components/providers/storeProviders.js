@@ -6,7 +6,6 @@ import { prependPath } from "utils/redirect";
 import { mapActions as vuexMapActions, mapGetters } from "vuex";
 
 import { useDatatypeStore } from "../../stores/datatypeStore";
-
 import { HasAttributesMixin } from "./utils";
 
 export const SimpleProviderMixin = {

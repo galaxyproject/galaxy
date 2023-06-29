@@ -6,7 +6,6 @@ import localize from "@/utils/localization";
 
 import type { CleanupResult } from "./model";
 
-
 interface CleanupResultDialogProps {
     result?: CleanupResult;
 }

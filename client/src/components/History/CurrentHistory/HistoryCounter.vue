@@ -2,7 +2,7 @@
 import { formatDistanceToNowStrict } from "date-fns";
 import { storeToRefs } from "pinia";
 import prettyBytes from "pretty-bytes";
-import { toRef, ref, computed, onMounted } from "vue";
+import { computed, onMounted, ref, toRef } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { HistoryFilters } from "@/components/History/HistoryFilters.js";
@@ -12,7 +12,6 @@ import { useUserStore } from "@/stores/userStore";
 import PreferredStorePopover from "./PreferredStorePopover.vue";
 import SelectPreferredStore from "./SelectPreferredStore.vue";
 import { useDetailedHistory } from "./usesDetailedHistory.js";
-
 
 interface HistoryBase {
     id: string;

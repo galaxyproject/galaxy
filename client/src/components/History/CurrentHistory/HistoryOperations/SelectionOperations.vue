@@ -150,18 +150,18 @@
 import { buildCollectionModal } from "components/History/adapters/buildCollectionModal";
 import { HistoryFilters } from "components/History/HistoryFilters";
 import {
-    hideSelectedContent,
-    unhideSelectedContent,
-    deleteSelectedContent,
-    undeleteSelectedContent,
-    purgeSelectedContent,
-    changeDbkeyOfSelectedContent,
-    changeDatatypeOfSelectedContent,
     addTagsToSelectedContent,
+    changeDatatypeOfSelectedContent,
+    changeDbkeyOfSelectedContent,
+    deleteSelectedContent,
+    hideSelectedContent,
+    purgeSelectedContent,
     removeTagsFromSelectedContent,
+    undeleteSelectedContent,
+    unhideSelectedContent,
 } from "components/History/model/crud";
 import { createDatasetCollection, getHistoryContent } from "components/History/model/queries";
-import { DbKeyProvider, DatatypesProvider } from "components/providers";
+import { DatatypesProvider, DbKeyProvider } from "components/providers";
 import ConfigProvider from "components/providers/ConfigProvider";
 import SingleItemSelector from "components/SingleItemSelector";
 import { StatelessTags } from "components/Tags";

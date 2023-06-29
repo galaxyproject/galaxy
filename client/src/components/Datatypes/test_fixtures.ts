@@ -2,8 +2,8 @@
 import DatatypesJson from "@tests/test-data/json/datatypes.json";
 import DatatypesMappingJson from "@tests/test-data/json/datatypes.mapping.json";
 
-import { DatatypesMapperModel } from "./model";
 import type { DatatypesCombinedMap } from "./model";
+import { DatatypesMapperModel } from "./model";
 
 export const typesAndMappingResponse: DatatypesCombinedMap = {
     datatypes: DatatypesJson,

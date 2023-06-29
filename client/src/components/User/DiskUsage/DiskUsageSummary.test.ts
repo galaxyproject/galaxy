@@ -3,7 +3,6 @@ import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
-
 import MockConfigProvider from "@/components/providers/MockConfigProvider";
 import MockCurrentUser from "@/components/providers/MockCurrentUser";
 import MockProvider from "@/components/providers/MockProvider";

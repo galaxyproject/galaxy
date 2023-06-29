@@ -4,15 +4,13 @@ import localize from "@/utils/localization";
 
 import {
     cleanupDiscardedDatasets,
+    cleanupDiscardedHistories,
     fetchDiscardedDatasets,
     fetchDiscardedDatasetsSummary,
-    cleanupDiscardedHistories,
     fetchDiscardedHistories,
     fetchDiscardedHistoriesSummary,
 } from "../services";
-
 import type { CleanupCategory } from "./model";
-
 
 export function useCleanupCategories() {
     const cleanupCategories = ref<CleanupCategory[]>([

@@ -5,7 +5,6 @@ import { BFormCheckbox } from "bootstrap-vue";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
-
 import {
     FAILED_FILE_SOURCE_STORE_RESPONSE,
     FILE_SOURCE_STORE_RESPONSE,

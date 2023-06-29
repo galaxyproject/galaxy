@@ -9,7 +9,7 @@
  */
 
 import { Subject } from "rxjs";
-import { map, filter, debounceTime, switchMap, distinctUntilChanged } from "rxjs/operators";
+import { debounceTime, distinctUntilChanged, filter, map, switchMap } from "rxjs/operators";
 
 import { createTag } from "../model";
 

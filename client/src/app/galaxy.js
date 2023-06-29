@@ -3,7 +3,7 @@ import Backbone from "backbone";
 import $ from "jquery";
 import _ from "underscore";
 import { create, dialog } from "utils/data";
-import { localize, _setUserLocale, _getUserLocale } from "utils/localization";
+import { _getUserLocale, _setUserLocale, localize } from "utils/localization";
 
 import userModel from "./user-model";
 

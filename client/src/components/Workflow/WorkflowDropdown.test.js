@@ -2,7 +2,7 @@ import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
-import { PiniaVuePlugin, createPinia } from "pinia";
+import { createPinia, PiniaVuePlugin } from "pinia";
 import { useUserStore } from "stores/userStore";
 import { getLocalVue } from "tests/jest/helpers";
 import { ROOT_COMPONENT } from "utils/navigation";

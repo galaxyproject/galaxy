@@ -70,7 +70,6 @@ import ToolPanelViewProvider from "components/providers/ToolPanelViewProvider";
 import Vue from "vue";
 
 import { Services } from "../services";
-
 import InstallationActions from "./InstallationActions.vue";
 import InstallationSettings from "./InstallationSettings.vue";
 import RepositoryTools from "./RepositoryTools.vue";

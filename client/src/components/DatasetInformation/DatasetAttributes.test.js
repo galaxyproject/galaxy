@@ -5,7 +5,6 @@ import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
 import MockProvider from "../providers/MockProvider";
-
 import DatasetAttributes from "./DatasetAttributes";
 
 const localVue = getLocalVue();

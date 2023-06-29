@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faShareAlt, faGlobe, faLink } from "@fortawesome/free-solid-svg-icons";
+import { faGlobe, faLink, faShareAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, VBTooltip } from "bootstrap-vue";
 

@@ -3,7 +3,6 @@ import type { components } from "@/schema";
 import type { CleanableSummary } from "./CleanableSummary";
 import type { CleanupResult } from "./CleanupResult";
 
-
 export type CleanableItem = components["schemas"]["StoredItem"];
 export type SortableKey = "name" | "size" | "update_time";
 type StoredItemOrderBy = components["schemas"]["StoredItemOrderBy"];

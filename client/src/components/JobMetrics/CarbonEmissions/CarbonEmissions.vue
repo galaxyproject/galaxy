@@ -11,7 +11,6 @@ import BarChart from "./BarChart.vue";
 import CarbonEmissionsCard from "./CarbonEmissionCard.vue";
 import * as carbonEmissionsConstants from "./carbonEmissionConstants.js";
 
-
 library.add(faQuestionCircle);
 
 interface CarbonEmissionsProps {

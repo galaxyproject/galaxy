@@ -95,7 +95,6 @@ import { useHistoryStore } from "@/stores/historyStore";
 import paginationMixin from "./paginationMixin";
 import WorkflowRunButton from "./WorkflowRunButton.vue";
 
-
 export default {
     components: {
         UtcDate,

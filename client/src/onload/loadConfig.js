@@ -21,7 +21,7 @@
  */
 
 import { BehaviorSubject, Subject } from "rxjs";
-import { debounceTime, scan, filter } from "rxjs/operators";
+import { debounceTime, filter, scan } from "rxjs/operators";
 
 import { defaultConfigs } from "./defaultConfigs";
 import { getRootFromIndexLink } from "./getRootFromIndexLink";

@@ -1,4 +1,4 @@
-import { mount, createLocalVue } from "@vue/test-utils";
+import { createLocalVue, mount } from "@vue/test-utils";
 import { useUserTags } from "composables/user";
 import { isDate } from "date-fns";
 import { computed } from "vue";

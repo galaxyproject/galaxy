@@ -1,3 +1,5 @@
+import "jest-location-mock";
+
 import { createTestingPinia } from "@pinia/testing";
 import { shallowMount } from "@vue/test-utils";
 import { PiniaVuePlugin } from "pinia";
@@ -6,8 +8,6 @@ import { ROOT_COMPONENT } from "utils/navigation";
 import VueRouter from "vue-router";
 
 import WorkflowIndexActions from "./WorkflowIndexActions";
-
-import "jest-location-mock";
 
 const localVue = getLocalVue(true);
 localVue.use(VueRouter);

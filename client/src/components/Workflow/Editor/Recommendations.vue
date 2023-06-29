@@ -26,7 +26,6 @@ import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { getToolPredictions } from "./modules/services";
 import { getCompatibleRecommendations } from "./modules/utilities";
 
-
 export default {
     components: {
         LoadingSpan,

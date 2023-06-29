@@ -9,9 +9,8 @@ import { getAppRoot } from "@/onload/loadConfig";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 
 import Index from "./Index.vue";
-import { loadWorkflow, getVersions } from "./modules/services";
+import { getVersions, loadWorkflow } from "./modules/services";
 import { getStateUpgradeMessages } from "./modules/utilities";
-
 
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);

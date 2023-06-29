@@ -4,12 +4,11 @@ import { getLocalVue } from "tests/jest/helpers";
 import { nextTick, ref } from "vue";
 
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
-import { useWorkflowStepStore, type Step, type Steps } from "@/stores/workflowStepStore";
+import { type Step, type Steps, useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 import { terminalFactory } from "./modules/terminals";
 import NodeOutput from "./NodeOutput.vue";
-import { mockOffset, advancedSteps } from "./test_fixtures";
-
+import { advancedSteps, mockOffset } from "./test_fixtures";
 
 const localVue = getLocalVue();
 

@@ -33,7 +33,7 @@
 
 <script>
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faExternalLinkAlt, faBuilding } from "@fortawesome/free-solid-svg-icons";
+import { faBuilding, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import ThingViewerMixin from "./ThingViewerMixin";

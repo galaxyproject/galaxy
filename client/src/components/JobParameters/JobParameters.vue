@@ -51,7 +51,6 @@ import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 
 import JobOutputs from "../JobInformation/JobOutputs";
-
 import JobParametersArrayValue from "./JobParametersArrayValue";
 
 Vue.use(BootstrapVue);

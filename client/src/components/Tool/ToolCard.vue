@@ -16,7 +16,6 @@ import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore";
 import ToolTargetPreferredObjectStorePopover from "./ToolTargetPreferredObjectStorePopover";
 import ToolTutorialRecommendations from "./ToolTutorialRecommendations.vue";
 
-
 const props = defineProps({
     id: {
         type: String,

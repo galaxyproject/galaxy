@@ -4,7 +4,6 @@ import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 
-
 import type { UserNotification } from "@/components/Notifications/index";
 import { generateMessageNotification, generateNewSharedItemNotification } from "@/components/Notifications/test-utils";
 import { useNotificationsStore } from "@/stores/notificationsStore";

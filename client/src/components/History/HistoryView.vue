@@ -51,7 +51,6 @@ import CollectionPanel from "./CurrentCollection/CollectionPanel";
 import HistoryPanel from "./CurrentHistory/HistoryPanel";
 import CopyModal from "./Modals/CopyModal";
 
-
 export default {
     components: {
         HistoryPanel,

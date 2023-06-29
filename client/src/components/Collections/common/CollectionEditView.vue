@@ -60,7 +60,7 @@
 
 <script>
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faDatabase, faTable, faBars, faUser, faCog } from "@fortawesome/free-solid-svg-icons";
+import { faBars, faCog, faDatabase, faTable, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
@@ -73,12 +73,10 @@ import Vue from "vue";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import LoadingSpan from "../../LoadingSpan.vue";
-import { DbKeyProvider, SuitableConvertersProvider, DatatypesProvider } from "../../providers";
-
+import { DatatypesProvider, DbKeyProvider, SuitableConvertersProvider } from "../../providers";
 import ChangeDatatypeTab from "./ChangeDatatypeTab";
 import DatabaseEditTab from "./DatabaseEditTab";
 import SuitableConvertersTab from "./SuitableConvertersTab";
-
 
 library.add(faDatabase, faTable, faBars, faUser, faCog);
 

@@ -58,7 +58,6 @@ import WorkflowRunForm from "./WorkflowRunForm";
 import WorkflowRunFormSimple from "./WorkflowRunFormSimple";
 import WorkflowRunSuccess from "./WorkflowRunSuccess";
 
-
 export default {
     components: {
         LoadingSpan,

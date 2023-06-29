@@ -1,7 +1,6 @@
+import { getDatatypesMapper } from "./index";
 import { getDatatypes } from "./services";
 import { typesAndMappingResponse } from "./test_fixtures";
-
-import { getDatatypesMapper } from "./index";
 
 jest.mock("./services");
 

@@ -2,7 +2,6 @@ import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
 import MockConfigProvider from "../providers/MockConfigProvider";
-
 import { getResource } from "./getResource";
 import NewUserWelcome from "./NewUserWelcome.vue";
 import testData from "./testData.json";

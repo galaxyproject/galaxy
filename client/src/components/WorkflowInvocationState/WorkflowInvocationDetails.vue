@@ -6,7 +6,6 @@ import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import ParameterStep from "./ParameterStep";
 import WorkflowInvocationStep from "./WorkflowInvocationStep";
 
-
 const props = defineProps({
     invocation: {
         type: Object,

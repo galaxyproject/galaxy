@@ -73,7 +73,7 @@
 
 <script>
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCheckSquare, faSquare, faMinusSquare } from "@fortawesome/free-regular-svg-icons";
+import { faCheckSquare, faMinusSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
 import { faFolder } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";

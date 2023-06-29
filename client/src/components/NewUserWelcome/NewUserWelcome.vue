@@ -28,7 +28,7 @@
     </div>
 </template>
 <script>
-import { BCard, BCardGroup, BTabs, BTab, BCarousel, BCarouselSlide, BButton, BRow, BCol } from "bootstrap-vue";
+import { BButton, BCard, BCardGroup, BCarousel, BCarouselSlide, BCol, BRow, BTab, BTabs } from "bootstrap-vue";
 import Heading from "components/Common/Heading";
 import Slides from "components/NewUserWelcome/components/Slides";
 import Subtopics from "components/NewUserWelcome/components/Subtopics";

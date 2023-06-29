@@ -10,7 +10,6 @@ import { mergeObjectListsById } from "@/utils/utils";
 import NotificationsList from "./NotificationsList.vue";
 import { generateNotificationsList } from "./test-utils";
 
-
 const localVue = getLocalVue(true);
 
 const { notifications: FAKE_NOTIFICATIONS, messageCount, sharedItemCount } = generateNotificationsList(10);

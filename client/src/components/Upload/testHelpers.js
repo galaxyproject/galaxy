@@ -1,5 +1,6 @@
 import "utils/uploadbox";
-import { mount, createLocalVue } from "@vue/test-utils";
+
+import { createLocalVue, mount } from "@vue/test-utils";
 import Backbone from "backbone";
 import BootstrapVue from "bootstrap-vue";
 import _ from "underscore";

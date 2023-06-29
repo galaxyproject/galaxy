@@ -6,7 +6,7 @@ import axios from "axios";
 import RuleCollectionBuilder from "components/RuleCollectionBuilder";
 import RulesDisplay from "components/RulesDisplay/RulesDisplay";
 import { getAppRoot } from "onload/loadConfig";
-import { ref, computed } from "vue";
+import { computed, ref } from "vue";
 
 library.add(faEdit);
 

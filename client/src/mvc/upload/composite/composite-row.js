@@ -1,4 +1,6 @@
 /** Renders the composite upload row view */
+import "utils/uploadbox";
+
 import Backbone from "backbone";
 import $ from "jquery";
 import Ui from "mvc/ui/ui-misc";
@@ -8,7 +10,6 @@ import UploadSettings from "mvc/upload/upload-settings";
 import _ from "underscore";
 import _l from "utils/localization";
 import Utils from "utils/utils";
-import "utils/uploadbox";
 
 export default Backbone.View.extend({
     /** Dictionary of upload states and associated icons */

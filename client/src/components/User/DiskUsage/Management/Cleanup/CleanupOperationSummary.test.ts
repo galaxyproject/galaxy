@@ -3,7 +3,7 @@ import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 
 import CleanupOperationSummary from "./CleanupOperationSummary.vue";
-import { CleanableSummary, type CleanupOperation, CleanupResult, type CleanableItem } from "./model";
+import { type CleanableItem, CleanableSummary, type CleanupOperation, CleanupResult } from "./model";
 
 const localVue = getLocalVue();
 

@@ -260,7 +260,7 @@
 
 <script>
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCopy, faEdit, faUserPlus, faUserSlash, faCaretDown, faCaretUp } from "@fortawesome/free-solid-svg-icons";
+import { faCaretDown, faCaretUp, faCopy, faEdit, faUserPlus, faUserSlash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
@@ -277,7 +277,6 @@ import Multiselect from "vue-multiselect";
 import { useUserStore } from "@/stores/userStore";
 
 import ErrorMessage from "./ErrorMessage";
-
 
 Vue.use(BootstrapVue);
 library.add(faCopy, faEdit, faUserPlus, faUserSlash, faCaretDown, faCaretUp);

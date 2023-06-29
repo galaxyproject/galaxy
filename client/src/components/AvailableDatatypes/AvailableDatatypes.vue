@@ -2,7 +2,7 @@
 import { ref } from "vue";
 
 import DelayedInput from "@/components/Common/DelayedInput.vue";
-import { useDetailedDatatypes, type DetailedDatatypes } from "@/composables/datatypes";
+import { type DetailedDatatypes, useDetailedDatatypes } from "@/composables/datatypes";
 import { useFilterObjectArray } from "@/composables/filter";
 
 const filter = ref("");

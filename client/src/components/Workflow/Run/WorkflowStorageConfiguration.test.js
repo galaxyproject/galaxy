@@ -1,5 +1,5 @@
 import { mount } from "@vue/test-utils";
-import { getLocalVue, findViaNavigation } from "tests/jest/helpers";
+import { findViaNavigation, getLocalVue } from "tests/jest/helpers";
 import { ROOT_COMPONENT } from "utils/navigation";
 
 import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration";

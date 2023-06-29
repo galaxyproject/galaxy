@@ -1,4 +1,4 @@
-import { shallowMount, createLocalVue } from "@vue/test-utils";
+import { createLocalVue, shallowMount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import BootstrapVue, { BButton } from "bootstrap-vue";
@@ -9,18 +9,18 @@ import flushPromises from "flush-promises";
 
 import FilesDialog from "./FilesDialog";
 import {
-    ftpId,
-    rootId,
+    directory1RecursiveResponse,
+    directory1Response,
+    directory2RecursiveResponse,
     directoryId,
+    ftpId,
+    pdbResponse,
+    rootId,
+    rootResponse,
+    someErrorText,
     subDirectoryId,
     subSubDirectoryId,
-    rootResponse,
-    pdbResponse,
-    directory1RecursiveResponse,
-    directory2RecursiveResponse,
-    directory1Response,
     subsubdirectoryResponse,
-    someErrorText,
 } from "./testingData";
 
 jest.mock("app");
