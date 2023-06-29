@@ -18,8 +18,6 @@ import { collectionElementsStore, datasetStore } from "./historyStore";
 import { invocationStore } from "./invocationStore";
 import { jobDestinationParametersStore } from "./jobDestinationParametersStore";
 import { panelStore } from "./panelStore";
-
-// Syncs vuex to Galaxy store until Galaxy vals to not exist
 import { syncVuextoGalaxy } from "./syncVuextoGalaxy";
 import { tagStore } from "./tagStore";
 import { toolStore } from "./toolStore";

@@ -16,8 +16,6 @@ import { serverPath } from "utils/serverPath";
 
 import { defaultAppFactory } from "./defaultAppFactory";
 import { globalInits } from "./globalInits";
-
-// observable configs and init queue
 import { initializations$, clearInitQueue } from "./initQueue";
 import { config$ } from "./loadConfig";
 

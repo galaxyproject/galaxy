@@ -74,6 +74,8 @@
 </template>
 
 <script>
+import "vue-multiselect/dist/vue-multiselect.min.css";
+
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
 import BootstrapVue from "bootstrap-vue";
@@ -86,8 +88,6 @@ import { Services } from "components/Libraries/LibraryPermissions/services";
 import { Toast } from "composables/toast";
 import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
-
-import "vue-multiselect/dist/vue-multiselect.min.css";
 import VueObserveVisibility from "vue-observe-visibility";
 
 Vue.use(VueObserveVisibility);

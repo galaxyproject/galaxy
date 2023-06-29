@@ -33,8 +33,6 @@
 
 <script>
 import { library } from "@fortawesome/fontawesome-svg-core";
-
-// maybe faUsers instead of faBuilding?
 import { faExternalLinkAlt, faBuilding } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 

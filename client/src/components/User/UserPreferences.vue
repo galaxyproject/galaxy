@@ -135,12 +135,10 @@ import Vue from "vue";
 
 import ThemeSelector from "./ThemeSelector.vue";
 import UserActivityBarSettings from "./UserActivityBarSettings";
+import UserBeaconSettings from "./UserBeaconSettings";
 import UserDeletion from "./UserDeletion";
 import UserPreferencesElement from "./UserPreferencesElement";
 import UserPreferredObjectStore from "./UserPreferredObjectStore";
-
-import "@fortawesome/fontawesome-svg-core";
-import UserBeaconSettings from "./UserBeaconSettings";
 
 import { useUserStore } from "@/stores/userStore";
 

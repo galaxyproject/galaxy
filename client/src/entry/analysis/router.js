@@ -1,6 +1,4 @@
 import { getGalaxyInstance } from "app";
-
-// these modules are mounted below the masthead.
 import AboutGalaxy from "components/AboutGalaxy.vue";
 import AvailableDatatypes from "components/AvailableDatatypes/AvailableDatatypes";
 import Citations from "components/Citation/Citations";
@@ -20,10 +18,6 @@ import HistoryView from "components/History/HistoryView";
 import HistoryMultipleView from "components/History/Multiple/MultipleView";
 import { HistoryExport } from "components/HistoryExport/index";
 import HistoryImport from "components/HistoryImport";
-
-// routes
-
-// child components
 import InteractiveTools from "components/InteractiveTools/InteractiveTools";
 import JobDetails from "components/JobInformation/JobDetails";
 import CarbonEmissionsCalculations from "components/JobMetrics/CarbonEmissions/CarbonEmissionsCalculations";

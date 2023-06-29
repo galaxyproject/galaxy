@@ -407,19 +407,18 @@
     </div>
 </template>
 <script>
+import "splitpanes/dist/splitpanes.css";
+
+import BootstrapVue from "bootstrap-vue";
 import STATES from "mvc/dataset/states";
+import { Splitpanes, Pane } from "splitpanes";
 import levenshteinDistance from "utils/levenshtein";
 import _l from "utils/localization";
 import naturalSort from "utils/natural-sort";
+import Vue from "vue";
+import draggable from "vuedraggable";
 
 import mixin from "./common/mixin";
-
-import "splitpanes/dist/splitpanes.css";
-import { Splitpanes, Pane } from "splitpanes";
-import draggable from "vuedraggable";
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-
 import PairedElementView from "./PairedElementView";
 import UnpairedDatasetElementView from "./UnpairedDatasetElementView";
 
