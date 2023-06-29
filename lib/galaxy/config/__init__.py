@@ -34,6 +34,7 @@ from urllib.parse import urlparse
 
 import yaml
 
+from galaxy.carbon_emissions.carbon_intensity import get_carbon_intensity_entry
 from galaxy.config.schema import AppSchema
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import (
@@ -840,36 +841,10 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             self.version_extra = extra_info
 
         # Carbon emissions configuration
-        configured_geographical_server_location_code = kwargs.get("geographical_server_location_code", "")
-        carbon_emissions_dir = self._in_root_dir(
-            os.path.join("lib", "galaxy", "carbon_emissions", "carbon_intensity.csv")
-        )
-        locations = self._load_list_from_file(self._in_root_dir(carbon_emissions_dir))[2:]
-        did_find_location = False
+        carbon_intensity_entry = get_carbon_intensity_entry(kwargs.get("geographical_server_location_code", ""))
 
-        for location in locations:
-            data = location.split(",")
-            location_code, location_name = data[0], data[2]
-
-            is_region = len(location_code) > 2
-            if is_region:
-                region_name = data[3]
-                location_name = f"{region_name} ({location_name})"
-
-            if location_code == configured_geographical_server_location_code:
-                did_find_location = True
-                self.geographical_server_location_name = location_name
-                self.carbon_intensity = float(data[4])
-                break
-
-        if not did_find_location:
-            log.warn(
-                "No corresponding location name exists for location code: %s.",
-                configured_geographical_server_location_code,
-            )
-            log.info("Using global defualt values for location name and carbon intensity...")
-            self.geographical_server_location_name = "GLOBAL"
-            self.carbon_intensity = 475.0
+        self.carbon_intensity = carbon_intensity_entry["carbon_intensity"]
+        self.geographical_server_location_name = carbon_intensity_entry["location_name"]
 
         # Database related configuration
         self.check_migrate_databases = string_as_bool(kwargs.get("check_migrate_databases", True))
