@@ -3,7 +3,7 @@ import AwsEstimate from "./AwsEstimate.vue";
 import CarbonEmissions from "./CarbonEmissions/CarbonEmissions.vue";
 import { useJobMetricsStore } from "@/stores/jobMetricsStore";
 import { computed, ref, unref } from "vue";
-import { worldwidePowerUsageEffectiveness } from "./CarbonEmissions/carbonEmissionConstants";
+import { worldwideCarbonIntensity, worldwidePowerUsageEffectiveness } from "./CarbonEmissions/carbonEmissionConstants";
 
 const props = defineProps({
     datasetFilesize: {
@@ -36,7 +36,7 @@ const props = defineProps({
     },
     carbonIntensity: {
         type: Number,
-        required: true,
+        default: worldwideCarbonIntensity,
     },
     shouldShowAwsEstimate: {
         type: Boolean,

@@ -22,14 +22,17 @@ interface CarbonEmissionsProps {
     };
     jobRuntimeInSeconds: number;
     coresAllocated: number;
-    powerUsageEffectiveness: number;
-    geographicalServerLocationName: string;
+    powerUsageEffectiveness?: number;
+    geographicalServerLocationName?: string;
     memoryAllocatedInMebibyte?: number;
-    carbonIntensity: number;
+    carbonIntensity?: number;
 }
 
 const props = withDefaults(defineProps<CarbonEmissionsProps>(), {
     memoryAllocatedInMebibyte: 0,
+    powerUsageEffectiveness: carbonEmissionsConstants.worldwidePowerUsageEffectiveness,
+    geographicalServerLocationName: "GLOBAL",
+    carbonIntensity: carbonEmissionsConstants.worldwideCarbonIntensity,
 });
 
 const carbonEmissions = computed(() => {
