@@ -94,13 +94,18 @@ export default {
             optionsShow: false,
             undoShow: false,
             hasValue: false,
+            urlTracker: null,
         };
+    },
+    watch: {
+        history: async function () {
+            this.urlTracker = new UrlTracker(this.getHistoryUrl());
+            this.load();
+        },
     },
     created: function () {
         this.services = new Services();
-        this.urlTracker = new UrlTracker(this.getHistoryUrl());
         this.model = new Model({ multiple: this.multiple, format: this.format });
-        this.load();
     },
     methods: {
         /** Returns the default url i.e. the url of the current history **/

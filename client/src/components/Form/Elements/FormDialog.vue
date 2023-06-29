@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faFolderOpen } from "@fortawesome/free-solid-svg-icons";
 import DataDialog from "@/components/DataDialog/DataDialog.vue";
-import { onMounted, ref, reactive } from "vue";
+import { ref, watch } from "vue";
 import { getCurrentGalaxyHistory } from "@/utils/data";
 
 library.add(faFolderOpen);
@@ -16,44 +16,43 @@ interface DataDialogProps {
 
 const props = withDefaults(defineProps<DataDialogProps>(), {
     multiple: false,
+    value: "",
 });
 
 const title = "Browse Datasets";
-const historyID: string = "";
-const localHistoryId = reactive({
-    value: historyID,
-});
+const localHistoryId = ref("");
+const dataDialogOpen = ref(false);
 
-onMounted(() => {
-    getCurrentGalaxyHistory().then((historyId) => {
-        localHistoryId.value = historyId;
-    });
-});
-
-const openDataDialog = ref(false);
+watch(
+    () => dataDialogOpen.value,
+    async () => {
+        localHistoryId.value = "";
+        localHistoryId.value = await getCurrentGalaxyHistory();
+    }
+);
 
 const emit = defineEmits<{
     (e: "input", value: Array<string> | string): void;
 }>();
 
 function onData(result: Array<string> | string) {
-    openDataDialog.value = false;
+    dataDialogOpen.value = false;
     emit("input", result);
 }
 </script>
 
 <template>
     <div class="d-flex">
-        <button @click="openDataDialog = true">
+        <button @click="dataDialogOpen = true">
             <font-awesome-icon icon="folder-open" :title="title" />
         </button>
-        <input v-model="props.value" disabled class="ui-input float-left" />
+        <input :value="props.value" disabled class="ui-input float-left" />
         <DataDialog
-            v-if="openDataDialog"
-            :history="localHistoryId.value"
+            v-if="dataDialogOpen"
+            :history="localHistoryId"
             :multiple="multiple"
-            @onCancel="openDataDialog = false"
-            @onUpload="openDataDialog = false"
+            @onCancel="dataDialogOpen = false"
+            @onUpload="dataDialogOpen = false"
             @onOk="onData" />
     </div>
 </template>
