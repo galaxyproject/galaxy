@@ -8925,17 +8925,6 @@ export interface components {
             /** Total Disk Usage */
             total_disk_usage: number;
         };
-        /**
-         * UserTheme
-         * @description Base model definition with common configuration used by all derived models.
-         */
-        UserTheme: {
-            /**
-             * user_theme
-             * @description The theme of the users GUI
-             */
-            theme: string;
-        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -16918,7 +16907,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["UserTheme"];
+                    "application/json": string;
                 };
             };
             /** @description Validation Error */
