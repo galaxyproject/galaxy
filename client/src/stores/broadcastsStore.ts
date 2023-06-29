@@ -1,9 +1,9 @@
-import Vue, { computed, ref } from "vue";
 import { defineStore } from "pinia";
+import Vue, { computed, ref } from "vue";
 
 import type { components } from "@/schema";
-import { mergeObjectListsById } from "@/utils/utils";
 import { loadBroadcastsFromServer } from "@/stores/services/broadcasts.service";
+import { mergeObjectListsById } from "@/utils/utils";
 
 export type BroadcastNotification = components["schemas"]["BroadcastNotificationResponse"];
 type Expirable = Pick<BroadcastNotification, "expiration_time">;

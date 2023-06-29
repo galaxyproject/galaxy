@@ -1,8 +1,8 @@
+import { shallowMount, createLocalVue } from "@vue/test-utils";
+import { PiniaVuePlugin, createPinia } from "pinia";
+import { useUserStore } from "stores/userStore";
 import Vuex from "vuex";
 import createCache from "vuex-cache";
-import { useUserStore } from "stores/userStore";
-import { PiniaVuePlugin, createPinia } from "pinia";
-import { shallowMount, createLocalVue } from "@vue/test-utils";
 
 import JobDestinationParams from "./JobDestinationParams";
 import jobDestinationResponse from "./testData/jobDestinationResponse";

@@ -1,5 +1,5 @@
-import { bytesToString } from "@/utils/utils";
 import type { components } from "@/schema";
+import { bytesToString } from "@/utils/utils";
 
 type CleanableItemsSummaryResponse = components["schemas"]["CleanableItemsSummary"];
 

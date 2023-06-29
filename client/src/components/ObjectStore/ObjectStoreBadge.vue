@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed } from "vue";
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
+import { computed } from "vue";
 
 import ConfigurationMarkdown from "./ConfigurationMarkdown.vue";
 

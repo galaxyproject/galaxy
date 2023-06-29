@@ -1,18 +1,19 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, toRefs, onBeforeUnmount, type Ref, type UnwrapRef } from "vue";
-import type { UseElementBoundingReturn, UseScrollReturn } from "@vueuse/core";
-import { faPlus, faMinus } from "@fortawesome/free-solid-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
+import { faPlus, faMinus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import type { UseElementBoundingReturn, UseScrollReturn } from "@vueuse/core";
+import { ref, computed, watch, nextTick, toRefs, onBeforeUnmount, type Ref, type UnwrapRef } from "vue";
 
-import DraggableWrapper from "./DraggablePan.vue";
-import { useTerminal } from "./composables/useTerminal";
 import { useRelativePosition } from "./composables/relativePosition";
+import { useTerminal } from "./composables/useTerminal";
+import DraggableWrapper from "./DraggablePan.vue";
 import { NULL_COLLECTION_TYPE_DESCRIPTION, type CollectionTypeDescriptor } from "./modules/collectionTypeDescription";
 
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
-import { useWorkflowStateStore, type XYPosition } from "@/stores/workflowEditorStateStore";
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import ConnectionMenu from "@/components/Workflow/Editor/ConnectionMenu.vue";
+import { useWorkflowStateStore, type XYPosition } from "@/stores/workflowEditorStateStore";
 import {
     useWorkflowStepStore,
     type OutputTerminalSource,
@@ -21,7 +22,6 @@ import {
     type PostJobAction,
 } from "@/stores/workflowStepStore";
 import { assertDefined, ensureDefined } from "@/utils/assertions";
-import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 type ElementBounding = UnwrapRef<UseElementBoundingReturn>;
 

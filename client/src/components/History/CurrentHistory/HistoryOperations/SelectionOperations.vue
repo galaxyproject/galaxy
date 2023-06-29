@@ -147,6 +147,8 @@
 </template>
 
 <script>
+import { buildCollectionModal } from "components/History/adapters/buildCollectionModal";
+import { HistoryFilters } from "components/History/HistoryFilters";
 import {
     hideSelectedContent,
     unhideSelectedContent,
@@ -159,12 +161,10 @@ import {
     removeTagsFromSelectedContent,
 } from "components/History/model/crud";
 import { createDatasetCollection, getHistoryContent } from "components/History/model/queries";
-import { buildCollectionModal } from "components/History/adapters/buildCollectionModal";
 import { DbKeyProvider, DatatypesProvider } from "components/providers";
+import ConfigProvider from "components/providers/ConfigProvider";
 import SingleItemSelector from "components/SingleItemSelector";
 import { StatelessTags } from "components/Tags";
-import ConfigProvider from "components/providers/ConfigProvider";
-import { HistoryFilters } from "components/History/HistoryFilters";
 
 export default {
     components: {

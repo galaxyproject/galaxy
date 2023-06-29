@@ -38,16 +38,16 @@
 </template>
 
 <script>
-import _ from "underscore";
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestion } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import BootstrapVue from "bootstrap-vue";
 import FlexPanel from "components/Panels/FlexPanel";
+import _ from "underscore";
+import Vue from "vue";
 
-import MarkdownToolBox from "./MarkdownToolBox";
 import MarkdownHelp from "./MarkdownHelp";
+import MarkdownToolBox from "./MarkdownToolBox";
 
 Vue.use(BootstrapVue);
 

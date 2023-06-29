@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import axios from "axios";
-import { computed, onMounted, reactive, ref, watch } from "vue";
-import { parse } from "csv-parse/sync";
 import { useWindowScroll } from "@vueuse/core";
+import axios from "axios";
+import { parse } from "csv-parse/sync";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 
 import { getAppRoot } from "@/onload/loadConfig";
 

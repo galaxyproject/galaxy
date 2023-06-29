@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { ref } from "vue";
 
+import { useCleanupCategories } from "./Cleanup/categories";
 import CleanupOperationSummary from "./Cleanup/CleanupOperationSummary.vue";
 import CleanupResultDialog from "./Cleanup/CleanupResultDialog.vue";
-import ReviewCleanupDialog from "./Cleanup/ReviewCleanupDialog.vue";
-import { useCleanupCategories } from "./Cleanup/categories";
 import type { CleanableItem, CleanupOperation, CleanupResult } from "./Cleanup/model";
+import ReviewCleanupDialog from "./Cleanup/ReviewCleanupDialog.vue";
 
 import { useConfig } from "@/composables/config";
-import { wait } from "@/utils/utils";
 import localize from "@/utils/localization";
+import { wait } from "@/utils/utils";
 
 interface ModalDialog {
     openModal: () => void;

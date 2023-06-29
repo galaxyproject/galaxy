@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { storeToRefs } from "pinia";
 import ActivityItem from "components/ActivityBar/ActivityItem.vue";
+import { storeToRefs } from "pinia";
+import { computed } from "vue";
 
 import { useNotificationsStore } from "@/stores/notificationsStore";
 

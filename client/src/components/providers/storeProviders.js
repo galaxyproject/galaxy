@@ -1,9 +1,9 @@
 // Simple dataset provider, looks at api for result, renders to slot prop
 import axios from "axios";
+import { mapActions, mapState } from "pinia";
+import { useDbKeyStore } from "stores/dbKeyStore";
 import { prependPath } from "utils/redirect";
 import { mapActions as vuexMapActions, mapGetters } from "vuex";
-import { useDbKeyStore } from "stores/dbKeyStore";
-import { mapActions, mapState } from "pinia";
 
 import { useDatatypeStore } from "../../stores/datatypeStore";
 

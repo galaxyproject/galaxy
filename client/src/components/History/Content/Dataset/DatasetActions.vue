@@ -72,8 +72,8 @@
 <script>
 import { copy as sendToClipboard } from "utils/clipboard";
 
-import { downloadUrlMixin } from "./mixins.js";
 import DatasetDownload from "./DatasetDownload";
+import { downloadUrlMixin } from "./mixins.js";
 
 import { absPath, prependPath } from "@/utils/redirect";
 

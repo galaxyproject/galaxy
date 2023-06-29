@@ -1,9 +1,9 @@
-import $ from "jquery";
-import _ from "underscore";
 import Backbone from "backbone";
-import { Toast } from "ui/toast";
-import mod_group_model from "toolshed/groups/group-model";
+import $ from "jquery";
 import mod_group_row from "toolshed/groups/group-listrow-view";
+import mod_group_model from "toolshed/groups/group-model";
+import { Toast } from "ui/toast";
+import _ from "underscore";
 
 const GroupListView = Backbone.View.extend({
     el: "#groups_element",

@@ -1,7 +1,7 @@
-import { getLocalVue } from "tests/jest/helpers";
 import { mount } from "@vue/test-utils";
-import { useUserTags } from "composables/user";
 import { useToast } from "composables/toast";
+import { useUserTags } from "composables/user";
+import { getLocalVue } from "tests/jest/helpers";
 import { computed } from "vue";
 
 import StatelessTags from "./StatelessTags";

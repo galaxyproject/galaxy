@@ -15,9 +15,9 @@
 </template>
 
 <script>
-import WorkflowIcons from "components/Workflow/icons";
-import FormDisplay from "components/Form/FormDisplay";
 import FormCard from "components/Form/FormCard";
+import FormDisplay from "components/Form/FormDisplay";
+import WorkflowIcons from "components/Workflow/icons";
 
 export default {
     components: {

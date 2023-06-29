@@ -1,6 +1,6 @@
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
 import MockProvider from "components/providers/MockProvider";
+import { getLocalVue } from "tests/jest/helpers";
 
 import DisplayApplications from "./DisplayApplications";
 

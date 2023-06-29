@@ -1,8 +1,8 @@
 <script setup>
-import { computed } from "vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheck, faCubes, faCube } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { computed } from "vue";
 
 library.add(faCheck, faCubes, faCube);
 const props = defineProps({

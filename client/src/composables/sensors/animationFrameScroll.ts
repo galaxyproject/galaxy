@@ -1,6 +1,6 @@
-import { reactive, ref } from "vue";
 import type { MaybeComputedRef } from "@vueuse/core";
 import { resolveUnref } from "@vueuse/core";
+import { reactive, ref } from "vue";
 
 import { useAnimationFrame } from "./animationFrame";
 

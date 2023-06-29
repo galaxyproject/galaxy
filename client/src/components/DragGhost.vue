@@ -1,9 +1,9 @@
 <script setup>
-import { computed } from "vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faPaperPlane } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useEventStore } from "stores/eventStore";
+import { computed } from "vue";
 
 import TextShort from "@/components/Common/TextShort.vue";
 

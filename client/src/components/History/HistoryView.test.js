@@ -1,12 +1,12 @@
-import { createPinia } from "pinia";
 import { mount } from "@vue/test-utils";
-import { useUserStore } from "stores/userStore";
-import { useHistoryStore } from "stores/historyStore";
-import { getLocalVue } from "tests/jest/helpers";
-import flushPromises from "flush-promises";
-import { getHistoryByIdFromServer, setCurrentHistoryOnServer } from "stores/services/history.services";
-import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
+import MockAdapter from "axios-mock-adapter";
+import flushPromises from "flush-promises";
+import { createPinia } from "pinia";
+import { useHistoryStore } from "stores/historyStore";
+import { getHistoryByIdFromServer, setCurrentHistoryOnServer } from "stores/services/history.services";
+import { useUserStore } from "stores/userStore";
+import { getLocalVue } from "tests/jest/helpers";
 
 import HistoryView from "./HistoryView";
 

@@ -181,20 +181,20 @@
 </template>
 
 <script>
-import _l from "utils/localization";
-import Vue from "vue";
-import { mapState } from "pinia";
-import { getAppRoot } from "onload/loadConfig";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
-import { Toast } from "composables/toast";
 import { initLibrariesIcons } from "components/Libraries/icons";
 import { MAX_DESCRIPTION_LENGTH, DEFAULT_PER_PAGE, onError } from "components/Libraries/library-utils";
 import LibraryEditField from "components/Libraries/LibraryEditField";
 import SearchField from "components/Libraries/LibraryFolder/SearchField";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { Toast } from "composables/toast";
+import { getAppRoot } from "onload/loadConfig";
+import { mapState } from "pinia";
+import _l from "utils/localization";
+import Vue from "vue";
 
-import { fields } from "./table-fields";
 import { Services } from "./services";
+import { fields } from "./table-fields";
 
 import { useUserStore } from "@/stores/userStore";
 

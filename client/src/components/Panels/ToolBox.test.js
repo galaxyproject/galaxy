@@ -1,9 +1,9 @@
-import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
+import MockAdapter from "axios-mock-adapter";
 import { useConfig } from "composables/config";
 
-import { filterToolSections, filterTools } from "./utilities";
 import toolsList from "./testToolsList";
+import { filterToolSections, filterTools } from "./utilities";
 
 jest.mock("composables/config");
 useConfig.mockReturnValue({

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import axios from "axios";
+import { BCard } from "bootstrap-vue";
 import { computed, ref, watch, type Ref } from "vue";
 import { useRouter } from "vue-router/composables";
-import { BCard } from "bootstrap-vue";
 
 import { getRedirectOnImportPath } from "../redirectPath";
 import { Services } from "../services";

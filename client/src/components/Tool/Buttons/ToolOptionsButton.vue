@@ -1,12 +1,12 @@
 <script setup>
-import { computed, ref } from "vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCopy } from "@fortawesome/free-regular-svg-icons";
+import { faCaretDown, faLink, faDownload, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import ToolSourceMenuItem from "components/Tool/ToolSourceMenuItem";
 import { storeToRefs } from "pinia";
 import Webhooks from "utils/webhooks";
-import ToolSourceMenuItem from "components/Tool/ToolSourceMenuItem";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCaretDown, faLink, faDownload, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
-import { faCopy } from "@fortawesome/free-regular-svg-icons";
+import { computed, ref } from "vue";
 
 import { copyLink, copyId, downloadTool, openLink } from "../utilities";
 

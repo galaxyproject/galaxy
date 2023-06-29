@@ -1,6 +1,6 @@
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
 import { useConfig } from "composables/config";
+import { getLocalVue } from "tests/jest/helpers";
 
 import ToolSection from "./ToolSection";
 

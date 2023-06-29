@@ -1,19 +1,19 @@
-import _l from "utils/localization";
-import $ from "jquery";
+import axios from "axios";
 import Select2 from "components/Select2";
+import $ from "jquery";
 import Popover from "mvc/ui/ui-popover";
 import UploadExtension from "mvc/upload/upload-extension";
-import UploadModel from "mvc/upload/upload-model";
 import UploadFtp from "mvc/upload/upload-ftp";
-import { filesDialog, refreshContentsWrapper } from "utils/data";
+import UploadModel from "mvc/upload/upload-model";
 import { getAppRoot } from "onload";
+import { filesDialog, refreshContentsWrapper } from "utils/data";
+import _l from "utils/localization";
 import { UploadQueue } from "utils/uploadbox";
-import axios from "axios";
 
-import { findExtension } from "./utils";
-import LazyLimited from "./lazy-limited";
 import { defaultNewFileName, uploadModelsToPayload } from "./helpers";
+import LazyLimited from "./lazy-limited";
 import UploadWrapper from "./UploadWrapper";
+import { findExtension } from "./utils";
 
 const localize = _l;
 

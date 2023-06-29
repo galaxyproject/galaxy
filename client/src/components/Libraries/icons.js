@@ -1,3 +1,4 @@
+import { library } from "@fortawesome/fontawesome-svg-core";
 import { faFile, faSave, faFolder, faCheckSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
 import {
     faTimes,
@@ -17,7 +18,6 @@ import {
     faMinusSquare,
     faAngleDoubleLeft,
 } from "@fortawesome/free-solid-svg-icons";
-import { library } from "@fortawesome/fontawesome-svg-core";
 
 const tableIcons = [
     faFile,

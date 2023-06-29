@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faUpload, faGlobe } from "@fortawesome/free-solid-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
+import { faUpload, faGlobe } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { computed } from "vue";
 
 import WorkflowSearch from "@/components/Workflow/WorkflowSearch.vue";
 import { useUserStore } from "@/stores/userStore";

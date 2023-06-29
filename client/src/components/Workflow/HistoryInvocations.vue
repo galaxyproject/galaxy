@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed } from "vue";
 import { storeToRefs } from "pinia";
+import { computed } from "vue";
 
 import InvocationsList from "@/components/Workflow/InvocationsList.vue";
-import { useUserStore } from "@/stores/userStore";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
 
 interface HistoryInvocationProps {
     historyId: string;

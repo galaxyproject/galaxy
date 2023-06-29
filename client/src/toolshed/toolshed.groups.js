@@ -3,8 +3,8 @@
 // MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
 import Backbone from "backbone";
-import mod_group_list from "toolshed/groups/group-list-view";
 import mod_group_detail from "toolshed/groups/group-detail-view";
+import mod_group_list from "toolshed/groups/group-list-view";
 
 // ============================================================================
 // ROUTER

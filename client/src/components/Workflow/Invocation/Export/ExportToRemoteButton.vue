@@ -1,10 +1,10 @@
 <script setup>
-import { watch } from "vue";
-import { BButton } from "bootstrap-vue";
-import { useTaskMonitor } from "composables/taskMonitor";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCloudUploadAlt, faSpinner, faCheckCircle, faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton } from "bootstrap-vue";
+import { useTaskMonitor } from "composables/taskMonitor";
+import { watch } from "vue";
 
 library.add(faCloudUploadAlt, faSpinner, faCheckCircle, faExclamationCircle);
 

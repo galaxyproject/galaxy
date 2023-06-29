@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
-import Multiselect from "vue-multiselect";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTags, faCheck, faTimes, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { ref, computed } from "vue";
 import type { Ref } from "vue";
+import Multiselect from "vue-multiselect";
 
 import Tag from "./Tag.vue";
 
+import { useToast } from "@/composables/toast";
 import { useMultiselect } from "@/composables/useMultiselect";
 import { useUserTags } from "@/composables/user";
-import { useToast } from "@/composables/toast";
 import { useUid } from "@/composables/utils/uid";
 
 interface StatelessTagsProps {

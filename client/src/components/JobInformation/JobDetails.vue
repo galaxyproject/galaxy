@@ -33,8 +33,8 @@
 import JobMetrics from "components/JobMetrics/JobMetrics";
 import JobParameters from "components/JobParameters/JobParameters.vue";
 
-import JobInformation from "./JobInformation";
 import CodeRow from "./CodeRow.vue";
+import JobInformation from "./JobInformation";
 
 export default {
     components: {

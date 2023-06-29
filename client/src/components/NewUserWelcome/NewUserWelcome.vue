@@ -29,12 +29,12 @@
 </template>
 <script>
 import { BCard, BCardGroup, BTabs, BTab, BCarousel, BCarouselSlide, BButton, BRow, BCol } from "bootstrap-vue";
-import { getAppRoot } from "onload/loadConfig";
-import Topics from "components/NewUserWelcome/components/Topics";
-import Subtopics from "components/NewUserWelcome/components/Subtopics";
-import Slides from "components/NewUserWelcome/components/Slides";
-import ConfigProvider from "components/providers/ConfigProvider";
 import Heading from "components/Common/Heading";
+import Slides from "components/NewUserWelcome/components/Slides";
+import Subtopics from "components/NewUserWelcome/components/Subtopics";
+import Topics from "components/NewUserWelcome/components/Topics";
+import ConfigProvider from "components/providers/ConfigProvider";
+import { getAppRoot } from "onload/loadConfig";
 
 import { getResource } from "./getResource";
 

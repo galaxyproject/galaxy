@@ -1,7 +1,7 @@
 /** This renders the content of the settings popup, allowing users to specify flags i.e. for space-to-tab conversion **/
+import Backbone from "backbone";
 import $ from "jquery";
 import _ from "underscore";
-import Backbone from "backbone";
 
 export default Backbone.View.extend({
     options: {

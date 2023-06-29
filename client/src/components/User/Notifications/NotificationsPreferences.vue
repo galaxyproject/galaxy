@@ -1,24 +1,24 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BCol, BRow, BCard, BButton, BFormCheckbox } from "bootstrap-vue";
+import { computed, ref, watch } from "vue";
 
-import type { components } from "@/schema";
-import { Toast } from "@/composables/toast";
-import { useConfig } from "@/composables/config";
-import LoadingSpan from "@/components/LoadingSpan.vue";
 import AsyncButton from "@/components/Common/AsyncButton.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import {
+    getNotificationsPreferencesFromServer,
+    updateNotificationsPreferencesOnServer,
+} from "@/components/User/Notifications/model/services";
+import { useConfig } from "@/composables/config";
+import { Toast } from "@/composables/toast";
 import {
     browserSupportsPushNotifications,
     pushNotificationsEnabled,
     togglePushNotifications,
 } from "@/composables/utils/pushNotifications";
-import {
-    getNotificationsPreferencesFromServer,
-    updateNotificationsPreferencesOnServer,
-} from "@/components/User/Notifications/model/services";
+import type { components } from "@/schema";
 
 library.add(faExclamationCircle);
 

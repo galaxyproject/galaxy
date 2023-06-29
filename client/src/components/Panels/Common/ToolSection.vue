@@ -48,8 +48,8 @@
 </template>
 
 <script>
-import ariaAlert from "utils/ariaAlert";
 import { useConfig } from "composables/config";
+import ariaAlert from "utils/ariaAlert";
 
 import Tool from "./Tool";
 import ToolPanelLabel from "./ToolPanelLabel";

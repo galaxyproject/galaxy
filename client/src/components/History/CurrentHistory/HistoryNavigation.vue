@@ -184,10 +184,10 @@
 </template>
 
 <script>
-import { mapActions, mapState } from "pinia";
-import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import CopyModal from "components/History/Modals/CopyModal";
 import SelectorModal from "components/History/Modals/SelectorModal";
+import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
+import { mapActions, mapState } from "pinia";
 
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";

@@ -1,24 +1,24 @@
 <script setup lang="ts">
-import draggable from "vuedraggable";
-import { ref, type Ref } from "vue";
 import { storeToRefs } from "pinia";
+import { ref, type Ref } from "vue";
 import { useRoute } from "vue-router/composables";
+import draggable from "vuedraggable";
 
 import ActivityItem from "./ActivityItem.vue";
 import ActivitySettings from "./ActivitySettings.vue";
 import InteractiveItem from "./Items/InteractiveItem.vue";
-import UploadItem from "./Items/UploadItem.vue";
 import NotificationItem from "./Items/NotificationItem.vue";
+import UploadItem from "./Items/UploadItem.vue";
 
-import { useConfig } from "@/composables/config";
-import { useUserStore } from "@/stores/userStore";
-import { useActivityStore, type Activity } from "@/stores/activityStore";
-import { convertDropData } from "@/stores/activitySetup";
-import { useEventStore } from "@/stores/eventStore";
 import ContextMenu from "@/components/Common/ContextMenu.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
 import WorkflowBox from "@/components/Panels/WorkflowBox.vue";
+import { useConfig } from "@/composables/config";
+import { convertDropData } from "@/stores/activitySetup";
+import { useActivityStore, type Activity } from "@/stores/activityStore";
+import { useEventStore } from "@/stores/eventStore";
+import { useUserStore } from "@/stores/userStore";
 
 const { config } = useConfig();
 

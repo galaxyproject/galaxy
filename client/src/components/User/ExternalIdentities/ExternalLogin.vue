@@ -96,13 +96,13 @@
 </template>
 
 <script>
+import { getGalaxyInstance } from "app";
 import axios from "axios";
-import Vue from "vue";
-import Multiselect from "vue-multiselect";
 import BootstrapVue from "bootstrap-vue";
 import LoadingSpan from "components/LoadingSpan";
-import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
+import Vue from "vue";
+import Multiselect from "vue-multiselect";
 
 Vue.use(BootstrapVue);
 

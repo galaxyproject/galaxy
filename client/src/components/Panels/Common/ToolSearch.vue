@@ -4,9 +4,9 @@ import { useRouter } from "vue-router/composables";
 
 import { flattenTools } from "../utilities.js";
 
+import { getGalaxyInstance } from "@/app";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import _l from "@/utils/localization";
-import { getGalaxyInstance } from "@/app";
 
 const router = useRouter();
 

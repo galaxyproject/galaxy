@@ -1,9 +1,9 @@
+import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
-import { mount } from "@vue/test-utils";
 
-import AwsEstimate from "./AwsEstimate";
 import { ec2Instances } from "./awsEc2ReferenceData.js";
+import AwsEstimate from "./AwsEstimate";
 
 const localVue = getLocalVue();
 

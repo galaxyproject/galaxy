@@ -1,14 +1,14 @@
-import { setActivePinia } from "pinia";
-import flushPromises from "flush-promises";
-import { getLocalVue } from "@tests/jest/helpers";
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/jest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
+import flushPromises from "flush-promises";
+import { setActivePinia } from "pinia";
 
 import NotificationActions from "./NotificationActions.vue";
 
-import { useNotificationsStore } from "@/stores/notificationsStore";
 import type { UserNotification } from "@/components/Notifications/index";
 import { generateMessageNotification, generateNewSharedItemNotification } from "@/components/Notifications/test-utils";
+import { useNotificationsStore } from "@/stores/notificationsStore";
 
 const localVue = getLocalVue(true);
 

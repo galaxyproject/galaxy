@@ -140,33 +140,33 @@
 </template>
 
 <script>
-import Vue from "vue";
-import { Toast } from "composables/toast";
-import { useHistoryStore } from "stores/historyStore";
-import { mapActions, mapState, storeToRefs } from "pinia";
-import { useHistoryItemsStore } from "stores/history/historyItemsStore";
-import LoadingSpan from "components/LoadingSpan";
+import { copyDataset } from "components/Dataset/services";
 import ContentItem from "components/History/Content/ContentItem";
-import { deleteContent, updateContentFields } from "components/History/model/queries";
 import ExpandedItems from "components/History/Content/ExpandedItems";
 import SelectedItems from "components/History/Content/SelectedItems";
-import ListingLayout from "components/History/Layout/ListingLayout";
 import { HistoryFilters as FilterClass } from "components/History/HistoryFilters";
-import { getOperatorForAlias } from "utils/filtering";
+import ListingLayout from "components/History/Layout/ListingLayout";
+import { deleteContent, updateContentFields } from "components/History/model/queries";
+import LoadingSpan from "components/LoadingSpan";
+import { Toast } from "composables/toast";
+import { mapActions, mapState, storeToRefs } from "pinia";
 import { rewatchHistory } from "store/historyStore/model/watchHistory";
-import { copyDataset } from "components/Dataset/services";
+import { useHistoryItemsStore } from "stores/history/historyItemsStore";
+import { useHistoryStore } from "stores/historyStore";
+import { getOperatorForAlias } from "utils/filtering";
+import Vue from "vue";
 
 import HistoryCounter from "./HistoryCounter";
-import HistoryOperations from "./HistoryOperations/HistoryOperations";
 import HistoryDetails from "./HistoryDetails";
 import HistoryDropZone from "./HistoryDropZone";
 import HistoryEmpty from "./HistoryEmpty";
 import HistoryFilters from "./HistoryFilters/HistoryFilters";
 import HistoryMessages from "./HistoryMessages";
+import HistoryOperations from "./HistoryOperations/HistoryOperations";
+import OperationErrorDialog from "./HistoryOperations/OperationErrorDialog";
+import SelectionChangeWarning from "./HistoryOperations/SelectionChangeWarning";
 import HistorySelectionOperations from "./HistoryOperations/SelectionOperations";
 import HistorySelectionStatus from "./HistoryOperations/SelectionStatus";
-import SelectionChangeWarning from "./HistoryOperations/SelectionChangeWarning";
-import OperationErrorDialog from "./HistoryOperations/OperationErrorDialog";
 
 export default {
     components: {

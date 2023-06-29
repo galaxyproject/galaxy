@@ -1,11 +1,11 @@
 import { getGalaxyInstance } from "app";
-import { Toast } from "composables/toast";
-import _l from "utils/localization";
-import _ from "underscore";
 import Backbone from "backbone";
+import { Toast } from "composables/toast";
 import $ from "jquery";
-import { getAppRoot } from "onload/loadConfig";
 import mod_select from "mvc/ui/ui-select";
+import { getAppRoot } from "onload/loadConfig";
+import _ from "underscore";
+import _l from "utils/localization";
 
 import { updateProgress } from "./delete-selected";
 import mod_library_model from "./library-model";

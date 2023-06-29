@@ -1,7 +1,7 @@
-import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
-import { PiniaVuePlugin } from "pinia";
 import { createTestingPinia } from "@pinia/testing";
+import { mount } from "@vue/test-utils";
+import { PiniaVuePlugin } from "pinia";
+import { getLocalVue } from "tests/jest/helpers";
 
 import Lint from "./Lint.vue";
 import { getUntypedWorkflowParameters } from "./modules/parameters";

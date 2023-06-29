@@ -52,8 +52,8 @@
 </template>
 
 <script>
-import { Credential } from "./model";
 import CredentialForm from "./CredentialForm";
+import { Credential } from "./model";
 
 export default {
     components: {

@@ -1,11 +1,11 @@
 <script setup>
-import { ref, reactive, inject } from "vue";
-import { BModal } from "bootstrap-vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
+import { BModal } from "bootstrap-vue";
+import ExternalLink from "components/ExternalLink";
 import { Toast } from "composables/toast";
 import { withPrefix } from "utils/redirect";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import ExternalLink from "components/ExternalLink";
+import { ref, reactive, inject } from "vue";
 
 import { wait } from "@/utils/utils";
 

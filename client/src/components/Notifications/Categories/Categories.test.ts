@@ -1,8 +1,8 @@
-import { setActivePinia } from "pinia";
-import flushPromises from "flush-promises";
-import { getLocalVue } from "@tests/jest/helpers";
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/jest/helpers";
 import { shallowMount, type Wrapper } from "@vue/test-utils";
+import flushPromises from "flush-promises";
+import { setActivePinia } from "pinia";
 
 import MessageNotification from "@/components/Notifications/Categories/MessageNotification.vue";
 import SharedItemNotification from "@/components/Notifications/Categories/SharedItemNotification.vue";

@@ -1,6 +1,6 @@
+import { getLocalVue } from "@tests/jest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "@tests/jest/helpers";
 
 import CleanupOperationSummary from "./CleanupOperationSummary.vue";
 import { CleanableSummary, type CleanupOperation, CleanupResult, type CleanableItem } from "./model";

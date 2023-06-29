@@ -2,17 +2,17 @@
  * Top-level trackster code, used for creating/loading visualizations and user interface elements.
  */
 
-import _ from "underscore";
-import $ from "jquery";
-import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
+import Backbone from "backbone";
+import $ from "jquery";
+import GridView from "mvc/grid/grid-view";
+import IconButton from "mvc/ui/icon-button";
+import { getAppRoot } from "onload/loadConfig";
+import _ from "underscore";
 import _l from "utils/localization";
+import query_string from "utils/query-string-parsing";
 import tracks from "viz/trackster/tracks";
 import visualization from "viz/visualization";
-import IconButton from "mvc/ui/icon-button";
-import query_string from "utils/query-string-parsing";
-import GridView from "mvc/grid/grid-view";
 // import Utils from "utils/utils";
 import "libs/jquery/jquery.event.drag";
 import "libs/jquery/jquery.event.hover";

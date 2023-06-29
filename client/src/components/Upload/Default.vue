@@ -101,13 +101,13 @@
 </template>
 
 <script>
-import _l from "utils/localization";
-import _ from "underscore";
-import UploadRow from "mvc/upload/default/default-row";
 import { BButton } from "bootstrap-vue";
+import UploadRow from "mvc/upload/default/default-row";
+import _ from "underscore";
+import _l from "utils/localization";
 
-import UploadBoxMixin from "./UploadBoxMixin";
 import { uploadModelsToPayload } from "./helpers";
+import UploadBoxMixin from "./UploadBoxMixin";
 
 export default {
     components: { BButton },

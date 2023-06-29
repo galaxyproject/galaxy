@@ -1,6 +1,6 @@
 <script setup>
-import { ref } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { ref } from "vue";
 
 import { InvocationExportPluginAction } from "./model";
 

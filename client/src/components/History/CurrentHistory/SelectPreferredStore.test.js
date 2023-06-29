@@ -1,8 +1,8 @@
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
+import { getLocalVue } from "tests/jest/helpers";
 
 import { setupSelectableMock } from "../../ObjectStore/mockServices";
 

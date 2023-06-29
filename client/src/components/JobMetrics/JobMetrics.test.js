@@ -1,8 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
-import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
 import { mount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
+import { getLocalVue } from "tests/jest/helpers";
 
 import JobMetrics from "./JobMetrics";
 

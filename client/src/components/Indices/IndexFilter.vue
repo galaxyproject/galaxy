@@ -40,11 +40,11 @@
 </template>
 
 <script>
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faTimes, faQuestion } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BInputGroup, BInputGroupAppend, BButton, BModal } from "bootstrap-vue";
 import DebouncedInput from "components/DebouncedInput";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faTimes, faQuestion } from "@fortawesome/free-solid-svg-icons";
-import { library } from "@fortawesome/fontawesome-svg-core";
 
 library.add(faTimes, faQuestion);
 

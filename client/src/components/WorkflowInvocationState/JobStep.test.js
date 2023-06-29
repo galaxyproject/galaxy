@@ -1,5 +1,5 @@
-import BootstrapVue from "bootstrap-vue";
 import { mount, createLocalVue } from "@vue/test-utils";
+import BootstrapVue from "bootstrap-vue";
 
 import JobStep from "./JobStep";
 import jobs from "./test/json/jobs.json";

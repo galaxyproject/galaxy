@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
-import { PiniaVuePlugin } from "pinia";
 import { mount } from "@vue/test-utils";
+import { PiniaVuePlugin } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
 import mountTarget from "./ActivitySettings.vue";

@@ -56,16 +56,16 @@
 import Utils from "utils/utils";
 import { toRef } from "vue";
 
-import { useUniqueLabelError } from "../composables/useUniqueLabelError";
 import { useStepProps } from "../composables/useStepProps";
+import { useUniqueLabelError } from "../composables/useUniqueLabelError";
 
-import FormSection from "./FormSection.vue";
 import FormConditional from "./FormConditional.vue";
+import FormSection from "./FormSection.vue";
 
-import FormDisplay from "@/components/Form/FormDisplay.vue";
-import ToolCard from "@/components/Tool/ToolCard.vue";
-import FormElement from "@/components/Form/FormElement.vue";
 import Heading from "@/components/Common/Heading.vue";
+import FormDisplay from "@/components/Form/FormDisplay.vue";
+import FormElement from "@/components/Form/FormElement.vue";
+import ToolCard from "@/components/Tool/ToolCard.vue";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 export default {

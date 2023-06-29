@@ -72,11 +72,11 @@
 </template>
 
 <script>
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestion, faCopy, faAngleDoubleDown, faAngleDoubleUp } from "@fortawesome/free-solid-svg-icons";
-import { getCitations } from "components/Citation/services";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import Citation from "components/Citation/Citation";
+import { getCitations } from "components/Citation/services";
 import License from "components/License/License";
 import Creators from "components/SchemaOrg/Creators";
 import { copy } from "utils/clipboard";

@@ -2,11 +2,11 @@
     galaxy upload utilities - requires FormData and XMLHttpRequest
 */
 
-import _ from "underscore";
+import axios from "axios";
 import jQuery from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import * as tus from "tus-js-client";
-import axios from "axios";
+import _ from "underscore";
 
 function submitPayload(payload, cnf) {
     axios

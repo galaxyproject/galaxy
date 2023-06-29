@@ -60,16 +60,16 @@
 
 <script>
 import axios from "axios";
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import DataDialog from "components/DataDialog/DataDialog";
+import BasicSelectionDialog from "components/SelectionDialog/BasicSelectionDialog";
+import DatasetCollectionDialog from "components/SelectionDialog/DatasetCollectionDialog";
 import { getAppRoot } from "onload/loadConfig";
 import { getCurrentGalaxyHistory } from "utils/data";
-import DataDialog from "components/DataDialog/DataDialog";
-import DatasetCollectionDialog from "components/SelectionDialog/DatasetCollectionDialog";
-import BasicSelectionDialog from "components/SelectionDialog/BasicSelectionDialog";
+import Vue from "vue";
 
-import MarkdownVisualization from "./MarkdownVisualization";
 import MarkdownSelector from "./MarkdownSelector";
+import MarkdownVisualization from "./MarkdownVisualization";
 
 Vue.use(BootstrapVue);
 

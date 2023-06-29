@@ -45,10 +45,10 @@
 
 <script>
 import axios from "axios";
-import { mapState } from "pinia";
-import { getAppRoot } from "onload/loadConfig";
 import LoadingSpan from "components/LoadingSpan";
 import { copyCollection } from "components/Markdown/services";
+import { getAppRoot } from "onload/loadConfig";
+import { mapState } from "pinia";
 
 import CollectionTree from "./CollectionTree";
 

@@ -1,13 +1,13 @@
 /** Renders the composite upload row view */
-import $ from "jquery";
-import _ from "underscore";
 import Backbone from "backbone";
+import $ from "jquery";
+import Ui from "mvc/ui/ui-misc";
+import Popover from "mvc/ui/ui-popover";
+import UploadFtp from "mvc/upload/upload-ftp";
+import UploadSettings from "mvc/upload/upload-settings";
+import _ from "underscore";
 import _l from "utils/localization";
 import Utils from "utils/utils";
-import UploadSettings from "mvc/upload/upload-settings";
-import UploadFtp from "mvc/upload/upload-ftp";
-import Popover from "mvc/ui/ui-popover";
-import Ui from "mvc/ui/ui-misc";
 import "utils/uploadbox";
 
 export default Backbone.View.extend({

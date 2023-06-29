@@ -5,9 +5,9 @@
  * instead, particularly after a collection store has been added if required.
  */
 
-import Vue from "vue";
 import { LastQueue } from "utils/promise-queue";
 import { urlData } from "utils/url";
+import Vue from "vue";
 
 import { mergeArray } from "./model/utilities";
 

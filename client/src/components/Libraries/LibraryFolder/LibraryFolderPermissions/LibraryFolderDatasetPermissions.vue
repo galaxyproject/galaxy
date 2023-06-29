@@ -74,18 +74,18 @@
 </template>
 
 <script>
-import Vue from "vue";
-import { getAppRoot } from "onload/loadConfig";
-import BootstrapVue from "bootstrap-vue";
-import { Services } from "components/Libraries/LibraryPermissions/services";
-import { Toast } from "composables/toast";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
-import PermissionsHeader from "components/Libraries/LibraryPermissions/PermissionsHeader";
-import PermissionsInputField from "components/Libraries/LibraryPermissions/PermissionsInputField";
+import BootstrapVue from "bootstrap-vue";
 import { initPermissionsIcons } from "components/Libraries/icons";
 import { extractRoles } from "components/Libraries/library-utils";
 import LibraryBreadcrumb from "components/Libraries/LibraryFolder/LibraryBreadcrumb";
+import PermissionsHeader from "components/Libraries/LibraryPermissions/PermissionsHeader";
+import PermissionsInputField from "components/Libraries/LibraryPermissions/PermissionsInputField";
+import { Services } from "components/Libraries/LibraryPermissions/services";
+import { Toast } from "composables/toast";
+import { getAppRoot } from "onload/loadConfig";
+import Vue from "vue";
 
 import "vue-multiselect/dist/vue-multiselect.min.css";
 import VueObserveVisibility from "vue-observe-visibility";

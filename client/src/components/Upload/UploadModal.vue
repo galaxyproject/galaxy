@@ -1,9 +1,9 @@
 <script setup>
-import { ref, watch } from "vue";
+import { useConfig } from "composables/config";
+import { useUserHistories } from "composables/userHistories";
 import { getAppRoot } from "onload";
 import { storeToRefs } from "pinia";
-import { useUserHistories } from "composables/userHistories";
-import { useConfig } from "composables/config";
+import { ref, watch } from "vue";
 
 import UploadModalContent from "./UploadModalContent";
 

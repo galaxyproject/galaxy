@@ -1,10 +1,10 @@
+import { createTestingPinia } from "@pinia/testing";
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
-import { createTestingPinia } from "@pinia/testing";
 import { setActivePinia } from "pinia";
+import { getLocalVue } from "tests/jest/helpers";
 
 import HistoryArchiveWizard from "./HistoryArchiveWizard.vue";
 

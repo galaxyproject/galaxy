@@ -160,36 +160,36 @@
 
 <script>
 import axios from "axios";
-import Vue, { onUnmounted, computed, ref } from "vue";
 import { storeToRefs } from "pinia";
+import Vue, { onUnmounted, computed, ref } from "vue";
 
+import WorkflowAttributes from "./Attributes.vue";
+import { defaultPosition } from "./composables/useDefaultStepPosition";
+import WorkflowLint from "./Lint.vue";
+import MessagesModal from "./MessagesModal.vue";
 import { fromSimple, toSimple } from "./modules/model";
 import { getModule, getVersions, saveWorkflow, loadWorkflow } from "./modules/services";
 import { getStateUpgradeMessages } from "./modules/utilities";
 import WorkflowOptions from "./Options.vue";
-import reportDefault from "./reportDefault";
-import WorkflowLint from "./Lint.vue";
-import StateUpgradeModal from "./StateUpgradeModal.vue";
 import RefactorConfirmationModal from "./RefactorConfirmationModal.vue";
-import MessagesModal from "./MessagesModal.vue";
-import WorkflowAttributes from "./Attributes.vue";
+import reportDefault from "./reportDefault";
+import StateUpgradeModal from "./StateUpgradeModal.vue";
 import WorkflowGraph from "./WorkflowGraph.vue";
-import { defaultPosition } from "./composables/useDefaultStepPosition";
 
-import { hide_modal } from "@/layout/modal";
-import { getAppRoot } from "@/onload/loadConfig";
+import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import ProviderAwareToolBoxWorkflow from "@/components/Panels/ProviderAwareToolBoxWorkflow.vue";
-import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
-import FormTool from "@/components/Workflow/Editor/Forms/FormTool.vue";
 import FormDefault from "@/components/Workflow/Editor/Forms/FormDefault.vue";
+import FormTool from "@/components/Workflow/Editor/Forms/FormTool.vue";
 import { getUntypedWorkflowParameters } from "@/components/Workflow/Editor/modules/parameters";
-import { LastQueue } from "@/utils/promise-queue";
-import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { ConfirmDialog } from "@/composables/confirmDialog";
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
-import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
+import { hide_modal } from "@/layout/modal";
+import { getAppRoot } from "@/onload/loadConfig";
+import { useConnectionStore } from "@/stores/workflowConnectionStore";
+import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
+import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+import { LastQueue } from "@/utils/promise-queue";
 
 export default {
     components: {

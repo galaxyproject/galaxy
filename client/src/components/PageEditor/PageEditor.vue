@@ -11,10 +11,10 @@
 
 <script>
 import axios from "axios";
+import LoadingSpan from "components/LoadingSpan";
 import { Toast } from "composables/toast";
 import { getAppRoot } from "onload/loadConfig";
 import { rethrowSimple } from "utils/simple-error";
-import LoadingSpan from "components/LoadingSpan";
 
 import PageEditorMarkdown from "./PageEditorMarkdown";
 

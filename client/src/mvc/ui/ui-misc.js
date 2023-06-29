@@ -1,14 +1,14 @@
 /**
  *  This class contains backbone wrappers for basic ui elements such as Images, Labels, Buttons, Input fields etc.
  */
-import $ from "jquery";
-import _ from "underscore";
 import Backbone from "backbone";
-import Select from "mvc/ui/ui-select-default";
-import Options from "mvc/ui/ui-options";
+import $ from "jquery";
 import Buttons from "mvc/ui/ui-buttons";
 import Modal from "mvc/ui/ui-modal";
+import Options from "mvc/ui/ui-options";
+import Select from "mvc/ui/ui-select-default";
 import Switch from "mvc/ui/ui-switch";
+import _ from "underscore";
 
 /** Displays messages used e.g. in the tool form */
 export var Message = Backbone.View.extend({

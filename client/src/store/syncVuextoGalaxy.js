@@ -4,14 +4,14 @@
  * sync functions can be removed from the plugin
  */
 
+import { getGalaxyInstance } from "app";
 import { defer } from "rxjs";
 import { shareReplay } from "rxjs/operators";
-import { getGalaxyInstance } from "app";
+import { syncConfigToGalaxy } from "store/configStore";
+import { syncUserToGalaxy } from "stores/users/syncUserToGalaxy";
 import { waitForInit } from "utils/observable";
 
 // store subscriptions
-import { syncUserToGalaxy } from "stores/users/syncUserToGalaxy";
-import { syncConfigToGalaxy } from "store/configStore";
 
 export const syncVuextoGalaxy = (store) => {
     const globalGalaxy$ = defer(() => {

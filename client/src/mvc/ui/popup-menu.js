@@ -2,9 +2,9 @@
 /**
  * view for a popup menu
  */
+import Backbone from "backbone";
 import $ from "jquery";
 import _ from "underscore";
-import Backbone from "backbone";
 
 const PopupMenu = Backbone.View.extend({
     //TODO: maybe better as singleton off the Galaxy obj

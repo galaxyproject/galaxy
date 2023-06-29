@@ -7,9 +7,9 @@
 </template>
 
 <script>
-import { urlData } from "utils/url";
 import Published from "components/Common/Published";
 import HistoryView from "components/History/HistoryView";
+import { urlData } from "utils/url";
 
 export default {
     components: {

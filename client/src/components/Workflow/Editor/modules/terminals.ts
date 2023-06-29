@@ -7,6 +7,7 @@ import {
     type CollectionTypeDescriptor,
 } from "./collectionTypeDescription";
 
+import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import {
     getConnectionId,
     useConnectionStore,
@@ -23,7 +24,6 @@ import type {
     ParameterStepInput,
     TerminalSource,
 } from "@/stores/workflowStepStore";
-import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { assertDefined } from "@/utils/assertions";
 
 export class ConnectionAcceptable {

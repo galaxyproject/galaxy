@@ -21,12 +21,12 @@
     </b-card>
 </template>
 <script>
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { JobProvider } from "components/providers";
 import JobInformation from "components/JobInformation/JobInformation";
 import JobParameters from "components/JobParameters/JobParameters";
+import { JobProvider } from "components/providers";
 import UtcDate from "components/UtcDate";
+import Vue from "vue";
 
 Vue.use(BootstrapVue);
 

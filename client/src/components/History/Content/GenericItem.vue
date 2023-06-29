@@ -30,9 +30,9 @@ import { mapActions } from "pinia";
 import ContentItem from "./ContentItem";
 import GenericElement from "./GenericElement";
 
+import { deleteContent, updateContentFields } from "@/components/History/model/queries";
 import { DatasetCollectionProvider, DatasetProvider } from "@/components/providers";
 import { DatasetCollectionElementProvider } from "@/components/providers/storeProviders";
-import { deleteContent, updateContentFields } from "@/components/History/model/queries";
 import { useHistoryStore } from "@/stores/historyStore";
 
 export default {

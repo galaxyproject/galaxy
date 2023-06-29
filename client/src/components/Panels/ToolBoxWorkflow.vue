@@ -76,10 +76,10 @@
 <script>
 import _l from "utils/localization";
 
-import ToolSection from "./Common/ToolSection";
-import ToolSearch from "./Common/ToolSearch";
-import { filterToolSections, removeDisabledTools } from "./utilities";
 import PanelViewButton from "./Buttons/PanelViewButton";
+import ToolSearch from "./Common/ToolSearch";
+import ToolSection from "./Common/ToolSection";
+import { filterToolSections, removeDisabledTools } from "./utilities";
 
 export default {
     name: "ToolBox",

@@ -1,8 +1,4 @@
 <script setup>
-import { computed } from "vue";
-import { BAlert, BCard, BCardTitle } from "bootstrap-vue";
-import LoadingSpan from "components/LoadingSpan";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import {
     faExclamationCircle,
@@ -11,6 +7,10 @@ import {
     faClock,
     faLink,
 } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert, BCard, BCardTitle } from "bootstrap-vue";
+import LoadingSpan from "components/LoadingSpan";
+import { computed } from "vue";
 
 import { ExportRecordModel } from "./models/exportRecordModel";
 

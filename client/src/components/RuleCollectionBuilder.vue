@@ -576,33 +576,33 @@
     </state-div>
 </template>
 <script>
-import $ from "jquery";
-import _ from "underscore";
-import { getAppRoot } from "onload/loadConfig";
+import HotTable from "@handsontable/vue";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
-import _l from "utils/localization";
-import { refreshContentsWrapper } from "utils/data";
-import HotTable from "@handsontable/vue";
-import UploadUtils from "mvc/upload/upload-utils";
-import JobStatesModel from "utils/job-states-model";
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import Select2 from "components/Select2";
-import RuleDefs from "components/RuleBuilder/rule-definitions";
 import ColumnSelector from "components/RuleBuilder/ColumnSelector";
-import RegularExpressionInput from "components/RuleBuilder/RegularExpressionInput";
-import RuleDisplay from "components/RuleBuilder/RuleDisplay";
 import IdentifierDisplay from "components/RuleBuilder/IdentifierDisplay";
-import RuleTargetComponent from "components/RuleBuilder/RuleTargetComponent";
+import RegularExpressionInput from "components/RuleBuilder/RegularExpressionInput";
+import RuleDefs from "components/RuleBuilder/rule-definitions";
 import RuleComponent from "components/RuleBuilder/RuleComponent";
+import RuleDisplay from "components/RuleBuilder/RuleDisplay";
+import RuleModalFooter from "components/RuleBuilder/RuleModalFooter";
 import RuleModalHeader from "components/RuleBuilder/RuleModalHeader";
 import RuleModalMiddle from "components/RuleBuilder/RuleModalMiddle";
-import RuleModalFooter from "components/RuleBuilder/RuleModalFooter";
-import StateDiv from "components/RuleBuilder/StateDiv";
+import RuleTargetComponent from "components/RuleBuilder/RuleTargetComponent";
 import SavedRulesSelector from "components/RuleBuilder/SavedRulesSelector";
 import SaveRules from "components/RuleBuilder/SaveRules";
+import StateDiv from "components/RuleBuilder/StateDiv";
+import Select2 from "components/Select2";
 import TooltipOnHover from "components/TooltipOnHover.vue";
+import $ from "jquery";
+import UploadUtils from "mvc/upload/upload-utils";
+import { getAppRoot } from "onload/loadConfig";
+import _ from "underscore";
+import { refreshContentsWrapper } from "utils/data";
+import JobStatesModel from "utils/job-states-model";
+import _l from "utils/localization";
+import Vue from "vue";
 
 Vue.use(BootstrapVue);
 

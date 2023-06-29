@@ -48,9 +48,9 @@
 </template>
 
 <script>
+import CredentialConfig from "./CredentialConfig";
 import { Credential, ResourceProviders } from "./model";
 import { getIdentityProviders } from "./model/service";
-import CredentialConfig from "./CredentialConfig";
 
 export default {
     components: {

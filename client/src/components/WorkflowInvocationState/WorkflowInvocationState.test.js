@@ -1,7 +1,7 @@
 import { shallowMount } from "@vue/test-utils";
+import { useConfig } from "composables/config";
 import { getLocalVue } from "tests/jest/helpers";
 import Vuex from "vuex";
-import { useConfig } from "composables/config";
 
 import invocationData from "../Workflow/test/json/invocation.json";
 

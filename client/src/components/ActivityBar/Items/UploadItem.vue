@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, type Ref } from "vue";
 import ActivityItem from "components/ActivityBar/ActivityItem.vue";
-import Query from "@/utils/query-string-parsing.js";
-import { useGlobalUploadModal } from "@/composables/globalUploadModal.js";
+import { ref, onMounted, onUnmounted, type Ref } from "vue";
+
 import { eventHub } from "@/components/plugins/eventHub.js";
+import { useGlobalUploadModal } from "@/composables/globalUploadModal.js";
+import Query from "@/utils/query-string-parsing.js";
 
 const { openGlobalUploadModal } = useGlobalUploadModal();
 

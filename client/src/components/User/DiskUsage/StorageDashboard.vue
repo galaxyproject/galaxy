@@ -4,8 +4,8 @@ import { useRouter } from "vue-router/composables";
 
 import DiskUsageSummary from "./DiskUsageSummary.vue";
 
-import localize from "@/utils/localization";
 import IconCard from "@/components/IconCard.vue";
+import localize from "@/utils/localization";
 
 const router = useRouter();
 

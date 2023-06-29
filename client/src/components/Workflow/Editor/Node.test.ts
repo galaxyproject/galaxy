@@ -1,8 +1,8 @@
+import { createTestingPinia } from "@pinia/testing";
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
-import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "tests/jest/helpers";
 
 import Node from "./Node.vue";
 import { mockOffset } from "./test_fixtures";

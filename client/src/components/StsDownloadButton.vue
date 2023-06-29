@@ -20,14 +20,14 @@
     A Bootstrap Button with logic for interfacing with Galaxy's short term storage
     component (STS).
 */
-import { getAppRoot } from "onload/loadConfig";
-import { BButton } from "bootstrap-vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faDownload, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import axios from "axios";
+import { BButton } from "bootstrap-vue";
 import ConfigProvider from "components/providers/ConfigProvider";
 import { Toast } from "composables/toast";
-import axios from "axios";
+import { getAppRoot } from "onload/loadConfig";
 import { withPrefix } from "utils/redirect";
 
 library.add(faDownload, faSpinner);

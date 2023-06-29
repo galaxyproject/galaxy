@@ -38,12 +38,12 @@
     </div>
 </template>
 <script>
-import { mapActions } from "pinia";
 import { getGalaxyInstance } from "app";
 import DelayedInput from "components/Common/DelayedInput";
-import UtcDate from "components/UtcDate";
-import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import LoadingSpan from "components/LoadingSpan";
+import StatelessTags from "components/TagsMultiselect/StatelessTags";
+import UtcDate from "components/UtcDate";
+import { mapActions } from "pinia";
 
 import DatasetHistory from "./DatasetHistory";
 import DatasetName from "./DatasetName";

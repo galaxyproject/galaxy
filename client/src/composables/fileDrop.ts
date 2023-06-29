@@ -1,5 +1,5 @@
-import { computed, ref, unref, type Ref } from "vue";
 import { useEventListener, type MaybeComputedRef } from "@vueuse/core";
+import { computed, ref, unref, type Ref } from "vue";
 
 export type FileDropHandler = (event: DragEvent) => void;
 

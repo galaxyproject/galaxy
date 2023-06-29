@@ -3,10 +3,10 @@
  * history provided the same interface for other components.
  */
 import Backbone from "backbone";
-import { useHistoryStore } from "stores/historyStore";
-import { useHistoryItemsStore } from "stores/history/historyItemsStore";
 import { createDatasetCollection } from "components/History/model/queries";
 import { watchHistory } from "store/historyStore/model/watchHistory";
+import { useHistoryItemsStore } from "stores/history/historyItemsStore";
+import { useHistoryStore } from "stores/historyStore";
 
 import { buildCollectionModal } from "./buildCollectionModal";
 

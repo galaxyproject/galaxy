@@ -84,17 +84,17 @@
     </div>
 </template>
 <script>
-import { useWorkflowStore } from "stores/workflowStore";
-import { mapCacheActions } from "vuex-cache";
-import { mapGetters, mapActions as vuexMapActions } from "vuex";
-import { mapState, mapActions } from "pinia";
-import WorkflowIcons from "components/Workflow/icons";
 import GenericHistoryItem from "components/History/Content/GenericItem";
-import { InvocationStepProvider } from "components/providers";
 import LoadingSpan from "components/LoadingSpan";
+import { InvocationStepProvider } from "components/providers";
+import WorkflowIcons from "components/Workflow/icons";
+import { mapState, mapActions } from "pinia";
+import { useWorkflowStore } from "stores/workflowStore";
+import { mapGetters, mapActions as vuexMapActions } from "vuex";
+import { mapCacheActions } from "vuex-cache";
 
-import ParameterStep from "./ParameterStep";
 import JobStep from "./JobStep";
+import ParameterStep from "./ParameterStep";
 
 export default {
     components: {

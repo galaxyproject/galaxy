@@ -2,8 +2,8 @@
  * Stores the Activity Bar state
  */
 
-import { ref, type Ref } from "vue";
 import { defineStore } from "pinia";
+import { ref, type Ref } from "vue";
 
 import { Activities } from "./activitySetup";
 

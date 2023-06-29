@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref } from "vue";
 import type { GetComponentPropTypes } from "types/utilityTypes";
+import { ref } from "vue";
 
 import CarbonEmissionsIcon from "./CarbonEmissionsIcon.vue";
 

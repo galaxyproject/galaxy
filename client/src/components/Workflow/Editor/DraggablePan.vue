@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { PropType, UnwrapRef } from "vue";
 import type { UseElementBoundingReturn } from "@vueuse/core";
+import type { PropType, UnwrapRef } from "vue";
 
 import Draggable from "./Draggable.vue";
 

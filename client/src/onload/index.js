@@ -13,10 +13,10 @@ import "./publicPath";
 import "@fontsource/atkinson-hyperlegible";
 
 // Client-side configuration variables (based on environment)
+import { library } from "@fortawesome/fontawesome-svg-core";
 import config from "config";
 
 // Custom Icons
-import { library } from "@fortawesome/fontawesome-svg-core";
 
 import customIconPack from "@/assets/icons.json";
 

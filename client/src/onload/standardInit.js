@@ -18,8 +18,8 @@ import { defaultAppFactory } from "./defaultAppFactory";
 import { globalInits } from "./globalInits";
 
 // observable configs and init queue
-import { config$ } from "./loadConfig";
 import { initializations$, clearInitQueue } from "./initQueue";
+import { config$ } from "./loadConfig";
 
 /**
  * This is the standard endpoint initialization chain. Configs are loaded, the

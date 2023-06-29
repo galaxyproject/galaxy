@@ -121,21 +121,21 @@
 </template>
 
 <script>
-import Vue from "vue";
-import { mapState } from "pinia";
-import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
-import { withPrefix } from "utils/redirect";
-import _l from "utils/localization";
 import axios from "axios";
-import QueryStringParsing from "utils/query-string-parsing";
-import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
+import BootstrapVue from "bootstrap-vue";
 import ConfigProvider from "components/providers/ConfigProvider";
+import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
+import { mapState } from "pinia";
+import _l from "utils/localization";
 import { userLogoutAll } from "utils/logout";
+import QueryStringParsing from "utils/query-string-parsing";
+import { withPrefix } from "utils/redirect";
+import Vue from "vue";
 
 import ThemeSelector from "./ThemeSelector.vue";
-import UserDeletion from "./UserDeletion";
 import UserActivityBarSettings from "./UserActivityBarSettings";
+import UserDeletion from "./UserDeletion";
 import UserPreferencesElement from "./UserPreferencesElement";
 import UserPreferredObjectStore from "./UserPreferredObjectStore";
 

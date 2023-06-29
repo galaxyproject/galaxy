@@ -9,8 +9,8 @@
         :setter="setter" />
 </template>
 <script>
-import BaseList from "./BaseList";
 import { getInstalledRepositories, resetRepositoryMetadata } from "./AdminServices";
+import BaseList from "./BaseList";
 
 export default {
     components: {

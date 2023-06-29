@@ -1,8 +1,8 @@
-import { defineStore } from "pinia";
 import axios from "axios";
+import { defineStore } from "pinia";
 
-import type { Steps } from "@/stores/workflowStepStore";
 import { getAppRoot } from "@/onload/loadConfig";
+import type { Steps } from "@/stores/workflowStepStore";
 
 interface Workflow {
     [index: string]: any;

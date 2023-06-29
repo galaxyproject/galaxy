@@ -23,12 +23,12 @@
 </template>
 
 <script>
-import Query from "utils/query-string-parsing";
-import { VBTooltip } from "bootstrap-vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { VBTooltip } from "bootstrap-vue";
 import { useGlobalUploadModal } from "composables/globalUploadModal";
+import Query from "utils/query-string-parsing";
 
 library.add(faUpload);
 

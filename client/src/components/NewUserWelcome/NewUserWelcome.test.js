@@ -3,9 +3,9 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import MockConfigProvider from "../providers/MockConfigProvider";
 
-import testData from "./testData.json";
-import NewUserWelcome from "./NewUserWelcome.vue";
 import { getResource } from "./getResource";
+import NewUserWelcome from "./NewUserWelcome.vue";
+import testData from "./testData.json";
 
 const localVue = getLocalVue();
 

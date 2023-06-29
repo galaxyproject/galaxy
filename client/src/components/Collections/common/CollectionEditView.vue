@@ -59,23 +59,23 @@
 </template>
 
 <script>
-import Vue from "vue";
-import { mapState } from "pinia";
-import BootstrapVue from "bootstrap-vue";
-import axios from "axios";
-import { prependPath } from "utils/redirect";
-import { errorMessageAsString } from "utils/simple-error";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faDatabase, faTable, faBars, faUser, faCog } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import axios from "axios";
+import BootstrapVue from "bootstrap-vue";
 import ConfigProvider from "components/providers/ConfigProvider";
+import { mapState } from "pinia";
+import { prependPath } from "utils/redirect";
+import { errorMessageAsString } from "utils/simple-error";
+import Vue from "vue";
 
-import { DbKeyProvider, SuitableConvertersProvider, DatatypesProvider } from "../../providers";
 import LoadingSpan from "../../LoadingSpan.vue";
+import { DbKeyProvider, SuitableConvertersProvider, DatatypesProvider } from "../../providers";
 
 import ChangeDatatypeTab from "./ChangeDatatypeTab";
-import SuitableConvertersTab from "./SuitableConvertersTab";
 import DatabaseEditTab from "./DatabaseEditTab";
+import SuitableConvertersTab from "./SuitableConvertersTab";
 
 import { useHistoryStore } from "@/stores/historyStore";
 

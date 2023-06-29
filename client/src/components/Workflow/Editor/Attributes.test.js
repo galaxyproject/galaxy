@@ -1,7 +1,7 @@
 import { mount, createLocalVue } from "@vue/test-utils";
 import { useUserTags } from "composables/user";
-import { computed } from "vue";
 import { isDate } from "date-fns";
+import { computed } from "vue";
 
 import Attributes from "./Attributes";
 import { UntypedParameters } from "./modules/parameters";

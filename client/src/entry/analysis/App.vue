@@ -43,29 +43,29 @@
     </div>
 </template>
 <script>
-import Modal from "mvc/ui/ui-modal";
-import Masthead from "components/Masthead/Masthead.vue";
 import { getGalaxyInstance } from "app";
-import { getAppRoot } from "onload";
-import { HistoryPanelProxy } from "components/History/adapters/HistoryPanelProxy";
-import { fetchMenu } from "entry/analysis/menu";
-import { WindowManager } from "layout/window-manager";
-import { withPrefix } from "utils/redirect";
-import Toast from "components/Toast";
 import ConfirmDialog from "components/ConfirmDialog";
+import { HistoryPanelProxy } from "components/History/adapters/HistoryPanelProxy";
+import Masthead from "components/Masthead/Masthead.vue";
+import Toast from "components/Toast";
 import UploadModal from "components/Upload/UploadModal.vue";
-import { ref } from "vue";
-import { storeToRefs } from "pinia";
-import { setToastComponentRef } from "composables/toast";
 import { setConfirmDialogComponentRef } from "composables/confirmDialog";
 import { setGlobalUploadModal } from "composables/globalUploadModal";
+import { setToastComponentRef } from "composables/toast";
+import { fetchMenu } from "entry/analysis/menu";
+import { WindowManager } from "layout/window-manager";
+import Modal from "mvc/ui/ui-modal";
+import { getAppRoot } from "onload";
+import { storeToRefs } from "pinia";
+import { withPrefix } from "utils/redirect";
+import { ref } from "vue";
 
-import { useHistoryStore } from "@/stores/historyStore";
-import { useUserStore } from "@/stores/userStore";
-import DragGhost from "@/components/DragGhost.vue";
 import Alert from "@/components/Alert.vue";
-import { useNotificationsStore } from "@/stores/notificationsStore";
+import DragGhost from "@/components/DragGhost.vue";
 import BroadcastsOverlay from "@/components/Notifications/Broadcasts/BroadcastsOverlay.vue";
+import { useHistoryStore } from "@/stores/historyStore";
+import { useNotificationsStore } from "@/stores/notificationsStore";
+import { useUserStore } from "@/stores/userStore";
 
 export default {
     components: {

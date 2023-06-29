@@ -1,16 +1,16 @@
-import { computed, ref } from "vue";
 import { defineStore } from "pinia";
+import { computed, ref } from "vue";
 
 import { useBroadcastsStore } from "./broadcastsStore";
 
+import type { UserNotification } from "@/components/Notifications";
 import type { components } from "@/schema";
-import { mergeObjectListsById } from "@/utils/utils";
 import {
     loadNotificationsFromServer,
     loadNotificationsStatus,
     updateBatchNotificationsOnServer,
 } from "@/stores/services/notifications.service";
-import type { UserNotification } from "@/components/Notifications";
+import { mergeObjectListsById } from "@/utils/utils";
 
 type NotificationChanges = components["schemas"]["UserNotificationUpdateRequest"];
 type UserNotificationsBatchUpdateRequest = components["schemas"]["UserNotificationsBatchUpdateRequest"];

@@ -1,8 +1,8 @@
 import { getGalaxyInstance } from "app";
 import { Toast } from "composables/toast";
-import _l from "utils/localization";
-import _ from "underscore";
 import $ from "jquery";
+import _ from "underscore";
+import _l from "utils/localization";
 
 import mod_library_model from "./library-model";
 

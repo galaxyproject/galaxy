@@ -1,7 +1,7 @@
-import MockAdapter from "axios-mock-adapter";
-import axios from "axios";
-import flushPromises from "flush-promises";
 import { shallowMount, createLocalVue } from "@vue/test-utils";
+import axios from "axios";
+import MockAdapter from "axios-mock-adapter";
+import flushPromises from "flush-promises";
 
 import DatasetCollectionDialog from "./DatasetCollectionDialog.vue";
 import SelectionDialog from "./SelectionDialog.vue";

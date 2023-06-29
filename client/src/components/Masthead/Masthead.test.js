@@ -1,15 +1,15 @@
-import Vuex from "vuex";
-import { mount } from "@vue/test-utils";
-import { getLocalVue, mockModule } from "tests/jest/helpers";
-import { WindowManager } from "layout/window-manager";
-import { configStore } from "store/configStore";
 import { createTestingPinia } from "@pinia/testing";
+import { mount } from "@vue/test-utils";
+import { WindowManager } from "layout/window-manager";
 import { PiniaVuePlugin, setActivePinia } from "pinia";
+import { configStore } from "store/configStore";
 import { useEntryPointStore } from "stores/entryPointStore";
+import { getLocalVue, mockModule } from "tests/jest/helpers";
+import Vuex from "vuex";
 
-import { getActiveTab } from "./utilities";
 import { loadWebhookMenuItems } from "./_webhooks";
 import { default as Masthead } from "./Masthead.vue";
+import { getActiveTab } from "./utilities";
 
 jest.mock("app");
 jest.mock("./_webhooks");

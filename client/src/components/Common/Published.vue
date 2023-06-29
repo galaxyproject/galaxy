@@ -28,8 +28,8 @@
 </template>
 
 <script>
-import { StatelessTags } from "components/Tags";
 import LoadingSpan from "components/LoadingSpan";
+import { StatelessTags } from "components/Tags";
 
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 

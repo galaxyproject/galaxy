@@ -4,8 +4,8 @@ import { computed, ref, onMounted } from "vue";
 
 import WorkflowTree from "./WorkflowTree.vue";
 
-import { withPrefix } from "@/utils/redirect";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import { withPrefix } from "@/utils/redirect";
 import { isEmpty } from "@/utils/utils";
 
 interface WorkflowDisplayProps {

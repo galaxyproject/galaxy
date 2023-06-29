@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import type { ZoomTransform } from "d3-zoom";
 import { ref, inject, reactive, PropType } from "vue";
 import type { Ref } from "vue";
-import type { ZoomTransform } from "d3-zoom";
 
 import { useDraggable } from "./composables/useDraggable.js";
 

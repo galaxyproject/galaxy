@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { BButton } from "bootstrap-vue";
-import { computed } from "vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChartBar, faUndo, faTrash, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
+import { BButton } from "bootstrap-vue";
+import { computed } from "vue";
 
 import type { DataValuePoint } from "./Charts";
 

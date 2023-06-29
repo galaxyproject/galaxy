@@ -1,7 +1,7 @@
 import type { CleanableItem } from "./CleanupOperation";
 
-import { bytesToString } from "@/utils/utils";
 import type { components } from "@/schema";
+import { bytesToString } from "@/utils/utils";
 
 export type StorageItemsCleanupResult = components["schemas"]["StorageItemsCleanupResult"];
 

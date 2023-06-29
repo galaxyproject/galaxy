@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { computed, unref } from "vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestionCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
 import type { GetComponentPropTypes } from "types/utilityTypes";
+import { computed, unref } from "vue";
 
-import * as carbonEmissionsConstants from "./carbonEmissionConstants.js";
-import CarbonEmissionsCard from "./CarbonEmissionCard.vue";
 import BarChart from "./BarChart.vue";
+import CarbonEmissionsCard from "./CarbonEmissionCard.vue";
+import * as carbonEmissionsConstants from "./carbonEmissionConstants.js";
 
 import Heading from "@/components/Common/Heading.vue";
 

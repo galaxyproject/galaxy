@@ -1,14 +1,12 @@
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import flushPromises from "flush-promises";
 import { BFormCheckbox } from "bootstrap-vue";
+import flushPromises from "flush-promises";
+import { getLocalVue } from "tests/jest/helpers";
 
 import HistoryArchiveExportSelector from "./HistoryArchiveExportSelector.vue";
 
-import type { HistorySummary } from "@/stores/historyStore";
-import { mockFetcher } from "@/schema/__mocks__";
 import {
     FAILED_FILE_SOURCE_STORE_RESPONSE,
     FILE_SOURCE_STORE_RESPONSE,
@@ -16,6 +14,8 @@ import {
     RECENT_FILE_SOURCE_STORE_RESPONSE,
     RECENT_STS_DOWNLOAD_RESPONSE,
 } from "@/components/Common/models/testData/exportData";
+import { mockFetcher } from "@/schema/__mocks__";
+import type { HistorySummary } from "@/stores/historyStore";
 
 jest.mock("@/schema");
 

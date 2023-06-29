@@ -78,20 +78,20 @@
     </div>
 </template>
 <script>
-import _l from "utils/localization";
-import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
+import CopyToClipboard from "components/CopyToClipboard";
+import filtersMixin from "components/Indices/filtersMixin";
+import IndexFilter from "components/Indices/IndexFilter";
+import SharingIndicators from "components/Indices/SharingIndicators";
 import { pagesProvider } from "components/providers/PageProvider";
 import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import UtcDate from "components/UtcDate";
 import paginationMixin from "components/Workflow/paginationMixin";
-import filtersMixin from "components/Indices/filtersMixin";
-import CopyToClipboard from "components/CopyToClipboard";
-import IndexFilter from "components/Indices/IndexFilter";
-import { getGalaxyInstance } from "app";
-import SharingIndicators from "components/Indices/SharingIndicators";
+import { getAppRoot } from "onload/loadConfig";
+import _l from "utils/localization";
 
-import PageIndexActions from "./PageIndexActions";
 import PageDropdown from "./PageDropdown";
+import PageIndexActions from "./PageIndexActions";
 import { updateTags } from "./services";
 
 import { withPrefix, absPath } from "@/utils/redirect";

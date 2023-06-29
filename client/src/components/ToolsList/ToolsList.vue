@@ -48,13 +48,13 @@
 </template>
 
 <script>
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faTimes } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import LoadingSpan from "components/LoadingSpan";
 import { ToolsProvider } from "components/providers/storeProviders";
 import { useAnimationFrameScroll } from "composables/sensors/animationFrameScroll";
 import { ref } from "vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faTimes } from "@fortawesome/free-solid-svg-icons";
 
 import ScrollToTopButton from "./ScrollToTopButton";
 import ToolsListTable from "./ToolsListTable";

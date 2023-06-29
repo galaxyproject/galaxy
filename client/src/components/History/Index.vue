@@ -31,9 +31,9 @@
 <script>
 import { mapState } from "pinia";
 
+import CurrentCollection from "./CurrentCollection/CollectionPanel";
 import HistoryNavigation from "./CurrentHistory/HistoryNavigation";
 import HistoryPanel from "./CurrentHistory/HistoryPanel";
-import CurrentCollection from "./CurrentCollection/CollectionPanel";
 
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";

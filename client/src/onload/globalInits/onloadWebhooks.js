@@ -1,5 +1,5 @@
-import Webhooks from "utils/webhooks";
 import Utils from "utils/utils";
+import Webhooks from "utils/webhooks";
 
 export function onloadWebhooks(Galaxy) {
     if (Galaxy.config.enable_webhooks) {

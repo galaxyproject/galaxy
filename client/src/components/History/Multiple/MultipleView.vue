@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, watchEffect, type Ref, type WatchStopHandle } from "vue";
-import { storeToRefs } from "pinia";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { storeToRefs } from "pinia";
+import { computed, ref, onMounted, watchEffect, type Ref, type WatchStopHandle } from "vue";
 
 import MultipleViewList from "./MultipleViewList.vue";
 
-import localize from "@/utils/localization";
-import { useUserStore } from "@/stores/userStore";
-import { useHistoryStore } from "@/stores/historyStore";
-import LoadingSpan from "@/components/LoadingSpan.vue";
 import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
+import localize from "@/utils/localization";
 
 const filter = ref("");
 const showSelectModal = ref(false);

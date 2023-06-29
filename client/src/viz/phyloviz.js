@@ -1,11 +1,11 @@
-import $ from "jquery";
 import Backbone from "backbone";
-import _l from "utils/localization";
 import * as d3 from "d3v3";
-import visualization_mod from "viz/visualization";
+import $ from "jquery";
+import { show_message, hide_modal } from "layout/modal";
 import { Dataset } from "mvc/dataset/data";
 import mod_icon_btn from "mvc/ui/icon-button";
-import { show_message, hide_modal } from "layout/modal";
+import _l from "utils/localization";
+import visualization_mod from "viz/visualization";
 
 /**
  * Base class of any menus that takes in user interaction. Contains checking methods.

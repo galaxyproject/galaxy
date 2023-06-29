@@ -1,5 +1,5 @@
-import { hashFnv32a } from "utils/utils";
 import { hsluvToRgb, hsluvToHex } from "hsluv";
+import { hashFnv32a } from "utils/utils";
 
 /**
  * Simple 3-color keyed color scheme generated

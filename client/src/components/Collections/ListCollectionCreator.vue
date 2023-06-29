@@ -197,11 +197,12 @@
 </template>
 
 <script>
+import STATES from "mvc/dataset/states";
+import _l from "utils/localization";
+
 import mixin from "./common/mixin";
 import DatasetCollectionElementView from "./ListDatasetCollectionElementView";
 
-import _l from "utils/localization";
-import STATES from "mvc/dataset/states";
 import "ui/hoverhighlight";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";

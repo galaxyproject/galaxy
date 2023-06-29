@@ -1,5 +1,5 @@
-import LoadingSpan from "components/LoadingSpan";
 import { Services } from "components/FilesDialog/services";
+import LoadingSpan from "components/LoadingSpan";
 
 export default {
     components: {

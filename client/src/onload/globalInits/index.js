@@ -7,19 +7,19 @@
  * will more properly be run inside a lifecycle handler inside of a component.
  */
 
-import { monitorInit } from "utils/installMonitor";
 import { make_popup_menus } from "ui/popupmenu";
+import { monitorInit } from "utils/installMonitor";
 
 import { prependInitialization } from "../initQueue";
 
 // specific initialization functions
-import { initSentry } from "./initSentry";
-import { initTooltips } from "./initTooltips";
 import { adjustIframeLinks, addIframeClass } from "./iframesAreTerrible";
 import { init_refresh_on_change } from "./init_refresh_on_change";
+import { initModals } from "./initModals";
+import { initSentry } from "./initSentry";
+import { initTooltips } from "./initTooltips";
 import { onloadWebhooks } from "./onloadWebhooks";
 import { replace_big_select_inputs } from "./replace_big_select_inputs";
-import { initModals } from "./initModals";
 
 export function globalInits() {
     prependInitialization(

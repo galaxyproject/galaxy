@@ -6,9 +6,9 @@
 import { mountVueComponent } from "utils/mountVueComponent";
 import { redirectToUrl } from "utils/redirect";
 
+import { BackboneTagService } from "./backboneTagService";
 import Tags from "./Tags";
 import { TagService } from "./tagService";
-import { BackboneTagService } from "./backboneTagService";
 
 /**
  * General mount function for the tags that were previously rendered

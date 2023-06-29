@@ -67,13 +67,13 @@
     </b-card>
 </template>
 <script>
-import DependencyResolver from "./DependencyResolver";
-import Requirements from "./Requirements";
-import Requirement from "./Requirement";
-import StatusDisplay from "./StatusDisplay";
 import ContainerResolutionDetails from "./ContainerResolutionDetails";
-import Tools from "./Tools";
+import DependencyResolver from "./DependencyResolver";
+import Requirement from "./Requirement";
+import Requirements from "./Requirements";
+import StatusDisplay from "./StatusDisplay";
 import ToolDisplay from "./ToolDisplay";
+import Tools from "./Tools";
 
 export default {
     components: {

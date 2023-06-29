@@ -407,13 +407,13 @@
     </div>
 </template>
 <script>
+import STATES from "mvc/dataset/states";
+import levenshteinDistance from "utils/levenshtein";
 import _l from "utils/localization";
+import naturalSort from "utils/natural-sort";
 
 import mixin from "./common/mixin";
 
-import levenshteinDistance from "utils/levenshtein";
-import STATES from "mvc/dataset/states";
-import naturalSort from "utils/natural-sort";
 import "splitpanes/dist/splitpanes.css";
 import { Splitpanes, Pane } from "splitpanes";
 import draggable from "vuedraggable";

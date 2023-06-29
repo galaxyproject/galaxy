@@ -1,8 +1,8 @@
 import { expect, jest } from "@jest/globals";
-import { mount, shallowMount, createWrapper } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
-import { PiniaVuePlugin, createPinia } from "pinia";
 import { createTestingPinia } from "@pinia/testing";
+import { mount, shallowMount, createWrapper } from "@vue/test-utils";
+import { PiniaVuePlugin, createPinia } from "pinia";
+import { getLocalVue } from "tests/jest/helpers";
 
 import PageDropdown from "./PageDropdown.vue";
 

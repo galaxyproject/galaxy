@@ -21,8 +21,8 @@
 </template>
 
 <script>
-import axios from "axios";
 import { getGalaxyInstance } from "app";
+import axios from "axios";
 import { errorMessageAsString } from "utils/simple-error";
 
 import SelectionDialogMixin from "./SelectionDialogMixin";

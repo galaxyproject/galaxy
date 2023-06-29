@@ -1,12 +1,12 @@
 <script setup>
-import RuleCollectionBuilder from "components/RuleCollectionBuilder";
-import RulesDisplay from "components/RulesDisplay/RulesDisplay";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { ref, computed } from "vue";
-import { getAppRoot } from "onload/loadConfig";
-import axios from "axios";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import axios from "axios";
+import RuleCollectionBuilder from "components/RuleCollectionBuilder";
+import RulesDisplay from "components/RulesDisplay/RulesDisplay";
+import { getAppRoot } from "onload/loadConfig";
+import { ref, computed } from "vue";
 
 library.add(faEdit);
 

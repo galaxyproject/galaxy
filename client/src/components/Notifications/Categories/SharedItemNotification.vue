@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { BCol, BRow, BLink } from "bootstrap-vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faExternalLinkAlt, faRetweet } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BCol, BRow, BLink } from "bootstrap-vue";
+import { computed } from "vue";
 
-import { useNotificationsStore } from "@/stores/notificationsStore";
 import Heading from "@/components/Common/Heading.vue";
-import NotificationActions from "@/components/Notifications/NotificationActions.vue";
 import type { SharedItemNotification } from "@/components/Notifications";
+import NotificationActions from "@/components/Notifications/NotificationActions.vue";
+import { useNotificationsStore } from "@/stores/notificationsStore";
 
 library.add(faExternalLinkAlt, faRetweet);
 

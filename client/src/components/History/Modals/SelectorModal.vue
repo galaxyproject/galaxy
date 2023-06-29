@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { storeToRefs } from "pinia";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faListAlt } from "@fortawesome/free-regular-svg-icons";
+import { faColumns, faSignInAlt, faArrowDown } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { useInfiniteScroll } from "@vueuse/core";
 import {
     BModal,
     BFormGroup,
@@ -10,23 +14,19 @@ import {
     BButtonGroup,
     BButton,
 } from "bootstrap-vue";
+import isEqual from "lodash.isequal";
+import { storeToRefs } from "pinia";
 import { computed, onMounted, onUnmounted, ref, watch, type PropType, type Ref } from "vue";
 import { useRouter } from "vue-router/composables";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faColumns, faSignInAlt, faArrowDown } from "@fortawesome/free-solid-svg-icons";
-import { faListAlt } from "@fortawesome/free-regular-svg-icons";
-import { useInfiniteScroll } from "@vueuse/core";
-import isEqual from "lodash.isequal";
 
+import Heading from "@/components/Common/Heading.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import UtcDate from "@/components/UtcDate.vue";
-import localize from "@/utils/localization";
-import Heading from "@/components/Common/Heading.vue";
 import type { components } from "@/schema";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import Filtering, { contains, expandNameTag } from "@/utils/filtering";
+import localize from "@/utils/localization";
 
 const validFilters = {
     name: contains("name"),

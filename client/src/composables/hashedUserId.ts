@@ -1,5 +1,5 @@
-import { computed, ref, watch } from "vue";
 import { useLocalStorage } from "@vueuse/core";
+import { computed, ref, watch } from "vue";
 
 import { useCurrentUser } from "./user";
 

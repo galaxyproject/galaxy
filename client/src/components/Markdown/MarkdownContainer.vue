@@ -2,18 +2,18 @@
 import { computed, ref } from "vue";
 
 import HistoryDatasetAsImage from "./Elements/HistoryDatasetAsImage.vue";
-import HistoryDatasetDisplay from "./Elements/HistoryDatasetDisplay.vue";
-import HistoryDatasetLink from "./Elements/HistoryDatasetLink.vue";
-import HistoryDatasetIndex from "./Elements/HistoryDatasetIndex.vue";
 import HistoryDatasetCollectionDisplay from "./Elements/HistoryDatasetCollection/CollectionDisplay.vue";
 import HistoryDatasetDetails from "./Elements/HistoryDatasetDetails.vue";
+import HistoryDatasetDisplay from "./Elements/HistoryDatasetDisplay.vue";
+import HistoryDatasetIndex from "./Elements/HistoryDatasetIndex.vue";
+import HistoryDatasetLink from "./Elements/HistoryDatasetLink.vue";
 import HistoryLink from "./Elements/HistoryLink.vue";
 import InvocationTime from "./Elements/InvocationTime.vue";
 import JobMetrics from "./Elements/JobMetrics.vue";
 import JobParameters from "./Elements/JobParameters.vue";
 import ToolStd from "./Elements/ToolStd.vue";
-import WorkflowDisplay from "./Elements/Workflow/WorkflowDisplay.vue";
 import Visualization from "./Elements/Visualization.vue";
+import WorkflowDisplay from "./Elements/Workflow/WorkflowDisplay.vue";
 
 const toggle = ref(false);
 const props = defineProps({

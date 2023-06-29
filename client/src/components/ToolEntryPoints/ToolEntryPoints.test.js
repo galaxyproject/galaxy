@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
-import { setActivePinia, PiniaVuePlugin } from "pinia";
 import { mount } from "@vue/test-utils";
+import { setActivePinia, PiniaVuePlugin } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
 import ToolEntryPoints from "./ToolEntryPoints";

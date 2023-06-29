@@ -1,7 +1,7 @@
-import { setActivePinia, createPinia } from "pinia";
-import flushPromises from "flush-promises";
-import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
+import MockAdapter from "axios-mock-adapter";
+import flushPromises from "flush-promises";
+import { setActivePinia, createPinia } from "pinia";
 
 import testInteractiveToolsResponse from "../components/InteractiveTools/testData/testInteractiveToolsResponse";
 

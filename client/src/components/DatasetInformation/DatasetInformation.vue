@@ -77,15 +77,15 @@
 </template>
 
 <script>
-import { bytesToString } from "utils/utils";
-import { withPrefix } from "utils/redirect";
-import UtcDate from "components/UtcDate";
 import { DatasetProvider } from "components/providers";
+import UtcDate from "components/UtcDate";
+import { withPrefix } from "utils/redirect";
+import { bytesToString } from "utils/utils";
 
 import DecodedId from "../DecodedId";
 
-import DatasetSources from "./DatasetSources";
 import DatasetHashes from "./DatasetHashes";
+import DatasetSources from "./DatasetSources";
 
 export default {
     components: {

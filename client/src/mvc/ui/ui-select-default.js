@@ -1,12 +1,12 @@
 /**
  *  This class creates/wraps a default html select field as backbone class.
  */
-import $ from "jquery";
-import _ from "underscore";
 import Backbone from "backbone";
-import Utils from "utils/utils";
-import { keyedColorScheme } from "utils/color";
+import $ from "jquery";
 import Buttons from "mvc/ui/ui-buttons";
+import _ from "underscore";
+import { keyedColorScheme } from "utils/color";
+import Utils from "utils/utils";
 
 var View = Backbone.View.extend({
     initialize: function (options) {

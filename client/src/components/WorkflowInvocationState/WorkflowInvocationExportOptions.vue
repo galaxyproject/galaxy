@@ -1,8 +1,8 @@
 <script setup>
 import { BCard } from "bootstrap-vue";
 import InvocationExportPluginCard from "components/Workflow/Invocation/Export/InvocationExportPluginCard.vue";
-import BioComputeObjectExportCard from "components/Workflow/Invocation/Export/Plugins/BioComputeObject/BioComputeObjectExportCard.vue";
 import { AVAILABLE_INVOCATION_EXPORT_PLUGINS } from "components/Workflow/Invocation/Export/Plugins";
+import BioComputeObjectExportCard from "components/Workflow/Invocation/Export/Plugins/BioComputeObject/BioComputeObjectExportCard.vue";
 import { useConfig } from "composables/config";
 
 const exportPlugins = AVAILABLE_INVOCATION_EXPORT_PLUGINS;

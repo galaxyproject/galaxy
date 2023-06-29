@@ -42,15 +42,15 @@
 </template>
 
 <script>
-import { CollectionElementsProvider } from "components/providers/storeProviders";
-import { updateContentFields } from "components/History/model/queries";
 import ContentItem from "components/History/Content/ContentItem";
 import ExpandedItems from "components/History/Content/ExpandedItems";
 import ListingLayout from "components/History/Layout/ListingLayout";
+import { updateContentFields } from "components/History/model/queries";
+import { CollectionElementsProvider } from "components/providers/storeProviders";
 
+import CollectionDetails from "./CollectionDetails";
 import CollectionNavigation from "./CollectionNavigation";
 import CollectionOperations from "./CollectionOperations";
-import CollectionDetails from "./CollectionDetails";
 
 export default {
     components: {

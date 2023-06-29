@@ -90,8 +90,8 @@
 </template>
 
 <script>
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import Vue from "vue";
 
 import CloudAuthItem from "./CloudAuthItem";
 import { Credential } from "./model";

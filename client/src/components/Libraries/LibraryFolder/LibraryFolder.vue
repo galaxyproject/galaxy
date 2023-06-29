@@ -260,22 +260,22 @@
 </template>
 
 <script>
-import Vue from "vue";
-import { mapState } from "pinia";
-import { sanitize } from "dompurify";
-import { getAppRoot } from "onload/loadConfig";
-import UtcDate from "components/UtcDate";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
-import Utils from "utils/utils";
-import linkifyHtml from "linkify-html";
-import { Toast } from "composables/toast";
 import { initFolderTableIcons } from "components/Libraries/icons";
 import { MAX_DESCRIPTION_LENGTH, DEFAULT_PER_PAGE } from "components/Libraries/library-utils";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import UtcDate from "components/UtcDate";
+import { Toast } from "composables/toast";
+import { sanitize } from "dompurify";
+import linkifyHtml from "linkify-html";
+import { getAppRoot } from "onload/loadConfig";
+import { mapState } from "pinia";
+import Utils from "utils/utils";
+import Vue from "vue";
 
-import FolderTopBar from "./TopToolbar/FolderTopBar";
-import { fields } from "./table-fields";
 import { Services } from "./services";
+import { fields } from "./table-fields";
+import FolderTopBar from "./TopToolbar/FolderTopBar";
 
 import { useUserStore } from "@/stores/userStore";
 

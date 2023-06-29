@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, unref } from "vue";
-import { storeToRefs } from "pinia";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { storeToRefs } from "pinia";
+import { computed, unref } from "vue";
 
 import { deletePage } from "./services";
 

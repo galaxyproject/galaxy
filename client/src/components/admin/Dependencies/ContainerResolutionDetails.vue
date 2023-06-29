@@ -44,12 +44,12 @@
 </template>
 
 <script>
-import Requirements from "./Requirements";
-import StatusDisplay from "./StatusDisplay";
 import ContainerDescription from "./ContainerDescription";
 import ContainerResolver from "./ContainerResolver";
-import Tools from "./Tools";
+import Requirements from "./Requirements";
+import StatusDisplay from "./StatusDisplay";
 import ToolDisplay from "./ToolDisplay";
+import Tools from "./Tools";
 
 export default {
     components: { ContainerDescription, ContainerResolver, Requirements, StatusDisplay, ToolDisplay, Tools },

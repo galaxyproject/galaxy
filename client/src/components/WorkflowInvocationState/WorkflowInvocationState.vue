@@ -31,15 +31,15 @@
     </b-alert>
 </template>
 <script>
+import mixin from "components/JobStates/mixin";
 import LoadingSpan from "components/LoadingSpan";
 import JOB_STATES_MODEL from "utils/job-states-model";
-import mixin from "components/JobStates/mixin";
 import { mapGetters, mapActions } from "vuex";
 
 import { cancelWorkflowScheduling } from "./services";
-import WorkflowInvocationSummary from "./WorkflowInvocationSummary.vue";
 import WorkflowInvocationDetails from "./WorkflowInvocationDetails.vue";
 import WorkflowInvocationExportOptions from "./WorkflowInvocationExportOptions.vue";
+import WorkflowInvocationSummary from "./WorkflowInvocationSummary.vue";
 
 export default {
     components: {

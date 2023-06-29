@@ -1,5 +1,5 @@
-import { createPinia } from "pinia";
 import { shallowMount } from "@vue/test-utils";
+import { createPinia } from "pinia";
 import { useUserStore } from "stores/userStore";
 import { getLocalVue } from "tests/jest/helpers";
 

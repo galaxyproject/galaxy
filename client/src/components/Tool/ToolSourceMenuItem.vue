@@ -1,9 +1,9 @@
 <script setup>
-import { useConfig } from "composables/config";
-import { storeToRefs } from "pinia";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEye } from "@fortawesome/free-regular-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { useConfig } from "composables/config";
+import { storeToRefs } from "pinia";
 
 import ToolSource from "./ToolSource.vue";
 

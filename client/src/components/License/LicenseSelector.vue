@@ -40,14 +40,14 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
-import axios from "axios";
-import LoadingSpan from "components/LoadingSpan";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faSave, faTimes, faEdit } from "@fortawesome/free-solid-svg-icons";
-import Vue from "vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
+import LoadingSpan from "components/LoadingSpan";
+import { getAppRoot } from "onload/loadConfig";
+import Vue from "vue";
 
 import License from "./License";
 

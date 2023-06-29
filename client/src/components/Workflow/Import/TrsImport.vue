@@ -3,17 +3,17 @@ import { storeToRefs } from "pinia";
 import { computed, ref, watch, type Ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { Services } from "../services";
 import { getRedirectOnImportPath } from "../redirectPath";
+import { Services } from "../services";
 
+import TrsServerSelection from "./TrsServerSelection.vue";
 import TrsTool from "./TrsTool.vue";
 import TrsUrlImport from "./TrsUrlImport.vue";
-import TrsServerSelection from "./TrsServerSelection.vue";
 import type { TrsSelection, TrsTool as TrsToolInterface } from "./types";
 
+import LoadingSpan from "@/components/LoadingSpan.vue";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
-import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const props = defineProps({
     queryTrsServer: {

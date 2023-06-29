@@ -86,20 +86,20 @@
     </div>
 </template>
 <script>
-import _l from "utils/localization";
-import { getAppRoot } from "onload/loadConfig";
-import { storedWorkflowsProvider } from "components/providers/StoredWorkflowsProvider";
-import UtcDate from "components/UtcDate";
 import { getGalaxyInstance } from "app";
 import filtersMixin from "components/Indices/filtersMixin";
 import SharingIndicators from "components/Indices/SharingIndicators";
+import { storedWorkflowsProvider } from "components/providers/StoredWorkflowsProvider";
+import UtcDate from "components/UtcDate";
+import { getAppRoot } from "onload/loadConfig";
+import _l from "utils/localization";
 
-import WorkflowDropdown from "./WorkflowDropdown";
 import paginationMixin from "./paginationMixin";
-import WorkflowIndexActions from "./WorkflowIndexActions";
-import WorkflowBookmark from "./WorkflowBookmark";
-import WorkflowRunButton from "./WorkflowRunButton.vue";
 import { Services } from "./services";
+import WorkflowBookmark from "./WorkflowBookmark";
+import WorkflowDropdown from "./WorkflowDropdown";
+import WorkflowIndexActions from "./WorkflowIndexActions";
+import WorkflowRunButton from "./WorkflowRunButton.vue";
 
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 

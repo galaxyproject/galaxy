@@ -116,25 +116,25 @@
     </div>
 </template>
 <script>
-import BootstrapVue from "bootstrap-vue";
-import { getGalaxyInstance } from "app";
-import Vue from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { getGalaxyInstance } from "app";
+import BootstrapVue from "bootstrap-vue";
 import { initTopBarIcons } from "components/Libraries/icons";
-import { Toast } from "composables/toast";
-import mod_utils from "utils/utils";
-import { getAppRoot } from "onload/loadConfig";
 import FolderDetails from "components/Libraries/LibraryFolder/FolderDetails/FolderDetails";
 import LibraryBreadcrumb from "components/Libraries/LibraryFolder/LibraryBreadcrumb";
+import { Toast } from "composables/toast";
+import { getAppRoot } from "onload/loadConfig";
+import mod_utils from "utils/utils";
+import Vue from "vue";
 
 import SearchField from "../SearchField";
 import { Services } from "../services";
 
-import download from "./download";
 import mod_add_datasets from "./add-datasets";
+import { deleteSelectedItems } from "./delete-selected";
+import download from "./download";
 import mod_import_collection from "./import-to-history/import-collection";
 import mod_import_dataset from "./import-to-history/import-dataset";
-import { deleteSelectedItems } from "./delete-selected";
 
 initTopBarIcons();
 

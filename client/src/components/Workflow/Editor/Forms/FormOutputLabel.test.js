@@ -1,6 +1,6 @@
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
 import { setActivePinia, PiniaVuePlugin, createPinia } from "pinia";
+import { getLocalVue } from "tests/jest/helpers";
 
 import FormOutputLabel from "./FormOutputLabel";
 

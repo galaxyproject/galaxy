@@ -31,8 +31,8 @@ import {
     type InputTerminals,
 } from "./modules/terminals";
 
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { useFocusWithin } from "@/composables/useActiveElement";
+import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 
 const props = defineProps<{

@@ -1,16 +1,16 @@
 <script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCircle, faHourglassHalf, faRetweet } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert, BRow, BCol, BFormCheckbox, BButton, BButtonGroup, BCard, BCollapse } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faCircle, faHourglassHalf, faRetweet } from "@fortawesome/free-solid-svg-icons";
-import { BAlert, BRow, BCol, BFormCheckbox, BButton, BButtonGroup, BCard, BCollapse } from "bootstrap-vue";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
-import { useNotificationsStore } from "@/stores/notificationsStore";
 import type { UserNotification } from "@/components/Notifications";
 import NotificationItem from "@/components/Notifications/NotificationItem.vue";
 import NotificationsPreferences from "@/components/User/Notifications/NotificationsPreferences.vue";
+import { useNotificationsStore } from "@/stores/notificationsStore";
 
 library.add(faCircle, faHourglassHalf, faRetweet);
 

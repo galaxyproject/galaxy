@@ -1,5 +1,5 @@
-import { ref, unref, watch, type Ref } from "vue";
 import type { UseElementBoundingReturn } from "@vueuse/core";
+import { ref, unref, watch, type Ref } from "vue";
 
 import { AxisAlignedBoundingBox } from "../modules/geometry";
 

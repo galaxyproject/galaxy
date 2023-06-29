@@ -29,11 +29,11 @@
     </div>
 </template>
 <script>
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import Vue from "vue";
 
-import { Services } from "../services";
 import InstallationActions from "../RepositoryDetails/InstallationActions";
+import { Services } from "../services";
 
 Vue.use(BootstrapVue);
 

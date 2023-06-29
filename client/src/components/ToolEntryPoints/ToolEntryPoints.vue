@@ -37,12 +37,12 @@
 </template>
 
 <script>
-import { mapActions, mapState } from "pinia";
-import { useEntryPointStore } from "stores/entryPointStore";
-import { getAppRoot } from "onload/loadConfig";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { getAppRoot } from "onload/loadConfig";
+import { mapActions, mapState } from "pinia";
+import { useEntryPointStore } from "stores/entryPointStore";
 
 library.add(faExternalLinkAlt);
 

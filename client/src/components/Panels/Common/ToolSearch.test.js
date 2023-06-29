@@ -1,6 +1,6 @@
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
 import DelayedInput from "components/Common/DelayedInput";
+import { getLocalVue } from "tests/jest/helpers";
 import VueRouter from "vue-router";
 
 import ToolSearch from "./ToolSearch";

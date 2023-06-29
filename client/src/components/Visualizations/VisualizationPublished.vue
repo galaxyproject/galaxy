@@ -7,9 +7,9 @@
 </template>
 
 <script>
-import { urlData } from "utils/url";
-import CenterFrame from "entry/analysis/modules/CenterFrame";
 import Published from "components/Common/Published";
+import CenterFrame from "entry/analysis/modules/CenterFrame";
+import { urlData } from "utils/url";
 
 export default {
     components: {

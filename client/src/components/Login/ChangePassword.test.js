@@ -1,6 +1,6 @@
+import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 import { withPrefix } from "utils/redirect";
 

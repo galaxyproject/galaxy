@@ -7,8 +7,8 @@
  *
  * TODO: convert the associated python endpoint to a legit json REST service
  */
-import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
+import { getAppRoot } from "onload/loadConfig";
 import { Subject } from "rxjs";
 import { map, filter, debounceTime, switchMap, distinctUntilChanged } from "rxjs/operators";
 

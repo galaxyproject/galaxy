@@ -102,11 +102,11 @@
 
 <script>
 import axios from "axios";
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { withPrefix } from "utils/redirect";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin";
 import _l from "utils/localization";
+import { withPrefix } from "utils/redirect";
+import Vue from "vue";
 
 import NewUserConfirmation from "./NewUserConfirmation";
 

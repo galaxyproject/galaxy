@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import Vue, { computed } from "vue";
 import BootstrapVue from "bootstrap-vue";
+import Vue, { computed } from "vue";
 
 import { getZoomInLevel, getZoomOutLevel, isMinZoom, isMaxZoom } from "./modules/zoomLevels";
 
