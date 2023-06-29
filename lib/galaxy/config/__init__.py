@@ -854,7 +854,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             is_region = len(location_code) > 2
             if is_region:
                 region_name = data[3]
-                location_name = "{} ({})".format(region_name, location_name)
+                location_name = f"{region_name} ({location_name})"
 
             if location_code == configured_geographical_server_location_code:
                 did_find_location = True
