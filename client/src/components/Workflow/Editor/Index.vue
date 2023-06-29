@@ -163,18 +163,6 @@ import axios from "axios";
 import { storeToRefs } from "pinia";
 import Vue, { onUnmounted, computed, ref } from "vue";
 
-import WorkflowAttributes from "./Attributes.vue";
-import { defaultPosition } from "./composables/useDefaultStepPosition";
-import WorkflowLint from "./Lint.vue";
-import MessagesModal from "./MessagesModal.vue";
-import { fromSimple, toSimple } from "./modules/model";
-import { getModule, getVersions, saveWorkflow, loadWorkflow } from "./modules/services";
-import { getStateUpgradeMessages } from "./modules/utilities";
-import WorkflowOptions from "./Options.vue";
-import RefactorConfirmationModal from "./RefactorConfirmationModal.vue";
-import reportDefault from "./reportDefault";
-import StateUpgradeModal from "./StateUpgradeModal.vue";
-import WorkflowGraph from "./WorkflowGraph.vue";
 
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
@@ -190,6 +178,19 @@ import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { LastQueue } from "@/utils/promise-queue";
+
+import WorkflowAttributes from "./Attributes.vue";
+import { defaultPosition } from "./composables/useDefaultStepPosition";
+import WorkflowLint from "./Lint.vue";
+import MessagesModal from "./MessagesModal.vue";
+import { fromSimple, toSimple } from "./modules/model";
+import { getModule, getVersions, saveWorkflow, loadWorkflow } from "./modules/services";
+import { getStateUpgradeMessages } from "./modules/utilities";
+import WorkflowOptions from "./Options.vue";
+import RefactorConfirmationModal from "./RefactorConfirmationModal.vue";
+import reportDefault from "./reportDefault";
+import StateUpgradeModal from "./StateUpgradeModal.vue";
+import WorkflowGraph from "./WorkflowGraph.vue";
 
 export default {
     components: {

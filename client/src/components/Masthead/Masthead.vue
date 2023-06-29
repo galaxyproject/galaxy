@@ -6,14 +6,15 @@ import { withPrefix } from "utils/redirect";
 import { watch, ref, reactive, onMounted, onBeforeMount } from "vue";
 import { useRoute } from "vue-router/composables";
 
+import NotificationsBell from "@/components/Notifications/NotificationsBell.vue";
+import { useConfig } from "@/composables/config";
+import { useUserStore } from "@/stores/userStore";
+
 import { loadWebhookMenuItems } from "./_webhooks";
 import MastheadItem from "./MastheadItem";
 import QuotaMeter from "./QuotaMeter";
 import { getActiveTab } from "./utilities";
 
-import NotificationsBell from "@/components/Notifications/NotificationsBell.vue";
-import { useConfig } from "@/composables/config";
-import { useUserStore } from "@/stores/userStore";
 
 const { isAnonymous, showActivityBar } = storeToRefs(useUserStore());
 

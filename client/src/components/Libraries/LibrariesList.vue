@@ -193,10 +193,11 @@ import { mapState } from "pinia";
 import _l from "utils/localization";
 import Vue from "vue";
 
+import { useUserStore } from "@/stores/userStore";
+
 import { Services } from "./services";
 import { fields } from "./table-fields";
 
-import { useUserStore } from "@/stores/userStore";
 
 initLibrariesIcons();
 

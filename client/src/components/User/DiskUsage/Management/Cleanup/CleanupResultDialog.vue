@@ -2,9 +2,10 @@
 import Alert from "components/Alert.vue";
 import { computed, ref } from "vue";
 
+import localize from "@/utils/localization";
+
 import type { CleanupResult } from "./model";
 
-import localize from "@/utils/localization";
 
 interface CleanupResultDialogProps {
     result?: CleanupResult;

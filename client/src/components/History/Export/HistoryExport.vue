@@ -14,11 +14,12 @@ import { useTaskMonitor } from "composables/taskMonitor";
 import { copy as sendToClipboard } from "utils/clipboard";
 import { computed, ref, reactive, onMounted, watch } from "vue";
 
+import { useHistoryStore } from "@/stores/historyStore";
+import { absPath } from "@/utils/redirect";
+
 import ExportOptions from "./ExportOptions.vue";
 import { getExportRecords, exportToFileSource, reimportHistoryFromRecord } from "./services";
 
-import { useHistoryStore } from "@/stores/historyStore";
-import { absPath } from "@/utils/redirect";
 
 const {
     isRunning: isExportTaskRunning,

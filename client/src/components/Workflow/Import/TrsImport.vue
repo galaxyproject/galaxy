@@ -3,6 +3,10 @@ import { storeToRefs } from "pinia";
 import { computed, ref, watch, type Ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import { Toast } from "@/composables/toast";
+import { useUserStore } from "@/stores/userStore";
+
 import { getRedirectOnImportPath } from "../redirectPath";
 import { Services } from "../services";
 
@@ -11,9 +15,6 @@ import TrsTool from "./TrsTool.vue";
 import TrsUrlImport from "./TrsUrlImport.vue";
 import type { TrsSelection, TrsTool as TrsToolInterface } from "./types";
 
-import LoadingSpan from "@/components/LoadingSpan.vue";
-import { Toast } from "@/composables/toast";
-import { useUserStore } from "@/stores/userStore";
 
 const props = defineProps({
     queryTrsServer: {

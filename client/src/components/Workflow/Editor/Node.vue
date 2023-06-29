@@ -116,7 +116,6 @@ import BootstrapVue from "bootstrap-vue";
 import type { PropType, Ref } from "vue";
 import Vue, { reactive, computed, ref } from "vue";
 
-import type { OutputTerminals } from "./modules/terminals";
 
 import { getGalaxyInstance } from "@/app";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
@@ -131,6 +130,8 @@ import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { useWorkflowStateStore, type TerminalPosition, type XYPosition } from "@/stores/workflowEditorStateStore";
 import type { Step } from "@/stores/workflowStepStore";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+
+import type { OutputTerminals } from "./modules/terminals";
 
 Vue.use(BootstrapVue);
 

@@ -65,12 +65,13 @@ import SelectionDialogMixin from "components/SelectionDialog/SelectionDialogMixi
 import { selectionStates } from "components/SelectionDialog/selectionStates";
 import Vue from "vue";
 
+import { errorMessageAsString } from "@/utils/simple-error";
+
 import { getGalaxyInstance } from "../../app";
 
 import { Model } from "./model";
 import { Services } from "./services";
 
-import { errorMessageAsString } from "@/utils/simple-error";
 
 library.add(faCaretLeft);
 export default {

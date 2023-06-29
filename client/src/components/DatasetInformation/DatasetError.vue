@@ -93,10 +93,11 @@ import { DatasetProvider } from "components/providers";
 import { JobDetailsProvider, JobProblemProvider } from "components/providers/JobProvider";
 import { mapState } from "pinia";
 
+import { useUserStore } from "@/stores/userStore";
+
 import DatasetErrorDetails from "./DatasetErrorDetails";
 import { sendErrorReport } from "./services";
 
-import { useUserStore } from "@/stores/userStore";
 
 library.add(faBug);
 

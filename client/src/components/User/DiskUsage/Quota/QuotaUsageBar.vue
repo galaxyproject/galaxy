@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 
+import localize from "@/utils/localization";
+
 import { DEFAULT_QUOTA_SOURCE_LABEL, QuotaUsage } from "./model/QuotaUsage";
 
-import localize from "@/utils/localization";
 
 interface QuotaUsageBarProps {
     quotaUsage: QuotaUsage;

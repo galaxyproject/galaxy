@@ -70,6 +70,8 @@ import { prependPath } from "utils/redirect";
 import { errorMessageAsString } from "utils/simple-error";
 import Vue from "vue";
 
+import { useHistoryStore } from "@/stores/historyStore";
+
 import LoadingSpan from "../../LoadingSpan.vue";
 import { DbKeyProvider, SuitableConvertersProvider, DatatypesProvider } from "../../providers";
 
@@ -77,7 +79,6 @@ import ChangeDatatypeTab from "./ChangeDatatypeTab";
 import DatabaseEditTab from "./DatabaseEditTab";
 import SuitableConvertersTab from "./SuitableConvertersTab";
 
-import { useHistoryStore } from "@/stores/historyStore";
 
 library.add(faDatabase, faTable, faBars, faUser, faCog);
 

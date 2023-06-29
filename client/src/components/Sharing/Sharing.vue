@@ -274,9 +274,10 @@ import { errorMessageAsString } from "utils/simple-error";
 import Vue from "vue";
 import Multiselect from "vue-multiselect";
 
+import { useUserStore } from "@/stores/userStore";
+
 import ErrorMessage from "./ErrorMessage";
 
-import { useUserStore } from "@/stores/userStore";
 
 Vue.use(BootstrapVue);
 library.add(faCopy, faEdit, faUserPlus, faUserSlash, faCaretDown, faCaretUp);

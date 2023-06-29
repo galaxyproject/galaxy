@@ -45,11 +45,12 @@ import { useGlobalUploadModal } from "composables/globalUploadModal";
 import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 
+import { errorMessageAsString } from "@/utils/simple-error";
+
 import { Model } from "./model";
 import { Services } from "./services";
 import { UrlTracker } from "./utilities";
 
-import { errorMessageAsString } from "@/utils/simple-error";
 
 Vue.use(BootstrapVue);
 

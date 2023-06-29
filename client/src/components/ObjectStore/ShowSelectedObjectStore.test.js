@@ -2,11 +2,12 @@ import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
-import ShowSelectedObjectStore from "./ShowSelectedObjectStore";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DescribeObjectStore from "@/components/ObjectStore/DescribeObjectStore.vue";
 import { mockFetcher } from "@/schema/__mocks__";
+
+import ShowSelectedObjectStore from "./ShowSelectedObjectStore";
 
 jest.mock("@/schema");
 

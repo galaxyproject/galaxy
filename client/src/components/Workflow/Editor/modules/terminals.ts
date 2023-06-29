@@ -1,11 +1,5 @@
 import EventEmitter from "events";
 
-import {
-    NULL_COLLECTION_TYPE_DESCRIPTION,
-    ANY_COLLECTION_TYPE_DESCRIPTION,
-    CollectionTypeDescription,
-    type CollectionTypeDescriptor,
-} from "./collectionTypeDescription";
 
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import {
@@ -25,6 +19,13 @@ import type {
     TerminalSource,
 } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
+
+import {
+    NULL_COLLECTION_TYPE_DESCRIPTION,
+    ANY_COLLECTION_TYPE_DESCRIPTION,
+    CollectionTypeDescription,
+    type CollectionTypeDescriptor,
+} from "./collectionTypeDescription";
 
 export class ConnectionAcceptable {
     reason: string | null;

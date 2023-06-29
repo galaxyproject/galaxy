@@ -273,11 +273,12 @@ import { mapState } from "pinia";
 import Utils from "utils/utils";
 import Vue from "vue";
 
+import { useUserStore } from "@/stores/userStore";
+
 import { Services } from "./services";
 import { fields } from "./table-fields";
 import FolderTopBar from "./TopToolbar/FolderTopBar";
 
-import { useUserStore } from "@/stores/userStore";
 
 initFolderTableIcons();
 

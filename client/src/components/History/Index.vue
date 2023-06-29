@@ -31,12 +31,13 @@
 <script>
 import { mapState } from "pinia";
 
+import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
+
 import CurrentCollection from "./CurrentCollection/CollectionPanel";
 import HistoryNavigation from "./CurrentHistory/HistoryNavigation";
 import HistoryPanel from "./CurrentHistory/HistoryPanel";
 
-import { useHistoryStore } from "@/stores/historyStore";
-import { useUserStore } from "@/stores/userStore";
 
 export default {
     components: {

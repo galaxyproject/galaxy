@@ -63,10 +63,11 @@ import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 import VueRouter from "vue-router";
 
-import { patchRouterPush } from "./router-push";
 
 import HistoryArchive from "@/components/History/Archiving/HistoryArchive.vue";
 import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
+
+import { patchRouterPush } from "./router-push";
 
 Vue.use(VueRouter);
 

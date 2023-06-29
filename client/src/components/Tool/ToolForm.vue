@@ -114,14 +114,15 @@ import { useHistoryItemsStore } from "stores/history/historyItemsStore";
 import { useJobStore } from "stores/jobStore";
 import { refreshContentsWrapper } from "utils/data";
 
+import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
+
 import ToolRecommendation from "../ToolRecommendation";
 
 import { getToolFormData, updateToolFormData, submitJob } from "./services";
 import ToolCard from "./ToolCard";
 import { allowCachedJobs } from "./utilities";
 
-import { useHistoryStore } from "@/stores/historyStore";
-import { useUserStore } from "@/stores/userStore";
 
 export default {
     components: {

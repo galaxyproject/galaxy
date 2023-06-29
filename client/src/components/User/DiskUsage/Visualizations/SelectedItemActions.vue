@@ -5,10 +5,11 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { computed } from "vue";
 
-import type { DataValuePoint } from "./Charts";
 
 import localize from "@/utils/localization";
 import { bytesToString } from "@/utils/utils";
+
+import type { DataValuePoint } from "./Charts";
 
 type ItemTypes = "history" | "dataset";
 

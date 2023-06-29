@@ -90,10 +90,11 @@ import WorkflowInvocationState from "components/WorkflowInvocationState/Workflow
 import { mapActions, mapState } from "pinia";
 import { useWorkflowStore } from "stores/workflowStore";
 
+import { useHistoryStore } from "@/stores/historyStore";
+
 import paginationMixin from "./paginationMixin";
 import WorkflowRunButton from "./WorkflowRunButton.vue";
 
-import { useHistoryStore } from "@/stores/historyStore";
 
 export default {
     components: {

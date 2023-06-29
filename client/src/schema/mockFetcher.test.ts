@@ -1,6 +1,7 @@
+import { fetcher } from "@/schema";
+
 import { mockFetcher } from "./__mocks__/fetcher";
 
-import { fetcher } from "@/schema";
 
 jest.mock("@/schema");
 

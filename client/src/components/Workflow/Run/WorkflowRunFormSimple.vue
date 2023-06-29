@@ -56,10 +56,11 @@ import { isWorkflowInput } from "components/Workflow/constants";
 import { mapState } from "pinia";
 import { errorMessageAsString } from "utils/simple-error";
 
+import { useUserStore } from "@/stores/userStore";
+
 import { invokeWorkflow } from "./services";
 import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration";
 
-import { useUserStore } from "@/stores/userStore";
 
 export default {
     components: {

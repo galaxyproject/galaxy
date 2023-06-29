@@ -52,10 +52,11 @@
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
+import { useConfig } from "@/composables/config";
+
 import Citation from "./Citation";
 import { getCitations } from "./services";
 
-import { useConfig } from "@/composables/config";
 
 Vue.use(BootstrapVue);
 

@@ -4,11 +4,6 @@ import { ref, type Ref } from "vue";
 import { useRoute } from "vue-router/composables";
 import draggable from "vuedraggable";
 
-import ActivityItem from "./ActivityItem.vue";
-import ActivitySettings from "./ActivitySettings.vue";
-import InteractiveItem from "./Items/InteractiveItem.vue";
-import NotificationItem from "./Items/NotificationItem.vue";
-import UploadItem from "./Items/UploadItem.vue";
 
 import ContextMenu from "@/components/Common/ContextMenu.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
@@ -19,6 +14,12 @@ import { convertDropData } from "@/stores/activitySetup";
 import { useActivityStore, type Activity } from "@/stores/activityStore";
 import { useEventStore } from "@/stores/eventStore";
 import { useUserStore } from "@/stores/userStore";
+
+import ActivityItem from "./ActivityItem.vue";
+import ActivitySettings from "./ActivitySettings.vue";
+import InteractiveItem from "./Items/InteractiveItem.vue";
+import NotificationItem from "./Items/NotificationItem.vue";
+import UploadItem from "./Items/UploadItem.vue";
 
 const { config } = useConfig();
 

@@ -4,10 +4,11 @@ import { mount, shallowMount, createWrapper } from "@vue/test-utils";
 import { PiniaVuePlugin, createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
-import PageDropdown from "./PageDropdown.vue";
 
 import { mockFetcher } from "@/schema/__mocks__";
 import { useUserStore } from "@/stores/userStore";
+
+import PageDropdown from "./PageDropdown.vue";
 
 import "jest-location-mock";
 

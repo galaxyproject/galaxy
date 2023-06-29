@@ -54,14 +54,21 @@ const baseRules = {
         "error",
         {
             "newlines-between": "always",
+            groups: ["builtin", "external", "internal", "parent", "sibling", "index"],
             pathGroups: [
                 {
                     pattern: "@/**",
                     group: "internal",
                 },
+                {
+                    pattern: "@tests/**",
+                    group: "internal",
+                },
             ],
             alphabetize: { order: "asc", caseInsensitive: true },
-            warnOnUnassignedImports: true,
+            // Eventually we want this to be true; we should be avoiding
+            // side-effect-only imports other than css.
+            // warnOnUnassignedImports: true,
         },
     ],
 };

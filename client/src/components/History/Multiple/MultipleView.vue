@@ -5,13 +5,14 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, ref, onMounted, watchEffect, type Ref, type WatchStopHandle } from "vue";
 
-import MultipleViewList from "./MultipleViewList.vue";
 
 import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
+
+import MultipleViewList from "./MultipleViewList.vue";
 
 const filter = ref("");
 const showSelectModal = ref(false);

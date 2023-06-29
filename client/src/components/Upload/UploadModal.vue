@@ -5,10 +5,11 @@ import { getAppRoot } from "onload";
 import { storeToRefs } from "pinia";
 import { ref, watch } from "vue";
 
-import UploadModalContent from "./UploadModalContent";
 
 import { useUserStore } from "@/stores/userStore";
 import { wait } from "@/utils/utils";
+
+import UploadModalContent from "./UploadModalContent";
 
 const { currentUser } = storeToRefs(useUserStore());
 const { currentHistoryId } = useUserHistories(currentUser);

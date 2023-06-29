@@ -3,12 +3,13 @@ import { useDraggable, type UseElementBoundingReturn } from "@vueuse/core";
 import { computed, onMounted, ref, unref, watch } from "vue";
 import type { Ref } from "vue";
 
-import { AxisAlignedBoundingBox, Transform } from "./modules/geometry";
 
 import { useAnimationFrame } from "@/composables/sensors/animationFrame";
 import { useAnimationFrameThrottle } from "@/composables/throttle";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import type { Step, Steps } from "@/stores/workflowStepStore";
+
+import { AxisAlignedBoundingBox, Transform } from "./modules/geometry";
 
 const props = defineProps<{
     steps: Steps;

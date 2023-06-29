@@ -84,6 +84,10 @@ import { UntypedParameters } from "components/Workflow/Editor/modules/parameters
 import { storeToRefs } from "pinia";
 import Vue from "vue";
 
+
+import { DatatypesMapperModel } from "@/components/Datatypes/model";
+import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+
 import {
     getDisconnectedInputs,
     getUntypedParameters,
@@ -94,9 +98,6 @@ import {
     fixUnlabeledOutputs,
     fixUntypedParameter,
 } from "./modules/linting";
-
-import { DatatypesMapperModel } from "@/components/Datatypes/model";
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 Vue.use(BootstrapVue);
 

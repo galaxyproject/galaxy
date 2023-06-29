@@ -108,13 +108,14 @@ import { updateContentFields } from "components/History/model/queries";
 import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import { useEntryPointStore } from "stores/entryPointStore";
 
+import { clearDrag, setDrag } from "@/utils/setDrag.js";
+
 import CollectionDescription from "./Collection/CollectionDescription";
 import { JobStateSummary } from "./Collection/JobStateSummary";
 import ContentOptions from "./ContentOptions";
 import DatasetDetails from "./Dataset/DatasetDetails";
 import { STATES, HIERARCHICAL_COLLECTION_JOB_STATES } from "./model/states";
 
-import { clearDrag, setDrag } from "@/utils/setDrag.js";
 
 library.add(faArrowCircleUp, faArrowCircleDown, faCheckCircle);
 export default {

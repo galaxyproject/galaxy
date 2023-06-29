@@ -50,11 +50,6 @@ import { useElementBounding, useScroll } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { computed, provide, reactive, ref, watch, type Ref, type PropType, watchEffect } from "vue";
 
-import AdaptiveGrid from "./AdaptiveGrid.vue";
-import { useD3Zoom } from "./composables/d3Zoom";
-import { useViewportBoundingBox } from "./composables/viewportBoundingBox";
-import type { OutputTerminals } from "./modules/terminals";
-import { minZoom, maxZoom } from "./modules/zoomLevels";
 
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import WorkflowNode from "@/components/Workflow/Editor/Node.vue";
@@ -65,6 +60,12 @@ import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import type { TerminalPosition, XYPosition } from "@/stores/workflowEditorStateStore";
 import { useWorkflowStepStore, type Step } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
+
+import AdaptiveGrid from "./AdaptiveGrid.vue";
+import { useD3Zoom } from "./composables/d3Zoom";
+import { useViewportBoundingBox } from "./composables/viewportBoundingBox";
+import type { OutputTerminals } from "./modules/terminals";
+import { minZoom, maxZoom } from "./modules/zoomLevels";
 
 const emit = defineEmits(["transform", "graph-offset", "onRemove", "scrollTo"]);
 const props = defineProps({

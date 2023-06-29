@@ -49,9 +49,10 @@ import _l from "utils/localization";
 import { rethrowSimple } from "utils/simple-error";
 import { bytesToString } from "utils/utils";
 
+import { useUserStore } from "@/stores/userStore";
+
 import { QuotaUsage } from "./Quota/model";
 
-import { useUserStore } from "@/stores/userStore";
 
 export default {
     components: {

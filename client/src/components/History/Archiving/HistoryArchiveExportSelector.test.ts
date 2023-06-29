@@ -5,7 +5,6 @@ import { BFormCheckbox } from "bootstrap-vue";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
-import HistoryArchiveExportSelector from "./HistoryArchiveExportSelector.vue";
 
 import {
     FAILED_FILE_SOURCE_STORE_RESPONSE,
@@ -16,6 +15,8 @@ import {
 } from "@/components/Common/models/testData/exportData";
 import { mockFetcher } from "@/schema/__mocks__";
 import type { HistorySummary } from "@/stores/historyStore";
+
+import HistoryArchiveExportSelector from "./HistoryArchiveExportSelector.vue";
 
 jest.mock("@/schema");
 

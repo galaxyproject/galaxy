@@ -3,10 +3,11 @@ import type { ZoomTransform } from "d3-zoom";
 import { ref, inject, reactive, PropType } from "vue";
 import type { Ref } from "vue";
 
-import { useDraggable } from "./composables/useDraggable.js";
 
 import { useAnimationFrameSize } from "@/composables/sensors/animationFrameSize";
 import { useAnimationFrameThrottle } from "@/composables/throttle";
+
+import { useDraggable } from "./composables/useDraggable.js";
 
 const props = defineProps({
     rootOffset: {

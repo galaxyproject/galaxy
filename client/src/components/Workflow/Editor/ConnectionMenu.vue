@@ -24,16 +24,17 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch, type ComputedRef } from "vue";
 
+
+import { useFocusWithin } from "@/composables/useActiveElement";
+import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+import { assertDefined } from "@/utils/assertions";
+
 import {
     type OutputTerminals,
     type InputTerminalsAndInvalid,
     terminalFactory,
     type InputTerminals,
 } from "./modules/terminals";
-
-import { useFocusWithin } from "@/composables/useActiveElement";
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
-import { assertDefined } from "@/utils/assertions";
 
 const props = defineProps<{
     terminal: OutputTerminals;

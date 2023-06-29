@@ -6,8 +6,6 @@ import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 
-import HistoryExport from "./HistoryExport.vue";
-import { getExportRecords } from "./services";
 
 import {
     EXPIRED_STS_DOWNLOAD_RECORD,
@@ -16,6 +14,9 @@ import {
 } from "@/components/Common/models/testData/exportData";
 import type { components } from "@/schema";
 import { useHistoryStore, type HistorySummary } from "@/stores/historyStore";
+
+import HistoryExport from "./HistoryExport.vue";
+import { getExportRecords } from "./services";
 
 const localVue = getLocalVue(true);
 

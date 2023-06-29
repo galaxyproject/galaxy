@@ -4,13 +4,14 @@ import { shallowMount } from "@vue/test-utils";
 import { PiniaVuePlugin, setActivePinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
+import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
+import { getAppRoot } from "@/onload/loadConfig";
+import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
+
 import Index from "./Index.vue";
 import { loadWorkflow, getVersions } from "./modules/services";
 import { getStateUpgradeMessages } from "./modules/utilities";
 
-import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
-import { getAppRoot } from "@/onload/loadConfig";
-import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);

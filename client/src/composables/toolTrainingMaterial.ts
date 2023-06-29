@@ -1,8 +1,9 @@
 import { computed, ref, watch, type Ref } from "vue";
 
+import { escapeRegExp } from "@/utils/regExp";
+
 import { useConfig } from "./config";
 
-import { escapeRegExp } from "@/utils/regExp";
 
 type TrainingDetails = {
     tool_id: Array<

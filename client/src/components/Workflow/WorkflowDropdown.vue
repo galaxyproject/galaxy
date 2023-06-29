@@ -98,10 +98,11 @@ import TextSummary from "components/Common/TextSummary";
 import { mapState } from "pinia";
 import { withPrefix } from "utils/redirect";
 
-import { Services } from "./services";
 
 import { useUserStore } from "@/stores/userStore";
 import { setDrag, clearDrag } from "@/utils/setDrag.js";
+
+import { Services } from "./services";
 
 library.add(faCaretDown);
 library.add(faSignature);

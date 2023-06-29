@@ -94,6 +94,8 @@ import UtcDate from "components/UtcDate";
 import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
+
 import paginationMixin from "./paginationMixin";
 import { Services } from "./services";
 import WorkflowBookmark from "./WorkflowBookmark";
@@ -101,7 +103,6 @@ import WorkflowDropdown from "./WorkflowDropdown";
 import WorkflowIndexActions from "./WorkflowIndexActions";
 import WorkflowRunButton from "./WorkflowRunButton.vue";
 
-import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 const helpHtml = `<div>
     <p>This input can be used to filter the workflows displayed.</p>

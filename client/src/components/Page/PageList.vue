@@ -90,11 +90,12 @@ import paginationMixin from "components/Workflow/paginationMixin";
 import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 
+import { withPrefix, absPath } from "@/utils/redirect";
+
 import PageDropdown from "./PageDropdown";
 import PageIndexActions from "./PageIndexActions";
 import { updateTags } from "./services";
 
-import { withPrefix, absPath } from "@/utils/redirect";
 
 const helpHtml = `<div>
 <p>This textbox can be used to filter the pages displayed.

@@ -10,11 +10,12 @@ import { getAppRoot } from "onload/loadConfig";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
+import { useUserStore } from "@/stores/userStore";
+
 import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore";
 import ToolTargetPreferredObjectStorePopover from "./ToolTargetPreferredObjectStorePopover";
 import ToolTutorialRecommendations from "./ToolTutorialRecommendations.vue";
 
-import { useUserStore } from "@/stores/userStore";
 
 const props = defineProps({
     id: {

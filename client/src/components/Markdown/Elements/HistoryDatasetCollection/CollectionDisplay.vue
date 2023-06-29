@@ -50,10 +50,11 @@ import { copyCollection } from "components/Markdown/services";
 import { getAppRoot } from "onload/loadConfig";
 import { mapState } from "pinia";
 
-import CollectionTree from "./CollectionTree";
 
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
+
+import CollectionTree from "./CollectionTree";
 
 export default {
     components: {

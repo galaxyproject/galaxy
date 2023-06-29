@@ -5,10 +5,11 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, unref } from "vue";
 
-import { deletePage } from "./services";
 
 import { useUserStore } from "@/stores/userStore";
 import _l from "@/utils/localization";
+
+import { deletePage } from "./services";
 
 library.add(faCaretDown);
 

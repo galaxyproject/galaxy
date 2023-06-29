@@ -63,9 +63,10 @@ import ConfigProvider from "components/providers/ConfigProvider";
 import { JobDetailsProvider } from "components/providers/JobProvider";
 import { mapState } from "pinia";
 
+import { useUserStore } from "@/stores/userStore";
+
 import InheritanceChain from "../InheritanceChain/InheritanceChain";
 
-import { useUserStore } from "@/stores/userStore";
 
 export default {
     components: {

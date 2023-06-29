@@ -2,11 +2,12 @@
 import { BAlert, BCard, BCardText, BLink } from "bootstrap-vue";
 import { computed, ref, onMounted, watchEffect } from "vue";
 
-import type { CleanableSummary, CleanupOperation } from "./model";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import localize from "@/utils/localization";
 import { wait } from "@/utils/utils";
+
+import type { CleanableSummary, CleanupOperation } from "./model";
 
 interface CleanupOperationSummaryProps {
     operation: CleanupOperation;
