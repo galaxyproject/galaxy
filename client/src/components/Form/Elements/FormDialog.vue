@@ -32,17 +32,12 @@ onMounted(() => {
 
 const openDataDialog = ref(false);
 
-const dataSelected = reactive({
-    value: props.value,
-});
-
 const emit = defineEmits<{
     (e: "input", value: Array<string> | string): void;
 }>();
 
 function onData(result: Array<string> | string) {
     openDataDialog.value = false;
-    dataSelected.value = result;
     emit("input", result);
 }
 </script>
@@ -52,7 +47,7 @@ function onData(result: Array<string> | string) {
         <button @click="openDataDialog = true">
             <font-awesome-icon icon="folder-open" :title="title" />
         </button>
-        <input v-model="dataSelected.value" disabled class="ui-input float-left" />
+        <input v-model="props.value" disabled class="ui-input float-left" />
         <DataDialog
             v-if="openDataDialog"
             :history="localHistoryId.value"
