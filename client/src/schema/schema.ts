@@ -1387,6 +1387,13 @@ export interface paths {
          */
         post: operations["update_tour_api_tours__tour_id__post"];
     };
+    "/api/users/current": {
+        /**
+         * Get Current User
+         * @description Display information about current user
+         */
+        get: operations["get_current_user_api_users_current_get"];
+    };
     "/api/users/current/recalculate_disk_usage": {
         /**
          * Triggers a recalculation of the current user disk usage.
@@ -1395,6 +1402,10 @@ export interface paths {
          * Please use `/api/users/current/recalculate_disk_usage` instead.
          */
         put: operations["recalculate_disk_usage_api_users_current_recalculate_disk_usage_put"];
+    };
+    "/api/users/deleted/{user_id}": {
+        /** Display information about a deleted user */
+        get: operations["get_deleted_user_api_users_deleted__user_id__get"];
     };
     "/api/users/recalculate_disk_usage": {
         /**
@@ -1405,6 +1416,10 @@ export interface paths {
          * Please use `/api/users/current/recalculate_disk_usage` instead.
          */
         put: operations["recalculate_disk_usage_api_users_recalculate_disk_usage_put"];
+    };
+    "/api/users/{user_id}": {
+        /** Display information about a specified user */
+        get: operations["get_user_api_users__user_id__get"];
     };
     "/api/users/{user_id}/api_key": {
         /** Return the user's API key */
@@ -1669,6 +1684,27 @@ export interface components {
              * @description The link to be opened when the button is clicked.
              */
             link: string;
+        };
+        /**
+         * AnonUserModel
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        AnonUserModel: {
+            /**
+             * Nice total disc usage
+             * @description Size of all non-purged, unique datasets of the user in a nice format.
+             */
+            nice_total_disk_usage: string;
+            /**
+             * Storage quota
+             * @description Percentage of the storage quota applicable to the user.
+             */
+            quota_percent: number;
+            /**
+             * Total disk usage
+             * @description Size of all non-purged, unique datasets of the user in bytes.
+             */
+            total_disk_usage: number;
         };
         /**
          * ArchiveHistoryRequestPayload
@@ -3637,6 +3673,40 @@ export interface components {
              * @default false
              */
             purge?: boolean;
+        };
+        /**
+         * DetailedUserModel
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        DetailedUserModel: {
+            /** Deleted */
+            deleted: boolean;
+            /** Email */
+            email: string;
+            /** Id */
+            id: string;
+            /** Is Admin */
+            is_admin: boolean;
+            /** Nice Total Disk Usage */
+            nice_total_disk_usage: string;
+            /** Preferences */
+            preferences: Record<string, never>;
+            /** Preferred Object Store Id */
+            preferred_object_store_id: Record<string, never>;
+            /** Purged */
+            purged: boolean;
+            /** Quota */
+            quota: string;
+            /** Quota Bytes */
+            quota_bytes: Record<string, never>;
+            /** Quota Percent */
+            quota_percent: Record<string, never>;
+            /** Tags Used */
+            tags_used: string[];
+            /** Total Disk Usage */
+            total_disk_usage: number;
+            /** Username */
+            username: string;
         };
         /**
          * DisplayApp
@@ -16500,6 +16570,42 @@ export interface operations {
             };
         };
     };
+    get_current_user_api_users_current_get: {
+        /**
+         * Get Current User
+         * @description Display information about current user
+         */
+        parameters: {
+            /** @description Indicates if the user is deleted */
+            query?: {
+                deleted?: boolean;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the user to get or 'current'. */
+            path: {
+                user_id: string | "current";
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json":
+                        | components["schemas"]["AnonUserModel"]
+                        | components["schemas"]["DetailedUserModel"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     recalculate_disk_usage_api_users_current_recalculate_disk_usage_put: {
         /**
          * Triggers a recalculation of the current user disk usage.
@@ -16522,6 +16628,35 @@ export interface operations {
             };
             /** @description The background task was submitted but there is no status tracking ID available. */
             204: never;
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_deleted_user_api_users_deleted__user_id__get: {
+        /** Display information about a deleted user */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the user to get. */
+            path: {
+                user_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json":
+                        | components["schemas"]["AnonUserModel"]
+                        | components["schemas"]["DetailedUserModel"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -16553,6 +16688,39 @@ export interface operations {
             };
             /** @description The background task was submitted but there is no status tracking ID available. */
             204: never;
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_user_api_users__user_id__get: {
+        /** Display information about a specified user */
+        parameters: {
+            /** @description Indicates if the user is deleted */
+            query?: {
+                deleted?: boolean;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the user to get or 'current'. */
+            path: {
+                user_id: string | "current";
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json":
+                        | components["schemas"]["AnonUserModel"]
+                        | components["schemas"]["DetailedUserModel"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 content: {
