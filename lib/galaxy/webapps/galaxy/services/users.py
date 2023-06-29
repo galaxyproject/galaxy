@@ -1,8 +1,8 @@
 from typing import Optional
 
-from galaxy import exceptions as glx_exceptions
+from galaxy import exceptions as glx_exceptions, util
 from galaxy.managers import api_keys
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import ProvidesHistoryContext, ProvidesUserContext
 from galaxy.managers.users import UserManager
 from galaxy.queue_worker import send_local_control_task
 from galaxy.schema import APIKeyModel
@@ -75,3 +75,17 @@ class UsersService(ServiceBase):
             raise glx_exceptions.InsufficientPermissionsException("Access denied.")
         user = self.user_manager.by_id(user_id)
         return user
+
+    def _anon_user_api_value(self, trans: ProvidesHistoryContext):
+        """Return data for an anonymous user, truncated to only usage and quota_percent"""
+        if not trans.user and not trans.history:
+            # Can't return info about this user, may not have a history yet.
+            # return {}
+            raise glx_exceptions.MessageException(err_msg="The user has no history, which should always be the case.")
+        usage = trans.app.quota_agent.get_usage(trans, history=trans.history)
+        percent = trans.app.quota_agent.get_percent(trans=trans, usage=usage)
+        return {
+            "total_disk_usage": int(usage),
+            "nice_total_disk_usage": util.nice_size(usage),
+            "quota_percent": percent,
+        }
