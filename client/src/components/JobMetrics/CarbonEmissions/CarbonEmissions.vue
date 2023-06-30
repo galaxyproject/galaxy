@@ -22,17 +22,14 @@ interface CarbonEmissionsProps {
     };
     jobRuntimeInSeconds: number;
     coresAllocated: number;
-    powerUsageEffectiveness?: number;
-    geographicalServerLocationName?: string;
+    powerUsageEffectiveness: number;
+    geographicalServerLocationName: string;
     memoryAllocatedInMebibyte?: number;
-    carbonIntensity?: number;
+    carbonIntensity: number;
 }
 
 const props = withDefaults(defineProps<CarbonEmissionsProps>(), {
     memoryAllocatedInMebibyte: 0,
-    powerUsageEffectiveness: carbonEmissionsConstants.worldwidePowerUsageEffectiveness,
-    geographicalServerLocationName: "GLOBAL",
-    carbonIntensity: carbonEmissionsConstants.worldwideCarbonIntensity,
 });
 
 const carbonEmissions = computed(() => {
@@ -336,11 +333,11 @@ function getEnergyNeededText(energyNeededInKiloWattHours: number) {
                 </table>
 
                 <p class="p-0 m-0">
-                    <span v-if="geographicalServerLocationName === 'GLOBAL'">
+                    <span v-if="geographicalServerLocationName === 'GLOBAL'" id="location-explanation">
                         <strong>1.</strong> Based off of the global carbon intensity value of
                         {{ carbonEmissionsConstants.worldwideCarbonIntensity }}.
                     </span>
-                    <span v-else>
+                    <span v-else id="location-explanation">
                         <strong>1.</strong> based off of this galaxy instance's configured location of
                         <strong>{{ geographicalServerLocationName }}</strong
                         >, which has a carbon intensity value of {{ carbonIntensity }} gCO2/kWh.
@@ -348,11 +345,11 @@ function getEnergyNeededText(energyNeededInKiloWattHours: number) {
 
                     <br />
 
-                    <span v-if="powerUsageEffectiveness === carbonEmissionsConstants.worldwidePowerUsageEffectiveness">
+                    <span v-if="powerUsageEffectiveness === carbonEmissionsConstants.worldwidePowerUsageEffectiveness" id="pue">
                         <strong>2.</strong> Using the global default power usage effectiveness value of
                         {{ carbonEmissionsConstants.worldwidePowerUsageEffectiveness }}.
                     </span>
-                    <span v-else>
+                    <span v-else id="pue">
                         <strong>2.</strong> using the galaxy instance's configured power usage effectiveness ratio value
                         of of {{ powerUsageEffectiveness }}.
                     </span>
