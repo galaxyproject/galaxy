@@ -3,11 +3,11 @@ History
 
 .. to_doc
 
------------
-23.0.4.dev0
------------
+-------------------
+23.0.4 (2023-06-30)
+-------------------
 
-
+No recorded changes since last release
 
 -------------------
 23.0.3 (2023-06-26)
@@ -36,6 +36,7 @@ Enhancements
 Bug fixes
 =========
 
+* 
 * Don't fail CWL tool parsing when Cheetah not installed by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16219 <https://github.com/galaxyproject/galaxy/pull/16219>`_
 * Allow skipping ``expect_num_outputs`` when ``expect_failure`` is set in tool test by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#16237 <https://github.com/galaxyproject/galaxy/pull/16237>`_
 
@@ -49,6 +50,7 @@ Bug fixes
 =========
 
 * 
+* 
 * Fix assertion linting to not fail on byte suffixes by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#15873 <https://github.com/galaxyproject/galaxy/pull/15873>`_
 * Fix ``get_test_from_anaconda()`` and ``base_image_for_targets()`` functions by `@nsoranzo <https://github.com/nsoranzo>`_ in `#16125 <https://github.com/galaxyproject/galaxy/pull/16125>`_
 * Fix test search for mulled container hashes by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16170 <https://github.com/galaxyproject/galaxy/pull/16170>`_
@@ -57,6 +59,7 @@ Bug fixes
 Enhancements
 ============
 
+* 
 * Allow setting auto_decompress property in staging interface by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16014 <https://github.com/galaxyproject/galaxy/pull/16014>`_
 
 -------------------

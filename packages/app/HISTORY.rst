@@ -3,11 +3,17 @@ History
 
 .. to_doc
 
------------
-23.0.4.dev0
------------
+-------------------
+23.0.4 (2023-06-30)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fix default when statement evaluation by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16332 <https://github.com/galaxyproject/galaxy/pull/16332>`_
+* Redact private role name and description when purging user by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16349 <https://github.com/galaxyproject/galaxy/pull/16349>`_
 
 -------------------
 23.0.3 (2023-06-26)
@@ -41,12 +47,14 @@ Other changes
 Bug fixes
 =========
 
+* 
 * Fix ``Text File Busy`` errors at the source by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16212 <https://github.com/galaxyproject/galaxy/pull/16212>`_
 
 ============
 Enhancements
 ============
 
+* 
 * Point release deps fixes and docs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16214 <https://github.com/galaxyproject/galaxy/pull/16214>`_
 * Use galaxy-release-util to upload python packages by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16240 <https://github.com/galaxyproject/galaxy/pull/16240>`_
 
@@ -59,6 +67,7 @@ Enhancements
 Bug fixes
 =========
 
+* 
 * 
 * Display DCE in job parameter component, allow rerunning with DCE input by `@mvdbeek <https://github.com/mvdbeek>`_ in `#15744 <https://github.com/galaxyproject/galaxy/pull/15744>`_
 * Fix mixed outputs_to_working_directory pulsar destinations by `@mvdbeek <https://github.com/mvdbeek>`_ in `#15927 <https://github.com/galaxyproject/galaxy/pull/15927>`_
@@ -83,6 +92,7 @@ Bug fixes
 Other changes
 =============
 
+* 
 * Startup fix when tool removed between reboot by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16175 <https://github.com/galaxyproject/galaxy/pull/16175>`_
 
 -------------------
