@@ -18,6 +18,7 @@ import LoadingSpan from "components/LoadingSpan";
 import { getAppRoot } from "onload/loadConfig";
 
 import RepositoryDetails from "../RepositoryDetails/Index.vue";
+
 import { Services } from "../services";
 
 export default {

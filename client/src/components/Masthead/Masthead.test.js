@@ -7,8 +7,9 @@ import { useEntryPointStore } from "stores/entryPointStore";
 import { getLocalVue, mockModule } from "tests/jest/helpers";
 import Vuex from "vuex";
 
-import { loadWebhookMenuItems } from "./_webhooks";
 import { default as Masthead } from "./Masthead.vue";
+
+import { loadWebhookMenuItems } from "./_webhooks";
 import { getActiveTab } from "./utilities";
 
 jest.mock("app");

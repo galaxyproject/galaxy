@@ -6,12 +6,12 @@ import type { Ref } from "vue";
 import { computed, ref } from "vue";
 import Multiselect from "vue-multiselect";
 
+import Tag from "./Tag.vue";
+
 import { useToast } from "@/composables/toast";
 import { useMultiselect } from "@/composables/useMultiselect";
 import { useUserTags } from "@/composables/user";
 import { useUid } from "@/composables/utils/uid";
-
-import Tag from "./Tag.vue";
 
 interface StatelessTagsProps {
     value?: string[];

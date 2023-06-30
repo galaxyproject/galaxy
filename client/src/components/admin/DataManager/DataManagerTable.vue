@@ -41,8 +41,9 @@
 
 <script>
 import axios from "axios";
-import Alert from "components/Alert.vue";
 import { getAppRoot } from "onload/loadConfig";
+
+import Alert from "components/Alert.vue";
 
 export default {
     components: {

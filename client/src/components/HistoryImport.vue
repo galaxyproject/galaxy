@@ -81,7 +81,6 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { refDebounced } from "@vueuse/core";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
-import FilesInput from "components/FilesDialog/FilesInput.vue";
 import { Services } from "components/FilesDialog/services";
 import JobError from "components/JobInformation/JobError";
 import { waitOnJob } from "components/JobStates/wait";
@@ -89,6 +88,8 @@ import LoadingSpan from "components/LoadingSpan";
 import { getAppRoot } from "onload/loadConfig";
 import { errorMessageAsString } from "utils/simple-error";
 import Vue, { ref, watch } from "vue";
+
+import FilesInput from "components/FilesDialog/FilesInput.vue";
 
 import ExternalLink from "./ExternalLink";
 

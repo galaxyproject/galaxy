@@ -3,9 +3,10 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBell } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BNavItem } from "bootstrap-vue";
-import Popper from "components/Popper/Popper.vue";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router/composables";
+
+import Popper from "components/Popper/Popper.vue";
 
 import { useNotificationsStore } from "@/stores/notificationsStore";
 

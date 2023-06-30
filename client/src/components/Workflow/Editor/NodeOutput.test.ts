@@ -3,11 +3,12 @@ import { createPinia, setActivePinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 import { nextTick, ref } from "vue";
 
+import NodeOutput from "./NodeOutput.vue";
+
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 import { type Step, type Steps, useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 import { terminalFactory } from "./modules/terminals";
-import NodeOutput from "./NodeOutput.vue";
 import { advancedSteps, mockOffset } from "./test_fixtures";
 
 const localVue = getLocalVue();

@@ -2,8 +2,9 @@ import { mount, type Wrapper, type WrapperArray } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { type CleanableItem, CleanableSummary, type CleanupOperation, CleanupResult } from "./model";
 import ReviewCleanupDialog from "./ReviewCleanupDialog.vue";
+
+import { type CleanableItem, CleanableSummary, type CleanupOperation, CleanupResult } from "./model";
 
 const localVue = getLocalVue();
 

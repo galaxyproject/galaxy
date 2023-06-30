@@ -1,4 +1,5 @@
 import RulesInput from "./RulesInput.vue";
+
 import { mountWithDetails } from "./testHelpers";
 
 describe("RulesInput.vue", () => {

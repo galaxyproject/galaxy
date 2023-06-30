@@ -19,8 +19,9 @@
 
 <script>
 import CollectionDescription from "@/components/History/Content/Collection/CollectionDescription.vue";
-import { JobStateSummary } from "@/components/History/Content/Collection/JobStateSummary.js";
 import DetailsLayout from "@/components/History/Layout/DetailsLayout.vue";
+
+import { JobStateSummary } from "@/components/History/Content/Collection/JobStateSummary.js";
 import short from "@/components/plugins/short.js";
 
 export default {

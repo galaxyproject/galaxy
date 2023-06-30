@@ -46,9 +46,7 @@
 import { getGalaxyInstance } from "app";
 import ConfirmDialog from "components/ConfirmDialog";
 import { HistoryPanelProxy } from "components/History/adapters/HistoryPanelProxy";
-import Masthead from "components/Masthead/Masthead.vue";
 import Toast from "components/Toast";
-import UploadModal from "components/Upload/UploadModal.vue";
 import { setConfirmDialogComponentRef } from "composables/confirmDialog";
 import { setGlobalUploadModal } from "composables/globalUploadModal";
 import { setToastComponentRef } from "composables/toast";
@@ -63,6 +61,9 @@ import { ref } from "vue";
 import Alert from "@/components/Alert.vue";
 import DragGhost from "@/components/DragGhost.vue";
 import BroadcastsOverlay from "@/components/Notifications/Broadcasts/BroadcastsOverlay.vue";
+import Masthead from "components/Masthead/Masthead.vue";
+import UploadModal from "components/Upload/UploadModal.vue";
+
 import { useHistoryStore } from "@/stores/historyStore";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import { useUserStore } from "@/stores/userStore";

@@ -1,4 +1,5 @@
 import Composite from "./Composite.vue";
+
 import { mountWithDetails } from "./testHelpers";
 
 describe("Composite.vue", () => {

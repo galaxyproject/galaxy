@@ -163,11 +163,19 @@ import axios from "axios";
 import { storeToRefs } from "pinia";
 import Vue, { computed, onUnmounted, ref } from "vue";
 
+import WorkflowAttributes from "./Attributes.vue";
+import WorkflowLint from "./Lint.vue";
+import MessagesModal from "./MessagesModal.vue";
+import WorkflowOptions from "./Options.vue";
+import RefactorConfirmationModal from "./RefactorConfirmationModal.vue";
+import StateUpgradeModal from "./StateUpgradeModal.vue";
+import WorkflowGraph from "./WorkflowGraph.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import ProviderAwareToolBoxWorkflow from "@/components/Panels/ProviderAwareToolBoxWorkflow.vue";
 import FormDefault from "@/components/Workflow/Editor/Forms/FormDefault.vue";
 import FormTool from "@/components/Workflow/Editor/Forms/FormTool.vue";
+
 import { getUntypedWorkflowParameters } from "@/components/Workflow/Editor/modules/parameters";
 import { ConfirmDialog } from "@/composables/confirmDialog";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
@@ -178,18 +186,11 @@ import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { LastQueue } from "@/utils/promise-queue";
 
-import WorkflowAttributes from "./Attributes.vue";
 import { defaultPosition } from "./composables/useDefaultStepPosition";
-import WorkflowLint from "./Lint.vue";
-import MessagesModal from "./MessagesModal.vue";
 import { fromSimple, toSimple } from "./modules/model";
 import { getModule, getVersions, loadWorkflow, saveWorkflow } from "./modules/services";
 import { getStateUpgradeMessages } from "./modules/utilities";
-import WorkflowOptions from "./Options.vue";
-import RefactorConfirmationModal from "./RefactorConfirmationModal.vue";
 import reportDefault from "./reportDefault";
-import StateUpgradeModal from "./StateUpgradeModal.vue";
-import WorkflowGraph from "./WorkflowGraph.vue";
 
 export default {
     components: {

@@ -4,6 +4,7 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DescribeObjectStore from "@/components/ObjectStore/DescribeObjectStore.vue";
+
 import { mockFetcher } from "@/schema/__mocks__";
 
 import ShowSelectedObjectStore from "./ShowSelectedObjectStore";

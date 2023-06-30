@@ -36,10 +36,11 @@ import LoadingSpan from "components/LoadingSpan";
 import JOB_STATES_MODEL from "utils/job-states-model";
 import { mapActions, mapGetters } from "vuex";
 
-import { cancelWorkflowScheduling } from "./services";
 import WorkflowInvocationDetails from "./WorkflowInvocationDetails.vue";
 import WorkflowInvocationExportOptions from "./WorkflowInvocationExportOptions.vue";
 import WorkflowInvocationSummary from "./WorkflowInvocationSummary.vue";
+
+import { cancelWorkflowScheduling } from "./services";
 
 export default {
     components: {

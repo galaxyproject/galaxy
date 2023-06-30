@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
 import WorkflowSearch from "@/components/Workflow/WorkflowSearch.vue";
+
 import { useUserStore } from "@/stores/userStore";
 import { withPrefix } from "@/utils/redirect";
 

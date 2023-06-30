@@ -21,8 +21,9 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faLink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BModal } from "bootstrap-vue";
-import JobInformation from "components/JobInformation/JobInformation.vue";
 import { copy } from "utils/clipboard";
+
+import JobInformation from "components/JobInformation/JobInformation.vue";
 
 library.add(faLink);
 

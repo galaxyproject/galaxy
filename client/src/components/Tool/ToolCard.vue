@@ -1,20 +1,21 @@
 <script setup>
 import Heading from "components/Common/Heading";
 import FormMessage from "components/Form/FormMessage";
-import ToolFavoriteButton from "components/Tool/Buttons/ToolFavoriteButton.vue";
-import ToolOptionsButton from "components/Tool/Buttons/ToolOptionsButton.vue";
-import ToolVersionsButton from "components/Tool/Buttons/ToolVersionsButton.vue";
 import ToolFooter from "components/Tool/ToolFooter";
 import ToolHelp from "components/Tool/ToolHelp";
 import { getAppRoot } from "onload/loadConfig";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
+import ToolTutorialRecommendations from "./ToolTutorialRecommendations.vue";
+import ToolFavoriteButton from "components/Tool/Buttons/ToolFavoriteButton.vue";
+import ToolOptionsButton from "components/Tool/Buttons/ToolOptionsButton.vue";
+import ToolVersionsButton from "components/Tool/Buttons/ToolVersionsButton.vue";
+
 import { useUserStore } from "@/stores/userStore";
 
 import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore";
 import ToolTargetPreferredObjectStorePopover from "./ToolTargetPreferredObjectStorePopover";
-import ToolTutorialRecommendations from "./ToolTutorialRecommendations.vue";
 
 const props = defineProps({
     id: {

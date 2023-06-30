@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import ActivityItem from "components/ActivityBar/ActivityItem.vue";
 import { onMounted, onUnmounted, type Ref, ref } from "vue";
+
+import ActivityItem from "components/ActivityBar/ActivityItem.vue";
 
 import { eventHub } from "@/components/plugins/eventHub.js";
 import { useGlobalUploadModal } from "@/composables/globalUploadModal.js";

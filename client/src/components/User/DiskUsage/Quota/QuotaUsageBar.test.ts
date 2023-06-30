@@ -1,8 +1,9 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { QuotaUsage } from "./model";
 import QuotaUsageBar from "./QuotaUsageBar.vue";
+
+import { QuotaUsage } from "./model";
 
 const localVue = getLocalVue();
 

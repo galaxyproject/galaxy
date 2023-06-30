@@ -6,8 +6,9 @@ import { BCol, BRow } from "bootstrap-vue";
 import { computed } from "vue";
 
 import Heading from "@/components/Common/Heading.vue";
-import type { MessageNotification } from "@/components/Notifications";
 import NotificationActions from "@/components/Notifications/NotificationActions.vue";
+
+import type { MessageNotification } from "@/components/Notifications";
 import { useMarkdown } from "@/composables/markdown";
 
 library.add(faInbox);

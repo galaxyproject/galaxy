@@ -70,9 +70,10 @@ import { prependPath } from "utils/redirect";
 import { errorMessageAsString } from "utils/simple-error";
 import Vue from "vue";
 
+import LoadingSpan from "@/components/LoadingSpan.vue";
+
 import { useHistoryStore } from "@/stores/historyStore";
 
-import LoadingSpan from "../../LoadingSpan.vue";
 import { DatatypesProvider, DbKeyProvider, SuitableConvertersProvider } from "../../providers";
 import ChangeDatatypeTab from "./ChangeDatatypeTab";
 import DatabaseEditTab from "./DatabaseEditTab";

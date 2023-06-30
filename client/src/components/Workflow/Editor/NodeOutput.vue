@@ -5,9 +5,11 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { UseElementBoundingReturn, UseScrollReturn } from "@vueuse/core";
 import { computed, nextTick, onBeforeUnmount, type Ref, ref, toRefs, type UnwrapRef, watch } from "vue";
 
-import type { DatatypesMapperModel } from "@/components/Datatypes/model";
+import DraggableWrapper from "./DraggablePan.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import ConnectionMenu from "@/components/Workflow/Editor/ConnectionMenu.vue";
+
+import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useWorkflowStateStore, type XYPosition } from "@/stores/workflowEditorStateStore";
 import {
     type OutputTerminalSource,
@@ -20,7 +22,6 @@ import { assertDefined, ensureDefined } from "@/utils/assertions";
 
 import { useRelativePosition } from "./composables/relativePosition";
 import { useTerminal } from "./composables/useTerminal";
-import DraggableWrapper from "./DraggablePan.vue";
 import { type CollectionTypeDescriptor, NULL_COLLECTION_TYPE_DESCRIPTION } from "./modules/collectionTypeDescription";
 
 type ElementBounding = UnwrapRef<UseElementBoundingReturn>;

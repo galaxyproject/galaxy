@@ -1,7 +1,8 @@
 import { createLocalVue, shallowMount } from "@vue/test-utils";
-import SelectionDialog from "components/SelectionDialog/SelectionDialog.vue";
 
 import DataDialog from "./DataDialog.vue";
+import SelectionDialog from "components/SelectionDialog/SelectionDialog.vue";
+
 import { Model } from "./model";
 import { Services } from "./services";
 import { UrlTracker } from "./utilities";

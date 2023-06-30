@@ -116,14 +116,15 @@ import BootstrapVue from "bootstrap-vue";
 import type { PropType, Ref } from "vue";
 import Vue, { computed, reactive, ref } from "vue";
 
-import { getGalaxyInstance } from "@/app";
-import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-import { useNodePosition } from "@/components/Workflow/Editor/composables/useNodePosition";
 import DraggableWrapper from "@/components/Workflow/Editor/DraggablePan.vue";
 import NodeInput from "@/components/Workflow/Editor/NodeInput.vue";
 import NodeOutput from "@/components/Workflow/Editor/NodeOutput.vue";
 import Recommendations from "@/components/Workflow/Editor/Recommendations.vue";
+
+import { getGalaxyInstance } from "@/app";
+import { DatatypesMapperModel } from "@/components/Datatypes/model";
+import { useNodePosition } from "@/components/Workflow/Editor/composables/useNodePosition";
 import WorkflowIcons from "@/components/Workflow/icons";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { type TerminalPosition, useWorkflowStateStore, type XYPosition } from "@/stores/workflowEditorStateStore";

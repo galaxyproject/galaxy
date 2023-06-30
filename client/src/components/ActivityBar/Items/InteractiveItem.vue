@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import ActivityItem from "components/ActivityBar/ActivityItem.vue";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
+
+import ActivityItem from "components/ActivityBar/ActivityItem.vue";
 
 import { useEntryPointStore } from "@/stores/entryPointStore";
 

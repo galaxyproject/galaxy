@@ -4,10 +4,11 @@ import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 
+import NotificationsList from "./NotificationsList.vue";
+
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import { mergeObjectListsById } from "@/utils/utils";
 
-import NotificationsList from "./NotificationsList.vue";
 import { generateNotificationsList } from "./test-utils";
 
 const localVue = getLocalVue(true);

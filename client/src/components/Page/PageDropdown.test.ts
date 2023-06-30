@@ -6,10 +6,10 @@ import { createWrapper, mount, shallowMount } from "@vue/test-utils";
 import { createPinia, PiniaVuePlugin } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
+import PageDropdown from "./PageDropdown.vue";
+
 import { mockFetcher } from "@/schema/__mocks__";
 import { useUserStore } from "@/stores/userStore";
-
-import PageDropdown from "./PageDropdown.vue";
 
 jest.mock("@/schema");
 

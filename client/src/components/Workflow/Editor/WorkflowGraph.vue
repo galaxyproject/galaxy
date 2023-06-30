@@ -50,17 +50,18 @@ import { useElementBounding, useScroll } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { computed, type PropType, provide, reactive, type Ref, ref, watch, watchEffect } from "vue";
 
-import { DatatypesMapperModel } from "@/components/Datatypes/model";
+import AdaptiveGrid from "./AdaptiveGrid.vue";
 import WorkflowNode from "@/components/Workflow/Editor/Node.vue";
 import WorkflowEdges from "@/components/Workflow/Editor/WorkflowEdges.vue";
 import WorkflowMinimap from "@/components/Workflow/Editor/WorkflowMinimap.vue";
 import ZoomControl from "@/components/Workflow/Editor/ZoomControl.vue";
+
+import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import type { TerminalPosition, XYPosition } from "@/stores/workflowEditorStateStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { type Step, useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 
-import AdaptiveGrid from "./AdaptiveGrid.vue";
 import { useD3Zoom } from "./composables/d3Zoom";
 import { useViewportBoundingBox } from "./composables/viewportBoundingBox";
 import type { OutputTerminals } from "./modules/terminals";

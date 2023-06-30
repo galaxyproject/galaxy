@@ -3,6 +3,7 @@ import { ref, watch } from "vue";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DescribeObjectStore from "@/components/ObjectStore/DescribeObjectStore.vue";
+
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { getObjectStoreDetails } from "./services";

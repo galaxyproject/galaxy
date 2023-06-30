@@ -6,8 +6,9 @@ import { BCol, BLink, BRow } from "bootstrap-vue";
 import { computed } from "vue";
 
 import Heading from "@/components/Common/Heading.vue";
-import type { SharedItemNotification } from "@/components/Notifications";
 import NotificationActions from "@/components/Notifications/NotificationActions.vue";
+
+import type { SharedItemNotification } from "@/components/Notifications";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 
 library.add(faExternalLinkAlt, faRetweet);

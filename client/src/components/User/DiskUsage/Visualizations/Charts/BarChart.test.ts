@@ -1,7 +1,8 @@
 import { mount } from "@vue/test-utils";
 
-import type { DataValuePoint } from ".";
 import BarChart from "./BarChart.vue";
+
+import type { DataValuePoint } from ".";
 
 // Duplicated interface from BarChart.vue because of https://github.com/vuejs/core/issues/4294
 interface BarChartProps {

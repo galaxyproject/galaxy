@@ -7,6 +7,7 @@ import { computed, ref, watch } from "vue";
 
 import AsyncButton from "@/components/Common/AsyncButton.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+
 import {
     getNotificationsPreferencesFromServer,
     updateNotificationsPreferencesOnServer,

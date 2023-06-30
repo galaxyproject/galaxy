@@ -2,18 +2,19 @@
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import BarChart from "./Charts/BarChart.vue";
+import RecoverableItemSizeTooltip from "./RecoverableItemSizeTooltip.vue";
+import SelectedItemActions from "./SelectedItemActions.vue";
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useToast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 
 import type { DataValuePoint } from "./Charts";
-import BarChart from "./Charts/BarChart.vue";
 import { bytesLabelFormatter, bytesValueFormatter } from "./Charts/formatters";
-import RecoverableItemSizeTooltip from "./RecoverableItemSizeTooltip.vue";
-import SelectedItemActions from "./SelectedItemActions.vue";
 import {
     fetchHistoryContentsSizeSummary,
     type ItemSizeSummary,

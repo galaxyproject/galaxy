@@ -594,7 +594,6 @@ import SavedRulesSelector from "components/RuleBuilder/SavedRulesSelector";
 import SaveRules from "components/RuleBuilder/SaveRules";
 import StateDiv from "components/RuleBuilder/StateDiv";
 import Select2 from "components/Select2";
-import TooltipOnHover from "components/TooltipOnHover.vue";
 import $ from "jquery";
 import UploadUtils from "mvc/upload/upload-utils";
 import { getAppRoot } from "onload/loadConfig";
@@ -603,6 +602,8 @@ import { refreshContentsWrapper } from "utils/data";
 import JobStatesModel from "utils/job-states-model";
 import _l from "utils/localization";
 import Vue from "vue";
+
+import TooltipOnHover from "components/TooltipOnHover.vue";
 
 Vue.use(BootstrapVue);
 

@@ -133,9 +133,10 @@ import QueryStringParsing from "utils/query-string-parsing";
 import { withPrefix } from "utils/redirect";
 import Vue from "vue";
 
+import ThemeSelector from "./ThemeSelector.vue";
+
 import { useUserStore } from "@/stores/userStore";
 
-import ThemeSelector from "./ThemeSelector.vue";
 import UserActivityBarSettings from "./UserActivityBarSettings";
 import UserBeaconSettings from "./UserBeaconSettings";
 import UserDeletion from "./UserDeletion";

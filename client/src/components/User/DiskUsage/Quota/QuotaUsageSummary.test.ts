@@ -1,8 +1,9 @@
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { QuotaUsage } from "./model";
 import QuotaUsageSummary from "./QuotaUsageSummary.vue";
+
+import { QuotaUsage } from "./model";
 
 const localVue = getLocalVue();
 

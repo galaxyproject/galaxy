@@ -2,11 +2,12 @@
 import { storeToRefs } from "pinia";
 import { computed, type Ref } from "vue";
 
+import SVGConnection from "./SVGConnection.vue";
+
 import { type Connection, type OutputTerminal, useConnectionStore } from "@/stores/workflowConnectionStore";
 import type { TerminalPosition } from "@/stores/workflowEditorStateStore";
 
 import type { OutputTerminals } from "./modules/terminals";
-import SVGConnection from "./SVGConnection.vue";
 
 const props = defineProps<{
     draggingConnection: TerminalPosition | null;

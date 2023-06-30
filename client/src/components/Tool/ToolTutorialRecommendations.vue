@@ -8,6 +8,7 @@ import { computed } from "vue";
 
 import Heading from "@/components/Common/Heading.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
+
 import { useToolTrainingMaterial } from "@/composables/toolTrainingMaterial";
 import { useUid } from "@/composables/utils/uid";
 

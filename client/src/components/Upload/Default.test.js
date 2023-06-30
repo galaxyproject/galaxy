@@ -2,6 +2,7 @@ import Backbone from "backbone";
 import UploadRow from "mvc/upload/default/default-row";
 
 import Default from "./Default.vue";
+
 import { mountWithDetails } from "./testHelpers";
 
 jest.mock("app");

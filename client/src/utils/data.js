@@ -1,8 +1,6 @@
 import { getGalaxyInstance } from "app";
 import axios from "axios";
-import DataDialog from "components/DataDialog/DataDialog.vue";
 import { FilesDialog } from "components/FilesDialog";
-import DatasetCollectionDialog from "components/SelectionDialog/DatasetCollectionDialog.vue";
 import { uploadModelsToPayload } from "components/Upload/helpers";
 import { useGlobalUploadModal } from "composables/globalUploadModal";
 import $ from "jquery";
@@ -10,6 +8,9 @@ import { getAppRoot } from "onload/loadConfig";
 import { rewatchHistory } from "store/historyStore/model/watchHistory";
 import { submitUpload } from "utils/uploadbox";
 import Vue from "vue";
+
+import DataDialog from "components/DataDialog/DataDialog.vue";
+import DatasetCollectionDialog from "components/SelectionDialog/DatasetCollectionDialog.vue";
 
 // This should be moved more centrally (though still hanging off Galaxy for
 // external use?), and populated from the store; just using this as a temporary

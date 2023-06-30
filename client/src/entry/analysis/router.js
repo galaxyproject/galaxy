@@ -1,5 +1,4 @@
 import { getGalaxyInstance } from "app";
-import AboutGalaxy from "components/AboutGalaxy.vue";
 import AvailableDatatypes from "components/AvailableDatatypes/AvailableDatatypes";
 import Citations from "components/Citation/Citations";
 import ClientError from "components/ClientError";
@@ -22,7 +21,6 @@ import InteractiveTools from "components/InteractiveTools/InteractiveTools";
 import JobDetails from "components/JobInformation/JobDetails";
 import CarbonEmissionsCalculations from "components/JobMetrics/CarbonEmissions/CarbonEmissionsCalculations";
 import NewUserWelcome from "components/NewUserWelcome/NewUserWelcome";
-import NotificationsList from "components/Notifications/NotificationsList.vue";
 import PageList from "components/Page/PageList";
 import PageDisplay from "components/PageDisplay/PageDisplay";
 import PageEditor from "components/PageEditor/PageEditor";
@@ -65,6 +63,8 @@ import VueRouter from "vue-router";
 
 import HistoryArchive from "@/components/History/Archiving/HistoryArchive.vue";
 import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
+import AboutGalaxy from "components/AboutGalaxy.vue";
+import NotificationsList from "components/Notifications/NotificationsList.vue";
 
 import { patchRouterPush } from "./router-push";
 

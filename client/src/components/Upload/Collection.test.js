@@ -1,4 +1,5 @@
 import Collection from "./Collection.vue";
+
 import { mountWithDetails } from "./testHelpers";
 
 describe("Collection.vue", () => {

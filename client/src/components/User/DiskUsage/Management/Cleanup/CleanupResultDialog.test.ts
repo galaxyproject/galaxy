@@ -3,6 +3,7 @@ import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
 import CleanupResultDialog from "./CleanupResultDialog.vue";
+
 import { type CleanableItem, CleanupResult } from "./model";
 
 const localVue = getLocalVue();

@@ -9,6 +9,7 @@ import { RouterLink } from "vue-router";
 import HistoryArchiveExportSelector from "@/components/History/Archiving/HistoryArchiveExportSelector.vue";
 import HistoryArchiveSimple from "@/components/History/Archiving/HistoryArchiveSimple.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+
 import { useConfig } from "@/composables/config";
 import { useFileSources } from "@/composables/fileSources";
 import { useToast } from "@/composables/toast";

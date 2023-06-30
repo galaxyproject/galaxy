@@ -3,6 +3,7 @@ import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
 import InvocationsList from "@/components/Workflow/InvocationsList.vue";
+
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 

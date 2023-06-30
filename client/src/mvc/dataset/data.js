@@ -1,8 +1,9 @@
 import Backbone from "backbone";
-import TabularChunkedView from "components/Visualizations/Tabular/TabularChunkedView.vue";
 import { getAppRoot } from "onload/loadConfig";
 import _ from "underscore";
 import { replaceChildrenWithComponent } from "utils/mountVueComponent";
+
+import TabularChunkedView from "components/Visualizations/Tabular/TabularChunkedView.vue";
 
 /**
  * Dataset metedata.

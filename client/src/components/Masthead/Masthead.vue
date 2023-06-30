@@ -7,6 +7,7 @@ import { onBeforeMount, onMounted, reactive, ref, watch } from "vue";
 import { useRoute } from "vue-router/composables";
 
 import NotificationsBell from "@/components/Notifications/NotificationsBell.vue";
+
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 

@@ -5,6 +5,7 @@ import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
 import InvocationExportPluginCard from "./InvocationExportPluginCard.vue";
+
 import { InvocationExportPlugin, InvocationExportPluginAction } from "./model";
 
 const localVue = getLocalVue();

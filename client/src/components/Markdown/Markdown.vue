@@ -65,14 +65,14 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faDownload, faEdit } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
-import LoadingSpan from "components/LoadingSpan.vue";
-import StsDownloadButton from "components/StsDownloadButton.vue";
 import MarkdownIt from "markdown-it";
 import markdownItRegexp from "markdown-it-regexp";
 import store from "store";
 import Vue from "vue";
 
 import MarkdownContainer from "./MarkdownContainer.vue";
+import LoadingSpan from "components/LoadingSpan.vue";
+import StsDownloadButton from "components/StsDownloadButton.vue";
 
 const FUNCTION_VALUE_REGEX = `\\s*(?:[\\w_\\-]+|\\"[^\\"]+\\"|\\'[^\\']+\\')\\s*`;
 const FUNCTION_CALL = `\\s*[\\w\\|]+\\s*=` + FUNCTION_VALUE_REGEX;

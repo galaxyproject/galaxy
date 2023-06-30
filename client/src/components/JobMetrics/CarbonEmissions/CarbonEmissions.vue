@@ -5,10 +5,10 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { GetComponentPropTypes } from "types/utilityTypes";
 import { computed, unref } from "vue";
 
-import Heading from "@/components/Common/Heading.vue";
-
 import BarChart from "./BarChart.vue";
 import CarbonEmissionsCard from "./CarbonEmissionCard.vue";
+import Heading from "@/components/Common/Heading.vue";
+
 import * as carbonEmissionsConstants from "./carbonEmissionConstants.js";
 
 library.add(faQuestionCircle);

@@ -6,8 +6,9 @@ import { BButton, BCol, BInputGroup, BRow } from "bootstrap-vue";
 import { formatDistanceToNow, parseISO } from "date-fns";
 
 import AsyncButton from "@/components/Common/AsyncButton.vue";
-import type { UserNotification } from "@/components/Notifications";
 import UtcDate from "@/components/UtcDate.vue";
+
+import type { UserNotification } from "@/components/Notifications";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 
 library.add(faHourglassHalf);

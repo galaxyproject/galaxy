@@ -7,6 +7,7 @@ import { storeToRefs } from "pinia";
 import { computed, type ComputedRef, type Ref, ref } from "vue";
 
 import DelayedInput from "@/components/Common/DelayedInput.vue";
+
 import { type Activity, useActivityStore } from "@/stores/activityStore";
 
 library.add({
