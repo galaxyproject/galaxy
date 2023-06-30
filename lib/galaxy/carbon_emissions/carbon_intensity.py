@@ -42,5 +42,4 @@ def get_carbon_intensity_entry(geographical_server_location_code: str) -> Carbon
 def _load_locations(path: str):
     with open(path, newline="") as f:
         csv_reader = csv.reader(f, delimiter=",")
-        for row in csv_reader:
-            yield row
+        yield from csv_reader
