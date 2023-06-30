@@ -51,7 +51,7 @@ dictobj = "*"
 dnspython = "*"
 docutils = "!=0.17, !=0.17.1"
 edam-ontology = "*"
-fastapi = ">=0.71.0, !=0.89.0"  # https://github.com/tiangolo/fastapi/issues/4041 https://github.com/tiangolo/fastapi/issues/5861
+fastapi = ">=0.71.0, !=0.89.0, <0.99"  # https://github.com/tiangolo/fastapi/issues/4041 https://github.com/tiangolo/fastapi/issues/5861
 fastapi-utils = "*"
 fs = "*"
 future = "*"
@@ -80,7 +80,7 @@ pebble = "*"
 psutil = "*"
 pulsar-galaxy-lib = ">=0.15.0.dev0"
 pycryptodome = "*"
-pydantic = {version = "*", extras = ["email"]}
+pydantic = {version = "<2", extras = ["email"]}
 PyJWT = "*"
 pykwalify = "*"
 pylibmagic = "*"
