@@ -30,8 +30,8 @@ def get_carbon_intensity_entry(geographical_server_location_code: str) -> Carbon
         if location_code == geographical_server_location_code:
             return {"location_name": location_name, "carbon_intensity": float(location_entry[4])}
 
-    log.warn("No corresponding location name exists for location code: %s.", geographical_server_location_code)
-    log.info("Using global defualt values for location name and carbon intensity...")
+    log.warning("No corresponding location name exists for location code: %s.", geographical_server_location_code)
+    log.info("Using global default values for location name and carbon intensity...")
     return {"location_name": "GLOBAL", "carbon_intensity": 475.0}
 
 
