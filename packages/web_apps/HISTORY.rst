@@ -10,6 +10,17 @@ History
 
 
 -------------------
+23.0.4 (2023-06-30)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix folder access for anonymous user by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16330 <https://github.com/galaxyproject/galaxy/pull/16330>`_
+
+-------------------
 23.0.3 (2023-06-26)
 -------------------
 
@@ -41,6 +52,7 @@ No recorded changes since last release
 Bug fixes
 =========
 
+* 
 * Display DCE in job parameter component, allow rerunning with DCE input by `@mvdbeek <https://github.com/mvdbeek>`_ in `#15744 <https://github.com/galaxyproject/galaxy/pull/15744>`_
 * Various fixes to path prefix handling by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16033 <https://github.com/galaxyproject/galaxy/pull/16033>`_
 * Fix dataype_change not updating HDCA update_time by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16099 <https://github.com/galaxyproject/galaxy/pull/16099>`_
