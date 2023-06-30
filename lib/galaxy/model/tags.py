@@ -162,6 +162,10 @@ class TagHandler:
         Notice that even admin users cannot directly modify tags on items they do not own.
         To modify tags on items they don't own, admin users must impersonate the item's owner.
         """
+        if getattr(item, "id", None) is None:
+            # Item is not persisted, likely it is being copied from an existing, so no need
+            # to check ownership at this point.
+            return
         if user is None:
             raise AuthenticationRequired("Must be logged in to manage tags.")
         history = getattr(item, "history", None)
