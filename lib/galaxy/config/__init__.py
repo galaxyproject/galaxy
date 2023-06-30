@@ -34,7 +34,7 @@ from urllib.parse import urlparse
 
 import yaml
 
-from galaxy.carbon_emissions.carbon_intensity import get_carbon_intensity_entry
+from galaxy.carbon_emissions import get_carbon_intensity_entry
 from galaxy.config.schema import AppSchema
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import (
@@ -842,7 +842,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
         # Carbon emissions configuration
         carbon_intensity_entry = get_carbon_intensity_entry(kwargs.get("geographical_server_location_code", ""))
-
         self.carbon_intensity = carbon_intensity_entry["carbon_intensity"]
         self.geographical_server_location_name = carbon_intensity_entry["location_name"]
 

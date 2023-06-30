@@ -7,10 +7,6 @@ from typing_extensions import TypedDict
 log = logging.getLogger(__name__)
 
 
-def foo():
-    pass
-
-
 class CarbonIntensityEntry(TypedDict):
     location_name: str
     carbon_intensity: float
