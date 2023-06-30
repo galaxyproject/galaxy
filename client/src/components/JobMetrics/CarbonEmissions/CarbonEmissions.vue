@@ -345,7 +345,9 @@ function getEnergyNeededText(energyNeededInKiloWattHours: number) {
 
                     <br />
 
-                    <span v-if="powerUsageEffectiveness === carbonEmissionsConstants.worldwidePowerUsageEffectiveness" id="pue">
+                    <span
+                        v-if="powerUsageEffectiveness === carbonEmissionsConstants.worldwidePowerUsageEffectiveness"
+                        id="pue">
                         <strong>2.</strong> Using the global default power usage effectiveness value of
                         {{ carbonEmissionsConstants.worldwidePowerUsageEffectiveness }}.
                     </span>

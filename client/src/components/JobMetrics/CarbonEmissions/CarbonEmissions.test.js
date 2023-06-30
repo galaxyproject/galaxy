@@ -112,7 +112,9 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
             localVue,
         });
         const locationText = wrapper.find("#location-explanation").element;
-        expect(locationText).toHaveTextContent(`1. Based off of the global carbon intensity value of ${carbonIntensity}.`);
+        expect(locationText).toHaveTextContent(
+            `1. Based off of the global carbon intensity value of ${carbonIntensity}.`
+        );
     });
 
     it("displays text saying that the carbon intensity value corresponding to `geographicalServerLocationName` was used.", () => {
@@ -132,7 +134,9 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
         });
 
         const locationElement = wrapper.find("#location-explanation").element;
-        expect(locationElement).toHaveTextContent(`1. based off of this galaxy instance's configured location of ${locationName}, which has a carbon intensity value of ${carbonIntensity} gCO2/kWh.`);
+        expect(locationElement).toHaveTextContent(
+            `1. based off of this galaxy instance's configured location of ${locationName}, which has a carbon intensity value of ${carbonIntensity} gCO2/kWh.`
+        );
     });
 
     it("displays text saying that global average values for PUE where used when `powerUsageEffectiveness` matches the global average.", () => {
@@ -150,6 +154,8 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
         });
 
         const locationElement = wrapper.find("#pue").element;
-        expect(locationElement).toHaveTextContent(`2. Using the global default power usage effectiveness value of ${powerUsageEffectiveness}.`);
+        expect(locationElement).toHaveTextContent(
+            `2. Using the global default power usage effectiveness value of ${powerUsageEffectiveness}.`
+        );
     });
 });
