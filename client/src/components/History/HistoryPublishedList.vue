@@ -35,7 +35,7 @@ const fields = [
     { key: "name", sortable: true },
     { key: "annotation", sortable: false },
     { label: "Owner", key: "username", sortable: false },
-    { label: "Community Tags", key: "tags", sortable: false },
+    { label: "Tags", key: "tags", sortable: false },
     { label: "Last Updated", key: "update_time", sortable: true },
 ];
 
@@ -210,7 +210,7 @@ watch([filterText, sortBy, sortDesc], () => {
                     <StatelessTags
                         clickable
                         :value="row.item.tags"
-                        :disabled="row.item.deleted"
+                        :disabled="true"
                         @input="(tags) => onTagsUpdate(tags, row)"
                         @tag-click="onTagClick" />
                 </template>
