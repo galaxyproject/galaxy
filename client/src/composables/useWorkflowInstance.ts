@@ -4,7 +4,7 @@ import { useWorkflowStore } from "@/stores/workflowStore";
 
 export function useWorkflowInstance(workflowId: string) {
     const workflowStore = useWorkflowStore();
-    const workflow = ref(workflowStore.getWorkflowByInstanceId(workflowId));
+    const workflow = ref(workflowStore.getStoredWorkflowByInstanceId(workflowId));
     const loading = ref(false);
 
     async function getWorkflowInstance() {

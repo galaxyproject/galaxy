@@ -13,6 +13,10 @@ OPEN_RESOURCE=bash -c 'open $$0 || xdg-open $$0'
 SLIDESHOW_TO_PDF?=bash -c 'docker run --rm -v `pwd`:/cwd astefanutti/decktape /cwd/$$0 /cwd/`dirname $$0`/`basename -s .html $$0`.pdf'
 YARN := $(shell command -v yarn 2> /dev/null)
 YARN_INSTALL_OPTS=--network-timeout 300000 --check-files
+# Respect predefined NODE_OPTIONS, otherwise set maximum heap size low for
+# compatibility with smaller machines.
+NODE_OPTIONS ?= --max-old-space-size=3072
+NODE_ENV = env NODE_OPTIONS=$(NODE_OPTIONS)
 CWL_TARGETS := test/functional/tools/cwl_tools/v1.0/conformance_tests.yaml \
 	test/functional/tools/cwl_tools/v1.1/conformance_tests.yaml \
 	test/functional/tools/cwl_tools/v1.2/conformance_tests.yaml \
@@ -197,19 +201,19 @@ install-client: node-deps ## Install prebuilt client as defined in root package.
 	yarn install && yarn run stage
 
 client: client-node-deps ## Rebuild client-side artifacts for local development.
-	cd client && yarn run build
+	cd client && $(NODE_ENV) yarn run build
 
 client-production: client-node-deps ## Rebuild client-side artifacts for a production deployment without sourcemaps.
-	cd client && yarn run build-production
+	cd client && $(NODE_ENV) yarn run build-production
 
 client-production-maps: client-node-deps ## Rebuild client-side artifacts for a production deployment with sourcemaps.
-	cd client && yarn run build-production-maps
+	cd client && $(NODE_ENV) yarn run build-production-maps
 
 client-format: client-node-deps ## Reformat client code
 	cd client && yarn run format
 
 client-dev-server: client-node-deps ## Starts a webpack dev server for client development (HMR enabled)
-	cd client && yarn run develop
+	cd client && $(NODE_ENV) yarn run develop
 
 client-test: client-node-deps  ## Run JS unit tests
 	cd client && yarn run test

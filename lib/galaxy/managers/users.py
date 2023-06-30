@@ -220,6 +220,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                 role.description = role.description.replace(user.email, email_hash)
             user.email = email_hash
             user.username = uname_hash
+            private_role.name = email_hash
+            private_role.description = f"Private Role for {email_hash}"
+            self.session().add(private_role)
         # Redact user addresses as well
         if self.app.config.redact_user_address_during_deletion:
             user_addresses = (

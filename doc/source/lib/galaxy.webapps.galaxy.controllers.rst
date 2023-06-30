@@ -137,14 +137,6 @@ galaxy.webapps.galaxy.controllers.user module
    :undoc-members:
    :show-inheritance:
 
-galaxy.webapps.galaxy.controllers.userskeys module
---------------------------------------------------
-
-.. automodule:: galaxy.webapps.galaxy.controllers.userskeys
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 galaxy.webapps.galaxy.controllers.visualization module
 ------------------------------------------------------
 
