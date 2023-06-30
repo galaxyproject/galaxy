@@ -52,28 +52,6 @@ const baseRules = {
     "import/first": "error",
     "import/newline-after-import": "error",
     "import/no-duplicates": "error",
-    // simple-import-sort actually does this better.
-    // "import/order": [
-    //     "error",
-    //     {
-    //         "newlines-between": "always",
-    //         groups: ["builtin", "external", "internal", "parent", "sibling", "index"],
-    //         pathGroups: [
-    //             {
-    //                 pattern: "@/**",
-    //                 group: "internal",
-    //             },
-    //             {
-    //                 pattern: "@tests/**",
-    //                 group: "internal",
-    //             },
-    //         ],
-    //         alphabetize: { order: "asc", caseInsensitive: true },
-    //         // Eventually we want this to be true; we should be avoiding
-    //         // side-effect-only imports other than css.
-    //         // warnOnUnassignedImports: true,
-    //     },
-    // ],
 };
 
 const baseExtends = [
