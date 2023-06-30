@@ -5,7 +5,9 @@ import Multiselect from "vue-multiselect";
 import { useMultiselect } from "@/composables/useMultiselect";
 import { uid } from "@/utils/utils";
 
-type SelectValue = string | number | null;
+import type { DataOption, DataValue } from "./types";
+
+type SelectValue = DataOption | null;
 const { ariaExpanded, onOpen, onClose } = useMultiselect();
 
 interface SelectOption {
@@ -18,8 +20,8 @@ const props = withDefaults(
         id?: string;
         multiple?: boolean;
         optional?: boolean;
-        options: Array<[string, SelectValue]>;
-        value?: Array<SelectValue> | string | number;
+        options: Array<DataOption>;
+        value?: Array<DataOption>;
     }>(),
     {
         id: `form-select-${uid()}`,
@@ -53,8 +55,8 @@ const deselectLabel: ComputedRef<string> = computed(() => {
  */
 const formattedOptions: ComputedRef<Array<SelectOption>> = computed(() => {
     const result: Array<SelectOption> = props.options.map((option) => ({
-        label: option[0],
-        value: option[1],
+        label: option.name,
+        value: option,
     }));
     if (props.optional && !props.multiple) {
         result.unshift({
