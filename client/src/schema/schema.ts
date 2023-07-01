@@ -1420,6 +1420,8 @@ export interface paths {
     "/api/users/{user_id}": {
         /** Display information about a specified user */
         get: operations["get_user_api_users__user_id__get"];
+        /** Delete the user with the given `id`, only admins can delete other users. */
+        delete: operations["delete_user_api_users__user_id__delete"];
     };
     "/api/users/{user_id}/api_key": {
         /** Return the user's API key */
@@ -3679,33 +3681,75 @@ export interface components {
          * @description Base model definition with common configuration used by all derived models.
          */
         DetailedUserModel: {
-            /** Deleted */
+            /**
+             * Deleted
+             * @description  User is deleted
+             */
             deleted: boolean;
-            /** Email */
+            /**
+             * Email
+             * @description User email
+             */
             email: string;
-            /** Id */
+            /**
+             * ID
+             * @description User ID
+             */
             id: string;
-            /** Is Admin */
+            /**
+             * Is admin
+             * @description User is admin
+             */
             is_admin: boolean;
-            /** Nice Total Disk Usage */
+            /**
+             * Nice total disc usage
+             * @description Size of all non-purged, unique datasets of the user in a nice format.
+             */
             nice_total_disk_usage: string;
-            /** Preferences */
+            /**
+             * Preferences
+             * @description Preferences of the user
+             */
             preferences: Record<string, never>;
-            /** Preferred Object Store Id */
+            /**
+             * Preferred object store id
+             * @description Preferred id of the object store
+             */
             preferred_object_store_id: Record<string, never>;
-            /** Purged */
+            /**
+             * Purged
+             * @description User is purged
+             */
             purged: boolean;
-            /** Quota */
+            /**
+             * Quota
+             * @description Quota applicable to the user
+             */
             quota: string;
-            /** Quota Bytes */
+            /**
+             * Quota in bytes
+             * @description Quota applicable to the user in bytes.
+             */
             quota_bytes: Record<string, never>;
-            /** Quota Percent */
+            /**
+             * Quota percent
+             * @description Percentage of the storage quota applicable to the user.
+             */
             quota_percent: Record<string, never>;
-            /** Tags Used */
+            /**
+             * Tags used
+             * @description Tags used by the user
+             */
             tags_used: string[];
-            /** Total Disk Usage */
+            /**
+             * Total disk usage
+             * @description Size of all non-purged, unique datasets of the user in bytes.
+             */
             total_disk_usage: number;
-            /** Username */
+            /**
+             * Username
+             * @description User username
+             */
             username: string;
         };
         /**
@@ -7500,6 +7544,17 @@ export interface components {
              * @default tar.gz
              */
             model_store_format?: components["schemas"]["ModelStoreFormat"];
+        };
+        /**
+         * PurgeUserPayload
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        PurgeUserPayload: {
+            /**
+             * Purge user
+             * @description Purge the user
+             */
+            purge: boolean;
         };
         /**
          * QuotaDetails
@@ -16708,6 +16763,38 @@ export interface operations {
                     "application/json":
                         | components["schemas"]["AnonUserModel"]
                         | components["schemas"]["DetailedUserModel"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_user_api_users__user_id__delete: {
+        /** Delete the user with the given `id`, only admins can delete other users. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the user to get. */
+            path: {
+                user_id: string;
+            };
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PurgeUserPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["DetailedUserModel"];
                 };
             };
             /** @description Validation Error */
