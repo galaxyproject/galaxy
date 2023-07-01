@@ -319,6 +319,10 @@ class DetailedUserModel(Model):
 FlexibleUserIdType = Union[DecodedDatabaseIdField, Literal["current"]]
 
 
+class PurgeUserPayload(Model):
+    purge: bool = Field(default=Required, title="Purge user", description="Purge the user")
+
+
 class UserModel(Model):
     """User in a transaction context."""
 
