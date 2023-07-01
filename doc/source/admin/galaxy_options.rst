@@ -1975,7 +1975,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    The actual name of the location corressponding to the
+    The actual name of the location corresponding to the
     `geographical_server_location_code`. To see a full list of
     supported locations, visit
     https://galaxyproject.org/admin/carbon_emissions
@@ -1988,7 +1988,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    The estimated power usage effectivness of the data centre housing
+    The estimated power usage effectiveness of the data centre housing
     the server your galaxy instance is running on. This can make
     carbon emissions estimates more accurate. For more information on
     how to calculate a PUE value, visit

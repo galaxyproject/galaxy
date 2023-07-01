@@ -1421,7 +1421,7 @@ mapping:
         default: "GLOBAL"
         required: false
         desc: |
-          The actual name of the location corressponding to the `geographical_server_location_code`.
+          The actual name of the location corresponding to the `geographical_server_location_code`.
           To see a full list of supported locations, visit https://galaxyproject.org/admin/carbon_emissions
 
       power_usage_effectiveness:
@@ -1429,7 +1429,7 @@ mapping:
         default: 1.67
         required: false
         desc: |
-          The estimated power usage effectivness of the data centre housing the server your galaxy
+          The estimated power usage effectiveness of the data centre housing the server your galaxy
           instance is running on. This can make carbon emissions estimates more accurate.
           For more information on how to calculate a PUE value, visit
           https://en.wikipedia.org/wiki/Power_usage_effectiveness
