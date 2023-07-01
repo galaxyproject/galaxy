@@ -104,7 +104,7 @@ class TestUsersApi(ApiTestCase):
         response = self._delete(f"users/{user['id']}", admin=True)
         self._assert_status_code_is_ok(response)
         data = dict(purge="True")
-        response = self._delete(f"users/{user['id']}", data=data, admin=True)
+        response = self._delete(f"users/{user['id']}", data=data, admin=True, json=True)
         self._assert_status_code_is_ok(response)
         payload = {"deleted": "True"}
         purged_user = self._get(f"users/{user['id']}", payload, admin=True).json()
