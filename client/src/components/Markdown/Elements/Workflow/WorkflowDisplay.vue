@@ -2,11 +2,11 @@
 import axios from "axios";
 import { computed, onMounted, ref } from "vue";
 
-import WorkflowTree from "./WorkflowTree.vue";
-import LoadingSpan from "@/components/LoadingSpan.vue";
-
 import { withPrefix } from "@/utils/redirect";
 import { isEmpty } from "@/utils/utils";
+
+import WorkflowTree from "./WorkflowTree.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface WorkflowDisplayProps {
     workflowId: string;

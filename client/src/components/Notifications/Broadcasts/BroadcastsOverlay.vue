@@ -6,10 +6,10 @@ import { BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router/composables";
 
-import Heading from "@/components/Common/Heading.vue";
-
 import { useMarkdown } from "@/composables/markdown";
 import { type BroadcastNotification, useBroadcastsStore } from "@/stores/broadcastsStore";
+
+import Heading from "@/components/Common/Heading.vue";
 
 library.add(faInfoCircle, faTimes);
 

@@ -3,11 +3,11 @@ import { computed, type Ref, ref } from "vue";
 //@ts-ignore missing typedefs
 import VirtualList from "vue-virtual-scroll-list";
 
-import MultipleViewItem from "./MultipleViewItem.vue";
-
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
 import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
 import type { HistorySummary } from "@/stores/historyStore";
+
+import MultipleViewItem from "./MultipleViewItem.vue";
 
 const props = withDefaults(
     defineProps<{

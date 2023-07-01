@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+import { QuotaSourceUsageProvider } from "@/components/User/DiskUsage/Quota/QuotaUsageProvider.js";
+
+import type { ConcreteObjectStoreModel } from "./types";
+
 import ConfigurationMarkdown from "./ConfigurationMarkdown.vue";
 import ObjectStoreBadges from "./ObjectStoreBadges.vue";
 import ObjectStoreRestrictionSpan from "./ObjectStoreRestrictionSpan.vue";
 import QuotaUsageBar from "@/components/User/DiskUsage/Quota/QuotaUsageBar.vue";
-
-import { QuotaSourceUsageProvider } from "@/components/User/DiskUsage/Quota/QuotaUsageProvider.js";
-
-import type { ConcreteObjectStoreModel } from "./types";
 
 interface Props {
     storageInfo: ConcreteObjectStoreModel;

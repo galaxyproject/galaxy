@@ -1,9 +1,9 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faDatabase } from "@fortawesome/free-solid-svg-icons";
 
-import SendForm from "./SendForm.vue";
-
 import { InvocationExportPlugin, InvocationExportPluginAction } from "../../model";
+
+import SendForm from "./SendForm.vue";
 
 library.add(faDatabase);
 

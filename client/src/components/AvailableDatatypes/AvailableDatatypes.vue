@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref } from "vue";
 
-import DelayedInput from "@/components/Common/DelayedInput.vue";
-
 import { type DetailedDatatypes, useDetailedDatatypes } from "@/composables/datatypes";
 import { useFilterObjectArray } from "@/composables/filter";
+
+import DelayedInput from "@/components/Common/DelayedInput.vue";
 
 const filter = ref("");
 const filterFields: Array<keyof DetailedDatatypes> = ["extension"];

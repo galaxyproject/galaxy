@@ -89,9 +89,9 @@ import { getAppRoot } from "onload/loadConfig";
 import { errorMessageAsString } from "utils/simple-error";
 import Vue, { ref, watch } from "vue";
 
-import FilesInput from "components/FilesDialog/FilesInput.vue";
-
 import ExternalLink from "./ExternalLink";
+
+import FilesInput from "components/FilesDialog/FilesInput.vue";
 
 library.add(faFolderOpen);
 library.add(faUpload);

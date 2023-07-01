@@ -2,9 +2,9 @@
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
-import ActivityItem from "components/ActivityBar/ActivityItem.vue";
-
 import { useNotificationsStore } from "@/stores/notificationsStore";
+
+import ActivityItem from "components/ActivityBar/ActivityItem.vue";
 
 const { totalUnreadCount } = storeToRefs(useNotificationsStore());
 

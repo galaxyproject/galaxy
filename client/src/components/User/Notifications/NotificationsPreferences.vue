@@ -5,9 +5,6 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BCard, BCol, BFormCheckbox, BRow } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import AsyncButton from "@/components/Common/AsyncButton.vue";
-import LoadingSpan from "@/components/LoadingSpan.vue";
-
 import {
     getNotificationsPreferencesFromServer,
     updateNotificationsPreferencesOnServer,
@@ -20,6 +17,9 @@ import {
     togglePushNotifications,
 } from "@/composables/utils/pushNotifications";
 import type { components } from "@/schema";
+
+import AsyncButton from "@/components/Common/AsyncButton.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 library.add(faExclamationCircle);
 

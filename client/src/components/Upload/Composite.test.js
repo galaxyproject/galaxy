@@ -1,6 +1,6 @@
-import Composite from "./Composite.vue";
-
 import { mountWithDetails } from "./testHelpers";
+
+import Composite from "./Composite.vue";
 
 describe("Composite.vue", () => {
     it("loads with correct initial state", async () => {

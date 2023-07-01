@@ -1,9 +1,9 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
-import UserDeletion from "./UserDeletion.vue";
-
 import { ROOT_COMPONENT } from "@/utils/navigation/schema";
+
+import UserDeletion from "./UserDeletion.vue";
 
 const localVue = getLocalVue(true);
 

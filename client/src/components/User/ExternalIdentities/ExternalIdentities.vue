@@ -98,9 +98,9 @@ import { sanitize } from "dompurify";
 import { userLogout } from "utils/logout";
 import Vue from "vue";
 
-import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin.vue";
-
 import svc from "./service";
+
+import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin.vue";
 
 Vue.use(BootstrapVue);
 

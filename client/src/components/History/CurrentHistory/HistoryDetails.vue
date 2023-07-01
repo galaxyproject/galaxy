@@ -15,10 +15,10 @@
 <script>
 import { mapActions } from "pinia";
 
-import DetailsLayout from "@/components/History/Layout/DetailsLayout.vue";
-
 import short from "@/components/plugins/short.js";
 import { useHistoryStore } from "@/stores/historyStore";
+
+import DetailsLayout from "@/components/History/Layout/DetailsLayout.vue";
 
 export default {
     components: {

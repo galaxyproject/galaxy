@@ -6,9 +6,9 @@ import { BNavItem } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router/composables";
 
-import Popper from "components/Popper/Popper.vue";
-
 import { useNotificationsStore } from "@/stores/notificationsStore";
+
+import Popper from "components/Popper/Popper.vue";
 
 library.add(faBell);
 

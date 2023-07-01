@@ -6,12 +6,6 @@ import { BAlert, BBadge, BButton, BButtonGroup, BListGroup, BListGroupItem, BPag
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import DelayedInput from "@/components/Common/DelayedInput.vue";
-import Heading from "@/components/Common/Heading.vue";
-import LoadingSpan from "@/components/LoadingSpan.vue";
-import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
-import UtcDate from "@/components/UtcDate.vue";
-
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useToast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -21,6 +15,12 @@ import {
     reimportHistoryFromExportRecordAsync,
 } from "@/stores/services/historyArchive.services";
 import localize from "@/utils/localization";
+
+import DelayedInput from "@/components/Common/DelayedInput.vue";
+import Heading from "@/components/Common/Heading.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
+import UtcDate from "@/components/UtcDate.vue";
 
 const router = useRouter();
 const historyStore = useHistoryStore();

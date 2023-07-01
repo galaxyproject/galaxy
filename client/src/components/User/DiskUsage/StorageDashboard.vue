@@ -2,10 +2,10 @@
 import { reactive } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import localize from "@/utils/localization";
+
 import DiskUsageSummary from "./DiskUsageSummary.vue";
 import IconCard from "@/components/IconCard.vue";
-
-import localize from "@/utils/localization";
 
 const router = useRouter();
 

@@ -5,11 +5,11 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BCol, BLink, BRow } from "bootstrap-vue";
 import { computed } from "vue";
 
-import Heading from "@/components/Common/Heading.vue";
-import NotificationActions from "@/components/Notifications/NotificationActions.vue";
-
 import type { SharedItemNotification } from "@/components/Notifications";
 import { useNotificationsStore } from "@/stores/notificationsStore";
+
+import Heading from "@/components/Common/Heading.vue";
+import NotificationActions from "@/components/Notifications/NotificationActions.vue";
 
 library.add(faExternalLinkAlt, faRetweet);
 

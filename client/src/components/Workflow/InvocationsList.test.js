@@ -4,7 +4,7 @@ import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import { formatDistanceToNow,parseISO } from "date-fns";
+import { formatDistanceToNow, parseISO } from "date-fns";
 import { getLocalVue } from "tests/jest/helpers";
 
 import InvocationsList from "./InvocationsList";

@@ -2,12 +2,6 @@
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import BarChart from "./Charts/BarChart.vue";
-import RecoverableItemSizeTooltip from "./RecoverableItemSizeTooltip.vue";
-import SelectedItemActions from "./SelectedItemActions.vue";
-import Heading from "@/components/Common/Heading.vue";
-import LoadingSpan from "@/components/LoadingSpan.vue";
-
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useToast } from "@/composables/toast";
 import localize from "@/utils/localization";
@@ -15,6 +9,12 @@ import localize from "@/utils/localization";
 import type { DataValuePoint } from "./Charts";
 import { bytesLabelFormatter, bytesValueFormatter } from "./Charts/formatters";
 import { fetchAllHistoriesSizeSummary, type ItemSizeSummary, purgeHistoryById, undeleteHistoryById } from "./service";
+
+import BarChart from "./Charts/BarChart.vue";
+import RecoverableItemSizeTooltip from "./RecoverableItemSizeTooltip.vue";
+import SelectedItemActions from "./SelectedItemActions.vue";
+import Heading from "@/components/Common/Heading.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const router = useRouter();
 const { success: successToast, error: errorToast } = useToast();

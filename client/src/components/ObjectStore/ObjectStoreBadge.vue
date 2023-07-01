@@ -4,9 +4,9 @@ import "./badgeIcons";
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
-import ConfigurationMarkdown from "./ConfigurationMarkdown.vue";
-
 import type { components } from "@/schema";
+
+import ConfigurationMarkdown from "./ConfigurationMarkdown.vue";
 
 type BadgeType = components["schemas"]["BadgeDict"];
 

@@ -2,9 +2,9 @@ import { getLocalVue } from "@tests/jest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 
-import CleanupOperationSummary from "./CleanupOperationSummary.vue";
-
 import { type CleanableItem, CleanableSummary, type CleanupOperation, CleanupResult } from "./model";
+
+import CleanupOperationSummary from "./CleanupOperationSummary.vue";
 
 const localVue = getLocalVue();
 

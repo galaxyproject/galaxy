@@ -92,12 +92,12 @@ import UtcDate from "components/UtcDate";
 import WorkflowInvocationState from "components/WorkflowInvocationState/WorkflowInvocationState";
 import { mapActions, mapState } from "pinia";
 
-import WorkflowRunButton from "./WorkflowRunButton.vue";
-
 import { useHistoryStore } from "@/stores/historyStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 
 import paginationMixin from "./paginationMixin";
+
+import WorkflowRunButton from "./WorkflowRunButton.vue";
 
 export default {
     components: {

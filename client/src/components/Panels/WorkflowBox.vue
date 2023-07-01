@@ -4,10 +4,10 @@ import { faGlobe, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
-import WorkflowSearch from "@/components/Workflow/WorkflowSearch.vue";
-
 import { useUserStore } from "@/stores/userStore";
 import { withPrefix } from "@/utils/redirect";
+
+import WorkflowSearch from "@/components/Workflow/WorkflowSearch.vue";
 
 // @ts-ignore bad library types
 library.add(faUpload, faGlobe);

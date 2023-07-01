@@ -2,10 +2,10 @@
 import axios from "axios";
 import { computed, ref } from "vue";
 
-import SelectObjectStore from "@/components/ObjectStore/SelectObjectStore.vue";
-
 import { prependPath } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
+
+import SelectObjectStore from "@/components/ObjectStore/SelectObjectStore.vue";
 
 const props = defineProps({
     userPreferredObjectStoreId: {

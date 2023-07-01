@@ -133,8 +133,6 @@ import QueryStringParsing from "utils/query-string-parsing";
 import { withPrefix } from "utils/redirect";
 import Vue from "vue";
 
-import ThemeSelector from "./ThemeSelector.vue";
-
 import { useUserStore } from "@/stores/userStore";
 
 import UserActivityBarSettings from "./UserActivityBarSettings";
@@ -142,6 +140,8 @@ import UserBeaconSettings from "./UserBeaconSettings";
 import UserDeletion from "./UserDeletion";
 import UserPreferencesElement from "./UserPreferencesElement";
 import UserPreferredObjectStore from "./UserPreferredObjectStore";
+
+import ThemeSelector from "./ThemeSelector.vue";
 
 Vue.use(BootstrapVue);
 

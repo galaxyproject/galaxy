@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 
-import LoadingSpan from "@/components/LoadingSpan.vue";
-import DescribeObjectStore from "@/components/ObjectStore/DescribeObjectStore.vue";
-
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { getObjectStoreDetails } from "./services";
 import type { ConcreteObjectStoreModel } from "./types";
+
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import DescribeObjectStore from "@/components/ObjectStore/DescribeObjectStore.vue";
 
 interface ShowSelectObjectStoreProps {
     forWhat: string;

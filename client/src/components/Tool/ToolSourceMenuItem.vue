@@ -5,9 +5,9 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useConfig } from "composables/config";
 import { storeToRefs } from "pinia";
 
-import ToolSource from "./ToolSource.vue";
-
 import { useUserStore } from "@/stores/userStore";
+
+import ToolSource from "./ToolSource.vue";
 
 library.add(faEye);
 

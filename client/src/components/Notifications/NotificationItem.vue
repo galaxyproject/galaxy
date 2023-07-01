@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+import type { UserNotification } from ".";
+
 import MessageNotificationComponent from "./Categories/MessageNotification.vue";
 import SharedItemNotificationComponent from "./Categories/SharedItemNotification.vue";
-
-import type { UserNotification } from ".";
 
 /**
  * A map of notification categories to their corresponding Vue components.

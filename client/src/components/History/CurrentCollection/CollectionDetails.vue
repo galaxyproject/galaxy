@@ -18,11 +18,11 @@
 </template>
 
 <script>
-import CollectionDescription from "@/components/History/Content/Collection/CollectionDescription.vue";
-import DetailsLayout from "@/components/History/Layout/DetailsLayout.vue";
-
 import { JobStateSummary } from "@/components/History/Content/Collection/JobStateSummary.js";
 import short from "@/components/plugins/short.js";
+
+import CollectionDescription from "@/components/History/Content/Collection/CollectionDescription.vue";
+import DetailsLayout from "@/components/History/Layout/DetailsLayout.vue";
 
 export default {
     components: {

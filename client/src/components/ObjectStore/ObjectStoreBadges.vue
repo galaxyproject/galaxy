@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import ObjectStoreBadge from "./ObjectStoreBadge.vue";
-
 import type { components } from "@/schema";
+
+import ObjectStoreBadge from "./ObjectStoreBadge.vue";
 
 type BadgeType = components["schemas"]["BadgeDict"];
 

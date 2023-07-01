@@ -5,11 +5,11 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BCol, BInputGroup, BRow } from "bootstrap-vue";
 import { formatDistanceToNow, parseISO } from "date-fns";
 
-import AsyncButton from "@/components/Common/AsyncButton.vue";
-import UtcDate from "@/components/UtcDate.vue";
-
 import type { UserNotification } from "@/components/Notifications";
 import { useNotificationsStore } from "@/stores/notificationsStore";
+
+import AsyncButton from "@/components/Common/AsyncButton.vue";
+import UtcDate from "@/components/UtcDate.vue";
 
 library.add(faHourglassHalf);
 

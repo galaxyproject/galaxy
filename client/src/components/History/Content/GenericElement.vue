@@ -2,9 +2,9 @@
 import type { PropType } from "vue";
 import Vue, { ref } from "vue";
 
-import ContentItem from "./ContentItem.vue";
-
 import type { components } from "@/schema";
+
+import ContentItem from "./ContentItem.vue";
 
 defineProps({
     dsc: {

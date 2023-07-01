@@ -3,12 +3,12 @@ import { mount } from "@vue/test-utils";
 import { PiniaVuePlugin } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
-import Lint from "./Lint.vue";
-
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 import { getUntypedWorkflowParameters } from "./modules/parameters";
+
+import Lint from "./Lint.vue";
 
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);

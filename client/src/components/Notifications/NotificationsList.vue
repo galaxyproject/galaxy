@@ -6,12 +6,12 @@ import { BAlert, BButton, BButtonGroup, BCard, BCol, BCollapse, BFormCheckbox, B
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
+import type { UserNotification } from "@/components/Notifications";
+import { useNotificationsStore } from "@/stores/notificationsStore";
+
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import NotificationItem from "@/components/Notifications/NotificationItem.vue";
 import NotificationsPreferences from "@/components/User/Notifications/NotificationsPreferences.vue";
-
-import type { UserNotification } from "@/components/Notifications";
-import { useNotificationsStore } from "@/stores/notificationsStore";
 
 library.add(faCircle, faHourglassHalf, faRetweet);
 

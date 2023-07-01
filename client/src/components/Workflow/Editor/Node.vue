@@ -116,12 +116,6 @@ import BootstrapVue from "bootstrap-vue";
 import type { PropType, Ref } from "vue";
 import Vue, { computed, reactive, ref } from "vue";
 
-import LoadingSpan from "@/components/LoadingSpan.vue";
-import DraggableWrapper from "@/components/Workflow/Editor/DraggablePan.vue";
-import NodeInput from "@/components/Workflow/Editor/NodeInput.vue";
-import NodeOutput from "@/components/Workflow/Editor/NodeOutput.vue";
-import Recommendations from "@/components/Workflow/Editor/Recommendations.vue";
-
 import { getGalaxyInstance } from "@/app";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useNodePosition } from "@/components/Workflow/Editor/composables/useNodePosition";
@@ -132,6 +126,12 @@ import type { Step } from "@/stores/workflowStepStore";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 import type { OutputTerminals } from "./modules/terminals";
+
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import DraggableWrapper from "@/components/Workflow/Editor/DraggablePan.vue";
+import NodeInput from "@/components/Workflow/Editor/NodeInput.vue";
+import NodeOutput from "@/components/Workflow/Editor/NodeOutput.vue";
+import Recommendations from "@/components/Workflow/Editor/Recommendations.vue";
 
 Vue.use(BootstrapVue);
 

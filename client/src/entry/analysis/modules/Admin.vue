@@ -1,10 +1,10 @@
 <script setup>
 import { computed } from "vue";
 
+import { useConfig } from "@/composables/config";
+
 import AdminPanel from "@/components/admin/AdminPanel.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
-
-import { useConfig } from "@/composables/config";
 
 const { config, isLoaded } = useConfig();
 

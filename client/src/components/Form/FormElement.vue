@@ -6,6 +6,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { ComputedRef } from "vue";
 import { computed, ref, useAttrs } from "vue";
 
+import type { FormParameterAttributes, FormParameterTypes, FormParameterValue } from "./parameterTypes";
+
 import FormBoolean from "./Elements/FormBoolean.vue";
 import FormColor from "./Elements/FormColor.vue";
 import FormDirectory from "./Elements/FormDirectory.vue";
@@ -20,8 +22,6 @@ import FormSelection from "./Elements/FormSelection.vue";
 import FormTags from "./Elements/FormTags.vue";
 import FormText from "./Elements/FormText.vue";
 import FormUpload from "./Elements/FormUpload.vue";
-
-import type { FormParameterAttributes, FormParameterTypes, FormParameterValue } from "./parameterTypes";
 
 interface FormElementProps {
     id?: string;

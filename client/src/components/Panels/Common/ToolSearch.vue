@@ -2,12 +2,12 @@
 import { computed, onMounted, onUnmounted, type PropType, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import DelayedInput from "@/components/Common/DelayedInput.vue";
-
 import { getGalaxyInstance } from "@/app";
 import _l from "@/utils/localization";
 
 import { flattenTools } from "../utilities.js";
+
+import DelayedInput from "@/components/Common/DelayedInput.vue";
 
 const router = useRouter();
 

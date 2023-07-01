@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import FormElement from "@/components/Form/FormElement.vue";
-
 import type { Step } from "@/stores/workflowStepStore";
+
+import FormElement from "@/components/Form/FormElement.vue";
 
 const emit = defineEmits<{
     (e: "onUpdateStep", value: Step): void;

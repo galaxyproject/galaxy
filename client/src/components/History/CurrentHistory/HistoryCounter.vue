@@ -5,14 +5,14 @@ import prettyBytes from "pretty-bytes";
 import { computed, onMounted, ref, toRef } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import PreferredStorePopover from "./PreferredStorePopover.vue";
-import SelectPreferredStore from "./SelectPreferredStore.vue";
-
 import { HistoryFilters } from "@/components/History/HistoryFilters.js";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 
 import { useDetailedHistory } from "./usesDetailedHistory.js";
+
+import PreferredStorePopover from "./PreferredStorePopover.vue";
+import SelectPreferredStore from "./SelectPreferredStore.vue";
 
 interface HistoryBase {
     id: string;

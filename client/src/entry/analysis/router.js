@@ -1,5 +1,4 @@
 import { getGalaxyInstance } from "app";
-import AvailableDatatypes from "components/AvailableDatatypes/AvailableDatatypes";
 import Citations from "components/Citation/Citations";
 import ClientError from "components/ClientError";
 import CollectionEditView from "components/Collections/common/CollectionEditView";
@@ -61,12 +60,14 @@ import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 import VueRouter from "vue-router";
 
-import HistoryArchive from "@/components/History/Archiving/HistoryArchive.vue";
-import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
-import AboutGalaxy from "components/AboutGalaxy.vue";
-import NotificationsList from "components/Notifications/NotificationsList.vue";
+import AvailableDatatypes from "@/components/AvailableDatatypes/AvailableDatatypes";
 
 import { patchRouterPush } from "./router-push";
+
+import AboutGalaxy from "@/components/AboutGalaxy.vue";
+import HistoryArchive from "@/components/History/Archiving/HistoryArchive.vue";
+import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
+import NotificationsList from "@/components/Notifications/NotificationsList.vue";
 
 Vue.use(VueRouter);
 

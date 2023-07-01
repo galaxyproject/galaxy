@@ -5,11 +5,11 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BCol, BRow } from "bootstrap-vue";
 import { computed } from "vue";
 
-import Heading from "@/components/Common/Heading.vue";
-import NotificationActions from "@/components/Notifications/NotificationActions.vue";
-
 import type { MessageNotification } from "@/components/Notifications";
 import { useMarkdown } from "@/composables/markdown";
+
+import Heading from "@/components/Common/Heading.vue";
+import NotificationActions from "@/components/Notifications/NotificationActions.vue";
 
 library.add(faInbox);
 

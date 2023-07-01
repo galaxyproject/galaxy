@@ -70,14 +70,14 @@ import { prependPath } from "utils/redirect";
 import { errorMessageAsString } from "utils/simple-error";
 import Vue from "vue";
 
-import LoadingSpan from "@/components/LoadingSpan.vue";
-
 import { useHistoryStore } from "@/stores/historyStore";
 
 import { DatatypesProvider, DbKeyProvider, SuitableConvertersProvider } from "../../providers";
 import ChangeDatatypeTab from "./ChangeDatatypeTab";
 import DatabaseEditTab from "./DatabaseEditTab";
 import SuitableConvertersTab from "./SuitableConvertersTab";
+
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 library.add(faDatabase, faTable, faBars, faUser, faCog);
 
