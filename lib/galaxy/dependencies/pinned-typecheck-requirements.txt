@@ -1,11 +1,11 @@
 cffi==1.15.1
 cryptography==41.0.1
-mypy==1.4.0
+mypy==1.4.1
 mypy-extensions==1.0.0
 pycparser==2.21
-pydantic==1.10.9
+pydantic==1.10.11
 tomli==2.0.1
-typed-ast==1.5.4
+typed-ast==1.5.5
 types-bleach==6.0.0.3
 types-boto==2.49.18.8
 types-contextvars==2.4.7.2
@@ -19,4 +19,4 @@ types-PyYAML==6.0.12.10
 types-requests==2.31.0.1
 types-six==1.16.21.8
 types-urllib3==1.26.25.13
-typing_extensions==4.6.3
+typing_extensions==4.7.1
