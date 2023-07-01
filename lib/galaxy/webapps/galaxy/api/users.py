@@ -49,6 +49,7 @@ from galaxy.schema.schema import (
     AsyncTaskResultSummary,
     DetailedUserModel,
     FlexibleUserIdType,
+    PurgeUserPayload,
     UserBeaconSetting,
 )
 from galaxy.security.validate_user_input import (
@@ -107,6 +108,8 @@ RecalculateDiskUsageResponseDescriptions = {
         "description": "The background task was submitted but there is no status tracking ID available.",
     },
 }
+
+PurgeUserBody = Body(default=None, title="Purge user", description="Purge the user.")
 
 
 @router.cbv
@@ -171,6 +174,65 @@ class FastAPIUsers:
         self, trans: ProvidesUserContext = DependsOnTrans, user_id: DecodedDatabaseIdField = UserIdPathParam
     ) -> str:
         return self.service.create_api_key(trans, user_id).key
+
+    # @expose_api
+    # def delete(self, trans, id, **kwd):
+    #     """
+    #     DELETE /api/users/{id}
+    #     delete the user with the given ``id``
+    #     Functionality restricted based on admin status
+
+    #     :param id: the encoded id of the user to delete
+    #     :type  id: str
+
+    #     :param purge: (optional) if True, purge the user
+    #     :type  purge: bool
+    #     """
+    #     user_to_update = self.user_manager.by_id(self.decode_id(id))
+    #     if trans.user_is_admin:
+    #         purge = util.string_as_bool(kwd.get("purge", False))
+    #         if purge:
+    #             log.debug("Purging user %s", user_to_update)
+    #             self.user_manager.purge(user_to_update)
+    #         else:
+    #             self.user_manager.delete(user_to_update)
+    #     else:
+    #         if trans.user == user_to_update:
+    #             self.user_manager.delete(user_to_update)
+    #         else:
+    #             raise exceptions.InsufficientPermissionsException("You may only delete your own account.")
+    #     return self.user_serializer.serialize_to_view(user_to_update, view="detailed")
+
+    @router.delete(
+        "/api/users/{user_id}",
+        name="delete_user",
+        summary="Delete the user with the given `id`, only admins can delete other users.",
+    )
+    def delete(
+        self,
+        payload: Optional[PurgeUserPayload] = PurgeUserBody,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_id: DecodedDatabaseIdField = UserIdPathParam,
+    ) -> DetailedUserModel:
+        user_to_update = self.service.user_manager.by_id(user_id)
+        payload = payload or None
+        if payload:
+            purge = payload.purge
+        else:
+            purge = False
+        if trans.user_is_admin:
+            if purge:
+                log.debug("Purging user %s", user_to_update)
+                self.service.user_manager.purge(user_to_update)
+            else:
+                self.service.user_manager.delete(user_to_update)
+        else:
+            if trans.user == user_to_update:
+                self.service.user_manager.delete(user_to_update)
+            else:
+                raise exceptions.InsufficientPermissionsException("You may only delete your own account.")
+        user_response = self.user_serializer.serialize_to_view(user_to_update, view="detailed")
+        return DetailedUserModel(**user_response)
 
     @router.delete(
         "/api/users/{user_id}/api_key",
@@ -455,34 +517,6 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         current_user = trans.user
         user_to_update = self._get_user_full(trans, id, **kwd)
         self.user_deserializer.deserialize(user_to_update, payload, user=current_user, trans=trans)
-        return self.user_serializer.serialize_to_view(user_to_update, view="detailed")
-
-    @expose_api
-    def delete(self, trans, id, **kwd):
-        """
-        DELETE /api/users/{id}
-        delete the user with the given ``id``
-        Functionality restricted based on admin status
-
-        :param id: the encoded id of the user to delete
-        :type  id: str
-
-        :param purge: (optional) if True, purge the user
-        :type  purge: bool
-        """
-        user_to_update = self.user_manager.by_id(self.decode_id(id))
-        if trans.user_is_admin:
-            purge = util.string_as_bool(kwd.get("purge", False))
-            if purge:
-                log.debug("Purging user %s", user_to_update)
-                self.user_manager.purge(user_to_update)
-            else:
-                self.user_manager.delete(user_to_update)
-        else:
-            if trans.user == user_to_update:
-                self.user_manager.delete(user_to_update)
-            else:
-                raise exceptions.InsufficientPermissionsException("You may only delete your own account.")
         return self.user_serializer.serialize_to_view(user_to_update, view="detailed")
 
     @web.require_admin
