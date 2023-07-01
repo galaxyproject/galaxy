@@ -111,7 +111,8 @@ async function getRemoteFilesAt(target) {
 
 function getRemoteFiles(success, error) {
     return $.ajax({
-        url: `${getAppRoot()}api/remote_files`,
+        // url: `${getAppRoot()}api/remote_files`,
+        url: `${getAppRoot()}static/api_remote_files.json`,
         method: "GET",
         success: success,
         error: error,

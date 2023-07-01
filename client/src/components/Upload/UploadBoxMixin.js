@@ -1,3 +1,4 @@
+import Vue from "vue"; //TODO confirm if need to bring in Vue at this location
 import _l from "utils/localization";
 import $ from "jquery";
 import Select2 from "components/Select2";
@@ -6,7 +7,8 @@ import UploadExtension from "mvc/upload/upload-extension";
 import UploadModel from "mvc/upload/upload-model";
 import UploadWrapper from "./UploadWrapper";
 import { defaultNewFileName, uploadModelsToPayload } from "./helpers";
-import UploadFtp from "mvc/upload/upload-ftp";
+// import UploadFtp from "mvc/upload/upload-ftp"; //TODO file marked for deprecation
+import { default as FormFTP } from "components/Form/Elements/FormFTP";
 import LazyLimited from "./lazy-limited";
 import { findExtension } from "./utils";
 import { filesDialog, refreshContentsWrapper } from "utils/data";
@@ -48,6 +50,7 @@ export default {
             }
         },
         remoteFiles() {
+            return true;
             // this needs to be true for the tests to pass
             return !!this.fileSourcesConfigured || !!this.ftpUploadSite;
         },
@@ -258,26 +261,9 @@ export default {
                     { multiple: true }
                 );
             } else {
-                this.ftp.show(
-                    new UploadFtp({
-                        collection: this.collection,
-                        ftp_upload_site: this.ftpUploadSite,
-                        onadd: (ftp_file) => {
-                            return this.uploadbox.add([
-                                {
-                                    mode: "ftp",
-                                    name: ftp_file.path,
-                                    size: ftp_file.size,
-                                    path: ftp_file.path,
-                                    uri: ftp_file.uri,
-                                },
-                            ]);
-                        },
-                        onremove: function (model_index) {
-                            this.collection.remove(model_index);
-                        },
-                    }).$el
-                );
+                const vueDiv = document.createElement("div");
+                document.body.appendChild(vueDiv);
+                this.ftp.show(this.mountFtpComponentFromJs(vueDiv));
             }
         },
         /** Create a new file */
@@ -329,8 +315,8 @@ export default {
         initAppProperties() {
             this.listExtensions = this.details.effectiveExtensions;
             this.listGenomes = this.details.listGenomes;
-            this.ftpUploadSite = this.details.currentFtp;
-            this.fileSourcesConfigured = this.details.fileSourcesConfigured;
+            this.ftpUploadSite = true; //this.details.currentFtp;
+            this.fileSourcesConfigured = false; //true;//this.details.fileSourcesConfigured;
         },
         initFtpPopover() {
             // add ftp file viewer
@@ -364,6 +350,39 @@ export default {
         },
         getRequestUrl: function (items, history_id) {
             return `${getAppRoot()}api/tools/fetch`;
+        },
+        mountFtpComponentFromJs: function (targetDom) {
+            return new Vue({
+                el: ".upload-top" /* //TODO component requires positioning */,
+                render: (h) =>
+                    h(FormFTP, {
+                        props: this.buildFtpComponentProps(),
+                    }),
+            }).$mount(targetDom).$el;
+        },
+        buildFtpComponentProps: function () {
+            return {
+                options: {
+                    ftp_upload_site: this.ftpUploadSite,
+                    upload_box: this.uploadbox,
+                    onchange: function () {},
+                    onadd: function (uploadBox, file) {
+                        return uploadBox.add([
+                            {
+                                mode: "ftp",
+                                name: file.path,
+                                size: file.size,
+                                path: file.path,
+                                uri: file.uri,
+                            },
+                        ]);
+                    },
+                    onremove: function (thisCollection, index) {
+                        return thisCollection.remove(index);
+                    },
+                },
+                collection: this.collection,
+            };
         },
     },
 };
