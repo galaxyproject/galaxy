@@ -286,20 +286,34 @@ class AnonUserModel(Model):
 
 
 class DetailedUserModel(Model):
-    preferences: Dict[Any, Any] = Field(default=Required)
-    is_admin: bool = Field(default=Required)
-    quota_percent: Any = Field(default=Required)
-    total_disk_usage: float = Field(default=Required)
-    nice_total_disk_usage: str = Field(default=Required)
-    tags_used: List[str] = Field(default=Required)
-    deleted: bool = Field(default=Required)
-    id: str = Field(default=Required)
-    email: str = Field(default=Required)
-    preferred_object_store_id: Any = Field(default=Required)
-    username: str = Field(default=Required)
-    quota_bytes: Any = Field(default=Required)
-    quota: str = Field(default=Required)
-    purged: bool = Field(default=Required)
+    preferences: Dict[Any, Any] = Field(default=Required, title="Preferences", description="Preferences of the user")
+    is_admin: bool = Field(default=Required, title="Is admin", description="User is admin")
+    quota_percent: Any = Field(
+        default=Required, title="Quota percent", description="Percentage of the storage quota applicable to the user."
+    )
+    total_disk_usage: float = Field(
+        default=Required,
+        title="Total disk usage",
+        description="Size of all non-purged, unique datasets of the user in bytes.",
+    )
+    nice_total_disk_usage: str = Field(
+        default=Required,
+        title="Nice total disc usage",
+        description="Size of all non-purged, unique datasets of the user in a nice format.",
+    )
+    tags_used: List[str] = Field(default=Required, title="Tags used", description="Tags used by the user")
+    deleted: bool = Field(default=Required, title="Deleted", description=" User is deleted")
+    id: str = Field(default=Required, title="ID", description="User ID")
+    email: str = Field(default=Required, title="Email", description="User email")
+    preferred_object_store_id: Any = Field(
+        default=Required, title="Preferred object store id", description="Preferred id of the object store"
+    )
+    username: str = Field(default=Required, title="Username", description="User username")
+    quota_bytes: Any = Field(
+        default=Required, title="Quota in bytes", description="Quota applicable to the user in bytes."
+    )
+    quota: str = Field(default=Required, title="Quota", description="Quota applicable to the user")
+    purged: bool = Field(default=Required, title="Purged", description="User is purged")
 
 
 FlexibleUserIdType = Union[DecodedDatabaseIdField, Literal["current"]]
