@@ -146,7 +146,13 @@ class UsersService(ServiceBase):
     ) -> Union[DetailedUserModel, AnonUserModel]:
         user = self.get_user_full(trans=trans, deleted=deleted, user_id=user_id)
         if user is not None:
-            user_response = self.user_serializer.serialize_to_view(user, view="detailed")
-            return DetailedUserModel(**user_response)
+            return self.user_to_detailed_model(user)
         anon_response = self._anon_user_api_value(trans)
         return AnonUserModel(**anon_response)
+
+    def user_to_detailed_model(
+        self,
+        user: User,
+    ) -> DetailedUserModel:
+        user_response = self.user_serializer.serialize_to_view(user, view="detailed")
+        return DetailedUserModel(**user_response)
