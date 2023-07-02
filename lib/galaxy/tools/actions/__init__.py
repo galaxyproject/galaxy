@@ -663,11 +663,15 @@ class DefaultToolAction(ToolAction):
             job.state = job.states.SKIPPED
             for output_collection in output_collections.out_collections.values():
                 output_collection.mark_as_populated()
+            for hdca in output_collections.out_collection_instances.values():
+                hdca.visible = False
             object_store_populator = ObjectStorePopulator(trans.app, trans.user)
             for data in out_data.values():
                 object_store_populator.set_object_store_id(data)
                 data.extension = "expression.json"
                 data.state = "ok"
+                data.blurb = "skipped"
+                data.visible = False
                 with open(data.dataset.file_name, "w") as out:
                     out.write(json.dumps(None))
         job.preferred_object_store_id = preferred_object_store_id

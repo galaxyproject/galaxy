@@ -336,7 +336,7 @@ class ConfiguresHandlers:
                 HANDLER_ASSIGNMENT_METHODS.MEM_SELF,
                 configured,
             )
-        if flush():
+        if flush:
             _timed_flush_obj(obj)
         queue_callback()
         return self.app.config.server_name

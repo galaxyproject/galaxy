@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { formatDistanceToNow, parseISO } from "date-fns";
-import { formatInTimeZone } from "date-fns-tz";
 import { computed } from "vue";
+import { format, formatDistanceToNow, parseISO } from "date-fns";
 
 interface UtcDateProps {
     date: string;
@@ -12,13 +11,12 @@ const props = withDefaults(defineProps<UtcDateProps>(), {
     mode: "date",
 });
 
-// Component assumes ISO format date, but note that in Galaxy this won't have
-// TZinfo -- it will always be Zulu
 const parsedDate = computed(() => parseISO(`${props.date}Z`));
 const elapsedTime = computed(() => formatDistanceToNow(parsedDate.value, { addSuffix: true }));
 const fullISO = computed(() => parsedDate.value.toISOString());
-const pretty = computed(() => `${formatInTimeZone(parsedDate.value, "Etc/Zulu", "eeee MMM do H:mm:ss yyyy")} UTC`);
+const pretty = computed(() => format(parsedDate.value, "eeee MMM do H:mm:ss yyyy zz"));
 </script>
+
 <template>
     <span v-if="mode == 'date'" class="utc-time" :title="elapsedTime">
         {{ fullISO }}
