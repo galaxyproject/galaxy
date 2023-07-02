@@ -1,14 +1,14 @@
 /**
     This class creates input elements. New input parameter types should be added to the types dictionary.
 */
-import Backbone from "backbone";
 import { getGalaxyInstance } from "app";
-import Utils from "utils/utils";
+import Backbone from "backbone";
+import DataPicker from "mvc/ui/ui-data-picker";
 import Ui from "mvc/ui/ui-misc";
 import SelectContent from "mvc/ui/ui-select-content";
-import SelectLibrary from "mvc/ui/ui-select-library";
 import SelectFtp from "mvc/ui/ui-select-ftp";
-import DataPicker from "mvc/ui/ui-data-picker";
+import SelectLibrary from "mvc/ui/ui-select-library";
+import Utils from "utils/utils";
 
 // create form view
 export default Backbone.View.extend({

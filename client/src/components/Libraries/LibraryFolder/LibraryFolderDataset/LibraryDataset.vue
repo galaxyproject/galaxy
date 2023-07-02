@@ -128,22 +128,23 @@
 </template>
 
 <script>
-import { mapState } from "pinia";
-import { useUserStore } from "@/stores/userStore";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faUsers, faRedo, faPencilAlt, faBook, faDownload, faTimes } from "@fortawesome/free-solid-svg-icons";
-import { faSave } from "@fortawesome/free-regular-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import mod_import_dataset from "components/Libraries/LibraryFolder/TopToolbar/import-to-history/import-dataset";
-import { Services } from "components/Libraries/LibraryFolder/services";
-import LibraryBreadcrumb from "components/Libraries/LibraryFolder/LibraryBreadcrumb";
-import download from "components/Libraries/LibraryFolder/TopToolbar/download";
+import { faSave } from "@fortawesome/free-regular-svg-icons";
+import { faBook, faDownload, faPencilAlt, faRedo, faTimes, faUsers } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import CopyToClipboard from "components/CopyToClipboard";
-import { Toast } from "composables/toast";
-import { fieldTitles } from "components/Libraries/LibraryFolder/LibraryFolderDataset/constants";
-import { DbKeyProvider, DatatypesProvider } from "components/providers";
-import SingleItemSelector from "components/SingleItemSelector";
 import { buildFields } from "components/Libraries/library-utils";
+import LibraryBreadcrumb from "components/Libraries/LibraryFolder/LibraryBreadcrumb";
+import { fieldTitles } from "components/Libraries/LibraryFolder/LibraryFolderDataset/constants";
+import { Services } from "components/Libraries/LibraryFolder/services";
+import download from "components/Libraries/LibraryFolder/TopToolbar/download";
+import mod_import_dataset from "components/Libraries/LibraryFolder/TopToolbar/import-to-history/import-dataset";
+import { DatatypesProvider, DbKeyProvider } from "components/providers";
+import SingleItemSelector from "components/SingleItemSelector";
+import { Toast } from "composables/toast";
+import { mapState } from "pinia";
+
+import { useUserStore } from "@/stores/userStore";
 
 library.add(faUsers, faRedo, faBook, faDownload, faPencilAlt, faTimes, faSave);
 

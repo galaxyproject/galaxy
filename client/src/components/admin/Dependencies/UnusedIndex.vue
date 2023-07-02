@@ -18,8 +18,8 @@
     </dependency-index-wrapper>
 </template>
 <script>
+import { deletedUnusedPaths, getDependencyUnusedPaths } from "../AdminServices";
 import DependencyIndexWrapper from "./DependencyIndexWrapper";
-import { getDependencyUnusedPaths, deletedUnusedPaths } from "../AdminServices";
 
 export default {
     components: { DependencyIndexWrapper },

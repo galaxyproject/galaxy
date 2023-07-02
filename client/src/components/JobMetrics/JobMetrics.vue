@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { computed, ref, unref } from "vue";
+
+import { useJobMetricsStore } from "@/stores/jobMetricsStore";
+
 import AwsEstimate from "./AwsEstimate.vue";
 import CarbonEmissions from "./CarbonEmissions/CarbonEmissions.vue";
-import { useJobMetricsStore } from "@/stores/jobMetricsStore";
-import { computed, ref, unref } from "vue";
 
 const props = defineProps({
     jobId: {

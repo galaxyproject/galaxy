@@ -1,6 +1,7 @@
-import { useAnimationFrame } from "./animationFrame";
 import type { MaybeComputedRef } from "@vueuse/core";
 import { resolveUnref } from "@vueuse/core";
+
+import { useAnimationFrame } from "./animationFrame";
 
 export type Size = { width: number; height: number };
 type CallbackValue = { clientSize: Size; scrollSize: Size };

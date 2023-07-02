@@ -147,12 +147,14 @@ chr5    152537259</pre
 </template>
 
 <script>
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-import axios from "axios";
-import { getGalaxyInstance } from "app";
-import Multiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.min.css";
+
+import { getGalaxyInstance } from "app";
+import axios from "axios";
+import BootstrapVue from "bootstrap-vue";
+import Vue from "vue";
+import Multiselect from "vue-multiselect";
+
 Vue.use(BootstrapVue);
 
 export default {

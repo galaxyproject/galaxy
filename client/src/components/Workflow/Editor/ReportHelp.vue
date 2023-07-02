@@ -73,6 +73,7 @@ history_dataset_collection_display(output="Merged Bam")
 
 <script>
 import { datasetCommandsHtml, markdownGeneralHelpHtml } from "components/Markdown/help";
+
 export default {
     data() {
         return {

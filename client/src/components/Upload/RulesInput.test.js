@@ -1,5 +1,6 @@
-import RulesInput from "./RulesInput.vue";
 import { mountWithDetails } from "./testHelpers";
+
+import RulesInput from "./RulesInput.vue";
 
 describe("RulesInput.vue", () => {
     it("loads with correct initial state", async () => {

@@ -102,23 +102,25 @@
 
 <script>
 import { getGalaxyInstance } from "app";
-import { useUserStore } from "@/stores/userStore";
-import { useHistoryStore } from "@/stores/historyStore";
-import { useHistoryItemsStore } from "stores/history/historyItemsStore";
-import { useJobStore } from "stores/jobStore";
-import { mapState, mapActions } from "pinia";
-import { getToolFormData, updateToolFormData, submitJob } from "./services";
-import { allowCachedJobs } from "./utilities";
-import { refreshContentsWrapper } from "utils/data";
-import ToolCard from "./ToolCard";
 import ButtonSpinner from "components/Common/ButtonSpinner";
-import ConfigProvider from "components/providers/ConfigProvider";
-import LoadingSpan from "components/LoadingSpan";
+import Heading from "components/Common/Heading";
 import FormDisplay from "components/Form/FormDisplay";
 import FormElement from "components/Form/FormElement";
+import LoadingSpan from "components/LoadingSpan";
+import ConfigProvider from "components/providers/ConfigProvider";
 import ToolEntryPoints from "components/ToolEntryPoints/ToolEntryPoints";
+import { mapActions, mapState } from "pinia";
+import { useHistoryItemsStore } from "stores/history/historyItemsStore";
+import { useJobStore } from "stores/jobStore";
+import { refreshContentsWrapper } from "utils/data";
+
+import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
+
 import ToolRecommendation from "../ToolRecommendation";
-import Heading from "components/Common/Heading";
+import { getToolFormData, submitJob, updateToolFormData } from "./services";
+import ToolCard from "./ToolCard";
+import { allowCachedJobs } from "./utilities";
 
 export default {
     components: {

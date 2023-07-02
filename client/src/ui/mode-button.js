@@ -1,4 +1,5 @@
 import jQuery from "jquery";
+
 ("use_strict");
 
 var $ = jQuery;

@@ -22,8 +22,8 @@
     </tr>
 </template>
 <script>
-import { faCompressAlt, faExpandAlt } from "@fortawesome/free-solid-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCompressAlt, faExpandAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 library.add(faCompressAlt, faExpandAlt);

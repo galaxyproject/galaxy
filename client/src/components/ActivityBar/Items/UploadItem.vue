@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, type Ref } from "vue";
+import { onMounted, onUnmounted, type Ref, ref } from "vue";
+
+import { eventHub } from "@/components/plugins/eventHub.js";
+import { useGlobalUploadModal } from "@/composables/globalUploadModal.js";
+import Query from "@/utils/query-string-parsing.js";
+
 import ActivityItem from "components/ActivityBar/ActivityItem.vue";
-// @ts-ignore
-import Query from "utils/query-string-parsing.js";
-// @ts-ignore
-import { useGlobalUploadModal } from "composables/globalUploadModal.js";
-// @ts-ignore
-import { eventHub } from "components/plugins/eventHub.js";
 
 const { openGlobalUploadModal } = useGlobalUploadModal();
 

@@ -1,5 +1,6 @@
-import { withPrefix } from "./redirect";
 import { getAppRoot } from "@/onload/loadConfig";
+
+import { withPrefix } from "./redirect";
 
 jest.mock("@/onload/loadConfig");
 

@@ -35,12 +35,12 @@
 </template>
 
 <script>
-import Vue from "vue";
-
-import VueObserveVisibility from "vue-observe-visibility";
-import Multiselect from "vue-multiselect";
-import { Services } from "components/Libraries/LibraryPermissions/services";
 import "vue-multiselect/dist/vue-multiselect.min.css";
+
+import { Services } from "components/Libraries/LibraryPermissions/services";
+import Vue from "vue";
+import Multiselect from "vue-multiselect";
+import VueObserveVisibility from "vue-observe-visibility";
 
 Vue.use(VueObserveVisibility);
 export default {

@@ -16,8 +16,9 @@
 </template>
 
 <script>
-import { refactor } from "./modules/services";
 import { BModal } from "bootstrap-vue";
+
+import { refactor } from "./modules/services";
 
 export default {
     components: { BModal },

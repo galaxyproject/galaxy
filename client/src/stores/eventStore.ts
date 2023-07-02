@@ -3,8 +3,8 @@
  * e.g. to provide early drag event data transfer access.
  */
 
-import { ref, type Ref } from "vue";
 import { defineStore } from "pinia";
+import { type Ref, ref } from "vue";
 
 export type EventData = { [key: string]: unknown };
 

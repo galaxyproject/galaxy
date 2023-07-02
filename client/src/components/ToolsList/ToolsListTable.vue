@@ -27,9 +27,10 @@
 </template>
 
 <script>
+import { useGlobalUploadModal } from "composables/globalUploadModal";
 import Vue from "vue";
 import infiniteScroll from "vue-infinite-scroll";
-import { useGlobalUploadModal } from "composables/globalUploadModal";
+
 import { fetchData } from "./services";
 import ToolsListItem from "./ToolsListItem";
 

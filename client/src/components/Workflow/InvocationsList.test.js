@@ -1,14 +1,14 @@
-import InvocationsList from "./InvocationsList";
+import "jest-location-mock";
+
+import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
+import { formatDistanceToNow, parseISO } from "date-fns";
 import { getLocalVue } from "tests/jest/helpers";
+
+import InvocationsList from "./InvocationsList";
 import mockInvocationData from "./test/json/invocation.json";
-import { parseISO, formatDistanceToNow } from "date-fns";
-
-import { createTestingPinia } from "@pinia/testing";
-
-import "jest-location-mock";
 
 const localVue = getLocalVue();
 

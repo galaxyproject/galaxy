@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { computed } from "vue";
+import Vue, { computed } from "vue";
 
 Vue.use(BootstrapVue);
 

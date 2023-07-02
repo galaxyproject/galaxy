@@ -1,22 +1,25 @@
 <script setup>
-import { computed, ref, reactive, onMounted, watch } from "vue";
-import { BAlert, BCard, BButton, BTab, BTabs } from "bootstrap-vue";
-import LoadingSpan from "components/LoadingSpan";
-import ExportRecordDetails from "components/Common/ExportRecordDetails.vue";
-import ExportRecordTable from "components/Common/ExportRecordTable.vue";
-import ExportOptions from "./ExportOptions.vue";
-import ExportForm from "components/Common/ExportForm.vue";
-import { getExportRecords, exportToFileSource, reimportHistoryFromRecord } from "./services";
-import { useTaskMonitor } from "composables/taskMonitor";
-import { useFileSources } from "composables/fileSources";
-import { useShortTermStorage, DEFAULT_EXPORT_PARAMS } from "composables/shortTermStorage";
-import { useConfirmDialog } from "composables/confirmDialog";
-import { copy as sendToClipboard } from "utils/clipboard";
-import { absPath } from "@/utils/redirect";
+import { library } from "@fortawesome/fontawesome-svg-core";
 import { faFileExport } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
+import { BAlert, BButton, BCard, BTab, BTabs } from "bootstrap-vue";
+import LoadingSpan from "components/LoadingSpan";
+import { useConfirmDialog } from "composables/confirmDialog";
+import { useFileSources } from "composables/fileSources";
+import { DEFAULT_EXPORT_PARAMS, useShortTermStorage } from "composables/shortTermStorage";
+import { useTaskMonitor } from "composables/taskMonitor";
+import { copy as sendToClipboard } from "utils/clipboard";
+import { computed, onMounted, reactive, ref, watch } from "vue";
+
 import { useHistoryStore } from "@/stores/historyStore";
+import { absPath } from "@/utils/redirect";
+
+import { exportToFileSource, getExportRecords, reimportHistoryFromRecord } from "./services";
+
+import ExportOptions from "./ExportOptions.vue";
+import ExportForm from "components/Common/ExportForm.vue";
+import ExportRecordDetails from "components/Common/ExportRecordDetails.vue";
+import ExportRecordTable from "components/Common/ExportRecordTable.vue";
 
 const {
     isRunning: isExportTaskRunning,

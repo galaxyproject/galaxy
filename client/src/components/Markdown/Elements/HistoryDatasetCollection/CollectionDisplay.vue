@@ -45,13 +45,15 @@
 
 <script>
 import axios from "axios";
-import { mapState } from "pinia";
-import { useUserStore } from "@/stores/userStore";
-import { useHistoryStore } from "@/stores/historyStore";
-import { getAppRoot } from "onload/loadConfig";
-import CollectionTree from "./CollectionTree";
 import LoadingSpan from "components/LoadingSpan";
 import { copyCollection } from "components/Markdown/services";
+import { getAppRoot } from "onload/loadConfig";
+import { mapState } from "pinia";
+
+import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
+
+import CollectionTree from "./CollectionTree";
 
 export default {
     components: {

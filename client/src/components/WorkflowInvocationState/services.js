@@ -1,5 +1,5 @@
-import { getRootFromIndexLink } from "onload";
 import axios from "axios";
+import { getRootFromIndexLink } from "onload";
 
 const getUrl = (path) => getRootFromIndexLink() + path;
 

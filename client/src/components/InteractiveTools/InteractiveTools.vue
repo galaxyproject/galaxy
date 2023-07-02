@@ -65,14 +65,15 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
-import { Services } from "./services";
-import UtcDate from "components/UtcDate";
-import { mapActions, mapState } from "pinia";
-import { useEntryPointStore } from "../../stores/entryPointStore";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import UtcDate from "components/UtcDate";
+import { getAppRoot } from "onload/loadConfig";
+import { mapActions, mapState } from "pinia";
+
+import { useEntryPointStore } from "../../stores/entryPointStore";
+import { Services } from "./services";
 
 library.add(faExternalLinkAlt);
 

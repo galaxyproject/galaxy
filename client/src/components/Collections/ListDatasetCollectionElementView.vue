@@ -9,7 +9,9 @@
 
 <script>
 import _l from "utils/localization";
+
 import ClickToEdit from "./common/ClickToEdit";
+
 export default {
     components: { ClickToEdit },
     props: {

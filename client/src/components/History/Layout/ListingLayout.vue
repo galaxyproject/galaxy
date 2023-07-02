@@ -21,10 +21,10 @@
     </div>
 </template>
 <script>
-import VirtualList from "vue-virtual-scroll-list";
-import LoadingSpan from "components/LoadingSpan";
 import { useElementBounding } from "@vueuse/core";
+import LoadingSpan from "components/LoadingSpan";
 import { computed, ref } from "vue";
+import VirtualList from "vue-virtual-scroll-list";
 
 export default {
     components: {

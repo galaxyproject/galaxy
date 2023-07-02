@@ -1,9 +1,10 @@
-import { mount, createLocalVue } from "@vue/test-utils";
+import { createLocalVue, mount } from "@vue/test-utils";
 import { useUserTags } from "composables/user";
+import { isDate } from "date-fns";
 import { computed } from "vue";
+
 import Attributes from "./Attributes";
 import { UntypedParameters } from "./modules/parameters";
-import { isDate } from "date-fns";
 
 jest.mock("app");
 

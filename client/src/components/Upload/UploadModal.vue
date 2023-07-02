@@ -1,13 +1,14 @@
 <script setup>
-import UploadModalContent from "./UploadModalContent";
-
-import { ref, watch } from "vue";
+import { useConfig } from "composables/config";
+import { useUserHistories } from "composables/userHistories";
 import { getAppRoot } from "onload";
 import { storeToRefs } from "pinia";
+import { ref, watch } from "vue";
+
 import { useUserStore } from "@/stores/userStore";
-import { useUserHistories } from "composables/userHistories";
-import { useConfig } from "composables/config";
 import { wait } from "@/utils/utils";
+
+import UploadModalContent from "./UploadModalContent";
 
 const { currentUser } = storeToRefs(useUserStore());
 const { currentHistoryId } = useUserHistories(currentUser);

@@ -45,16 +45,18 @@
 </template>
 
 <script>
-import { useHistoryItemsStore } from "stores/history/historyItemsStore";
-import { mapState } from "pinia";
-import { useHistoryStore } from "@/stores/historyStore";
-import { getRunData } from "./services";
 import LoadingSpan from "components/LoadingSpan";
-import WorkflowRunSuccess from "./WorkflowRunSuccess";
+import { mapState } from "pinia";
+import { useHistoryItemsStore } from "stores/history/historyItemsStore";
+import { errorMessageAsString } from "utils/simple-error";
+
+import { useHistoryStore } from "@/stores/historyStore";
+
+import { WorkflowRunModel } from "./model";
+import { getRunData } from "./services";
 import WorkflowRunForm from "./WorkflowRunForm";
 import WorkflowRunFormSimple from "./WorkflowRunFormSimple";
-import { WorkflowRunModel } from "./model";
-import { errorMessageAsString } from "utils/simple-error";
+import WorkflowRunSuccess from "./WorkflowRunSuccess";
 
 export default {
     components: {

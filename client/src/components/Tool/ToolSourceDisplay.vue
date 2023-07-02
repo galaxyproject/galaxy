@@ -3,9 +3,10 @@
 </template>
 
 <script>
-import Prism from "vue-prismjs";
 import "prismjs/themes/prism.css";
 import "prismjs/plugins/normalize-whitespace/prism-normalize-whitespace.js";
+
+import Prism from "vue-prismjs";
 
 export default {
     components: {

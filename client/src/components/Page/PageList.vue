@@ -78,22 +78,23 @@
     </div>
 </template>
 <script>
-import _l from "utils/localization";
-import { getAppRoot } from "onload/loadConfig";
-import { updateTags } from "./services";
+import { getGalaxyInstance } from "app";
+import CopyToClipboard from "components/CopyToClipboard";
+import filtersMixin from "components/Indices/filtersMixin";
+import IndexFilter from "components/Indices/IndexFilter";
+import SharingIndicators from "components/Indices/SharingIndicators";
 import { pagesProvider } from "components/providers/PageProvider";
 import StatelessTags from "components/TagsMultiselect/StatelessTags";
-import PageDropdown from "./PageDropdown";
 import UtcDate from "components/UtcDate";
 import paginationMixin from "components/Workflow/paginationMixin";
-import filtersMixin from "components/Indices/filtersMixin";
-import PageIndexActions from "./PageIndexActions";
-import CopyToClipboard from "components/CopyToClipboard";
-import IndexFilter from "components/Indices/IndexFilter";
-import { withPrefix, absPath } from "@/utils/redirect";
-import { getGalaxyInstance } from "app";
+import { getAppRoot } from "onload/loadConfig";
+import _l from "utils/localization";
 
-import SharingIndicators from "components/Indices/SharingIndicators";
+import { absPath, withPrefix } from "@/utils/redirect";
+
+import PageDropdown from "./PageDropdown";
+import PageIndexActions from "./PageIndexActions";
+import { updateTags } from "./services";
 
 const helpHtml = `<div>
 <p>This textbox can be used to filter the pages displayed.

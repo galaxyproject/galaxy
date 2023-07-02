@@ -1,12 +1,13 @@
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
-import FormDirectory from "./FormDirectory";
-import FilesDialog from "components/FilesDialog/FilesDialog";
-
-import flushPromises from "flush-promises";
-import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
+import MockAdapter from "axios-mock-adapter";
+import FilesDialog from "components/FilesDialog/FilesDialog";
 import { rootResponse } from "components/FilesDialog/testingData";
+import flushPromises from "flush-promises";
+import { getLocalVue } from "tests/jest/helpers";
+
+import FormDirectory from "./FormDirectory";
+
 const localVue = getLocalVue();
 jest.mock("app");
 

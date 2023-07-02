@@ -1,5 +1,5 @@
-import { computed, watch, unref } from "vue";
 import { useHistoryStore } from "stores/historyStore";
+import { computed, unref, watch } from "vue";
 
 export function useUserHistories(user) {
     const historyStore = useHistoryStore();

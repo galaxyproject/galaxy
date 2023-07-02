@@ -1,4 +1,4 @@
-import { useWorkflowStepStore, type Steps, type ConnectionOutputLink } from "@/stores/workflowStepStore";
+import { type ConnectionOutputLink, type Steps, useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 interface Workflow {
     name: string;

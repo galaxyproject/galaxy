@@ -1,5 +1,6 @@
 import _l from "utils/localization";
 import Vue from "vue";
+
 import { collectionCreatorModalSetup } from "./common/modal";
 
 function listCollectionCreatorModal(elements, options) {

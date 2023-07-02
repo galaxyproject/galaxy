@@ -1,5 +1,5 @@
 import { fromEvent, interval, timer } from "rxjs";
-import { map, filter, take, takeUntil } from "rxjs/operators";
+import { filter, map, take, takeUntil } from "rxjs/operators";
 
 /**
  * Creates an observable that emits a single value once it appears, as defined by the selector

@@ -1,9 +1,11 @@
-import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
-import DelayedInput from "components/Common/DelayedInput";
-import ToolSearch from "./ToolSearch";
-import VueRouter from "vue-router";
 import "jest-location-mock";
+
+import { mount } from "@vue/test-utils";
+import DelayedInput from "components/Common/DelayedInput";
+import { getLocalVue } from "tests/jest/helpers";
+import VueRouter from "vue-router";
+
+import ToolSearch from "./ToolSearch";
 
 const localVue = getLocalVue();
 localVue.use(VueRouter);

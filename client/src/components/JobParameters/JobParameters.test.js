@@ -1,13 +1,14 @@
-import Vuex from "vuex";
+import { createLocalVue, mount } from "@vue/test-utils";
 import axios from "axios";
-import { createPinia } from "pinia";
 import MockAdapter from "axios-mock-adapter";
-import { mount, createLocalVue } from "@vue/test-utils";
+import raw from "components/providers/test/json/Dataset.json";
 import flushPromises from "flush-promises";
+import { createPinia } from "pinia";
+import { configStore } from "store/configStore";
+import Vuex from "vuex";
+
 import JobParameters from "./JobParameters";
 import paramResponse from "./parameters-response.json";
-import raw from "components/providers/test/json/Dataset.json";
-import { configStore } from "store/configStore";
 
 const JOB_ID = "foo";
 const DatasetProvider = {

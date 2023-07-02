@@ -21,9 +21,10 @@
     </div>
 </template>
 <script>
-import DC_VIEW from "mvc/collection/collection-view";
-import mixin from "./mixin";
 import ProgressBar from "components/ProgressBar";
+import DC_VIEW from "mvc/collection/collection-view";
+
+import mixin from "./mixin";
 
 export default {
     components: {

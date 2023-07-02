@@ -1,5 +1,6 @@
-import { useWorkflowStore } from "@/stores/workflowStore";
 import { ref } from "vue";
+
+import { useWorkflowStore } from "@/stores/workflowStore";
 
 export function useWorkflowInstance(workflowId: string) {
     const workflowStore = useWorkflowStore();

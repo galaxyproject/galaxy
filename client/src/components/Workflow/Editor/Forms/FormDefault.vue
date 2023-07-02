@@ -58,17 +58,20 @@
 </template>
 
 <script setup lang="ts">
-import FormDisplay from "@/components/Form/FormDisplay.vue";
+import { computed, toRef } from "vue";
+
+import type { DatatypesMapperModel } from "@/components/Datatypes/model";
+import WorkflowIcons from "@/components/Workflow/icons";
+import { type Step, useWorkflowStepStore } from "@/stores/workflowStepStore";
+
+import { useStepProps } from "../composables/useStepProps";
+import { useUniqueLabelError } from "../composables/useUniqueLabelError";
+
+import FormConditional from "./FormConditional.vue";
 import FormCard from "@/components/Form/FormCard.vue";
+import FormDisplay from "@/components/Form/FormDisplay.vue";
 import FormElement from "@/components/Form/FormElement.vue";
 import FormOutputLabel from "@/components/Workflow/Editor/Forms/FormOutputLabel.vue";
-import FormConditional from "./FormConditional.vue";
-import WorkflowIcons from "@/components/Workflow/icons";
-import { useWorkflowStepStore, type Step } from "@/stores/workflowStepStore";
-import { useUniqueLabelError } from "../composables/useUniqueLabelError";
-import { computed, toRef } from "vue";
-import type { DatatypesMapperModel } from "@/components/Datatypes/model";
-import { useStepProps } from "../composables/useStepProps";
 
 const props = defineProps<{
     step: Step;

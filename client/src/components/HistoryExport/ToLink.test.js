@@ -1,10 +1,11 @@
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
-import ToLink from "./ToLink.vue";
-import flushPromises from "flush-promises";
-import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
+import MockAdapter from "axios-mock-adapter";
 import { waitOnJob } from "components/JobStates/wait";
+import flushPromises from "flush-promises";
+import { getLocalVue } from "tests/jest/helpers";
+
+import ToLink from "./ToLink.vue";
 
 const localVue = getLocalVue();
 const TEST_HISTORY_ID = "hist1235";

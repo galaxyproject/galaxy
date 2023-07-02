@@ -1,5 +1,6 @@
-import JobOutputs from "./JobOutputs";
 import { shallowMount } from "@vue/test-utils";
+
+import JobOutputs from "./JobOutputs";
 
 jest.mock("components/providers/DatasetCollectionProvider");
 

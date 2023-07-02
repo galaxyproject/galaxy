@@ -15,8 +15,10 @@
     </div>
 </template>
 <script>
-import ClickToEdit from "./common/ClickToEdit.vue";
 import _l from "utils/localization";
+
+import ClickToEdit from "./common/ClickToEdit.vue";
+
 export default {
     components: { ClickToEdit },
     props: {

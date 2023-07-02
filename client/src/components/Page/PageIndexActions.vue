@@ -1,10 +1,9 @@
 <script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faPlus } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { useRouter } from "vue-router/composables";
-
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faPlus } from "@fortawesome/free-solid-svg-icons";
-import { library } from "@fortawesome/fontawesome-svg-core";
 
 const router = useRouter();
 library.add(faPlus);

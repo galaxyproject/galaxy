@@ -1,10 +1,12 @@
-import localize from "@/utils/localization";
 import { ref } from "vue";
+
+import localize from "@/utils/localization";
+
 import {
     cleanupDiscardedDatasets,
+    cleanupDiscardedHistories,
     fetchDiscardedDatasets,
     fetchDiscardedDatasetsSummary,
-    cleanupDiscardedHistories,
     fetchDiscardedHistories,
     fetchDiscardedHistoriesSummary,
 } from "../services";

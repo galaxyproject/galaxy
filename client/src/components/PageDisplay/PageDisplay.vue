@@ -19,11 +19,12 @@
 </template>
 
 <script>
-import { urlData } from "utils/url";
-import { withPrefix } from "utils/redirect";
-import ConfigProvider from "components/providers/ConfigProvider";
-import Markdown from "components/Markdown/Markdown";
 import Published from "components/Common/Published";
+import Markdown from "components/Markdown/Markdown";
+import ConfigProvider from "components/providers/ConfigProvider";
+import { withPrefix } from "utils/redirect";
+import { urlData } from "utils/url";
+
 import PageHtml from "./PageHtml";
 
 export default {

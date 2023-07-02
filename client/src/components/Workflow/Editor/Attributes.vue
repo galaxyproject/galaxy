@@ -52,13 +52,14 @@
 </template>
 
 <script>
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { format, parseISO } from "date-fns";
-import { Services } from "components/Workflow/services";
-import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import LicenseSelector from "components/License/LicenseSelector";
 import CreatorEditor from "components/SchemaOrg/CreatorEditor";
+import StatelessTags from "components/TagsMultiselect/StatelessTags";
+import { Services } from "components/Workflow/services";
+import { format, parseISO } from "date-fns";
+import Vue from "vue";
+
 import { UntypedParameters } from "./modules/parameters";
 
 Vue.use(BootstrapVue);

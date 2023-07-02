@@ -2,6 +2,7 @@ import axios from "axios";
 import { SingleQueryProvider } from "components/providers/SingleQueryProvider";
 import { getAppRoot } from "onload/loadConfig";
 import { rethrowSimple } from "utils/simple-error";
+
 import { QuotaUsage } from "./model";
 
 /**

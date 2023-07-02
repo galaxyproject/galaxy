@@ -1,10 +1,12 @@
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
-import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
+import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
-import InvocationExportPluginCard from "./InvocationExportPluginCard.vue";
+import { getLocalVue } from "tests/jest/helpers";
+
 import { InvocationExportPlugin, InvocationExportPluginAction } from "./model";
+
+import InvocationExportPluginCard from "./InvocationExportPluginCard.vue";
 
 const localVue = getLocalVue();
 

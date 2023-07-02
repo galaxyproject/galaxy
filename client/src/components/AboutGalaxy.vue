@@ -4,12 +4,13 @@
 
 import { computed } from "vue";
 
-import { getAppRoot } from "@/onload/loadConfig";
 import { useConfig } from "@/composables/config";
-import UtcDate from "@/components/UtcDate.vue";
-import License from "@/components/License/License.vue";
-import ExternalLink from "@/components/ExternalLink.vue";
+import { getAppRoot } from "@/onload/loadConfig";
+
 import Heading from "@/components/Common/Heading.vue";
+import ExternalLink from "@/components/ExternalLink.vue";
+import License from "@/components/License/License.vue";
+import UtcDate from "@/components/UtcDate.vue";
 
 const { config, isLoaded } = useConfig();
 

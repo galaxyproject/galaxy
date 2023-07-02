@@ -73,16 +73,17 @@
 </template>
 
 <script>
-import { getGalaxyInstance } from "app";
-import UploadBoxMixin from "./UploadBoxMixin";
-import UploadUtils from "mvc/upload/upload-utils";
-import axios from "axios";
-import { getAppRoot } from "onload/loadConfig";
-import { filesDialog } from "utils/data";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { getGalaxyInstance } from "app";
+import axios from "axios";
 import { BButton, BLink } from "bootstrap-vue";
+import UploadUtils from "mvc/upload/upload-utils";
+import { getAppRoot } from "onload/loadConfig";
+import { filesDialog } from "utils/data";
+
+import UploadBoxMixin from "./UploadBoxMixin";
 
 library.add(faEdit);
 

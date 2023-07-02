@@ -1,11 +1,13 @@
+import { createTestingPinia } from "@pinia/testing";
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
-import { createTestingPinia } from "@pinia/testing";
 import { setActivePinia } from "pinia";
-import { useHistoryStore, type HistorySummary } from "@/stores/historyStore";
+import { getLocalVue } from "tests/jest/helpers";
+
+import { type HistorySummary, useHistoryStore } from "@/stores/historyStore";
+
 import HistoryArchiveWizard from "./HistoryArchiveWizard.vue";
 
 jest.mock("@/composables/config", () => ({

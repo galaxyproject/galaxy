@@ -40,8 +40,9 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
+import { getAppRoot } from "onload/loadConfig";
+
 import Alert from "components/Alert.vue";
 
 export default {

@@ -31,16 +31,16 @@
 </template>
 
 <script>
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+
+import CreatorViewer from "./CreatorViewer";
+import OrganizationForm from "./OrganizationForm";
+import PersonForm from "./PersonForm";
 
 library.add(faTimes);
 library.add(faEdit);
-
-import PersonForm from "./PersonForm";
-import CreatorViewer from "./CreatorViewer";
-import OrganizationForm from "./OrganizationForm";
 
 export default {
     components: {

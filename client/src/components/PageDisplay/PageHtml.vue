@@ -8,6 +8,7 @@
 
 <script>
 import { withPrefix } from "utils/redirect";
+
 export default {
     props: {
         page: {

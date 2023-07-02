@@ -5,8 +5,8 @@
 
 import axios, { type AxiosError, type AxiosResponse } from "axios";
 
-import { getAppRoot } from "@/onload/loadConfig";
 import { getGalaxyInstance } from "@/app";
+import { getAppRoot } from "@/onload/loadConfig";
 import _l from "@/utils/localization";
 
 /** Object with any internal structure. More specific key than built-in Object type */

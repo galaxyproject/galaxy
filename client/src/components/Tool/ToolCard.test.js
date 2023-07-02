@@ -1,12 +1,13 @@
-import { createPinia } from "pinia";
 import { mount } from "@vue/test-utils";
-import { getLocalVue, mockModule } from "tests/jest/helpers";
-import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
-import ToolCard from "./ToolCard";
-import Vuex from "vuex";
+import MockAdapter from "axios-mock-adapter";
+import { createPinia } from "pinia";
 import { configStore } from "store/configStore";
 import { useUserStore } from "stores/userStore";
+import { getLocalVue, mockModule } from "tests/jest/helpers";
+import Vuex from "vuex";
+
+import ToolCard from "./ToolCard";
 
 const localVue = getLocalVue();
 

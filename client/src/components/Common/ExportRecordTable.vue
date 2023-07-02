@@ -1,16 +1,16 @@
 <script setup>
-import { computed, ref } from "vue";
-import { BCard, BButton, BButtonGroup, BButtonToolbar, BCollapse, BTable, BLink } from "bootstrap-vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import {
-    faExclamationCircle,
     faCheckCircle,
     faDownload,
+    faExclamationCircle,
     faFileImport,
-    faSpinner,
     faLink,
+    faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton, BButtonGroup, BButtonToolbar, BCard, BCollapse, BLink, BTable } from "bootstrap-vue";
+import { computed, ref } from "vue";
 
 library.add(faExclamationCircle, faCheckCircle, faDownload, faFileImport, faSpinner, faLink);
 

@@ -1,10 +1,11 @@
 <script setup>
-import { computed, ref, watch } from "vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faChevronLeft, faChevronRight, faGripLinesVertical } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDraggable } from "@vueuse/core";
 import { LastQueue } from "utils/promise-queue";
+import { computed, ref, watch } from "vue";
+
 import { determineWidth } from "./utilities";
 
 const lastQueue = new LastQueue(10);

@@ -1,12 +1,15 @@
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
-import NodeOutput from "./NodeOutput.vue";
 import { createPinia, setActivePinia } from "pinia";
-import { useWorkflowStepStore, type Step, type Steps } from "@/stores/workflowStepStore";
-import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
-import { mockOffset, advancedSteps } from "./test_fixtures";
+import { getLocalVue } from "tests/jest/helpers";
 import { nextTick, ref } from "vue";
+
+import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
+import { type Step, type Steps, useWorkflowStepStore } from "@/stores/workflowStepStore";
+
 import { terminalFactory } from "./modules/terminals";
+import { advancedSteps, mockOffset } from "./test_fixtures";
+
+import NodeOutput from "./NodeOutput.vue";
 
 const localVue = getLocalVue();
 

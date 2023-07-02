@@ -72,13 +72,13 @@
 </template>
 
 <script>
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-import { faCheckSquare, faSquare, faMinusSquare } from "@fortawesome/free-regular-svg-icons";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCheckSquare, faMinusSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
 import { faFolder } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
+import BootstrapVue from "bootstrap-vue";
 import { selectionStates } from "components/SelectionDialog/selectionStates";
+import Vue from "vue";
 
 Vue.use(BootstrapVue);
 library.add(faCheckSquare, faSquare, faFolder, faMinusSquare);

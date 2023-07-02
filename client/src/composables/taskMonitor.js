@@ -1,5 +1,5 @@
-import { computed, ref, readonly } from "vue";
 import axios from "axios";
+import { computed, readonly, ref } from "vue";
 
 const SUCCESS_STATE = "SUCCESS";
 const FAILURE_STATE = "FAILURE";

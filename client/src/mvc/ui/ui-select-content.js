@@ -1,11 +1,11 @@
-import _ from "underscore";
-import $ from "jquery";
+import { getGalaxyInstance } from "app";
 import Backbone from "backbone";
-import _l from "utils/localization";
-import Utils from "utils/utils";
+import $ from "jquery";
 import Ui from "mvc/ui/ui-misc";
 import Select from "mvc/ui/ui-select-default";
-import { getGalaxyInstance } from "app";
+import _ from "underscore";
+import _l from "utils/localization";
+import Utils from "utils/utils";
 
 /** Batch mode variations */
 const Batch = { DISABLED: "disabled", ENABLED: "enabled", LINKED: "linked" };

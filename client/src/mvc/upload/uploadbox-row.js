@@ -1,11 +1,12 @@
 /**
  * shared functionality between default-row and collection-row.
  */
-import _l from "utils/localization";
 import Backbone from "backbone";
-import Utils from "utils/utils";
 import Popover from "mvc/ui/ui-popover";
 import UploadSettings from "mvc/upload/upload-settings";
+import _l from "utils/localization";
+import Utils from "utils/utils";
+
 export default Backbone.View.extend({
     /** Dictionary of upload states and associated icons */
     status_classes: {

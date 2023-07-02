@@ -25,8 +25,9 @@
     </div>
 </template>
 <script>
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import Vue from "vue";
+
 import LoginForm from "./LoginForm";
 import RegisterForm from "./RegisterForm";
 

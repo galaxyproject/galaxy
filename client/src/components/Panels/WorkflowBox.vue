@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { withPrefix } from "@/utils/redirect";
-import { useUserStore } from "@/stores/userStore";
-import { computed } from "vue";
-import WorkflowSearch from "@/components/Workflow/WorkflowSearch.vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faUpload, faGlobe } from "@fortawesome/free-solid-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
+import { faGlobe, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { computed } from "vue";
+
+import { useUserStore } from "@/stores/userStore";
+import { withPrefix } from "@/utils/redirect";
+
+import WorkflowSearch from "@/components/Workflow/WorkflowSearch.vue";
 
 // @ts-ignore bad library types
 library.add(faUpload, faGlobe);

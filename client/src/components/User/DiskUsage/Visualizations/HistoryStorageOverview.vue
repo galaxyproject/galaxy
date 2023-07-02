@@ -1,23 +1,26 @@
 <script setup lang="ts">
+import { onMounted, ref } from "vue";
+import { useRouter } from "vue-router/composables";
+
+import { useConfirmDialog } from "@/composables/confirmDialog";
+import { useToast } from "@/composables/toast";
+import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
+
 import type { DataValuePoint } from "./Charts";
-import { ref, onMounted } from "vue";
-import BarChart from "./Charts/BarChart.vue";
 import { bytesLabelFormatter, bytesValueFormatter } from "./Charts/formatters";
 import {
     fetchHistoryContentsSizeSummary,
     type ItemSizeSummary,
-    undeleteDatasetById,
     purgeDatasetById,
+    undeleteDatasetById,
 } from "./service";
+
+import BarChart from "./Charts/BarChart.vue";
 import RecoverableItemSizeTooltip from "./RecoverableItemSizeTooltip.vue";
 import SelectedItemActions from "./SelectedItemActions.vue";
-import LoadingSpan from "@/components/LoadingSpan.vue";
 import Heading from "@/components/Common/Heading.vue";
-import { useRouter } from "vue-router/composables";
-import { useToast } from "@/composables/toast";
-import { useConfirmDialog } from "@/composables/confirmDialog";
-import { useHistoryStore } from "@/stores/historyStore";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const router = useRouter();
 const { success: successToast, error: errorToast } = useToast();

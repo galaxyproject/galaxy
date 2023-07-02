@@ -7,11 +7,12 @@
  *
  * TODO: convert the associated python endpoint to a legit json REST service
  */
-import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
-import { createTag } from "./model";
+import { getAppRoot } from "onload/loadConfig";
 import { Subject } from "rxjs";
-import { map, filter, debounceTime, switchMap, distinctUntilChanged } from "rxjs/operators";
+import { debounceTime, distinctUntilChanged, filter, map, switchMap } from "rxjs/operators";
+
+import { createTag } from "./model";
 
 export class TagService {
     constructor({ id, itemClass, context, debounceInterval = 150 }) {

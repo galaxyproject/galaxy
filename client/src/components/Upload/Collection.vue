@@ -117,14 +117,15 @@
 </template>
 
 <script>
-import _l from "utils/localization";
-import _ from "underscore";
 import { getGalaxyInstance } from "app";
-import { refreshContentsWrapper } from "utils/data";
-import UploadRow from "mvc/upload/collection/collection-row";
-import UploadBoxMixin from "./UploadBoxMixin";
-import { uploadModelsToPayload } from "./helpers";
 import { BButton } from "bootstrap-vue";
+import UploadRow from "mvc/upload/collection/collection-row";
+import _ from "underscore";
+import { refreshContentsWrapper } from "utils/data";
+import _l from "utils/localization";
+
+import { uploadModelsToPayload } from "./helpers";
+import UploadBoxMixin from "./UploadBoxMixin";
 
 export default {
     components: { BButton },

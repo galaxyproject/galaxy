@@ -16,10 +16,11 @@
 </template>
 
 <script>
-import ToolBox from "./ToolBox";
 import ConfigProvider from "components/providers/ConfigProvider";
 import ToolPanelViewProvider from "components/providers/ToolPanelViewProvider";
 import { mapActions } from "vuex";
+
+import ToolBox from "./ToolBox";
 
 export default {
     components: {

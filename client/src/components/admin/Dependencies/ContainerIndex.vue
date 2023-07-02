@@ -91,13 +91,14 @@
     </dependency-index-wrapper>
 </template>
 <script>
+import BootstrapVue from "bootstrap-vue";
 import _ from "underscore";
 import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-import DependencyIndexMixin from "./DependencyIndexMixin";
-import ContainerResolutionDetails from "./ContainerResolutionDetails";
+
 import { getContainerResolutionToolbox, resolveContainersWithInstall } from "../AdminServices";
+import ContainerResolutionDetails from "./ContainerResolutionDetails";
 import { DESCRIPTION } from "./ContainerResolver";
+import DependencyIndexMixin from "./DependencyIndexMixin";
 
 Vue.use(BootstrapVue);
 

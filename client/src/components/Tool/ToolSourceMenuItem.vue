@@ -1,9 +1,15 @@
 <script setup>
-import ToolSource from "./ToolSource.vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faEye } from "@fortawesome/free-regular-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useConfig } from "composables/config";
 import { storeToRefs } from "pinia";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+
 import { useUserStore } from "@/stores/userStore";
+
+import ToolSource from "./ToolSource.vue";
+
+library.add(faEye);
 
 const { config } = useConfig(true);
 const { currentUser } = storeToRefs(useUserStore());
@@ -14,13 +20,6 @@ const props = defineProps({
         required: true,
     },
 });
-</script>
-
-<script>
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faEye } from "@fortawesome/free-regular-svg-icons";
-
-library.add(faEye);
 </script>
 
 <template>

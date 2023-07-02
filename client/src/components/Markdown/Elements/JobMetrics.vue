@@ -6,6 +6,7 @@
 
 <script>
 import JobMetrics from "components/JobMetrics/JobMetrics";
+
 export default {
     components: {
         JobMetrics,

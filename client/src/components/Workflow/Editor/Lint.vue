@@ -75,26 +75,28 @@
 </template>
 
 <script>
-import Vue from "vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faExclamationTriangle, faMagic } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
-import { UntypedParameters } from "components/Workflow/Editor/modules/parameters";
 import LintSection from "components/Workflow/Editor/LintSection";
+import { UntypedParameters } from "components/Workflow/Editor/modules/parameters";
+import { storeToRefs } from "pinia";
+import Vue from "vue";
+
+import { DatatypesMapperModel } from "@/components/Datatypes/model";
+import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+
 import {
-    getDisconnectedInputs,
-    getUntypedParameters,
-    getMissingMetadata,
-    getUnlabeledOutputs,
     fixAllIssues,
     fixDisconnectedInput,
     fixUnlabeledOutputs,
     fixUntypedParameter,
+    getDisconnectedInputs,
+    getMissingMetadata,
+    getUnlabeledOutputs,
+    getUntypedParameters,
 } from "./modules/linting";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faMagic, faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
-import { DatatypesMapperModel } from "@/components/Datatypes/model";
-import { storeToRefs } from "pinia";
 
 Vue.use(BootstrapVue);
 

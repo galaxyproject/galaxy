@@ -1,8 +1,9 @@
-import PageIndexActions from "./PageIndexActions.vue";
+import "jest-location-mock";
+
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
-import "jest-location-mock";
+import PageIndexActions from "./PageIndexActions.vue";
 
 const localVue = getLocalVue();
 

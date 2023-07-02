@@ -18,8 +18,9 @@
 </template>
 <script>
 import RuleDefs from "components/RuleBuilder/rule-definitions";
-import RuleDisplayPreview from "./RuleDisplayPreview";
+
 import IdentifierDisplayPreview from "./IdentifierDisplayPreview";
+import RuleDisplayPreview from "./RuleDisplayPreview";
 
 export default {
     components: {

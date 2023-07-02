@@ -5,13 +5,13 @@
  * submitted, delayed only by the throttle period and the request response time.
  */
 
+import { getGalaxyInstance } from "app";
 import defaultStore from "store/index";
 import { useHistoryItemsStore } from "stores/history/historyItemsStore";
-import { urlData } from "utils/url";
-import { loadSet } from "utils/setCache";
 import { useHistoryStore } from "stores/historyStore";
 import { getCurrentHistoryFromServer } from "stores/services/history.services";
-import { getGalaxyInstance } from "app";
+import { loadSet } from "utils/setCache";
+import { urlData } from "utils/url";
 
 const limit = 1000;
 

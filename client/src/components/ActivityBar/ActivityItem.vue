@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { useRouter } from "vue-router/composables";
-import Popper from "@/components/Popper/Popper.vue";
-import TextShort from "@/components/Common/TextShort.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { useRouter } from "vue-router/composables";
+
+import TextShort from "@/components/Common/TextShort.vue";
+import Popper from "@/components/Popper/Popper.vue";
 
 const router = useRouter();
 

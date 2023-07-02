@@ -1,8 +1,9 @@
 /** Adds window manager masthead icon and functionality **/
-import _l from "utils/localization";
-import WinBox from "winbox/src/js/winbox.js";
 import "winbox/dist/css/winbox.min.css";
+
+import _l from "utils/localization";
 import { withPrefix } from "utils/redirect";
+import WinBox from "winbox/src/js/winbox.js";
 
 export class WindowManager {
     constructor(options) {

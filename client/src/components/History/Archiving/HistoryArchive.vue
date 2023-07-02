@@ -1,24 +1,26 @@
 <script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCopy, faEye, faUndo } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert, BBadge, BButton, BButtonGroup, BListGroup, BListGroupItem, BPagination } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
-import localize from "@/utils/localization";
-import UtcDate from "@/components/UtcDate.vue";
-import Heading from "@/components/Common/Heading.vue";
-import LoadingSpan from "@/components/LoadingSpan.vue";
-import DelayedInput from "@/components/Common/DelayedInput.vue";
-import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
+import { useRouter } from "vue-router/composables";
+
+import { useConfirmDialog } from "@/composables/confirmDialog";
+import { useToast } from "@/composables/toast";
+import { useHistoryStore } from "@/stores/historyStore";
 import * as ArchiveServices from "@/stores/services/historyArchive.services";
 import {
-    reimportHistoryFromExportRecordAsync,
     type ArchivedHistorySummary,
+    reimportHistoryFromExportRecordAsync,
 } from "@/stores/services/historyArchive.services";
-import { BAlert, BButton, BButtonGroup, BBadge, BPagination, BListGroup, BListGroupItem } from "bootstrap-vue";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faUndo, faCopy, faEye } from "@fortawesome/free-solid-svg-icons";
-import { useRouter } from "vue-router/composables";
-import { useHistoryStore } from "@/stores/historyStore";
-import { useToast } from "@/composables/toast";
-import { useConfirmDialog } from "@/composables/confirmDialog";
+import localize from "@/utils/localization";
+
+import DelayedInput from "@/components/Common/DelayedInput.vue";
+import Heading from "@/components/Common/Heading.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
+import UtcDate from "@/components/UtcDate.vue";
 
 const router = useRouter();
 const historyStore = useHistoryStore();

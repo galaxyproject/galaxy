@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from "vue";
+import { onMounted, ref, watch } from "vue";
+
+import { errorMessageAsString } from "@/utils/simple-error";
+
+import { getSelectableObjectStores } from "./services";
+
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DescribeObjectStore from "@/components/ObjectStore/DescribeObjectStore.vue";
-import { errorMessageAsString } from "@/utils/simple-error";
 import ObjectStoreBadges from "@/components/ObjectStore/ObjectStoreBadges.vue";
 import ProvidedQuotaSourceUsageBar from "@/components/User/DiskUsage/Quota/ProvidedQuotaSourceUsageBar.vue";
-import { getSelectableObjectStores } from "./services";
 
 interface SelectObjectStoreProps {
     selectedObjectStoreId?: String | null;

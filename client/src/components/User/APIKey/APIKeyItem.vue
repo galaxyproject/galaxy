@@ -1,9 +1,10 @@
 <script setup>
-import { ref } from "vue";
-import svc from "./model/service";
 import { getGalaxyInstance } from "app";
-import UtcDate from "components/UtcDate";
 import CopyToClipboard from "components/CopyToClipboard";
+import UtcDate from "components/UtcDate";
+import { ref } from "vue";
+
+import svc from "./model/service";
 
 defineProps({
     item: {

@@ -40,15 +40,17 @@
 </template>
 
 <script>
-import _l from "utils/localization";
-import { mapActions, mapState } from "pinia";
-import { useUserStore } from "@/stores/userStore";
-import { bytesToString } from "utils/utils";
+import axios from "axios";
 import ConfigProvider from "components/providers/ConfigProvider";
 import QuotaUsageSummary from "components/User/DiskUsage/Quota/QuotaUsageSummary";
 import { getAppRoot } from "onload/loadConfig";
-import axios from "axios";
+import { mapActions, mapState } from "pinia";
+import _l from "utils/localization";
 import { rethrowSimple } from "utils/simple-error";
+import { bytesToString } from "utils/utils";
+
+import { useUserStore } from "@/stores/userStore";
+
 import { QuotaUsage } from "./Quota/model";
 
 export default {

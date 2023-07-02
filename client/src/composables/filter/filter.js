@@ -1,5 +1,5 @@
-import { onScopeDispose, ref, watch } from "vue";
 import { resolveUnref } from "@vueuse/core";
+import { onScopeDispose, ref, watch } from "vue";
 
 export function useFilterObjectArray(array, filter, objectFields) {
     const worker = new Worker(new URL("./filter.worker.js", import.meta.url));

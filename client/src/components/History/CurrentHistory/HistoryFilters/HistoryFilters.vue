@@ -132,10 +132,11 @@
 
 <script>
 import DebouncedInput from "components/DebouncedInput";
-import HistoryFiltersDefault from "./HistoryFiltersDefault";
 import { STATES } from "components/History/Content/model/states";
 import StatesInfo from "components/History/Content/model/StatesInfo";
 import { HistoryFilters } from "components/History/HistoryFilters";
+
+import HistoryFiltersDefault from "./HistoryFiltersDefault";
 
 export default {
     components: {

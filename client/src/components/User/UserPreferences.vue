@@ -121,26 +121,27 @@
 </template>
 
 <script>
-import Vue from "vue";
-import { mapState } from "pinia";
-import BootstrapVue from "bootstrap-vue";
-import ThemeSelector from "./ThemeSelector.vue";
 import { getGalaxyInstance } from "app";
-import { withPrefix } from "utils/redirect";
-import _l from "utils/localization";
 import axios from "axios";
-import QueryStringParsing from "utils/query-string-parsing";
-import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
+import BootstrapVue from "bootstrap-vue";
 import ConfigProvider from "components/providers/ConfigProvider";
+import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
+import { mapState } from "pinia";
+import _l from "utils/localization";
 import { userLogoutAll } from "utils/logout";
-import UserDeletion from "./UserDeletion";
+import QueryStringParsing from "utils/query-string-parsing";
+import { withPrefix } from "utils/redirect";
+import Vue from "vue";
+
+import { useUserStore } from "@/stores/userStore";
+
 import UserActivityBarSettings from "./UserActivityBarSettings";
+import UserBeaconSettings from "./UserBeaconSettings";
+import UserDeletion from "./UserDeletion";
 import UserPreferencesElement from "./UserPreferencesElement";
 import UserPreferredObjectStore from "./UserPreferredObjectStore";
 
-import "@fortawesome/fontawesome-svg-core";
-import UserBeaconSettings from "./UserBeaconSettings";
-import { useUserStore } from "@/stores/userStore";
+import ThemeSelector from "./ThemeSelector.vue";
 
 Vue.use(BootstrapVue);
 

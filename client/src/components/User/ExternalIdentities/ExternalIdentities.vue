@@ -91,14 +91,16 @@
 </template>
 
 <script>
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
-import svc from "./service";
-import { userLogout } from "utils/logout";
-import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin.vue";
-import { sanitize } from "dompurify";
+import BootstrapVue from "bootstrap-vue";
 import { Toast } from "composables/toast";
+import { sanitize } from "dompurify";
+import { userLogout } from "utils/logout";
+import Vue from "vue";
+
+import svc from "./service";
+
+import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin.vue";
 
 Vue.use(BootstrapVue);
 

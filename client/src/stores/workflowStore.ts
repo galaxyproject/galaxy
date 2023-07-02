@@ -1,8 +1,9 @@
-import { defineStore } from "pinia";
 import axios from "axios";
-import type { Steps } from "@/stores/workflowStepStore";
-import { getAppRoot } from "@/onload/loadConfig";
+import { defineStore } from "pinia";
 import { computed, ref, set } from "vue";
+
+import { getAppRoot } from "@/onload/loadConfig";
+import type { Steps } from "@/stores/workflowStepStore";
 
 interface Workflow {
     [index: string]: any;

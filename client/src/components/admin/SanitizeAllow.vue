@@ -105,10 +105,11 @@
 </template>
 
 <script>
-import BaseGrid from "./BaseGrid.vue";
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
+
 import Message from "../Message.vue";
+import BaseGrid from "./BaseGrid.vue";
 
 export default {
     components: {

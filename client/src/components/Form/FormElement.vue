@@ -1,26 +1,27 @@
 <script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCaretSquareDown, faCaretSquareUp } from "@fortawesome/free-regular-svg-icons";
+import { faArrowsAltH, faExclamation, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import type { ComputedRef } from "vue";
+import { computed, ref, useAttrs } from "vue";
+
+import type { FormParameterAttributes, FormParameterTypes, FormParameterValue } from "./parameterTypes";
+
 import FormBoolean from "./Elements/FormBoolean.vue";
-import FormHidden from "./Elements/FormHidden.vue";
-import FormInput from "./Elements/FormInput.vue";
-import FormParameter from "./Elements/FormParameter.vue";
-import FormSelection from "./Elements/FormSelection.vue";
 import FormColor from "./Elements/FormColor.vue";
 import FormDirectory from "./Elements/FormDirectory.vue";
-import FormNumber from "./Elements/FormNumber.vue";
-import FormText from "./Elements/FormText.vue";
-import FormOptionalText from "./Elements/FormOptionalText.vue";
-import FormRulesEdit from "./Elements/FormRulesEdit.vue";
-import FormUpload from "./Elements/FormUpload.vue";
 import FormDrilldown from "./Elements/FormDrilldown/FormDrilldown.vue";
+import FormHidden from "./Elements/FormHidden.vue";
+import FormInput from "./Elements/FormInput.vue";
+import FormNumber from "./Elements/FormNumber.vue";
+import FormOptionalText from "./Elements/FormOptionalText.vue";
+import FormParameter from "./Elements/FormParameter.vue";
+import FormRulesEdit from "./Elements/FormRulesEdit.vue";
+import FormSelection from "./Elements/FormSelection.vue";
 import FormTags from "./Elements/FormTags.vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { ref, computed, useAttrs } from "vue";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faExclamation, faTimes, faArrowsAltH } from "@fortawesome/free-solid-svg-icons";
-import { faCaretSquareDown, faCaretSquareUp } from "@fortawesome/free-regular-svg-icons";
-
-import type { ComputedRef } from "vue";
-import type { FormParameterTypes, FormParameterAttributes, FormParameterValue } from "./parameterTypes";
+import FormText from "./Elements/FormText.vue";
+import FormUpload from "./Elements/FormUpload.vue";
 
 interface FormElementProps {
     id?: string;

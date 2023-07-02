@@ -1,25 +1,28 @@
 <script setup lang="ts">
-import DraggableWrapper from "./DraggablePan.vue";
-import { useTerminal } from "./composables/useTerminal";
-import { ref, computed, watch, nextTick, toRefs, onBeforeUnmount, type Ref, type UnwrapRef } from "vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faMinus, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import type { UseElementBoundingReturn, UseScrollReturn } from "@vueuse/core";
+import { computed, nextTick, onBeforeUnmount, type Ref, ref, toRefs, type UnwrapRef, watch } from "vue";
+
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useWorkflowStateStore, type XYPosition } from "@/stores/workflowEditorStateStore";
-import ConnectionMenu from "@/components/Workflow/Editor/ConnectionMenu.vue";
 import {
-    useWorkflowStepStore,
     type OutputTerminalSource,
-    type Step,
-    type PostJobActions,
     type PostJobAction,
+    type PostJobActions,
+    type Step,
+    useWorkflowStepStore,
 } from "@/stores/workflowStepStore";
 import { assertDefined, ensureDefined } from "@/utils/assertions";
-import type { UseElementBoundingReturn, UseScrollReturn } from "@vueuse/core";
+
 import { useRelativePosition } from "./composables/relativePosition";
-import { NULL_COLLECTION_TYPE_DESCRIPTION, type CollectionTypeDescriptor } from "./modules/collectionTypeDescription";
+import { useTerminal } from "./composables/useTerminal";
+import { type CollectionTypeDescriptor, NULL_COLLECTION_TYPE_DESCRIPTION } from "./modules/collectionTypeDescription";
+
+import DraggableWrapper from "./DraggablePan.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
-import { faPlus, faMinus } from "@fortawesome/free-solid-svg-icons";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import ConnectionMenu from "@/components/Workflow/Editor/ConnectionMenu.vue";
 
 type ElementBounding = UnwrapRef<UseElementBoundingReturn>;
 

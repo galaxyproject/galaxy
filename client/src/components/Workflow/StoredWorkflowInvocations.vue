@@ -8,10 +8,11 @@
     </StoredWorkflowDetailsProvider>
 </template>
 <script>
-import { mapState } from "pinia";
-import { useUserStore } from "@/stores/userStore";
-import InvocationsList from "components/Workflow/InvocationsList";
 import { StoredWorkflowDetailsProvider } from "components/providers/StoredWorkflowsProvider";
+import InvocationsList from "components/Workflow/InvocationsList";
+import { mapState } from "pinia";
+
+import { useUserStore } from "@/stores/userStore";
 
 export default {
     components: {

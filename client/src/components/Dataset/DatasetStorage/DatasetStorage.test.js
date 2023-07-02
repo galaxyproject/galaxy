@@ -1,9 +1,10 @@
 import { shallowMount } from "@vue/test-utils";
-import DatasetStorage from "./DatasetStorage";
-import { getLocalVue } from "tests/jest/helpers";
-import flushPromises from "flush-promises";
-import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
+import MockAdapter from "axios-mock-adapter";
+import flushPromises from "flush-promises";
+import { getLocalVue } from "tests/jest/helpers";
+
+import DatasetStorage from "./DatasetStorage";
 
 const localVue = getLocalVue();
 

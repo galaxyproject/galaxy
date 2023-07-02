@@ -5,8 +5,8 @@
 </template>
 
 <script>
-import { mapCacheActions } from "vuex-cache";
 import { getCompositeDatasetInfo } from "components/Dataset/services";
+import { mapCacheActions } from "vuex-cache";
 
 export default {
     props: {

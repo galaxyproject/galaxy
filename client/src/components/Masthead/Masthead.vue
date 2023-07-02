@@ -1,17 +1,19 @@
 <script setup>
-import { storeToRefs } from "pinia";
 import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
-import MastheadItem from "./MastheadItem";
-import { loadWebhookMenuItems } from "./_webhooks";
-import QuotaMeter from "./QuotaMeter";
-import { withPrefix } from "utils/redirect";
-import { getActiveTab } from "./utilities";
-import { watch, ref, reactive } from "vue";
-import { onMounted, onBeforeMount } from "vue";
-import { useConfig } from "@/composables/config";
-import { useRoute } from "vue-router/composables";
-import { useUserStore } from "@/stores/userStore";
+import { storeToRefs } from "pinia";
 import { useEntryPointStore } from "stores/entryPointStore";
+import { withPrefix } from "utils/redirect";
+import { onBeforeMount, onMounted, reactive, ref, watch } from "vue";
+import { useRoute } from "vue-router/composables";
+
+import { useConfig } from "@/composables/config";
+import { useUserStore } from "@/stores/userStore";
+
+import { loadWebhookMenuItems } from "./_webhooks";
+import MastheadItem from "./MastheadItem";
+import QuotaMeter from "./QuotaMeter";
+import { getActiveTab } from "./utilities";
+
 import NotificationsBell from "@/components/Notifications/NotificationsBell.vue";
 
 const { isAnonymous, showActivityBar } = storeToRefs(useUserStore());

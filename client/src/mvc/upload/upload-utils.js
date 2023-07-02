@@ -1,6 +1,6 @@
+import axios from "axios";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
-import axios from "axios";
 import { rethrowSimple } from "utils/simple-error";
 
 const AUTO_EXTENSION = {

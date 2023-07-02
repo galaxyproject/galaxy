@@ -1,10 +1,11 @@
 import { shallowMount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
+import MockConfigProvider from "components/providers/MockConfigProvider";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
+
 import SelectionOperations from "./SelectionOperations.vue";
-import MockConfigProvider from "components/providers/MockConfigProvider";
 
 const localVue = getLocalVue();
 

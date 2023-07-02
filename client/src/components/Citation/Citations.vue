@@ -49,11 +49,13 @@
     </div>
 </template>
 <script>
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { getCitations } from "./services";
-import Citation from "./Citation";
+import Vue from "vue";
+
 import { useConfig } from "@/composables/config";
+
+import Citation from "./Citation";
+import { getCitations } from "./services";
 
 Vue.use(BootstrapVue);
 

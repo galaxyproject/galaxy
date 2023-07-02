@@ -64,13 +64,13 @@
     </div>
 </template>
 <script>
-import { getRootFromIndexLink } from "onload";
 import mixin from "components/JobStates/mixin";
-import ProgressBar from "components/ProgressBar";
 import LoadingSpan from "components/LoadingSpan";
-import InvocationMessage from "@/components/WorkflowInvocationState/InvocationMessage.vue";
-
+import ProgressBar from "components/ProgressBar";
+import { getRootFromIndexLink } from "onload";
 import { mapGetters } from "vuex";
+
+import InvocationMessage from "@/components/WorkflowInvocationState/InvocationMessage.vue";
 
 const getUrl = (path) => getRootFromIndexLink() + path;
 

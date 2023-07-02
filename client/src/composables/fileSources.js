@@ -1,5 +1,5 @@
-import { ref, readonly, onMounted } from "vue";
 import { Services } from "components/FilesDialog/services";
+import { onMounted, readonly, ref } from "vue";
 
 const fileSourcesService = new Services();
 

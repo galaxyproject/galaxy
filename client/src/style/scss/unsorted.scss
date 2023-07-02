@@ -642,18 +642,6 @@ div.permissionContainer {
     padding: 0;
 }
 
-.fa-icon-button {
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    cursor: pointer;
-    width: 16px;
-    height: 16px;
-    &:hover {
-        color: $brand-info;
-    }
-}
-
 .editable-text {
     cursor: pointer;
 }

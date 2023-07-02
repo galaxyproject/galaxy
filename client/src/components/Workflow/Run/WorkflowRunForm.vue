@@ -53,18 +53,20 @@
 </template>
 
 <script>
-import { mapState } from "pinia";
-import { useUserStore } from "@/stores/userStore";
-import { useHistoryStore } from "@/stores/historyStore";
 import ButtonSpinner from "components/Common/ButtonSpinner";
-import FormDisplay from "components/Form/FormDisplay";
 import FormCard from "components/Form/FormCard";
+import FormDisplay from "components/Form/FormDisplay";
 import FormElement from "components/Form/FormElement";
-import WorkflowRunDefaultStep from "./WorkflowRunDefaultStep";
-import WorkflowRunInputStep from "./WorkflowRunInputStep";
 import { allowCachedJobs } from "components/Tool/utilities";
+import { mapState } from "pinia";
+
+import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
+
 import { getReplacements } from "./model";
 import { invokeWorkflow } from "./services";
+import WorkflowRunDefaultStep from "./WorkflowRunDefaultStep";
+import WorkflowRunInputStep from "./WorkflowRunInputStep";
 
 export default {
     components: {

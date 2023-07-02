@@ -1,8 +1,9 @@
 import { defineStore } from "pinia";
 import Vue, { computed, ref } from "vue";
-import type { components } from "@/schema";
-import { sortByObjectProp } from "@/utils/sorting";
+
 import { HistoryFilters } from "@/components/History/HistoryFilters";
+import { useUserLocalStorage } from "@/composables/userLocalStorage";
+import type { components } from "@/schema";
 import {
     cloneHistory,
     createAndSelectNewHistory,
@@ -16,7 +17,7 @@ import {
     updateHistoryFields,
 } from "@/stores/services/history.services";
 import * as ArchiveServices from "@/stores/services/historyArchive.services";
-import { useUserLocalStorage } from "@/composables/userLocalStorage";
+import { sortByObjectProp } from "@/utils/sorting";
 
 export type HistorySummary = components["schemas"]["HistorySummary"];
 

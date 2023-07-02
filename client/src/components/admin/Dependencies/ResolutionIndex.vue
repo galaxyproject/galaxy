@@ -82,12 +82,13 @@
     </dependency-index-wrapper>
 </template>
 <script>
+import BootstrapVue from "bootstrap-vue";
 import _ from "underscore";
 import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
+
+import { getToolboxDependencies, installDependencies, uninstallDependencies } from "../AdminServices";
 import DependencyIndexMixin from "./DependencyIndexMixin";
 import ResolutionDetails from "./ResolutionDetails";
-import { getToolboxDependencies, installDependencies, uninstallDependencies } from "../AdminServices";
 
 Vue.use(BootstrapVue);
 

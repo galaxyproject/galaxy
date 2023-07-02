@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { computed, ref, type Ref } from "vue";
+import { computed, type Ref, ref } from "vue";
 //@ts-ignore missing typedefs
 import VirtualList from "vue-virtual-scroll-list";
-import MultipleViewItem from "./MultipleViewItem.vue";
-import type { HistorySummary } from "@/stores/historyStore";
-import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
+
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
+import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
+import type { HistorySummary } from "@/stores/historyStore";
+
+import MultipleViewItem from "./MultipleViewItem.vue";
 
 const props = withDefaults(
     defineProps<{
