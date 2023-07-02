@@ -1,8 +1,8 @@
 import { shallowMount } from "@vue/test-utils";
+import { format, parseISO } from "date-fns";
 import { getLocalVue } from "tests/jest/helpers";
 
 import UtcDate from "./UtcDate.vue";
-import { format, parseISO } from "date-fns";
 
 describe("UTCDate component", () => {
     const localVue = getLocalVue();
