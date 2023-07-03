@@ -13,10 +13,7 @@ from sqlalchemy.sql import select
 from sqlalchemy.sql.expression import func
 
 import galaxy.model
-from galaxy.exceptions import (
-    AuthenticationRequired,
-    ItemOwnershipException,
-)
+from galaxy.exceptions import ItemOwnershipException
 from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.util import (
@@ -166,8 +163,6 @@ class TagHandler:
             # Item is not persisted, likely it is being copied from an existing, so no need
             # to check ownership at this point.
             return
-        if user is None:
-            raise AuthenticationRequired("Must be logged in to manage tags.")
         history = getattr(item, "history", None)
         is_owner = getattr(item, "user", None) == user or getattr(history, "user", None) == user
         if not is_owner:
