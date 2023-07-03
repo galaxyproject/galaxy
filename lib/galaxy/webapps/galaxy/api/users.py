@@ -20,11 +20,7 @@ from fastapi import (
 )
 from markupsafe import escape
 from pydantic import Required
-from sqlalchemy import (
-    false,
-    or_,
-    true,
-)
+
 
 from galaxy import (
     exceptions,
@@ -37,7 +33,6 @@ from galaxy.managers import (
 )
 from galaxy.managers.context import ProvidesHistoryContext, ProvidesUserContext
 from galaxy.model import (
-    User,
     UserAddress,
     UserQuotaUsage,
 )
@@ -51,6 +46,7 @@ from galaxy.schema.schema import (
     FlexibleUserIdType,
     PurgeUserPayload,
     UserBeaconSetting,
+    UserModel,
 )
 from galaxy.security.validate_user_input import (
     validate_email,
@@ -87,6 +83,10 @@ router = Router(tags=["users"])
 
 ThemePathParam: str = Path(default=Required, title="Theme", description="The theme of the GUI")
 UserDeleted: bool = Query(default=None, title="Deleted User", description="Indicates if the user is deleted")
+UsersDeleted: bool = Query(default=False)
+FilterEmail: str = Query(default=None)
+FilterName: str = Query(default=None)
+FilterAny: str = Query(default=None)
 UserIdPathParam: DecodedDatabaseIdField = Path(..., title="User ID", description="The ID of the user to get.")
 APIKeyPathParam: str = Path(..., title="API Key", description="The API key of the user.")
 FlexibleUserIdPathParam: FlexibleUserIdType = Path(
@@ -311,6 +311,27 @@ class FastAPIUsers:
             trans.sa_session.commit()
         return theme
 
+    @router.get("/api/users/deleted", name="Get deleted users", description="Display a collection of deleted users")
+    def index_deleted(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        f_email: str = FilterEmail,
+        f_name: str = FilterName,
+        f_any: str = FilterAny,
+    ) -> List[UserModel]:
+        return self.service.get_index(trans=trans, deleted=True, f_email=f_email, f_name=f_name, f_any=f_any)
+
+    @router.get("/api/users", name="Get users", description="Display a collection of users")
+    def index(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        deleted: bool = UsersDeleted,
+        f_email: str = FilterEmail,
+        f_name: str = FilterName,
+        f_any: str = FilterAny,
+    ) -> List[UserModel]:
+        return self.service.get_index(trans=trans, deleted=deleted, f_email=f_email, f_name=f_name, f_any=f_any)
+
     @router.get(
         "/api/users/deleted/{user_id}",
         name="get_deleted_user",
@@ -348,90 +369,6 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
     user_manager: users.UserManager = depends(users.UserManager)
     user_serializer: users.UserSerializer = depends(users.UserSerializer)
     user_deserializer: users.UserDeserializer = depends(users.UserDeserializer)
-
-    @expose_api
-    def index(self, trans: ProvidesUserContext, deleted="False", f_email=None, f_name=None, f_any=None, **kwd):
-        """
-        GET /api/users
-        GET /api/users/deleted
-        Displays a collection (list) of users.
-
-        :param deleted: (optional) If true, show deleted users
-        :type  deleted: bool
-
-        :param f_email: (optional) An email address to filter on. (Non-admin
-                        users can only use this if ``expose_user_email`` is ``True`` in
-                        galaxy.ini)
-        :type  f_email: str
-
-        :param f_name: (optional) A username to filter on. (Non-admin users
-                       can only use this if ``expose_user_name`` is ``True`` in
-                       galaxy.ini)
-        :type  f_name: str
-
-        :param f_any: (optional) Filter on username OR email. (Non-admin users
-                       can use this, the email filter and username filter will
-                       only be active if their corresponding ``expose_user_*`` is
-                       ``True`` in galaxy.ini)
-        :type  f_any: str
-        """
-        rval = []
-        query = trans.sa_session.query(User)
-        deleted = util.string_as_bool(deleted)
-
-        if f_email and (trans.user_is_admin or trans.app.config.expose_user_email):
-            query = query.filter(User.email.like(f"%{f_email}%"))
-
-        if f_name and (trans.user_is_admin or trans.app.config.expose_user_name):
-            query = query.filter(User.username.like(f"%{f_name}%"))
-
-        if f_any:
-            if trans.user_is_admin:
-                query = query.filter(or_(User.email.like(f"%{f_any}%"), User.username.like(f"%{f_any}%")))
-            else:
-                if trans.app.config.expose_user_email and trans.app.config.expose_user_name:
-                    query = query.filter(or_(User.email.like(f"%{f_any}%"), User.username.like(f"%{f_any}%")))
-                elif trans.app.config.expose_user_email:
-                    query = query.filter(User.email.like(f"%{f_any}%"))
-                elif trans.app.config.expose_user_name:
-                    query = query.filter(User.username.like(f"%{f_any}%"))
-
-        if deleted:
-            # only admins can see deleted users
-            if not trans.user_is_admin:
-                return []
-            query = query.filter(User.table.c.deleted == true())
-        else:
-            # special case: user can see only their own user
-            # special case2: if the galaxy admin has specified that other user email/names are
-            #   exposed, we don't want special case #1
-            if (
-                not trans.user_is_admin
-                and not trans.app.config.expose_user_name
-                and not trans.app.config.expose_user_email
-            ):
-                item = trans.user.to_dict(value_mapper={"id": trans.security.encode_id})
-                return [item]
-            query = query.filter(User.table.c.deleted == false())
-        for user in query:
-            item = user.to_dict(value_mapper={"id": trans.security.encode_id})
-            # If NOT configured to expose_email, do not expose email UNLESS the user is self, or
-            # the user is an admin
-            if user is not trans.user and not trans.user_is_admin:
-                expose_keys = ["id"]
-                if trans.app.config.expose_user_name:
-                    expose_keys.append("username")
-                if trans.app.config.expose_user_email:
-                    expose_keys.append("email")
-                new_item = {}
-                for key, value in item.items():
-                    if key in expose_keys:
-                        new_item[key] = value
-                item = new_item
-
-            # TODO: move into api_values
-            rval.append(item)
-        return rval
 
     def _get_user_full(self, trans, user_id, **kwd):
         """Return referenced user or None if anonymous user is referenced."""
