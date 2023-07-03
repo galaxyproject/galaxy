@@ -15,6 +15,7 @@ from galaxy_test.base.decorators import (
 from galaxy_test.base.populators import skip_without_tool
 
 TEST_USER_EMAIL = "user_for_users_index_test@bx.psu.edu"
+TEST_USER_EMAIL_INDEX_DELETED = "user_for_users_index_deleted_test@bx.psu.edu"
 TEST_USER_EMAIL_DELETE = "user_for_delete_test@bx.psu.edu"
 TEST_USER_EMAIL_PURGE = "user_for_purge_test@bx.psu.edu"
 TEST_USER_EMAIL_UNDELETE = "user_for_undelete_test@bx.psu.edu"
@@ -25,15 +26,27 @@ class TestUsersApi(ApiTestCase):
     @requires_admin
     @requires_new_user
     def test_index(self):
-        self._setup_user(TEST_USER_EMAIL)
+        user = self._setup_user(TEST_USER_EMAIL_INDEX_DELETED)
         all_users_response = self._get("users", admin=True)
         self._assert_status_code_is(all_users_response, 200)
         all_users = all_users_response.json()
         # New user is in list
-        assert len([u for u in all_users if u["email"] == TEST_USER_EMAIL]) == 1
+        assert len([u for u in all_users if u["email"] == TEST_USER_EMAIL_INDEX_DELETED]) == 1
         # Request made from admin user, so should at least self and this
         # new user.
         assert len(all_users) > 1
+        # index of deleted users
+        self._delete(f"users/{user['id']}", admin=True)
+        all_deleted_users_response_1 = self._get("users/deleted", admin=True)
+        self._assert_status_code_is(all_deleted_users_response_1, 200)
+        payload = {"deleted": "True"}
+        all_deleted_users_response_2 = self._get("users", data=payload, admin=True)
+        self._assert_status_code_is(all_deleted_users_response_2, 200)
+        # user is in list of deleted users
+        all_deleted_users = all_deleted_users_response_1.json()
+        assert len([u for u in all_deleted_users if u["email"] == TEST_USER_EMAIL_INDEX_DELETED]) == 1
+        all_deleted_users = all_deleted_users_response_2.json()
+        assert len([u for u in all_deleted_users if u["email"] == TEST_USER_EMAIL_INDEX_DELETED]) == 1
 
     @requires_new_user
     def test_index_only_self_for_nonadmins(self):
