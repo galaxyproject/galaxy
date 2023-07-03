@@ -78,10 +78,14 @@ class TagsApiTests(ApiTestCase):
         update_history_tags_response = self._put("tags", data=payload, json=True)
         return update_history_tags_response
 
-    def _assert_tags_in_item(self, item_id, expected_tags: List[str]):
+    def _get_item(self, item_id: str):
         item_response = self._get(f"{self.api_name}/{item_id}")
         self._assert_status_code_is(item_response, 200)
         item = item_response.json()
+        return item
+
+    def _assert_tags_in_item(self, item_id, expected_tags: List[str]):
+        item = self._get_item(item_id)
         assert "tags" in item
         assert item["tags"] == expected_tags
 
@@ -131,7 +135,15 @@ class TestLibraryDatasetTags(TagsApiTests):
 
     def create_item(self) -> str:
         ld = self.library_populator.new_library_dataset(name=f"test-library-dataset-{uuid4()}")
+        self.library_id = ld["parent_library_id"]
         return ld["id"]
+
+    def _get_item(self, item_id: str):
+        assert self.library_id is not None, "Library ID not set"
+        item_response = self._get(f"{self.api_name}/{self.library_id}/contents/{item_id}")
+        self._assert_status_code_is(item_response, 200)
+        item = item_response.json()
+        return item
 
 
 class TestPageTags(TagsApiTests):
