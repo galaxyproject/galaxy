@@ -574,6 +574,7 @@ class WorkflowsAPIController(
         POST /api/workflows/build_module
         Builds module models for the workflow editor.
         """
+        # payload is tool state
         if payload is None:
             payload = {}
         inputs = payload.get("inputs", {})
@@ -584,8 +585,6 @@ class WorkflowsAPIController(
             populate_state(trans, module.get_inputs(), inputs, module_state, check=False)
             module.recover_state(module_state, from_tool_form=True)
         return {
-            "label": inputs.get("__label", ""),
-            "annotation": inputs.get("__annotation", ""),
             "name": module.get_name(),
             "tool_state": module.get_state(),
             "content_id": module.get_content_id(),
