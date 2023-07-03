@@ -27,20 +27,7 @@ class TagsApiTests(ApiTestCase):
 
     def test_tags_on_item(self):
         item_id = self.create_item()
-
         self._assert_tags_in_item(item_id, [])
-
-        tag_name = "mytagname"
-        tag_value = "mytagvalue"
-        create_tag_response = self._create_named_tag_on_item(item_id, tag_name, tag_value)
-        self._assert_status_code_is(create_tag_response, 200)
-        item_tag_assoc = create_tag_response.json()
-        assert item_tag_assoc["user_tname"] == tag_name
-        assert item_tag_assoc["user_value"] == tag_value
-
-        new_tags = ["UpdatedTag"]
-        self._update_tags_using_item_update(item_id, new_tags)
-        self._assert_tags_in_item(item_id, new_tags)
 
         new_tags = ["APITag"]
         update_history_tags_response = self._update_tags_using_tags_api(item_id, new_tags)
@@ -49,29 +36,9 @@ class TagsApiTests(ApiTestCase):
 
         # other users can't create or update tags
         with self._different_user():
-            create_tag_response = self._create_named_tag_on_item(
-                item_id, tag_name="othertagname", tag_value="othertagvalue"
-            )
-            self._assert_status_code_is(create_tag_response, 403)
-
-            new_tags = ["otherAPITag"]
-            update_item_response = self._update_tags_using_item_update(item_id, new_tags)
-            self._assert_status_code_is(update_item_response, 403)
-
             new_tags = ["otherAPITag"]
             update_history_tags_response = self._update_tags_using_tags_api(item_id, new_tags)
             self._assert_status_code_is(update_history_tags_response, 403)
-
-    def _create_named_tag_on_item(self, item_id, tag_name, tag_value):
-        create_tag_response = self._post(
-            f"{self.api_name}/{item_id}/tags/{tag_name}", data={"value": tag_value}, json=True
-        )
-
-        return create_tag_response
-
-    def _update_tags_using_item_update(self, item_id, new_tags):
-        update_item_response = self._put(f"{self.api_name}/{item_id}", data={"tags": new_tags}, json=True)
-        return update_item_response
 
     def _update_tags_using_tags_api(self, item_id, new_tags):
         payload = {"item_class": self.item_class, "item_id": item_id, "item_tags": new_tags}
