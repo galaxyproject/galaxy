@@ -1387,6 +1387,13 @@ export interface paths {
          */
         post: operations["update_tour_api_tours__tour_id__post"];
     };
+    "/api/users": {
+        /**
+         * Get Users
+         * @description Display a collection of users
+         */
+        get: operations["Get_users_api_users_get"];
+    };
     "/api/users/current": {
         /**
          * Get Current User
@@ -1402,6 +1409,13 @@ export interface paths {
          * Please use `/api/users/current/recalculate_disk_usage` instead.
          */
         put: operations["recalculate_disk_usage_api_users_current_recalculate_disk_usage_put"];
+    };
+    "/api/users/deleted": {
+        /**
+         * Get Deleted Users
+         * @description Display a collection of deleted users
+         */
+        get: operations["Get_deleted_users_api_users_deleted_get"];
     };
     "/api/users/deleted/{user_id}": {
         /** Display information about a deleted user */
@@ -16614,6 +16628,38 @@ export interface operations {
             };
         };
     };
+    Get_users_api_users_get: {
+        /**
+         * Get Users
+         * @description Display a collection of users
+         */
+        parameters?: {
+            query?: {
+                deleted?: boolean;
+                f_email?: string;
+                f_name?: string;
+                f_any?: string;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["UserModel"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_current_user_api_users_current_get: {
         /**
          * Get Current User
@@ -16672,6 +16718,37 @@ export interface operations {
             };
             /** @description The background task was submitted but there is no status tracking ID available. */
             204: never;
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    Get_deleted_users_api_users_deleted_get: {
+        /**
+         * Get Deleted Users
+         * @description Display a collection of deleted users
+         */
+        parameters?: {
+            query?: {
+                f_email?: string;
+                f_name?: string;
+                f_any?: string;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["UserModel"][];
+                };
+            };
             /** @description Validation Error */
             422: {
                 content: {
