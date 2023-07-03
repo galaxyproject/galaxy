@@ -203,8 +203,7 @@ class FastAPIUsers:
                 self.service.user_manager.delete(user_to_update)
             else:
                 raise exceptions.InsufficientPermissionsException("You may only delete your own account.")
-        user_response = self.user_serializer.serialize_to_view(user_to_update, view="detailed")
-        return DetailedUserModel(**user_response)
+        return self.service.user_to_detailed_model(user_to_update)
 
     @router.delete(
         "/api/users/{user_id}/api_key",
