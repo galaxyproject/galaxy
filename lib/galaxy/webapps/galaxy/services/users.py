@@ -1,4 +1,6 @@
-from typing import Optional, Union
+from typing import List, Optional, Union
+
+from sqlalchemy import false, true, or_
 
 from galaxy import exceptions as glx_exceptions, util
 from galaxy.managers import api_keys
@@ -12,7 +14,7 @@ from galaxy.model import User
 from galaxy.queue_worker import send_local_control_task
 from galaxy.schema import APIKeyModel
 
-from galaxy.schema.schema import AnonUserModel, DetailedUserModel, FlexibleUserIdType
+from galaxy.schema.schema import AnonUserModel, DetailedUserModel, FlexibleUserIdType, UserModel
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.webapps.galaxy.services.base import (
     async_task_summary,
@@ -156,3 +158,68 @@ class UsersService(ServiceBase):
     ) -> DetailedUserModel:
         user_response = self.user_serializer.serialize_to_view(user, view="detailed")
         return DetailedUserModel(**user_response)
+
+    def get_index(
+        self,
+        trans: ProvidesUserContext,
+        deleted: bool,
+        f_email: str,
+        f_name: str,
+        f_any: str,
+    ) -> List[UserModel]:
+        rval = []
+        query = trans.sa_session.query(User)
+
+        if f_email and (trans.user_is_admin or trans.app.config.expose_user_email):
+            query = query.filter(User.email.like(f"%{f_email}%"))
+
+        if f_name and (trans.user_is_admin or trans.app.config.expose_user_name):
+            query = query.filter(User.username.like(f"%{f_name}%"))
+
+        if f_any:
+            if trans.user_is_admin:
+                query = query.filter(or_(User.email.like(f"%{f_any}%"), User.username.like(f"%{f_any}%")))
+            else:
+                if trans.app.config.expose_user_email and trans.app.config.expose_user_name:
+                    query = query.filter(or_(User.email.like(f"%{f_any}%"), User.username.like(f"%{f_any}%")))
+                elif trans.app.config.expose_user_email:
+                    query = query.filter(User.email.like(f"%{f_any}%"))
+                elif trans.app.config.expose_user_name:
+                    query = query.filter(User.username.like(f"%{f_any}%"))
+
+        if deleted:
+            # only admins can see deleted users
+            if not trans.user_is_admin:
+                return []
+            query = query.filter(User.table.c.deleted == true())
+        else:
+            # special case: user can see only their own user
+            # special case2: if the galaxy admin has specified that other user email/names are
+            #   exposed, we don't want special case #1
+            if (
+                not trans.user_is_admin
+                and not trans.app.config.expose_user_name
+                and not trans.app.config.expose_user_email
+            ):
+                item = trans.user.to_dict(value_mapper={"id": trans.security.encode_id})
+                return [item]
+            query = query.filter(User.table.c.deleted == false())
+        for user in query:
+            item = user.to_dict(value_mapper={"id": trans.security.encode_id})
+            # If NOT configured to expose_email, do not expose email UNLESS the user is self, or
+            # the user is an admin
+            if user is not trans.user and not trans.user_is_admin:
+                expose_keys = ["id"]
+                if trans.app.config.expose_user_name:
+                    expose_keys.append("username")
+                if trans.app.config.expose_user_email:
+                    expose_keys.append("email")
+                new_item = {}
+                for key, value in item.items():
+                    if key in expose_keys:
+                        new_item[key] = value
+                item = new_item
+
+            # TODO: move into api_values
+            rval.append(item)
+        return rval
