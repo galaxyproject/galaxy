@@ -268,7 +268,7 @@ class FastAPIUsers:
         """
         **Warning**: This endpoint is experimental and might change or disappear in future versions.
         """
-        user = self.service._get_user(trans, user_id)
+        user = self.service.get_user(trans, user_id)
 
         enabled = user.preferences["beacon_enabled"] if "beacon_enabled" in user.preferences else False
 
@@ -287,7 +287,7 @@ class FastAPIUsers:
         """
         **Warning**: This endpoint is experimental and might change or disappear in future versions.
         """
-        user = self.service._get_user(trans, user_id)
+        user = self.service.get_user(trans, user_id)
 
         user.preferences["beacon_enabled"] = payload.enabled
         with transaction(trans.sa_session):
@@ -305,7 +305,7 @@ class FastAPIUsers:
         user_id: DecodedDatabaseIdField = UserIdPathParam,
         theme: str = ThemePathParam,
     ) -> str:
-        user = self.service._get_user(trans, user_id)
+        user = self.service.get_user(trans, user_id)
         user.preferences["theme"] = theme
         with transaction(trans.sa_session):
             trans.sa_session.commit()

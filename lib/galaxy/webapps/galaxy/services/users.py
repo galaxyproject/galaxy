@@ -62,28 +62,28 @@ class UsersService(ServiceBase):
 
     def get_api_key(self, trans: ProvidesUserContext, user_id: int) -> Optional[APIKeyModel]:
         """Returns the current API key or None if the user doesn't have any valid API key."""
-        user = self._get_user(trans, user_id)
+        user = self.get_user(trans, user_id)
         api_key = self.api_key_manager.get_api_key(user)
         return APIKeyModel.construct(key=api_key.key, create_time=api_key.create_time) if api_key else None
 
     def get_or_create_api_key(self, trans: ProvidesUserContext, user_id: int) -> str:
         """Returns the current API key (as plain string) or creates a new one."""
-        user = self._get_user(trans, user_id)
+        user = self.get_user(trans, user_id)
         return self.api_key_manager.get_or_create_api_key(user)
 
     def create_api_key(self, trans: ProvidesUserContext, user_id: int) -> APIKeyModel:
         """Creates a new API key for the given user"""
-        user = self._get_user(trans, user_id)
+        user = self.get_user(trans, user_id)
         api_key = self.api_key_manager.create_api_key(user)
         result = APIKeyModel.construct(key=api_key.key, create_time=api_key.create_time)
         return result
 
     def delete_api_key(self, trans: ProvidesUserContext, user_id: int) -> None:
         """Deletes a particular API key"""
-        user = self._get_user(trans, user_id)
+        user = self.get_user(trans, user_id)
         self.api_key_manager.delete_api_key(user)
 
-    def _get_user(self, trans: ProvidesUserContext, user_id):
+    def get_user(self, trans: ProvidesUserContext, user_id):
         user = trans.user
         if trans.anonymous or (user and user.id != user_id and not trans.user_is_admin):
             raise glx_exceptions.InsufficientPermissionsException("Access denied.")
