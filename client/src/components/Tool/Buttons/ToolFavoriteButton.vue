@@ -1,8 +1,14 @@
 <script setup>
-import { computed } from "vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faStar as farStar } from "@fortawesome/free-regular-svg-icons";
+import { faStar as fasStar } from "@fortawesome/free-solid-svg-icons";
 import { storeToRefs } from "pinia";
 import ariaAlert from "utils/ariaAlert";
+import { computed } from "vue";
+
 import { useUserStore } from "@/stores/userStore";
+
+library.add(fasStar, farStar);
 
 const props = defineProps({
     id: {
@@ -59,14 +65,6 @@ async function onRemoveFavorite() {
         ariaAlert("failed to remove from favorites");
     }
 }
-</script>
-
-<script>
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faStar as fasStar } from "@fortawesome/free-solid-svg-icons";
-import { faStar as farStar } from "@fortawesome/free-regular-svg-icons";
-
-library.add(fasStar, farStar);
 </script>
 
 <template>

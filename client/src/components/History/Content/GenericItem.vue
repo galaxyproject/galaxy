@@ -25,13 +25,15 @@
 
 <script>
 import LoadingSpan from "components/LoadingSpan";
+import { mapActions } from "pinia";
+
+import { deleteContent, updateContentFields } from "@/components/History/model/queries";
 import { DatasetCollectionProvider, DatasetProvider } from "@/components/providers";
 import { DatasetCollectionElementProvider } from "@/components/providers/storeProviders";
-import { deleteContent, updateContentFields } from "@/components/History/model/queries";
+import { useHistoryStore } from "@/stores/historyStore";
+
 import ContentItem from "./ContentItem";
 import GenericElement from "./GenericElement";
-import { mapActions } from "pinia";
-import { useHistoryStore } from "@/stores/historyStore";
 
 export default {
     components: {

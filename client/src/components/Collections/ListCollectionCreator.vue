@@ -197,17 +197,19 @@
 </template>
 
 <script>
-import mixin from "./common/mixin";
-import DatasetCollectionElementView from "./ListDatasetCollectionElementView";
-import _l from "utils/localization";
-import STATES from "mvc/dataset/states";
 import "ui/hoverhighlight";
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-import draggable from "vuedraggable";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faSortAlphaDown, faUndo } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import BootstrapVue from "bootstrap-vue";
+import STATES from "mvc/dataset/states";
+import _l from "utils/localization";
+import Vue from "vue";
+import draggable from "vuedraggable";
+
+import mixin from "./common/mixin";
+import DatasetCollectionElementView from "./ListDatasetCollectionElementView";
 
 library.add(faSortAlphaDown, faUndo);
 

@@ -59,22 +59,25 @@
 </template>
 
 <script>
-import Vue from "vue";
-import { mapState } from "pinia";
-import BootstrapVue from "bootstrap-vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faBars, faCog, faDatabase, faTable, faUser } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
+import BootstrapVue from "bootstrap-vue";
+import ConfigProvider from "components/providers/ConfigProvider";
+import { mapState } from "pinia";
 import { prependPath } from "utils/redirect";
-import { useHistoryStore } from "@/stores/historyStore";
 import { errorMessageAsString } from "utils/simple-error";
+import Vue from "vue";
+
+import { useHistoryStore } from "@/stores/historyStore";
+
+import { DatatypesProvider, DbKeyProvider, SuitableConvertersProvider } from "../../providers";
+import ChangeDatatypeTab from "./ChangeDatatypeTab";
 import DatabaseEditTab from "./DatabaseEditTab";
 import SuitableConvertersTab from "./SuitableConvertersTab";
-import { DbKeyProvider, SuitableConvertersProvider, DatatypesProvider } from "../../providers";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faDatabase, faTable, faBars, faUser, faCog } from "@fortawesome/free-solid-svg-icons";
-import ConfigProvider from "components/providers/ConfigProvider";
-import ChangeDatatypeTab from "./ChangeDatatypeTab";
-import LoadingSpan from "../../LoadingSpan.vue";
+
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 library.add(faDatabase, faTable, faBars, faUser, faCog);
 

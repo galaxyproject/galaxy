@@ -20,12 +20,12 @@
 </template>
 
 <script>
-import axios from "axios";
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { errorMessageAsString } from "utils/simple-error";
+import axios from "axios";
+import BootstrapVue from "bootstrap-vue";
 import { withPrefix } from "utils/redirect";
+import { errorMessageAsString } from "utils/simple-error";
+import Vue from "vue";
 
 Vue.use(BootstrapVue);
 

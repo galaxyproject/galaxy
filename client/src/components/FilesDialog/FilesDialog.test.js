@@ -1,28 +1,27 @@
-import FilesDialog from "./FilesDialog";
-import SelectionDialog from "components/SelectionDialog/SelectionDialog";
-import DataDialogTable from "components/SelectionDialog/DataDialogTable";
-import { shallowMount, createLocalVue } from "@vue/test-utils";
-import flushPromises from "flush-promises";
-import { BButton } from "bootstrap-vue";
-import MockAdapter from "axios-mock-adapter";
+import { createLocalVue, shallowMount } from "@vue/test-utils";
 import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
+import MockAdapter from "axios-mock-adapter";
+import BootstrapVue, { BButton } from "bootstrap-vue";
+import DataDialogTable from "components/SelectionDialog/DataDialogTable";
+import SelectionDialog from "components/SelectionDialog/SelectionDialog";
+import { selectionStates } from "components/SelectionDialog/selectionStates";
+import flushPromises from "flush-promises";
 
+import FilesDialog from "./FilesDialog";
 import {
-    ftpId,
-    rootId,
+    directory1RecursiveResponse,
+    directory1Response,
+    directory2RecursiveResponse,
     directoryId,
+    ftpId,
+    pdbResponse,
+    rootId,
+    rootResponse,
+    someErrorText,
     subDirectoryId,
     subSubDirectoryId,
-    rootResponse,
-    pdbResponse,
-    directory1RecursiveResponse,
-    directory2RecursiveResponse,
-    directory1Response,
     subsubdirectoryResponse,
-    someErrorText,
 } from "./testingData";
-import { selectionStates } from "components/SelectionDialog/selectionStates";
 
 jest.mock("app");
 

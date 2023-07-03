@@ -11,6 +11,8 @@
     </span>
 </template>
 <script>
+import DisplayRaw from "./DisplayRaw";
+
 const DESCRIPTIONS = {
     conda: "The Conda package manager will be used for resolution. ",
     galaxy_package: "A manually configured Galaxy package directory will be used for resolution. ",
@@ -33,8 +35,6 @@ function describeRequirement(status) {
     }
     return `${prefix}${requirement}. `;
 }
-
-import DisplayRaw from "./DisplayRaw";
 
 export default {
     components: { DisplayRaw },

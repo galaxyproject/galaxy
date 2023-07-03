@@ -32,6 +32,7 @@
 </template>
 <script>
 import { getAppRoot } from "onload/loadConfig";
+
 export default {
     props: {
         header: { type: String, required: true },

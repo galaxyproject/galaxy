@@ -39,15 +39,17 @@
 </template>
 
 <script>
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import SelectionDialogMixin from "components/SelectionDialog/SelectionDialogMixin";
-import { UrlTracker } from "./utilities";
+import { useGlobalUploadModal } from "composables/globalUploadModal";
+import { getAppRoot } from "onload/loadConfig";
+import Vue from "vue";
+
+import { errorMessageAsString } from "@/utils/simple-error";
+
 import { Model } from "./model";
 import { Services } from "./services";
-import { getAppRoot } from "onload/loadConfig";
-import { useGlobalUploadModal } from "composables/globalUploadModal";
-import { errorMessageAsString } from "@/utils/simple-error";
+import { UrlTracker } from "./utilities";
 
 Vue.use(BootstrapVue);
 

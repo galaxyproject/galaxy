@@ -61,18 +61,18 @@
 </template>
 
 <script>
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-import store from "store";
-import MarkdownIt from "markdown-it";
-import markdownItRegexp from "markdown-it-regexp";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faDownload, faEdit } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import BootstrapVue from "bootstrap-vue";
+import MarkdownIt from "markdown-it";
+import markdownItRegexp from "markdown-it-regexp";
+import store from "store";
+import Vue from "vue";
 
+import MarkdownContainer from "./MarkdownContainer.vue";
 import LoadingSpan from "components/LoadingSpan.vue";
 import StsDownloadButton from "components/StsDownloadButton.vue";
-import MarkdownContainer from "./MarkdownContainer.vue";
 
 const FUNCTION_VALUE_REGEX = `\\s*(?:[\\w_\\-]+|\\"[^\\"]+\\"|\\'[^\\']+\\')\\s*`;
 const FUNCTION_CALL = `\\s*[\\w\\|]+\\s*=` + FUNCTION_VALUE_REGEX;

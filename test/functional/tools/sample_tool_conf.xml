@@ -87,7 +87,6 @@
   <tool file="is_valid_xml.xml" />
   <tool file="expression_tools/parse_values_from_file.xml"/>
   <tool file="expression_tools/pick_value.xml" />
-  <tool file="remote_test_data_location.xml" />
   <!--
   TODO: Figure out why this transiently fails on Jenkins.
   <tool file="maxseconds.xml" />

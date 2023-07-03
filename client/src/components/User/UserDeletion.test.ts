@@ -1,5 +1,8 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
+
+import { ROOT_COMPONENT } from "@/utils/navigation/schema";
+
 import UserDeletion from "./UserDeletion.vue";
 
 const localVue = getLocalVue(true);
@@ -15,8 +18,6 @@ function mountComponent() {
     });
     return wrapper;
 }
-
-import { ROOT_COMPONENT } from "@/utils/navigation/schema";
 
 describe("UserDeletion.vue", () => {
     it("contains a localized link", async () => {

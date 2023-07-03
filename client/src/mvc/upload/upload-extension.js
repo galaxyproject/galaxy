@@ -1,7 +1,8 @@
 /** This renders a popover with extension details **/
-import _ from "underscore";
 import Backbone from "backbone";
 import Popover from "mvc/ui/ui-popover";
+import _ from "underscore";
+
 export default Backbone.View.extend({
     initialize: function (options) {
         this.model = new Backbone.Model(options);

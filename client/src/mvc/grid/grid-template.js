@@ -1,6 +1,6 @@
+import { sanitize } from "dompurify";
 import $ from "jquery";
 import _ from "underscore";
-import { sanitize } from "dompurify";
 
 // grid view templates
 export default {

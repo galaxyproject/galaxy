@@ -1,6 +1,7 @@
-import { computed, ref, watch } from "vue";
-import { useCurrentUser } from "./user";
 import { useLocalStorage } from "@vueuse/core";
+import { computed, ref, watch } from "vue";
+
+import { useCurrentUser } from "./user";
 
 async function hash32(value: string): Promise<string> {
     const valueUtf8 = new TextEncoder().encode(value);

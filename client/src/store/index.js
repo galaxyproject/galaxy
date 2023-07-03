@@ -2,28 +2,25 @@
  * Central Vuex store
  */
 
+import config from "config";
+import localForage from "localforage";
 import Vue from "vue";
 import Vuex from "vuex";
 import createCache from "vuex-cache";
 import VuexPersistence from "vuex-persist";
-import localForage from "localforage";
 
-import config from "config";
-
-import { gridSearchStore } from "./gridSearchStore";
-import { tagStore } from "./tagStore";
-import { jobDestinationParametersStore } from "./jobDestinationParametersStore";
-import { invocationStore } from "./invocationStore";
-import { collectionElementsStore, datasetStore } from "./historyStore";
-import { configStore } from "./configStore";
-import { toolStore } from "./toolStore";
-import { datasetPathDestinationStore } from "./datasetPathDestinationStore";
-import { datasetExtFilesStore } from "./datasetExtFilesStore";
 import { collectionAttributesStore } from "./collectionAttributesStore";
+import { configStore } from "./configStore";
+import { datasetExtFilesStore } from "./datasetExtFilesStore";
+import { datasetPathDestinationStore } from "./datasetPathDestinationStore";
+import { gridSearchStore } from "./gridSearchStore";
+import { collectionElementsStore, datasetStore } from "./historyStore";
+import { invocationStore } from "./invocationStore";
+import { jobDestinationParametersStore } from "./jobDestinationParametersStore";
 import { panelStore } from "./panelStore";
-
-// Syncs vuex to Galaxy store until Galaxy vals to not exist
 import { syncVuextoGalaxy } from "./syncVuextoGalaxy";
+import { tagStore } from "./tagStore";
+import { toolStore } from "./toolStore";
 
 Vue.use(Vuex);
 

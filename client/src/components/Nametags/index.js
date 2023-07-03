@@ -1,5 +1,6 @@
-import Nametags from "./Nametags";
 import { mountVueComponent } from "utils/mountVueComponent";
+
+import Nametags from "./Nametags";
 
 export { default as Nametag } from "./Nametag.vue";
 export { default as Nametags } from "./Nametags.vue";

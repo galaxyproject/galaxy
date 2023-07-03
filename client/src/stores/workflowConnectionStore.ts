@@ -1,7 +1,8 @@
 import { defineStore } from "pinia";
+import Vue from "vue";
+
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { pushOrSet } from "@/utils/pushOrSet";
-import Vue from "vue";
 
 interface InvalidConnections {
     [index: ConnectionId]: string | undefined;

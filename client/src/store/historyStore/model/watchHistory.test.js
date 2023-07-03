@@ -1,13 +1,14 @@
-import MockAdapter from "axios-mock-adapter";
+import { createLocalVue, mount } from "@vue/test-utils";
 import axios from "axios";
-import { watchHistoryOnce } from "./watchHistory";
-import { useHistoryStore } from "stores/historyStore";
+import MockAdapter from "axios-mock-adapter";
+import { createPinia, mapState } from "pinia";
 import { collectionElementsStore } from "store/historyStore/collectionElementsStore";
 import { datasetStore } from "store/historyStore/datasetStore";
 import { useHistoryItemsStore } from "stores/history/historyItemsStore";
-import { createPinia, mapState } from "pinia";
-import { mount, createLocalVue } from "@vue/test-utils";
+import { useHistoryStore } from "stores/historyStore";
 import Vuex from "vuex";
+
+import { watchHistoryOnce } from "./watchHistory";
 
 const pinia = createPinia();
 

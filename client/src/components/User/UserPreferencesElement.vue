@@ -1,5 +1,6 @@
 <script setup>
 import { BRow } from "bootstrap-vue";
+
 defineProps({
     id: {
         type: String,

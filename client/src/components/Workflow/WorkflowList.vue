@@ -86,20 +86,22 @@
     </div>
 </template>
 <script>
-import _l from "utils/localization";
-import { Services } from "./services";
-import { getAppRoot } from "onload/loadConfig";
-import { storedWorkflowsProvider } from "components/providers/StoredWorkflowsProvider";
-import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
-import WorkflowDropdown from "./WorkflowDropdown";
-import UtcDate from "components/UtcDate";
 import { getGalaxyInstance } from "app";
-import paginationMixin from "./paginationMixin";
 import filtersMixin from "components/Indices/filtersMixin";
-import WorkflowIndexActions from "./WorkflowIndexActions";
-import WorkflowBookmark from "./WorkflowBookmark";
-import WorkflowRunButton from "./WorkflowRunButton.vue";
 import SharingIndicators from "components/Indices/SharingIndicators";
+import { storedWorkflowsProvider } from "components/providers/StoredWorkflowsProvider";
+import UtcDate from "components/UtcDate";
+import { getAppRoot } from "onload/loadConfig";
+import _l from "utils/localization";
+
+import paginationMixin from "./paginationMixin";
+import { Services } from "./services";
+import WorkflowBookmark from "./WorkflowBookmark";
+import WorkflowDropdown from "./WorkflowDropdown";
+import WorkflowIndexActions from "./WorkflowIndexActions";
+
+import WorkflowRunButton from "./WorkflowRunButton.vue";
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 const helpHtml = `<div>
     <p>This input can be used to filter the workflows displayed.</p>

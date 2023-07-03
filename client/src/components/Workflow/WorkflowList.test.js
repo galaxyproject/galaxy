@@ -1,15 +1,16 @@
-import Workflows from "../Workflow/WorkflowList";
+import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
-import { useUserTags } from "composables/user";
-import { computed } from "vue";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import { getLocalVue } from "tests/jest/helpers";
+import { useUserTags } from "composables/user";
+import { formatDistanceToNow, parseISO } from "date-fns";
 import flushPromises from "flush-promises";
-import { parseISO, formatDistanceToNow } from "date-fns";
 import { PiniaVuePlugin } from "pinia";
-import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "tests/jest/helpers";
+import { computed } from "vue";
+
 import Tag from "../TagsMultiselect/Tag";
+import Workflows from "../Workflow/WorkflowList";
 
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);

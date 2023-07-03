@@ -85,10 +85,11 @@
 </template>
 
 <script>
+import { BLink } from "bootstrap-vue";
 import { STATES } from "components/History/Content/model/states";
 import { DatasetProvider } from "components/providers/storeProviders";
+
 import DatasetActions from "./DatasetActions";
-import { BLink } from "bootstrap-vue";
 
 export default {
     components: {

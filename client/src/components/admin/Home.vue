@@ -119,9 +119,10 @@
 </template>
 
 <script>
-import Heading from "components/Common/Heading.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faServer, faUser, faWrench } from "@fortawesome/free-solid-svg-icons";
+
+import Heading from "components/Common/Heading.vue";
 
 library.add(faServer, faUser, faWrench);
 

@@ -1,76 +1,73 @@
-import Vue from "vue";
-import VueRouter from "vue-router";
-import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
-import { patchRouterPush } from "./router-push";
-
-// these modules are mounted below the masthead.
-import Analysis from "entry/analysis/modules/Analysis";
-import Home from "entry/analysis/modules/Home";
-import CenterFrame from "entry/analysis/modules/CenterFrame";
-import Login from "entry/analysis/modules/Login";
-import WorkflowEditorModule from "entry/analysis/modules/WorkflowEditor";
-
-// routes
-import AdminRoutes from "entry/analysis/routes/admin-routes";
-import LibraryRoutes from "entry/analysis/routes/library-routes";
-import StorageDashboardRoutes from "entry/analysis/routes/storageDashboardRoutes";
-
-// child components
-import AboutGalaxy from "components/AboutGalaxy.vue";
-import CarbonEmissionsCalculations from "components/JobMetrics/CarbonEmissions/CarbonEmissionsCalculations";
 import Citations from "components/Citation/Citations";
 import ClientError from "components/ClientError";
 import CollectionEditView from "components/Collections/common/CollectionEditView";
-import CustomBuilds from "components/User/CustomBuilds";
+import DatasetList from "components/Dataset/DatasetList";
 import DatasetAttributes from "components/DatasetInformation/DatasetAttributes";
 import DatasetDetails from "components/DatasetInformation/DatasetDetails";
 import DatasetError from "components/DatasetInformation/DatasetError";
-import DatasetList from "components/Dataset/DatasetList";
-import AvailableDatatypes from "components/AvailableDatatypes/AvailableDatatypes";
 import FormGeneric from "components/Form/FormGeneric";
-import GridShared from "components/Grid/GridShared";
 import GridHistory from "components/Grid/GridHistory";
-import PageList from "components/Page/PageList";
-import HistoryImport from "components/HistoryImport";
-import HistoryView from "components/History/HistoryView";
+import GridShared from "components/Grid/GridShared";
+import HistoryExportTasks from "components/History/Export/HistoryExport";
 import HistoryPublished from "components/History/HistoryPublished";
 import HistoryPublishedList from "components/History/HistoryPublishedList";
-import HistoryInvocations from "components/Workflow/HistoryInvocations";
+import HistoryView from "components/History/HistoryView";
 import HistoryMultipleView from "components/History/Multiple/MultipleView";
-import NotificationsList from "components/Notifications/NotificationsList.vue";
+import { HistoryExport } from "components/HistoryExport/index";
+import HistoryImport from "components/HistoryImport";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools";
-import InvocationReport from "components/Workflow/InvocationReport";
 import JobDetails from "components/JobInformation/JobDetails";
+import CarbonEmissionsCalculations from "components/JobMetrics/CarbonEmissions/CarbonEmissionsCalculations";
 import NewUserWelcome from "components/NewUserWelcome/NewUserWelcome";
+import PageList from "components/Page/PageList";
 import PageDisplay from "components/PageDisplay/PageDisplay";
 import PageEditor from "components/PageEditor/PageEditor";
 import Sharing from "components/Sharing/Sharing";
-import StoredWorkflowInvocations from "components/Workflow/StoredWorkflowInvocations";
-import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson";
-import ToolsList from "components/ToolsList/ToolsList";
 import ToolSuccess from "components/Tool/ToolSuccess";
+import ToolsList from "components/ToolsList/ToolsList";
+import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson";
 import TourList from "components/Tour/TourList";
 import TourRunner from "components/Tour/TourRunner";
-import TrsImport from "components/Workflow/Import/TrsImport";
-import TrsSearch from "components/Workflow/Import/TrsSearch";
-import UserInvocations from "components/Workflow/UserInvocations";
+import { APIKey } from "components/User/APIKey";
+import { CloudAuth } from "components/User/CloudAuth";
+import CustomBuilds from "components/User/CustomBuilds";
+import { ExternalIdentities } from "components/User/ExternalIdentities";
+import { NotificationsPreferences } from "components/User/Notifications";
 import UserPreferences from "components/User/UserPreferences";
 import UserPreferencesForm from "components/User/UserPreferencesForm";
 import VisualizationsList from "components/Visualizations/Index";
-import WorkflowExport from "components/Workflow/WorkflowExport";
 import VisualizationPublished from "components/Visualizations/VisualizationPublished";
+import HistoryInvocations from "components/Workflow/HistoryInvocations";
+import TrsImport from "components/Workflow/Import/TrsImport";
+import TrsSearch from "components/Workflow/Import/TrsSearch";
+import InvocationReport from "components/Workflow/InvocationReport";
+import StoredWorkflowInvocations from "components/Workflow/StoredWorkflowInvocations";
+import UserInvocations from "components/Workflow/UserInvocations";
+import WorkflowExport from "components/Workflow/WorkflowExport";
 import WorkflowImport from "components/Workflow/WorkflowImport";
 import WorkflowList from "components/Workflow/WorkflowList";
 import WorkflowPublished from "components/Workflow/WorkflowPublished";
-import { APIKey } from "components/User/APIKey";
-import { NotificationsPreferences } from "components/User/Notifications";
-import { CloudAuth } from "components/User/CloudAuth";
-import { ExternalIdentities } from "components/User/ExternalIdentities";
-import { HistoryExport } from "components/HistoryExport/index";
-import HistoryExportTasks from "components/History/Export/HistoryExport";
-import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
+import Analysis from "entry/analysis/modules/Analysis";
+import CenterFrame from "entry/analysis/modules/CenterFrame";
+import Home from "entry/analysis/modules/Home";
+import Login from "entry/analysis/modules/Login";
+import WorkflowEditorModule from "entry/analysis/modules/WorkflowEditor";
+import AdminRoutes from "entry/analysis/routes/admin-routes";
+import LibraryRoutes from "entry/analysis/routes/library-routes";
+import StorageDashboardRoutes from "entry/analysis/routes/storageDashboardRoutes";
+import { getAppRoot } from "onload/loadConfig";
+import Vue from "vue";
+import VueRouter from "vue-router";
+
+import AvailableDatatypes from "@/components/AvailableDatatypes/AvailableDatatypes";
+
+import { patchRouterPush } from "./router-push";
+
+import AboutGalaxy from "@/components/AboutGalaxy.vue";
 import HistoryArchive from "@/components/History/Archiving/HistoryArchive.vue";
+import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
+import NotificationsList from "@/components/Notifications/NotificationsList.vue";
 
 Vue.use(VueRouter);
 

@@ -499,7 +499,7 @@ class TestHistorySerializer(BaseTestCase):
             mock_paused_jobs.return_value = jobs
             history.resume_paused_jobs()
             mock_paused_jobs.assert_called_once()
-            assert job.state == model.Job.states.NEW, job.state
+            assert job.state == model.Job.states.NEW, job.state  # type: ignore[comparison-overlap]  # https://github.com/python/mypy/issues/15509
 
     def _history_state_from_states_and_deleted(self, user, hda_state_and_deleted_tuples):
         history = self.history_manager.create(name="name", user=user)

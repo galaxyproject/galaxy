@@ -7,5 +7,5 @@ import $ from "jquery"; // eslint-disable-line no-unused-vars
 import _ from "underscore"; // eslint-disable-line no-unused-vars
 
 export { default as LegacyGridView } from "legacy/grid/grid-view";
-export { default as ToolshedGroups } from "toolshed/toolshed.groups";
 export { default as store } from "storemodern";
+export { default as ToolshedGroups } from "toolshed/toolshed.groups";

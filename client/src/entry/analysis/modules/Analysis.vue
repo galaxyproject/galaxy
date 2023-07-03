@@ -1,13 +1,15 @@
 <script setup>
-import { computed, ref, onMounted, onUnmounted } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
-import { useUserStore } from "@/stores/userStore";
-import HistoryIndex from "@/components/History/Index.vue";
-import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
+
 import ToolBox from "@/components/Panels/ProviderAwareToolBox";
-import DragAndDropModal from "@/components/Upload/DragAndDropModal.vue";
-import FlexPanel from "@/components/Panels/FlexPanel.vue";
+import { useUserStore } from "@/stores/userStore";
+
 import CenterFrame from "./CenterFrame.vue";
+import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
+import HistoryIndex from "@/components/History/Index.vue";
+import FlexPanel from "@/components/Panels/FlexPanel.vue";
+import DragAndDropModal from "@/components/Upload/DragAndDropModal.vue";
 
 const route = useRoute();
 const router = useRouter();

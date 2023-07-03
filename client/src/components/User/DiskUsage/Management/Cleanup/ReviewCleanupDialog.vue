@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import { BButton, BFormCheckbox, BModal, BPagination, BTable } from "bootstrap-vue";
+import { computed, ref, watch } from "vue";
+
 import localize from "@/utils/localization";
 import { bytesToString } from "@/utils/utils";
-import { BModal, BTable, BFormCheckbox, BPagination, BButton } from "bootstrap-vue";
+
+import { type CleanableItem, type CleanupOperation, PaginationOptions, type SortableKey } from "./model";
+
 import UtcDate from "@/components/UtcDate.vue";
-import { type CleanableItem, type CleanupOperation, type SortableKey, PaginationOptions } from "./model";
-import { computed, ref, watch } from "vue";
 
 interface ReviewCleanupDialogProps {
     operation?: CleanupOperation;

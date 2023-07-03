@@ -1,7 +1,7 @@
-import type { Step } from "@/stores/workflowStepStore";
 import { toRefs } from "@vueuse/core";
-
 import { computed, type Ref } from "vue";
+
+import type { Step } from "@/stores/workflowStepStore";
 
 export function useStepProps(step: Ref<Step>) {
     const {

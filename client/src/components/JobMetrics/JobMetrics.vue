@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import { computed, ref, unref } from "vue";
+
+import { useJobMetricsStore } from "@/stores/jobMetricsStore";
+
+import { worldwideCarbonIntensity, worldwidePowerUsageEffectiveness } from "./CarbonEmissions/carbonEmissionConstants";
+
 import AwsEstimate from "./AwsEstimate.vue";
 import CarbonEmissions from "./CarbonEmissions/CarbonEmissions.vue";
-import { useJobMetricsStore } from "@/stores/jobMetricsStore";
-import { computed, ref, unref } from "vue";
-import { worldwideCarbonIntensity, worldwidePowerUsageEffectiveness } from "./CarbonEmissions/carbonEmissionConstants";
 
 const props = defineProps({
     datasetFilesize: {

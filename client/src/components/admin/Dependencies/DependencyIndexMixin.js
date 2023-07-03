@@ -1,13 +1,14 @@
 import { getAppRoot } from "onload/loadConfig";
+
+import ContainerDescription from "./ContainerDescription";
+import ContainerResolver from "./ContainerResolver";
 import DependencyIndexWrapper from "./DependencyIndexWrapper";
 import DependencyResolver from "./DependencyResolver";
 import Requirements from "./Requirements";
 import StatusDisplay from "./StatusDisplay";
 import Statuses from "./Statuses";
-import ContainerDescription from "./ContainerDescription";
-import ContainerResolver from "./ContainerResolver";
-import Tools from "./Tools";
 import ToolDisplay from "./ToolDisplay";
+import Tools from "./Tools";
 
 export default {
     components: {

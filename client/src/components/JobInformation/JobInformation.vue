@@ -73,14 +73,15 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
-import DecodedId from "../DecodedId.vue";
-import CodeRow from "./CodeRow.vue";
+import CopyToClipboard from "components/CopyToClipboard";
 import { JobDetailsProvider } from "components/providers/JobProvider";
 import UtcDate from "components/UtcDate";
-import CopyToClipboard from "components/CopyToClipboard";
-import JOB_STATES_MODEL from "utils/job-states-model";
 import { formatDuration, intervalToDuration } from "date-fns";
+import { getAppRoot } from "onload/loadConfig";
+import JOB_STATES_MODEL from "utils/job-states-model";
+
+import DecodedId from "../DecodedId.vue";
+import CodeRow from "./CodeRow.vue";
 
 export default {
     components: {

@@ -4,6 +4,7 @@
 
 <script>
 import HistoryList from "./history-list";
+
 export default {
     props: {
         actionId: {

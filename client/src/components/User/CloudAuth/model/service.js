@@ -3,8 +3,9 @@
  */
 
 import axios from "axios";
-import { Credential, IdentityProvider } from "./index";
 import { getRootFromIndexLink } from "onload";
+
+import { Credential, IdentityProvider } from "./index";
 
 const getUrl = (path) => getRootFromIndexLink() + path;
 

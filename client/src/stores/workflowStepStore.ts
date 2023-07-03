@@ -1,7 +1,8 @@
-import Vue from "vue";
 import { defineStore } from "pinia";
-import { getConnectionId, useConnectionStore, type Connection } from "@/stores/workflowConnectionStore";
+import Vue from "vue";
+
 import type { CollectionTypeDescriptor } from "@/components/Workflow/Editor/modules/collectionTypeDescription";
+import { type Connection, getConnectionId, useConnectionStore } from "@/stores/workflowConnectionStore";
 import { assertDefined } from "@/utils/assertions";
 
 interface State {

@@ -64,13 +64,15 @@
     </b-card>
 </template>
 <script>
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { Services } from "../services";
 import ConfigProvider from "components/providers/ConfigProvider";
 import ToolPanelViewProvider from "components/providers/ToolPanelViewProvider";
-import InstallationSettings from "./InstallationSettings.vue";
+import Vue from "vue";
+
+import { Services } from "../services";
+
 import InstallationActions from "./InstallationActions.vue";
+import InstallationSettings from "./InstallationSettings.vue";
 import RepositoryTools from "./RepositoryTools.vue";
 
 Vue.use(BootstrapVue);

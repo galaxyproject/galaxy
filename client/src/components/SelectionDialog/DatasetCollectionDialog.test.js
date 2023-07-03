@@ -1,10 +1,10 @@
-import MockAdapter from "axios-mock-adapter";
+import { createLocalVue, shallowMount } from "@vue/test-utils";
 import axios from "axios";
-import DatasetCollectionDialog from "./DatasetCollectionDialog.vue";
-import SelectionDialog from "./SelectionDialog.vue";
+import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 
-import { shallowMount, createLocalVue } from "@vue/test-utils";
+import DatasetCollectionDialog from "./DatasetCollectionDialog.vue";
+import SelectionDialog from "./SelectionDialog.vue";
 
 jest.mock("app");
 

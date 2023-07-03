@@ -23,10 +23,11 @@
 </template>
 
 <script>
-import ToolBoxWorkflow from "./ToolBoxWorkflow";
 import ConfigProvider from "components/providers/ConfigProvider";
 import ToolPanelViewProvider from "components/providers/ToolPanelViewProvider";
 import { mapActions } from "vuex";
+
+import ToolBoxWorkflow from "./ToolBoxWorkflow";
 
 export default {
     components: {

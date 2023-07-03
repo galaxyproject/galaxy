@@ -1,10 +1,10 @@
 /** This renders the content of the ftp popup **/
-import _ from "underscore";
-import $ from "jquery";
-import Backbone from "backbone";
 import { getGalaxyInstance } from "app";
-import Utils from "utils/utils";
+import Backbone from "backbone";
+import $ from "jquery";
 import UploadUtils from "mvc/upload/upload-utils";
+import _ from "underscore";
+import Utils from "utils/utils";
 
 export default Backbone.View.extend({
     initialize: function (options) {

@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { computed, type Ref } from "vue";
-import { type Connection, useConnectionStore, type OutputTerminal } from "@/stores/workflowConnectionStore";
 import { storeToRefs } from "pinia";
+import { computed, type Ref } from "vue";
+
+import { type Connection, type OutputTerminal, useConnectionStore } from "@/stores/workflowConnectionStore";
 import type { TerminalPosition } from "@/stores/workflowEditorStateStore";
+
 import type { OutputTerminals } from "./modules/terminals";
+
 import SVGConnection from "./SVGConnection.vue";
 
 const props = defineProps<{

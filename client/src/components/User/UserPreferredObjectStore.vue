@@ -38,11 +38,11 @@
 
 <script>
 import axios from "axios";
-import { prependPath } from "utils/redirect";
-import Vue from "vue";
 import { BModal, BRow, VBModal } from "bootstrap-vue";
 import SelectObjectStore from "components/ObjectStore/SelectObjectStore";
+import { prependPath } from "utils/redirect";
 import { errorMessageAsString } from "utils/simple-error";
+import Vue from "vue";
 
 Vue.use(VBModal);
 

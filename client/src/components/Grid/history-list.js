@@ -1,13 +1,13 @@
 /** This class renders the grid list. */
-import $ from "jquery";
-import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
-import _l from "utils/localization";
-import AjaxQueue from "utils/ajax-queue";
-import Utils from "utils/utils";
+import Backbone from "backbone";
+import $ from "jquery";
 import GridView from "mvc/grid/grid-view";
+import { getAppRoot } from "onload/loadConfig";
 import LoadingIndicator from "ui/loading-indicator";
+import AjaxQueue from "utils/ajax-queue";
+import _l from "utils/localization";
+import Utils from "utils/utils";
 
 var HistoryGridView = GridView.extend({
     initialize: function (grid_config) {

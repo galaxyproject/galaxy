@@ -8,8 +8,7 @@
 </template>
 
 <script>
-import { BButton } from "bootstrap-vue";
-import { VBTooltip } from "bootstrap-vue";
+import { BButton, VBTooltip } from "bootstrap-vue";
 
 export default {
     components: {

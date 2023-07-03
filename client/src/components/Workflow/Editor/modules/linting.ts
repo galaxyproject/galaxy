@@ -1,8 +1,9 @@
-import { terminalFactory } from "./terminals";
-import type { Step, Steps } from "@/stores/workflowStepStore";
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import type { UntypedParameters } from "@/components/Workflow/Editor/modules/parameters";
+import type { Step, Steps } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
+
+import { terminalFactory } from "./terminals";
 
 interface LintState {
     stepId: number;

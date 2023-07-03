@@ -1,10 +1,14 @@
 <script setup>
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faEdit } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import axios from "axios";
 import RuleCollectionBuilder from "components/RuleCollectionBuilder";
 import RulesDisplay from "components/RulesDisplay/RulesDisplay";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { ref, computed } from "vue";
 import { getAppRoot } from "onload/loadConfig";
-import axios from "axios";
+import { computed, ref } from "vue";
+
+library.add(faEdit);
 
 const props = defineProps({
     value: {
@@ -53,13 +57,6 @@ function onSaveRules(rules) {
 function onCancel() {
     modal.value.hide();
 }
-</script>
-
-<script>
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faEdit } from "@fortawesome/free-solid-svg-icons";
-
-library.add(faEdit);
 </script>
 
 <template>

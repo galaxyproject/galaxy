@@ -23,10 +23,10 @@
 
 <script>
 import axios from "axios";
+import LoadingSpan from "components/LoadingSpan";
+import DescribeObjectStore from "components/ObjectStore/DescribeObjectStore";
 import { getAppRoot } from "onload/loadConfig";
 import { errorMessageAsString } from "utils/simple-error";
-import DescribeObjectStore from "components/ObjectStore/DescribeObjectStore";
-import LoadingSpan from "components/LoadingSpan";
 
 export default {
     components: {

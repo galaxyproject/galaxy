@@ -21,17 +21,18 @@
 </template>
 
 <script>
-import { getGalaxyInstance } from "app";
-import { useHistoryItemsStore } from "stores/history/historyItemsStore";
-import { mapState } from "pinia";
-import WorkflowIcons from "components/Workflow/icons";
-import FormDisplay from "components/Form/FormDisplay";
-import FormMessage from "components/Form/FormMessage";
-import FormCard from "components/Form/FormCard";
-import { visitInputs } from "components/Form/utilities";
-import { getTool } from "./services";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit, faUndo } from "@fortawesome/free-solid-svg-icons";
+import { getGalaxyInstance } from "app";
+import FormCard from "components/Form/FormCard";
+import FormDisplay from "components/Form/FormDisplay";
+import FormMessage from "components/Form/FormMessage";
+import { visitInputs } from "components/Form/utilities";
+import WorkflowIcons from "components/Workflow/icons";
+import { mapState } from "pinia";
+import { useHistoryItemsStore } from "stores/history/historyItemsStore";
+
+import { getTool } from "./services";
 
 library.add(faEdit, faUndo);
 

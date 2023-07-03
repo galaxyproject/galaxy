@@ -72,6 +72,7 @@
 
 <script>
 import { prependPath } from "@/utils/redirect";
+
 export default {
     props: {
         writable: { type: Boolean, default: true },

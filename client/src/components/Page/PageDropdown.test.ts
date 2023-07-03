@@ -1,15 +1,15 @@
-import { expect, jest } from "@jest/globals";
+import "jest-location-mock";
 
-import { mount, shallowMount, createWrapper } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
-import { PiniaVuePlugin, createPinia } from "pinia";
+import { expect, jest } from "@jest/globals";
 import { createTestingPinia } from "@pinia/testing";
+import { createWrapper, mount, shallowMount } from "@vue/test-utils";
+import { createPinia, PiniaVuePlugin } from "pinia";
+import { getLocalVue } from "tests/jest/helpers";
+
 import { mockFetcher } from "@/schema/__mocks__";
 import { useUserStore } from "@/stores/userStore";
 
 import PageDropdown from "./PageDropdown.vue";
-
-import "jest-location-mock";
 
 jest.mock("@/schema");
 

@@ -1,8 +1,8 @@
-import { defineStore } from "pinia";
-import { getAppRoot } from "onload/loadConfig";
-import { rethrowSimple } from "utils/simple-error";
 import axios from "axios";
 import isEqual from "lodash.isequal";
+import { getAppRoot } from "onload/loadConfig";
+import { defineStore } from "pinia";
+import { rethrowSimple } from "utils/simple-error";
 
 export const useEntryPointStore = defineStore("entryPointStore", {
     state: () => ({

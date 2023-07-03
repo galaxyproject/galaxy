@@ -1,12 +1,13 @@
 <script setup>
-import UtcDate from "components/UtcDate";
-import StatelessTags from "components/TagsMultiselect/StatelessTags";
-import { computed, ref, watch } from "vue";
 import Heading from "components/Common/Heading";
-import LoadingSpan from "components/LoadingSpan";
 import DebouncedInput from "components/DebouncedInput";
-import { getPublishedHistories, updateTags } from "./services";
+import LoadingSpan from "components/LoadingSpan";
+import StatelessTags from "components/TagsMultiselect/StatelessTags";
+import UtcDate from "components/UtcDate";
 import Filtering, { contains, expandNameTag } from "utils/filtering";
+import { computed, ref, watch } from "vue";
+
+import { getPublishedHistories, updateTags } from "./services";
 
 const validFilters = {
     name: contains("name"),
@@ -35,7 +36,7 @@ const fields = [
     { key: "name", sortable: true },
     { key: "annotation", sortable: false },
     { label: "Owner", key: "username", sortable: false },
-    { label: "Community Tags", key: "tags", sortable: false },
+    { label: "Tags", key: "tags", sortable: false },
     { label: "Last Updated", key: "update_time", sortable: true },
 ];
 
@@ -210,7 +211,7 @@ watch([filterText, sortBy, sortDesc], () => {
                     <StatelessTags
                         clickable
                         :value="row.item.tags"
-                        :disabled="row.item.deleted"
+                        :disabled="true"
                         @input="(tags) => onTagsUpdate(tags, row)"
                         @tag-click="onTagClick" />
                 </template>

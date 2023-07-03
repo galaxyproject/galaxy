@@ -1,16 +1,17 @@
 <script setup>
-import { computed } from "vue";
-import { BAlert, BCard, BCardTitle } from "bootstrap-vue";
-import LoadingSpan from "components/LoadingSpan";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import {
-    faExclamationCircle,
-    faExclamationTriangle,
     faCheckCircle,
     faClock,
+    faExclamationCircle,
+    faExclamationTriangle,
     faLink,
 } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert, BCard, BCardTitle } from "bootstrap-vue";
+import LoadingSpan from "components/LoadingSpan";
+import { computed } from "vue";
+
 import { ExportRecordModel } from "./models/exportRecordModel";
 
 library.add(faExclamationCircle, faExclamationTriangle, faCheckCircle, faClock, faLink);

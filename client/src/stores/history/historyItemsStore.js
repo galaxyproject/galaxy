@@ -3,13 +3,13 @@
  * to the history items provider used in the history panel.
  */
 
-import { defineStore } from "pinia";
-import Vue from "vue";
+import { HistoryFilters } from "components/History/HistoryFilters";
 import { reverse } from "lodash";
+import { defineStore } from "pinia";
+import { mergeArray } from "store/historyStore/model/utilities";
 import { LastQueue } from "utils/promise-queue";
 import { urlData } from "utils/url";
-import { mergeArray } from "store/historyStore/model/utilities";
-import { HistoryFilters } from "components/History/HistoryFilters";
+import Vue from "vue";
 
 const limit = 100;
 const queue = new LastQueue();

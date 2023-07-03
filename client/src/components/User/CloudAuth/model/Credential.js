@@ -1,6 +1,7 @@
 import { safeAssign } from "utils/safeAssign";
-import { ResourceProviders } from "./ResourceProviders";
+
 import { BaseModel } from "./BaseModel";
+import { ResourceProviders } from "./ResourceProviders";
 
 export class Credential extends BaseModel {
     constructor(props = {}) {

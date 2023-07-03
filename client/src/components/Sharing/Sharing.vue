@@ -259,21 +259,23 @@
 </template>
 
 <script>
-import Vue from "vue";
-import { mapState } from "pinia";
-import { useUserStore } from "@/stores/userStore";
-import BootstrapVue from "bootstrap-vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCopy, faEdit, faUserPlus, faUserSlash, faCaretDown, faCaretUp } from "@fortawesome/free-solid-svg-icons";
-import { getAppRoot } from "onload/loadConfig";
+import { faCaretDown, faCaretUp, faCopy, faEdit, faUserPlus, faUserSlash } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
-import SlugInput from "components/Common/SlugInput";
 import axios from "axios";
-import Multiselect from "vue-multiselect";
-import { copy } from "utils/clipboard";
+import BootstrapVue from "bootstrap-vue";
+import SlugInput from "components/Common/SlugInput";
 import ConfigProvider from "components/providers/ConfigProvider";
+import { getAppRoot } from "onload/loadConfig";
+import { mapState } from "pinia";
+import { copy } from "utils/clipboard";
 import { errorMessageAsString } from "utils/simple-error";
+import Vue from "vue";
+import Multiselect from "vue-multiselect";
+
+import { useUserStore } from "@/stores/userStore";
+
 import ErrorMessage from "./ErrorMessage";
 
 Vue.use(BootstrapVue);

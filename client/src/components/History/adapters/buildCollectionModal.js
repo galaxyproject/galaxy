@@ -8,11 +8,11 @@
  * deprecated jquery Deferred object.
  */
 
-import jQuery from "jquery";
 import LIST_COLLECTION_CREATOR from "components/Collections/ListCollectionCreatorModal";
 import PAIR_COLLECTION_CREATOR from "components/Collections/PairCollectionCreatorModal";
 import LIST_OF_PAIRS_COLLECTION_CREATOR from "components/Collections/PairedListCollectionCreatorModal";
 import RULE_BASED_COLLECTION_CREATOR from "components/Collections/RuleBasedCollectionCreatorModal";
+import jQuery from "jquery";
 
 // stand-in for buildCollection from history-view-edit.js
 export async function buildCollectionModal(collectionType, selectedContent, historyId, fromRulesInput = false) {

@@ -1,22 +1,24 @@
 <script setup lang="ts">
-import draggable from "vuedraggable";
-import { ref, type Ref } from "vue";
 import { storeToRefs } from "pinia";
-import { useConfig } from "@/composables/config";
-import { useUserStore } from "@/stores/userStore";
-import { useActivityStore, type Activity } from "@/stores/activityStore";
+import { type Ref, ref } from "vue";
 import { useRoute } from "vue-router/composables";
+import draggable from "vuedraggable";
+
+import { useConfig } from "@/composables/config";
 import { convertDropData } from "@/stores/activitySetup";
+import { type Activity, useActivityStore } from "@/stores/activityStore";
 import { useEventStore } from "@/stores/eventStore";
+import { useUserStore } from "@/stores/userStore";
+
+import ActivityItem from "./ActivityItem.vue";
+import ActivitySettings from "./ActivitySettings.vue";
+import InteractiveItem from "./Items/InteractiveItem.vue";
+import NotificationItem from "./Items/NotificationItem.vue";
+import UploadItem from "./Items/UploadItem.vue";
 import ContextMenu from "@/components/Common/ContextMenu.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
 import WorkflowBox from "@/components/Panels/WorkflowBox.vue";
-import ActivityItem from "./ActivityItem.vue";
-import ActivitySettings from "./ActivitySettings.vue";
-import InteractiveItem from "./Items/InteractiveItem.vue";
-import UploadItem from "./Items/UploadItem.vue";
-import NotificationItem from "./Items/NotificationItem.vue";
 
 const { config } = useConfig();
 

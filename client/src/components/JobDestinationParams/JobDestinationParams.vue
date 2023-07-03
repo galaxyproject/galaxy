@@ -13,8 +13,9 @@
 </template>
 
 <script>
-import { mapCacheActions } from "vuex-cache";
 import { mapState } from "pinia";
+import { mapCacheActions } from "vuex-cache";
+
 import { useUserStore } from "@/stores/userStore";
 
 export default {

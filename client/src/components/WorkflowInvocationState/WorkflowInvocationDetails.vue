@@ -1,7 +1,9 @@
 <script setup>
-import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
-import ParameterStep from "./ParameterStep";
 import GenericHistoryItem from "components/History/Content/GenericItem";
+
+import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
+
+import ParameterStep from "./ParameterStep";
 import WorkflowInvocationStep from "./WorkflowInvocationStep";
 
 const props = defineProps({

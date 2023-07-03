@@ -1,11 +1,12 @@
 /** Renders the default uploader rows */
-import $ from "jquery";
-import _ from "underscore";
 import Backbone from "backbone";
-import Utils from "utils/utils";
+import $ from "jquery";
+import Select from "mvc/ui/ui-select";
 import UploadExtension from "mvc/upload/upload-extension";
 import UploadBoxRow from "mvc/upload/uploadbox-row";
-import Select from "mvc/ui/ui-select";
+import _ from "underscore";
+import Utils from "utils/utils";
+
 export default UploadBoxRow.extend({
     initialize: function (app, options) {
         var self = this;

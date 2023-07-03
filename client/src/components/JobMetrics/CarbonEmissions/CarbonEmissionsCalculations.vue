@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import ExternalLink from "@/components/ExternalLink.vue";
-import Heading from "@/components/Common/Heading.vue";
 import Abbreviation from "@/components/Common/Abbreviation.vue";
+import Heading from "@/components/Common/Heading.vue";
+import ExternalLink from "@/components/ExternalLink.vue";
 
 const dictionary = [
     {

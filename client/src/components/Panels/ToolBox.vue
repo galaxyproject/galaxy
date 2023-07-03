@@ -77,16 +77,17 @@
 </template>
 
 <script>
-import ToolSection from "./Common/ToolSection";
-import ToolSearch from "./Common/ToolSearch";
+import { getGalaxyInstance } from "app";
 import UploadButton from "components/Upload/UploadButton";
 import { useGlobalUploadModal } from "composables/globalUploadModal";
-import FavoritesButton from "./Buttons/FavoritesButton";
-import PanelViewButton from "./Buttons/PanelViewButton";
-import { filterToolSections, filterTools, hasResults, hideToolsSection } from "./utilities";
-import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import _l from "utils/localization";
+
+import FavoritesButton from "./Buttons/FavoritesButton";
+import PanelViewButton from "./Buttons/PanelViewButton";
+import ToolSearch from "./Common/ToolSearch";
+import ToolSection from "./Common/ToolSection";
+import { filterTools, filterToolSections, hasResults, hideToolsSection } from "./utilities";
 
 export default {
     components: {

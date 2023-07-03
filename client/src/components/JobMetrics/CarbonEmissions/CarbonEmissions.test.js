@@ -1,7 +1,8 @@
-import { getLocalVue } from "tests/jest/helpers";
-import CarbonEmissions from "./CarbonEmissions";
 import { mount } from "@vue/test-utils";
+import { getLocalVue } from "tests/jest/helpers";
+
 import { worldwideCarbonIntensity, worldwidePowerUsageEffectiveness } from "./carbonEmissionConstants.js";
+import CarbonEmissions from "./CarbonEmissions";
 
 const localVue = getLocalVue();
 

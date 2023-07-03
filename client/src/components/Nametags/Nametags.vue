@@ -3,8 +3,9 @@
 </template>
 
 <script>
-import Nametag from "./Nametag";
 import { mapActions } from "vuex";
+
+import Nametag from "./Nametag";
 
 export default {
     components: {

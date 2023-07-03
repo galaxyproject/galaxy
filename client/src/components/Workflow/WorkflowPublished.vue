@@ -7,9 +7,9 @@
 </template>
 
 <script>
-import { urlData } from "utils/url";
 import Published from "components/Common/Published";
 import WorkflowDisplay from "components/Markdown/Elements/Workflow/WorkflowDisplay";
+import { urlData } from "utils/url";
 
 export default {
     components: {

@@ -1,7 +1,7 @@
 /**
  * Utilities file for Panel Searches (panel/client search + advanced/backend search)
  */
-import { orderBy, escapeRegExp } from "lodash";
+import { orderBy } from "lodash";
 import levenshteinDistance from "utils/levenshtein";
 
 const TOOLS_RESULTS_SORT_LABEL = "apiSort";
@@ -252,9 +252,11 @@ function isToolObject(tool) {
 
 // given array and a substring, get the closest matching term for substring
 function matchingTerm(termArray, substring) {
+    const sanitized = sanitizeString(substring);
+
     for (const i in termArray) {
         const term = termArray[i];
-        if (term.match(substring)) {
+        if (term.match(sanitized)) {
             return term;
         }
     }
@@ -273,8 +275,8 @@ function sanitizeString(value, targets = [], substitute = "") {
     targets.forEach((rep) => {
         sanitized = sanitized.replaceAll(rep, substitute);
     });
-    sanitized = escapeRegExp(sanitized);
-    return sanitized;
+
+    return sanitized.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function flattenToolsSection(section) {

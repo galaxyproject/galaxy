@@ -1,10 +1,11 @@
-import { computed, ref } from "vue";
 import { defineStore } from "pinia";
+import { computed, ref } from "vue";
+
 import { useHistoryStore } from "@/stores/historyStore";
 import {
     addFavoriteToolQuery,
-    removeFavoriteToolQuery,
     getCurrentUser,
+    removeFavoriteToolQuery,
     setCurrentThemeQuery,
 } from "@/stores/users/queries";
 

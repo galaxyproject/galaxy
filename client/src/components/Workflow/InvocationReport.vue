@@ -11,13 +11,13 @@
 </template>
 
 <script>
+import BootstrapVue from "bootstrap-vue";
+import Markdown from "components/Markdown/Markdown";
+import ConfigProvider from "components/providers/ConfigProvider";
+import { Toast } from "composables/toast";
 import { withPrefix } from "utils/redirect";
 import { urlData } from "utils/url";
-import { Toast } from "composables/toast";
-import ConfigProvider from "components/providers/ConfigProvider";
-import Markdown from "components/Markdown/Markdown";
 import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
 
 Vue.use(BootstrapVue);
 

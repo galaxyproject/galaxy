@@ -1,6 +1,6 @@
+import Backbone from "backbone";
 import $ from "jquery";
 import _ from "underscore";
-import Backbone from "backbone";
 
 export var View = Backbone.View.extend({
     className: "ui-modal",

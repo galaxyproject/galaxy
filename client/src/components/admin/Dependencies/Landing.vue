@@ -11,8 +11,8 @@
     </div>
 </template>
 <script>
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import Vue from "vue";
 
 import ContainerIndex from "./ContainerIndex";
 import ResolutionIndex from "./ResolutionIndex";

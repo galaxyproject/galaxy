@@ -1,9 +1,10 @@
-import { PiniaVuePlugin } from "pinia";
-import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
 import { createTestingPinia } from "@pinia/testing";
-import ContentItem from "./ContentItem";
+import { mount } from "@vue/test-utils";
 import { updateContentFields } from "components/History/model/queries";
+import { PiniaVuePlugin } from "pinia";
+import { getLocalVue } from "tests/jest/helpers";
+
+import ContentItem from "./ContentItem";
 
 jest.mock("components/History/model/queries");
 

@@ -1,14 +1,14 @@
-import _ from "underscore";
-import $ from "jquery";
+import { getGalaxyInstance } from "app";
 import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
-import _l from "utils/localization";
+import $ from "jquery";
 import { Dataset } from "mvc/dataset/data";
-import util_mod from "viz/trackster/util";
-import config_mod from "utils/config";
 import GridView from "mvc/grid/grid-view";
 import Tabs from "mvc/ui/ui-tabs";
-import { getGalaxyInstance } from "app";
+import { getAppRoot } from "onload/loadConfig";
+import _ from "underscore";
+import config_mod from "utils/config";
+import _l from "utils/localization";
+import util_mod from "viz/trackster/util";
 
 /**
  * Mixin for returning custom JSON representation from toJSON. Class attribute to_json_keys defines a set of attributes

@@ -1,6 +1,7 @@
 <script setup>
-import { ref, computed } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { computed, ref } from "vue";
+
 const props = defineProps({
     value: {
         required: true,

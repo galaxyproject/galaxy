@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { storeToRefs } from "pinia";
-import { BButton } from "bootstrap-vue";
-import { useRouter } from "vue-router/composables";
-import { useMarkdown } from "@/composables/markdown";
-import Heading from "@/components/Common/Heading.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faInfoCircle, faTimes } from "@fortawesome/free-solid-svg-icons";
-import { useBroadcastsStore, type BroadcastNotification } from "@/stores/broadcastsStore";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
+import { useRouter } from "vue-router/composables";
+
+import { useMarkdown } from "@/composables/markdown";
+import { type BroadcastNotification, useBroadcastsStore } from "@/stores/broadcastsStore";
+
+import Heading from "@/components/Common/Heading.vue";
 
 library.add(faInfoCircle, faTimes);
 

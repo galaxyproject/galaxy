@@ -42,6 +42,10 @@ from galaxy.tool_util.parser.interface import (
     TestCollectionOutputDef,
 )
 from galaxy.util.bunch import Bunch
+from galaxy.util.hash_util import (
+    memory_bound_hexdigest,
+    parse_checksum_hash,
+)
 from . import verify
 from .asserts import verify_assertions
 from .wait import wait_on
@@ -315,7 +319,7 @@ class GalaxyInteractorApi:
 
     def verify_output_dataset(self, history_id, hda_id, outfile, attributes, tool_id, tool_version=None):
         fetcher = self.__dataset_fetcher(history_id)
-        test_data_downloader = self.__test_data_downloader(tool_id, tool_version)
+        test_data_downloader = self.__test_data_downloader(tool_id, tool_version, attributes)
         verify_hid(
             outfile,
             hda_id=hda_id,
@@ -478,10 +482,7 @@ class GalaxyInteractorApi:
             local_path = self.test_data_path(tool_id, filename, tool_version=tool_version)
 
         if result is None and (local_path is None or not os.path.exists(local_path)):
-            for test_data_directory in self.test_data_directories:
-                local_path = os.path.join(test_data_directory, filename)
-                if os.path.exists(local_path):
-                    break
+            local_path = self._find_in_test_data_directories(filename)
 
         if result is None and local_path is not None and os.path.exists(local_path):
             if mode == "file":
@@ -502,6 +503,14 @@ class GalaxyInteractorApi:
                 raise AssertionError(f"Test input file ({filename}) cannot be found.")
 
         return result
+
+    def _find_in_test_data_directories(self, filename: str) -> Optional[str]:
+        local_path = None
+        for test_data_directory in self.test_data_directories:
+            local_path = os.path.join(test_data_directory, filename)
+            if os.path.exists(local_path):
+                break
+        return local_path
 
     def __output_id(self, output_data):
         # Allow data structure coming out of tools API - {id: <id>, output_name: <name>, etc...}
@@ -551,7 +560,14 @@ class GalaxyInteractorApi:
                 )
             name = test_data["name"]
         else:
-            name = os.path.basename(fname)
+            file_name = None
+            file_name_exists = False
+            location = self._ensure_valid_location_in(test_data)
+            if fname:
+                file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
+                file_name_exists = os.path.exists(f"{file_name}")
+            upload_from_location = not file_name_exists and location is not None
+            name = os.path.basename(location if upload_from_location else fname)
             tool_input.update(
                 {
                     "files_0|NAME": name,
@@ -559,7 +575,9 @@ class GalaxyInteractorApi:
                 }
             )
             files = {}
-            if force_path_paste:
+            if upload_from_location:
+                tool_input.update({"files_0|url_paste": location})
+            elif force_path_paste:
                 file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
                 tool_input.update({"files_0|url_paste": f"file://{file_name}"})
             else:
@@ -583,6 +601,13 @@ class GalaxyInteractorApi:
         jobs = submit_response["jobs"]
         assert len(jobs) > 0, f"Invalid response from server [{submit_response}], expecting a job."
         return lambda: self.wait_for_job(jobs[0]["id"], history_id, maxseconds=maxseconds)
+
+    def _ensure_valid_location_in(self, test_data: dict) -> Optional[str]:
+        location: Optional[str] = test_data.get("location")
+        has_valid_location = location and util.is_url(location)
+        if location and not has_valid_location:
+            raise ValueError(f"Invalid `location` URL: `{location}`")
+        return location
 
     def run_tool(self, testdef, history_id, resource_parameters=None) -> RunToolResponse:
         # We need to handle the case where we've uploaded a valid compressed file since the upload
@@ -825,11 +850,47 @@ class GalaxyInteractorApi:
             test_user = self._post("users", data, key=admin_key).json()
         return test_user
 
-    def __test_data_downloader(self, tool_id, tool_version=None):
-        def test_data_download(filename, mode="file"):
+    def __test_data_downloader(self, tool_id, tool_version=None, attributes: Optional[dict] = None):
+        location = None
+        checksum = attributes.get("checksum") if attributes else None
+
+        def test_data_download_from_galaxy(filename, mode="file"):
             return self.test_data_download(tool_id, filename, mode=mode, tool_version=tool_version)
 
-        return test_data_download
+        def test_data_download_from_location(filename: str):
+            # try to find the file in the test data directories first
+            local_path = self._find_in_test_data_directories(filename)
+            if local_path and os.path.exists(local_path):
+                with open(local_path, mode="rb") as f:
+                    return f.read()
+            # if not found, try to download it from the location to the test data directory
+            # to be reused in subsequent tests
+            if local_path:
+                util.download_to_file(location, local_path)
+                self._verify_checksum(local_path, checksum)
+                with open(local_path, mode="rb") as f:
+                    return f.read()
+            # otherwise, download it to a temporary file
+            with tempfile.NamedTemporaryFile() as file_handle:
+                util.download_to_file(location, file_handle.name)
+                self._verify_checksum(file_handle.name, checksum)
+                return file_handle.file.read()
+
+        if attributes:
+            location = self._ensure_valid_location_in(attributes)
+            if location:
+                return test_data_download_from_location
+        return test_data_download_from_galaxy
+
+    def _verify_checksum(self, file_path: str, checksum: Optional[str] = None):
+        if checksum is None:
+            return
+        hash_function, expected_hash_value = parse_checksum_hash(checksum)
+        calculated_hash_value = memory_bound_hexdigest(hash_func_name=hash_function, path=file_path)
+        if calculated_hash_value != expected_hash_value:
+            raise AssertionError(
+                f"Failed to verify checksum with [{hash_function}] - expected [{expected_hash_value}] got [{calculated_hash_value}]"
+            )
 
     def __dataset_fetcher(self, history_id):
         def fetcher(hda_id, base_name=None):
@@ -1695,7 +1756,6 @@ def test_data_iter(required_files):
             ftype=extra.get("ftype", DEFAULT_FTYPE),
             dbkey=extra.get("dbkey", DEFAULT_DBKEY),
             location=extra.get("location", None),
-            md5=extra.get("md5", None),
         )
         edit_attributes = extra.get("edit_attributes", [])
 

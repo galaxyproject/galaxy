@@ -1,6 +1,6 @@
+import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 import JOB_STATES_MODEL from "utils/job-states-model";
-import axios from "axios";
 
 export function waitOnJob(jobId, onStateUpdate = null, interval = 1000) {
     // full=true to capture standard error on last iteration for building

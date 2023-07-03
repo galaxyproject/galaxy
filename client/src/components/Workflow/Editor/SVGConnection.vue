@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { line, curveBasis } from "d3";
+import { curveBasis, line } from "d3";
 import { computed, type PropType } from "vue";
 
-import { getConnectionId, type Connection } from "@/stores/workflowConnectionStore";
-import { useWorkflowStateStore, type TerminalPosition } from "@/stores/workflowEditorStateStore";
+import { type Connection, getConnectionId } from "@/stores/workflowConnectionStore";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
+import { type TerminalPosition, useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 const props = defineProps({

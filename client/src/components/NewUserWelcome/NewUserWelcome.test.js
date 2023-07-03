@@ -1,11 +1,13 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
-import testData from "./testData.json";
-import NewUserWelcome from "./NewUserWelcome.vue";
+
+import MockConfigProvider from "../providers/MockConfigProvider";
 import { getResource } from "./getResource";
+import testData from "./testData.json";
+
+import NewUserWelcome from "./NewUserWelcome.vue";
 
 const localVue = getLocalVue();
-import MockConfigProvider from "../providers/MockConfigProvider";
 
 jest.mock("./getResource");
 

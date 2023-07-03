@@ -147,25 +147,24 @@
 </template>
 
 <script>
-import {
-    hideSelectedContent,
-    unhideSelectedContent,
-    deleteSelectedContent,
-    undeleteSelectedContent,
-    purgeSelectedContent,
-    changeDbkeyOfSelectedContent,
-    changeDatatypeOfSelectedContent,
-    addTagsToSelectedContent,
-    removeTagsFromSelectedContent,
-} from "components/History/model/crud";
-import { createDatasetCollection } from "components/History/model/queries";
 import { buildCollectionModal } from "components/History/adapters/buildCollectionModal";
-import { DbKeyProvider, DatatypesProvider } from "components/providers";
+import { HistoryFilters } from "components/History/HistoryFilters";
+import {
+    addTagsToSelectedContent,
+    changeDatatypeOfSelectedContent,
+    changeDbkeyOfSelectedContent,
+    deleteSelectedContent,
+    hideSelectedContent,
+    purgeSelectedContent,
+    removeTagsFromSelectedContent,
+    undeleteSelectedContent,
+    unhideSelectedContent,
+} from "components/History/model/crud";
+import { createDatasetCollection, getHistoryContent } from "components/History/model/queries";
+import { DatatypesProvider, DbKeyProvider } from "components/providers";
+import ConfigProvider from "components/providers/ConfigProvider";
 import SingleItemSelector from "components/SingleItemSelector";
 import { StatelessTags } from "components/Tags";
-import ConfigProvider from "components/providers/ConfigProvider";
-import { HistoryFilters } from "components/History/HistoryFilters";
-import { getHistoryContent } from "components/History/model/queries";
 
 export default {
     components: {

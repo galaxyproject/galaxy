@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { BCard } from "bootstrap-vue";
-import { computed, onMounted, ref, watch } from "vue";
 import * as d3 from "d3";
+import { computed, onMounted, ref, watch } from "vue";
 
 import type { DataValuePoint } from ".";
 

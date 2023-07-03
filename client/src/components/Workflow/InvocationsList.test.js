@@ -1,18 +1,18 @@
-import InvocationsList from "./InvocationsList";
+import "jest-location-mock";
+
+import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
+import { formatDistanceToNow, parseISO } from "date-fns";
 import { getLocalVue } from "tests/jest/helpers";
+
+import InvocationsList from "./InvocationsList";
 import mockInvocationData from "./test/json/invocation.json";
-import { parseISO, formatDistanceToNow } from "date-fns";
-
-import { createPinia } from "pinia";
-
-import "jest-location-mock";
 
 const localVue = getLocalVue();
 
-const pinia = createPinia();
+const pinia = createTestingPinia();
 describe("InvocationsList.vue", () => {
     let axiosMock;
     let wrapper;
@@ -139,11 +139,11 @@ describe("InvocationsList.vue", () => {
             wrapper = mount(InvocationsList, {
                 propsData,
                 computed: {
-                    getWorkflowNameByInstanceId: (state) => (id) => "workflow name",
+                    getStoredWorkflowNameByInstanceId: (state) => (id) => "workflow name",
                     getStoredWorkflowIdByInstanceId: (state) => (id) => {
                         return "workflowId";
                     },
-                    getWorkflowByInstanceId: (state) => (id) => {
+                    getStoredWorkflowByInstanceId: (state) => (id) => {
                         return { id: "workflowId" };
                     },
                     getHistoryById: (state) => (id) => {
@@ -216,8 +216,8 @@ describe("InvocationsList.vue", () => {
             wrapper = mount(InvocationsList, {
                 propsData,
                 computed: {
-                    getWorkflowNameByInstanceId: (state) => (id) => "workflow name",
-                    getWorkflowByInstanceId: (state) => (id) => {
+                    getStoredWorkflowNameByInstanceId: (state) => (id) => "workflow name",
+                    getStoredWorkflowByInstanceId: (state) => (id) => {
                         return { id: "workflowId" };
                     },
                     getHistoryById: (state) => (id) => {

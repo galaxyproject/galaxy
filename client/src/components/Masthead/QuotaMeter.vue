@@ -31,8 +31,9 @@
 <script>
 import { mapState } from "pinia";
 import { bytesToString } from "utils/utils";
-import { useUserStore } from "@/stores/userStore";
 import { mapGetters } from "vuex";
+
+import { useUserStore } from "@/stores/userStore";
 
 export default {
     name: "QuotaMeter",

@@ -1,17 +1,19 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { BAlert, BCard, BTab, BTabs } from "bootstrap-vue";
-import { useFileSources } from "@/composables/fileSources";
+import { library } from "@fortawesome/fontawesome-svg-core";
 import { faArchive } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
+import { BAlert, BCard, BTab, BTabs } from "bootstrap-vue";
+import { computed, ref } from "vue";
 import { RouterLink } from "vue-router";
+
+import { useConfig } from "@/composables/config";
+import { useFileSources } from "@/composables/fileSources";
+import { useToast } from "@/composables/toast";
+import { type HistorySummary, useHistoryStore } from "@/stores/historyStore";
+
 import HistoryArchiveExportSelector from "@/components/History/Archiving/HistoryArchiveExportSelector.vue";
 import HistoryArchiveSimple from "@/components/History/Archiving/HistoryArchiveSimple.vue";
-import { useHistoryStore, type HistorySummary } from "@/stores/historyStore";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-import { useConfig } from "@/composables/config";
-import { useToast } from "@/composables/toast";
 
 library.add(faArchive);
 

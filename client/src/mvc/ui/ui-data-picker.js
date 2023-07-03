@@ -1,8 +1,8 @@
 /** Creates a data dialog input field */
-import $ from "jquery";
-import Backbone from "backbone";
-import Buttons from "mvc/ui/ui-buttons";
 import { getGalaxyInstance } from "app/index";
+import Backbone from "backbone";
+import $ from "jquery";
+import Buttons from "mvc/ui/ui-buttons";
 
 export default Backbone.View.extend({
     constructor(options) {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { computed, type Ref, ref, watch } from "vue";
+
 import { Services } from "../services";
-import { computed, ref, watch, type Ref } from "vue";
 import type { TrsSelection } from "./types";
 
 const props = defineProps<{

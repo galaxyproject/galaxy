@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, type WritableComputedRef, type Ref } from "vue";
+import { computed, type Ref, ref, type WritableComputedRef } from "vue";
+
 import { useUserStore } from "@/stores/userStore";
 
 const userStore = useUserStore();

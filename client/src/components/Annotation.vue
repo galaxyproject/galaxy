@@ -24,8 +24,8 @@
 </template>
 
 <script>
-import DebouncedInput from "./DebouncedInput";
 import ClickToEdit from "./ClickToEdit";
+import DebouncedInput from "./DebouncedInput";
 
 export default {
     components: {

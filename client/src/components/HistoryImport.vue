@@ -75,22 +75,23 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
-import axios from "axios";
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faFolderOpen, faUpload, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
-import FilesInput from "components/FilesDialog/FilesInput.vue";
-import { waitOnJob } from "components/JobStates/wait";
-import { errorMessageAsString } from "utils/simple-error";
-import LoadingSpan from "components/LoadingSpan";
-import JobError from "components/JobInformation/JobError";
-import { Services } from "components/FilesDialog/services";
-import { ref, watch } from "vue";
+import { faExternalLinkAlt, faFolderOpen, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { refDebounced } from "@vueuse/core";
+import axios from "axios";
+import BootstrapVue from "bootstrap-vue";
+import { Services } from "components/FilesDialog/services";
+import JobError from "components/JobInformation/JobError";
+import { waitOnJob } from "components/JobStates/wait";
+import LoadingSpan from "components/LoadingSpan";
+import { getAppRoot } from "onload/loadConfig";
+import { errorMessageAsString } from "utils/simple-error";
+import Vue, { ref, watch } from "vue";
+
 import ExternalLink from "./ExternalLink";
+
+import FilesInput from "components/FilesDialog/FilesInput.vue";
 
 library.add(faFolderOpen);
 library.add(faUpload);

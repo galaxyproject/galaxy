@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import _l from "@/utils/localization";
-import { computed, unref } from "vue";
-import { deletePage } from "./services";
-import { storeToRefs } from "pinia";
-import { useUserStore } from "@/stores/userStore";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { storeToRefs } from "pinia";
+import { computed, unref } from "vue";
+
+import { useUserStore } from "@/stores/userStore";
+import _l from "@/utils/localization";
+
+import { deletePage } from "./services";
 
 library.add(faCaretDown);
 

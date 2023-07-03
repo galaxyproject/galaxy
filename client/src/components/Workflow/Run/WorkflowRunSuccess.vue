@@ -26,12 +26,13 @@
 </template>
 
 <script>
-import { mapState } from "pinia";
-import { useHistoryStore } from "@/stores/historyStore";
 import WorkflowInvocationState from "components/WorkflowInvocationState/WorkflowInvocationState";
-import Webhooks from "utils/webhooks";
 import { getAppRoot } from "onload/loadConfig";
+import { mapState } from "pinia";
 import { refreshContentsWrapper } from "utils/data";
+import Webhooks from "utils/webhooks";
+
+import { useHistoryStore } from "@/stores/historyStore";
 
 export default {
     components: {

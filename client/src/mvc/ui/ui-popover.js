@@ -1,8 +1,8 @@
 /**
  * Popover wrapper
  */
-import $ from "jquery";
 import Backbone from "backbone";
+import $ from "jquery";
 import _ from "underscore";
 import Utils from "utils/utils";
 

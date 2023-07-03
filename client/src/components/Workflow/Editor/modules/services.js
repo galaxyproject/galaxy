@@ -1,6 +1,7 @@
 import axios from "axios";
-import { rethrowSimple, errorMessageAsString } from "utils/simple-error";
 import { getAppRoot } from "onload/loadConfig";
+import { errorMessageAsString, rethrowSimple } from "utils/simple-error";
+
 import { toSimple } from "./model";
 
 /** Workflow data request helper **/

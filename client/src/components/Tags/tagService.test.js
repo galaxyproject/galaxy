@@ -1,7 +1,8 @@
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import { TagService } from "./tagService";
+
 import { createTag } from "./model";
+import { TagService } from "./tagService";
 import autocompleteResponse from "./testData/autocompleteResponse.txt";
 
 describe("Tags/tagService.js", () => {

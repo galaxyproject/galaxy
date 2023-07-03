@@ -46,8 +46,9 @@
 
 <script>
 import { mapActions, mapState } from "pinia";
-import { useUserStore } from "@/stores/userStore";
+
 import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
 
 export default {
     props: {

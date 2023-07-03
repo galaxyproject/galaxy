@@ -10,12 +10,13 @@
 </template>
 
 <script>
+import { map } from "rxjs/operators";
 import Vue from "vue";
 import VueRx from "vue-rx";
 import { mapActions } from "vuex";
-import { map } from "rxjs/operators";
-import StatelessTags from "./StatelessTags";
+
 import { diffTags } from "./model";
+import StatelessTags from "./StatelessTags";
 import { TagService } from "./tagService";
 
 Vue.use(VueRx);

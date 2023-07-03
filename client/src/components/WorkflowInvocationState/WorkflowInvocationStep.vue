@@ -84,16 +84,17 @@
     </div>
 </template>
 <script>
-import { useWorkflowStore } from "stores/workflowStore";
-import { mapCacheActions } from "vuex-cache";
-import { mapGetters, mapActions as vuexMapActions } from "vuex";
-import { mapState, mapActions } from "pinia";
+import GenericHistoryItem from "components/History/Content/GenericItem";
+import LoadingSpan from "components/LoadingSpan";
+import { InvocationStepProvider } from "components/providers";
 import WorkflowIcons from "components/Workflow/icons";
+import { mapActions, mapState } from "pinia";
+import { useWorkflowStore } from "stores/workflowStore";
+import { mapActions as vuexMapActions, mapGetters } from "vuex";
+import { mapCacheActions } from "vuex-cache";
+
 import JobStep from "./JobStep";
 import ParameterStep from "./ParameterStep";
-import GenericHistoryItem from "components/History/Content/GenericItem";
-import { InvocationStepProvider } from "components/providers";
-import LoadingSpan from "components/LoadingSpan";
 
 export default {
     components: {
@@ -116,7 +117,7 @@ export default {
         };
     },
     computed: {
-        ...mapState(useWorkflowStore, ["getWorkflowByInstanceId"]),
+        ...mapState(useWorkflowStore, ["getStoredWorkflowByInstanceId"]),
         ...mapGetters(["getToolForId", "getToolNameById", "getInvocationStepById"]),
         isReady() {
             return this.invocation.steps.length > 0;
@@ -173,7 +174,7 @@ export default {
                 case "tool":
                     return `Step ${oneBasedStepIndex}: ${this.getToolNameById(workflowStep.tool_id)}`;
                 case "subworkflow": {
-                    const subworkflow = this.getWorkflowByInstanceId(workflowStep.workflow_id);
+                    const subworkflow = this.getStoredWorkflowByInstanceId(workflowStep.workflow_id);
                     const label = subworkflow ? subworkflow.name : "Subworkflow";
                     return `Step ${oneBasedStepIndex}: ${label}`;
                 }
