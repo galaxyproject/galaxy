@@ -572,6 +572,7 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             guest_ports=self.tool_info.guest_ports,
             container_name=self.container_name,
             cleanenv=asbool(self.prop("cleanenv", singularity_util.DEFAULT_CLEANENV)),
+            no_mount=self.prop("no_mount", singularity_util.DEFAULT_NO_MOUNT),
             **self.get_singularity_target_kwds(),
         )
         return run_command
