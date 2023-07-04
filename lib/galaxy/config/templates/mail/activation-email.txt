@@ -1,11 +1,12 @@
-Edit this template to customise the "account activation" text email your
-users will receive.
+Use this template to customise the "account activation" text email your
+users will receive. Copy the file to
+{{ templates_dir }}/mail/activation-email.txt and modify as required.
 
 If you are adding URLs into this, remember that only absolute URLS (with
 a domain name) make sense in email! They can be served from any stable
 location, including your Galaxy server or GitHub.
 
-The following variables are available for inserting into the html like
+The following variables are available for inserting into the text like
 {{ variable_name }}. They will be rendered into the text before the email is
 sent:
 
