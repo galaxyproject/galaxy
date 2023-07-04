@@ -1,9 +1,9 @@
 import { useWorkflowStore } from "@/stores/workflowStore";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
 export function useWorkflowInstance(workflowId: string) {
     const workflowStore = useWorkflowStore();
-    const workflow = ref(workflowStore.getStoredWorkflowByInstanceId(workflowId));
+    const workflow = computed(() => workflowStore.getStoredWorkflowByInstanceId(workflowId));
     const loading = ref(false);
 
     async function getWorkflowInstance() {
