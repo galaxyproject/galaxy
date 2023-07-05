@@ -1,5 +1,5 @@
 mypy
-pydantic  # for pydantic.mypy plugin
+pydantic<2  # for pydantic.mypy plugin
 types-bleach
 types-boto
 types-contextvars
