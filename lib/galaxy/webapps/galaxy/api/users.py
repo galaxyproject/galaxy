@@ -21,17 +21,16 @@ from fastapi import (
 from markupsafe import escape
 from pydantic import Required
 
-
 from galaxy import (
     exceptions,
     util,
-    web,
 )
 from galaxy.exceptions import ObjectInvalid
-from galaxy.managers import (
-    users,
+from galaxy.managers import users
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
 )
-from galaxy.managers.context import ProvidesHistoryContext, ProvidesUserContext
 from galaxy.model import (
     UserAddress,
     UserQuotaUsage,
@@ -59,9 +58,7 @@ from galaxy.util import (
     docstring_trim,
     listify,
 )
-from galaxy.web import (
-    expose_api,
-)
+from galaxy.web import expose_api
 from galaxy.web.form_builder import AddressField
 from galaxy.webapps.base.controller import (
     BaseUIController,
@@ -148,6 +145,19 @@ class FastAPIUsers:
         f_any: str = FilterAny,
     ) -> List[UserModel]:
         return self.service.get_index(trans=trans, deleted=True, f_email=f_email, f_name=f_name, f_any=f_any)
+
+    @router.post(
+        "/api/users/deleted/{user_id}/undelete",
+        name="undelete_user",
+        summary="Restore the deleted user with the given `id`",
+        require_admin=True,
+    )
+    def undelete(
+        self, trans: ProvidesHistoryContext = DependsOnTrans, user_id: DecodedDatabaseIdField = UserIdPathParam
+    ) -> DetailedUserModel:
+        user = self.service.get_user(trans=trans, user_id=user_id)
+        self.service.user_manager.undelete(user)
+        return self.service.user_to_detailed_model(user)
 
     @router.get(
         "/api/users/deleted/{user_id}",
@@ -426,20 +436,6 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         user_to_update = self._get_user_full(trans, id, **kwd)
         self.user_deserializer.deserialize(user_to_update, payload, user=current_user, trans=trans)
         return self.user_serializer.serialize_to_view(user_to_update, view="detailed")
-
-    @web.require_admin
-    @expose_api
-    def undelete(self, trans, id, **kwd):
-        """
-        POST /api/users/deleted/{id}/undelete
-        Undelete the user with the given ``id``
-
-        :param id: the encoded id of the user to be undeleted
-        :type  id: str
-        """
-        user = self.get_user(trans, id)
-        self.user_manager.undelete(user)
-        return self.user_serializer.serialize_to_view(user, view="detailed")
 
     def _get_extra_user_preferences(self, trans):
         """
