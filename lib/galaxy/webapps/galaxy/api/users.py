@@ -6,6 +6,8 @@ import json
 import logging
 import re
 from typing import (
+    Any,
+    Dict,
     List,
     Optional,
     Union,
@@ -107,6 +109,7 @@ RecalculateDiskUsageResponseDescriptions = {
 }
 
 PurgeUserBody = Body(default=None, title="Purge user", description="Purge the user.")
+UpdateUserBody = Body(default=Required, title="Update user", description="The user values to update.")
 
 
 @router.cbv
@@ -343,6 +346,22 @@ class FastAPIUsers:
         user_deleted = deleted or False
         return self.service.show_user(trans=trans, user_id=user_id, deleted=user_deleted)
 
+    @router.put(
+        "/api/users/{user_id}", name="update_user", summary="Updates the values for the item with the given ``id``"
+    )
+    def update(
+        self,
+        payload: Dict[Any, Any] = UpdateUserBody,
+        deleted: Optional[bool] = UserDeleted,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_id: DecodedDatabaseIdField = UserIdPathParam,
+    ) -> DetailedUserModel:
+        deleted = deleted or False
+        current_user = trans.user
+        user_to_update = self.service.get_user_full(trans, user_id, deleted=deleted)
+        self.service.user_deserializer.deserialize(user_to_update, payload, user=current_user, trans=trans)
+        return self.service.user_to_detailed_model(user_to_update)
+
     @router.delete(
         "/api/users/{user_id}",
         name="delete_user",
@@ -415,27 +434,6 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             raise exceptions.NotImplemented()
         item = user.to_dict(view="element", value_mapper={"id": trans.security.encode_id, "total_disk_usage": float})
         return item
-
-    @expose_api
-    def update(self, trans: ProvidesUserContext, id: str, payload: dict, **kwd):
-        """
-        update( self, trans, id, payload, **kwd )
-        * PUT /api/users/{id}
-            updates the values for the item with the given ``id``
-
-        :type id: str
-        :param id: the encoded id of the item to update
-        :type payload: dict
-        :param payload: a dictionary of new attribute values
-
-        :rtype: dict
-        :returns: an error object if an error occurred or a dictionary containing
-            the serialized item after any changes
-        """
-        current_user = trans.user
-        user_to_update = self._get_user_full(trans, id, **kwd)
-        self.user_deserializer.deserialize(user_to_update, payload, user=current_user, trans=trans)
-        return self.user_serializer.serialize_to_view(user_to_update, view="detailed")
 
     def _get_extra_user_preferences(self, trans):
         """
