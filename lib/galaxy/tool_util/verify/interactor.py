@@ -845,7 +845,7 @@ class GalaxyInteractorApi:
                 password=password,
                 username=username,
             )
-            test_user = self._post("users", data, key=admin_key).json()
+            test_user = self._post("users", data, key=admin_key, json=True).json()
         return test_user
 
     def __test_data_downloader(self, tool_id, tool_version=None, attributes: Optional[dict] = None):
