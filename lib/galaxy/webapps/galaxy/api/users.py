@@ -139,6 +139,28 @@ class FastAPIUsers:
         result = self.service.recalculate_disk_usage(trans)
         return Response(status_code=status.HTTP_204_NO_CONTENT) if result is None else result
 
+    @router.get("/api/users/deleted", name="Get deleted users", description="Display a collection of deleted users")
+    def index_deleted(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        f_email: str = FilterEmail,
+        f_name: str = FilterName,
+        f_any: str = FilterAny,
+    ) -> List[UserModel]:
+        return self.service.get_index(trans=trans, deleted=True, f_email=f_email, f_name=f_name, f_any=f_any)
+
+    @router.get(
+        "/api/users/deleted/{user_id}",
+        name="get_deleted_user",
+        summary="Display information about a deleted user",
+    )
+    def show_deleted(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        user_id: DecodedDatabaseIdField = UserIdPathParam,
+    ) -> Union[AnonUserModel, DetailedUserModel]:
+        return self.service.show_user(trans=trans, user_id=user_id, deleted=True)
+
     @router.get(
         "/api/users/{user_id}/api_key",
         name="get_or_create_api_key",
@@ -174,36 +196,6 @@ class FastAPIUsers:
         self, trans: ProvidesUserContext = DependsOnTrans, user_id: DecodedDatabaseIdField = UserIdPathParam
     ) -> str:
         return self.service.create_api_key(trans, user_id).key
-
-    @router.delete(
-        "/api/users/{user_id}",
-        name="delete_user",
-        summary="Delete the user with the given `id`, only admins can delete other users.",
-    )
-    def delete(
-        self,
-        payload: Optional[PurgeUserPayload] = PurgeUserBody,
-        trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParam,
-    ) -> DetailedUserModel:
-        user_to_update = self.service.user_manager.by_id(user_id)
-        payload = payload or None
-        if payload:
-            purge = payload.purge
-        else:
-            purge = False
-        if trans.user_is_admin:
-            if purge:
-                log.debug("Purging user %s", user_to_update)
-                self.service.user_manager.purge(user_to_update)
-            else:
-                self.service.user_manager.delete(user_to_update)
-        else:
-            if trans.user == user_to_update:
-                self.service.user_manager.delete(user_to_update)
-            else:
-                raise exceptions.InsufficientPermissionsException("You may only delete your own account.")
-        return self.service.user_to_detailed_model(user_to_update)
 
     @router.delete(
         "/api/users/{user_id}/api_key",
@@ -311,16 +303,6 @@ class FastAPIUsers:
             trans.sa_session.commit()
         return theme
 
-    @router.get("/api/users/deleted", name="Get deleted users", description="Display a collection of deleted users")
-    def index_deleted(
-        self,
-        trans: ProvidesUserContext = DependsOnTrans,
-        f_email: str = FilterEmail,
-        f_name: str = FilterName,
-        f_any: str = FilterAny,
-    ) -> List[UserModel]:
-        return self.service.get_index(trans=trans, deleted=True, f_email=f_email, f_name=f_name, f_any=f_any)
-
     @router.get("/api/users", name="Get users", description="Display a collection of users")
     def index(
         self,
@@ -331,18 +313,6 @@ class FastAPIUsers:
         f_any: str = FilterAny,
     ) -> List[UserModel]:
         return self.service.get_index(trans=trans, deleted=deleted, f_email=f_email, f_name=f_name, f_any=f_any)
-
-    @router.get(
-        "/api/users/deleted/{user_id}",
-        name="get_deleted_user",
-        summary="Display information about a deleted user",
-    )
-    def show_deleted(
-        self,
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParam,
-    ) -> Union[AnonUserModel, DetailedUserModel]:
-        return self.service.show_user(trans=trans, user_id=user_id, deleted=True)
 
     @router.get(
         "/api/users/current",
@@ -362,6 +332,36 @@ class FastAPIUsers:
     ) -> Union[AnonUserModel, DetailedUserModel]:
         user_deleted = deleted or False
         return self.service.show_user(trans=trans, user_id=user_id, deleted=user_deleted)
+
+    @router.delete(
+        "/api/users/{user_id}",
+        name="delete_user",
+        summary="Delete the user with the given `id`, only admins can delete other users.",
+    )
+    def delete(
+        self,
+        payload: Optional[PurgeUserPayload] = PurgeUserBody,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_id: DecodedDatabaseIdField = UserIdPathParam,
+    ) -> DetailedUserModel:
+        user_to_update = self.service.user_manager.by_id(user_id)
+        payload = payload or None
+        if payload:
+            purge = payload.purge
+        else:
+            purge = False
+        if trans.user_is_admin:
+            if purge:
+                log.debug("Purging user %s", user_to_update)
+                self.service.user_manager.purge(user_to_update)
+            else:
+                self.service.user_manager.delete(user_to_update)
+        else:
+            if trans.user == user_to_update:
+                self.service.user_manager.delete(user_to_update)
+            else:
+                raise exceptions.InsufficientPermissionsException("You may only delete your own account.")
+        return self.service.user_to_detailed_model(user_to_update)
 
 
 class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin):
