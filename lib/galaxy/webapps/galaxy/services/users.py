@@ -1,20 +1,39 @@
-from typing import List, Optional, Union
+from typing import (
+    List,
+    Optional,
+    Union,
+)
 
-from sqlalchemy import false, true, or_
+from sqlalchemy import (
+    false,
+    or_,
+    true,
+)
 
-from galaxy import exceptions as glx_exceptions, util
+import galaxy.managers.base as managers_base
+from galaxy import (
+    exceptions as glx_exceptions,
+    util,
+)
 from galaxy.managers import api_keys
-from galaxy.managers.context import ProvidesHistoryContext, ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.users import (
+    UserDeserializer,
     UserManager,
     UserSerializer,
 )
-import galaxy.managers.base as managers_base
 from galaxy.model import User
 from galaxy.queue_worker import send_local_control_task
 from galaxy.schema import APIKeyModel
-
-from galaxy.schema.schema import AnonUserModel, DetailedUserModel, FlexibleUserIdType, UserModel
+from galaxy.schema.schema import (
+    AnonUserModel,
+    DetailedUserModel,
+    FlexibleUserIdType,
+    UserModel,
+)
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.webapps.galaxy.services.base import (
     async_task_summary,
@@ -35,11 +54,13 @@ class UsersService(ServiceBase):
         user_manager: UserManager,
         api_key_manager: api_keys.ApiKeyManager,
         user_serializer: UserSerializer,
+        user_deserializer: UserDeserializer,
     ):
         super().__init__(security)
         self.user_manager = user_manager
         self.api_key_manager = api_key_manager
         self.user_serializer = user_serializer
+        self.user_deserializer = user_deserializer
 
     def recalculate_disk_usage(
         self,
