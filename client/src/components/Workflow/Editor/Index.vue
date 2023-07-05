@@ -643,27 +643,25 @@ export default {
                 this.isCanvas = true;
                 return;
             }
-            const stepData = {
-                name: name,
-                content_id: contentId,
-                input_connections: {},
-                type: type,
-                outputs: [],
-                position: defaultPosition(this.graphOffset, this.transform),
-                post_job_actions: {},
-            };
-            const { id } = this.stepStore.addStep(stepData);
-            getModule(stepData, id, this.stateStore.setLoadingState).then((response) => {
-                this.stepStore.updateStep({
-                    ...stepData,
-                    id: id,
-                    tool_state: response.tool_state,
-                    inputs: response.inputs,
-                    outputs: response.outputs,
-                    config_form: response.config_form,
-                });
-                this.stateStore.setActiveNode(id);
-            });
+            const stepData = this.stepStore.insertNewStep(
+                contentId,
+                name,
+                type,
+                defaultPosition(this.graphOffset, this.transform)
+            );
+
+            getModule({ name, type, content_id: contentId }, stepData.id, this.stateStore.setLoadingState).then(
+                (response) => {
+                    this.stepStore.updateStep({
+                        ...stepData,
+                        tool_state: response.tool_state,
+                        inputs: response.inputs,
+                        outputs: response.outputs,
+                        config_form: response.config_form,
+                    });
+                    this.stateStore.setActiveNode(stepData.id);
+                }
+            );
         },
         async _loadEditorData(data) {
             if (data.name !== undefined) {
