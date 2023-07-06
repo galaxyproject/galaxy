@@ -2,8 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faInfoCircle, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
-import { PropType } from "vue";
+import { BButton, BCol, BRow } from "bootstrap-vue";
 import { useRouter } from "vue-router/composables";
 
 import { useMarkdown } from "@/composables/markdown";
@@ -13,16 +12,12 @@ import Heading from "@/components/Common/Heading.vue";
 
 library.add(faInfoCircle, faTimes);
 
-const props = defineProps({
-    broadcast: {
-        type: Object as PropType<BroadcastNotification>,
-        required: true,
-    },
-    previewMode: {
-        type: Boolean,
-        default: false,
-    },
-});
+interface Props {
+    previewMode?: boolean;
+    broadcast: BroadcastNotification;
+}
+
+const props = defineProps<Props>();
 
 const router = useRouter();
 const broadcastsStore = useBroadcastsStore();
