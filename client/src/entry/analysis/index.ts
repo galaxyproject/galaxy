@@ -1,5 +1,4 @@
 import { createPinia, PiniaVuePlugin } from "pinia";
-import piniaPluginPersistedstate from "pinia-plugin-persistedstate";
 import Vue, { provide } from "vue";
 
 import { addInitialization, standardInit } from "@/onload";
@@ -11,7 +10,6 @@ import App from "./App.vue";
 
 Vue.use(PiniaVuePlugin);
 const pinia = createPinia();
-pinia.use(piniaPluginPersistedstate);
 
 addInitialization((Galaxy: any) => {
     console.log("App setup");
