@@ -1940,19 +1940,6 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~~~
-``carbon_intensity``
-~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Specifies the carbon intensity correlating with the
-    `geographical_server_location_code` value you have set. Defaults
-    to the current global value of 475 if not set, or if
-    `geographical_server_location_code` is invalid or unsupported.
-:Default: ``475.0``
-:Type: float
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``geographical_server_location_code``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1965,19 +1952,6 @@
     defaults to "GLOBAL" if not set or the
     `geographical_server_location_code` value is invalid or
     unsupported. To see a full list of supported locations, visit
-    https://galaxyproject.org/admin/carbon_emissions
-:Default: ``GLOBAL``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``geographical_server_location_name``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    The actual name of the location corresponding to the
-    `geographical_server_location_code`. To see a full list of
-    supported locations, visit
     https://galaxyproject.org/admin/carbon_emissions
 :Default: ``GLOBAL``
 :Type: str

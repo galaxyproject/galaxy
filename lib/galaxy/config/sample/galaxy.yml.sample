@@ -1259,12 +1259,6 @@ galaxy:
   # for more detals.
   #carbon_emission_estimates: true
 
-  # Specifies the carbon intensity correlating with the
-  # `geographical_server_location_code` value you have set. Defaults to
-  # the current global value of 475 if not set, or if
-  # `geographical_server_location_code` is invalid or unsupported.
-  #carbon_intensity: 475.0
-
   # The estimated geographical location of the server hosting your
   # galaxy instance given as an ISO 3166 code. This is used to make
   # carbon emissions estimates more accurate as the location effects the
@@ -1274,11 +1268,6 @@ galaxy:
   # To see a full list of supported locations, visit
   # https://galaxyproject.org/admin/carbon_emissions
   #geographical_server_location_code: GLOBAL
-
-  # The actual name of the location corresponding to the
-  # `geographical_server_location_code`. To see a full list of supported
-  # locations, visit https://galaxyproject.org/admin/carbon_emissions
-  #geographical_server_location_name: GLOBAL
 
   # The estimated power usage effectiveness of the data centre housing
   # the server your galaxy instance is running on. This can make carbon

@@ -178,6 +178,7 @@ class ConfigSerializer(base.ModelSerializer):
             "carbon_emission_estimates": _defaults_to(True),
             "carbon_intensity": _use_config,
             "geographical_server_location_name": _use_config,
+            "geographical_server_location_code": _use_config,
             "power_usage_effectiveness": _use_config,
             "message_box_content": _use_config,
             "message_box_visible": _use_config,

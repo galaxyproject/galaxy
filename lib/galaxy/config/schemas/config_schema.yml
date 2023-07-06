@@ -1396,15 +1396,6 @@ mapping:
           Visit https://www.green-algorithms.org/ and https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator.
           for more detals.
 
-      carbon_intensity:
-        type: float
-        default: 475.0
-        required: false
-        desc: |
-          Specifies the carbon intensity correlating with the `geographical_server_location_code` value you have set.
-          Defaults to the current global value of 475 if not set, or if `geographical_server_location_code` is invalid
-          or unsupported.
-
       geographical_server_location_code:
         type: str
         default: "GLOBAL"
@@ -1415,14 +1406,6 @@ mapping:
           carbon intensity values used in the estimate calculation. This defaults to "GLOBAL" if not set or the
           `geographical_server_location_code` value is invalid or unsupported. To see a full list of supported locations,
           visit https://galaxyproject.org/admin/carbon_emissions
-
-      geographical_server_location_name:
-        type: str
-        default: "GLOBAL"
-        required: false
-        desc: |
-          The actual name of the location corresponding to the `geographical_server_location_code`.
-          To see a full list of supported locations, visit https://galaxyproject.org/admin/carbon_emissions
 
       power_usage_effectiveness:
         type: float
