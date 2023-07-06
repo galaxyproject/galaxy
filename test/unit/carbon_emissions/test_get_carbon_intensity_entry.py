@@ -1,7 +1,7 @@
 from galaxy.carbon_emissions import get_carbon_intensity_entry
 
 
-def test_object_store_store_by_set():
+def test_get_carbon_intensity_entry():
     """
     Test if `get_carbon_intensity_entry` retrieves the correct name and carbon
     intensity value for a country or region
