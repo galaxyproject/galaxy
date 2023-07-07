@@ -14,6 +14,7 @@ import NotificationActions from "@/components/Notifications/NotificationActions.
 library.add(faInbox);
 
 interface Props {
+    previewMode?: boolean;
     notification: MessageNotification;
 }
 
@@ -38,7 +39,7 @@ const notificationVariant = computed(() => {
                 <FontAwesomeIcon :class="`text-${notificationVariant}`" icon="inbox" />
                 {{ notification.content.subject }}
             </Heading>
-            <NotificationActions :notification="notification" />
+            <NotificationActions v-if="!previewMode" :notification="notification" />
         </BRow>
         <BRow>
             <span id="notification-message" v-html="renderMarkdown(notification.content.message)" />
