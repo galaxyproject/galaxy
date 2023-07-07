@@ -112,6 +112,7 @@ RecalculateDiskUsageResponseDescriptions = {
 CreateUserBody = Body(default=Required, title="Create user", description="The values to create a user.")
 PurgeUserBody = Body(default=None, title="Purge user", description="Purge the user.")
 UpdateUserBody = Body(default=Required, title="Update user", description="The user values to update.")
+AnyUserModel = Union[DetailedUserModel, AnonUserModel]
 
 
 @router.cbv
@@ -173,7 +174,7 @@ class FastAPIUsers:
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
         user_id: DecodedDatabaseIdField = UserIdPathParam,
-    ) -> Union[AnonUserModel, DetailedUserModel]:
+    ) -> AnyUserModel:
         return self.service.show_user(trans=trans, user_id=user_id, deleted=True)
 
     @router.get(
@@ -383,7 +384,7 @@ class FastAPIUsers:
         trans: ProvidesHistoryContext = DependsOnTrans,
         user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
         deleted: Optional[bool] = UserDeleted,
-    ) -> Union[AnonUserModel, DetailedUserModel]:
+    ) -> AnyUserModel:
         user_deleted = deleted or False
         return self.service.show_user(trans=trans, user_id=user_id, deleted=user_deleted)
 
