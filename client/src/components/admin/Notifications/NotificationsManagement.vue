@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { useRouter } from "vue-router/composables";
-import Heading from "@/components/Common/Heading.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { useRouter } from "vue-router/composables";
+
 import BroadcastsList from "@/components/admin/Notifications/BroadcastsList.vue";
+import Heading from "@/components/Common/Heading.vue";
 
 const router = useRouter();
 
