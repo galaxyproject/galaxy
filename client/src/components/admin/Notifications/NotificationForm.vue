@@ -216,6 +216,14 @@ async function sendNewNotification() {
                 </BCol>
             </BRow>
 
+            <BRow align-v="center" class="m-1">
+                <Heading size="md"> Preview </Heading>
+            </BRow>
+
+            <BCard class="my-2">
+                <MessageNotification :notification="notificationData.notification" preview-mode />
+            </BCard>
+
             <BRow class="m-2" align-h="center">
                 <AsyncButton
                     icon="save"
