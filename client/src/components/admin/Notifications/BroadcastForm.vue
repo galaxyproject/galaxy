@@ -126,6 +126,11 @@ if (props.id) {
         </BAlert>
 
         <div v-else>
+            <BAlert v-if="props.id && broadcastPublished" variant="warning" show>
+                This broadcast has already been published. Some users may have already seen it and changing it now will
+                not affect them.
+            </BAlert>
+
             <FormElement
                 id="broadcast-subject"
                 v-model="broadcastData.content.subject"
