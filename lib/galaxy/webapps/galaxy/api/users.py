@@ -82,11 +82,11 @@ log = logging.getLogger(__name__)
 router = Router(tags=["users"])
 
 ThemePathParam: str = Path(default=Required, title="Theme", description="The theme of the GUI")
-UserDeleted: bool = Query(default=None, title="Deleted User", description="Indicates if the user is deleted")
-UsersDeleted: bool = Query(default=False)
-FilterEmail: str = Query(default=None)
-FilterName: str = Query(default=None)
-FilterAny: str = Query(default=None)
+UserDeleted: bool = Query(default=None, title="Deleted user", description="Indicates if the user is deleted")
+UsersDeleted: bool = Query(default=False, title="Deleted users", description="Indicates if the collection will be about deleted users")
+FilterEmail: str = Query(default=None, title="Email filter", description="An email address to filter on")
+FilterName: str = Query(default=None, title="Name filter", description="An username address to filter on")
+FilterAny: str = Query(default=None, title="Any filter", description="Filter on username OR email")
 UserIdPathParam: DecodedDatabaseIdField = Path(..., title="User ID", description="The ID of the user to get.")
 APIKeyPathParam: str = Path(..., title="API Key", description="The API key of the user.")
 FlexibleUserIdPathParam: FlexibleUserIdType = Path(
@@ -142,7 +142,11 @@ class FastAPIUsers:
         result = self.service.recalculate_disk_usage(trans)
         return Response(status_code=status.HTTP_204_NO_CONTENT) if result is None else result
 
-    @router.get("/api/users/deleted", name="get_deleted_users", description="Return a collection of deleted users")
+    @router.get(
+        "/api/users/deleted",
+        name="get_deleted_users",
+        description="Return a collection of deleted users. Only admins can see deleted users.",
+    )
     def index_deleted(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
@@ -155,7 +159,7 @@ class FastAPIUsers:
     @router.post(
         "/api/users/deleted/{user_id}/undelete",
         name="undelete_user",
-        summary="Restore a deleted user",
+        summary="Restore a deleted user. Only admins can restore users.",
         require_admin=True,
     )
     def undelete(
@@ -168,7 +172,7 @@ class FastAPIUsers:
     @router.get(
         "/api/users/deleted/{user_id}",
         name="get_deleted_user",
-        summary="Return information about a deleted user",
+        summary="Return information about a deleted user. Only admins can see deleted users.",
     )
     def show_deleted(
         self,
@@ -323,7 +327,7 @@ class FastAPIUsers:
             trans.sa_session.commit()
         return theme
 
-    @router.get("/api/users", name="get_users", description="Return a collection of users")
+    @router.get("/api/users", name="get_users", description="Return a collection of users. Filters will only work if enabled in config or user is admin.")
     def index(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
@@ -337,16 +341,13 @@ class FastAPIUsers:
     @router.post(
         "/api/users",
         name="create_user",
-        summary="Create a new Galaxy user",
+        summary="Create a new Galaxy user. Only admins can create users for now.",
     )
     def create(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         payload: CreateUserPayload = CreateUserBody,
     ) -> CreatedUserModel:
-        """
-        Rework CreateUserPayload payload and add pydantic model for return
-        """
         if not trans.app.config.allow_user_creation and not trans.user_is_admin:
             raise exceptions.ConfigDoesNotAllowException("User creation is not allowed in this Galaxy instance")
 
@@ -381,7 +382,7 @@ class FastAPIUsers:
     @router.get(
         "/api/users/{user_id}",
         name="get_user",
-        summary="Return information about a specified user",
+        summary="Return information about a specified user. Only admin can see deleted or other users",
     )
     def show(
         self,
@@ -392,7 +393,7 @@ class FastAPIUsers:
         user_deleted = deleted or False
         return self.service.show_user(trans=trans, user_id=user_id, deleted=user_deleted)
 
-    @router.put("/api/users/{user_id}", name="update_user", summary="Update the values of a user")
+    @router.put("/api/users/{user_id}", name="update_user", summary="Update the values of a user. Only admin can update others.")
     def update(
         self,
         payload: Dict[Any, Any] = UpdateUserBody,
@@ -409,7 +410,7 @@ class FastAPIUsers:
     @router.delete(
         "/api/users/{user_id}",
         name="delete_user",
-        summary="Delete a user",
+        summary="Delete a user. Only admins can delete others or purge users.",
     )
     def delete(
         self,
