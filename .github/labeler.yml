@@ -63,8 +63,8 @@ area/toolshed:
   - lib/toolshed/**/*
   - templates/webapps/tool_shed/**/*
 area/UI-UX:
-  - client/src/**/*
-  - templates/**/*
+  - any: ["client/src/**/*", "templates/**/*"]
+    all: ["!client/src/schema/schema.ts"]
 area/util:
   - lib/galaxy/util/**/*
 area/visualizations:
