@@ -1,5 +1,5 @@
 <template>
-    <div v-b-tooltip.topright.hover class="tool-panel-label" :title="description">
+    <div v-b-tooltip.topright.hover class="tool-panel-label" tabindex="0" :title="description">
         {{ definition.text }}
         <ToolPanelLinks :links="definition.links" />
     </div>
@@ -30,8 +30,12 @@ export default {
         display: none;
     }
 
-    &:hover:deep(.tool-panel-links) {
-        display: inline;
+    &:hover,
+    &:focus,
+    &:focus-within {
+        &:deep(.tool-panel-links) {
+            display: inline;
+        }
     }
 }
 </style>

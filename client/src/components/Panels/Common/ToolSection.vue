@@ -3,16 +3,12 @@
         <div
             v-b-tooltip.topright.hover
             :class="['toolSectionTitle', `tool-menu-section-${sectionName}`]"
-            :title="title"
-            @mouseover="hover = true"
-            @mouseleave="hover = false"
-            @focus="hover = true"
-            @blur="hover = false">
+            :title="title">
             <a class="title-link" href="javascript:void(0)" @click="toggleMenu()">
                 <span class="name">
                     {{ name }}
                 </span>
-                <ToolPanelLinks :links="links" :show="hover" />
+                <ToolPanelLinks :links="links" />
             </a>
         </div>
         <transition name="slide">
@@ -262,8 +258,12 @@ export default {
         display: none;
     }
 
-    &:hover:deep(.tool-panel-links) {
-        display: inline;
+    &:hover,
+    &:focus,
+    &:focus-within {
+        &:deep(.tool-panel-links) {
+            display: inline;
+        }
     }
 }
 </style>
