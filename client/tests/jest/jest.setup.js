@@ -1,4 +1,5 @@
 import "@testing-library/jest-dom";
+
 import Vue from "vue";
 
 // Set Vue to suppress production / devtools / etc. warnings
@@ -12,3 +13,4 @@ global.setImmediate = global.setTimeout;
 
 // Always mock the following imports
 jest.mock("@/composables/hashedUserId");
+jest.mock("@/composables/userLocalStorage");

@@ -1,21 +1,16 @@
 import { defineStore } from "pinia";
-import { ref } from "vue";
 
-export const useUserFlagsStore = defineStore(
-    "userFlagsStore",
-    () => {
-        const showSelectionQueryBreakWarning = ref(true);
+import { useUserLocalStorage } from "@/composables/userLocalStorage";
 
-        function ignoreSelectionQueryBreakWarning() {
-            showSelectionQueryBreakWarning.value = false;
-        }
+export const useUserFlagsStore = defineStore("userFlagsStore", () => {
+    const showSelectionQueryBreakWarning = useUserLocalStorage("user-flags-store-show-break-warning", true);
 
-        return {
-            showSelectionQueryBreakWarning,
-            ignoreSelectionQueryBreakWarning,
-        };
-    },
-    {
-        persist: true,
+    function ignoreSelectionQueryBreakWarning() {
+        showSelectionQueryBreakWarning.value = false;
     }
-);
+
+    return {
+        showSelectionQueryBreakWarning,
+        ignoreSelectionQueryBreakWarning,
+    };
+});
