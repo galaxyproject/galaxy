@@ -142,7 +142,7 @@ class FastAPIUsers:
         result = self.service.recalculate_disk_usage(trans)
         return Response(status_code=status.HTTP_204_NO_CONTENT) if result is None else result
 
-    @router.get("/api/users/deleted", name="Get deleted users", description="Display a collection of deleted users")
+    @router.get("/api/users/deleted", name="get_deleted_users", description="Return a collection of deleted users")
     def index_deleted(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
@@ -155,7 +155,7 @@ class FastAPIUsers:
     @router.post(
         "/api/users/deleted/{user_id}/undelete",
         name="undelete_user",
-        summary="Restore the deleted user with the given `id`",
+        summary="Restore a deleted user",
         require_admin=True,
     )
     def undelete(
@@ -168,7 +168,7 @@ class FastAPIUsers:
     @router.get(
         "/api/users/deleted/{user_id}",
         name="get_deleted_user",
-        summary="Display information about a deleted user",
+        summary="Return information about a deleted user",
     )
     def show_deleted(
         self,
@@ -207,7 +207,7 @@ class FastAPIUsers:
         api_key = self.service.get_api_key(trans, user_id)
         return api_key if api_key else Response(status_code=status.HTTP_204_NO_CONTENT)
 
-    @router.post("/api/users/{user_id}/api_key", summary="Creates a new API key for the user")
+    @router.post("/api/users/{user_id}/api_key", name="create_api_key", summary="Create a new API key for the user")
     def create_api_key(
         self, trans: ProvidesUserContext = DependsOnTrans, user_id: DecodedDatabaseIdField = UserIdPathParam
     ) -> str:
@@ -215,6 +215,7 @@ class FastAPIUsers:
 
     @router.delete(
         "/api/users/{user_id}/api_key",
+        name="delete_api_key",
         summary="Delete the current API key of the user",
         status_code=status.HTTP_204_NO_CONTENT,
     )
@@ -266,7 +267,8 @@ class FastAPIUsers:
 
     @router.get(
         "/api/users/{user_id}/beacon",
-        summary="Returns information about beacon share settings",
+        name="get_beacon_settings",
+        summary="Return information about beacon share settings",
     )
     def get_beacon(
         self,
@@ -284,7 +286,8 @@ class FastAPIUsers:
 
     @router.post(
         "/api/users/{user_id}/beacon",
-        summary="Changes beacon setting",
+        name="set_beacon_settings",
+        summary="Change beacon setting",
     )
     def set_beacon(
         self,
@@ -305,7 +308,8 @@ class FastAPIUsers:
 
     @router.put(
         "/api/users/{user_id}/theme/{theme}",
-        summary="Sets the user's theme choice.",
+        name="set_theme",
+        summary="Set the user's theme choice",
     )
     def set_theme(
         self,
@@ -319,7 +323,7 @@ class FastAPIUsers:
             trans.sa_session.commit()
         return theme
 
-    @router.get("/api/users", name="Get users", description="Display a collection of users")
+    @router.get("/api/users", name="get_users", description="Return a collection of users")
     def index(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
@@ -332,8 +336,8 @@ class FastAPIUsers:
 
     @router.post(
         "/api/users",
-        name="Create user",
-        summary="Creates a new Galaxy user.",
+        name="create_user",
+        summary="Create a new Galaxy user",
     )
     def create(
         self,
@@ -372,12 +376,12 @@ class FastAPIUsers:
     @router.get(
         "/api/users/current",
         name="get_current_user",
-        description="Display information about current user",
+        description="Return information about the current user",
     )
     @router.get(
         "/api/users/{user_id}",
         name="get_user",
-        summary="Display information about a specified user",
+        summary="Return information about a specified user",
     )
     def show(
         self,
@@ -388,7 +392,7 @@ class FastAPIUsers:
         user_deleted = deleted or False
         return self.service.show_user(trans=trans, user_id=user_id, deleted=user_deleted)
 
-    @router.put("/api/users/{user_id}", name="update_user", summary="Updates the values of the user")
+    @router.put("/api/users/{user_id}", name="update_user", summary="Update the values of a user")
     def update(
         self,
         payload: Dict[Any, Any] = UpdateUserBody,
@@ -405,7 +409,7 @@ class FastAPIUsers:
     @router.delete(
         "/api/users/{user_id}",
         name="delete_user",
-        summary="Delete the user with the given `id`, only admins can delete other users.",
+        summary="Delete a user",
     )
     def delete(
         self,
