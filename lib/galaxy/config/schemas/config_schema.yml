@@ -1384,6 +1384,39 @@ mapping:
           CPU, RAM and runtime usage is mapped against AWS pricing table.
           Please note, that those numbers are only estimates.
 
+      carbon_emission_estimates:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          This flag enables carbon emissions estimates for every job based on its runtime metrics.
+          CPU and RAM usage and the total job runtime are used to determine an estimate value.
+          These estimates and are based off of the work of the Green Algorithms Project and
+          the United States Environmental Protection Agency (EPA).
+          Visit https://www.green-algorithms.org/ and https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator.
+          for more detals.
+
+      geographical_server_location_code:
+        type: str
+        default: "GLOBAL"
+        required: false
+        desc: |
+          The estimated geographical location of the server hosting your galaxy instance given as an ISO 3166 code.
+          This is used to make carbon emissions estimates more accurate as the location effects the
+          carbon intensity values used in the estimate calculation. This defaults to "GLOBAL" if not set or the
+          `geographical_server_location_code` value is invalid or unsupported. To see a full list of supported locations,
+          visit https://galaxyproject.org/admin/carbon_emissions
+
+      power_usage_effectiveness:
+        type: float
+        default: 1.67
+        required: false
+        desc: |
+          The estimated power usage effectiveness of the data centre housing the server your galaxy
+          instance is running on. This can make carbon emissions estimates more accurate.
+          For more information on how to calculate a PUE value, visit
+          https://en.wikipedia.org/wiki/Power_usage_effectiveness
+
       interactivetools_enable:
         type: bool
         default: false

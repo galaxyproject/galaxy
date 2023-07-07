@@ -25,7 +25,7 @@ export const treeYear = 11000;
 // source: http://www.sciencedirect.com/science/article/pii/S0269749101002640
 export const treeMonth = 917;
 
-// source: https://www.iea.org/reports/global-energy-co2-status-report-2019/emissions
+// source: (in gCO2/kWh) https://www.iea.org/reports/global-energy-co2-status-report-2019/emissions
 export const worldwideCarbonIntensity = 475.0;
 
 // source: https://journal.uptimeinstitute.com/is-pue-actually-going-up/
