@@ -1,4 +1,5 @@
 import axios from "axios";
+
 import { type components, fetcher } from "@/schema";
 
 const getNotification = fetcher.path("/api/notifications/{notification_id}").method("get").create();
@@ -10,7 +11,7 @@ export async function loadNotification(id: string): Promise<NotificationResponse
 
 const postNotification = fetcher.path("/api/notifications").method("post").create();
 type NotificationCreateRequest = components["schemas"]["NotificationCreateRequest"];
-export async function createNotification(notification: NotificationCreateRequest) {
+export async function sendNotification(notification: NotificationCreateRequest) {
     const { data } = await postNotification(notification);
     return data;
 }
