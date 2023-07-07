@@ -128,6 +128,17 @@ class UsersService(ServiceBase):
             "quota_percent": percent,
         }
 
+    def get_non_anonymous_user_full(
+        self,
+        trans: ProvidesUserContext,
+        user_id: FlexibleUserIdType,
+        deleted: bool,
+    ) -> User:
+        user = self.get_user_full(trans, user_id, deleted)
+        if user is None:
+            raise glx_exceptions.AuthenticationRequired(err_msg="You need to be logged in.")
+        return user
+
     def get_user_full(
         self,
         trans: ProvidesUserContext,
