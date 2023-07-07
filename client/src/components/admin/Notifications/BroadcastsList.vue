@@ -1,20 +1,30 @@
 <script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import {
+    faBroadcastTower,
+    faClock,
+    faEdit,
+    faHourglassHalf,
+    faInfoCircle,
+    faRedo,
+    faTrash,
+} from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref } from "vue";
-import { type components } from "@/schema";
-import { Toast } from "@/composables/toast";
-import UtcDate from "@/components/UtcDate.vue";
 import { useRouter } from "vue-router/composables";
+
+import { loadBroadcasts, updateBroadcast } from "@/components/admin/Notifications/broadcasts.services";
+import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useMarkdown } from "@/composables/markdown";
+import { Toast } from "@/composables/toast";
+import { type components } from "@/schema";
+import { BroadcastNotification } from "@/stores/broadcastsStore";
+
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { useConfirmDialog } from "@/composables/confirmDialog";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BroadcastNotification } from "@/stores/broadcastsStore";
-import { loadBroadcasts, updateBroadcast } from "@/components/admin/Notifications/broadcasts.services";
-import { faBroadcastTower, faClock, faEdit, faHourglassHalf, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import UtcDate from "@/components/UtcDate.vue";
 
-library.add(faBroadcastTower, faClock, faEdit, faHourglassHalf, faInfoCircle);
+library.add(faBroadcastTower, faClock, faEdit, faHourglassHalf, faInfoCircle, faRedo, faTrash);
 
 type BroadcastNotificationResponse = components["schemas"]["BroadcastNotificationResponse"];
 
@@ -24,6 +34,9 @@ const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
 const loadingBroadcasts = ref(false);
 const broadcasts = ref<BroadcastNotificationResponse[]>([]);
+
+const broadcastExpired = (item: BroadcastNotification) =>
+    item.expiration_time && new Date(item.expiration_time) < new Date();
 
 function getBroadcastVariant(item: BroadcastNotification) {
     switch (item.variant) {
@@ -61,6 +74,9 @@ function getBroadcastPublicity(item: BroadcastNotification) {
 
 function getBroadcastExpiry(item: BroadcastNotification) {
     if (item.expiration_time) {
+        if (broadcastExpired(item)) {
+            return `Expired on ${new Date(item.expiration_time + "Z").toLocaleString()}`;
+        }
         return `Expires on ${new Date(item.expiration_time + "Z").toLocaleString()}`;
     } else {
         return "Does not expire";
@@ -81,6 +97,7 @@ async function loadBroadcastsList() {
     broadcasts.value.sort((a, b) => new Date(b.create_time).getTime() - new Date(a.create_time).getTime());
     loadingBroadcasts.value = false;
 }
+
 loadBroadcastsList();
 </script>
 
@@ -97,15 +114,32 @@ loadBroadcastsList();
         </BAlert>
 
         <div v-else class="mx-1">
+            <BCard class="mb-2">
+                <BRow class="align-items-center" no-gutters>
+                    <BCol>
+                        <BRow align-h="end" align-v="center">
+                            <BButton
+                                v-b-tooltip.hover
+                                size="sm"
+                                variant="outline-primary"
+                                title="Refresh broadcasts"
+                                @click="loadBroadcastsList">
+                                <FontAwesomeIcon :icon="faRedo" />
+                            </BButton>
+                        </BRow>
+                    </BCol>
+                </BRow>
+            </BCard>
+
             <BCard v-for="broadcast in broadcasts" :key="broadcast.id" class="mb-2">
                 <BRow align-v="center" align-h="between" class="mb-0 mx-0">
-                    <Heading size="md" class="mb-0">
+                    <Heading size="md" class="mb-0" :class="broadcastExpired(broadcast) ? 'expired-broadcast' : ''">
                         <FontAwesomeIcon :class="`text-${getBroadcastVariant(broadcast)}`" :icon="faInfoCircle" />
                         {{ broadcast.content.subject }}
                     </Heading>
                     <BRow align-h="end" align-v="center">
                         <UtcDate class="mx-2" :date="broadcast.create_time" mode="elapsed" />
-                        <BInputGroup>
+                        <BInputGroup v-if="!broadcastExpired(broadcast)">
                             <BButton
                                 id="edit-broadcast-button"
                                 v-b-tooltip.hover
@@ -129,7 +163,10 @@ loadBroadcastsList();
                 <BRow align-v="center" align-h="between" class="mx-0">
                     <BCol>
                         <BRow align-v="center">
-                            <span class="broadcast-message" v-html="renderMarkdown(broadcast.content.message)" />
+                            <span
+                                class="broadcast-message"
+                                :class="broadcastExpired(broadcast) ? 'expired-broadcast' : ''"
+                                v-html="renderMarkdown(broadcast.content.message)" />
                         </BRow>
                         <BRow>
                             <BButton
@@ -152,7 +189,11 @@ loadBroadcastsList();
                             {{ getBroadcastPublicity(broadcast) }}
                         </BRow>
                         <BRow align-v="center" align-h="end">
-                            <FontAwesomeIcon :icon="faHourglassHalf" class="mx-1 expire" />
+                            <FontAwesomeIcon
+                                variant="danger"
+                                :icon="broadcastExpired(broadcast) ? faTrash : faHourglassHalf"
+                                :class="broadcastExpired(broadcast) ? 'expired' : 'expires'"
+                                class="mx-1" />
                             {{ getBroadcastExpiry(broadcast) }}
                         </BRow>
                     </BCol>
@@ -164,6 +205,10 @@ loadBroadcastsList();
 
 <style scoped lang="scss">
 @import "scss/theme/blue.scss";
+.expired-broadcast {
+    text-decoration: line-through;
+}
+
 .published {
     color: $brand-primary;
 }
@@ -172,7 +217,11 @@ loadBroadcastsList();
     color: $brand-warning;
 }
 
-.expire {
+.expires {
     color: $brand-info;
+}
+
+.expired {
+    color: $brand-danger;
 }
 </style>
