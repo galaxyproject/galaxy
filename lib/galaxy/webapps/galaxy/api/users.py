@@ -83,7 +83,9 @@ router = Router(tags=["users"])
 
 ThemePathParam: str = Path(default=Required, title="Theme", description="The theme of the GUI")
 UserDeleted: bool = Query(default=None, title="Deleted user", description="Indicates if the user is deleted")
-UsersDeleted: bool = Query(default=False, title="Deleted users", description="Indicates if the collection will be about deleted users")
+UsersDeleted: bool = Query(
+    default=False, title="Deleted users", description="Indicates if the collection will be about deleted users"
+)
 FilterEmail: str = Query(default=None, title="Email filter", description="An email address to filter on")
 FilterName: str = Query(default=None, title="Name filter", description="An username address to filter on")
 FilterAny: str = Query(default=None, title="Any filter", description="Filter on username OR email")
@@ -150,9 +152,9 @@ class FastAPIUsers:
     def index_deleted(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        f_email: str = FilterEmail,
-        f_name: str = FilterName,
-        f_any: str = FilterAny,
+        f_email: Optional[str] = FilterEmail,
+        f_name: Optional[str] = FilterName,
+        f_any: Optional[str] = FilterAny,
     ) -> List[UserModel]:
         return self.service.get_index(trans=trans, deleted=True, f_email=f_email, f_name=f_name, f_any=f_any)
 
@@ -327,14 +329,18 @@ class FastAPIUsers:
             trans.sa_session.commit()
         return theme
 
-    @router.get("/api/users", name="get_users", description="Return a collection of users. Filters will only work if enabled in config or user is admin.")
+    @router.get(
+        "/api/users",
+        name="get_users",
+        description="Return a collection of users. Filters will only work if enabled in config or user is admin.",
+    )
     def index(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         deleted: bool = UsersDeleted,
-        f_email: str = FilterEmail,
-        f_name: str = FilterName,
-        f_any: str = FilterAny,
+        f_email: Optional[str] = FilterEmail,
+        f_name: Optional[str] = FilterName,
+        f_any: Optional[str] = FilterAny,
     ) -> List[UserModel]:
         return self.service.get_index(trans=trans, deleted=deleted, f_email=f_email, f_name=f_name, f_any=f_any)
 
@@ -393,7 +399,9 @@ class FastAPIUsers:
         user_deleted = deleted or False
         return self.service.show_user(trans=trans, user_id=user_id, deleted=user_deleted)
 
-    @router.put("/api/users/{user_id}", name="update_user", summary="Update the values of a user. Only admin can update others.")
+    @router.put(
+        "/api/users/{user_id}", name="update_user", summary="Update the values of a user. Only admin can update others."
+    )
     def update(
         self,
         payload: Dict[Any, Any] = UpdateUserBody,

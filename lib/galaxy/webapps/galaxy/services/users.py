@@ -195,9 +195,9 @@ class UsersService(ServiceBase):
         self,
         trans: ProvidesUserContext,
         deleted: bool,
-        f_email: str,
-        f_name: str,
-        f_any: str,
+        f_email: Optional[str],
+        f_name: Optional[str],
+        f_any: Optional[str],
     ) -> List[UserModel]:
         rval = []
         query = trans.sa_session.query(User)
