@@ -1,19 +1,14 @@
+import time
+
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver.integration_util import IntegrationTestCase
+from .objectstore._base import BaseObjectStoreIntegrationTestCase
+from .objectstore.test_selection_with_resource_parameters import DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE
 
 
-class TestRecalculateUserDiskUsageIntegration(IntegrationTestCase):
-    task_based = True
+class RecalculateDiskUsage:
+    task_based: bool
     dataset_populator: DatasetPopulator
-
-    def setUp(self):
-        super().setUp()
-        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
-
-    @classmethod
-    def handle_galaxy_config_kwds(cls, config):
-        super().handle_galaxy_config_kwds(config)
-        config["allow_user_dataset_purge"] = True
 
     def test_recalculate_user_disk_usage(self):
         # The initial disk usage is 0
@@ -26,6 +21,12 @@ class TestRecalculateUserDiskUsageIntegration(IntegrationTestCase):
         # The usage should be the total of the datasets
         current_usage = self.dataset_populator.get_usage_for(None)
         assert current_usage["total_disk_usage"] == expected_usage
+
+        self.recalculate_disk_usage()
+        # The disk usage should still be the expected usage
+        current_usage = self.dataset_populator.get_usage_for(None)
+        assert current_usage["total_disk_usage"] == expected_usage
+
         self.dataset_populator.delete_dataset(history_id, hda_id, purge=True, wait_for_purge=True)
 
         # Purging that dataset should result in usage dropping back
@@ -33,10 +34,63 @@ class TestRecalculateUserDiskUsageIntegration(IntegrationTestCase):
         current_usage = self.dataset_populator.get_usage_for(None)
         assert current_usage["total_disk_usage"] == 0
 
-        recalculate_response = self._put("users/current/recalculate_disk_usage")
-        task_ok = self.dataset_populator.wait_on_task(recalculate_response)
-        assert task_ok
-
+        self.recalculate_disk_usage()
         # The disk usage should be 0 again
         current_usage = self.dataset_populator.get_usage_for(None)
         assert current_usage["total_disk_usage"] == 0
+
+    def recalculate_disk_usage(self):
+        recalculate_response = self.dataset_populator._put("users/current/recalculate_disk_usage")
+        if self.task_based:
+            task_ok = self.dataset_populator.wait_on_task(recalculate_response)
+            assert task_ok
+        else:
+            time.sleep(2)
+
+
+class TestRecalculateUserDiskUsageIntegration(IntegrationTestCase, RecalculateDiskUsage):
+    task_based = True
+    dataset_populator: DatasetPopulator
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["allow_user_dataset_purge"] = True
+
+
+class TestRecalculateUserDiskUsageHierarchicalIntegration(BaseObjectStoreIntegrationTestCase, RecalculateDiskUsage):
+    task_based = True
+    dataset_populator: DatasetPopulator
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        cls._configure_object_store(DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE, config)
+        super().handle_galaxy_config_kwds(config)
+        config["allow_user_dataset_purge"] = True
+
+
+class TestRecalculateUserDiskUsageHierarchicalNoTaskIntegration(
+    BaseObjectStoreIntegrationTestCase, RecalculateDiskUsage
+):
+    task_based = False
+    dataset_populator: DatasetPopulator
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        cls._configure_object_store(DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE, config)
+        super().handle_galaxy_config_kwds(config)
+        config["allow_user_dataset_purge"] = True
+        config["enable_celery_tasks"] = False
+        config["metadata_strategy"] = "extended"
