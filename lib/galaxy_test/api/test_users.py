@@ -1,11 +1,3 @@
-import json
-
-from requests import (
-    delete,
-    get,
-    put,
-)
-
 from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.base.api_asserts import assert_object_id_error
 from galaxy_test.base.decorators import (
@@ -66,40 +58,40 @@ class TestUsersApi(ApiTestCase):
 
     @requires_new_user
     def test_update(self):
-        new_name = "linnaeus"
+        payload = {"username": "linnaeus"}
         user = self._setup_user(TEST_USER_EMAIL)
         not_the_user = self._setup_user("email@example.com")
         with self._different_user(email=TEST_USER_EMAIL):
             # working
-            update_response = self.__update(user, username=new_name)
+            update_response = self.__update(user, data=payload)
             self._assert_status_code_is(update_response, 200)
             update_json = update_response.json()
-            assert update_json["username"] == new_name
+            assert update_json["username"] == payload["username"]
 
             # too short
-            update_response = self.__update(user, username="")
+            update_response = self.__update(user, data={"username": ""})
             self._assert_status_code_is(update_response, 400)
 
             # not them
-            update_response = self.__update(not_the_user, username=new_name)
+            update_response = self.__update(not_the_user, data=payload)
             self._assert_status_code_is(update_response, 400)
 
             # non-existent
             no_user_id = "5d7db0757a2eb7ef"
-            update_url = self._api_url(f"users/{no_user_id}", use_key=True)
-            update_response = put(update_url, data=json.dumps(dict(username=new_name)))
+            update_url = self._api_url(f"users/{no_user_id}")
+            update_response = self._put(update_url, data=payload, json=True)
             assert_object_id_error(update_response)
 
     @requires_admin
     @requires_new_user
     def test_admin_update(self):
-        new_name = "flexo"
+        payload = {"username": "flexo"}
         user = self._setup_user(TEST_USER_EMAIL)
-        update_url = self._api_url(f"users/{user['id']}", params=dict(key=self.master_api_key))
-        update_response = put(update_url, data=json.dumps(dict(username=new_name)))
+        update_url = self._api_url(f"users/{user['id']}")
+        update_response = self._put(update_url, data=payload, admin=True, json=True)
         self._assert_status_code_is(update_response, 200)
         update_json = update_response.json()
-        assert update_json["username"] == new_name
+        assert update_json["username"] == payload["username"]
 
     @requires_admin
     @requires_new_user
@@ -141,19 +133,21 @@ class TestUsersApi(ApiTestCase):
     def test_information(self):
         user = self._setup_user(TEST_USER_EMAIL)
         url = self.__url("information/inputs", user)
-        response = get(url).json()
+        response = self._get(url).json()
         assert response["username"] == user["username"]
         assert response["email"] == TEST_USER_EMAIL
-        put(url, data=json.dumps(dict(username="newname", email="new@email.email")))
-        response = get(url).json()
+        payload = {"username": "newname", "email": "new@email.email"}
+        self._put(url, data=payload, json=True)
+        response = self._get(url).json()
         assert response["username"] == "newname"
         assert response["email"] == "new@email.email"
-        put(url, data=json.dumps(dict(username=user["username"], email=TEST_USER_EMAIL)))
-        response = get(url).json()
+        payload = {"username": str(user["username"]), "email": TEST_USER_EMAIL}
+        self._put(url, data=payload, json=True)
+        response = self._get(url).json()
         assert response["username"] == user["username"]
         assert response["email"] == TEST_USER_EMAIL
-        put(url, data=json.dumps({"address_0|desc": "_desc"}))
-        response = get(url).json()
+        self._put(url, data={"address_0|desc": "_desc"}, json=True)
+        response = self._get(url).json()
         assert len(response["addresses"]) == 1
         assert response["addresses"][0]["desc"] == "_desc"
 
@@ -213,42 +207,37 @@ class TestUsersApi(ApiTestCase):
     def test_favorites(self):
         user = self._setup_user(TEST_USER_EMAIL)
         # adding a tool to favorites
-        url = self._api_url(f"users/{user['id']}/favorites/tools", params=dict(key=self.master_api_key))
-        put_response = put(url, data=json.dumps({"object_id": "cat1"}))
+        url = self._api_url(f"users/{user['id']}/favorites/tools")
+        put_response = self._put(url, data={"object_id": "cat1"}, admin=True, json=True)
         self._assert_status_code_is_ok(put_response)
         assert put_response.json()["tools"][0] == "cat1"
         # not implemented for workflows yet
-        url = self._api_url(f"users/{user['id']}/favorites/workflows", params=dict(key=self.master_api_key))
-        put_response = put(url, data=json.dumps({"object_id": "14ds68f4sda68gf46dsag4"}))
+        url = self._api_url(f"users/{user['id']}/favorites/workflows")
+        put_response = self._put(url, data={"object_id": "14ds68f4sda68gf46dsag4"}, admin=True, json=True)
         self._assert_status_code_is(put_response, 400)
         # delete existing tool favorite
-        url = self._api_url(f"users/{user['id']}/favorites/tools/cat1", params=dict(key=self.master_api_key))
-        delete_response = delete(url)
+        url = self._api_url(f"users/{user['id']}/favorites/tools/cat1")
+        delete_response = self._delete(url, admin=True)
         self._assert_status_code_is_ok(delete_response)
         assert delete_response.json()["tools"] == []
         # delete non-existing tool favorite
-        url = self._api_url(
-            f"users/{user['id']}/favorites/tools/madeuptoolthatdoes/not/exist/in/favs",
-            params=dict(key=self.master_api_key),
-        )
-        delete_response = delete(url)
+        url = self._api_url(f"users/{user['id']}/favorites/tools/madeuptoolthatdoes/not/exist/in/favs")
+        delete_response = self._delete(url, admin=True)
         self._assert_status_code_is(delete_response, 404)
         # delete non existing workflow favorite
-        url = self._api_url(
-            f"users/{user['id']}/favorites/workflows/1as5das5das56d465", params=dict(key=self.master_api_key)
-        )
-        delete_response = delete(url)
+        url = self._api_url(f"users/{user['id']}/favorites/workflows/1as5das5das56d465")
+        delete_response = self._delete(url, admin=True)
         self._assert_status_code_is(delete_response, 400)
 
     @skip_without_tool("cat1")
     def test_search_favorites(self):
         user, user_key = self._setup_user_get_key(TEST_USER_EMAIL)
         url = self._api_url(f"users/{user['id']}/favorites/tools", params=dict(key=user_key))
-        fav_response = put(url, data=json.dumps({"object_id": "cat1"}))
+        fav_response = self._put(url, data={"object_id": "cat1"}, json=True)
         self._assert_status_code_is_ok(fav_response)
         assert "cat1" in fav_response.json()["tools"]
         url = self._api_url("tools", params=dict(q="#favs", key=user_key))
-        search_response = get(url).json()
+        search_response = self._get(url).json()
         assert "cat1" in search_response
 
     @requires_new_user
@@ -291,9 +280,9 @@ class TestUsersApi(ApiTestCase):
     def __show(self, user):
         return self._get(f"users/{user['id']}")
 
-    def __update(self, user, **new_data):
-        update_url = self._api_url(f"users/{user['id']}", use_key=True)
-        return put(update_url, data=new_data)
+    def __update(self, user, data):
+        update_url = self._api_url(f"users/{user['id']}")
+        return self._put(update_url, data=data, json=True)
 
     def __assert_matches_user(self, userA, userB):
         self._assert_has_keys(userB, "id", "username", "total_disk_usage")
