@@ -622,7 +622,7 @@ FROM new
         else:
             statement = """
 INSERT INTO user_quota_source_usage(user_id, quota_source_label, disk_usage)
-VALUES(:user_id, :label, ({label_usage}))
+VALUES(:id, :label, ({label_usage}))
 ON CONFLICT
 ON constraint uqsu_unique_label_per_user
 DO UPDATE SET disk_usage = excluded.disk_usage
