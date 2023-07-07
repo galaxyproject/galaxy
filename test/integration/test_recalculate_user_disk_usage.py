@@ -1,9 +1,30 @@
+import string
 import time
 
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver.integration_util import IntegrationTestCase
 from .objectstore._base import BaseObjectStoreIntegrationTestCase
 from .objectstore.test_selection_with_resource_parameters import DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE
+
+SIMPLE_DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template(
+    """<?xml version="1.0"?>
+<object_store type="distributed" id="primary" order="0">
+    <backends>
+        <backend id="default" type="disk" weight="1" name="Default Store">
+            <description>This is my description of the default store with *markdown*.</description>
+            <files_dir path="${temp_directory}/files_default"/>
+            <extra_dir type="temp" path="${temp_directory}/tmp_default"/>
+            <extra_dir type="job_work" path="${temp_directory}/job_working_directory_default"/>
+        </backend>
+        <backend id="static" type="disk" weight="0">
+            <files_dir path="${temp_directory}/files_static"/>
+            <extra_dir type="temp" path="${temp_directory}/tmp_static"/>
+            <extra_dir type="job_work" path="${temp_directory}/job_working_directory_static"/>
+        </backend>
+    </backends>
+</object_store>
+"""
+)
 
 
 class RecalculateDiskUsage:
@@ -73,6 +94,23 @@ class TestRecalculateUserDiskUsageHierarchicalIntegration(BaseObjectStoreIntegra
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         cls._configure_object_store(DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE, config)
+        super().handle_galaxy_config_kwds(config)
+        config["allow_user_dataset_purge"] = True
+
+
+class TestRecalculateUserDiskUsageSimpleHierarchicalIntegration(
+    BaseObjectStoreIntegrationTestCase, RecalculateDiskUsage
+):
+    task_based = True
+    dataset_populator: DatasetPopulator
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        cls._configure_object_store(SIMPLE_DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE, config)
         super().handle_galaxy_config_kwds(config)
         config["allow_user_dataset_purge"] = True
 
