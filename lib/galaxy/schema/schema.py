@@ -136,6 +136,7 @@ AccessibleField: bool = Field(
     description="Whether this item is accessible to the current user due to permissions.",
 )
 
+
 EntityIdField = Field(
     ...,
     title="ID",
@@ -228,6 +229,32 @@ ContentsUrlField = Field(
     description="The relative URL to access the contents of this History.",
 )
 
+UserIdField = Field(title="ID", description="Encoded ID of the user")
+UserEmailField = Field(title="Email", description="Email of the user")
+UserDescriptionField = Field(title="Description", description="Description of the user")
+UserNameField = Field(default=Required, title="user_name", description="The name of the user.")
+QuotaPercentField = Field(
+    default=None, title="Quota percent", description="Percentage of the storage quota applicable to the user."
+)
+UserDeletedField = Field(default=Required, title="Deleted", description=" User is deleted")
+PreferredObjectStoreIdField = Field(
+    default=None,
+    title="Preferred Object Store ID",
+    description="The ID of the object store that should be used to store new datasets in this history.",
+)
+
+TotalDiskUsageField = Field(
+    default=Required,
+    title="Total disk usage",
+    description="Size of all non-purged, unique datasets of the user in bytes.",
+)
+NiceTotalDiskUsageField = Field(
+    default=Required,
+    title="Nice total disc usage",
+    description="Size of all non-purged, unique datasets of the user in a nice format.",
+)
+FlexibleUserIdType = Union[DecodedDatabaseIdField, Literal["current"]]
+
 
 class Model(BaseModel):
     """Base model definition with common configuration used by all derived models."""
@@ -267,72 +294,57 @@ class Model(BaseModel):
                 del properties[prop_key_to_remove]
 
 
-class AnonUserModel(Model):
-    total_disk_usage: int = Field(
-        default=Required,
-        title="Total disk usage",
-        description="Size of all non-purged, unique datasets of the user in bytes.",
-    )
-    nice_total_disk_usage: str = Field(
-        default=Required,
-        title="Nice total disc usage",
-        description="Size of all non-purged, unique datasets of the user in a nice format.",
-    )
-    quota_percent: int = Field(
-        default=Required,
-        title="Storage quota",
-        description="Percentage of the storage quota applicable to the user.",
-    )
+class BaseUserModel(Model):
+    id: EncodedDatabaseIdField = UserIdField
+    username: str = UserNameField
+    email: str = UserEmailField
+    deleted: bool = UserDeletedField
 
 
-class DetailedUserModel(Model):
-    preferences: Dict[Any, Any] = Field(default=Required, title="Preferences", description="Preferences of the user")
+class UserModel(BaseUserModel):
+    """User in a transaction context."""
+
+    active: bool = Field(title="Active", description="User is active")
+    model_class: USER_MODEL_CLASS = ModelClassField(USER_MODEL_CLASS)
+    last_password_change: Optional[datetime] = Field(title="Last password change", description="")
+
+
+class DiskUsageUserModel(Model):
+    total_disk_usage: float = TotalDiskUsageField
+    nice_total_disk_usage: str = NiceTotalDiskUsageField
+
+
+class AnonUserModel(DiskUsageUserModel):
+    quota_percent: Any = QuotaPercentField
+
+
+class DetailedUserModel(BaseUserModel, AnonUserModel):
     is_admin: bool = Field(default=Required, title="Is admin", description="User is admin")
-    quota_percent: Any = Field(
-        default=Required, title="Quota percent", description="Percentage of the storage quota applicable to the user."
-    )
-    total_disk_usage: float = Field(
-        default=Required,
-        title="Total disk usage",
-        description="Size of all non-purged, unique datasets of the user in bytes.",
-    )
-    nice_total_disk_usage: str = Field(
-        default=Required,
-        title="Nice total disc usage",
-        description="Size of all non-purged, unique datasets of the user in a nice format.",
-    )
-    tags_used: List[str] = Field(default=Required, title="Tags used", description="Tags used by the user")
-    deleted: bool = Field(default=Required, title="Deleted", description=" User is deleted")
-    id: str = Field(default=Required, title="ID", description="User ID")
-    email: str = Field(default=Required, title="Email", description="User email")
-    preferred_object_store_id: Any = Field(
-        default=Required, title="Preferred object store id", description="Preferred id of the object store"
-    )
-    username: str = Field(default=Required, title="Username", description="User username")
+    purged: bool = Field(default=Required, title="Purged", description="User is purged")
+    preferences: Dict[Any, Any] = Field(default=Required, title="Preferences", description="Preferences of the user")
+    preferred_object_store_id: Optional[str] = PreferredObjectStoreIdField
+    quota: str = Field(default=Required, title="Quota", description="Quota applicable to the user")
     quota_bytes: Any = Field(
         default=Required, title="Quota in bytes", description="Quota applicable to the user in bytes."
     )
-    quota: str = Field(default=Required, title="Quota", description="Quota applicable to the user")
-    purged: bool = Field(default=Required, title="Purged", description="User is purged")
+    tags_used: List[str] = Field(default=Required, title="Tags used", description="Tags used by the user")
 
 
-FlexibleUserIdType = Union[DecodedDatabaseIdField, Literal["current"]]
+class CreatedUserModel(UserModel, DiskUsageUserModel):
+    preferred_object_store_id: Optional[str] = PreferredObjectStoreIdField
 
 
 class PurgeUserPayload(Model):
     purge: bool = Field(default=Required, title="Purge user", description="Purge the user")
 
 
-class UserModel(Model):
-    """User in a transaction context."""
-
-    id: DecodedDatabaseIdField = Field(title="ID", description="User ID")
-    username: str = Field(title="Username", description="User username")
-    email: str = Field(title="Email", description="User email")
-    active: bool = Field(title="Active", description="User is active")
-    deleted: bool = Field(title="Deleted", description="User is deleted")
-    last_password_change: Optional[datetime] = Field(title="Last password change", description="")
-    model_class: USER_MODEL_CLASS = ModelClassField(USER_MODEL_CLASS)
+class CreateUserPayload(Model):
+    password: str = Field(default=Required, title="user_password", description="The password of the user.")
+    remote_user_email: Optional[str] = Field(
+        default=None, title="user_email", description="The email of the remote user."
+    )
+    email: str = UserEmailField
+    username: str = UserNameField
 
 
 class GroupModel(Model):
@@ -1114,11 +1126,7 @@ class HistorySummary(HistoryBase):
     annotation: Optional[str] = AnnotationField
     tags: TagCollection
     update_time: datetime = UpdateTimeField
-    preferred_object_store_id: Optional[str] = Field(
-        None,
-        title="Preferred Object Store ID",
-        description="The ID of the object store that should be used to store new datasets in this history.",
-    )
+    preferred_object_store_id: Optional[str] = PreferredObjectStoreIdField
 
 
 class HistoryActiveContentCounts(Model):
@@ -2470,12 +2478,7 @@ class GroupRoleListResponse(Model):
     __root__: List[GroupRoleResponse]
 
 
-# Users -----------------------------------------------------------------
-
-UserIdField = Field(title="ID", description="Encoded ID of the user")
-UserEmailField = Field(title="Email", description="Email of the user")
-UserDescriptionField = Field(title="Description", description="Description of the user")
-
+# Users -----------------------------------------------------------------------
 # Group_Users -----------------------------------------------------------------
 
 
