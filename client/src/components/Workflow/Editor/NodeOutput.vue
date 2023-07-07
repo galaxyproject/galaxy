@@ -40,6 +40,7 @@ const props = defineProps<{
     scale: number;
     datatypesMapper: DatatypesMapperModel;
     parentNode: HTMLElement | null;
+    readonly: boolean;
 }>();
 
 const emit = defineEmits(["pan-by", "stopDragging", "onDragConnector"]);
@@ -124,6 +125,10 @@ async function toggleChildComponent() {
 }
 
 function onToggleActive() {
+    if (props.readonly) {
+        return;
+    }
+
     const step = stepStore.getStep(stepId.value);
     assertDefined(step);
     let stepWorkflowOutputs = [...(step.workflow_outputs || [])];
@@ -138,6 +143,10 @@ function onToggleActive() {
 }
 
 function onToggleVisible() {
+    if (props.readonly) {
+        return;
+    }
+
     const actionKey = `HideDatasetAction${props.output.name}`;
     const step = { ...ensureDefined(stepStore.getStep(stepId.value)) };
     if (isVisible.value) {
@@ -338,7 +347,8 @@ const removeTagsAction = computed(() => {
             :prevent-default="false"
             :stop-propagation="true"
             :drag-data="{ stepId: stepId, output: effectiveOutput }"
-            draggable="true"
+            :draggable="!readonly"
+            :disabled="readonly"
             @pan-by="onPanBy"
             @start="isDragging = true"
             @stop="onStopDragging"

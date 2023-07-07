@@ -8,13 +8,14 @@
         :node-label="title"
         :class="classes"
         :style="style"
+        :disabled="readonly"
         @move="onMoveTo"
         @pan-by="onPanBy">
         <div class="node-header unselectable clearfix" @click="makeActive" @keyup.enter="makeActive">
             <b-button-group class="float-right">
                 <LoadingSpan v-if="isLoading" spinner-only />
                 <b-button
-                    v-if="canClone"
+                    v-if="canClone && !readonly"
                     v-b-tooltip.hover
                     class="node-clone py-0"
                     variant="primary"
@@ -25,6 +26,7 @@
                     <i class="fa fa-files-o" />
                 </b-button>
                 <b-button
+                    v-if="!readonly"
                     v-b-tooltip.hover
                     class="node-destroy py-0"
                     variant="primary"
@@ -35,7 +37,7 @@
                     <i class="fa fa-times" />
                 </b-button>
                 <b-button
-                    v-if="isEnabled"
+                    v-if="isEnabled && !readonly"
                     :id="popoverId"
                     class="node-recommendations py-0"
                     variant="primary"
@@ -44,7 +46,7 @@
                     <i class="fa fa-arrow-right" />
                 </b-button>
                 <b-popover
-                    v-if="isEnabled"
+                    v-if="isEnabled && !readonly"
                     :target="popoverId"
                     triggers="hover"
                     placement="bottom"
@@ -84,6 +86,7 @@
                 :scroll="scroll"
                 :scale="scale"
                 :parent-node="elHtml"
+                :readonly="readonly"
                 @onChange="onChange" />
             <div v-if="showRule" class="rule" />
             <NodeOutput
@@ -100,6 +103,7 @@
                 :scale="scale"
                 :datatypes-mapper="datatypesMapper"
                 :parent-node="elHtml"
+                :readonly="readonly"
                 @onDragConnector="onDragConnector"
                 @stopDragging="onStopDragging"
                 @onChange="onChange" />
@@ -152,6 +156,7 @@ const props = defineProps({
     scroll: { type: Object as PropType<UseScrollReturn>, required: true },
     scale: { type: Number, default: 1 },
     highlight: { type: Boolean, default: false },
+    readonly: { type: Boolean, default: false },
 });
 
 const emit = defineEmits([

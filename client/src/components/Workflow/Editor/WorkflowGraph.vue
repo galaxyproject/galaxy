@@ -28,6 +28,7 @@
                     :root-offset="elementBounding"
                     :scroll="scroll"
                     :scale="scale"
+                    :readonly="readonly"
                     @pan-by="panBy"
                     @stopDragging="onStopDragging"
                     @onDragConnector="onDragConnector"
@@ -73,6 +74,7 @@ const props = defineProps({
     datatypesMapper: { type: DatatypesMapperModel, required: true },
     highlightId: { type: null as unknown as PropType<number | null>, default: null },
     scrollToId: { type: null as unknown as PropType<number | null>, default: null },
+    readonly: { type: Boolean, default: false },
 });
 
 const stateStore = useWorkflowStateStore();

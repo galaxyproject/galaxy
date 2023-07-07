@@ -10,7 +10,7 @@
             <div :id="iconId" ref="el" v-b-tooltip.manual class="icon" :title="reason" />
         </div>
         <div
-            v-if="showRemove"
+            v-if="showRemove && !readonly"
             v-b-tooltip.hover
             :title="reason"
             class="delete-terminal"
@@ -73,6 +73,10 @@ export default {
         parentNode: {
             type: HTMLElement,
             default: null,
+        },
+        readonly: {
+            type: Boolean,
+            default: false,
         },
     },
     setup(props) {
