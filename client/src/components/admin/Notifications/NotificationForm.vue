@@ -1,122 +1,114 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { type components } from "@/schema";
-import { Toast } from "@/composables/toast";
+import { BAlert, BCard, BCol, BFormGroup, BFormInput, BRow } from "bootstrap-vue";
+import { format } from "date-fns";
+import { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
-import Heading from "@/components/Common/Heading.vue";
-import LoadingSpan from "@/components/LoadingSpan.vue";
-import FormElement from "@/components/Form/FormElement.vue";
-import AsyncButton from "@/components/Common/AsyncButton.vue";
+
 import {
-    createNotification,
     getGroups,
     getRoles,
     getUsers,
+    sendNotification,
 } from "@/components/admin/Notifications/notifications.services";
+import { Toast } from "@/composables/toast";
+import { type components } from "@/schema";
 
-type NotificationRecipients = components["schemas"]["NotificationRecipients"];
+import AsyncButton from "@/components/Common/AsyncButton.vue";
+import Heading from "@/components/Common/Heading.vue";
+import FormElement from "@/components/Form/FormElement.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import MessageNotification from "@/components/Notifications/Categories/MessageNotification.vue";
 
-type NotificationCreateData = {
-    source: string;
+const dateTimeFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS";
+
+type SelectOption = [string, string];
+type NotificationCreateData = components["schemas"]["NotificationCreateData"];
+type NotificationCreateRequest = components["schemas"]["NotificationCreateRequest"];
+
+interface MessageNotificationCreateData extends NotificationCreateData {
     category: "message";
-    variant: "info" | "warning" | "urgent";
-    content: {
-        category: "message";
-        subject: string;
-        message: string;
-    };
-};
+    content: components["schemas"]["MessageNotificationContent"];
+}
 
-const props = defineProps({
-    id: {
-        type: String,
-        default: null,
-    },
-});
+interface MessageNotificationCreateRequest extends NotificationCreateRequest {
+    notification: MessageNotificationCreateData;
+}
 
 const router = useRouter();
 
 const loading = ref(false);
-const roles = ref<[string, string][]>([]);
-const users = ref<[string, string][]>([]);
-const groups = ref<[string, string][]>([]);
-const recipients = ref<NotificationRecipients>({
-    role_ids: [],
-    user_ids: [],
-    group_ids: [],
-});
-const notification = ref<NotificationCreateData>({
-    source: "admin",
-    category: "message",
-    variant: "info",
-    content: {
+const roles = ref<SelectOption[]>([]);
+const users = ref<SelectOption[]>([]);
+const groups = ref<SelectOption[]>([]);
+const notificationData = ref<MessageNotificationCreateRequest>({
+    notification: {
+        source: "admin",
         category: "message",
-        subject: "",
-        message: "",
+        variant: "info",
+        content: {
+            category: "message",
+            subject: "",
+            message: "",
+        },
+        expiration_time: new Date(Date.now() + 6 * 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
+        publication_time: new Date().toISOString().slice(0, 16),
+    },
+    recipients: {
+        user_ids: [],
+        role_ids: [],
+        group_ids: [],
     },
 });
 
-const title = computed(() => {
-    if (props.id) {
-        return "Edit Notification";
-    } else {
-        return "New Notification";
-    }
-});
 const requiredFieldsFilled = computed(() => {
     return (
-        notification.value.content.subject !== "" ||
-        notification.value.content.message !== "" ||
-        (recipients.value.user_ids?.length !== 0 &&
-            recipients.value.role_ids?.length !== 0 &&
-            recipients.value.group_ids?.length !== 0)
+        notificationData.value.notification.content.subject !== "" &&
+        notificationData.value.notification.content.message !== "" &&
+        (notificationData.value.recipients.user_ids?.length ||
+            notificationData.value.recipients.role_ids?.length ||
+            notificationData.value.recipients.group_ids?.length)
     );
 });
 
-async function loadUsers() {
+async function loadData<T>(
+    getData: () => Promise<T[]>,
+    target: Ref<SelectOption[]>,
+    formatter: (item: T) => SelectOption
+) {
     try {
-        const tmp = await getUsers();
-        users.value = tmp.map((user) => {
-            return [`${user.username} | ${user.email}`, user.id];
-        });
+        const tmp = await getData();
+        target.value = tmp.map(formatter);
     } catch (error: any) {
         Toast.error(error.err_msg);
     }
 }
 
-async function loadRoles() {
-    try {
-        const tmp = await getRoles();
-        roles.value = tmp.map((role) => {
-            return [`${role.name} | ${role.description}`, role.id];
-        });
-    } catch (error: any) {
-        Toast.error(error.err_msg);
-    }
-}
+loadData(getUsers, users, (user) => {
+    return [`${user.username} | ${user.email}`, user.id];
+});
 
-async function loadGroups() {
-    try {
-        const tmp = await getGroups();
-        groups.value = tmp.map((group) => {
-            return [`${group.name}`, group.id];
-        });
-    } catch (error: any) {
-        Toast.error(error.err_msg);
-    }
-}
+loadData(getRoles, roles, (role) => {
+    return [`${role.name} | ${role.description}`, role.id];
+});
 
-loadUsers();
-loadRoles();
-loadGroups();
+loadData(getGroups, groups, (group) => {
+    return [`${group.name}`, group.id];
+});
 
-async function createNewNotification() {
+async function sendNewNotification() {
     try {
-        await createNotification({
-            recipients: recipients.value,
-            notification: notification.value,
-        });
-        Toast.success("Notification created");
+        const tmp = notificationData.value;
+
+        if (tmp.notification.publication_time) {
+            tmp.notification.publication_time = format(new Date(tmp.notification.publication_time), dateTimeFormat);
+        }
+
+        if (tmp.notification.expiration_time) {
+            tmp.notification.expiration_time = format(new Date(tmp.notification.expiration_time), dateTimeFormat);
+        }
+
+        await sendNotification(tmp);
+        Toast.success("Notification sent");
         router.push("/admin/notifications");
     } catch (error: any) {
         Toast.error(error.err_msg);
@@ -126,7 +118,7 @@ async function createNewNotification() {
 
 <template>
     <div>
-        <Heading> {{ title }} </Heading>
+        <Heading> New Notification </Heading>
 
         <BAlert v-if="loading" show>
             <LoadingSpan message="Loading notification" />
@@ -135,7 +127,7 @@ async function createNewNotification() {
         <div v-else>
             <FormElement
                 id="notification-subject"
-                v-model="notification.content.subject"
+                v-model="notificationData.notification.content.subject"
                 type="text"
                 title="Subject"
                 :optional="false"
@@ -145,7 +137,7 @@ async function createNewNotification() {
 
             <FormElement
                 id="notification-message"
-                v-model="notification.content.message"
+                v-model="notificationData.notification.content.message"
                 type="text"
                 title="Message"
                 :optional="false"
@@ -155,7 +147,7 @@ async function createNewNotification() {
 
             <FormElement
                 id="notification-variant"
-                v-model="notification.variant"
+                v-model="notificationData.notification.variant"
                 type="select"
                 title="Variant"
                 :optional="false"
@@ -168,7 +160,7 @@ async function createNewNotification() {
 
             <FormElement
                 id="notification-recipients-user-ids"
-                v-model="recipients.user_ids"
+                v-model="notificationData.recipients.user_ids"
                 type="select"
                 title="User recipients"
                 help="The users that will receive the notification"
@@ -177,7 +169,7 @@ async function createNewNotification() {
 
             <FormElement
                 id="notification-recipients-role-ids"
-                v-model="recipients.role_ids"
+                v-model="notificationData.recipients.role_ids"
                 type="select"
                 title="Role recipients"
                 help="The roles that will receive the notification"
@@ -186,7 +178,7 @@ async function createNewNotification() {
 
             <FormElement
                 id="notification-recipients-group-ids"
-                v-model="recipients.group_ids"
+                v-model="notificationData.recipients.group_ids"
                 type="select"
                 title="Group recipients"
                 help="The groups that will receive the notification"
@@ -202,7 +194,7 @@ async function createNewNotification() {
                         description="The notification will be displayed after this time. Default is the current time.">
                         <BFormInput
                             id="notification-publication-time"
-                            :value.sync="notification.publication_time"
+                            v-model="notificationData.notification.publication_time"
                             type="datetime-local"
                             placeholder="Enter publication time"
                             required />
@@ -216,7 +208,7 @@ async function createNewNotification() {
                         description="The notification will be deleted from the database after this time. Default is 6 months from the creation time.">
                         <BFormInput
                             id="notification-expiration-time"
-                            v-model="notification.expiration_time"
+                            v-model="notificationData.notification.expiration_time"
                             type="datetime-local"
                             placeholder="Enter expiration time"
                             required />
@@ -231,9 +223,8 @@ async function createNewNotification() {
                     variant="primary"
                     size="md"
                     :disabled="!requiredFieldsFilled"
-                    :action="createNewNotification">
-                    <span v-if="props.id" v-localize> Update Notification </span>
-                    <span v-else v-localize> Create Notification </span>
+                    :action="sendNewNotification">
+                    <span v-localize> Send Notification </span>
                 </AsyncButton>
             </BRow>
         </div>
