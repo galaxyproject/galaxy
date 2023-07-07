@@ -191,3 +191,9 @@
   label: Stock DRS filesource
   id: drsstock
   doc: Make sure to define this generic drs file source if you have defined any other drs file sources, or stock drs download capability will be disabled.
+
+- type: inveniordm
+  id: invenio
+  doc: Invenio RDM turn-key research data management repository
+  label: Invenio RDM Demo Repository
+  url: https://inveniordm.web.cern.ch/
