@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import FormCard from "./FormCard.vue";
-import { defineAsyncComponent, unref, type PropType, nextTick } from "vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faPlus, faTrashAlt, faCaretUp, faCaretDown } from "@fortawesome/free-solid-svg-icons";
+import { faCaretDown, faCaretUp, faPlus, faTrashAlt } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { defineAsyncComponent, nextTick, type PropType, unref } from "vue";
+
 import { useUid } from "@/composables/utils/uid";
+
+import FormCard from "./FormCard.vue";
 
 const FormNode = defineAsyncComponent(() => import("./FormInputs.vue"));
 

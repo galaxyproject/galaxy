@@ -66,11 +66,13 @@
 </template>
 
 <script>
-import FormCard from "components/Form/FormCard";
-import FormElement from "components/Form/FormElement";
-import { matchCase } from "components/Form/utilities";
+import { set } from "vue";
 
+import { matchCase } from "@/components/Form/utilities";
+
+import FormCard from "./FormCard.vue";
 import FormRepeat from "./FormRepeat.vue";
+import FormElement from "@/components/Form/FormElement.vue";
 
 export default {
     name: "FormNode",
@@ -141,8 +143,10 @@ export default {
         },
         repeatInsert(input) {
             const newInputs = structuredClone(input.inputs);
-            input.cache = input.cache || [];
+
+            set(input, "cache", input.cache ?? []);
             input.cache.push(newInputs);
+
             this.onChangeForm();
         },
         repeatDelete(input, cacheId) {
