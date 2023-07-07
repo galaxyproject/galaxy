@@ -18,7 +18,10 @@
         <transition name="slide">
             <div v-if="opened">
                 <template v-for="[key, el] in sortedElements">
-                    <ToolPanelLabel v-if="category.text" :key="key" :definition="el" />
+                    <ToolPanelLabel
+                        v-if="category.text || el.model_class === 'ToolSectionLabel'"
+                        :key="key"
+                        :definition="el" />
                     <tool
                         v-else
                         :key="key"
@@ -252,5 +255,15 @@ export default {
 .slide-leave-to {
     overflow: hidden;
     max-height: 0;
+}
+
+.title-link {
+    &:deep(.tool-panel-links) {
+        display: none;
+    }
+
+    &:hover:deep(.tool-panel-links) {
+        display: inline;
+    }
 }
 </style>
