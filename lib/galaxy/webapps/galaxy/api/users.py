@@ -398,7 +398,7 @@ class FastAPIUsers:
     ) -> DetailedUserModel:
         deleted = deleted or False
         current_user = trans.user
-        user_to_update = self.service.get_user_full(trans, user_id, deleted=deleted)
+        user_to_update = self.service.get_non_anonymous_user_full(trans, user_id, deleted=deleted)
         self.service.user_deserializer.deserialize(user_to_update, payload, user=current_user, trans=trans)
         return self.service.user_to_detailed_model(user_to_update)
 
