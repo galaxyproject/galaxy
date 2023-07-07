@@ -1390,14 +1390,19 @@ export interface paths {
     "/api/users": {
         /**
          * Get Users
-         * @description Display a collection of users
+         * @description Return a collection of users
          */
-        get: operations["Get_users_api_users_get"];
+        get: operations["get_users_api_users_get"];
+        /**
+         * Create a new Galaxy user
+         * @description Rework CreateUserPayload payload and add pydantic model for return
+         */
+        post: operations["create_user_api_users_post"];
     };
     "/api/users/current": {
         /**
          * Get Current User
-         * @description Display information about current user
+         * @description Return information about the current user
          */
         get: operations["get_current_user_api_users_current_get"];
     };
@@ -1413,13 +1418,17 @@ export interface paths {
     "/api/users/deleted": {
         /**
          * Get Deleted Users
-         * @description Display a collection of deleted users
+         * @description Return a collection of deleted users
          */
-        get: operations["Get_deleted_users_api_users_deleted_get"];
+        get: operations["get_deleted_users_api_users_deleted_get"];
     };
     "/api/users/deleted/{user_id}": {
-        /** Display information about a deleted user */
+        /** Return information about a deleted user */
         get: operations["get_deleted_user_api_users_deleted__user_id__get"];
+    };
+    "/api/users/deleted/{user_id}/undelete": {
+        /** Restore a deleted user */
+        post: operations["undelete_user_api_users_deleted__user_id__undelete_post"];
     };
     "/api/users/recalculate_disk_usage": {
         /**
@@ -1432,15 +1441,17 @@ export interface paths {
         put: operations["recalculate_disk_usage_api_users_recalculate_disk_usage_put"];
     };
     "/api/users/{user_id}": {
-        /** Display information about a specified user */
+        /** Return information about a specified user */
         get: operations["get_user_api_users__user_id__get"];
-        /** Delete the user with the given `id`, only admins can delete other users. */
+        /** Update the values of a user */
+        put: operations["update_user_api_users__user_id__put"];
+        /** Delete a user */
         delete: operations["delete_user_api_users__user_id__delete"];
     };
     "/api/users/{user_id}/api_key": {
         /** Return the user's API key */
         get: operations["get_or_create_api_key_api_users__user_id__api_key_get"];
-        /** Creates a new API key for the user */
+        /** Create a new API key for the user */
         post: operations["create_api_key_api_users__user_id__api_key_post"];
         /** Delete the current API key of the user */
         delete: operations["delete_api_key_api_users__user_id__api_key_delete"];
@@ -1451,18 +1462,18 @@ export interface paths {
     };
     "/api/users/{user_id}/beacon": {
         /**
-         * Returns information about beacon share settings
+         * Return information about beacon share settings
          * @description **Warning**: This endpoint is experimental and might change or disappear in future versions.
          */
-        get: operations["get_beacon_api_users__user_id__beacon_get"];
+        get: operations["get_beacon_settings_api_users__user_id__beacon_get"];
         /**
-         * Changes beacon setting
+         * Change beacon setting
          * @description **Warning**: This endpoint is experimental and might change or disappear in future versions.
          */
-        post: operations["set_beacon_api_users__user_id__beacon_post"];
+        post: operations["set_beacon_settings_api_users__user_id__beacon_post"];
     };
     "/api/users/{user_id}/theme/{theme}": {
-        /** Sets the user's theme choice. */
+        /** Set the user's theme choice */
         put: operations["set_theme_api_users__user_id__theme__theme__put"];
     };
     "/api/users/{user_id}/usage": {
@@ -1712,10 +1723,10 @@ export interface components {
              */
             nice_total_disk_usage: string;
             /**
-             * Storage quota
+             * Quota percent
              * @description Percentage of the storage quota applicable to the user.
              */
-            quota_percent: number;
+            quota_percent?: Record<string, never>;
             /**
              * Total disk usage
              * @description Size of all non-purged, unique datasets of the user in bytes.
@@ -2950,6 +2961,91 @@ export interface components {
             url: string;
         };
         /**
+         * CreateUserPayload
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        CreateUserPayload: {
+            /**
+             * Email
+             * @description Email of the user
+             */
+            email: string;
+            /**
+             * user_password
+             * @description The password of the user.
+             */
+            password: string;
+            /**
+             * user_email
+             * @description The email of the remote user.
+             */
+            remote_user_email?: string;
+            /**
+             * user_name
+             * @description The name of the user.
+             */
+            username: string;
+        };
+        /**
+         * CreatedUserModel
+         * @description User in a transaction context.
+         */
+        CreatedUserModel: {
+            /**
+             * Active
+             * @description User is active
+             */
+            active: boolean;
+            /**
+             * Deleted
+             * @description  User is deleted
+             */
+            deleted: boolean;
+            /**
+             * Email
+             * @description Email of the user
+             */
+            email: string;
+            /**
+             * ID
+             * @description Encoded ID of the user
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Last password change
+             * Format: date-time
+             */
+            last_password_change?: string;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @default User
+             * @enum {string}
+             */
+            model_class: "User";
+            /**
+             * Nice total disc usage
+             * @description Size of all non-purged, unique datasets of the user in a nice format.
+             */
+            nice_total_disk_usage: string;
+            /**
+             * Preferred Object Store ID
+             * @description The ID of the object store that should be used to store new datasets in this history.
+             */
+            preferred_object_store_id?: string;
+            /**
+             * Total disk usage
+             * @description Size of all non-purged, unique datasets of the user in bytes.
+             */
+            total_disk_usage: number;
+            /**
+             * user_name
+             * @description The name of the user.
+             */
+            username: string;
+        };
+        /**
          * CustomBuildsMetadataResponse
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -3702,12 +3798,13 @@ export interface components {
             deleted: boolean;
             /**
              * Email
-             * @description User email
+             * @description Email of the user
              */
             email: string;
             /**
              * ID
-             * @description User ID
+             * @description Encoded ID of the user
+             * @example 0123456789ABCDEF
              */
             id: string;
             /**
@@ -3726,10 +3823,10 @@ export interface components {
              */
             preferences: Record<string, never>;
             /**
-             * Preferred object store id
-             * @description Preferred id of the object store
+             * Preferred Object Store ID
+             * @description The ID of the object store that should be used to store new datasets in this history.
              */
-            preferred_object_store_id: Record<string, never>;
+            preferred_object_store_id?: string;
             /**
              * Purged
              * @description User is purged
@@ -3749,7 +3846,7 @@ export interface components {
              * Quota percent
              * @description Percentage of the storage quota applicable to the user.
              */
-            quota_percent: Record<string, never>;
+            quota_percent?: Record<string, never>;
             /**
              * Tags used
              * @description Tags used by the user
@@ -3761,8 +3858,8 @@ export interface components {
              */
             total_disk_usage: number;
             /**
-             * Username
-             * @description User username
+             * user_name
+             * @description The name of the user.
              */
             username: string;
         };
@@ -8795,17 +8892,17 @@ export interface components {
             active: boolean;
             /**
              * Deleted
-             * @description User is deleted
+             * @description  User is deleted
              */
             deleted: boolean;
             /**
              * Email
-             * @description User email
+             * @description Email of the user
              */
             email: string;
             /**
              * ID
-             * @description User ID
+             * @description Encoded ID of the user
              * @example 0123456789ABCDEF
              */
             id: string;
@@ -8822,8 +8919,8 @@ export interface components {
              */
             model_class: "User";
             /**
-             * Username
-             * @description User username
+             * user_name
+             * @description The name of the user.
              */
             username: string;
         };
@@ -16628,10 +16725,10 @@ export interface operations {
             };
         };
     };
-    Get_users_api_users_get: {
+    get_users_api_users_get: {
         /**
          * Get Users
-         * @description Display a collection of users
+         * @description Return a collection of users
          */
         parameters?: {
             query?: {
@@ -16660,10 +16757,41 @@ export interface operations {
             };
         };
     };
+    create_user_api_users_post: {
+        /**
+         * Create a new Galaxy user
+         * @description Rework CreateUserPayload payload and add pydantic model for return
+         */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateUserPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["CreatedUserModel"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_current_user_api_users_current_get: {
         /**
          * Get Current User
-         * @description Display information about current user
+         * @description Return information about the current user
          */
         parameters: {
             /** @description Indicates if the user is deleted */
@@ -16684,8 +16812,8 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
-                        | components["schemas"]["AnonUserModel"]
-                        | components["schemas"]["DetailedUserModel"];
+                        | components["schemas"]["DetailedUserModel"]
+                        | components["schemas"]["AnonUserModel"];
                 };
             };
             /** @description Validation Error */
@@ -16726,10 +16854,10 @@ export interface operations {
             };
         };
     };
-    Get_deleted_users_api_users_deleted_get: {
+    get_deleted_users_api_users_deleted_get: {
         /**
          * Get Deleted Users
-         * @description Display a collection of deleted users
+         * @description Return a collection of deleted users
          */
         parameters?: {
             query?: {
@@ -16758,7 +16886,7 @@ export interface operations {
         };
     };
     get_deleted_user_api_users_deleted__user_id__get: {
-        /** Display information about a deleted user */
+        /** Return information about a deleted user */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -16774,8 +16902,35 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
-                        | components["schemas"]["AnonUserModel"]
-                        | components["schemas"]["DetailedUserModel"];
+                        | components["schemas"]["DetailedUserModel"]
+                        | components["schemas"]["AnonUserModel"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    undelete_user_api_users_deleted__user_id__undelete_post: {
+        /** Restore a deleted user */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the user to get. */
+            path: {
+                user_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["DetailedUserModel"];
                 };
             };
             /** @description Validation Error */
@@ -16818,7 +16973,7 @@ export interface operations {
         };
     };
     get_user_api_users__user_id__get: {
-        /** Display information about a specified user */
+        /** Return information about a specified user */
         parameters: {
             /** @description Indicates if the user is deleted */
             query?: {
@@ -16838,8 +16993,44 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
-                        | components["schemas"]["AnonUserModel"]
-                        | components["schemas"]["DetailedUserModel"];
+                        | components["schemas"]["DetailedUserModel"]
+                        | components["schemas"]["AnonUserModel"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_user_api_users__user_id__put: {
+        /** Update the values of a user */
+        parameters: {
+            /** @description Indicates if the user is deleted */
+            query?: {
+                deleted?: boolean;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the user to get. */
+            path: {
+                user_id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["DetailedUserModel"];
                 };
             };
             /** @description Validation Error */
@@ -16851,7 +17042,7 @@ export interface operations {
         };
     };
     delete_user_api_users__user_id__delete: {
-        /** Delete the user with the given `id`, only admins can delete other users. */
+        /** Delete a user */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -16910,7 +17101,7 @@ export interface operations {
         };
     };
     create_api_key_api_users__user_id__api_key_post: {
-        /** Creates a new API key for the user */
+        /** Create a new API key for the user */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -16988,9 +17179,9 @@ export interface operations {
             };
         };
     };
-    get_beacon_api_users__user_id__beacon_get: {
+    get_beacon_settings_api_users__user_id__beacon_get: {
         /**
-         * Returns information about beacon share settings
+         * Return information about beacon share settings
          * @description **Warning**: This endpoint is experimental and might change or disappear in future versions.
          */
         parameters: {
@@ -17018,9 +17209,9 @@ export interface operations {
             };
         };
     };
-    set_beacon_api_users__user_id__beacon_post: {
+    set_beacon_settings_api_users__user_id__beacon_post: {
         /**
-         * Changes beacon setting
+         * Change beacon setting
          * @description **Warning**: This endpoint is experimental and might change or disappear in future versions.
          */
         parameters: {
@@ -17054,7 +17245,7 @@ export interface operations {
         };
     };
     set_theme_api_users__user_id__theme__theme__put: {
-        /** Sets the user's theme choice. */
+        /** Set the user's theme choice */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
