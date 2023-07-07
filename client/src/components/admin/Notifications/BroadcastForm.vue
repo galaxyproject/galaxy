@@ -1,15 +1,21 @@
 <script setup lang="ts">
-import Vue, { computed, ref } from "vue";
-import { type components } from "@/schema";
-import { Toast } from "@/composables/toast";
-import { useRouter } from "vue-router/composables";
-import Heading from "@/components/Common/Heading.vue";
-import LoadingSpan from "@/components/LoadingSpan.vue";
-import FormElement from "@/components/Form/FormElement.vue";
-import AsyncButton from "@/components/Common/AsyncButton.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import BroadcastContainer from "@/components/Notifications/Broadcasts/BroadcastContainer.vue";
+import { BAlert, BButton, BCol, BFormGroup, BFormInput, BRow } from "bootstrap-vue";
+import { format } from "date-fns";
+import Vue, { computed, ref } from "vue";
+import { useRouter } from "vue-router/composables";
+
 import { createBroadcast, loadBroadcast, updateBroadcast } from "@/components/admin/Notifications/broadcasts.services";
+import { Toast } from "@/composables/toast";
+import { type components } from "@/schema";
+
+import AsyncButton from "@/components/Common/AsyncButton.vue";
+import Heading from "@/components/Common/Heading.vue";
+import FormElement from "@/components/Form/FormElement.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import BroadcastContainer from "@/components/Notifications/Broadcasts/BroadcastContainer.vue";
+
+const dateTimeFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS";
 
 type BroadcastNotificationCreateRequest = components["schemas"]["BroadcastNotificationCreateRequest"];
 
@@ -31,25 +37,29 @@ const title = computed(() => {
 });
 
 const loading = ref(false);
-const broadcast = ref<BroadcastNotificationCreateRequest>({
+
+const broadcastData = ref<BroadcastNotificationCreateRequest>({
     source: "admin",
     variant: "info",
     content: {
         subject: "",
         message: "",
     },
+    expiration_time: new Date(Date.now() + 6 * 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
+    publication_time: new Date().toISOString().slice(0, 16),
 });
 
+const broadcastPublished = ref(false);
 const requiredFieldsFilled = computed(() => {
-    return broadcast.value.content.subject !== "" && broadcast.value.content.message !== "";
+    return broadcastData.value.content.subject !== "" && broadcastData.value.content.message !== "";
 });
 
 function addActionLink() {
-    if (!broadcast.value.content.action_links) {
-        Vue.set(broadcast.value.content, "action_links", []);
+    if (!broadcastData.value.content.action_links) {
+        Vue.set(broadcastData.value.content, "action_links", []);
     }
 
-    broadcast.value.content.action_links?.push({
+    broadcastData.value.content.action_links?.push({
         action_name: "",
         link: "",
     });
@@ -57,11 +67,21 @@ function addActionLink() {
 
 async function createOrUpdateBroadcast() {
     try {
+        const tmp = broadcastData.value;
+
+        if (tmp.publication_time) {
+            tmp.publication_time = format(new Date(tmp.publication_time), dateTimeFormat);
+        }
+
+        if (tmp.expiration_time) {
+            tmp.expiration_time = format(new Date(tmp.expiration_time), dateTimeFormat);
+        }
+
         if (props.id) {
-            await updateBroadcast(props.id, broadcast.value);
+            await updateBroadcast(props.id, tmp);
             Toast.success("Broadcast updated");
         } else {
-            await createBroadcast(broadcast.value);
+            await createBroadcast(tmp);
             Toast.success("Broadcast created");
         }
         router.push("/admin/notifications/");
@@ -71,17 +91,30 @@ async function createOrUpdateBroadcast() {
 }
 
 async function loadBroadcastData() {
-    if (props.id) {
-        loading.value = true;
-        try {
-            broadcast.value = await loadBroadcast(props.id);
-        } catch (error: any) {
-            Toast.error(error.err_msg);
+    loading.value = true;
+    try {
+        const loadedBroadcast = await loadBroadcast(props.id);
+
+        broadcastData.value.publication_time = new Date(loadedBroadcast.publication_time).toISOString().slice(0, 16);
+
+        if (loadedBroadcast.expiration_time) {
+            broadcastData.value.expiration_time = new Date(loadedBroadcast.expiration_time).toISOString().slice(0, 16);
         }
-        loading.value = false;
+
+        broadcastData.value = loadedBroadcast;
+
+        if (broadcastData.value.publication_time) {
+            broadcastPublished.value = new Date(broadcastData.value.publication_time) < new Date();
+        }
+    } catch (error: any) {
+        Toast.error(error.err_msg);
     }
+    loading.value = false;
 }
-loadBroadcastData();
+
+if (props.id) {
+    loadBroadcastData();
+}
 </script>
 
 <template>
@@ -95,7 +128,7 @@ loadBroadcastData();
         <div v-else>
             <FormElement
                 id="broadcast-subject"
-                v-model="broadcast.content.subject"
+                v-model="broadcastData.content.subject"
                 type="text"
                 title="Subject"
                 :optional="false"
@@ -105,7 +138,7 @@ loadBroadcastData();
 
             <FormElement
                 id="broadcast-variant"
-                v-model="broadcast.variant"
+                v-model="broadcastData.variant"
                 type="select"
                 title="Variant"
                 :optional="false"
@@ -118,7 +151,7 @@ loadBroadcastData();
 
             <FormElement
                 id="broadcast-message"
-                v-model="broadcast.content.message"
+                v-model="broadcastData.content.message"
                 type="text"
                 title="Message"
                 :optional="false"
@@ -128,7 +161,7 @@ loadBroadcastData();
 
             <BFormGroup id="broadcast-action-link-group" label="Action Links" label-for="broadcast-action-link">
                 <BRow
-                    v-for="(actionLink, index) in broadcast.content.action_links"
+                    v-for="(actionLink, index) in broadcastData.content.action_links"
                     :key="actionLink.action_name"
                     class="my-2">
                     <BCol cols="auto">
@@ -155,8 +188,8 @@ loadBroadcastData();
                             variant="error-outline"
                             role="button"
                             @click="
-                                broadcast.content.action_links.splice(
-                                    broadcast.content.action_links.indexOf(actionLink),
+                                broadcastData.content.action_links.splice(
+                                    broadcastData.content.action_links.indexOf(actionLink),
                                     1
                                 )
                             ">
@@ -185,7 +218,7 @@ loadBroadcastData();
                         description="The broadcast will be displayed from this time onwards. Default is the time of creation.">
                         <BFormInput
                             id="broadcast-publication-time"
-                            :value.sync="broadcast.publication_time"
+                            v-model="broadcastData.publication_time"
                             type="datetime-local"
                             placeholder="Enter publication time"
                             required />
@@ -199,7 +232,7 @@ loadBroadcastData();
                         description="The broadcast will not be displayed and will be deleted from the database after this time. Default is 6 months from the creation time.">
                         <BFormInput
                             id="broadcast-expiration-time"
-                            v-model="broadcast.expiration_time"
+                            v-model="broadcastData.expiration_time"
                             type="datetime-local"
                             placeholder="Enter expiration time"
                             required />
@@ -211,7 +244,7 @@ loadBroadcastData();
                 <Heading size="md"> Preview </Heading>
             </BRow>
 
-            <BroadcastContainer :broadcast="broadcast" preview-mode />
+            <BroadcastContainer :broadcast="broadcastData" preview-mode />
 
             <BRow class="m-2" align-h="center">
                 <AsyncButton
