@@ -1390,13 +1390,10 @@ export interface paths {
     "/api/users": {
         /**
          * Get Users
-         * @description Return a collection of users
+         * @description Return a collection of users. Filters will only work if enabled in config or user is admin.
          */
         get: operations["get_users_api_users_get"];
-        /**
-         * Create a new Galaxy user
-         * @description Rework CreateUserPayload payload and add pydantic model for return
-         */
+        /** Create a new Galaxy user. Only admins can create users for now. */
         post: operations["create_user_api_users_post"];
     };
     "/api/users/current": {
@@ -1418,16 +1415,16 @@ export interface paths {
     "/api/users/deleted": {
         /**
          * Get Deleted Users
-         * @description Return a collection of deleted users
+         * @description Return a collection of deleted users. Only admins can see deleted users.
          */
         get: operations["get_deleted_users_api_users_deleted_get"];
     };
     "/api/users/deleted/{user_id}": {
-        /** Return information about a deleted user */
+        /** Return information about a deleted user. Only admins can see deleted users. */
         get: operations["get_deleted_user_api_users_deleted__user_id__get"];
     };
     "/api/users/deleted/{user_id}/undelete": {
-        /** Restore a deleted user */
+        /** Restore a deleted user. Only admins can restore users. */
         post: operations["undelete_user_api_users_deleted__user_id__undelete_post"];
     };
     "/api/users/recalculate_disk_usage": {
@@ -1441,11 +1438,11 @@ export interface paths {
         put: operations["recalculate_disk_usage_api_users_recalculate_disk_usage_put"];
     };
     "/api/users/{user_id}": {
-        /** Return information about a specified user */
+        /** Return information about a specified user. Only admin can see deleted or other users */
         get: operations["get_user_api_users__user_id__get"];
-        /** Update the values of a user */
+        /** Update the values of a user. Only admin can update others. */
         put: operations["update_user_api_users__user_id__put"];
-        /** Delete a user */
+        /** Delete a user. Only admins can delete others or purge users. */
         delete: operations["delete_user_api_users__user_id__delete"];
     };
     "/api/users/{user_id}/api_key": {
@@ -16728,9 +16725,13 @@ export interface operations {
     get_users_api_users_get: {
         /**
          * Get Users
-         * @description Return a collection of users
+         * @description Return a collection of users. Filters will only work if enabled in config or user is admin.
          */
         parameters?: {
+            /** @description Indicates if the collection will be about deleted users */
+            /** @description An email address to filter on */
+            /** @description An username address to filter on */
+            /** @description Filter on username OR email */
             query?: {
                 deleted?: boolean;
                 f_email?: string;
@@ -16758,10 +16759,7 @@ export interface operations {
         };
     };
     create_user_api_users_post: {
-        /**
-         * Create a new Galaxy user
-         * @description Rework CreateUserPayload payload and add pydantic model for return
-         */
+        /** Create a new Galaxy user. Only admins can create users for now. */
         parameters?: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -16857,9 +16855,12 @@ export interface operations {
     get_deleted_users_api_users_deleted_get: {
         /**
          * Get Deleted Users
-         * @description Return a collection of deleted users
+         * @description Return a collection of deleted users. Only admins can see deleted users.
          */
         parameters?: {
+            /** @description An email address to filter on */
+            /** @description An username address to filter on */
+            /** @description Filter on username OR email */
             query?: {
                 f_email?: string;
                 f_name?: string;
@@ -16886,7 +16887,7 @@ export interface operations {
         };
     };
     get_deleted_user_api_users_deleted__user_id__get: {
-        /** Return information about a deleted user */
+        /** Return information about a deleted user. Only admins can see deleted users. */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -16915,7 +16916,7 @@ export interface operations {
         };
     };
     undelete_user_api_users_deleted__user_id__undelete_post: {
-        /** Restore a deleted user */
+        /** Restore a deleted user. Only admins can restore users. */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -16973,7 +16974,7 @@ export interface operations {
         };
     };
     get_user_api_users__user_id__get: {
-        /** Return information about a specified user */
+        /** Return information about a specified user. Only admin can see deleted or other users */
         parameters: {
             /** @description Indicates if the user is deleted */
             query?: {
@@ -17006,7 +17007,7 @@ export interface operations {
         };
     };
     update_user_api_users__user_id__put: {
-        /** Update the values of a user */
+        /** Update the values of a user. Only admin can update others. */
         parameters: {
             /** @description Indicates if the user is deleted */
             query?: {
@@ -17042,7 +17043,7 @@ export interface operations {
         };
     };
     delete_user_api_users__user_id__delete: {
-        /** Delete a user */
+        /** Delete a user. Only admins can delete others or purge users. */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
