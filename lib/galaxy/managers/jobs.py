@@ -556,7 +556,7 @@ class JobSearch:
                         and_(model.Job.id == a.job_id, a.name == k, a.value == json.dumps(v, sort_keys=True))
                     )
             else:
-                job_parameter_conditions = [model.Job.id == job]
+                job_parameter_conditions = [model.Job.id == job[0]]
             query = self.sa_session.query(model.Job).filter(*job_parameter_conditions)
             job = query.first()
             if job is None:
