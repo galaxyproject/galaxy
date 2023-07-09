@@ -328,7 +328,7 @@ class JobSearch:
         job_conditions = [
             and_(
                 model.Job.tool_id == tool_id,
-                model.Job.user == user,
+                model.Job.user_id == user.id,
                 model.Job.copied_from_job_id.is_(None),  # Always pick original job
             )
         ]
