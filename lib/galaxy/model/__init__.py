@@ -7764,6 +7764,7 @@ class WorkflowStep(Base, RepresentById):
         copied_step.position = self.position
         copied_step.config = self.config
         copied_step.label = self.label
+        copied_step.when_expression = self.when_expression
         copied_step.inputs = copy_list(self.inputs, copied_step)
 
         subworkflow_step_mapping = {}
