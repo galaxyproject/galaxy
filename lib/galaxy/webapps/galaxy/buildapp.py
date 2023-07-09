@@ -846,14 +846,6 @@ def populate_api_routes(webapp, app):
     )
 
     webapp.mapper.connect(
-        "set_favorite_tool",
-        "/api/users/{id}/favorites/{object_type}",
-        controller="users",
-        action="set_favorite",
-        conditions=dict(method=["PUT"]),
-    )
-
-    webapp.mapper.connect(
         "remove_favorite_tool",
         "/api/users/{id}/favorites/{object_type}/{object_id:.*?}",
         controller="users",
