@@ -347,6 +347,18 @@ class CreateUserPayload(Model):
     username: str = UserNameField
 
 
+class SetFavoritePayload(Model):
+    object_id: str = Field(
+        default=Required, title="Object ID", description="The id of an object the user wants to favorite."
+    )
+
+
+class FavoriteModel(Model):
+    tools: List[str] = Field(
+        default=Required, title="Favorite tools", description="The name of the tools the user favored."
+    )
+
+
 class GroupModel(Model):
     """User group model"""
 
