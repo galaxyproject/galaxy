@@ -104,6 +104,11 @@ QuotaSourceLabelPathParam: str = Path(
 ObjectTypePathParam: str = Path(
     default=Required, title="Object type", description="The object type the user wants to favorite"
 )
+ObjectIDPathParam: str = Path(
+    default=Required,
+    title="Object ID",
+    description="The ID of an object the user wants to remove from favorites",
+)
 
 RecalculateDiskUsageSummary = "Triggers a recalculation of the current user disk usage."
 RecalculateDiskUsageResponseDescriptions = {
@@ -321,6 +326,70 @@ class FastAPIUsers:
 
         return payload
 
+    @router.delete(
+        "/api/users/{user_id}/favorites/{object_type}/{object_id}",
+        name="remove_favorite",
+        summary="Remove the object from user's favorites",
+    )
+    def remove_favorite(
+        self,
+        object_type: str = ObjectTypePathParam,
+        object_id: str = ObjectIDPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_id: DecodedDatabaseIdField = UserIdPathParam,
+    ) -> FavoriteModel:
+        self.service.validate_favorite_object_type(object_type)
+        user = self.service.get_user(trans, user_id)
+        favorites = json.loads(user.preferences["favorites"]) if "favorites" in user.preferences else {}
+        if object_type == "tools":
+            if "tools" in favorites:
+                favorite_tools = favorites["tools"]
+                if object_id in favorite_tools:
+                    del favorite_tools[favorite_tools.index(object_id)]
+                    favorites["tools"] = favorite_tools
+                    user.preferences["favorites"] = json.dumps(favorites)
+                    with transaction(trans.sa_session):
+                        trans.sa_session.commit()
+                else:
+                    raise exceptions.ObjectNotFound("Given object is not in the list of favorites")
+        return favorites
+
+    @router.put(
+        "/api/users/{user_id}/favorites/{object_type}",
+        name="set_favorite",
+        summary="Add the object to user's favorites",
+    )
+    def set_favorite(
+        self,
+        object_type: str = ObjectTypePathParam,
+        payload: SetFavoritePayload = SetFavoriteBody,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_id: DecodedDatabaseIdField = UserIdPathParam,
+    ) -> FavoriteModel:
+        # TODO ask if this is necessary
+        # payload = payload or {}
+        self.service.validate_favorite_object_type(object_type)
+        user = self.service.get_user(trans, user_id)
+        favorites = json.loads(user.preferences["favorites"]) if "favorites" in user.preferences else {}
+        if object_type == "tools":
+            tool_id = payload.object_id
+            tool = trans.app.toolbox.get_tool(tool_id)
+            if not tool:
+                raise exceptions.ObjectNotFound(f"Could not find tool with id '{tool_id}'.")
+            if not tool.allow_user_access(user):
+                raise exceptions.AuthenticationFailed(f"Access denied for tool with id '{tool_id}'.")
+            if "tools" in favorites:
+                favorite_tools = favorites["tools"]
+            else:
+                favorite_tools = []
+            if tool_id not in favorite_tools:
+                favorite_tools.append(tool_id)
+                favorites["tools"] = favorite_tools
+                user.preferences["favorites"] = json.dumps(favorites)
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
+        return favorites
+
     @router.put(
         "/api/users/{user_id}/theme/{theme}",
         name="set_theme",
@@ -453,42 +522,6 @@ class FastAPIUsers:
             else:
                 raise exceptions.InsufficientPermissionsException("You may only delete your own account.")
         return self.service.user_to_detailed_model(user_to_update)
-
-    @router.put(
-        "/api/users/{user_id}/favorites/{object_type}",
-        name="set_favorite",
-        summary="Add the object to user's favorites",
-    )
-    def set_favorite(
-        self,
-        object_type: str = ObjectTypePathParam,
-        payload: SetFavoritePayload = SetFavoriteBody,
-        trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParam,
-    ) -> FavoriteModel:
-        # TODO ask if this is necessary
-        # payload = payload or {}
-        self.service.validate_favorite_object_type(object_type)
-        user = self.service.get_user(trans, user_id)
-        favorites = json.loads(user.preferences["favorites"]) if "favorites" in user.preferences else {}
-        if object_type == "tools":
-            tool_id = payload.object_id
-            tool = trans.app.toolbox.get_tool(tool_id)
-            if not tool:
-                raise exceptions.ObjectNotFound(f"Could not find tool with id '{tool_id}'.")
-            if not tool.allow_user_access(user):
-                raise exceptions.AuthenticationFailed(f"Access denied for tool with id '{tool_id}'.")
-            if "tools" in favorites:
-                favorite_tools = favorites["tools"]
-            else:
-                favorite_tools = []
-            if tool_id not in favorite_tools:
-                favorite_tools.append(tool_id)
-                favorites["tools"] = favorite_tools
-                user.preferences["favorites"] = json.dumps(favorites)
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
-        return favorites
 
 
 class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin):
@@ -799,43 +832,6 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             trans.sa_session.commit()
         trans.log_event("User information added")
         return {"message": "User information has been saved."}
-
-    @expose_api
-    def remove_favorite(self, trans, id, object_type, object_id, payload=None, **kwd):
-        """Remove the object from user's favorites
-        DELETE /api/users/{id}/favorites/{object_type}/{object_id:.*?}
-
-        :param id: the encoded id of the user
-        :type  id: str
-        :param object_type: the object type that users wants to favorite
-        :type  object_type: str
-        :param object_id: the id of an object that users wants to remove from favorites
-        :type  object_id: str
-        """
-        payload = payload or {}
-        self._validate_favorite_object_type(object_type)
-        user = self._get_user(trans, id)
-        favorites = json.loads(user.preferences["favorites"]) if "favorites" in user.preferences else {}
-        if object_type == "tools":
-            if "tools" in favorites:
-                favorite_tools = favorites["tools"]
-                if object_id in favorite_tools:
-                    del favorite_tools[favorite_tools.index(object_id)]
-                    favorites["tools"] = favorite_tools
-                    user.preferences["favorites"] = json.dumps(favorites)
-                    with transaction(trans.sa_session):
-                        trans.sa_session.commit()
-                else:
-                    raise exceptions.ObjectNotFound("Given object is not in the list of favorites")
-        return favorites
-
-    def _validate_favorite_object_type(self, object_type):
-        if object_type in ["tools"]:
-            pass
-        else:
-            raise exceptions.ObjectAttributeInvalidException(
-                f"This type is not supported. Given object_type: {object_type}"
-            )
 
     @expose_api
     def get_password(self, trans, id, payload=None, **kwd):
