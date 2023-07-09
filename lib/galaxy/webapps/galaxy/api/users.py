@@ -46,8 +46,10 @@ from galaxy.schema.schema import (
     CreatedUserModel,
     CreateUserPayload,
     DetailedUserModel,
+    FavoriteModel,
     FlexibleUserIdType,
     PurgeUserPayload,
+    SetFavoritePayload,
     UserBeaconSetting,
     UserModel,
 )
@@ -99,6 +101,9 @@ QuotaSourceLabelPathParam: str = Path(
     title="Quota Source Label",
     description="The label corresponding to the quota source to fetch usage information about.",
 )
+ObjectTypePathParam: str = Path(
+    default=Required, title="Object type", description="The object type the user wants to favorite"
+)
 
 RecalculateDiskUsageSummary = "Triggers a recalculation of the current user disk usage."
 RecalculateDiskUsageResponseDescriptions = {
@@ -114,6 +119,10 @@ RecalculateDiskUsageResponseDescriptions = {
 CreateUserBody = Body(default=Required, title="Create user", description="The values to create a user.")
 PurgeUserBody = Body(default=None, title="Purge user", description="Purge the user.")
 UpdateUserBody = Body(default=Required, title="Update user", description="The user values to update.")
+# TODO ask if it is ok to set this to required
+SetFavoriteBody = Body(
+    default=Required, title="Set favorite", description="The id of an object the user wants to favorite."
+)
 AnyUserModel = Union[DetailedUserModel, AnonUserModel]
 
 
@@ -445,6 +454,42 @@ class FastAPIUsers:
                 raise exceptions.InsufficientPermissionsException("You may only delete your own account.")
         return self.service.user_to_detailed_model(user_to_update)
 
+    @router.put(
+        "/api/users/{user_id}/favorites/{object_type}",
+        name="set_favorite",
+        summary="Add the object to user's favorites",
+    )
+    def set_favorite(
+        self,
+        object_type: str = ObjectTypePathParam,
+        payload: SetFavoritePayload = SetFavoriteBody,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_id: DecodedDatabaseIdField = UserIdPathParam,
+    ) -> FavoriteModel:
+        # TODO ask if this is necessary
+        # payload = payload or {}
+        self.service.validate_favorite_object_type(object_type)
+        user = self.service.get_user(trans, user_id)
+        favorites = json.loads(user.preferences["favorites"]) if "favorites" in user.preferences else {}
+        if object_type == "tools":
+            tool_id = payload.object_id
+            tool = trans.app.toolbox.get_tool(tool_id)
+            if not tool:
+                raise exceptions.ObjectNotFound(f"Could not find tool with id '{tool_id}'.")
+            if not tool.allow_user_access(user):
+                raise exceptions.AuthenticationFailed(f"Access denied for tool with id '{tool_id}'.")
+            if "tools" in favorites:
+                favorite_tools = favorites["tools"]
+            else:
+                favorite_tools = []
+            if tool_id not in favorite_tools:
+                favorite_tools.append(tool_id)
+                favorites["tools"] = favorite_tools
+                user.preferences["favorites"] = json.dumps(favorites)
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
+        return favorites
+
 
 class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin):
     service: UsersService = depends(UsersService)
@@ -754,41 +799,6 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             trans.sa_session.commit()
         trans.log_event("User information added")
         return {"message": "User information has been saved."}
-
-    @expose_api
-    def set_favorite(self, trans, id, object_type, payload=None, **kwd):
-        """Add the object to user's favorites
-        PUT /api/users/{id}/favorites/{object_type}
-
-        :param id: the encoded id of the user
-        :type  id: str
-        :param object_type: the object type that users wants to favorite
-        :type  object_type: str
-        :param object_id: the id of an object that users wants to favorite
-        :type  object_id: str
-        """
-        payload = payload or {}
-        self._validate_favorite_object_type(object_type)
-        user = self._get_user(trans, id)
-        favorites = json.loads(user.preferences["favorites"]) if "favorites" in user.preferences else {}
-        if object_type == "tools":
-            tool_id = payload.get("object_id")
-            tool = self.app.toolbox.get_tool(tool_id)
-            if not tool:
-                raise exceptions.ObjectNotFound(f"Could not find tool with id '{tool_id}'.")
-            if not tool.allow_user_access(user):
-                raise exceptions.AuthenticationFailed(f"Access denied for tool with id '{tool_id}'.")
-            if "tools" in favorites:
-                favorite_tools = favorites["tools"]
-            else:
-                favorite_tools = []
-            if tool_id not in favorite_tools:
-                favorite_tools.append(tool_id)
-                favorites["tools"] = favorite_tools
-                user.preferences["favorites"] = json.dumps(favorites)
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
-        return favorites
 
     @expose_api
     def remove_favorite(self, trans, id, object_type, object_id, payload=None, **kwd):
