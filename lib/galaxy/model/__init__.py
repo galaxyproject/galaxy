@@ -10668,7 +10668,7 @@ Job.any_output_dataset_collection_instances_deleted = column_property(
 )
 
 Job.any_output_dataset_deleted = column_property(
-    exists(HistoryDatasetAssociation).where(
+    exists(HistoryDatasetAssociation.id).where(
         and_(
             Job.id == JobToOutputDatasetAssociation.job_id,
             HistoryDatasetAssociation.table.c.id == JobToOutputDatasetAssociation.dataset_id,
