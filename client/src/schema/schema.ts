@@ -1393,8 +1393,6 @@ export interface paths {
          * @description Return a collection of users. Filters will only work if enabled in config or user is admin.
          */
         get: operations["get_users_api_users_get"];
-        /** Create a new Galaxy user. Only admins can create users for now. */
-        post: operations["create_user_api_users_post"];
     };
     "/api/users/current": {
         /**
@@ -1468,6 +1466,14 @@ export interface paths {
          * @description **Warning**: This endpoint is experimental and might change or disappear in future versions.
          */
         post: operations["set_beacon_settings_api_users__user_id__beacon_post"];
+    };
+    "/api/users/{user_id}/favorites/{object_type}": {
+        /** Add the object to user's favorites */
+        put: operations["set_favorite_api_users__user_id__favorites__object_type__put"];
+    };
+    "/api/users/{user_id}/favorites/{object_type}/{object_id}": {
+        /** Remove the object from user's favorites */
+        delete: operations["remove_favorite_api_users__user_id__favorites__object_type___object_id__delete"];
     };
     "/api/users/{user_id}/theme/{theme}": {
         /** Set the user's theme choice */
@@ -2958,91 +2964,6 @@ export interface components {
             url: string;
         };
         /**
-         * CreateUserPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
-        CreateUserPayload: {
-            /**
-             * Email
-             * @description Email of the user
-             */
-            email: string;
-            /**
-             * user_password
-             * @description The password of the user.
-             */
-            password: string;
-            /**
-             * user_email
-             * @description The email of the remote user.
-             */
-            remote_user_email?: string;
-            /**
-             * user_name
-             * @description The name of the user.
-             */
-            username: string;
-        };
-        /**
-         * CreatedUserModel
-         * @description User in a transaction context.
-         */
-        CreatedUserModel: {
-            /**
-             * Active
-             * @description User is active
-             */
-            active: boolean;
-            /**
-             * Deleted
-             * @description  User is deleted
-             */
-            deleted: boolean;
-            /**
-             * Email
-             * @description Email of the user
-             */
-            email: string;
-            /**
-             * ID
-             * @description Encoded ID of the user
-             * @example 0123456789ABCDEF
-             */
-            id: string;
-            /**
-             * Last password change
-             * Format: date-time
-             */
-            last_password_change?: string;
-            /**
-             * Model class
-             * @description The name of the database model class.
-             * @default User
-             * @enum {string}
-             */
-            model_class: "User";
-            /**
-             * Nice total disc usage
-             * @description Size of all non-purged, unique datasets of the user in a nice format.
-             */
-            nice_total_disk_usage: string;
-            /**
-             * Preferred Object Store ID
-             * @description The ID of the object store that should be used to store new datasets in this history.
-             */
-            preferred_object_store_id?: string;
-            /**
-             * Total disk usage
-             * @description Size of all non-purged, unique datasets of the user in bytes.
-             */
-            total_disk_usage: number;
-            /**
-             * user_name
-             * @description The name of the user.
-             */
-            username: string;
-        };
-        /**
          * CustomBuildsMetadataResponse
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -4061,6 +3982,17 @@ export interface components {
             /** Items From */
             items_from?: string;
             src: components["schemas"]["Src"];
+        };
+        /**
+         * FavoriteModel
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        FavoriteModel: {
+            /**
+             * Favorite tools
+             * @description The name of the tools the user favored.
+             */
+            tools: string[];
         };
         /**
          * FetchDataPayload
@@ -8045,6 +7977,17 @@ export interface components {
              * @example 1.0.0
              */
             version: string;
+        };
+        /**
+         * SetFavoritePayload
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        SetFavoritePayload: {
+            /**
+             * Object ID
+             * @description The id of an object the user wants to favorite.
+             */
+            object_id: string;
         };
         /**
          * SetSlugPayload
@@ -16758,34 +16701,6 @@ export interface operations {
             };
         };
     };
-    create_user_api_users_post: {
-        /** Create a new Galaxy user. Only admins can create users for now. */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateUserPayload"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["CreatedUserModel"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     get_current_user_api_users_current_get: {
         /**
          * Get Current User
@@ -17235,6 +17150,71 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["UserBeaconSetting"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_favorite_api_users__user_id__favorites__object_type__put: {
+        /** Add the object to user's favorites */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The object type the user wants to favorite */
+            /** @description The ID of the user to get. */
+            path: {
+                object_type: string;
+                user_id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetFavoritePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["FavoriteModel"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_favorite_api_users__user_id__favorites__object_type___object_id__delete: {
+        /** Remove the object from user's favorites */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The object type the user wants to favorite */
+            /** @description The ID of an object the user wants to remove from favorites */
+            /** @description The ID of the user to get. */
+            path: {
+                object_type: string;
+                object_id: string;
+                user_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["FavoriteModel"];
                 };
             };
             /** @description Validation Error */
