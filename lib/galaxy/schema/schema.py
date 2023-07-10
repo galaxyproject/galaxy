@@ -359,6 +359,12 @@ class FavoriteModel(Model):
     )
 
 
+class AddCustomBuildPayload(Model):
+    name: str = Field(default=Required, title="Name", description="The name of the custom build.")
+    lentype: str = Field(default=Required, title="?", description="?")
+    lenvalue: str = Field(default=Required, title="?", description="?")
+
+
 class GroupModel(Model):
     """User group model"""
 

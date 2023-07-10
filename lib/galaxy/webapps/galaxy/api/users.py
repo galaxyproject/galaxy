@@ -429,14 +429,9 @@ class FastAPIUsers:
         return self.service.get_index(trans=trans, deleted=deleted, f_email=f_email, f_name=f_name, f_any=f_any)
 
     @router.get(
-        "/api/users/current",
-        name="get_current_user",
-        description="Return information about the current user",
-    )
-    @router.get(
         "/api/users/{user_id}",
         name="get_user",
-        summary="Return information about a specified user. Only admin can see deleted or other users",
+        summary="Return information about a specified or the current user. Only admin can see deleted or other users",
     )
     def show(
         self,
