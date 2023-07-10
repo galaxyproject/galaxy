@@ -40,11 +40,9 @@ from galaxy.model import (
 from galaxy.model.base import transaction
 from galaxy.schema import APIKeyModel
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.schema import (
+from galaxy.schema.schema import (  # AddCustomBuildPayload,; CreatedUserModel,; CreateUserPayload,
     AnonUserModel,
     AsyncTaskResultSummary,
-    CreatedUserModel,
-    CreateUserPayload,
     DetailedUserModel,
     FavoriteModel,
     FlexibleUserIdType,
@@ -71,6 +69,7 @@ from galaxy.webapps.base.controller import (
     UsesFormDefinitionsMixin,
     UsesTagsMixin,
 )
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from galaxy.webapps.galaxy.api import (
     BaseGalaxyAPIController,
     depends,
@@ -109,6 +108,11 @@ ObjectIDPathParam: str = Path(
     title="Object ID",
     description="The ID of an object the user wants to remove from favorites",
 )
+# CustomBuildKeyPathParam: str = Path(
+#     default=Required,
+#     title="Custom build key",
+#     description="The key of the custom build to be deleted.",
+# )
 
 RecalculateDiskUsageSummary = "Triggers a recalculation of the current user disk usage."
 RecalculateDiskUsageResponseDescriptions = {
@@ -121,6 +125,7 @@ RecalculateDiskUsageResponseDescriptions = {
     },
 }
 
+# TODO think if these are good titles and descriptions
 CreateUserBody = Body(default=Required, title="Create user", description="The values to create a user.")
 PurgeUserBody = Body(default=None, title="Purge user", description="Purge the user.")
 UpdateUserBody = Body(default=Required, title="Update user", description="The user values to update.")
@@ -128,6 +133,7 @@ UpdateUserBody = Body(default=Required, title="Update user", description="The us
 SetFavoriteBody = Body(
     default=Required, title="Set favorite", description="The id of an object the user wants to favorite."
 )
+# AddCustomBuildBody = Body(default=Required, title="Add custom build", description="The values to add a new custom build.")
 AnyUserModel = Union[DetailedUserModel, AnonUserModel]
 
 
@@ -422,42 +428,6 @@ class FastAPIUsers:
     ) -> List[UserModel]:
         return self.service.get_index(trans=trans, deleted=deleted, f_email=f_email, f_name=f_name, f_any=f_any)
 
-    @router.post(
-        "/api/users",
-        name="create_user",
-        summary="Create a new Galaxy user. Only admins can create users for now.",
-    )
-    def create(
-        self,
-        trans: ProvidesUserContext = DependsOnTrans,
-        payload: CreateUserPayload = CreateUserBody,
-    ) -> CreatedUserModel:
-        if not trans.app.config.allow_user_creation and not trans.user_is_admin:
-            raise exceptions.ConfigDoesNotAllowException("User creation is not allowed in this Galaxy instance")
-
-        # TODO: this is not working, because we cannot access get_or_create_remote_user
-        if trans.app.config.use_remote_user and trans.user_is_admin:
-            user = trans.get_or_create_remote_user(remote_user_email=payload.email)
-        elif trans.user_is_admin:
-            username = payload.username
-            email = payload.email
-            password = payload.password
-            message = "\n".join(
-                (
-                    validate_email(trans, email),
-                    validate_password(trans, password, password),
-                    validate_publicname(trans, username),
-                )
-            ).rstrip()
-            if message:
-                raise exceptions.RequestParameterInvalidException(message)
-            else:
-                user = self.service.user_manager.create(email=email, username=username, password=password)
-        else:
-            raise exceptions.NotImplemented()
-        item = user.to_dict(view="element", value_mapper={"id": trans.security.encode_id, "total_disk_usage": float})
-        return item
-
     @router.get(
         "/api/users/current",
         name="get_current_user",
@@ -586,6 +556,36 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                     }
                 )
         return extra_pref_inputs
+
+    @expose_api
+    def create(self, trans: GalaxyWebTransaction, payload: dict, **kwd):
+        """
+        POST /api/users
+        Creates a new Galaxy user.
+        """
+        if not trans.app.config.allow_user_creation and not trans.user_is_admin:
+            raise exceptions.ConfigDoesNotAllowException("User creation is not allowed in this Galaxy instance")
+        if trans.app.config.use_remote_user and trans.user_is_admin:
+            user = trans.get_or_create_remote_user(remote_user_email=payload["remote_user_email"])
+        elif trans.user_is_admin:
+            username = payload["username"]
+            email = payload["email"]
+            password = payload["password"]
+            message = "\n".join(
+                (
+                    validate_email(trans, email),
+                    validate_password(trans, password, password),
+                    validate_publicname(trans, username),
+                )
+            ).rstrip()
+            if message:
+                raise exceptions.RequestParameterInvalidException(message)
+            else:
+                user = self.user_manager.create(email=email, username=username, password=password)
+        else:
+            raise exceptions.NotImplemented()
+        item = user.to_dict(view="element", value_mapper={"id": trans.security.encode_id, "total_disk_usage": float})
+        return item
 
     @expose_api
     def get_information(self, trans, id, **kwd):
