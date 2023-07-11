@@ -141,7 +141,7 @@ class TestUsersApi(ApiTestCase):
         response = self._get(url).json()
         assert response["username"] == "newname"
         assert response["email"] == "new@email.email"
-        payload = {"username": str(user["username"]), "email": TEST_USER_EMAIL}
+        payload = {"username": user["username"], "email": TEST_USER_EMAIL}
         self._put(url, data=payload, json=True)
         response = self._get(url).json()
         assert response["username"] == user["username"]
