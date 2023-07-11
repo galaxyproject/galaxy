@@ -112,11 +112,57 @@ class SummarySendDatasets(Model):
     )
 
 
-class SummaryGetObjects(Model):
-    datasets: List[Any] = Field(
-        default=Required,
-        title="Datasets",
-        description="A list of datasets created for the fetched files.",
+class Dataset(Model):
+    # TODO Add descriptions for fields
+    id: Optional[Any] = Field(
+        default=None,
+        title="ID",
+        description="",
+    )
+    create_time: Optional[Any] = Field(
+        default=None,
+        title="Create time",
+        description="",
+    )
+    update_time: Optional[Any] = Field(
+        default=None,
+        title="Update time",
+        description="",
+    )
+    state: Optional[Any] = Field(
+        default=None,
+        title="State",
+        description="",
+    )
+    deleted: Optional[Any] = Field(
+        default=None,
+        title="Deleted",
+        description="",
+    )
+    purged: Optional[Any] = Field(
+        default=None,
+        title="Purged",
+        description="",
+    )
+    purgable: Optional[Any] = Field(
+        default=None,
+        title="Purgable",
+        description="",
+    )
+    file_size: Optional[Any] = Field(
+        default=None,
+        title="File size",
+        description="",
+    )
+    total_size: Optional[Any] = Field(
+        default=None,
+        title="Total size",
+        description="",
+    )
+    uuid: Optional[Any] = Field(
+        default=None,
+        title="UUID",
+        description="",
     )
 
 
