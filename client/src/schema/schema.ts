@@ -3049,6 +3049,32 @@ export interface components {
             )[];
         };
         /**
+         * Dataset
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        Dataset: {
+            /** Create time */
+            create_time?: Record<string, never>;
+            /** Deleted */
+            deleted?: Record<string, never>;
+            /** File size */
+            file_size?: Record<string, never>;
+            /** ID */
+            id?: Record<string, never>;
+            /** Purgable */
+            purgable?: Record<string, never>;
+            /** Purged */
+            purged?: Record<string, never>;
+            /** State */
+            state?: Record<string, never>;
+            /** Total size */
+            total_size?: Record<string, never>;
+            /** Update time */
+            update_time?: Record<string, never>;
+            /** UUID */
+            uuid?: Record<string, never>;
+        };
+        /**
          * DatasetAssociationRoles
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -3764,22 +3790,6 @@ export interface components {
             /** Items From */
             items_from?: string;
             src: components["schemas"]["Src"];
-        };
-        /**
-         * FailedJob
-         * @description Base model definition with common configuration used by all derived models.
-         */
-        FailedJob: {
-            /**
-             * Error
-             * @description A descriptive error message.
-             */
-            error: string;
-            /**
-             * Object
-             * @description The name of object is queued to be created
-             */
-            object: string;
         };
         /**
          * FetchDataPayload
@@ -5478,8 +5488,8 @@ export interface components {
          */
         InputArguments: {
             /**
-             * Genome
-             * @description Sets the genome (e.g., `hg19`) of the objects being fetched to Galaxy.
+             * Database Key
+             * @description Sets the database key of the objects being fetched to Galaxy.
              * @default ?
              */
             dbkey?: string;
@@ -8038,22 +8048,6 @@ export interface components {
          */
         StoredItemOrderBy: "name-asc" | "name-dsc" | "size-asc" | "size-dsc" | "update_time-asc" | "update_time-dsc";
         /**
-         * SuccessfulJob
-         * @description Base model definition with common configuration used by all derived models.
-         */
-        SuccessfulJob: {
-            /**
-             * Job ID
-             * @description The ID of the queued send job.
-             */
-            job_id: string;
-            /**
-             * Object
-             * @description The name of object is queued to be created
-             */
-            object: string;
-        };
-        /**
          * SuitableConverter
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -8085,17 +8079,6 @@ export interface components {
          */
         SuitableConverters: components["schemas"]["SuitableConverter"][];
         /**
-         * SummaryGetObjects
-         * @description Base model definition with common configuration used by all derived models.
-         */
-        SummaryGetObjects: {
-            /**
-             * Datasets
-             * @description A list of datasets created for the fetched files.
-             */
-            datasets: Record<string, never>[];
-        };
-        /**
          * SummarySendDatasets
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -8109,12 +8092,12 @@ export interface components {
              * Failed datasets
              * @description The datasets for which Galaxy failed to create (and queue) send job
              */
-            failed_dataset_labels: components["schemas"]["FailedJob"][];
+            failed_dataset_labels: string[];
             /**
              * Send datasets
              * @description The datasets for which Galaxy succeeded to create (and queue) send job
              */
-            sent_dataset_labels: components["schemas"]["SuccessfulJob"][];
+            sent_dataset_labels: string[];
         };
         /**
          * TagCollection
@@ -9076,7 +9059,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["SummaryGetObjects"];
+                    "application/json": components["schemas"]["Dataset"][];
                 };
             };
             /** @description Validation Error */
