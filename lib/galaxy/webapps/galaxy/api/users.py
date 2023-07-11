@@ -83,15 +83,15 @@ log = logging.getLogger(__name__)
 router = Router(tags=["users"])
 
 ThemePathParam: str = Path(default=Required, title="Theme", description="The theme of the GUI")
-UserDeleted: bool = Query(default=None, title="Deleted user", description="Indicates if the user is deleted")
-UsersDeleted: bool = Query(
+UserDeletedQueryParam: bool = Query(default=None, title="Deleted user", description="Indicates if the user is deleted")
+UsersDeletedQueryParam: bool = Query(
     default=False, title="Deleted users", description="Indicates if the collection will be about deleted users"
 )
-FilterEmail: str = Query(default=None, title="Email filter", description="An email address to filter on")
-FilterName: str = Query(default=None, title="Name filter", description="An username address to filter on")
-FilterAny: str = Query(default=None, title="Any filter", description="Filter on username OR email")
-UserIdPathParam: DecodedDatabaseIdField = Path(..., title="User ID", description="The ID of the user to get.")
-APIKeyPathParam: str = Path(..., title="API Key", description="The API key of the user.")
+FilterEmailQueryParam: str = Query(default=None, title="Email filter", description="An email address to filter on")
+FilterNameQueryParam: str = Query(default=None, title="Name filter", description="An username address to filter on")
+FilterAnyQueryParam: str = Query(default=None, title="Any filter", description="Filter on username OR email")
+UserIdPathParamQueryParam: DecodedDatabaseIdField = Path(..., title="User ID", description="The ID of the user to get.")
+APIKeyPathParamQueryParam: str = Path(..., title="API Key", description="The API key of the user.")
 FlexibleUserIdPathParam: FlexibleUserIdType = Path(
     ..., title="User ID", description="The ID of the user to get or 'current'."
 )
@@ -125,7 +125,6 @@ RecalculateDiskUsageResponseDescriptions = {
     },
 }
 
-# TODO think if these are good titles and descriptions
 CreateUserBody = Body(default=Required, title="Create user", description="The values to create a user.")
 PurgeUserBody = Body(default=None, title="Purge user", description="Purge the user.")
 UpdateUserBody = Body(default=Required, title="Update user", description="The user values to update.")
@@ -172,9 +171,9 @@ class FastAPIUsers:
     def index_deleted(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        f_email: Optional[str] = FilterEmail,
-        f_name: Optional[str] = FilterName,
-        f_any: Optional[str] = FilterAny,
+        f_email: Optional[str] = FilterEmailQueryParam,
+        f_name: Optional[str] = FilterNameQueryParam,
+        f_any: Optional[str] = FilterAnyQueryParam,
     ) -> List[UserModel]:
         return self.service.get_index(trans=trans, deleted=True, f_email=f_email, f_name=f_name, f_any=f_any)
 
@@ -185,7 +184,9 @@ class FastAPIUsers:
         require_admin=True,
     )
     def undelete(
-        self, trans: ProvidesHistoryContext = DependsOnTrans, user_id: DecodedDatabaseIdField = UserIdPathParam
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
     ) -> DetailedUserModel:
         user = self.service.get_user(trans=trans, user_id=user_id)
         self.service.user_manager.undelete(user)
@@ -199,7 +200,7 @@ class FastAPIUsers:
     def show_deleted(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParam,
+        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
     ) -> AnyUserModel:
         return self.service.show_user(trans=trans, user_id=user_id, deleted=True)
 
@@ -209,7 +210,7 @@ class FastAPIUsers:
         summary="Return the user's API key",
     )
     def get_or_create_api_key(
-        self, trans: ProvidesUserContext = DependsOnTrans, user_id: DecodedDatabaseIdField = UserIdPathParam
+        self, trans: ProvidesUserContext = DependsOnTrans, user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam
     ) -> str:
         return self.service.get_or_create_api_key(trans, user_id)
 
@@ -228,14 +229,14 @@ class FastAPIUsers:
         },
     )
     def get_api_key(
-        self, trans: ProvidesUserContext = DependsOnTrans, user_id: DecodedDatabaseIdField = UserIdPathParam
+        self, trans: ProvidesUserContext = DependsOnTrans, user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam
     ):
         api_key = self.service.get_api_key(trans, user_id)
         return api_key if api_key else Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.post("/api/users/{user_id}/api_key", name="create_api_key", summary="Create a new API key for the user")
     def create_api_key(
-        self, trans: ProvidesUserContext = DependsOnTrans, user_id: DecodedDatabaseIdField = UserIdPathParam
+        self, trans: ProvidesUserContext = DependsOnTrans, user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam
     ) -> str:
         return self.service.create_api_key(trans, user_id).key
 
@@ -248,7 +249,7 @@ class FastAPIUsers:
     def delete_api_key(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParam,
+        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
     ):
         self.service.delete_api_key(trans, user_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -299,7 +300,7 @@ class FastAPIUsers:
     def get_beacon(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParam,
+        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
     ) -> UserBeaconSetting:
         """
         **Warning**: This endpoint is experimental and might change or disappear in future versions.
@@ -318,7 +319,7 @@ class FastAPIUsers:
     def set_beacon(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParam,
+        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
         payload: UserBeaconSetting = Body(...),
     ) -> UserBeaconSetting:
         """
@@ -339,10 +340,10 @@ class FastAPIUsers:
     )
     def remove_favorite(
         self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
         object_type: str = ObjectTypePathParam,
         object_id: str = ObjectIDPathParam,
-        trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParam,
     ) -> FavoriteModel:
         self.service.validate_favorite_object_type(object_type)
         user = self.service.get_user(trans, user_id)
@@ -367,13 +368,11 @@ class FastAPIUsers:
     )
     def set_favorite(
         self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
         object_type: str = ObjectTypePathParam,
         payload: SetFavoritePayload = SetFavoriteBody,
-        trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParam,
     ) -> FavoriteModel:
-        # TODO ask if this is necessary
-        # payload = payload or {}
         self.service.validate_favorite_object_type(object_type)
         user = self.service.get_user(trans, user_id)
         favorites = json.loads(user.preferences["favorites"]) if "favorites" in user.preferences else {}
@@ -404,7 +403,7 @@ class FastAPIUsers:
     def set_theme(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParam,
+        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
         theme: str = ThemePathParam,
     ) -> str:
         user = self.service.get_user(trans, user_id)
@@ -421,10 +420,10 @@ class FastAPIUsers:
     def index(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        deleted: bool = UsersDeleted,
-        f_email: Optional[str] = FilterEmail,
-        f_name: Optional[str] = FilterName,
-        f_any: Optional[str] = FilterAny,
+        deleted: bool = UsersDeletedQueryParam,
+        f_email: Optional[str] = FilterEmailQueryParam,
+        f_name: Optional[str] = FilterNameQueryParam,
+        f_any: Optional[str] = FilterAnyQueryParam,
     ) -> List[UserModel]:
         return self.service.get_index(trans=trans, deleted=deleted, f_email=f_email, f_name=f_name, f_any=f_any)
 
@@ -437,7 +436,7 @@ class FastAPIUsers:
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
         user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
-        deleted: Optional[bool] = UserDeleted,
+        deleted: Optional[bool] = UserDeletedQueryParam,
     ) -> AnyUserModel:
         user_deleted = deleted or False
         return self.service.show_user(trans=trans, user_id=user_id, deleted=user_deleted)
@@ -447,10 +446,10 @@ class FastAPIUsers:
     )
     def update(
         self,
-        payload: Dict[Any, Any] = UpdateUserBody,
-        deleted: Optional[bool] = UserDeleted,
         trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParam,
+        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
+        payload: Dict[Any, Any] = UpdateUserBody,
+        deleted: Optional[bool] = UserDeletedQueryParam,
     ) -> DetailedUserModel:
         deleted = deleted or False
         current_user = trans.user
@@ -465,12 +464,11 @@ class FastAPIUsers:
     )
     def delete(
         self,
-        payload: Optional[PurgeUserPayload] = PurgeUserBody,
         trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParam,
+        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
+        payload: Optional[PurgeUserPayload] = PurgeUserBody,
     ) -> DetailedUserModel:
         user_to_update = self.service.user_manager.by_id(user_id)
-        payload = payload or None
         if payload:
             purge = payload.purge
         else:
@@ -492,8 +490,6 @@ class FastAPIUsers:
 class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin):
     service: UsersService = depends(UsersService)
     user_manager: users.UserManager = depends(users.UserManager)
-    user_serializer: users.UserSerializer = depends(users.UserSerializer)
-    user_deserializer: users.UserDeserializer = depends(users.UserDeserializer)
 
     def _get_user_full(self, trans, user_id, **kwd):
         """Return referenced user or None if anonymous user is referenced."""
