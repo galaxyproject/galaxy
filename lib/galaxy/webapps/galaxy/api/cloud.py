@@ -3,7 +3,7 @@ API operations on Cloud-based storages, such as Amazon Simple Storage Service (S
 """
 
 import logging
-from typing import Union
+from typing import List
 
 from fastapi import (
     Body,
@@ -18,9 +18,7 @@ from galaxy.managers.datasets import DatasetSerializer
 from galaxy.schema.cloud import (
     CloudDatasets,
     CloudObjects,
-    InputArguments,
     StatusCode,
-    SummaryGetObjects,
     SummarySendDatasets,
 )
 from galaxy.webapps.galaxy.api import (
@@ -61,20 +59,19 @@ class FastAPICloudController:
         self,
         payload: CloudObjects = Body(default=Required),
         trans: ProvidesHistoryContext = DependsOnTrans,
-    ) -> SummaryGetObjects:
-        input_args: Union[InputArguments, dict] = payload.input_args or {}
+    ) -> List[dict]:
         datasets = self.cloud_manager.get(
             trans=trans,
             history_id=payload.history_id,
             bucket_name=payload.bucket,
             objects=payload.objects,
             authz_id=payload.authz_id,
-            input_args=input_args,
+            input_args=payload.input_args,
         )
         rtv = []
         for dataset in datasets:
             rtv.append(self.datasets_serializer.serialize_to_view(dataset, view="summary"))
-        return SummaryGetObjects(datasets=rtv)
+        return rtv
 
     @router.post(
         "/api/cloud/storage/send",
