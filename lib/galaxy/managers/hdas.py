@@ -222,10 +222,11 @@ class HDAManager(
         return ldda.to_history_dataset_association(history, add_to_history=True)
 
     # .... deletion and purging
-    def purge(self, hda, flush=True, user: Optional[model.User] = None):
+    def purge(self, hda, flush=True, **kwargs):
         if self.app.config.enable_celery_tasks:
             from galaxy.celery.tasks import purge_hda
 
+            user = kwargs.get("user")
             return purge_hda.delay(hda_id=hda.id, task_user_id=getattr(user, "id", None))
         else:
             self._purge(hda, flush=flush)
