@@ -94,3 +94,20 @@ preferences:
               label: Password
               type:  password
               required: False
+
+    invenio:
+        description: Your Invenio RDM Account
+        inputs:
+            - name: token
+              label: Personal Token to publish records to Invenio RDM
+              type: secret
+              store: vault # Requires setting up vault_config_file in your galaxy.yml
+              required: False
+            - name: public_name
+              label: Public name to publish records (formatted as "Lastname, Firstname")
+              type: text
+              required: False
+            - name: public_records
+              label: Whether to publish records (file exports) or make them restricted. Only public records can be imported back.
+              type: boolean
+              required: False

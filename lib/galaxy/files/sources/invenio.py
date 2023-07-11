@@ -17,6 +17,7 @@ from typing_extensions import (
     Unpack,
 )
 
+from galaxy.files import ProvidesUserFileSourcesUserContext
 from galaxy.files.sources import (
     BaseFilesSource,
     FilesSourceOptions,
@@ -124,14 +125,24 @@ class InvenioFilesSource(BaseFilesSource):
         self._invenio_url = base_url
         self._props = props
 
-    def _list(self, path="/", recursive=True, user_context=None, opts: Optional[FilesSourceOptions] = None):
+    def _list(
+        self,
+        path="/",
+        recursive=True,
+        user_context: Optional[ProvidesUserFileSourcesUserContext] = None,
+        opts: Optional[FilesSourceOptions] = None,
+    ):
         is_root_path = path == "/"
         if is_root_path:
             return self._list_records(user_context)
         return self._list_record_files(path, user_context)
 
     def _realize_to(
-        self, source_path: str, native_path: str, user_context=None, opts: Optional[FilesSourceOptions] = None
+        self,
+        source_path: str,
+        native_path: str,
+        user_context: Optional[ProvidesUserFileSourcesUserContext] = None,
+        opts: Optional[FilesSourceOptions] = None,
     ):
         # TODO: source_path will be wrong when constructed from the UI as it assumes the target_uri is `get_root_uri() + filename`
 
@@ -147,7 +158,11 @@ class InvenioFilesSource(BaseFilesSource):
             )
 
     def _write_from(
-        self, target_path: str, native_path: str, user_context=None, opts: Optional[FilesSourceOptions] = None
+        self,
+        target_path: str,
+        native_path: str,
+        user_context: Optional[ProvidesUserFileSourcesUserContext] = None,
+        opts: Optional[FilesSourceOptions] = None,
     ):
         filename = os.path.basename(target_path)
         record_title = f"{filename} (exported by Galaxy)"
@@ -159,26 +174,26 @@ class InvenioFilesSource(BaseFilesSource):
             self._delete_draft_record(draft_record, user_context)
             raise
 
-    def _list_records(self, user_context=None):
+    def _list_records(self, user_context: Optional[ProvidesUserFileSourcesUserContext] = None):
         # TODO: This is limited to 25 records by default. Add pagination support?
         request_url = urljoin(self._invenio_url, "api/records")
         response_data = self._get_response(user_context, request_url)
         return self._get_records_from_response(response_data)
 
-    def _list_record_files(self, path, user_context=None):
+    def _list_record_files(self, path, user_context: Optional[ProvidesUserFileSourcesUserContext] = None):
         request_url = urljoin(self._invenio_url, f"{path}/files")
         response_data = self._get_response(user_context, request_url)
         return self._get_record_files_from_response(path, response_data)
 
-    def _get_response(self, user_context, request_url: str) -> dict:
+    def _get_response(self, user_context: Optional[ProvidesUserFileSourcesUserContext], request_url: str) -> dict:
         headers = self._get_request_headers(user_context)
         response = requests.get(request_url, headers=headers, verify=VERIFY)
         self._ensure_response_has_expected_status_code(response, 200)
         return response.json()
 
-    def _get_request_headers(self, user_context):
-        preferences = user_context.preferences if user_context else None
-        token = preferences.get(f"{self.id}|token", None) if preferences else None
+    def _get_request_headers(self, user_context: Optional[ProvidesUserFileSourcesUserContext]):
+        vault = user_context.user_vault if user_context else None
+        token = vault.read_secret(f"preferences/{self.id}/token") if vault else None
         headers = {"Authorization": f"Bearer {token}"} if token else {}
         return headers
 
@@ -224,14 +239,18 @@ class InvenioFilesSource(BaseFilesSource):
     def _to_plugin_uri(self, uri: str) -> str:
         return uri.replace(self._invenio_url, self.get_uri_root())
 
-    def _serialization_props(self, user_context=None) -> InvenioFilesSourceProperties:
+    def _serialization_props(
+        self, user_context: Optional[ProvidesUserFileSourcesUserContext] = None
+    ) -> InvenioFilesSourceProperties:
         effective_props = {}
         for key, val in self._props.items():
             effective_props[key] = self._evaluate_prop(val, user_context=user_context)
         effective_props["url"] = self._invenio_url
         return cast(InvenioFilesSourceProperties, effective_props)
 
-    def _create_draft_record(self, title: str, user_context=None) -> InvenioRecord:
+    def _create_draft_record(
+        self, title: str, user_context: Optional[ProvidesUserFileSourcesUserContext] = None
+    ) -> InvenioRecord:
         today = datetime.date.today().isoformat()
         creator = self._get_creator_from_user_context(user_context)
         should_publish = self._get_public_records_user_setting_enabled_status(user_context)
@@ -261,13 +280,21 @@ class InvenioFilesSource(BaseFilesSource):
         record = response.json()
         return record
 
-    def _delete_draft_record(self, record: InvenioRecord, user_context=None):
+    def _delete_draft_record(
+        self, record: InvenioRecord, user_context: Optional[ProvidesUserFileSourcesUserContext] = None
+    ):
         delete_record_url = record["links"]["self"]
         headers = self._get_request_headers(user_context)
         response = requests.delete(delete_record_url, headers=headers, verify=VERIFY)
         self._ensure_response_has_expected_status_code(response, 204)
 
-    def _upload_file_to_draft_record(self, record: InvenioRecord, filename: str, native_path: str, user_context=None):
+    def _upload_file_to_draft_record(
+        self,
+        record: InvenioRecord,
+        filename: str,
+        native_path: str,
+        user_context: Optional[ProvidesUserFileSourcesUserContext] = None,
+    ):
         upload_file_url = urljoin(self._invenio_url, f"api/records/{record['id']}/draft/files")
         headers = self._get_request_headers(user_context)
 
@@ -287,13 +314,15 @@ class InvenioFilesSource(BaseFilesSource):
         response = requests.post(commit_file_upload_url, headers=headers, verify=VERIFY)
         self._ensure_response_has_expected_status_code(response, 200)
 
-    def _publish_draft_record(self, record: InvenioRecord, user_context=None):
+    def _publish_draft_record(
+        self, record: InvenioRecord, user_context: Optional[ProvidesUserFileSourcesUserContext] = None
+    ):
         publish_record_url = urljoin(self._invenio_url, f"api/records/{record['id']}/draft/actions/publish")
         headers = self._get_request_headers(user_context)
         response = requests.post(publish_record_url, headers=headers, verify=VERIFY)
         self._ensure_response_has_expected_status_code(response, 202)
 
-    def _get_creator_from_user_context(self, user_context):
+    def _get_creator_from_user_context(self, user_context: Optional[ProvidesUserFileSourcesUserContext]):
         preferences = user_context.preferences if user_context else None
         public_name = preferences.get(f"{self.id}|public_name", None) if preferences else None
         family_name = "Galaxy User"
@@ -307,7 +336,9 @@ class InvenioFilesSource(BaseFilesSource):
                 given_name = public_name
         return {"person_or_org": {"family_name": family_name, "given_name": given_name, "type": "personal"}}
 
-    def _get_public_records_user_setting_enabled_status(self, user_context) -> bool:
+    def _get_public_records_user_setting_enabled_status(
+        self, user_context: Optional[ProvidesUserFileSourcesUserContext]
+    ) -> bool:
         preferences = user_context.preferences if user_context else None
         public_records = preferences.get(f"{self.id}|public_records", None) if preferences else None
         if public_records:
