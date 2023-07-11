@@ -94,39 +94,13 @@ class CloudDatasets(Model):
     )
 
 
-class FailedJob(Model):
-    object: str = Field(
-        default=Required,
-        title="Object",
-        description="The name of object is queued to be created",
-    )
-    error: str = Field(
-        default=Required,
-        title="Error",
-        description="A descriptive error message.",
-    )
-
-
-class SuccessfulJob(Model):
-    object: str = Field(
-        default=Required,
-        title="Object",
-        description="The name of object is queued to be created",
-    )
-    job_id: str = Field(
-        default=Required,
-        title="Job ID",
-        description="The ID of the queued send job.",
-    )
-
-
 class SummarySendDatasets(Model):
-    sent_dataset_labels: List[SuccessfulJob] = Field(
+    sent_dataset_labels: List[str] = Field(
         default=Required,
         title="Send datasets",
         description="The datasets for which Galaxy succeeded to create (and queue) send job",
     )
-    failed_dataset_labels: List[FailedJob] = Field(
+    failed_dataset_labels: List[str] = Field(
         default=Required,
         title="Failed datasets",
         description="The datasets for which Galaxy failed to create (and queue) send job",
