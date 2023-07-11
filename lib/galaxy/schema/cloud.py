@@ -11,7 +11,6 @@ from pydantic import (
 )
 from typing_extensions import Literal
 
-# from galaxy.model import Dataset
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import Model
 
@@ -19,8 +18,8 @@ from galaxy.schema.schema import Model
 class InputArguments(Model):
     dbkey: Optional[str] = Field(
         default="?",
-        title="Genome",
-        description="Sets the genome (e.g., `hg19`) of the objects being fetched to Galaxy.",
+        title="Database Key",
+        description="Sets the database key of the objects being fetched to Galaxy.",
     )
     file_type: Optional[str] = Field(
         default="auto",
