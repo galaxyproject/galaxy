@@ -18,6 +18,7 @@ from galaxy.managers.datasets import DatasetSerializer
 from galaxy.schema.cloud import (
     CloudDatasets,
     CloudObjects,
+    Dataset,
     StatusCode,
     SummarySendDatasets,
 )
@@ -59,7 +60,7 @@ class FastAPICloudController:
         self,
         payload: CloudObjects = Body(default=Required),
         trans: ProvidesHistoryContext = DependsOnTrans,
-    ) -> List[dict]:
+    ) -> List[Dataset]:
         datasets = self.cloud_manager.get(
             trans=trans,
             history_id=payload.history_id,
@@ -70,7 +71,7 @@ class FastAPICloudController:
         )
         rtv = []
         for dataset in datasets:
-            rtv.append(self.datasets_serializer.serialize_to_view(dataset, view="summary"))
+            rtv.append(Dataset(**self.datasets_serializer.serialize_to_view(dataset, view="summary")))
         return rtv
 
     @router.post(
