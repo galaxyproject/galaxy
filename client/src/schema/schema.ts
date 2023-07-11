@@ -1394,13 +1394,6 @@ export interface paths {
          */
         get: operations["get_users_api_users_get"];
     };
-    "/api/users/current": {
-        /**
-         * Get Current User
-         * @description Return information about the current user
-         */
-        get: operations["get_current_user_api_users_current_get"];
-    };
     "/api/users/current/recalculate_disk_usage": {
         /**
          * Triggers a recalculation of the current user disk usage.
@@ -1436,7 +1429,7 @@ export interface paths {
         put: operations["recalculate_disk_usage_api_users_recalculate_disk_usage_put"];
     };
     "/api/users/{user_id}": {
-        /** Return information about a specified user. Only admin can see deleted or other users */
+        /** Return information about a specified or the current user. Only admin can see deleted or other users */
         get: operations["get_user_api_users__user_id__get"];
         /** Update the values of a user. Only admin can update others. */
         put: operations["update_user_api_users__user_id__put"];
@@ -16701,42 +16694,6 @@ export interface operations {
             };
         };
     };
-    get_current_user_api_users_current_get: {
-        /**
-         * Get Current User
-         * @description Return information about the current user
-         */
-        parameters: {
-            /** @description Indicates if the user is deleted */
-            query?: {
-                deleted?: boolean;
-            };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description The ID of the user to get or 'current'. */
-            path: {
-                user_id: string | "current";
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json":
-                        | components["schemas"]["DetailedUserModel"]
-                        | components["schemas"]["AnonUserModel"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     recalculate_disk_usage_api_users_current_recalculate_disk_usage_put: {
         /**
          * Triggers a recalculation of the current user disk usage.
@@ -16889,7 +16846,7 @@ export interface operations {
         };
     };
     get_user_api_users__user_id__get: {
-        /** Return information about a specified user. Only admin can see deleted or other users */
+        /** Return information about a specified or the current user. Only admin can see deleted or other users */
         parameters: {
             /** @description Indicates if the user is deleted */
             query?: {
@@ -17167,11 +17124,11 @@ export interface operations {
             header?: {
                 "run-as"?: string;
             };
-            /** @description The object type the user wants to favorite */
             /** @description The ID of the user to get. */
+            /** @description The object type the user wants to favorite */
             path: {
-                object_type: string;
                 user_id: string;
+                object_type: string;
             };
         };
         requestBody: {
@@ -17201,13 +17158,13 @@ export interface operations {
             header?: {
                 "run-as"?: string;
             };
+            /** @description The ID of the user to get. */
             /** @description The object type the user wants to favorite */
             /** @description The ID of an object the user wants to remove from favorites */
-            /** @description The ID of the user to get. */
             path: {
+                user_id: string;
                 object_type: string;
                 object_id: string;
-                user_id: string;
             };
         };
         responses: {
