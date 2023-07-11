@@ -456,7 +456,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             hash_function=payload.hash_function,
             user=trans.async_request_user,
         )
-        result = compute_dataset_hash.delay(request=request)
+        result = compute_dataset_hash.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         return async_task_summary(result)
 
     def drs_dataset_instance(self, object_id: str) -> Tuple[int, DatasetSourceType]:
@@ -497,7 +497,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                 hash_function=hash_funciton,
                 user=None,
             )
-            compute_dataset_hash.delay(request=request)
+            compute_dataset_hash.delay(request=request, task_user_id=getattr(trans.user, "id", None))
             raise galaxy_exceptions.AcceptedRetryLater(
                 "required checksum task for DRS object response launched.", retry_after=60
             )

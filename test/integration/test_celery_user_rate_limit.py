@@ -3,7 +3,6 @@ import tempfile
 from functools import lru_cache
 from typing import (
     Dict,
-    Iterable,
     List,
 )
 
@@ -14,11 +13,14 @@ from galaxy.celery import galaxy_task
 from galaxy.model.database_utils import sqlalchemy_engine
 from galaxy.util import ExecutionTimer
 from galaxy_test.driver.driver_util import init_database
-from galaxy_test.driver.integration_util import IntegrationTestCase
+from galaxy_test.driver.integration_util import (
+    IntegrationTestCase,
+    skip_unless_postgres,
+)
 
 
-@galaxy_task(bind=True)
-def mock_user_id_task(self, task_user_id: int):
+@galaxy_task
+def mock_user_id_task(task_user_id: int):
     return task_user_id
 
 
@@ -33,16 +35,15 @@ def sqlite_url():
 @lru_cache()
 def setup_users(dburl: str, num_users: int = 2):
     """
-    Setup test users in galaxy_user table with user id's starting from 2 because
-    we assume there always exists a user with id = 1.
+    Setup test users in galaxy_user table with user id's starting from 2.
     This is because the new celery_user_rate_limit table has
     a user_id with a foreign key pointing to galaxy_user table.
     """
-    expected_user_ids = [i for i in range(2, num_users + 1)]
+    expected_user_ids = [i for i in range(2, num_users + 2)]
     with sqlalchemy_engine(dburl) as engine:
         with engine.begin() as conn:
             found_user_ids = conn.scalars(
-                text("select id from galaxy_user where id between 1 and :high"), {"high": num_users}
+                text("select id from galaxy_user where id between 2 and :high"), {"high": num_users + 1}
             ).all()
             if len(expected_user_ids) > len(found_user_ids):
                 user_ids_to_add = set(expected_user_ids).difference(found_user_ids)
@@ -71,7 +72,8 @@ class TestCeleryUserRateLimitIntegration(IntegrationTestCase):
     def setUp(self):
         super().setUp()
 
-    def _test_mock_pass_user_id_task(self, users: Iterable[int], num_calls: int, tasks_per_user_per_sec: float):
+    def _test_mock_pass_user_id_task(self, num_users: int, num_calls: int, tasks_per_user_per_sec: float):
+        users = [i for i in range(2, num_users + 2)]
         expected_duration: float
         if tasks_per_user_per_sec == 0.0:
             expected_duration = 0.0
@@ -83,18 +85,25 @@ class TestCeleryUserRateLimitIntegration(IntegrationTestCase):
         expected_duration_hbound = expected_duration + 4
         start_time = datetime.datetime.utcnow()
         timer = ExecutionTimer()
+        #  Invoke test task num_calls times for each user
         results: Dict[int, List[AsyncResult]] = {}
         for user in users:
             user_results: List[AsyncResult] = []
-            for _i in range(num_calls):  # type: ignore
+            for _ in range(num_calls):  # type: ignore
                 user_results.append(mock_user_id_task.delay(task_user_id=user))
             results[user] = user_results
+        #  Collect results of each call
         for user, user_results in results.items():
             for result in user_results:
                 val = result.get(timeout=1000)
                 assert val == user
         elapsed = timer.elapsed
+        #  Verify that total elapsed time for all executions match expection
+        #  of num_calls * scheduling delay between task executions
         assert elapsed >= expected_duration_lbound and elapsed <= expected_duration_hbound
+        #  Verify that total elapsed time for execution of all tasks for
+        #  an individual user is the same as total expected duration.
+        #  Tasks run for different users run in parallel.
         for user_results in results.values():
             last_task_end_time = start_time
             for result in user_results:
@@ -104,66 +113,49 @@ class TestCeleryUserRateLimitIntegration(IntegrationTestCase):
             assert user_elapsed >= expected_duration_lbound and user_elapsed <= expected_duration_hbound
 
 
+@skip_unless_postgres()
 class TestCeleryUserRateLimitIntegrationPostgres(TestCeleryUserRateLimitIntegration):
+    _user_rate_limit = 0.1
+
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
-        dburl = config["database_connection"]
+        super().handle_galaxy_config_kwds(config)
+        config["celery_user_rate_limit"] = cls._user_rate_limit
+
+    def setUp(self):
+        super().setUp()
+        dburl = self._app.config.database_connection  # that's how you get to galaxy app instance
         setup_users(dburl)
 
-
-class TestCeleryUserRateLimitIntegrationPostgres1(TestCeleryUserRateLimitIntegrationPostgres):
-    @classmethod
-    def handle_galaxy_config_kwds(cls, config):
-        TestCeleryUserRateLimitIntegrationPostgres.handle_galaxy_config_kwds(config)
-        config["celery_user_rate_limit"] = 0.1
-
     def test_mock_pass_user_id_task(self):
-        self._test_mock_pass_user_id_task([1, 2], 3, 0.1)
-
-
-class TestCeleryUserRateLimitIntegrationPostgresStandard(TestCeleryUserRateLimitIntegrationPostgres1):
-    @classmethod
-    def handle_galaxy_config_kwds(cls, config):
-        TestCeleryUserRateLimitIntegrationPostgres1.handle_galaxy_config_kwds(config)
-        config["celery_user_rate_limit_standard_before_start"] = True
-
-
-class TestCeleryUserRateLimitIntegrationPostgresNoLimit(TestCeleryUserRateLimitIntegration):
-    @classmethod
-    def handle_galaxy_config_kwds(cls, config):
-        TestCeleryUserRateLimitIntegrationPostgres.handle_galaxy_config_kwds(config)
-        # config["celery_user_rate_limit"] = 0.0
-
-    def test_mock_pass_user_id_task(self):
-        self._test_mock_pass_user_id_task([1, 2], 3, 0)
+        self._test_mock_pass_user_id_task(2, 3, self._user_rate_limit)
 
 
 class TestCeleryUserRateLimitIntegrationSqlite(TestCeleryUserRateLimitIntegration):
+    _user_rate_limit = 0.1
+
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["check_migrate_databases"] = False
         config["database_connection"] = sqlite_url()
         if config.get("database_engine_option_pool_size"):
             config.pop("database_engine_option_pool_size")
         if config.get("database_engine_option_max_overflow"):
             config.pop("database_engine_option_max_overflow")
-        setup_users(config["database_connection"])
+        config["celery_user_rate_limit"] = cls._user_rate_limit
 
-
-class TestCeleryUserRateLimitIntegrationSqlite1(TestCeleryUserRateLimitIntegrationSqlite):
-    @classmethod
-    def handle_galaxy_config_kwds(cls, config):
-        TestCeleryUserRateLimitIntegrationSqlite.handle_galaxy_config_kwds(config)
-        config["celery_user_rate_limit"] = 0.1
+    def setUp(self):
+        super().setUp()
+        dburl = self._app.config.database_connection  # that's how you get to galaxy app instance
+        setup_users(dburl)
 
     def test_mock_pass_user_id_task(self):
-        self._test_mock_pass_user_id_task([1, 2], 3, 0.1)
+        self._test_mock_pass_user_id_task(2, 3, self._user_rate_limit)
 
 
-class TestCeleryUserRateLimitIntegrationSqliteNoLimit(TestCeleryUserRateLimitIntegrationSqlite):
-    @classmethod
-    def handle_galaxy_config_kwds(cls, config):
-        TestCeleryUserRateLimitIntegrationSqlite.handle_galaxy_config_kwds(config)
-        # config["celery_user_rate_limit"] = 0.0
+class TestCeleryUserRateLimitIntegrationNoLimit(TestCeleryUserRateLimitIntegration):
+    _user_rate_limit = 0.0
 
     def test_mock_pass_user_id_task(self):
-        self._test_mock_pass_user_id_task([1, 2], 3, 0)
+        self._test_mock_pass_user_id_task(2, 3, self._user_rate_limit)

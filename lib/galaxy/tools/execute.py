@@ -194,8 +194,13 @@ def execute(
             )
 
             raw_tool_source = tool.tool_source.to_string()
+            #  task_user_id parameter is used to do task user rate limiting. It is only passed
+            #  to first task in chain because it is only necessary to rate limit the first
+            #  task in a chain.
             async_result = (
-                setup_fetch_data.s(job_id, raw_tool_source=raw_tool_source)
+                setup_fetch_data.s(
+                    job_id, raw_tool_source=raw_tool_source, task_user_id=getattr(trans.user, "id", None)
+                )
                 | fetch_data.s(job_id=job_id)
                 | set_job_metadata.s(
                     extended_metadata_collection="extended" in tool.app.config.metadata_strategy,

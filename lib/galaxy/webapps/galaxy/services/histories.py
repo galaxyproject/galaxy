@@ -291,7 +291,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             for_library=False,
             model_store_format=payload.model_store_format,
         )
-        result = import_model_store.delay(request=request)
+        result = import_model_store.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         return async_task_summary(result)
 
     def _ensure_can_create_history(self, trans):
@@ -352,7 +352,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             export_association_id=export_association.id,
             **payload.dict(),
         )
-        result = prepare_history_download.delay(request=request)
+        result = prepare_history_download.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         task_summary = async_task_summary(result)
         export_association.task_uuid = task_summary.id
         with transaction(trans.sa_session):
@@ -370,7 +370,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             export_association_id=export_association.id,
             **payload.dict(),
         )
-        result = write_history_to.delay(request=request)
+        result = write_history_to.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         task_summary = async_task_summary(result)
         export_association.task_uuid = task_summary.id
         with transaction(trans.sa_session):

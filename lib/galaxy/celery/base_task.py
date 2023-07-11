@@ -49,7 +49,10 @@ class GalaxyTaskBeforeStartUserRateLimit(GalaxyTaskBeforeStart):
         tasks_per_user_per_sec: float,
         ga_scoped_session: galaxy_scoped_session,
     ):
-        self.task_exec_countdown_secs = 1 / tasks_per_user_per_sec
+        try:
+            self.task_exec_countdown_secs = 1 / tasks_per_user_per_sec
+        except ZeroDivisionError:
+            raise Exception("tasks_per_user_per_sec was zero in celery GalaxyTask before_start")
         self.ga_scoped_session = ga_scoped_session
 
     def __call__(self, task: Task, task_id, args, kwargs):

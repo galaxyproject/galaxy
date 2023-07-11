@@ -140,7 +140,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         return self.query(filters=filters, order_by=desc_update_time, limit=1, **kwargs).first()
 
     # .... purgable
-    def purge(self, history, flush=True, **kwargs):
+    def purge(self, history, flush=True, user: Optional[model.User] = None, **kwargs):
         """
         Purge this history and all HDAs, Collections, and Datasets inside this history.
         """
@@ -149,7 +149,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         # First purge all the datasets
         for hda in history.datasets:
             if not hda.purged:
-                self.hda_manager.purge(hda, flush=True)
+                self.hda_manager.purge(hda, flush=True, user=user)
 
         # Now mark the history as purged
         super().purge(history, flush=flush, **kwargs)
@@ -456,7 +456,7 @@ class HistoryStorageCleanerManager(StorageCleanerManager):
         for history_id in item_ids:
             try:
                 history = self.history_manager.get_owned(history_id, user)
-                self.history_manager.purge(history, flush=False)
+                self.history_manager.purge(history, flush=False, user=user)
                 success_item_count += 1
                 total_free_bytes += int(history.disk_size)
             except BaseException as e:

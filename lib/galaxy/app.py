@@ -73,6 +73,7 @@ from galaxy.model.database_heartbeat import DatabaseHeartbeat
 from galaxy.model.database_utils import (
     database_exists,
     is_one_database,
+    is_postgres,
 )
 from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.model.migrations import verify_databases
@@ -596,12 +597,9 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         The default supertype class does not enforce a user rate limit. This is the case if the celery_user_rate_limit
         config param is the default value.
         """
+        task_before_start: GalaxyTaskBeforeStart
         if self.config.celery_user_rate_limit:
-            task_before_start: GalaxyTaskBeforeStart
-            if (
-                not self.config.celery_user_rate_limit_standard_before_start
-                and self.config.database_connection.startswith("postgres")
-            ):
+            if is_postgres(self.config.database_connection):
                 task_before_start = GalaxyTaskBeforeStartUserRateLimitPostgres(
                     self.config.celery_user_rate_limit, self.model.session
                 )
@@ -609,7 +607,9 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
                 task_before_start = GalaxyTaskBeforeStartUserRateLimitStandard(
                     self.config.celery_user_rate_limit, self.model.session
                 )
-            self._register_singleton(GalaxyTaskBeforeStart, task_before_start)
+        else:
+            task_before_start = GalaxyTaskBeforeStart()
+        self._register_singleton(GalaxyTaskBeforeStart, task_before_start)
 
     def _configure_tool_shed_registry(self) -> None:
         # Set up the tool sheds registry

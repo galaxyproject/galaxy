@@ -425,7 +425,7 @@ class DatasetCollectionManager:
                     dataset.deleted = True
 
                 if purge and not dataset.purged:
-                    async_result = self.hda_manager.purge(dataset)
+                    async_result = self.hda_manager.purge(dataset, user=trans.user)
 
         with transaction(trans.sa_session):
             trans.sa_session.commit()
