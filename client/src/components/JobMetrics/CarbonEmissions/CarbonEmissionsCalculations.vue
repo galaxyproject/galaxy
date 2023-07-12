@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { worldwideCarbonIntensity, worldwidePowerUsageEffectiveness } from "./carbonEmissionConstants.js";
+
 import Abbreviation from "@/components/Common/Abbreviation.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
@@ -39,7 +41,7 @@ const greenAlgorithmsUrl = "https://www.green-algorithms.org/";
             <Heading h1 separator bold size="lg">Carbon Emissions Calculations</Heading>
 
             <p>
-                Our calculations are based off of the work of the
+                Our calculations are based off of work done by the
                 <ExternalLink :href="greenAlgorithmsUrl">Green Algorithms Project</ExternalLink>
                 and in particular their implementation of the "carbon footprint calculator".
 
@@ -58,31 +60,28 @@ const greenAlgorithmsUrl = "https://www.green-algorithms.org/";
                 to it (in MB). Additionally, we require information about the CPU model of the server that ran the job.
                 In particular, we consider the CPU
                 <Abbreviation :explanation="'Thermal Design Power'">TDP</Abbreviation>, its core count and the number of
-                those cores allocated to the job. We assume a real core usage factor of 1.0, meaning that that 100% of
-                each allocated core's resources are used. Given that CPU specifications can vary greatly and that we
-                cannot always assume this information is provided, we have two approaches:
+                cores allocated to the job. We assume that 100% of each allocated core's resources are used.
             </p>
 
-            <ol>
-                <li>In the case that the server's CPU specifications are known, we proceed as normal.</li>
-                <li>
-                    When no information is provided, we estimate the server's configuration by matching your job's CPU
-                    and/or memory usage to a comparable general purpose
-                    <Abbreviation :explanation="'Amazon Web Services Elastic Compute Cloud'">AWS EC2</Abbreviation>
-                    instance. EC2 was chosen because its service provides numerous server configurations allowing us to
-                    cover more real-world situations.
-                    <ExternalLink :href="'https://aws.amazon.com/ec2/instance-types/'">
-                        (Click here to read further about general purpose EC2 machines)
-                    </ExternalLink>
-                </li>
-            </ol>
+            <p>
+                Given that CPU specifications can vary greatly and that Galaxy does not support fetching this
+                information dynamically, we estimate the server's hardware configuration by matching your job's CPU
+                and/or memory usage to a comparable general purpose
+                <Abbreviation :explanation="'Amazon Web Services Elastic Compute Cloud'">AWS EC2</Abbreviation>
+                instance. EC2 was chosen because the service provides various hardware configurations allowing us to
+                cover more real-world situations.
+                <ExternalLink :href="'https://aws.amazon.com/ec2/instance-types/'">
+                    (Click here to read further about general purpose EC2 machines)
+                </ExternalLink>
+            </p>
 
             <p>
                 Once we have the information needed, we calculate the power usage of the CPU and memory in watts. For
-                each component, the respective power usage is the product of the amount of allocated resources, a
+                each component, the respective power usage is the product of allocated resources amount, a
                 <Abbreviation :explanation="'Power Usage Effectiveness'">PUE</Abbreviation> value and a power usage
-                factor. For CPUs power usage factor is the TDP (normalized to TDP-per-core) and for memory we use an
-                average memory power draw constant of 0.375 W/GiB.
+                factor. For CPUs, this value is the TDP per core and, for memory, we use a reference of 0.375 W/GiB from
+                the "carbon footprint calculator". Administrators can set a custom PUE value, otherwise a default PUE
+                value of {{ worldwidePowerUsageEffectiveness }} is used.
             </p>
 
             <pre>
@@ -107,7 +106,9 @@ const greenAlgorithmsUrl = "https://www.green-algorithms.org/";
 
             <p>
                 Finally, we convert the energy usage into estimated carbon emissions (in metric units CO2e) by
-                multiplying the carbon intensity of the server location:
+                multiplying the carbon intensity value corresponding to the geographical server location configured by
+                administrators. If no value was set or the location is not supported the calculation uses a global
+                average carbon intensity value of {{ worldwideCarbonIntensity }} gCO2/kWh.
             </p>
 
             <pre>
@@ -121,10 +122,10 @@ const greenAlgorithmsUrl = "https://www.green-algorithms.org/";
             <Heading h2 separator bold size="sm">How we compare carbon emissions</Heading>
 
             <p>
-                We compare the total carbon emissions of your job (per metric unit of CO2e) with
-                <ExternalLink :href="epaCalculationsUrl">carbon emission estimates calculated by the EPA</ExternalLink>.
-                When calculating the equivalent distance driven, we use the same reference values from the Green
-                Algorithms Project's "Carbon emissions Calculator" tool.
+                Take the estimates more relatable, we compare your job's carbon emissions and energy usage values to
+                <ExternalLink :href="epaCalculationsUrl">values calculated by the EPA</ExternalLink>. We use the same
+                reference values from the Green Algorithms Project's "Carbon emissions Calculator" tool when calculating
+                the equivalent distance driven.
             </p>
 
             <pre>
