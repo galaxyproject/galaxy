@@ -43,10 +43,12 @@ function onData(result: Array<string> | string) {
 
 <template>
     <div class="d-flex">
-        <button @click="dataDialogOpen = true">
-            <font-awesome-icon icon="folder-open" :title="title" />
-        </button>
-        <input :value="props.value" disabled class="ui-input float-left" />
+        <b-input-group>
+            <button @click="dataDialogOpen = true">
+                <font-awesome-icon icon="folder-open" :title="title" />
+            </button>
+            <input :value="props.value" readonly class="float-left" />
+        </b-input-group>
         <DataDialog
             v-if="dataDialogOpen"
             :history="localHistoryId"
