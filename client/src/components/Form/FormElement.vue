@@ -12,7 +12,6 @@ import FormBoolean from "./Elements/FormBoolean.vue";
 import FormColor from "./Elements/FormColor.vue";
 import FormDirectory from "./Elements/FormDirectory.vue";
 import FormDrilldown from "./Elements/FormDrilldown/FormDrilldown.vue";
-<<<<<<< HEAD
 import FormHidden from "./Elements/FormHidden.vue";
 import FormInput from "./Elements/FormInput.vue";
 import FormNumber from "./Elements/FormNumber.vue";
@@ -23,17 +22,7 @@ import FormSelection from "./Elements/FormSelection.vue";
 import FormTags from "./Elements/FormTags.vue";
 import FormText from "./Elements/FormText.vue";
 import FormUpload from "./Elements/FormUpload.vue";
-=======
 import FormDialog from "./Elements/FormDialog.vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { ref, computed, useAttrs } from "vue";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faExclamation, faTimes, faArrowsAltH } from "@fortawesome/free-solid-svg-icons";
-import { faCaretSquareDown, faCaretSquareUp } from "@fortawesome/free-regular-svg-icons";
-
-import type { ComputedRef } from "vue";
-import type { FormParameterTypes, FormParameterAttributes, FormParameterValue } from "./parameterTypes";
->>>>>>> d24eb2b32d (first pass at converting FormDialog)
 
 interface FormElementProps {
     id?: string;
