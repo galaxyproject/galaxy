@@ -494,7 +494,7 @@
                     <label v-if="showAddNameTag">{{ l("Add nametag for name") }}:</label>
                     <input v-if="showAddNameTag" v-model="addNameTag" type="checkbox" />
                     <div v-if="showCollectionNameInput" class="rule-footer-name-group">
-                        <b-input
+                        <GInput
                             v-model="collectionName"
                             v-b-tooltip.hover
                             class="collection-name"
@@ -593,6 +593,7 @@ import JobStatesModel from "utils/job-states-model";
 import _l from "utils/localization";
 import Vue from "vue";
 
+import GInput from "@/component-library/GInput.vue";
 import TooltipOnHover from "components/TooltipOnHover.vue";
 
 Vue.use(BootstrapVue);

@@ -6,7 +6,7 @@
         <div id="workflow-name-area">
             <b>Name</b>
             <meta itemprop="name" :content="name" />
-            <b-input id="workflow-name" v-model="nameCurrent" @keyup="$emit('update:nameCurrent', nameCurrent)" />
+            <GInput id="workflow-name" v-model="nameCurrent" @keyup="$emit('update:nameCurrent', nameCurrent)" />
         </div>
         <div id="workflow-version-area" class="mt-2">
             <b>Version</b>
@@ -62,6 +62,8 @@ import Vue from "vue";
 
 import { UntypedParameters } from "./modules/parameters";
 
+import GInput from "@/component-library/GInput.vue";
+
 Vue.use(BootstrapVue);
 
 export default {
@@ -70,6 +72,7 @@ export default {
         StatelessTags,
         LicenseSelector,
         CreatorEditor,
+        GInput,
     },
     props: {
         id: {

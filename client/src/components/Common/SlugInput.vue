@@ -1,5 +1,5 @@
 <template>
-    <b-input
+    <GInput
         ref="input"
         v-model="slugInput"
         class="d-inline w-auto h-auto px-1 py-0"
@@ -8,12 +8,12 @@
         @keydown.esc="onCancel" />
 </template>
 <script>
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
-
-Vue.use(BootstrapVue);
+import GInput from "@/component-library/GInput.vue";
 
 export default {
+    components: {
+        GInput,
+    },
     props: {
         slug: {
             type: String,

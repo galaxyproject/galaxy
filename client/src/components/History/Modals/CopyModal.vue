@@ -16,7 +16,7 @@
         <transition>
             <b-form v-if="!loading">
                 <b-form-group label="Enter a title for the new history" label-for="copy-modal-title">
-                    <b-input id="copy-modal-title" v-model="name" :state="newNameValid" required />
+                    <GInput id="copy-modal-title" v-model="name" :state="newNameValid" required />
                     <b-form-invalid-feedback :state="newNameValid">
                         Please enter a valid history title.
                     </b-form-invalid-feedback>
@@ -50,7 +50,12 @@ import { mapActions, mapState } from "pinia";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
+import GInput from "@/component-library/GInput.vue";
+
 export default {
+    components: {
+        GInput,
+    },
     props: {
         history: { type: Object, required: true },
     },

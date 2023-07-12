@@ -1,6 +1,6 @@
 <template>
     <b-input-group>
-        <b-input
+        <g-input
             ref="toolInput"
             v-model="queryInput"
             class="search-query"
@@ -39,7 +39,12 @@
     </b-input-group>
 </template>
 <script>
+import GInput from "@/component-library/GInput.vue";
+
 export default {
+    components: {
+        GInput,
+    },
     props: {
         query: {
             type: String,
