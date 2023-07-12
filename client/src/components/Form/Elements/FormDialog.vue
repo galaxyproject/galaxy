@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faFolderOpen } from "@fortawesome/free-solid-svg-icons";
-import DataDialog from "@/components/DataDialog/DataDialog.vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref, watch } from "vue";
+
 import { getCurrentGalaxyHistory } from "@/utils/data";
+
+import DataDialog from "@/components/DataDialog/DataDialog.vue";
 
 library.add(faFolderOpen);
 
