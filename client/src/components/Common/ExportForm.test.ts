@@ -1,14 +1,12 @@
+import { getLocalVue } from "@tests/jest/helpers";
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
 
 import ExportForm from "./ExportForm.vue";
 
 const localVue = getLocalVue(true);
 
-jest.mock("components/JobStates/wait");
-
 describe("ExportForm.vue", () => {
-    let wrapper;
+    let wrapper: any;
 
     beforeEach(async () => {
         wrapper = shallowMount(ExportForm, {
@@ -17,24 +15,41 @@ describe("ExportForm.vue", () => {
         });
     });
 
-    it("should render a form with export disable because inputs empty", async () => {
-        expect(wrapper.find(".export-button").exists()).toBeTruthy();
-        expect(wrapper.find(".export-button").attributes("disabled")).toBeTruthy();
-        expect(wrapper.vm.canExport).toBeFalsy();
+    it("should render a form with export button disabled because inputs are empty", async () => {
+        expect(wrapper.vm.directory).toEqual("");
+        expect(wrapper.vm.name).toEqual("");
+
+        expectExportButtonDisabled();
     });
 
-    it("should allow export when name and directory available", async () => {
+    it("should render a form with export button disabled because directory is empty", async () => {
+        await wrapper.setData({
+            name: "export.tar.gz",
+        });
+
+        expectExportButtonDisabled();
+    });
+
+    it("should render a form with export button disabled because name is empty", async () => {
+        await wrapper.setData({
+            directory: "gxfiles://",
+        });
+
+        expectExportButtonDisabled();
+    });
+
+    it("should allow export when all inputs are defined", async () => {
         await wrapper.setData({
             name: "export.tar.gz",
             directory: "gxfiles://",
         });
-        expect(wrapper.vm.directory).toEqual("gxfiles://");
-        expect(wrapper.vm.name).toEqual("export.tar.gz");
-        expect(wrapper.vm.canExport).toBeTruthy();
+
+        expectExportButtonEnabled();
     });
 
     it("should localize button text", async () => {
-        expect(wrapper.find(".export-button").text()).toBeLocalizationOf("Export");
+        const newLocal = wrapper.find(".export-button").text();
+        expect(newLocal).toBeLocalizationOf("Export");
     });
 
     it("should emit 'export' event with correct inputs on export button click", async () => {
@@ -64,7 +79,17 @@ describe("ExportForm.vue", () => {
 
         await wrapper.find(".export-button").trigger("click");
 
-        expect(wrapper.vm.directory).toBe(null);
-        expect(wrapper.vm.name).toBe(null);
+        expect(wrapper.vm.directory).toBe("");
+        expect(wrapper.vm.name).toBe("");
     });
+
+    function expectExportButtonDisabled() {
+        expect(wrapper.find(".export-button").exists()).toBeTruthy();
+        expect(wrapper.find(".export-button").attributes("disabled")).toBeTruthy();
+    }
+
+    function expectExportButtonEnabled() {
+        expect(wrapper.find(".export-button").exists()).toBeTruthy();
+        expect(wrapper.find(".export-button").attributes("disabled")).toBeFalsy();
+    }
 });
