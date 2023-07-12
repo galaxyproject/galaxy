@@ -1,10 +1,9 @@
-<script setup>
-import GenericHistoryItem from "components/History/Content/GenericItem";
-
+<script setup lang="ts">
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 
-import ParameterStep from "./ParameterStep";
-import WorkflowInvocationStep from "./WorkflowInvocationStep";
+import ParameterStep from "./ParameterStep.vue";
+import WorkflowInvocationStep from "./WorkflowInvocationStep.vue";
+import GenericHistoryItem from "components/History/Content/GenericItem.vue";
 
 const props = defineProps({
     invocation: {
@@ -13,9 +12,13 @@ const props = defineProps({
     },
 });
 
+interface HasSrc {
+    src: string;
+}
+
 const { workflow } = useWorkflowInstance(props.invocation.workflow_id);
 
-function dataInputStepLabel(key, input) {
+function dataInputStepLabel(key: number, input: HasSrc) {
     const invocationStep = props.invocation.steps[key];
     let label = invocationStep && invocationStep.workflow_step_label;
     if (!label) {

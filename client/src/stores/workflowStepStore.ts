@@ -192,6 +192,25 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
             this.stepExtraInputs[step.id] = getStepExtraInputs(step);
             return step;
         },
+        insertNewStep(
+            contentId: NewStep["content_id"],
+            name: NewStep["name"],
+            type: NewStep["type"],
+            position: NewStep["position"]
+        ) {
+            const stepData: NewStep = {
+                name: name,
+                content_id: contentId,
+                input_connections: {},
+                type: type,
+                inputs: [],
+                outputs: [],
+                position: position,
+                post_job_actions: {},
+                tool_state: {},
+            };
+            return this.addStep(stepData);
+        },
         updateStep(this: State, step: Step) {
             const workflow_outputs = step.workflow_outputs?.filter((workflowOutput) =>
                 step.outputs.find((output) => workflowOutput.output_name == output.name)

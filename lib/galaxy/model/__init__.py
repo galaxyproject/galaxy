@@ -566,9 +566,7 @@ FROM dataset
 LEFT OUTER JOIN library_dataset_dataset_association ON dataset.id = library_dataset_dataset_association.dataset_id
 WHERE dataset.id IN (SELECT dataset_id FROM per_hist_hdas)
     AND library_dataset_dataset_association.id IS NULL
-    AND (
-        {dataset_condition}
-    )
+    {and_dataset_condition}
 """
 
 
@@ -577,7 +575,7 @@ def calculate_user_disk_usage_statements(user_id, quota_source_map, for_sqlite=F
     statements = []
     default_quota_enabled = quota_source_map.default_quota_enabled
     default_exclude_ids = quota_source_map.default_usage_excluded_ids()
-    default_cond = "dataset.object_store_id IS NULL" if default_quota_enabled else ""
+    default_cond = "dataset.object_store_id IS NULL" if default_quota_enabled and default_exclude_ids else ""
     exclude_cond = "dataset.object_store_id NOT IN :exclude_object_store_ids" if default_exclude_ids else ""
     use_or = " OR " if (default_cond != "" and exclude_cond != "") else ""
     default_usage_dataset_condition = "{default_cond} {use_or} {exclude_cond}".format(
@@ -585,7 +583,9 @@ def calculate_user_disk_usage_statements(user_id, quota_source_map, for_sqlite=F
         exclude_cond=exclude_cond,
         use_or=use_or,
     )
-    default_usage = UNIQUE_DATASET_USER_USAGE.format(dataset_condition=default_usage_dataset_condition)
+    if default_usage_dataset_condition.strip():
+        default_usage_dataset_condition = f"AND ( {default_usage_dataset_condition} )"
+    default_usage = UNIQUE_DATASET_USER_USAGE.format(and_dataset_condition=default_usage_dataset_condition)
     default_usage = (
         """
 UPDATE galaxy_user SET disk_usage = (%s)
@@ -602,7 +602,7 @@ WHERE id = :id
     # the object_store_id to quota_source_label into a temp table of values
     for quota_source_label, object_store_ids in source.items():
         label_usage = UNIQUE_DATASET_USER_USAGE.format(
-            dataset_condition="dataset.object_store_id IN :include_object_store_ids"
+            and_dataset_condition="AND ( dataset.object_store_id IN :include_object_store_ids )"
         )
         if for_sqlite:
             # hacky alternative for older sqlite
@@ -622,7 +622,7 @@ FROM new
         else:
             statement = """
 INSERT INTO user_quota_source_usage(user_id, quota_source_label, disk_usage)
-VALUES(:user_id, :label, ({label_usage}))
+VALUES(:id, :label, ({label_usage}))
 ON CONFLICT
 ON constraint uqsu_unique_label_per_user
 DO UPDATE SET disk_usage = excluded.disk_usage
@@ -997,16 +997,25 @@ ON CONFLICT
         assert object_store is not None
         quota_source_map = object_store.get_quota_source_map()
         default_quota_enabled = quota_source_map.default_quota_enabled
-        default_cond = "dataset.object_store_id IS NULL OR" if default_quota_enabled else ""
+        exclude_objectstore_ids = quota_source_map.default_usage_excluded_ids()
+        default_cond = "dataset.object_store_id IS NULL OR" if default_quota_enabled and exclude_objectstore_ids else ""
         default_usage_dataset_condition = (
-            "{default_cond} dataset.object_store_id NOT IN :exclude_object_store_ids".format(
-                default_cond=default_cond,
+            (
+                "AND ( {default_cond} dataset.object_store_id NOT IN :exclude_object_store_ids )".format(
+                    default_cond=default_cond,
+                )
             )
+            if exclude_objectstore_ids
+            else ""
         )
-        default_usage = UNIQUE_DATASET_USER_USAGE.format(dataset_condition=default_usage_dataset_condition)
+        default_usage = UNIQUE_DATASET_USER_USAGE.format(and_dataset_condition=default_usage_dataset_condition)
         sql_calc = text(default_usage)
-        sql_calc = sql_calc.bindparams(bindparam("id"), bindparam("exclude_object_store_ids", expanding=True))
-        params = {"id": self.id, "exclude_object_store_ids": quota_source_map.default_usage_excluded_ids()}
+        params = {"id": self.id}
+        bindparams = [bindparam("id")]
+        if exclude_objectstore_ids:
+            params["exclude_object_store_ids"] = exclude_objectstore_ids
+            bindparams.append(bindparam("exclude_object_store_ids", expanding=True))
+        sql_calc = sql_calc.bindparams(*bindparams)
         sa_session = object_session(self)
         usage = sa_session.scalar(sql_calc, params)
         return usage
@@ -7755,6 +7764,7 @@ class WorkflowStep(Base, RepresentById):
         copied_step.position = self.position
         copied_step.config = self.config
         copied_step.label = self.label
+        copied_step.when_expression = self.when_expression
         copied_step.inputs = copy_list(self.inputs, copied_step)
 
         subworkflow_step_mapping = {}
