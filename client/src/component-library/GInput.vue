@@ -1,13 +1,6 @@
-<template>
-    <b-form-input v-bind="$attrs" v-on="$listeners"> </b-form-input>
-</template>
-
-<script>
+<script setup lang="ts">
 import { BFormInput } from "bootstrap-vue";
-
-export default {
-    components: {
-        BFormInput,
-    },
-};
 </script>
+<template>
+    <BFormInput v-bind="$attrs" v-on="$listeners"> </BFormInput>
+</template>
