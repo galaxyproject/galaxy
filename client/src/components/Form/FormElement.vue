@@ -10,6 +10,7 @@ import type { FormParameterAttributes, FormParameterTypes, FormParameterValue } 
 
 import FormBoolean from "./Elements/FormBoolean.vue";
 import FormColor from "./Elements/FormColor.vue";
+import FormDialog from "./Elements/FormDialog.vue";
 import FormDirectory from "./Elements/FormDirectory.vue";
 import FormDrilldown from "./Elements/FormDrilldown/FormDrilldown.vue";
 import FormHidden from "./Elements/FormHidden.vue";
@@ -22,7 +23,6 @@ import FormSelection from "./Elements/FormSelection.vue";
 import FormTags from "./Elements/FormTags.vue";
 import FormText from "./Elements/FormText.vue";
 import FormUpload from "./Elements/FormUpload.vue";
-import FormDialog from "./Elements/FormDialog.vue";
 
 interface FormElementProps {
     id?: string;
