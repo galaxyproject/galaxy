@@ -3,7 +3,6 @@ API operations on Cloud-based storages, such as Amazon Simple Storage Service (S
 """
 
 import logging
-from typing import List
 
 from fastapi import (
     Body,
@@ -17,10 +16,10 @@ from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.datasets import DatasetSerializer
 from galaxy.schema.cloud import (
     CloudDatasets,
+    CloudDatasetsResponse,
     CloudObjects,
-    Dataset,
+    DatasetSummaryList,
     StatusCode,
-    SummarySendDatasets,
 )
 from galaxy.webapps.galaxy.api import (
     depends,
@@ -60,7 +59,7 @@ class FastAPICloudController:
         self,
         payload: CloudObjects = Body(default=Required),
         trans: ProvidesHistoryContext = DependsOnTrans,
-    ) -> List[Dataset]:
+    ) -> DatasetSummaryList:
         datasets = self.cloud_manager.get(
             trans=trans,
             history_id=payload.history_id,
@@ -71,8 +70,8 @@ class FastAPICloudController:
         )
         rtv = []
         for dataset in datasets:
-            rtv.append(Dataset(**self.datasets_serializer.serialize_to_view(dataset, view="summary")))
-        return rtv
+            rtv.append(self.datasets_serializer.serialize_to_view(dataset, view="summary"))
+        return DatasetSummaryList.construct(__root__=rtv)
 
     @router.post(
         "/api/cloud/storage/send",
@@ -83,7 +82,7 @@ class FastAPICloudController:
         self,
         payload: CloudDatasets = Body(default=Required),
         trans: ProvidesHistoryContext = DependsOnTrans,
-    ) -> SummarySendDatasets:
+    ) -> CloudDatasetsResponse:
         log.info(
             msg="Received api/send request for `{}` datasets using authnz with id `{}`, and history `{}`."
             "".format(
@@ -101,4 +100,4 @@ class FastAPICloudController:
             dataset_ids=payload.dataset_ids,
             overwrite_existing=payload.overwrite_existing,
         )
-        return SummarySendDatasets(sent_dataset_labels=sent, failed_dataset_labels=failed, bucket_name=payload.bucket)
+        return CloudDatasetsResponse(sent_dataset_labels=sent, failed_dataset_labels=failed, bucket_name=payload.bucket)
