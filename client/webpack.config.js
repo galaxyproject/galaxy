@@ -37,16 +37,7 @@ module.exports = (env = {}, argv = {}) => {
     if (targetEnv == "production") {
         minimizations = {
             minimize: true,
-            minimizer: [
-                new TerserPlugin({
-                    terserOptions: {
-                        compress: {
-                            drop_console: true,
-                        },
-                    },
-                }),
-                new CssMinimizerPlugin(),
-            ],
+            minimizer: [new TerserPlugin(), new CssMinimizerPlugin()],
         };
     } else {
         minimizations = {

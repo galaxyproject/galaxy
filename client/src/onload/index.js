@@ -16,6 +16,10 @@ import config from "config";
 // Custom Icons
 import customIconPack from "@/assets/icons.json";
 
+import { overrideProductionConsole } from "./console";
+
+overrideProductionConsole();
+
 // Module exports appear as objects on window.config in the browser
 export { getRootFromIndexLink } from "./getRootFromIndexLink";
 export { addInitialization, clearInitQueue, initializations$, prependInitialization } from "./initQueue";
