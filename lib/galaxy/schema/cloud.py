@@ -1,5 +1,4 @@
 from typing import (
-    Any,
     List,
     Optional,
     Union,
@@ -12,7 +11,10 @@ from pydantic import (
 from typing_extensions import Literal
 
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.schema import Model
+from galaxy.schema.schema import (
+    DatasetSummary,
+    Model,
+)
 
 
 class InputArguments(Model):
@@ -94,7 +96,7 @@ class CloudDatasets(Model):
     )
 
 
-class SummarySendDatasets(Model):
+class CloudDatasetsResponse(Model):
     sent_dataset_labels: List[str] = Field(
         default=Required,
         title="Send datasets",
@@ -112,60 +114,6 @@ class SummarySendDatasets(Model):
     )
 
 
-class Dataset(Model):
-    # TODO Add descriptions for fields
-    id: Optional[Any] = Field(
-        default=None,
-        title="ID",
-        description="",
-    )
-    create_time: Optional[Any] = Field(
-        default=None,
-        title="Create time",
-        description="",
-    )
-    update_time: Optional[Any] = Field(
-        default=None,
-        title="Update time",
-        description="",
-    )
-    state: Optional[Any] = Field(
-        default=None,
-        title="State",
-        description="",
-    )
-    deleted: Optional[Any] = Field(
-        default=None,
-        title="Deleted",
-        description="",
-    )
-    purged: Optional[Any] = Field(
-        default=None,
-        title="Purged",
-        description="",
-    )
-    purgable: Optional[Any] = Field(
-        default=None,
-        title="Purgable",
-        description="",
-    )
-    file_size: Optional[Any] = Field(
-        default=None,
-        title="File size",
-        description="",
-    )
-    total_size: Optional[Any] = Field(
-        default=None,
-        title="Total size",
-        description="",
-    )
-    uuid: Optional[Any] = Field(
-        default=None,
-        title="UUID",
-        description="",
-    )
-
-
 class StatusCode(Model):
     detail: str = Field(
         default=Required,
@@ -177,3 +125,7 @@ class StatusCode(Model):
         title="Code",
         description="The actual status code",
     )
+
+
+class DatasetSummaryList(Model):
+    __root__: List[DatasetSummary]
