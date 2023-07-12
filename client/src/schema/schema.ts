@@ -16889,9 +16889,9 @@ export interface operations {
             header?: {
                 "run-as"?: string;
             };
-            /** @description The ID of the user to get. */
+            /** @description The ID of the user to get or 'current'. */
             path: {
-                user_id: string;
+                user_id: string | "current";
             };
         };
         requestBody: {
