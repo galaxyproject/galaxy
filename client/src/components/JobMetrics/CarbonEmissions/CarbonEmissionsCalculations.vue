@@ -76,12 +76,12 @@ const greenAlgorithmsUrl = "https://www.green-algorithms.org/";
             </p>
 
             <p>
-                Once we have the information needed, we calculate the power usage of the CPU and memory in watts. For
-                each component, the respective power usage is the product of allocated resources amount, a
+                Once we have the information needed, we calculate your job's CPU and memory power usage in watts. The
+                power usage is the product of allocated resources amount, a
                 <Abbreviation :explanation="'Power Usage Effectiveness'">PUE</Abbreviation> value and a power usage
-                factor. For CPUs, this value is the TDP per core and, for memory, we use a reference of 0.375 W/GiB from
-                the "carbon footprint calculator". Administrators can set a custom PUE value, otherwise a default PUE
-                value of {{ worldwidePowerUsageEffectiveness }} is used.
+                factor. For CPUs, the power usage factor is its TDP per core and, for memory, we use a reference of
+                0.375 W/GiB from the "carbon footprint calculator". Administrators can set a custom PUE value, otherwise
+                a default PUE value of {{ worldwidePowerUsageEffectiveness }} is used.
             </p>
 
             <pre>
@@ -107,7 +107,7 @@ const greenAlgorithmsUrl = "https://www.green-algorithms.org/";
             <p>
                 Finally, we convert the energy usage into estimated carbon emissions (in metric units CO2e) by
                 multiplying the carbon intensity value corresponding to the geographical server location configured by
-                administrators. If no value was set or the location is not supported the calculation uses a global
+                administrators. If no value was set or the location is not supported, the calculation uses a global
                 average carbon intensity value of {{ worldwideCarbonIntensity }} gCO2/kWh.
             </p>
 
@@ -122,7 +122,7 @@ const greenAlgorithmsUrl = "https://www.green-algorithms.org/";
             <Heading h2 separator bold size="sm">How we compare carbon emissions</Heading>
 
             <p>
-                Take the estimates more relatable, we compare your job's carbon emissions and energy usage values to
+                To make the estimates more relatable, we compare your job's carbon emissions and energy usage to
                 <ExternalLink :href="epaCalculationsUrl">values calculated by the EPA</ExternalLink>. We use the same
                 reference values from the Green Algorithms Project's "Carbon emissions Calculator" tool when calculating
                 the equivalent distance driven.
