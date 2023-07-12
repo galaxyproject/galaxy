@@ -125,10 +125,11 @@ RecalculateDiskUsageResponseDescriptions = {
     },
 }
 
+# TODO rename without verbs
 CreateUserBody = Body(default=Required, title="Create user", description="The values to create a user.")
 PurgeUserBody = Body(default=None, title="Purge user", description="Purge the user.")
 UpdateUserBody = Body(default=Required, title="Update user", description="The user values to update.")
-# TODO ask if it is ok to set this to required
+# TODO make enum
 SetFavoriteBody = Body(
     default=Required, title="Set favorite", description="The id of an object the user wants to favorite."
 )
@@ -447,7 +448,7 @@ class FastAPIUsers:
     def update(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
+        user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
         payload: Dict[Any, Any] = UpdateUserBody,
         deleted: Optional[bool] = UserDeletedQueryParam,
     ) -> DetailedUserModel:

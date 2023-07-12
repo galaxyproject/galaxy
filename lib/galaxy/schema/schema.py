@@ -329,7 +329,7 @@ class DetailedUserModel(BaseUserModel, AnonUserModel):
     )
     tags_used: List[str] = Field(default=Required, title="Tags used", description="Tags used by the user")
 
-
+# TODO rename without verbs
 class CreatedUserModel(UserModel, DiskUsageUserModel):
     preferred_object_store_id: Optional[str] = PreferredObjectStoreIdField
 
