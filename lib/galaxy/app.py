@@ -599,7 +599,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         """
         task_before_start: GalaxyTaskBeforeStart
         if self.config.celery_user_rate_limit:
-            if is_postgres(self.config.database_connection):
+            if is_postgres(self.config.database_connection):  # type: ignore[arg-type]
                 task_before_start = GalaxyTaskBeforeStartUserRateLimitPostgres(
                     self.config.celery_user_rate_limit, self.model.session
                 )
