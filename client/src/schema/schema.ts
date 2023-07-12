@@ -2259,6 +2259,27 @@ export interface components {
             overwrite_existing?: boolean;
         };
         /**
+         * CloudDatasetsResponse
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        CloudDatasetsResponse: {
+            /**
+             * Bucket
+             * @description The name of bucket to which the listed datasets are queued to be sent
+             */
+            bucket_name: string;
+            /**
+             * Failed datasets
+             * @description The datasets for which Galaxy failed to create (and queue) send job
+             */
+            failed_dataset_labels: string[];
+            /**
+             * Send datasets
+             * @description The datasets for which Galaxy succeeded to create (and queue) send job
+             */
+            sent_dataset_labels: string[];
+        };
+        /**
          * CloudObjects
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -3049,32 +3070,6 @@ export interface components {
             )[];
         };
         /**
-         * Dataset
-         * @description Base model definition with common configuration used by all derived models.
-         */
-        Dataset: {
-            /** Create time */
-            create_time?: Record<string, never>;
-            /** Deleted */
-            deleted?: Record<string, never>;
-            /** File size */
-            file_size?: Record<string, never>;
-            /** ID */
-            id?: Record<string, never>;
-            /** Purgable */
-            purgable?: Record<string, never>;
-            /** Purged */
-            purged?: Record<string, never>;
-            /** State */
-            state?: Record<string, never>;
-            /** Total size */
-            total_size?: Record<string, never>;
-            /** Update time */
-            update_time?: Record<string, never>;
-            /** UUID */
-            uuid?: Record<string, never>;
-        };
-        /**
          * DatasetAssociationRoles
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -3297,6 +3292,56 @@ export interface components {
              */
             sources: Record<string, never>[];
         };
+        /**
+         * DatasetSummary
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        DatasetSummary: {
+            /**
+             * Create Time
+             * Format: date-time
+             * @description The time and date this item was created.
+             */
+            create_time?: string;
+            /** Deleted */
+            deleted: boolean;
+            /** File Size */
+            file_size: number;
+            /**
+             * ID
+             * @description The encoded ID of this entity.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /** Purgable */
+            purgable: boolean;
+            /** Purged */
+            purged: boolean;
+            /**
+             * State
+             * @description The current state of this dataset.
+             */
+            state: components["schemas"]["DatasetState"];
+            /** Total Size */
+            total_size: number;
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time and date this item was updated.
+             */
+            update_time?: string;
+            /**
+             * UUID
+             * Format: uuid4
+             * @description Universal unique identifier for this dataset.
+             */
+            uuid: string;
+        };
+        /**
+         * DatasetSummaryList
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        DatasetSummaryList: components["schemas"]["DatasetSummary"][];
         /**
          * DatasetTextContentDetails
          * @description Base model definition with common configuration used by all derived models.
@@ -8079,27 +8124,6 @@ export interface components {
          */
         SuitableConverters: components["schemas"]["SuitableConverter"][];
         /**
-         * SummarySendDatasets
-         * @description Base model definition with common configuration used by all derived models.
-         */
-        SummarySendDatasets: {
-            /**
-             * Bucket
-             * @description The name of bucket to which the listed datasets are queued to be sent
-             */
-            bucket_name: string;
-            /**
-             * Failed datasets
-             * @description The datasets for which Galaxy failed to create (and queue) send job
-             */
-            failed_dataset_labels: string[];
-            /**
-             * Send datasets
-             * @description The datasets for which Galaxy succeeded to create (and queue) send job
-             */
-            sent_dataset_labels: string[];
-        };
-        /**
          * TagCollection
          * @description The collection of tags associated with an item.
          */
@@ -9059,7 +9083,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["Dataset"][];
+                    "application/json": components["schemas"]["DatasetSummaryList"];
                 };
             };
             /** @description Validation Error */
@@ -9090,7 +9114,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["SummarySendDatasets"];
+                    "application/json": components["schemas"]["CloudDatasetsResponse"];
                 };
             };
             /** @description Validation Error */
