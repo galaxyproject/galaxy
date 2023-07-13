@@ -40,15 +40,16 @@ from galaxy.model import (
 from galaxy.model.base import transaction
 from galaxy.schema import APIKeyModel
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.schema import (  # AddCustomBuildPayload,; CreatedUserModel,; CreateUserPayload,
+from galaxy.schema.schema import (  # AddCustomBuildPayload,; CreatedUserModel,;
     AnonUserModel,
     AsyncTaskResultSummary,
     DetailedUserModel,
-    FavoriteModel,
+    FavoriteObject,
+    FavoriteObjectsSummary,
+    FavoriteObjectType,
     FlexibleUserIdType,
-    PurgeUserPayload,
-    SetFavoritePayload,
     UserBeaconSetting,
+    UserDeletionPayload,
     UserModel,
 )
 from galaxy.security.validate_user_input import (
@@ -100,7 +101,7 @@ QuotaSourceLabelPathParam: str = Path(
     title="Quota Source Label",
     description="The label corresponding to the quota source to fetch usage information about.",
 )
-ObjectTypePathParam: str = Path(
+ObjectTypePathParam: FavoriteObjectType = Path(
     default=Required, title="Object type", description="The object type the user wants to favorite"
 )
 ObjectIDPathParam: str = Path(
@@ -125,12 +126,9 @@ RecalculateDiskUsageResponseDescriptions = {
     },
 }
 
-# TODO rename without verbs
-CreateUserBody = Body(default=Required, title="Create user", description="The values to create a user.")
-PurgeUserBody = Body(default=None, title="Purge user", description="Purge the user.")
-UpdateUserBody = Body(default=Required, title="Update user", description="The user values to update.")
-# TODO make enum
-SetFavoriteBody = Body(
+UserDeletionBody = Body(default=None, title="Purge user", description="Purge the user.")
+UserUpdateBody = Body(default=Required, title="Update user", description="The user values to update.")
+FavoriteObjectBody = Body(
     default=Required, title="Set favorite", description="The id of an object the user wants to favorite."
 )
 # AddCustomBuildBody = Body(default=Required, title="Add custom build", description="The values to add a new custom build.")
@@ -343,13 +341,12 @@ class FastAPIUsers:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
-        object_type: str = ObjectTypePathParam,
+        object_type: FavoriteObjectType = ObjectTypePathParam,
         object_id: str = ObjectIDPathParam,
-    ) -> FavoriteModel:
-        self.service.validate_favorite_object_type(object_type)
+    ) -> FavoriteObjectsSummary:
         user = self.service.get_user(trans, user_id)
         favorites = json.loads(user.preferences["favorites"]) if "favorites" in user.preferences else {}
-        if object_type == "tools":
+        if object_type.value == "tools":
             if "tools" in favorites:
                 favorite_tools = favorites["tools"]
                 if object_id in favorite_tools:
@@ -371,13 +368,12 @@ class FastAPIUsers:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
-        object_type: str = ObjectTypePathParam,
-        payload: SetFavoritePayload = SetFavoriteBody,
-    ) -> FavoriteModel:
-        self.service.validate_favorite_object_type(object_type)
+        object_type: FavoriteObjectType = ObjectTypePathParam,
+        payload: FavoriteObject = FavoriteObjectBody,
+    ) -> FavoriteObjectsSummary:
         user = self.service.get_user(trans, user_id)
         favorites = json.loads(user.preferences["favorites"]) if "favorites" in user.preferences else {}
-        if object_type == "tools":
+        if object_type.value == "tools":
             tool_id = payload.object_id
             tool = trans.app.toolbox.get_tool(tool_id)
             if not tool:
@@ -449,7 +445,7 @@ class FastAPIUsers:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
-        payload: Dict[Any, Any] = UpdateUserBody,
+        payload: Dict[Any, Any] = UserUpdateBody,
         deleted: Optional[bool] = UserDeletedQueryParam,
     ) -> DetailedUserModel:
         deleted = deleted or False
@@ -467,7 +463,7 @@ class FastAPIUsers:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
-        payload: Optional[PurgeUserPayload] = PurgeUserBody,
+        payload: Optional[UserDeletionPayload] = UserDeletionBody,
     ) -> DetailedUserModel:
         user_to_update = self.service.user_manager.by_id(user_id)
         if payload:
