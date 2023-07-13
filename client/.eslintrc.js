@@ -15,6 +15,7 @@ const baseRules = {
     // but that kind of refactoring is best done slowly, one bit at a time
     // as those components are touched.
     "vue/multi-word-component-names": "warn",
+    "vue/component-name-in-template-casing": "error",
     "vue/prop-name-casing": "warn",
     "vue/require-prop-types": "warn",
     "vue/require-default-prop": "warn",
