@@ -845,14 +845,6 @@ def populate_api_routes(webapp, app):
         conditions=dict(method=["PUT"]),
     )
 
-    webapp.mapper.connect(
-        "delete_custom_builds",
-        "/api/users/{id}/custom_builds/{key}",
-        controller="users",
-        action="delete_custom_builds",
-        conditions=dict(method=["DELETE"]),
-    )
-
     # ========================
     # ===== WEBHOOKS API =====
     # ========================
