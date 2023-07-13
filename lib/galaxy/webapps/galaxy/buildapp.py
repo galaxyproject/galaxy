@@ -829,14 +829,6 @@ def populate_api_routes(webapp, app):
         conditions=dict(method=["POST"]),
     )
 
-    webapp.mapper.connect(
-        "add_custom_builds",
-        "/api/users/{id}/custom_builds/{key}",
-        controller="users",
-        action="add_custom_builds",
-        conditions=dict(method=["PUT"]),
-    )
-
     # ========================
     # ===== WEBHOOKS API =====
     # ========================
