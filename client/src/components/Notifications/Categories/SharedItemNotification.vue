@@ -63,14 +63,14 @@ function onClick(link: string) {
                 <span>The user</span>
                 <b>{{ content.owner_name }}</b>
                 <span>shared </span>
-                <b-link
+                <BLink
                     v-b-tooltip.bottom
                     :title="`View ${content.item_type} in new tab`"
                     class="text-primary"
                     @click="onClick(content.slug)">
                     {{ content.item_name }}
                     <FontAwesomeIcon icon="external-link-alt" />
-                </b-link>
+                </BLink>
                 <em>{{ content.item_type }}</em>
                 <span> with you.</span>
             </p>

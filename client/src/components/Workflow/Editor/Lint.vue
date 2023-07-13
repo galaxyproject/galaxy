@@ -2,7 +2,7 @@
     <b-card id="lint-panel" header-tag="header" body-class="p-0" class="right-content">
         <template v-slot:header>
             <div class="mb-1 font-weight-bold">
-                <font-awesome-icon icon="magic" class="mr-1" />
+                <FontAwesomeIcon icon="magic" class="mr-1" />
                 Best Practices Review
             </div>
             <div v-if="showRefactor">
@@ -67,7 +67,7 @@
                 @onMouseLeave="onUnhighlight"
                 @onClick="onFixUnlabeledOutputs" />
             <div v-if="!hasActiveOutputs">
-                <font-awesome-icon icon="exclamation-triangle" class="text-warning" />
+                <FontAwesomeIcon icon="exclamation-triangle" class="text-warning" />
                 <span>This workflow has no labeled outputs, please select and label at least one output.</span>
             </div>
         </b-card-body>

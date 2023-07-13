@@ -36,7 +36,7 @@
                     v-on="$listeners" />
             </div>
         </div>
-        <workflow-minimap
+        <WorkflowMinimap
             v-if="elementBounding"
             :steps="steps"
             :viewport-bounds="elementBounding"

@@ -60,32 +60,32 @@ function onPermanentlyDeleteItem() {
         </div>
 
         <div class="my-2">
-            <b-button
+            <BButton
                 variant="outline-primary"
                 size="sm"
                 class="mx-2"
                 :title="localize(`Go to the details of this ${itemType}`)"
                 @click="onViewItem">
-                <font-awesome-icon :icon="viewDetailsIcon" />
-            </b-button>
-            <b-button
+                <FontAwesomeIcon :icon="viewDetailsIcon" />
+            </BButton>
+            <BButton
                 v-if="isRecoverable"
                 variant="outline-primary"
                 size="sm"
                 class="mx-2"
                 :title="localize(`Undelete this ${itemType}`)"
                 @click="onUndeleteItem">
-                <font-awesome-icon icon="undo" />
-            </b-button>
-            <b-button
+                <FontAwesomeIcon icon="undo" />
+            </BButton>
+            <BButton
                 v-if="isRecoverable"
                 variant="outline-danger"
                 size="sm"
                 class="mx-2"
                 :title="localize(`Permanently delete this ${itemType}`)"
                 @click="onPermanentlyDeleteItem">
-                <font-awesome-icon icon="trash" />
-            </b-button>
+                <FontAwesomeIcon icon="trash" />
+            </BButton>
         </div>
     </div>
 </template>

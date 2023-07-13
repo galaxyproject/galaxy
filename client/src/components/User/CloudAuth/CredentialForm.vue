@@ -32,7 +32,7 @@
                 :options="resourceProviderOptions" />
         </b-form-group>
 
-        <credential-config v-model="credential.config" />
+        <CredentialConfig v-model="credential.config" />
 
         <footer class="border-top">
             <b-button variant="secondary" @click.prevent="$emit('delete', credential)"> Delete Key </b-button>

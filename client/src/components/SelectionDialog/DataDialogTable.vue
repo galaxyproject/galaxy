@@ -15,14 +15,14 @@
             @row-clicked="clicked"
             @filtered="filtered">
             <template v-slot:head(select_icon)="">
-                <font-awesome-icon
+                <FontAwesomeIcon
                     class="select-checkbox cursor-pointer"
                     title="Check to select all datasets"
                     :icon="selectionIcon(selectAllIcon)"
                     @click="$emit('toggleSelectAll')" />
             </template>
             <template v-slot:cell(select_icon)="data">
-                <font-awesome-icon :icon="selectionIcon(data.item._rowVariant)" />
+                <FontAwesomeIcon :icon="selectionIcon(data.item._rowVariant)" />
             </template>
             <template v-slot:cell(label)="data">
                 <div style="cursor: pointer">
@@ -35,7 +35,7 @@
                             <span :title="`label-${data.item.labelTitle}`">{{ data.value ? data.value : "-" }}</span>
                         </div>
                         <div v-else @click.stop="open(data.item)">
-                            <font-awesome-icon icon="folder" />
+                            <FontAwesomeIcon icon="folder" />
                             <b-link :title="`label-${data.item.labelTitle}`">{{
                                 data.value ? data.value : "-"
                             }}</b-link>

@@ -6,7 +6,7 @@
                 :to="{ path: `/libraries` }"
                 data-toggle="tooltip"
                 title="Go to libraries list">
-                <font-awesome-icon icon="home" />
+                <FontAwesomeIcon icon="home" />
             </b-button>
             <div>
                 <div class="form-inline">
@@ -17,7 +17,7 @@
                         class="btn btn-secondary toolbtn-create-folder add-library-items add-library-items-folder mr-1"
                         type="button"
                         @click="newFolder">
-                        <font-awesome-icon icon="plus" />
+                        <FontAwesomeIcon icon="plus" />
                         Folder
                     </button>
                     <div v-if="metadata.can_add_library_item">
@@ -60,7 +60,7 @@
                             type="button"
                             class="primary-button dropdown-toggle add-to-history"
                             data-toggle="dropdown">
-                            <font-awesome-icon icon="book" />
+                            <FontAwesomeIcon icon="book" />
                             Add to History <span class="caret"></span>
                         </button>
                         <div class="dropdown-menu" role="menu">
@@ -85,7 +85,7 @@
                         title="Download items as archive"
                         class="dropdown dataset-manipulation mr-1">
                         <button id="download--btn" type="button" class="primary-button" @click="downloadData('zip')">
-                            <font-awesome-icon icon="download" />
+                            <FontAwesomeIcon icon="download" />
                             Download
                         </button>
                     </div>
@@ -96,7 +96,7 @@
                         class="primary-button toolbtn-bulk-delete logged-dataset-manipulation mr-1"
                         type="button"
                         @click="deleteSelected">
-                        <font-awesome-icon icon="trash" />
+                        <FontAwesomeIcon icon="trash" />
                         Delete
                     </button>
                     <FolderDetails :id="folder_id" class="mr-1" :metadata="metadata" />

@@ -20,9 +20,9 @@ const variant = computed(() => {
 </script>
 
 <template>
-    <b-badge :variant="variant">
+    <BBadge :variant="variant">
         <FontAwesomeIcon v-if="props.included" icon="check" />
         <FontAwesomeIcon v-else icon="times" />
         {{ props.itemName }}
-    </b-badge>
+    </BBadge>
 </template>

@@ -1,13 +1,13 @@
 <template>
-    <config-provider v-slot="{ config, loading }">
-        <markdown
+    <ConfigProvider v-slot="{ config, loading }">
+        <Markdown
             v-if="!loading"
             :markdown-config="markdownConfig"
             :enable_beta_markdown_export="config.enable_beta_markdown_export"
             :export-link="exportUrl"
             :download-endpoint="stsUrl(config)"
             @onEdit="onEdit" />
-    </config-provider>
+    </ConfigProvider>
 </template>
 
 <script>

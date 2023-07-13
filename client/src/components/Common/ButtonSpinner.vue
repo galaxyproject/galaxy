@@ -6,7 +6,7 @@
         variant="info"
         title="Please Wait..."
         class="d-flex flex-nowrap align-items-center text-nowrap">
-        <font-awesome-icon icon="spinner" class="mr-2" spin />{{ title }}
+        <FontAwesomeIcon icon="spinner" class="mr-2" spin />{{ title }}
     </b-button>
     <b-button
         v-else
@@ -15,7 +15,7 @@
         class="d-flex flex-nowrap align-items-center text-nowrap"
         :title="tooltip"
         @click="$emit('onClick')">
-        <font-awesome-icon icon="play" class="mr-2" />{{ title }}
+        <FontAwesomeIcon icon="play" class="mr-2" />{{ title }}
     </b-button>
 </template>
 <script>

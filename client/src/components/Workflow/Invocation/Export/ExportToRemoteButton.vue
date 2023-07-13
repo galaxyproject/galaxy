@@ -37,10 +37,10 @@ watch([isCompleted, hasFailed, requestHasFailed], ([newIsCompleted, newHasFailed
 </script>
 
 <template>
-    <b-button v-b-tooltip.hover.bottom :title="props.title" @click="() => emit('onClick')">
-        <font-awesome-icon v-if="isRunning" icon="spinner" spin />
-        <font-awesome-icon v-else-if="hasFailed || requestHasFailed" icon="exclamation-circle" />
-        <font-awesome-icon v-else-if="isCompleted" icon="check-circle" />
-        <font-awesome-icon v-else icon="cloud-upload-alt" />
-    </b-button>
+    <BButton v-b-tooltip.hover.bottom :title="props.title" @click="() => emit('onClick')">
+        <FontAwesomeIcon v-if="isRunning" icon="spinner" spin />
+        <FontAwesomeIcon v-else-if="hasFailed || requestHasFailed" icon="exclamation-circle" />
+        <FontAwesomeIcon v-else-if="isCompleted" icon="check-circle" />
+        <FontAwesomeIcon v-else icon="cloud-upload-alt" />
+    </BButton>
 </template>

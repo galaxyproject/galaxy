@@ -12,7 +12,7 @@
             </template>
         </b-table>
         <div v-if="noResultsFound" class="unavailable-message">No matching repositories found.</div>
-        <loading-span v-if="pageLoading" message="Loading repositories" />
+        <LoadingSpan v-if="pageLoading" message="Loading repositories" />
     </div>
 </template>
 <script>

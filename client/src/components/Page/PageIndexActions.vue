@@ -14,9 +14,9 @@ function create() {
 </script>
 <template>
     <span>
-        <b-button id="page-create" class="m-1" @click="create">
-            <font-awesome-icon icon="plus" />
+        <BButton id="page-create" class="m-1" @click="create">
+            <FontAwesomeIcon icon="plus" />
             {{ "Create" | localize }}
-        </b-button>
+        </BButton>
     </span>
 </template>

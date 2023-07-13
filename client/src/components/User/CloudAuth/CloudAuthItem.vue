@@ -40,7 +40,7 @@
         </header>
         <!-- TODO: Restructure credential handling so we're not mutating the prop -->
         <!-- eslint-disable vue/no-mutating-props-->
-        <credential-form
+        <CredentialForm
             v-if="expanded"
             v-model="credential"
             class="border-top"

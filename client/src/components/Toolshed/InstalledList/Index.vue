@@ -2,7 +2,7 @@
     <div>
         <div v-if="error" class="alert alert-danger" show>{{ error }}</div>
         <div v-else>
-            <loading-span v-if="loading" message="Loading installed repositories" />
+            <LoadingSpan v-if="loading" message="Loading installed repositories" />
             <div v-else>
                 <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
                 <div class="m-1">

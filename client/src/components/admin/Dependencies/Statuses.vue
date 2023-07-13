@@ -2,10 +2,10 @@
     <span class="dependency-statuses">
         <b v-if="statuses.length == 0"> <span class="fa fa-times text-danger"></span><i>unresolved</i> </b>
         <span v-else-if="merged">
-            <status-display :status="statuses[0]" :all-statuses="statuses" />
+            <StatusDisplay :status="statuses[0]" :all-statuses="statuses" />
         </span>
         <div v-for="(item_status, index) in statuses" v-else :key="index">
-            <status-display :status="item_status" />
+            <StatusDisplay :status="item_status" />
         </div>
     </span>
 </template>

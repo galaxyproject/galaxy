@@ -207,7 +207,7 @@ async function loadMore(noScroll = false) {
 
 <template>
     <div>
-        <b-modal
+        <BModal
             ref="modal"
             v-model="propShowModal"
             class="history-selector-modal"
@@ -218,16 +218,16 @@ async function loadMore(noScroll = false) {
                 <Heading h2 inline size="sm">{{ localize(title) }}</Heading>
             </template>
 
-            <b-form-group :description="localize('Filter histories')">
-                <b-form-input v-model="filter" type="search" debounce="400" :placeholder="localize('Search Filter')" />
-            </b-form-group>
+            <BFormGroup :description="localize('Filter histories')">
+                <BFormInput v-model="filter" type="search" debounce="400" :placeholder="localize('Search Filter')" />
+            </BFormGroup>
 
-            <b-badge v-if="filter && !validFilter" class="alert-danger w-100">Search string too short!</b-badge>
+            <BBadge v-if="filter && !validFilter" class="alert-danger w-100">Search string too short!</BBadge>
             <b-alert v-else-if="!busy && hasNoResults" variant="danger" show>No histories found.</b-alert>
 
             <div ref="scrollableDiv" class="history-selector-modal-list">
-                <b-list-group>
-                    <b-list-group-item
+                <BListGroup>
+                    <BListGroupItem
                         v-for="history in filtered"
                         :key="history.id"
                         :data-pk="history.id"
@@ -242,12 +242,12 @@ async function loadMore(noScroll = false) {
                             </Heading>
 
                             <div class="d-flex align-items-center flex-gapx-1">
-                                <b-badge v-b-tooltip pill :title="localize('Amount of items in history')">
+                                <BBadge v-b-tooltip pill :title="localize('Amount of items in history')">
                                     {{ history.count }} {{ localize("items") }}
-                                </b-badge>
-                                <b-badge v-if="history.update_time" v-b-tooltip pill :title="localize('Last edited')">
+                                </BBadge>
+                                <BBadge v-if="history.update_time" v-b-tooltip pill :title="localize('Last edited')">
                                     <UtcDate :date="history.update_time" mode="elapsed" />
-                                </b-badge>
+                                </BBadge>
                             </div>
                         </div>
 
@@ -263,8 +263,8 @@ async function loadMore(noScroll = false) {
                         <div
                             v-if="props.additionalOptions.length > 0"
                             class="d-flex justify-content-end align-items-center mt-1">
-                            <b-button-group>
-                                <b-button
+                            <BButtonGroup>
+                                <BButton
                                     v-if="props.additionalOptions.includes('set-current')"
                                     v-b-tooltip
                                     :title="localize('Set as current history')"
@@ -272,9 +272,9 @@ async function loadMore(noScroll = false) {
                                     class="p-0 px-1"
                                     @click.stop="() => setCurrentHistory(history)">
                                     <FontAwesomeIcon icon="fa-sign-in-alt" />
-                                </b-button>
+                                </BButton>
 
-                                <b-button
+                                <BButton
                                     v-if="props.additionalOptions.includes('multi')"
                                     v-b-tooltip
                                     :title="localize('Open in multi-view')"
@@ -282,9 +282,9 @@ async function loadMore(noScroll = false) {
                                     class="p-0 px-1"
                                     @click.stop="() => openInMulti(history)">
                                     <FontAwesomeIcon icon="fa-columns" />
-                                </b-button>
+                                </BButton>
 
-                                <b-button
+                                <BButton
                                     v-if="props.additionalOptions.includes('center')"
                                     v-b-tooltip
                                     :title="localize('Open in center panel')"
@@ -292,10 +292,10 @@ async function loadMore(noScroll = false) {
                                     class="p-0 px-1"
                                     @click.stop="() => setCenterPanelHistory(history)">
                                     <FontAwesomeIcon icon="far fa-list-alt" />
-                                </b-button>
-                            </b-button-group>
+                                </BButton>
+                            </BButtonGroup>
                         </div>
-                    </b-list-group-item>
+                    </BListGroupItem>
                     <div>
                         <div v-if="allLoaded || filter !== ''" class="list-end my-2">
                             <span v-if="filtered.length == 1">- {{ filtered.length }} history loaded -</span>
@@ -303,13 +303,13 @@ async function loadMore(noScroll = false) {
                         </div>
                         <b-overlay :show="busy" opacity="0.5" />
                     </div>
-                </b-list-group>
+                </BListGroup>
             </div>
 
             <template v-slot:modal-footer>
                 <div v-if="!allLoaded" class="mr-auto">
                     <i>Loaded {{ filtered.length }} out of {{ totalHistoryCount }} histories</i>
-                    <b-button
+                    <BButton
                         v-b-tooltip.noninteractive.hover
                         class="load-more-hist-button"
                         size="sm"
@@ -317,19 +317,19 @@ async function loadMore(noScroll = false) {
                         variant="link"
                         @click="loadMore()">
                         <FontAwesomeIcon icon="fa-arrow-down" />
-                    </b-button>
+                    </BButton>
                 </div>
-                <b-button
+                <BButton
                     v-if="multiple"
                     v-localize
                     :disabled="selectedHistories.length === 0 || isEqual(selectedHistories, pinnedHistories)"
                     variant="primary"
                     @click="selectHistories">
                     Change Selected
-                </b-button>
+                </BButton>
                 <span v-else v-localize> Click a history to switch to it </span>
             </template>
-        </b-modal>
+        </BModal>
     </div>
 </template>
 

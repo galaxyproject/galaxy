@@ -294,7 +294,7 @@ function setTooltipPosition(mouseX: number, mouseY: number): void {
 </script>
 
 <template>
-    <b-card class="mb-3 mx-3">
+    <BCard class="mb-3 mx-3">
         <template v-slot:header>
             <h3 class="text-center my-1">
                 <slot name="title">
@@ -322,7 +322,7 @@ function setTooltipPosition(mouseX: number, mouseY: number): void {
                 <div>{{ labelFormatter(tooltipDataPoint) }}</div>
             </slot>
         </div>
-    </b-card>
+    </BCard>
 </template>
 
 <style lang="scss" scoped>

@@ -38,7 +38,7 @@ function readFile() {
     <div>
         <b-form-file v-model="file" class="mb-1" @input="readFile" />
         <div v-if="waiting">
-            <font-awesome-icon icon="spinner" spin />
+            <FontAwesomeIcon icon="spinner" spin />
             Uploading File...
         </div>
         <textarea v-show="currentValue" v-model="currentValue" class="ui-textarea" disabled />

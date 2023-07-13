@@ -5,20 +5,20 @@
             <loading-span :message="initializeFileSourcesMessage" />
         </span>
         <span v-else-if="hasWritableFileSources">
-            <b-card no-body>
-                <b-tabs pills card vertical>
-                    <b-tab title="to a link" title-link-class="tab-export-to-link" active>
+            <BCard no-body>
+                <BTabs pills card vertical>
+                    <BTab title="to a link" title-link-class="tab-export-to-link" active>
                         <b-card-text>
                             <ToLink :history-id="historyId" />
                         </b-card-text>
-                    </b-tab>
-                    <b-tab title="to a remote file" title-link-class="tab-export-to-file">
+                    </BTab>
+                    <BTab title="to a remote file" title-link-class="tab-export-to-file">
                         <b-card-text>
                             <ToRemoteFile :history-id="historyId" />
                         </b-card-text>
-                    </b-tab>
-                </b-tabs>
-            </b-card>
+                    </BTab>
+                </BTabs>
+            </BCard>
         </span>
         <span v-else>
             <ToLink :history-id="historyId" />

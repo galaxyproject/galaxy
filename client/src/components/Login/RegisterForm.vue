@@ -19,7 +19,7 @@
                                 <b-card-body>
                                     Create a Galaxy account using an institutional account (e.g.:Google/JHU). This will
                                     redirect you to your institutional login through Custos.
-                                    <external-login :login_page="false" />
+                                    <ExternalLogin :login_page="false" />
                                 </b-card-body>
                             </b-collapse>
                         </span>

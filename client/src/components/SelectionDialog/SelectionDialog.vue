@@ -21,7 +21,7 @@
                 </div>
                 <div v-else>
                     <b-btn v-if="undoShow" id="back-btn" size="sm" class="float-left" @click="backFunc">
-                        <font-awesome-icon :icon="['fas', 'caret-left']" />
+                        <FontAwesomeIcon :icon="['fas', 'caret-left']" />
                         Back
                     </b-btn>
                     <b-btn id="close-btn" size="sm" class="float-right" variant="primary" @click="hideModal">

@@ -1,6 +1,6 @@
 <template>
     <LoadingSpan v-if="loading" message="Loading Page" class="m-3" />
-    <page-editor-markdown
+    <PageEditorMarkdown
         v-else
         :title="title"
         :page-id="pageId"

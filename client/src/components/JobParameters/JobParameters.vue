@@ -40,7 +40,7 @@
             </td>
         </div>
         <br />
-        <job-outputs :job-outputs="outputs" paginate :title="`Job Outputs`" />
+        <JobOutputs :job-outputs="outputs" paginate :title="`Job Outputs`" />
     </div>
 </template>
 

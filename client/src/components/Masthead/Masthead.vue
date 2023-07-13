@@ -101,9 +101,9 @@ onMounted(() => {
 </script>
 
 <template>
-    <b-navbar id="masthead" type="dark" role="navigation" aria-label="Main" class="justify-content-between">
-        <b-navbar-nav>
-            <b-navbar-brand
+    <BNavbar id="masthead" type="dark" role="navigation" aria-label="Main" class="justify-content-between">
+        <BNavbarNav>
+            <BNavbarBrand
                 v-b-tooltip.hover
                 class="ml-2 mr-2"
                 title="Home"
@@ -111,41 +111,41 @@ onMounted(() => {
                 :href="withPrefix(logoUrl)">
                 <img alt="logo" :src="withPrefix(logoSrc)" />
                 <img v-if="logoSrcSecondary" alt="logo" :src="withPrefix(logoSrcSecondary)" />
-            </b-navbar-brand>
+            </BNavbarBrand>
             <span v-if="brand" class="navbar-text px-2">
                 {{ brand }}
             </span>
-        </b-navbar-nav>
-        <b-navbar-nav>
-            <masthead-item
+        </BNavbarNav>
+        <BNavbarNav>
+            <MastheadItem
                 v-for="(tab, idx) in props.tabs"
                 v-show="tab.hidden !== true"
                 :key="`tab-${idx}`"
                 :tab="tab"
                 :active-tab="activeTab"
                 @open-url="emit('open-url', $event)" />
-            <masthead-item
+            <MastheadItem
                 v-show="itsMenu.hidden !== true"
                 :key="`its-tab`"
                 :tab="itsMenu"
                 :active-tab="activeTab"
                 @open-url="emit('open-url', $event)" />
-            <masthead-item
+            <MastheadItem
                 v-for="(tab, idx) in extensionTabs"
                 v-show="tab.hidden !== true"
                 :key="`extension-tab-${idx}`"
                 :tab="tab"
                 :active-tab="activeTab"
                 @open-url="emit('open-url', $event)" />
-            <masthead-item v-if="windowTab" :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
+            <MastheadItem v-if="windowTab" :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
             <BNavItem
                 v-if="!isAnonymous && config.enable_notification_system && !showActivityBar"
                 id="notifications-bell">
                 <NotificationsBell tooltip-placement="bottom" />
             </BNavItem>
-        </b-navbar-nav>
-        <quota-meter />
-    </b-navbar>
+        </BNavbarNav>
+        <QuotaMeter />
+    </BNavbar>
 </template>
 
 <style scoped lang="scss">

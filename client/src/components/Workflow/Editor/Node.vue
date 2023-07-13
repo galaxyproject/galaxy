@@ -1,5 +1,5 @@
 <template>
-    <draggable-wrapper
+    <DraggableWrapper
         :id="idString"
         ref="el"
         :scale="scale"
@@ -12,7 +12,7 @@
         @pan-by="onPanBy">
         <div class="node-header unselectable clearfix" @click="makeActive" @keyup.enter="makeActive">
             <b-button-group class="float-right">
-                <loading-span v-if="isLoading" spinner-only />
+                <LoadingSpan v-if="isLoading" spinner-only />
                 <b-button
                     v-if="canClone"
                     v-b-tooltip.hover
@@ -60,7 +60,7 @@
             </b-button-group>
             <i :class="iconClass" />
             <span v-if="step.when" v-b-tooltip.hover title="This step is conditionally executed.">
-                <font-awesome-icon icon="fa-code-branch" />
+                <FontAwesomeIcon icon="fa-code-branch" />
             </span>
             <span
                 v-b-tooltip.hover
@@ -73,7 +73,7 @@
             {{ errors }}
         </b-alert>
         <div v-else class="node-body" @click="makeActive" @keyup.enter="makeActive">
-            <node-input
+            <NodeInput
                 v-for="(input, index) in inputs"
                 :key="`in-${index}-${input.name}`"
                 :input="input"
@@ -86,7 +86,7 @@
                 :parent-node="elHtml"
                 @onChange="onChange" />
             <div v-if="showRule" class="rule" />
-            <node-output
+            <NodeOutput
                 v-for="(output, index) in outputs"
                 :key="`out-${index}-${output.name}`"
                 :output="output"
@@ -104,7 +104,7 @@
                 @stopDragging="onStopDragging"
                 @onChange="onChange" />
         </div>
-    </draggable-wrapper>
+    </DraggableWrapper>
 </template>
 
 <script setup lang="ts">

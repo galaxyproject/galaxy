@@ -1,6 +1,6 @@
 <template>
     <component :is="providerComponent" :id="itemId" v-slot="{ result: item, loading }" auto-refresh>
-        <loading-span v-if="loading" message="Loading dataset" />
+        <LoadingSpan v-if="loading" message="Loading dataset" />
         <div v-else>
             <ContentItem
                 :id="item.hid ?? item.element_index + 1"

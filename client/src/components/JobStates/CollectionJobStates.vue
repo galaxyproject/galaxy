@@ -3,16 +3,16 @@
         {{ simpleDescription }}
     </div>
     <div v-else-if="!jobStatesSummary || !jobStatesSummary.hasDetails()">
-        <progress-bar :note="loadingNote" :loading="true" :info-progress="1" />
+        <ProgressBar :note="loadingNote" :loading="true" :info-progress="1" />
     </div>
     <div v-else-if="isNew">
-        <progress-bar note="Creating jobs" :loading="true" :info-progress="1" />
+        <ProgressBar note="Creating jobs" :loading="true" :info-progress="1" />
     </div>
     <div v-else-if="isErrored">
         {{ errorDescription }}
     </div>
     <div v-else>
-        <progress-bar
+        <ProgressBar
             :note="generatingNote"
             :ok-count="okCount"
             :error-count="errorCount"

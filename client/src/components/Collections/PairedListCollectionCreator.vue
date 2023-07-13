@@ -324,8 +324,8 @@
                                 </div>
                             </div>
                         </div>
-                        <splitpanes horizontal style="height: 400px">
-                            <pane>
+                        <Splitpanes horizontal style="height: 400px">
+                            <Pane>
                                 <div v-if="noUnpairedElementsDisplayed">
                                     <b-alert show variant="warning">
                                         {{ l("No datasets were found matching the current filters.") }}
@@ -334,7 +334,7 @@
                                 <div class="unpaired-columns flex-column-container scroll-container flex-row">
                                     <div class="forward-column flex-column column truncate">
                                         <ol class="column-datasets">
-                                            <unpaired-dataset-element-view
+                                            <UnpairedDatasetElementView
                                                 v-for="element in forwardElements"
                                                 :key="element.id"
                                                 :class="{
@@ -359,7 +359,7 @@
                                     </div>
                                     <div class="reverse-column flex-column column truncate">
                                         <ol class="column-datasets">
-                                            <unpaired-dataset-element-view
+                                            <UnpairedDatasetElementView
                                                 v-for="element in reverseElements"
                                                 :key="element.id"
                                                 :class="{
@@ -372,8 +372,8 @@
                                         </ol>
                                     </div>
                                 </div>
-                            </pane>
-                            <pane>
+                            </Pane>
+                            <Pane>
                                 <div class="column-header">
                                     <div class="column-title paired-column-title">
                                         <span class="title"> {{ numOfPairs }} {{ l(" pairs") }}</span>
@@ -389,7 +389,7 @@
                                 <div class="paired-columns flex-column-container scroll-container flex-row">
                                     <ol class="column-datasets">
                                         <draggable v-model="pairedElements" @start="drag = true" @end="drag = false">
-                                            <paired-element-view
+                                            <PairedElementView
                                                 v-for="pair in pairedElements"
                                                 :key="pair.id"
                                                 :pair="pair"
@@ -398,8 +398,8 @@
                                         </draggable>
                                     </ol>
                                 </div>
-                            </pane>
-                        </splitpanes>
+                            </Pane>
+                        </Splitpanes>
                     </template>
                 </collection-creator>
             </div>

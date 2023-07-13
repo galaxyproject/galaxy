@@ -31,7 +31,7 @@
                     class="btn btn-secondary toolbtn_save_permissions primary-button"
                     type="button"
                     @click="postPermissions">
-                    <font-awesome-icon :icon="['far', 'save']" />
+                    <FontAwesomeIcon :icon="['far', 'save']" />
                     &nbsp;Save
                 </button>
             </div>

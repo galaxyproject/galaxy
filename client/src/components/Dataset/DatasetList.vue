@@ -3,7 +3,7 @@
         <div v-if="error" class="alert alert-danger" show>{{ error }}</div>
         <div v-else>
             <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
-            <delayed-input class="m-1 mb-3" placeholder="Search Datasets" @change="onQuery" />
+            <DelayedInput class="m-1 mb-3" placeholder="Search Datasets" @change="onQuery" />
             <b-table
                 id="dataset-table"
                 striped
@@ -28,7 +28,7 @@
                     <UtcDate :date="data.value" mode="elapsed" />
                 </template>
             </b-table>
-            <loading-span v-if="loading" message="Loading datasets" />
+            <LoadingSpan v-if="loading" message="Loading datasets" />
             <div v-if="showNotFound">
                 No matching entries found for: <span class="font-weight-bold">{{ query }}</span
                 >.

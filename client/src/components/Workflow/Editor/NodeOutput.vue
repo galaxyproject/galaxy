@@ -329,7 +329,7 @@ const removeTagsAction = computed(() => {
             </div>
         </div>
 
-        <draggable-wrapper
+        <DraggableWrapper
             :id="id"
             ref="el"
             :class="terminalClass"
@@ -352,12 +352,12 @@ const removeTagsAction = computed(() => {
                 @keyup.space="toggleChildComponent"
                 @keyup.enter="toggleChildComponent"
                 @keyup.esc="toggleChildComponent">
-                <connection-menu
+                <ConnectionMenu
                     v-if="showChildComponent"
                     ref="menu"
                     :terminal="terminal"
-                    @closeMenu="closeMenu"></connection-menu>
+                    @closeMenu="closeMenu"></ConnectionMenu>
             </div>
-        </draggable-wrapper>
+        </DraggableWrapper>
     </div>
 </template>

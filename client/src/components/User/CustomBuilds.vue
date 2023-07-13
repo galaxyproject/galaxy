@@ -28,7 +28,7 @@
             </b-row>
             <b-row>
                 <b-col id="installed-builds" class="mb-4">
-                    <multiselect
+                    <Multiselect
                         v-model="selectedInstalledBuilds"
                         multiple
                         taggable
@@ -36,7 +36,7 @@
                         track-by="value"
                         :searchable="false"
                         :options="installedBuilds">
-                    </multiselect>
+                    </Multiselect>
                 </b-col>
             </b-row>
         </template>

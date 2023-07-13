@@ -371,7 +371,7 @@ function getEnergyNeededText(energyNeededInKiloWattHours: number) {
                     class="align-self-start mt-2">
                     <span>
                         Learn more about how we calculate your carbon emissions data.
-                        <font-awesome-icon icon="fa-question-circle" />
+                        <FontAwesomeIcon icon="fa-question-circle" />
                     </span>
                 </router-link>
             </div>

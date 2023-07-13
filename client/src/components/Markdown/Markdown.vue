@@ -1,16 +1,16 @@
 <template>
     <div class="markdown-wrapper">
-        <loading-span v-if="loading" />
+        <LoadingSpan v-if="loading" />
         <div v-else>
             <div>
-                <sts-download-button
+                <StsDownloadButton
                     v-if="effectiveExportLink"
                     class="float-right markdown-pdf-export"
                     :fallback-url="exportLink"
                     :download-endpoint="downloadEndpoint"
                     size="sm"
                     title="Generate PDF">
-                </sts-download-button>
+                </StsDownloadButton>
                 <b-button
                     v-if="!readOnly"
                     v-b-tooltip.hover
@@ -20,7 +20,7 @@
                     title="Edit Markdown"
                     @click="$emit('onEdit')">
                     Edit
-                    <font-awesome-icon icon="edit" />
+                    <FontAwesomeIcon icon="edit" />
                 </b-button>
                 <h1 class="float-right align-middle mr-2 mt-1 h-md">Galaxy {{ markdownConfig.model_class }}</h1>
                 <span class="float-left font-weight-light">
@@ -43,7 +43,7 @@
             </div>
             <div v-for="(obj, index) in markdownObjects" :key="index" class="markdown-components">
                 <p v-if="obj.name == 'default'" class="text-justify m-2" v-html="obj.content" />
-                <markdown-container
+                <MarkdownContainer
                     v-else
                     :name="obj.name"
                     :args="obj.args"

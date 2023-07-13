@@ -1,5 +1,5 @@
 <template>
-    <b-modal
+    <BModal
         v-model="show"
         :title="title"
         :header-text-variant="titleVariant"
@@ -23,7 +23,7 @@
                 </li>
             </ul>
         </div>
-    </b-modal>
+    </BModal>
 </template>
 
 <script>

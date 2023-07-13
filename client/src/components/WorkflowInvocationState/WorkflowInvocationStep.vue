@@ -14,7 +14,7 @@
                     v-slot="{ result: stepDetails, loading }"
                     auto-refresh>
                     <div style="min-width: 1">
-                        <loading-span v-if="loading" :message="`Loading invocation step details`"> </loading-span>
+                        <LoadingSpan v-if="loading" :message="`Loading invocation step details`"> </LoadingSpan>
                         <div v-else>
                             <details
                                 v-if="Object.values(stepDetails.outputs).length > 0"
@@ -22,7 +22,7 @@
                                 <summary><b>Output Datasets</b></summary>
                                 <div v-for="(value, name) in stepDetails.outputs" :key="value.id">
                                     <b>{{ name }}</b>
-                                    <generic-history-item :item-id="value.id" :item-src="value.src" />
+                                    <GenericHistoryItem :item-id="value.id" :item-src="value.src" />
                                 </div>
                             </details>
                             <details
@@ -31,18 +31,18 @@
                                 <summary><b>Output Dataset Collections</b></summary>
                                 <div v-for="(value, name) in stepDetails.output_collections" :key="value.id">
                                     <b>{{ name }}</b>
-                                    <generic-history-item :item-id="value.id" :item-src="value.src" />
+                                    <GenericHistoryItem :item-id="value.id" :item-src="value.src" />
                                 </div>
                             </details>
                             <div class="portlet-body" style="width: 100%; overflow-x: auto">
                                 <details v-if="workflowStepType == 'tool'" class="invocation-step-job-details">
                                     <summary><b>Jobs</b></summary>
-                                    <job-step :jobs="stepDetails.jobs" />
+                                    <JobStep :jobs="stepDetails.jobs" />
                                 </details>
-                                <parameter-step
+                                <ParameterStep
                                     v-else-if="workflowStepType == 'parameter_input'"
                                     :parameters="[invocation.input_step_parameters[stepDetails.workflow_step_label]]" />
-                                <generic-history-item
+                                <GenericHistoryItem
                                     v-else-if="
                                         isDataStep &&
                                         invocation &&
@@ -64,7 +64,7 @@
                                             </li>
                                         </ul>
                                     </div>
-                                    <workflow-invocation-state
+                                    <WorkflowInvocationState
                                         v-else
                                         :invocation-id="stepDetails.subworkflow_invocation_id" />
                                 </div>
@@ -72,13 +72,13 @@
                         </div>
                     </div>
                 </InvocationStepProvider>
-                <loading-span
+                <LoadingSpan
                     v-else
                     :message="`This invocation has not been scheduled yet, step information is unavailable`">
                     <!-- Probably a subworkflow invocation, could walk back to parent and show
                          why step is not scheduled, but that's not necessary for a first pass, I think
                     -->
-                </loading-span>
+                </LoadingSpan>
             </div>
         </div>
     </div>

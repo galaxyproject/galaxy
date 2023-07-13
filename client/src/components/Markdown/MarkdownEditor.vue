@@ -15,7 +15,7 @@
                                 variant="link"
                                 role="button"
                                 @click="onHelp">
-                                <font-awesome-icon icon="question" />
+                                <FontAwesomeIcon icon="question" />
                             </b-button>
                         </div>
                         <div class="my-1">

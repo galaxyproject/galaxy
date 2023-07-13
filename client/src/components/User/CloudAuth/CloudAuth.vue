@@ -64,7 +64,7 @@
         <div class="scroll-container">
             <b-list-group>
                 <transition-group name="fade">
-                    <cloud-auth-item
+                    <CloudAuthItem
                         v-for="credential in filteredItems"
                         :key="credential.counter"
                         :credential="credential"

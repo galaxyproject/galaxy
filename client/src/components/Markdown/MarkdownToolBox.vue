@@ -10,21 +10,17 @@
                 <b-alert v-if="error" variant="danger" class="my-2 mx-3 px-2 py-1" show>
                     {{ error }}
                 </b-alert>
-                <tool-section
-                    v-if="isWorkflow"
-                    :category="historyInEditorSection"
-                    :expanded="true"
-                    @onClick="onClick" />
-                <tool-section v-else :category="historySection" :expanded="true" @onClick="onClick" />
-                <tool-section :category="jobSection" :expanded="true" @onClick="onClick" />
-                <tool-section
+                <ToolSection v-if="isWorkflow" :category="historyInEditorSection" :expanded="true" @onClick="onClick" />
+                <ToolSection v-else :category="historySection" :expanded="true" @onClick="onClick" />
+                <ToolSection :category="jobSection" :expanded="true" @onClick="onClick" />
+                <ToolSection
                     v-if="isWorkflow"
                     :category="workflowInEditorSection"
                     :expanded="true"
                     @onClick="onClick" />
-                <tool-section v-else :category="workflowSection" :expanded="true" @onClick="onClick" />
-                <tool-section :category="otherSection" :expanded="true" @onClick="onClick" />
-                <tool-section
+                <ToolSection v-else :category="workflowSection" :expanded="true" @onClick="onClick" />
+                <ToolSection :category="otherSection" :expanded="true" @onClick="onClick" />
+                <ToolSection
                     v-if="hasVisualizations"
                     :category="visualizationSection"
                     :expanded="true"

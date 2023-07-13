@@ -4,7 +4,7 @@
         <div class="current-dataset chain-box">{{ datasetName }}</div>
         <div v-if="inherit_chain && inherit_chain.length > 0">
             <div v-for="({ name, dep }, i) in inherit_chain" :key="i">
-                <font-awesome-icon class="inheritance-arrow" size="3x" :icon="['fas', 'long-arrow-alt-up']" />
+                <FontAwesomeIcon class="inheritance-arrow" size="3x" :icon="['fas', 'long-arrow-alt-up']" />
                 <div class="chain-box">{{ name }} in {{ dep }}</div>
             </div>
         </div>

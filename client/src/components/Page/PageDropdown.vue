@@ -54,7 +54,7 @@ function onDelete(page_id: string) {
             aria-haspopup="true"
             :data-page-dropdown="props.page.id"
             aria-expanded="false">
-            <font-awesome-icon icon="caret-down" class="fa-lg" />
+            <FontAwesomeIcon icon="caret-down" class="fa-lg" />
             <span class="page-title">{{ props.page.title }}</span>
         </b-link>
         <p v-if="props.page.description">{{ props.page.description }}</p>

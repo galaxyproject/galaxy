@@ -141,7 +141,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <multiselect
+    <Multiselect
         v-if="hasOptions"
         v-model="currentValue"
         :allow-empty="true"

@@ -1,6 +1,6 @@
 <template>
     <div class="collection-element" @click="$emit('element-is-selected', element)">
-        <click-to-edit v-model="elementName" :title="titleElementName" />
+        <ClickToEdit v-model="elementName" :title="titleElementName" />
         <button class="discard-btn btn-sm" :title="titleDiscardButton" @click="clickDiscard">
             {{ l("Discard") }}
         </button>

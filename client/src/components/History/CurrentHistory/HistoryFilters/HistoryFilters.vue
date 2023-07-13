@@ -115,7 +115,7 @@
                     </b-input-group-append>
                 </b-input-group>
             </b-form-group>
-            <history-filters-default :settings="filterSettings" @change="onOption" />
+            <HistoryFiltersDefault :settings="filterSettings" @change="onOption" />
             <div class="mt-3">
                 <b-button class="mr-1" size="sm" variant="primary" description="apply filters" @click="onSearch">
                     <icon icon="search" />

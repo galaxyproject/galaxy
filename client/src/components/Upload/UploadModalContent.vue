@@ -1,7 +1,7 @@
 <template>
-    <b-tabs v-if="ready">
-        <b-tab v-if="showRegular" id="regular" title="Regular" button-id="tab-title-link-regular">
-            <default
+    <BTabs v-if="ready">
+        <BTab v-if="showRegular" id="regular" title="Regular" button-id="tab-title-link-regular">
+            <Default
                 ref="regular"
                 :details="details"
                 :lazy-load-max="50"
@@ -9,19 +9,19 @@
                 :has-callback="hasCallback"
                 :selectable="selectable"
                 v-on="$listeners" />
-        </b-tab>
-        <b-tab v-if="showComposite" id="composite" title="Composite" button-id="tab-title-link-composite">
-            <composite :details="details" :has-callback="hasCallback" :selectable="selectable" v-on="$listeners" />
-        </b-tab>
-        <b-tab v-if="showCollection" id="collection" title="Collection" button-id="tab-title-link-collection">
-            <collection :details="details" :has-callback="hasCallback" :selectable="selectable" v-on="$listeners" />
-        </b-tab>
-        <b-tab v-if="showRules" id="rule-based" title="Rule-based" button-id="tab-title-link-rule-based">
-            <rules-input :details="details" :has-callback="hasCallback" :selectable="selectable" v-on="$listeners" />
-        </b-tab>
-    </b-tabs>
+        </BTab>
+        <BTab v-if="showComposite" id="composite" title="Composite" button-id="tab-title-link-composite">
+            <Composite :details="details" :has-callback="hasCallback" :selectable="selectable" v-on="$listeners" />
+        </BTab>
+        <BTab v-if="showCollection" id="collection" title="Collection" button-id="tab-title-link-collection">
+            <Collection :details="details" :has-callback="hasCallback" :selectable="selectable" v-on="$listeners" />
+        </BTab>
+        <BTab v-if="showRules" id="rule-based" title="Rule-based" button-id="tab-title-link-rule-based">
+            <RulesInput :details="details" :has-callback="hasCallback" :selectable="selectable" v-on="$listeners" />
+        </BTab>
+    </BTabs>
     <div v-else>
-        <loading-span message="Loading required information from Galaxy server." />
+        <LoadingSpan message="Loading required information from Galaxy server." />
     </div>
 </template>
 

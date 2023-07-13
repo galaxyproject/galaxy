@@ -7,8 +7,8 @@
                     <h2 v-else id="toolbox-heading" v-localize class="m-1 h-sm">Advanced Tool Search</h2>
                     <div class="panel-header-buttons">
                         <b-button-group>
-                            <favorites-button v-if="!showAdvanced" :query="query" @onFavorites="onQuery" />
-                            <panel-view-button
+                            <FavoritesButton v-if="!showAdvanced" :query="query" @onFavorites="onQuery" />
+                            <PanelViewButton
                                 v-if="panelViews && Object.keys(panelViews).length > 1"
                                 :panel-views="panelViews"
                                 :current-panel-view="currentPanelView"
@@ -19,7 +19,7 @@
             </div>
         </div>
         <div class="unified-panel-controls">
-            <tool-search
+            <ToolSearch
                 enable-advanced
                 :current-panel-view="currentPanelView"
                 :placeholder="titleSearchTools"
@@ -30,7 +30,7 @@
                 @onQuery="onQuery"
                 @onResults="onResults" />
             <section v-if="!showAdvanced">
-                <upload-button />
+                <UploadButton />
                 <div v-if="hasResults" class="pb-2">
                     <b-button size="sm" class="w-100" @click="onToggle">
                         <span :class="buttonIcon" />
@@ -57,14 +57,14 @@
         <div v-if="!showAdvanced" class="unified-panel-body">
             <div class="toolMenuContainer">
                 <div class="toolMenu">
-                    <tool-section
+                    <ToolSection
                         v-for="(section, key) in sections"
                         :key="key"
                         :category="section"
                         :query-filter="queryFilter"
                         @onClick="onOpen" />
                 </div>
-                <tool-section :category="{ text: 'Workflows' }" />
+                <ToolSection :category="{ text: 'Workflows' }" />
                 <div id="internal-workflows" class="toolSectionBody">
                     <div class="toolSectionBg" />
                     <div v-for="wf in workflows" :key="wf.id" class="toolTitle">

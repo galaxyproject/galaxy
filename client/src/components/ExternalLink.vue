@@ -16,6 +16,6 @@ const props = defineProps({
 <template>
     <a target="_blank" :href="props.href">
         <slot></slot>
-        <font-awesome-icon icon="external-link-alt" />
+        <FontAwesomeIcon icon="external-link-alt" />
     </a>
 </template>

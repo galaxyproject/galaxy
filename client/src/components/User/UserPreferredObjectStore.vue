@@ -1,5 +1,5 @@
 <template>
-    <b-row class="ml-3 mb-1">
+    <BRow class="ml-3 mb-1">
         <i class="pref-icon pt-1 fa fa-lg fa-hdd" />
         <div class="pref-content pr-1">
             <a
@@ -12,7 +12,7 @@
             <div v-localize class="form-text text-muted">
                 Select a preferred default object store for the outputs of new jobs to be created in.
             </div>
-            <b-modal
+            <BModal
                 id="modal-select-preferred-object-store"
                 ref="modal"
                 v-model="showModal"
@@ -31,9 +31,9 @@
                     :default-option-title="galaxySelectionDefaultTitle"
                     :default-option-description="galaxySelectionDefaultDescription"
                     @onSubmit="handleSubmit" />
-            </b-modal>
+            </BModal>
         </div>
-    </b-row>
+    </BRow>
 </template>
 
 <script>

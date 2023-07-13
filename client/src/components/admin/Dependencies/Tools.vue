@@ -1,11 +1,11 @@
 <template>
     <div class="tools" :title="title">
         <span v-if="toolIds.length == 1">
-            <tool-display :tool-id="toolIds[0]" />
+            <ToolDisplay :tool-id="toolIds[0]" />
         </span>
         <span v-else-if="compact"> {{ toolIds.length }} tools </span>
         <div v-for="(toolId, index) in toolIds" v-else :key="index">
-            <tool-display :tool-id="toolId" />
+            <ToolDisplay :tool-id="toolId" />
         </div>
     </div>
 </template>

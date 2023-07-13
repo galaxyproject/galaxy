@@ -14,7 +14,7 @@
                     <pre :class="codeClass">{{ codeItem }}</pre>
                 </b-col>
                 <b-col class="nopadding pointer">
-                    <font-awesome-icon :icon="iconClass" />
+                    <FontAwesomeIcon :icon="iconClass" />
                 </b-col>
             </b-row>
         </td>

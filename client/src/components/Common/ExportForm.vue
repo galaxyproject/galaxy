@@ -5,7 +5,7 @@
             label-for="directory"
             :description="directoryDescription | localize"
             class="mt-3">
-            <files-input id="directory" v-model="directory" mode="directory" :require-writable="true" />
+            <FilesInput id="directory" v-model="directory" mode="directory" :require-writable="true" />
         </b-form-group>
         <b-form-group id="fieldset-name" label-for="name" :description="nameDescription | localize" class="mt-3">
             <b-form-input id="name" v-model="name" :placeholder="namePlaceholder | localize" required></b-form-input>

@@ -34,7 +34,7 @@
                     target="_blank"
                     :name="row.item.name"
                     >{{ row.item.name }}
-                    <font-awesome-icon icon="external-link-alt" />
+                    <FontAwesomeIcon icon="external-link-alt" />
                 </a>
             </template>
             <template v-slot:cell(job_info)="row">

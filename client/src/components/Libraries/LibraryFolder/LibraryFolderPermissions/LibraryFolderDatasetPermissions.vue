@@ -10,7 +10,7 @@
                     variant="secondary"
                     type="button"
                     :href="`${root}libraries/folders/${folder_id}/dataset/${dataset_id}`">
-                    <font-awesome-icon :icon="['far', 'file']" />
+                    <FontAwesomeIcon :icon="['far', 'file']" />
                     &nbsp;Dataset Details
                 </b-button>
                 <PermissionsHeader :name="dataset.name" />
@@ -66,7 +66,7 @@
                 class="toolbtn_save_permissions"
                 variant="secondary"
                 @click="postPermissions">
-                <font-awesome-icon :icon="['far', 'save']" />
+                <FontAwesomeIcon :icon="['far', 'save']" />
                 &nbsp;Save
             </b-button>
         </b-container>

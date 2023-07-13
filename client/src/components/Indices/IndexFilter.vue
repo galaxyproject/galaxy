@@ -1,6 +1,6 @@
 <template>
     <span>
-        <b-input-group>
+        <BInputGroup>
             <DebouncedInput v-slot="{ value: debouncedValue, input }" v-model="localFilter" :delay="debounceDelay">
                 <b-form-input
                     :id="id"
@@ -14,28 +14,28 @@
                     @input="input"
                     @keyup.esc="onReset" />
             </DebouncedInput>
-            <b-input-group-append>
-                <b-button
+            <BInputGroupAppend>
+                <BButton
                     v-b-tooltip.hover
                     aria-haspopup="true"
                     title="Advanced Filtering Help"
                     :size="size"
                     @click="onHelp">
-                    <font-awesome-icon icon="question" />
-                </b-button>
-                <b-button
+                    <FontAwesomeIcon icon="question" />
+                </BButton>
+                <BButton
                     v-b-tooltip.hover
                     aria-haspopup="true"
                     title="Clear Filters (esc)"
                     :size="size"
                     @click="onReset">
-                    <font-awesome-icon icon="times" />
-                </b-button>
-            </b-input-group-append>
-        </b-input-group>
-        <b-modal v-model="showHelp" title="Filtering Options Help" ok-only>
+                    <FontAwesomeIcon icon="times" />
+                </BButton>
+            </BInputGroupAppend>
+        </BInputGroup>
+        <BModal v-model="showHelp" title="Filtering Options Help" ok-only>
             <div v-html="helpHtml"></div>
-        </b-modal>
+        </BModal>
     </span>
 </template>
 

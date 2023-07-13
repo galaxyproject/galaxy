@@ -167,29 +167,29 @@ const infoString = computed(() => {
         </div>
         <div v-if="dependentWorkflowStep">
             Problem occurred at this step:
-            <workflow-invocation-step
+            <WorkflowInvocationStep
                 :invocation="invocation"
                 :workflow="workflow"
-                :workflow-step="dependentWorkflowStep"></workflow-invocation-step>
+                :workflow-step="dependentWorkflowStep"></WorkflowInvocationStep>
         </div>
         <div v-if="workflowStep">
             {{ stepDescription }}
-            <workflow-invocation-step
+            <WorkflowInvocationStep
                 :invocation="invocation"
                 :workflow="workflow"
-                :workflow-step="workflowStep"></workflow-invocation-step>
+                :workflow-step="workflowStep"></WorkflowInvocationStep>
         </div>
         <div v-if="HdaId">
             This dataset failed:
-            <generic-history-item :item-id="HdaId" item-src="hda" />
+            <GenericHistoryItem :item-id="HdaId" item-src="hda" />
         </div>
         <div v-if="HdcaId">
             This dataset collection failed:
-            <generic-history-item :item-id="HdcaId" item-src="hdca" />
+            <GenericHistoryItem :item-id="HdcaId" item-src="hdca" />
         </div>
         <div v-if="jobId">
             This job failed:
-            <job-information :job_id="jobId" />
+            <JobInformation :job_id="jobId" />
         </div>
     </div>
 </template>

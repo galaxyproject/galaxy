@@ -16,7 +16,7 @@
             </p>
             <p v-else>You can check the status of queued jobs and view the resulting data the History panel.</p>
         </div>
-        <workflow-invocation-state
+        <WorkflowInvocationState
             v-for="(invocation, index) in invocations"
             :key="invocation.id"
             :index="index"

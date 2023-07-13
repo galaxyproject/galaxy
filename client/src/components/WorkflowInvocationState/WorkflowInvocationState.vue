@@ -1,7 +1,7 @@
 <template>
     <b-tabs v-if="invocation">
         <b-tab title="Summary" active>
-            <workflow-invocation-summary
+            <WorkflowInvocationSummary
                 :invocation="invocation"
                 :index="index"
                 :invocation-and-job-terminal="invocationAndJobTerminal"
@@ -10,7 +10,7 @@
                 @invocation-cancelled="cancelWorkflowScheduling" />
         </b-tab>
         <b-tab title="Details">
-            <workflow-invocation-details
+            <WorkflowInvocationDetails
                 :invocation="invocation"
                 :invocation-and-job-terminal="invocationAndJobTerminal" />
         </b-tab>
@@ -19,7 +19,7 @@
         </b-tab> -->
         <b-tab title="Export">
             <div v-if="invocationAndJobTerminal">
-                <workflow-invocation-export-options :invocation-id="invocation.id" />
+                <WorkflowInvocationExportOptions :invocation-id="invocation.id" />
             </div>
             <b-alert v-else variant="info" show>
                 <LoadingSpan message="Waiting to complete invocation" />

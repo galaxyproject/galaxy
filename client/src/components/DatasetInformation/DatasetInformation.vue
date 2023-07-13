@@ -37,13 +37,13 @@
                     <tr v-if="dataset.id">
                         <td>History Content API ID</td>
                         <td>
-                            <div id="dataset-id">{{ dataset.id }} <decoded-id :id="dataset.id" /></div>
+                            <div id="dataset-id">{{ dataset.id }} <DecodedId :id="dataset.id" /></div>
                         </td>
                     </tr>
                     <tr v-if="dataset.history_id">
                         <td>History API ID</td>
                         <td>
-                            <div id="history_id">{{ dataset.history_id }} <decoded-id :id="dataset.history_id" /></div>
+                            <div id="history_id">{{ dataset.history_id }} <DecodedId :id="dataset.history_id" /></div>
                         </td>
                     </tr>
                     <tr v-if="dataset.uuid">

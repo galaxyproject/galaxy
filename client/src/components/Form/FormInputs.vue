@@ -44,7 +44,7 @@
                             size="sm"
                             class="float-right"
                             @click="repeatDelete(input, cacheId)">
-                            <font-awesome-icon icon="trash-alt" />
+                            <FontAwesomeIcon icon="trash-alt" />
                         </b-button>
                     </template>
                     <template v-slot:body>
@@ -52,7 +52,7 @@
                     </template>
                 </FormCard>
                 <b-button v-if="!sustainRepeats" @click="repeatInsert(input)">
-                    <font-awesome-icon icon="plus" class="mr-1" />
+                    <FontAwesomeIcon icon="plus" class="mr-1" />
                     <span data-description="repeat insert">Insert {{ input.title || "Repeat" }}</span>
                 </b-button>
             </div>

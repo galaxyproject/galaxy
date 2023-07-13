@@ -9,7 +9,7 @@
                 variant="link"
                 size="sm"
                 @click="copyBibtex">
-                <font-awesome-icon icon="copy" />
+                <FontAwesomeIcon icon="copy" />
             </b-button>
             <Citation
                 v-for="(citation, index) in citations"
@@ -25,7 +25,7 @@
                 title="Learn more about Galaxy Requirements"
                 href="https://galaxyproject.org/tools/requirements/"
                 target="_blank">
-                See details <font-awesome-icon icon="external-link-alt" />
+                See details <FontAwesomeIcon icon="external-link-alt" />
             </a>
             <div v-for="(requirement, index) in requirements" :key="index">
                 - {{ requirement.name }}
@@ -43,13 +43,13 @@
                 <template v-if="xref.reftype == 'bio.tools'">
                     bio.tools: {{ xref.value }} (<a :href="`https://bio.tools/${xref.value}`" target="_blank"
                         >bio.tools
-                        <font-awesome-icon
+                        <FontAwesomeIcon
                             v-b-tooltip.hover
                             title="Visit bio.tools reference"
                             icon="external-link-alt" /> </a
                     >) (<a :href="`https://openebench.bsc.es/tool/${xref.value}`" target="_blank"
                         >OpenEBench
-                        <font-awesome-icon
+                        <FontAwesomeIcon
                             v-b-tooltip.hover
                             title="Visit OpenEBench reference"
                             icon="external-link-alt" /> </a

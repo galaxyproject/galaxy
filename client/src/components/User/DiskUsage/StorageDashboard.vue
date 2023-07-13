@@ -47,8 +47,8 @@ function goToHistoriesOverview() {
             </h1>
             <h2 class="text-center my-3 h-sm">{{ texts.subtitle }}</h2>
         </header>
-        <disk-usage-summary class="m-3" />
-        <icon-card
+        <DiskUsageSummary class="m-3" />
+        <IconCard
             class="mx-auto mb-3"
             data-description="free space card"
             :title="texts.freeSpace.title"
@@ -57,7 +57,7 @@ function goToHistoriesOverview() {
             :button-text="texts.freeSpace.buttonText"
             @onButtonClick="goToStorageManager" />
 
-        <icon-card
+        <IconCard
             class="mx-auto mb-3"
             data-description="explore usage card"
             :title="texts.explore.title"

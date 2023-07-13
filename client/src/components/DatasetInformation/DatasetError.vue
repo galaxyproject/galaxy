@@ -75,7 +75,7 @@
                             variant="primary"
                             class="mt-3"
                             @click="submit(dataset, jobDetails.user_email)">
-                            <font-awesome-icon icon="bug" class="mr-1" />Report
+                            <FontAwesomeIcon icon="bug" class="mr-1" />Report
                         </b-button>
                     </div>
                 </div>

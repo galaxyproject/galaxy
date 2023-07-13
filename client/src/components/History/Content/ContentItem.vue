@@ -21,7 +21,7 @@
                         class="p-0"
                         title="Input"
                         @click.stop="toggleHighlights">
-                        <font-awesome-icon class="text-info" icon="arrow-circle-up" />
+                        <FontAwesomeIcon class="text-info" icon="arrow-circle-up" />
                     </b-button>
                     <b-button
                         v-else-if="highlight == 'active'"
@@ -31,7 +31,7 @@
                         title="Inputs/Outputs highlighted for this item"
                         @click.stop="toggleHighlights"
                         @keypress="toggleHighlights">
-                        <font-awesome-icon icon="check-circle" />
+                        <FontAwesomeIcon icon="check-circle" />
                     </b-button>
                     <b-button
                         v-else-if="highlight == 'output'"
@@ -40,7 +40,7 @@
                         class="p-0"
                         title="Output"
                         @click.stop="toggleHighlights">
-                        <font-awesome-icon class="text-info" icon="arrow-circle-down" />
+                        <FontAwesomeIcon class="text-info" icon="arrow-circle-down" />
                     </b-button>
                     <span v-if="hasStateIcon" class="state-icon">
                         <icon fixed-width :icon="contentState.icon" :spin="contentState.spin" />

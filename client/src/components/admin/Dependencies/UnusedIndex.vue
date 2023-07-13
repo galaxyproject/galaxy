@@ -1,5 +1,5 @@
 <template>
-    <dependency-index-wrapper
+    <DependencyIndexWrapper
         :loading="loading"
         :error="error"
         loading-message="Loading tool dependency resolver information">
@@ -15,7 +15,7 @@
                 <b-button @click="deleteSelected"> Delete Selected Environments </b-button>
             </div>
         </template>
-    </dependency-index-wrapper>
+    </DependencyIndexWrapper>
 </template>
 <script>
 import { deletedUnusedPaths, getDependencyUnusedPaths } from "../AdminServices";

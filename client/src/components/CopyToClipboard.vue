@@ -1,5 +1,5 @@
 <template>
-    <font-awesome-icon class="cursor-pointer" :title="title" :icon="['far', 'copy']" @click="copy(text, message)" />
+    <FontAwesomeIcon class="cursor-pointer" :title="title" :icon="['far', 'copy']" @click="copy(text, message)" />
 </template>
 
 <script>

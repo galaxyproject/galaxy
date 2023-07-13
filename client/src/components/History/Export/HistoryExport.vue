@@ -176,48 +176,48 @@ function updateExportParams(newParams) {
 </script>
 <template>
     <span class="history-export-component">
-        <font-awesome-icon icon="file-export" size="2x" class="text-primary float-left mr-2" />
+        <FontAwesomeIcon icon="file-export" size="2x" class="text-primary float-left mr-2" />
         <h1 class="h-lg">
             Export
-            <loading-span v-if="!history" spinner-only />
+            <LoadingSpan v-if="!history" spinner-only />
             <b v-else id="history-name">{{ historyName }}</b>
         </h1>
 
-        <export-options
+        <ExportOptions
             id="history-export-options"
             class="mt-3"
             :export-params="exportParams"
             @onValueChanged="updateExportParams" />
 
         <h2 class="h-md mt-3">How do you want to export this history?</h2>
-        <b-card no-body class="mt-3">
-            <b-tabs pills card vertical>
-                <b-tab id="direct-download-tab" title="to direct download" title-link-class="tab-export-to-link" active>
+        <BCard no-body class="mt-3">
+            <BTabs pills card vertical>
+                <BTab id="direct-download-tab" title="to direct download" title-link-class="tab-export-to-link" active>
                     <p>
                         Here you can generate a temporal download for your history. When your download link expires or
                         your history changes you can re-generate it again.
                     </p>
-                    <b-alert show variant="warning">
+                    <BAlert show variant="warning">
                         History archive downloads can expire and are removed at regular intervals. For permanent
                         storage, export to a <b>remote file</b> or download and then import the archive on another
                         Galaxy server.
-                    </b-alert>
-                    <b-button
+                    </BAlert>
+                    <BButton
                         class="gen-direct-download-btn"
                         :disabled="!canGenerateDownload"
                         variant="primary"
                         @click="prepareDownload">
                         Generate direct download
-                    </b-button>
+                    </BButton>
                     <span v-if="isPreparingDownload">
-                        <loading-span message="Galaxy is preparing your download, this will likely take a while" />
+                        <LoadingSpan message="Galaxy is preparing your download, this will likely take a while" />
                     </span>
-                    <b-alert v-else-if="isLatestExportRecordReadyToDownload" variant="success" class="mt-3" show>
+                    <BAlert v-else-if="isLatestExportRecordReadyToDownload" variant="success" class="mt-3" show>
                         The latest export record is ready. Use the download button below to download it or change the
                         advanced export options above to generate a new one.
-                    </b-alert>
-                </b-tab>
-                <b-tab
+                    </BAlert>
+                </BTab>
+                <BTab
                     v-if="hasWritableFileSources"
                     id="file-source-tab"
                     title="to remote file"
@@ -227,17 +227,17 @@ function updateExportParams(newParams) {
                         one of the available remote file sources here. You will be able to re-import it later as long as
                         it remains available on the remote server.
                     </p>
-                    <export-form what="history" :clear-input-after-export="true" @export="doExportToFileSource" />
-                </b-tab>
-            </b-tabs>
-        </b-card>
+                    <ExportForm what="history" :clear-input-after-export="true" @export="doExportToFileSource" />
+                </BTab>
+            </BTabs>
+        </BCard>
 
-        <b-alert v-if="errorMessage" id="last-export-record-error-alert" variant="danger" class="mt-3" show>
+        <BAlert v-if="errorMessage" id="last-export-record-error-alert" variant="danger" class="mt-3" show>
             {{ errorMessage }}
-        </b-alert>
+        </BAlert>
         <div v-else-if="latestExportRecord">
             <h2 class="h-md mt-3">Latest Export Record</h2>
-            <export-record-details
+            <ExportRecordDetails
                 :record="latestExportRecord"
                 object-type="history"
                 class="mt-3"
@@ -248,11 +248,11 @@ function updateExportParams(newParams) {
                 @onReimport="reimportFromRecord"
                 @onActionMessageDismissed="onActionMessageDismissedFromRecord" />
         </div>
-        <b-alert v-else id="no-export-records-alert" variant="info" class="mt-3" show>
+        <BAlert v-else id="no-export-records-alert" variant="info" class="mt-3" show>
             {{ availableRecordsMessage }}
-        </b-alert>
+        </BAlert>
 
-        <export-record-table
+        <ExportRecordTable
             v-if="hasPreviousExports"
             id="previous-export-records"
             :records="previousExportRecords"

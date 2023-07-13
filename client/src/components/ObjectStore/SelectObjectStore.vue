@@ -82,7 +82,7 @@ async function handleSubmit(preferredObjectStoreId: string) {
 
 <template>
     <div>
-        <loading-span v-if="loading" :message="loadingObjectStoreInfoMessage" />
+        <LoadingSpan v-if="loading" :message="loadingObjectStoreInfoMessage" />
         <div v-else>
             <b-alert v-if="error" variant="danger" class="object-store-selection-error" show>
                 {{ error }}

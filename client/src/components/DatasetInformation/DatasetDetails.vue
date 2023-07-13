@@ -14,12 +14,12 @@
                         :job-id="dataset.creating_job"
                         auto-refresh>
                         <div v-if="!isJobLoading" class="details">
-                            <dataset-information :hda_id="datasetId" />
-                            <job-parameters dataset_type="hda" :dataset-id="datasetId" />
-                            <job-information :job_id="dataset.creating_job" />
-                            <dataset-storage :dataset-id="datasetId" />
-                            <inheritance-chain :dataset-id="datasetId" :dataset-name="dataset.name" />
-                            <job-metrics
+                            <DatasetInformation :hda_id="datasetId" />
+                            <JobParameters dataset_type="hda" :dataset-id="datasetId" />
+                            <JobInformation :job_id="dataset.creating_job" />
+                            <DatasetStorage :dataset-id="datasetId" />
+                            <InheritanceChain :dataset-id="datasetId" :dataset-name="dataset.name" />
+                            <JobMetrics
                                 v-if="config"
                                 :dataset-id="datasetId"
                                 :carbon-intensity="config.carbon_intensity"
@@ -27,8 +27,8 @@
                                 :power-usage-effectiveness="config.power_usage_effectiveness"
                                 :should-show-aws-estimate="config.aws_estimate"
                                 :should-show-carbon-emissions-estimates="config.carbon_emissions_estimates" />
-                            <job-destination-params v-if="currentUser.is_admin" :job-id="dataset.creating_job" />
-                            <job-dependencies :dependencies="job.dependencies"></job-dependencies>
+                            <JobDestinationParams v-if="currentUser.is_admin" :job-id="dataset.creating_job" />
+                            <JobDependencies :dependencies="job.dependencies"></JobDependencies>
                             <div v-if="dataset.peek">
                                 <h2 class="h-md">Dataset Peek</h2>
                                 <div v-html="dataset.peek" />
@@ -36,8 +36,8 @@
                         </div>
                     </JobDetailsProvider>
                     <div v-else-if="!isDatasetLoading" class="details">
-                        <dataset-information :hda_id="datasetId" />
-                        <dataset-storage :dataset-id="datasetId" />
+                        <DatasetInformation :hda_id="datasetId" />
+                        <DatasetStorage :dataset-id="datasetId" />
                         <div>
                             <h2 class="h-md">Job Not Found</h2>
                             <p>

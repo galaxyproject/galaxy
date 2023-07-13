@@ -1,6 +1,6 @@
 <template>
-    <b-form-input v-model="localValue" class="directory-form-input" :placeholder="placeholder" @click="selectFile">
-    </b-form-input>
+    <BFormInput v-model="localValue" class="directory-form-input" :placeholder="placeholder" @click="selectFile">
+    </BFormInput>
 </template>
 
 <script>

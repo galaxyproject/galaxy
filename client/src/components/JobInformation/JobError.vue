@@ -2,7 +2,7 @@
     <b-card border-variant="danger" :header="header">
         <b-card-text>
             <div @click="showInfo = true">
-                <a href="#">See full job details <font-awesome-icon icon="info-circle" /></a>
+                <a href="#">See full job details <FontAwesomeIcon icon="info-circle" /></a>
             </div>
             <div v-if="job.stderr" class="error-wrapper" @click="toggleExpanded">
                 Job Standard Error
@@ -12,7 +12,7 @@
             <!-- TODO: modal for reporting error. -->
         </b-card-text>
         <b-modal v-model="showInfo" modal-class="job-information-modal" scrollable ok-only hide-header>
-            <job-information :job_id="job.id" :include-times="true" />
+            <JobInformation :job_id="job.id" :include-times="true" />
         </b-modal>
     </b-card>
 </template>

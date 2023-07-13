@@ -4,7 +4,7 @@
         <div v-for="attribute in displayedAttributes" :key="attribute.key" role="group" class="form-group">
             <label :for="attribute.key">{{ attribute.label }}</label>
             <span v-b-tooltip.hover title="Hide Attribute"
-                ><font-awesome-icon icon="eye-slash" @click="onHide(attribute.key)"
+                ><FontAwesomeIcon icon="eye-slash" @click="onHide(attribute.key)"
             /></span>
             <b-form-input
                 :id="attribute.key"
