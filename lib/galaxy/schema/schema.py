@@ -354,6 +354,12 @@ class FavoriteObjectType(str, Enum):
     tools = "tools"
 
 
+class DeletedCustomBuild(Model):
+    message: str = Field(
+        default=Required, title="Deletion message", description="Confirmation of the custom build deletion."
+    )
+
+
 class AddCustomBuildPayload(Model):
     name: str = Field(default=Required, title="Name", description="The name of the custom build.")
     lentype: str = Field(default=Required, title="?", description="?")
