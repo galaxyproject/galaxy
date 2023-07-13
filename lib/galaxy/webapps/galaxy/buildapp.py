@@ -830,14 +830,6 @@ def populate_api_routes(webapp, app):
     )
 
     webapp.mapper.connect(
-        "get_custom_builds",
-        "/api/users/{id}/custom_builds",
-        controller="users",
-        action="get_custom_builds",
-        conditions=dict(method=["GET"]),
-    )
-
-    webapp.mapper.connect(
         "add_custom_builds",
         "/api/users/{id}/custom_builds/{key}",
         controller="users",
