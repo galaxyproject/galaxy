@@ -43,6 +43,7 @@ from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     AnonUserModel,
     AsyncTaskResultSummary,
+    CustomBuildCreationPayload,
     DeletedCustomBuild,
     DetailedUserModel,
     FavoriteObject,
@@ -132,7 +133,10 @@ UserUpdateBody = Body(default=Required, title="Update user", description="The us
 FavoriteObjectBody = Body(
     default=Required, title="Set favorite", description="The id of an object the user wants to favorite."
 )
-# AddCustomBuildBody = Body(default=Required, title="Add custom build", description="The values to add a new custom build.")
+# TODO Does name fit to add_custom_build operation?
+CustomBuildCreationBody = Body(
+    default=Required, title="Add custom build", description="The values to add a new custom build."
+)
 AnyUserModel = Union[DetailedUserModel, AnonUserModel]
 
 
@@ -410,7 +414,94 @@ class FastAPIUsers:
             trans.sa_session.commit()
         return theme
 
-    # TODO add pydantic model for return
+    # TODO Add pydantic model for return
+    @router.put(
+        "/api/users/{user_id}/custom_builds/{key}",
+        name="add_custom_builds",
+        summary="Add new custom build.",
+    )
+    def add_custom_builds(
+        self,
+        key: str = CustomBuildKeyPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
+        payload: CustomBuildCreationPayload = CustomBuildCreationBody,
+    ):
+        user = self.service.get_user(trans, user_id)
+        dbkeys = json.loads(user.preferences["dbkeys"]) if "dbkeys" in user.preferences else {}
+        name = payload.name
+        len_type = payload.len_type
+        len_value = payload.len_value
+        if len_type not in ["file", "fasta", "text"] or not len_value:
+            raise exceptions.RequestParameterInvalidException("Please specify a valid data source type.")
+        if not name or not key:
+            raise exceptions.RequestParameterMissingException("You must specify values for all the fields.")
+        elif key in dbkeys:
+            raise exceptions.DuplicatedIdentifierException(
+                "There is already a custom build with that key. Delete it first if you want to replace it."
+            )
+        else:
+            # Have everything needed; create new build.
+            build_dict = {"name": name}
+            if len_type in ["text", "file"]:
+                # Create new len file
+                new_len = trans.app.model.HistoryDatasetAssociation(
+                    extension="len", create_dataset=True, sa_session=trans.sa_session
+                )
+                trans.sa_session.add(new_len)
+                new_len.name = name
+                new_len.visible = False
+                new_len.state = trans.app.model.Job.states.OK
+                new_len.info = "custom build .len file"
+                try:
+                    trans.app.object_store.create(new_len.dataset)
+                except ObjectInvalid:
+                    raise exceptions.InternalServerError("Unable to create output dataset: object store is full.")
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
+                counter = 0
+                lines_skipped = 0
+                with open(new_len.file_name, "w") as f:
+                    # LEN files have format:
+                    #   <chrom_name><tab><chrom_length>
+                    for line in len_value.split("\n"):
+                        # Splits at the last whitespace in the line
+                        lst = line.strip().rsplit(None, 1)
+                        if not lst or len(lst) < 2:
+                            lines_skipped += 1
+                            continue
+                        # TODO Does name length_str fit here?
+                        chrom, length_str = lst[0], lst[1]
+                        try:
+                            length = int(length_str)
+                        except ValueError:
+                            lines_skipped += 1
+                            continue
+                        if chrom != escape(chrom):
+                            build_dict["message"] = "Invalid chromosome(s) with HTML detected and skipped."
+                            lines_skipped += 1
+                            continue
+                        counter += 1
+                        f.write(f"{chrom}\t{length}\n")
+                build_dict["len"] = new_len.id
+                build_dict["count"] = str(counter)
+            else:
+                build_dict["fasta"] = trans.security.decode_id(len_value)
+                dataset = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(build_dict["fasta"])
+                try:
+                    new_len = dataset.get_converted_dataset(trans, "len")
+                    new_linecount = new_len.get_converted_dataset(trans, "linecount")
+                    build_dict["len"] = new_len.id
+                    build_dict["linecount"] = new_linecount.id
+                except Exception:
+                    raise exceptions.ToolExecutionError("Failed to convert dataset.")
+            dbkeys[key] = build_dict
+            user.preferences["dbkeys"] = json.dumps(dbkeys)
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
+            return build_dict
+
+    # TODO Add pydantic model for return
     @router.get(
         "/api/users/{user_id}/custom_builds", name="get_custom_builds", summary=" Returns collection of custom builds."
     )
@@ -1042,95 +1133,6 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             "toolbox_section_filters": {"title": "Sections", "config": trans.app.config.user_tool_section_filters},
             "toolbox_label_filters": {"title": "Labels", "config": trans.app.config.user_tool_label_filters},
         }
-
-    @expose_api
-    def add_custom_builds(self, trans, id, key, payload=None, **kwd):
-        """
-        PUT /api/users/{id}/custom_builds/{key}
-        Add new custom build.
-
-        :param id: the encoded id of the user
-        :type  id: str
-
-        :param id: custom build key
-        :type  id: str
-
-        :param payload: data with new build details
-        :type  payload: dict
-        """
-        payload = payload or {}
-        user = self._get_user(trans, id)
-        dbkeys = json.loads(user.preferences["dbkeys"]) if "dbkeys" in user.preferences else {}
-        name = payload.get("name")
-        len_type = payload.get("len|type")
-        len_value = payload.get("len|value")
-        if len_type not in ["file", "fasta", "text"] or not len_value:
-            raise exceptions.RequestParameterInvalidException("Please specify a valid data source type.")
-        if not name or not key:
-            raise exceptions.RequestParameterMissingException("You must specify values for all the fields.")
-        elif key in dbkeys:
-            raise exceptions.DuplicatedIdentifierException(
-                "There is already a custom build with that key. Delete it first if you want to replace it."
-            )
-        else:
-            # Have everything needed; create new build.
-            build_dict = {"name": name}
-            if len_type in ["text", "file"]:
-                # Create new len file
-                new_len = trans.app.model.HistoryDatasetAssociation(
-                    extension="len", create_dataset=True, sa_session=trans.sa_session
-                )
-                trans.sa_session.add(new_len)
-                new_len.name = name
-                new_len.visible = False
-                new_len.state = trans.app.model.Job.states.OK
-                new_len.info = "custom build .len file"
-                try:
-                    trans.app.object_store.create(new_len.dataset)
-                except ObjectInvalid:
-                    raise exceptions.InternalServerError("Unable to create output dataset: object store is full.")
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
-                counter = 0
-                lines_skipped = 0
-                with open(new_len.file_name, "w") as f:
-                    # LEN files have format:
-                    #   <chrom_name><tab><chrom_length>
-                    for line in len_value.split("\n"):
-                        # Splits at the last whitespace in the line
-                        lst = line.strip().rsplit(None, 1)
-                        if not lst or len(lst) < 2:
-                            lines_skipped += 1
-                            continue
-                        chrom, length = lst[0], lst[1]
-                        try:
-                            length = int(length)
-                        except ValueError:
-                            lines_skipped += 1
-                            continue
-                        if chrom != escape(chrom):
-                            build_dict["message"] = "Invalid chromosome(s) with HTML detected and skipped."
-                            lines_skipped += 1
-                            continue
-                        counter += 1
-                        f.write(f"{chrom}\t{length}\n")
-                build_dict["len"] = new_len.id
-                build_dict["count"] = counter
-            else:
-                build_dict["fasta"] = trans.security.decode_id(len_value)
-                dataset = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(build_dict["fasta"])
-                try:
-                    new_len = dataset.get_converted_dataset(trans, "len")
-                    new_linecount = new_len.get_converted_dataset(trans, "linecount")
-                    build_dict["len"] = new_len.id
-                    build_dict["linecount"] = new_linecount.id
-                except Exception:
-                    raise exceptions.ToolExecutionError("Failed to convert dataset.")
-            dbkeys[key] = build_dict
-            user.preferences["dbkeys"] = json.dumps(dbkeys)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
-            return build_dict
 
     def _get_user(self, trans, id):
         user = self.get_user(trans, id)
