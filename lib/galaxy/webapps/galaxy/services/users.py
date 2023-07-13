@@ -255,11 +255,3 @@ class UsersService(ServiceBase):
             # TODO: move into api_values
             rval.append(item)
         return rval
-
-    def validate_favorite_object_type(self, object_type):
-        if object_type in ["tools"]:
-            pass
-        else:
-            raise glx_exceptions.ObjectAttributeInvalidException(
-                f"This type is not supported. Given object_type: {object_type}"
-            )
