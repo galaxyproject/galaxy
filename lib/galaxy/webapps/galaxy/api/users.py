@@ -40,9 +40,10 @@ from galaxy.model import (
 from galaxy.model.base import transaction
 from galaxy.schema import APIKeyModel
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.schema import (  # AddCustomBuildPayload,; CreatedUserModel,;
+from galaxy.schema.schema import (
     AnonUserModel,
     AsyncTaskResultSummary,
+    DeletedCustomBuild,
     DetailedUserModel,
     FavoriteObject,
     FavoriteObjectsSummary,
@@ -109,11 +110,11 @@ ObjectIDPathParam: str = Path(
     title="Object ID",
     description="The ID of an object the user wants to remove from favorites",
 )
-# CustomBuildKeyPathParam: str = Path(
-#     default=Required,
-#     title="Custom build key",
-#     description="The key of the custom build to be deleted.",
-# )
+CustomBuildKeyPathParam: str = Path(
+    default=Required,
+    title="Custom build key",
+    description="The key of the custom build to be deleted.",
+)
 
 RecalculateDiskUsageSummary = "Triggers a recalculation of the current user disk usage."
 RecalculateDiskUsageResponseDescriptions = {
@@ -408,6 +409,26 @@ class FastAPIUsers:
         with transaction(trans.sa_session):
             trans.sa_session.commit()
         return theme
+
+    @router.delete(
+        "/api/users/{user_id}/custom_builds/{key}", name="delete_custom_build", summary="Delete a custom build"
+    )
+    def delete_custom_builds(
+        self,
+        key: str = CustomBuildKeyPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
+    ) -> DeletedCustomBuild:
+        user = self.service.get_user(trans, user_id)
+        dbkeys = json.loads(user.preferences["dbkeys"]) if "dbkeys" in user.preferences else {}
+        if key and key in dbkeys:
+            del dbkeys[key]
+            user.preferences["dbkeys"] = json.dumps(dbkeys)
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
+            return DeletedCustomBuild(message=f"Deleted {key}.")
+        else:
+            raise exceptions.ObjectNotFound(f"Could not find and delete build ({key}).")
 
     @router.get(
         "/api/users",
@@ -1111,30 +1132,6 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             with transaction(trans.sa_session):
                 trans.sa_session.commit()
             return build_dict
-
-    @expose_api
-    def delete_custom_builds(self, trans, id, key, payload=None, **kwd):
-        """
-        DELETE /api/users/{id}/custom_builds/{key}
-        Delete a custom build.
-
-        :param id: the encoded id of the user
-        :type  id: str
-
-        :param id: custom build key to be deleted
-        :type  id: str
-        """
-        payload = payload or {}
-        user = self._get_user(trans, id)
-        dbkeys = json.loads(user.preferences["dbkeys"]) if "dbkeys" in user.preferences else {}
-        if key and key in dbkeys:
-            del dbkeys[key]
-            user.preferences["dbkeys"] = json.dumps(dbkeys)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
-            return {"message": f"Deleted {key}."}
-        else:
-            raise exceptions.ObjectNotFound(f"Could not find and delete build ({key}).")
 
     def _get_user(self, trans, id):
         user = self.get_user(trans, id)
