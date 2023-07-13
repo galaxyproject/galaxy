@@ -203,7 +203,7 @@ fi
 # Install node if not installed
 if [ $SKIP_NODE -eq 0 ]; then
     if [ -n "$VIRTUAL_ENV" ]; then
-        if ! in_venv "$(command -v node)" || [ "$(node --version)" != "v${NODE_VERSION}" ]; then
+        if ! command -v node >/dev/null || [ "$(node --version)" != "v${NODE_VERSION}" ]; then
             echo "Installing node into $VIRTUAL_ENV with nodeenv."
             if [ -d "${VIRTUAL_ENV}/lib/node_modules" ]; then
                 echo "Removing old ${VIRTUAL_ENV}/lib/node_modules directory."
