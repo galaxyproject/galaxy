@@ -1460,6 +1460,16 @@ export interface paths {
          */
         post: operations["set_beacon_settings_api_users__user_id__beacon_post"];
     };
+    "/api/users/{user_id}/custom_builds": {
+        /** Returns collection of custom builds. */
+        get: operations["get_custom_builds_api_users__user_id__custom_builds_get"];
+    };
+    "/api/users/{user_id}/custom_builds/{key}": {
+        /** Add new custom build. */
+        put: operations["add_custom_builds_api_users__user_id__custom_builds__key__put"];
+        /** Delete a custom build */
+        delete: operations["delete_custom_build_api_users__user_id__custom_builds__key__delete"];
+    };
     "/api/users/{user_id}/favorites/{object_type}": {
         /** Add the object to user's favorites */
         put: operations["set_favorite_api_users__user_id__favorites__object_type__put"];
@@ -2957,6 +2967,27 @@ export interface components {
             url: string;
         };
         /**
+         * CustomBuildCreationPayload
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        CustomBuildCreationPayload: {
+            /**
+             * ?
+             * @description ?
+             */
+            "len|type": string;
+            /**
+             * ?
+             * @description ?
+             */
+            "len|value": string;
+            /**
+             * Name
+             * @description The name of the custom build.
+             */
+            name: string;
+        };
+        /**
          * CustomBuildsMetadataResponse
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -3698,6 +3729,17 @@ export interface components {
             purge?: boolean;
         };
         /**
+         * DeletedCustomBuild
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        DeletedCustomBuild: {
+            /**
+             * Deletion message
+             * @description Confirmation of the custom build deletion.
+             */
+            message: string;
+        };
+        /**
          * DetailedUserModel
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -3977,10 +4019,27 @@ export interface components {
             src: components["schemas"]["Src"];
         };
         /**
-         * FavoriteModel
+         * FavoriteObject
          * @description Base model definition with common configuration used by all derived models.
          */
-        FavoriteModel: {
+        FavoriteObject: {
+            /**
+             * Object ID
+             * @description The id of an object the user wants to favorite.
+             */
+            object_id: string;
+        };
+        /**
+         * FavoriteObjectType
+         * @description An enumeration.
+         * @enum {string}
+         */
+        FavoriteObjectType: "tools";
+        /**
+         * FavoriteObjectsSummary
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        FavoriteObjectsSummary: {
             /**
              * Favorite tools
              * @description The name of the tools the user favored.
@@ -7579,17 +7638,6 @@ export interface components {
             model_store_format?: components["schemas"]["ModelStoreFormat"];
         };
         /**
-         * PurgeUserPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
-        PurgeUserPayload: {
-            /**
-             * Purge user
-             * @description Purge the user
-             */
-            purge: boolean;
-        };
-        /**
          * QuotaDetails
          * @description Base model containing common fields for Quotas.
          */
@@ -7970,17 +8018,6 @@ export interface components {
              * @example 1.0.0
              */
             version: string;
-        };
-        /**
-         * SetFavoritePayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
-        SetFavoritePayload: {
-            /**
-             * Object ID
-             * @description The id of an object the user wants to favorite.
-             */
-            object_id: string;
         };
         /**
          * SetSlugPayload
@@ -8795,6 +8832,17 @@ export interface components {
              * @description True if beacon sharing is enabled
              */
             enabled: boolean;
+        };
+        /**
+         * UserDeletionPayload
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        UserDeletionPayload: {
+            /**
+             * Purge user
+             * @description Purge the user
+             */
+            purge: boolean;
         };
         /**
          * UserEmail
@@ -16928,7 +16976,7 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": components["schemas"]["PurgeUserPayload"];
+                "application/json": components["schemas"]["UserDeletionPayload"];
             };
         };
         responses: {
@@ -17117,6 +17165,96 @@ export interface operations {
             };
         };
     };
+    get_custom_builds_api_users__user_id__custom_builds_get: {
+        /** Returns collection of custom builds. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the user to get. */
+            path: {
+                user_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_custom_builds_api_users__user_id__custom_builds__key__put: {
+        /** Add new custom build. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The key of the custom build to be deleted. */
+            /** @description The ID of the user to get. */
+            path: {
+                key: string;
+                user_id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomBuildCreationPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_custom_build_api_users__user_id__custom_builds__key__delete: {
+        /** Delete a custom build */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The key of the custom build to be deleted. */
+            /** @description The ID of the user to get. */
+            path: {
+                key: string;
+                user_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["DeletedCustomBuild"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     set_favorite_api_users__user_id__favorites__object_type__put: {
         /** Add the object to user's favorites */
         parameters: {
@@ -17128,19 +17266,19 @@ export interface operations {
             /** @description The object type the user wants to favorite */
             path: {
                 user_id: string;
-                object_type: string;
+                object_type: components["schemas"]["FavoriteObjectType"];
             };
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SetFavoritePayload"];
+                "application/json": components["schemas"]["FavoriteObject"];
             };
         };
         responses: {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["FavoriteModel"];
+                    "application/json": components["schemas"]["FavoriteObjectsSummary"];
                 };
             };
             /** @description Validation Error */
@@ -17163,7 +17301,7 @@ export interface operations {
             /** @description The ID of an object the user wants to remove from favorites */
             path: {
                 user_id: string;
-                object_type: string;
+                object_type: components["schemas"]["FavoriteObjectType"];
                 object_id: string;
             };
         };
@@ -17171,7 +17309,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["FavoriteModel"];
+                    "application/json": components["schemas"]["FavoriteObjectsSummary"];
                 };
             };
             /** @description Validation Error */
