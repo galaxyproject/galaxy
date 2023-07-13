@@ -330,10 +330,6 @@ class DetailedUserModel(BaseUserModel, AnonUserModel):
     tags_used: List[str] = Field(default=Required, title="Tags used", description="Tags used by the user")
 
 
-class CreatedUserModel(UserModel, DiskUsageUserModel):
-    preferred_object_store_id: Optional[str] = PreferredObjectStoreIdField
-
-
 class UserDeletionPayload(Model):
     purge: bool = Field(default=Required, title="Purge user", description="Purge the user")
 
@@ -360,10 +356,11 @@ class DeletedCustomBuild(Model):
     )
 
 
-class AddCustomBuildPayload(Model):
+# TODO Does name fit to add_custom_build operation?
+class CustomBuildCreationPayload(Model):
     name: str = Field(default=Required, title="Name", description="The name of the custom build.")
-    lentype: str = Field(default=Required, title="?", description="?")
-    lenvalue: str = Field(default=Required, title="?", description="?")
+    len_type: str = Field(default=Required, alias="len|type", title="?", description="?")
+    len_value: str = Field(default=Required, alias="len|value", title="?", description="?")
 
 
 class GroupModel(Model):
