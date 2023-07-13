@@ -410,6 +410,43 @@ class FastAPIUsers:
             trans.sa_session.commit()
         return theme
 
+    # TODO add pydantic model for return
+    @router.get(
+        "/api/users/{user_id}/custom_builds", name="get_custom_builds", summary=" Returns collection of custom builds."
+    )
+    def get_custom_builds(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
+    ):
+        user = self.service.get_user(trans, user_id)
+        dbkeys = json.loads(user.preferences["dbkeys"]) if "dbkeys" in user.preferences else {}
+        valid_dbkeys = {}
+        update = False
+        for key, dbkey in dbkeys.items():
+            if "count" not in dbkey and "linecount" in dbkey:
+                chrom_count_dataset = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(
+                    dbkey["linecount"]
+                )
+                if (
+                    chrom_count_dataset
+                    and not chrom_count_dataset.deleted
+                    and chrom_count_dataset.state == trans.app.model.HistoryDatasetAssociation.states.OK
+                ):
+                    chrom_count = int(open(chrom_count_dataset.file_name).readline())
+                    dbkey["count"] = chrom_count
+                    valid_dbkeys[key] = dbkey
+                    update = True
+            else:
+                valid_dbkeys[key] = dbkey
+        if update:
+            user.preferences["dbkeys"] = json.dumps(valid_dbkeys)
+        dbkey_collection = []
+        for key, attributes in valid_dbkeys.items():
+            attributes["id"] = key
+            dbkey_collection.append(attributes)
+        return dbkey_collection
+
     @router.delete(
         "/api/users/{user_id}/custom_builds/{key}", name="delete_custom_build", summary="Delete a custom build"
     )
@@ -1005,44 +1042,6 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             "toolbox_section_filters": {"title": "Sections", "config": trans.app.config.user_tool_section_filters},
             "toolbox_label_filters": {"title": "Labels", "config": trans.app.config.user_tool_label_filters},
         }
-
-    @expose_api
-    def get_custom_builds(self, trans, id, payload=None, **kwd):
-        """
-        GET /api/users/{id}/custom_builds
-        Returns collection of custom builds.
-
-        :param id: the encoded id of the user
-        :type  id: str
-        """
-        payload = payload or {}
-        user = self._get_user(trans, id)
-        dbkeys = json.loads(user.preferences["dbkeys"]) if "dbkeys" in user.preferences else {}
-        valid_dbkeys = {}
-        update = False
-        for key, dbkey in dbkeys.items():
-            if "count" not in dbkey and "linecount" in dbkey:
-                chrom_count_dataset = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(
-                    dbkey["linecount"]
-                )
-                if (
-                    chrom_count_dataset
-                    and not chrom_count_dataset.deleted
-                    and chrom_count_dataset.state == trans.app.model.HistoryDatasetAssociation.states.OK
-                ):
-                    chrom_count = int(open(chrom_count_dataset.file_name).readline())
-                    dbkey["count"] = chrom_count
-                    valid_dbkeys[key] = dbkey
-                    update = True
-            else:
-                valid_dbkeys[key] = dbkey
-        if update:
-            user.preferences["dbkeys"] = json.dumps(valid_dbkeys)
-        dbkey_collection = []
-        for key, attributes in valid_dbkeys.items():
-            attributes["id"] = key
-            dbkey_collection.append(attributes)
-        return dbkey_collection
 
     @expose_api
     def add_custom_builds(self, trans, id, key, payload=None, **kwd):
