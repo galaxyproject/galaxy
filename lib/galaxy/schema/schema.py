@@ -329,34 +329,29 @@ class DetailedUserModel(BaseUserModel, AnonUserModel):
     )
     tags_used: List[str] = Field(default=Required, title="Tags used", description="Tags used by the user")
 
-# TODO rename without verbs
+
 class CreatedUserModel(UserModel, DiskUsageUserModel):
     preferred_object_store_id: Optional[str] = PreferredObjectStoreIdField
 
 
-class PurgeUserPayload(Model):
+class UserDeletionPayload(Model):
     purge: bool = Field(default=Required, title="Purge user", description="Purge the user")
 
 
-class CreateUserPayload(Model):
-    password: str = Field(default=Required, title="user_password", description="The password of the user.")
-    remote_user_email: Optional[str] = Field(
-        default=None, title="user_email", description="The email of the remote user."
-    )
-    email: str = UserEmailField
-    username: str = UserNameField
-
-
-class SetFavoritePayload(Model):
+class FavoriteObject(Model):
     object_id: str = Field(
         default=Required, title="Object ID", description="The id of an object the user wants to favorite."
     )
 
 
-class FavoriteModel(Model):
+class FavoriteObjectsSummary(Model):
     tools: List[str] = Field(
         default=Required, title="Favorite tools", description="The name of the tools the user favored."
     )
+
+
+class FavoriteObjectType(str, Enum):
+    tools = "tools"
 
 
 class AddCustomBuildPayload(Model):
