@@ -1,5 +1,8 @@
-import { Services } from "components/FilesDialog/services";
+//TODO: replace all usages of this with useFileSources composable
+
 import LoadingSpan from "components/LoadingSpan";
+
+import { getFileSources } from "@/components/FilesDialog/services";
 
 export default {
     components: {
@@ -18,7 +21,7 @@ export default {
     },
     methods: {
         async initializeFilesSources() {
-            const fileSources = await new Services().getFileSources();
+            const fileSources = await new getFileSources();
             this.hasWritableFileSources = fileSources.some((fs) => fs.writable);
             this.initializingFileSources = false;
         },

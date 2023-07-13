@@ -69,7 +69,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import { getGalaxyInstance } from "../../app";
 import { Model } from "./model";
-import { Services } from "./services";
+import { browseRemoteFiles, getFileSources } from "./services";
 
 library.add(faCaretLeft);
 export default {
@@ -119,7 +119,6 @@ export default {
         },
     },
     created: function () {
-        this.services = new Services();
         this.urlTracker = new UrlTracker("");
         this.model = new Model({ multiple: this.multiple });
         this.load();
@@ -221,7 +220,7 @@ export default {
                 // look for subdirectories
                 const recursive = true;
                 this.isBusy = true;
-                this.services.list(record.url, recursive).then((items) => {
+                browseRemoteFiles(record.url, recursive).then((items) => {
                     items.forEach((item) => {
                         // construct record
                         const sub_record = this.parseItemFileMode(item);
@@ -294,8 +293,7 @@ export default {
             this.undoShow = !this.urlTracker.atRoot();
             if (this.urlTracker.atRoot() || this.errorMessage) {
                 this.errorMessage = null;
-                this.services
-                    .getFileSources()
+                getFileSources()
                     .then((items) => {
                         items = items
                             .filter((item) => !this.requireWritable || item.writable)
@@ -319,8 +317,7 @@ export default {
                         this.errorMessage = errorMessageAsString(error);
                     });
             } else {
-                this.services
-                    .list(this.currentDirectory.url)
+                browseRemoteFiles(this.currentDirectory.url)
                     .then((items) => {
                         this.items = this.parseItems(items);
                         this.formatRows();
