@@ -10,7 +10,7 @@ import type { FormParameterAttributes, FormParameterTypes, FormParameterValue } 
 
 import FormBoolean from "./Elements/FormBoolean.vue";
 import FormColor from "./Elements/FormColor.vue";
-import FormDialog from "./Elements/FormDialog.vue";
+import FormDataDialog from "./Elements/FormDataDialog.vue";
 import FormDirectory from "./Elements/FormDirectory.vue";
 import FormDrilldown from "./Elements/FormDrilldown/FormDrilldown.vue";
 import FormHidden from "./Elements/FormHidden.vue";
@@ -279,7 +279,7 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 v-model="currentValue"
                 :options="attrs.options"
                 :multiple="attrs.multiple" />
-            <FormDialog
+            <FormDataDialog
                 v-else-if="props.type === 'data_dialog'"
                 :id="id"
                 v-model="currentValue"
