@@ -407,6 +407,36 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
         response = self.dataset_populator.tag_dataset(history_id, hda["id"], ["DatasetTag"], raise_on_error=False)
         assert response["err_msg"] == "History is immutable"
 
+    def test_histories_count(self):
+        # Create a new user so we can test the count without other existing histories
+        with self._different_user("user_for_count@test.com"):
+            first_history_id = self._create_history("TestHistoryForCount 1")["id"]
+            self._assert_expected_histories_count(expected_count=1)
+
+            second_history_id = self._create_history("TestHistoryForCount 2")["id"]
+            self._assert_expected_histories_count(expected_count=2)
+
+            third_history_id = self._create_history("TestHistoryForCount 3")["id"]
+            self._assert_expected_histories_count(expected_count=3)
+
+            # Delete the second history
+            self.dataset_populator.delete_history(second_history_id)
+            self._assert_expected_histories_count(expected_count=2)
+
+            # Archive the first history
+            self.dataset_populator.archive_history(first_history_id)
+            self._assert_expected_histories_count(expected_count=1)
+
+            # Only the third history should be active
+            active_histories = self._get("histories").json()
+            assert len(active_histories) == 1
+            assert active_histories[0]["id"] == third_history_id
+
+    def _assert_expected_histories_count(self, expected_count):
+        response = self._get("histories/count")
+        self._assert_status_code_is(response, 200)
+        assert response.json() == expected_count
+
 
 class ImportExportTests(BaseHistories):
     task_based: ClassVar[bool]
