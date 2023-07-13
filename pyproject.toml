@@ -85,7 +85,7 @@ pydantic = {version = "<2", extras = ["email"]}
 PyJWT = "*"
 pykwalify = "*"
 pylibmagic = "*"
-pyparsing = "*"
+pyparsing = "<3.1"  # Needed by matplotlib on Python >=3.8 https://github.com/matplotlib/matplotlib/issues/26152
 pysam = ">=0.21"  # for Python 3.11 support on macOS
 python = ">=3.7,<3.12"  # Keep maximum version strict to appease numpy and scipy
 python-dateutil = "*"

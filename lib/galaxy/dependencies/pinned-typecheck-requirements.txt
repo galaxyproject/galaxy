@@ -1,5 +1,5 @@
 cffi==1.15.1
-cryptography==41.0.1
+cryptography==41.0.2
 mypy==1.4.1
 mypy-extensions==1.0.0
 pycparser==2.21
@@ -8,7 +8,7 @@ tomli==2.0.1
 typed-ast==1.5.5
 types-bleach==6.0.0.3
 types-boto==2.49.18.8
-types-contextvars==2.4.7.2
+types-contextvars==2.4.7.3
 types-dataclasses==0.6.6
 types-docutils==0.20.0.1
 types-Markdown==3.4.2.9
