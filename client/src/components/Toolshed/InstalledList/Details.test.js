@@ -33,11 +33,11 @@ describe("Details", () => {
             },
             localVue,
         });
-        expect(wrapper.findAll("loading-span-stub").length).toBe(1);
-        expect(wrapper.find("loading-span-stub").attributes("message")).toBe("Loading installed repository details");
+        expect(wrapper.findAll("loadingspan-stub").length).toBe(1);
+        expect(wrapper.find("loadingspan-stub").attributes("message")).toBe("Loading installed repository details");
         expect(wrapper.findAll("repositorydetails-stub").length).toBe(0);
         await localVue.nextTick();
-        expect(wrapper.findAll("loading-span-stub").length).toBe(0);
+        expect(wrapper.findAll("loadingspan-stub").length).toBe(0);
         expect(wrapper.findAll(".alert").length).toBe(0);
         expect(wrapper.findAll("repositorydetails-stub").length).toBe(1);
     });

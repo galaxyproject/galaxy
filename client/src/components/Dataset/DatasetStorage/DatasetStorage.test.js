@@ -40,8 +40,8 @@ describe("DatasetStorage.vue", () => {
     it("test loading...", async () => {
         mount();
         await wrapper.vm.$nextTick();
-        expect(wrapper.findAll("loading-span-stub").length).toBe(1);
-        expect(wrapper.findAll("describe-object-store-stub").length).toBe(0);
+        expect(wrapper.findAll("loadingspan-stub").length).toBe(1);
+        expect(wrapper.findAll("describeobjectstore-stub").length).toBe(0);
     });
 
     it("test error rendering...", async () => {
@@ -52,13 +52,13 @@ describe("DatasetStorage.vue", () => {
         await flushPromises();
         expect(wrapper.findAll(".error").length).toBe(1);
         expect(wrapper.findAll(".error").at(0).text()).toBe(TEST_ERROR_MESSAGE);
-        expect(wrapper.findAll("loading-span-stub").length).toBe(0);
+        expect(wrapper.findAll("loadingspan-stub").length).toBe(0);
     });
 
     it("test dataset storage with object store without id", async () => {
         await mountWithResponse(TEST_STORAGE_API_RESPONSE_WITHOUT_ID);
-        expect(wrapper.findAll("loading-span-stub").length).toBe(0);
-        expect(wrapper.findAll("describe-object-store-stub").length).toBe(1);
+        expect(wrapper.findAll("loadingspan-stub").length).toBe(0);
+        expect(wrapper.findAll("describeobjectstore-stub").length).toBe(1);
         expect(wrapper.vm.storageInfo.private).toEqual(false);
     });
 
