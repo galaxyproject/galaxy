@@ -3,7 +3,7 @@
         <container type="docker">quay.io/bgruening/docker-jupyter-notebook:2021-03-05</container>
     </requirements>
     <entry_points>
-        <entry_point name="JupyTool interactive tool" requires_domain="True">
+        <entry_point name="JupyTool interactive tool" requires_domain="False">
             <port>8888</port>
             <url>ipython/lab</url>
         </entry_point>
@@ -14,6 +14,7 @@
         <environment_variable name="GALAXY_WEB_PORT">8080</environment_variable>
         <environment_variable name="GALAXY_URL">$__galaxy_url__</environment_variable>
         <environment_variable name="API_KEY" inject="api_key"/>
+        <environment_variable name="EP_PATH" inject="entry_point_path">JupyTool interactive tool</environment_variable>
     </environment_variables>
     <configfiles>
         <inputs name="inputs" filename="galaxy_inputs.json" data_style="staging_path_and_source_path"/>
@@ -80,6 +81,7 @@ except FileNotFoundError:
         export GALAXY_WORKING_DIR=`pwd` &&
         mkdir -p ./jupyter/outputs/collection &&
         mkdir -p ./jupyter/galaxy_inputs &&
+        export PROXY_PREFIX=\${EP_PATH%/ipython*} &&
 
         ## change into the directory where the notebooks are located
         cd ./jupyter/ &&

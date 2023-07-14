@@ -4,7 +4,7 @@
         <container type="docker">quay.io/erasche/docker-rstudio-notebook:ie2</container>
     </requirements>
     <entry_points>
-        <entry_point name="RStudio" requires_domain="True">
+        <entry_point name="RStudio" requires_domain="False">
             <port>8787</port>
             <url>/</url>
         </entry_point>
