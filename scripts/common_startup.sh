@@ -109,8 +109,8 @@ if [ $SET_VENV -eq 1 ] && [ $CREATE_VENV -eq 1 ]; then
         # as well, but in this case we need it done beforehand.
         set_conda_exe
         if [ -n "$CONDA_EXE" ]; then
-            echo "Found Conda, will set up a virtualenv using conda."
-            echo "To use a virtualenv instead, create one with a non-Conda Python at $GALAXY_VIRTUAL_ENV"
+            echo "Found Conda, will set up a virtualenv using a Python installed from Conda."
+            echo "To use a non-Conda Python for the virtualenv, pre-create the virtualenv at $GALAXY_VIRTUAL_ENV"
             : ${GALAXY_CONDA_ENV:="_galaxy_"}
             if [ "$CONDA_DEFAULT_ENV" != "$GALAXY_CONDA_ENV" ]; then
                 if ! check_conda_env "$GALAXY_CONDA_ENV"; then
