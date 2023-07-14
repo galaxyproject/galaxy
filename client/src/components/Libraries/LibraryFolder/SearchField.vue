@@ -1,5 +1,5 @@
 <template>
-    <b-input-group size="sm">
+    <GInputGroup size="sm">
         <GInput
             id="filterInput"
             v-model="search"
@@ -7,17 +7,20 @@
             type="search"
             :placeholder="titleSearch"
             @keyup.enter="startSearch()" />
-    </b-input-group>
+    </GInputGroup>
 </template>
 
 <script>
 import GInput from "component-library/GInput";
 import _l from "utils/localization";
 
+import GInputGroup from "@/component-library/GInputGroup.vue";
+
 export default {
     name: "SearchField",
     components: {
         GInput,
+        GInputGroup,
     },
     props: {
         typingDelay: {

@@ -4,15 +4,7 @@ import { faListAlt } from "@fortawesome/free-regular-svg-icons";
 import { faArrowDown, faColumns, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useInfiniteScroll } from "@vueuse/core";
-import {
-    BBadge,
-    BButton,
-    BButtonGroup,
-    BFormGroup,
-    BListGroup,
-    BListGroupItem,
-    BModal,
-} from "bootstrap-vue";
+import { BBadge, BButton, BButtonGroup, BFormGroup, BListGroup, BListGroupItem, BModal } from "bootstrap-vue";
 import isEqual from "lodash.isequal";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, onUnmounted, type PropType, type Ref, ref, watch } from "vue";

@@ -30,9 +30,9 @@
                         id="cutoff"
                         label="Cutoff in minutes"
                         description="Display jobs that had their state updated in the given time period.">
-                        <b-input-group>
+                        <GInputGroup>
                             <GInput id="cutoff" v-model="cutoffMin" type="number" />
-                        </b-input-group>
+                        </GInputGroup>
                     </b-form-group>
                 </b-form>
                 <b-form-group description="Use strings or regular expressions to search jobs.">
@@ -43,12 +43,12 @@
         <transition name="fade">
             <b-form v-if="unfinishedJobs.length && selectedStopJobIds.length" @submit.prevent="onStopJobs">
                 <b-form-group label="Stop Selected Jobs" description="Stop message will be displayed to the user">
-                    <b-input-group>
+                    <GInputGroup>
                         <GInput id="stop-message" v-model="stopMessage" placeholder="Stop message" required />
-                        <b-input-group-append>
+                        <GInputGroupAppend>
                             <b-btn type="submit">Submit</b-btn>
-                        </b-input-group-append>
-                    </b-input-group>
+                        </GInputGroupAppend>
+                    </GInputGroup>
                 </b-form-group>
             </b-form>
         </transition>
@@ -109,6 +109,8 @@ import { commonJobFields } from "./JobFields";
 import JobLock from "./JobLock";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GInputGroup from "@/component-library/GInputGroup.vue";
+import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
 
 function cancelJob(jobId, message) {
     const url = `${getAppRoot()}api/jobs/${jobId}`;
@@ -143,6 +145,8 @@ returned. So <code>tool:'cat1'</code> would show only jobs from the <code>cat1</
 
 export default {
     components: {
+        GInputGroup,
+        GInputGroupAppend,
         GAlert,
         GInput,
         JobLock,

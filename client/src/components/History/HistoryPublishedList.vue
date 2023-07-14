@@ -11,6 +11,8 @@ import { computed, ref, watch } from "vue";
 import { getPublishedHistories, updateTags } from "./services";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GInputGroup from "@/component-library/GInputGroup.vue";
+import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
 
 const validFilters = {
     name: contains("name"),
@@ -116,7 +118,7 @@ watch([filterText, sortBy, sortDesc], () => {
         <GAlert v-if="noItems" variant="info" show>No published histories found.</GAlert>
 
         <div v-else>
-            <b-input-group class="mb-2">
+            <GInputGroup class="mb-2">
                 <DebouncedInput v-slot="{ value, input }" v-model="localFilter">
                     <GInput
                         id="published-histories-filter"
@@ -129,7 +131,7 @@ watch([filterText, sortBy, sortDesc], () => {
                         @input="input"
                         @keyup.esc="updateFilter('')" />
                 </DebouncedInput>
-                <b-input-group-append>
+                <GInputGroupAppend>
                     <b-button
                         id="published-histories-advanced-filter-toggle"
                         size="sm"
@@ -149,8 +151,8 @@ watch([filterText, sortBy, sortDesc], () => {
                         @click="updateFilter('')">
                         <icon icon="times" />
                     </b-button>
-                </b-input-group-append>
-            </b-input-group>
+                </GInputGroupAppend>
+            </GInputGroup>
 
             <div v-if="showAdvanced" class="mt-2" @keyup.esc="onToggle" @keyup.enter="onSearch">
                 <small>Filter by name:</small>

@@ -1,10 +1,10 @@
 <template>
-    <b-input-group>
+    <GInputGroup>
         <GInput v-model="filter" :placeholder="placeholder" />
-        <b-input-group-append>
+        <GInputGroupAppend>
             <b-btn :disabled="!filter" @click="filter = ''"><i class="fa fa-times" /></b-btn>
-        </b-input-group-append>
-    </b-input-group>
+        </GInputGroupAppend>
+    </GInputGroup>
 </template>
 
 <script>
@@ -12,11 +12,15 @@ import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
 import GInput from "@/component-library/GInput.vue";
+import GInputGroup from "@/component-library/GInputGroup.vue";
+import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GInputGroup,
+        GInputGroupAppend,
         GInput,
     },
     props: {

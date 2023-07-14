@@ -1,6 +1,6 @@
 <template>
     <span>
-        <BInputGroup>
+        <GInputGroup>
             <DebouncedInput v-slot="{ value: debouncedValue, input }" v-model="localFilter" :delay="debounceDelay">
                 <GInput
                     :id="id"
@@ -14,7 +14,7 @@
                     @input="input"
                     @keyup.esc="onReset" />
             </DebouncedInput>
-            <BInputGroupAppend>
+            <GInputGroupAppend>
                 <BButton
                     v-b-tooltip.hover
                     aria-haspopup="true"
@@ -31,8 +31,8 @@
                     @click="onReset">
                     <FontAwesomeIcon icon="times" />
                 </BButton>
-            </BInputGroupAppend>
-        </BInputGroup>
+            </GInputGroupAppend>
+        </GInputGroup>
         <BModal v-model="showHelp" title="Filtering Options Help" ok-only>
             <div v-html="helpHtml"></div>
         </BModal>
@@ -43,9 +43,12 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestion, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BInputGroup, BInputGroupAppend, BModal } from "bootstrap-vue";
+import { BButton, BModal } from "bootstrap-vue";
 import GInput from "component-library/GInput";
 import DebouncedInput from "components/DebouncedInput";
+
+import GInputGroup from "component-library/GInputGroup.vue";
+import GInputGroupAppend from "component-library/GInputGroupAppend.vue";
 
 library.add(faTimes, faQuestion);
 
@@ -55,8 +58,8 @@ library.add(faTimes, faQuestion);
 export default {
     components: {
         DebouncedInput,
-        BInputGroup,
-        BInputGroupAppend,
+        GInputGroup,
+        GInputGroupAppend,
         BButton,
         BModal,
         FontAwesomeIcon,

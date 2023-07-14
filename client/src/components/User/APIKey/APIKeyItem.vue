@@ -6,6 +6,11 @@ import { ref } from "vue";
 
 import svc from "./model/service";
 
+import GInputGroup from "@/component-library/GInputGroup.vue";
+import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
+import GInputGroupPrepend from "@/component-library/GInputGroupPrepend.vue";
+import GInputGroupText from "@/component-library/GInputGroupText.vue";
+
 defineProps({
     item: {
         type: Object,
@@ -35,17 +40,17 @@ const deleteKey = () => {
     <b-card title="Current API key">
         <div class="d-flex justify-content-between w-100">
             <div class="w-100">
-                <b-input-group
+                <GInputGroup
                     class="w-100"
                     @blur="hover = false"
                     @focus="hover = true"
                     @mouseover="hover = true"
                     @mouseleave="hover = false">
-                    <b-input-group-prepend>
-                        <b-input-group-text>
+                    <GInputGroupPrepend>
+                        <GInputGroupText>
                             <icon icon="key" />
-                        </b-input-group-text>
-                    </b-input-group-prepend>
+                        </GInputGroupText>
+                    </GInputGroupPrepend>
 
                     <b-input
                         :type="hover ? 'text' : 'password'"
@@ -53,15 +58,15 @@ const deleteKey = () => {
                         disabled
                         data-test-id="api-key-input" />
 
-                    <b-input-group-append>
-                        <b-input-group-text>
+                    <GInputGroupAppend>
+                        <GInputGroupText>
                             <CopyToClipboard message="Key was copied to clipboard" :text="item.key" title="Copy key" />
-                        </b-input-group-text>
+                        </GInputGroupText>
                         <b-button title="Delete api key" @click="toggleDeleteModal">
                             <icon icon="trash" />
                         </b-button>
-                    </b-input-group-append>
-                </b-input-group>
+                    </GInputGroupAppend>
+                </GInputGroup>
                 <span class="small text-black-50">
                     created on
                     <UtcDate class="text-black-50 small" :date="item.create_time" mode="pretty" />

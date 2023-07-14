@@ -80,11 +80,7 @@ async function submit(ev: SubmitEvent) {
     <b-form class="mt-4 workflow-import-file" @submit="submit">
         <h2 class="h-sm">Import from a Galaxy workflow export URL or a workflow file</h2>
         <b-form-group label="Archived Workflow URL">
-            <GInput
-                id="workflow-import-url-input"
-                v-model="sourceURL"
-                aria-label="Workflow Import URL"
-                type="url" />
+            <GInput id="workflow-import-url-input" v-model="sourceURL" aria-label="Workflow Import URL" type="url" />
             If the workflow is accessible via a URL, enter the URL above and click Import.
         </b-form-group>
         <b-form-group label="Archived Workflow File">

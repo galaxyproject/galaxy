@@ -1,5 +1,5 @@
 <template>
-    <b-input-group>
+    <GInputGroup>
         <GInput
             ref="toolInput"
             v-model="queryInput"
@@ -10,7 +10,7 @@
             @input="delayQuery"
             @change="setQuery"
             @keydown.esc="setQuery('')" />
-        <b-input-group-append>
+        <GInputGroupAppend>
             <b-button
                 v-if="enableAdvanced"
                 v-b-tooltip.hover.noninteractive
@@ -35,15 +35,19 @@
                 <icon v-if="loading" fixed-width icon="spinner" spin />
                 <icon v-else fixed-width icon="times" />
             </b-button>
-        </b-input-group-append>
-    </b-input-group>
+        </GInputGroupAppend>
+    </GInputGroup>
 </template>
 <script>
 import GInput from "@/component-library/GInput.vue";
+import GInputGroup from "@/component-library/GInputGroup.vue";
+import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
 
 export default {
     components: {
         GInput,
+        GInputGroup,
+        GInputGroupAppend,
     },
     props: {
         query: {

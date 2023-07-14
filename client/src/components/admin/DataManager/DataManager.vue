@@ -14,15 +14,12 @@
                 <b-row>
                     <b-col md="6">
                         <b-form-group description="Search for strings or regular expressions">
-                            <b-input-group>
-                                <GInput
-                                    v-model="filter"
-                                    placeholder="Type to Search"
-                                    @keyup.esc.native="filter = ''" />
-                                <b-input-group-append>
+                            <GInputGroup>
+                                <GInput v-model="filter" placeholder="Type to Search" @keyup.esc.native="filter = ''" />
+                                <GInputGroupAppend>
                                     <b-btn :disabled="!filter" @click="filter = ''">Clear (esc)</b-btn>
-                                </b-input-group-append>
-                            </b-input-group>
+                                </GInputGroupAppend>
+                            </GInputGroup>
                         </b-form-group>
                     </b-col>
                 </b-row>
@@ -81,9 +78,13 @@ import { getAppRoot } from "onload/loadConfig";
 import { debounce } from "underscore";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GInputGroup from "@/component-library/GInputGroup.vue";
+import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
 
 export default {
     components: {
+        GInputGroup,
+        GInputGroupAppend,
         GAlert,
         GInput,
     },

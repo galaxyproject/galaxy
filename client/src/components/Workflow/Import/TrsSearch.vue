@@ -14,6 +14,8 @@ import TrsServerSelection from "./TrsServerSelection.vue";
 import TrsTool from "./TrsTool.vue";
 import GAlert from "@/component-library/GAlert.vue";
 import GInput from "@/component-library/GInput.vue";
+import GInputGroup from "@/component-library/GInputGroup.vue";
+import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 type TrsSearchData = {
@@ -135,7 +137,7 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
         </div>
 
         <div>
-            <b-input-group class="mb-3">
+            <GInputGroup class="mb-3">
                 <GInput
                     id="trs-search-query"
                     v-model="query"
@@ -143,7 +145,7 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
                     placeholder="search query"
                     data-description="filter text input"
                     @keyup.esc="query = ''" />
-                <b-input-group-append>
+                <GInputGroupAppend>
                     <b-button
                         v-b-tooltip
                         placement="bottom"
@@ -155,14 +157,14 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
                     <b-button size="sm" title="clear search" @click="query = ''">
                         <icon icon="times" />
                     </b-button>
-                </b-input-group-append>
-            </b-input-group>
+                </GInputGroupAppend>
+            </GInputGroup>
         </div>
         <div>
             <GAlert v-if="loading" variant="info" show>
                 <LoadingSpan :message="`Searching for ${query}, this may take a while - please be patient`" />
             </GAlert>
-            <GAlert v-else-if="!query" variant="info" show> Enter search query to begin search. </GAlert>
+            <GAlert v-else-if="!query" variant="info" show> Enter search query to begin search.</GAlert>
             <GAlert v-else-if="results.length == 0" variant="info" show>
                 No search results found, refine your search.
             </GAlert>

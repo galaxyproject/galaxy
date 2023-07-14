@@ -11,6 +11,8 @@ import localize from "@/utils/localization";
 
 import MultipleViewList from "./MultipleViewList.vue";
 import GAlert from "@/component-library/GAlert.vue";
+import GInputGroup from "@/component-library/GInputGroup.vue";
+import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
 import GInput from "@/component-library/GInput.vue";
 import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -78,7 +80,7 @@ function updateFilter(newFilter: string) {
             <LoadingSpan message="Loading Histories" />
         </GAlert>
         <div v-else-if="histories.length" class="multi-history-panel d-flex flex-column h-100">
-            <b-input-group class="w-100">
+            <GInputGroup class="w-100">
                 <GInput
                     v-model="filter"
                     size="sm"
@@ -87,12 +89,12 @@ function updateFilter(newFilter: string) {
                     :placeholder="localize('search datasets in selected histories')"
                     data-description="filter text input"
                     @keyup.esc="updateFilter('')" />
-                <b-input-group-append>
+                <GInputGroupAppend>
                     <b-button size="sm" data-description="show deleted filter toggle" @click="updateFilter('')">
                         <FontAwesomeIcon icon="fa-times" />
                     </b-button>
-                </b-input-group-append>
-            </b-input-group>
+                </GInputGroupAppend>
+            </GInputGroup>
             <MultipleViewList
                 :histories="histories"
                 :filter="filter"

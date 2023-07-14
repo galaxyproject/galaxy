@@ -2,7 +2,7 @@
     <div class="overflow-auto h-100 p-1" @scroll="onScroll">
         <div v-if="error" class="alert alert-danger">{{ error }}</div>
         <div v-else>
-            <b-input-group class="mb-3">
+            <GInputGroup class="mb-3">
                 <b-input
                     id="toolshed-repo-search"
                     v-model="queryInput"
@@ -10,12 +10,12 @@
                     @input="delayQuery"
                     @change="setQuery"
                     @keydown.esc="setQuery()" />
-                <b-input-group-append v-b-tooltip.hover :title="titleClearSearch">
+                <GInputGroupAppend v-b-tooltip.hover :title="titleClearSearch">
                     <b-btn @click="setQuery()">
                         <i class="fa fa-times" />
                     </b-btn>
-                </b-input-group-append>
-            </b-input-group>
+                </GInputGroupAppend>
+            </GInputGroup>
             <b-form-radio-group v-model="tabValue" class="mb-3" :options="tabOptions" />
             <div v-if="tabValue">
                 <SearchList :query="query" :scrolled="scrolled" @onQuery="setQuery" @onError="setError" />
@@ -31,9 +31,13 @@ import _l from "utils/localization";
 
 import InstalledList from "./InstalledList/Index.vue";
 import SearchList from "./SearchList/Index.vue";
+import GInputGroup from "@/component-library/GInputGroup.vue";
+import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
 
 export default {
     components: {
+        GInputGroup,
+        GInputGroupAppend,
         SearchList,
         InstalledList,
     },

@@ -28,7 +28,7 @@
         <b-collapse id="collapse-2" v-model="isNewLibFormVisible">
             <b-card>
                 <b-form @submit.prevent="newLibrary">
-                    <b-input-group class="mb-2 new-row">
+                    <GInputGroup class="mb-2 new-row">
                         <GInput v-model="newLibraryForm.name" required :placeholder="titleName" />
                         <GInput v-model="newLibraryForm.description" required :placeholder="titleDescription" />
                         <GInput v-model="newLibraryForm.synopsis" :placeholder="titleSynopsis" />
@@ -38,7 +38,7 @@
                                 {{ titleSave }}
                             </b-button>
                         </template>
-                    </b-input-group>
+                    </GInputGroup>
                 </b-form>
             </b-card>
         </b-collapse>
@@ -199,6 +199,7 @@ import { useUserStore } from "@/stores/userStore";
 import { Services } from "./services";
 import { fields } from "./table-fields";
 
+import GInputGroup from "@/component-library/GInputGroup.vue";
 import GLink from "@/component-library/GLink.vue";
 
 initLibrariesIcons();
@@ -207,6 +208,7 @@ Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GInputGroup,
         GLink,
         FontAwesomeIcon,
         GInput,

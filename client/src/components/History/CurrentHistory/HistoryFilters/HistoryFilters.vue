@@ -1,6 +1,6 @@
 <template>
     <div>
-        <b-input-group>
+        <GInputGroup>
             <DebouncedInput v-slot="{ value, input }" v-model="localFilter">
                 <GInput
                     size="sm"
@@ -11,7 +11,7 @@
                     @input="input"
                     @keyup.esc="updateFilter('')" />
             </DebouncedInput>
-            <b-input-group-append>
+            <GInputGroupAppend>
                 <b-button
                     v-b-tooltip.hover
                     aria-haspopup="true"
@@ -35,8 +35,8 @@
                     @click="updateFilter('')">
                     <icon fixed-width icon="times" />
                 </b-button>
-            </b-input-group-append>
-        </b-input-group>
+            </GInputGroupAppend>
+        </GInputGroup>
         <div
             v-if="showAdvanced"
             class="mt-2"
@@ -50,7 +50,7 @@
             <small class="mt-1">Filter by tag:</small>
             <GInput v-model="filterSettings['tag:']" size="sm" placeholder="any tag" />
             <small class="mt-1">Filter by state:</small>
-            <b-input-group>
+            <GInputGroup>
                 <GInput
                     v-model="filterSettings['state:']"
                     v-b-tooltip.focus.v-danger="hasError('state:')"
@@ -59,13 +59,13 @@
                     placeholder="any state"
                     list="stateSelect" />
                 <b-form-datalist id="stateSelect" :options="states"></b-form-datalist>
-                <b-input-group-append>
+                <GInputGroupAppend>
                     <b-button title="States Help" size="sm" @click="showHelp = true">
                         <icon icon="question" />
                     </b-button>
-                </b-input-group-append>
+                </GInputGroupAppend>
                 <StatesInfo :show-help.sync="showHelp" :exclude-states="excludeStates" @set-filter="onOption" />
-            </b-input-group>
+            </GInputGroup>
             <small>Filter by database:</small>
             <GInput v-model="filterSettings['genome_build:']" size="sm" placeholder="any database" />
             <small class="mt-1">Filter by related to item index:</small>
@@ -77,7 +77,7 @@
                 placeholder="index equals" />
             <small class="mt-1">Filter by item index:</small>
             <b-form-group class="m-0">
-                <b-input-group>
+                <GInputGroup>
                     <GInput
                         v-model="filterSettings['hid>']"
                         v-b-tooltip.focus.v-danger="hasError('hid>')"
@@ -90,30 +90,30 @@
                         :class="hasError('hid<') && 'ui-input-error'"
                         size="sm"
                         placeholder="index lower" />
-                </b-input-group>
+                </GInputGroup>
             </b-form-group>
             <small class="mt-1">Filter by creation time:</small>
             <b-form-group class="m-0">
-                <b-input-group>
+                <GInputGroup>
                     <GInput
                         v-model="create_time_gt"
                         v-b-tooltip.focus.v-danger="hasError('create_time>')"
                         :class="hasError('create_time>') && 'ui-input-error'"
                         size="sm"
                         placeholder="created after" />
-                    <b-input-group-append>
+                    <GInputGroupAppend>
                         <b-form-datepicker v-model="create_time_gt" reset-button button-only size="sm" />
-                    </b-input-group-append>
+                    </GInputGroupAppend>
                     <GInput
                         v-model="create_time_lt"
                         v-b-tooltip.focus.v-danger="hasError('create_time<')"
                         :class="hasError('create_time<') && 'ui-input-error'"
                         size="sm"
                         placeholder="created before" />
-                    <b-input-group-append>
+                    <GInputGroupAppend>
                         <b-form-datepicker v-model="create_time_lt" reset-button button-only size="sm" />
-                    </b-input-group-append>
-                </b-input-group>
+                    </GInputGroupAppend>
+                </GInputGroup>
             </b-form-group>
             <HistoryFiltersDefault :settings="filterSettings" @change="onOption" />
             <div class="mt-3">
@@ -139,8 +139,13 @@ import { HistoryFilters } from "components/History/HistoryFilters";
 
 import HistoryFiltersDefault from "./HistoryFiltersDefault";
 
+import GInputGroup from "@/component-library/GInputGroup.vue";
+import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
+
 export default {
     components: {
+        GInputGroup,
+        GInputGroupAppend,
         DebouncedInput,
         GInput,
         HistoryFiltersDefault,
