@@ -654,6 +654,18 @@ class ToolEvaluator:
             elif inject and inject.startswith("oidc_"):
                 environment_variable_template = self.get_oidc_token(inject)
                 is_template = False
+            elif inject and inject == "entry_point_path" and environment_variable_template:
+                from galaxy.managers.interactivetool import InteractiveToolManager
+
+                entry_point_name = environment_variable_template
+                matching_eps = [ep for ep in self.job.interactivetool_entry_points if ep.name == entry_point_name]
+                if matching_eps:
+                    entry_point = matching_eps[0]
+                    entry_point_path = InteractiveToolManager(self.app).get_entry_point_path(self.app, entry_point)
+                    environment_variable_template = entry_point_path.rstrip("/")
+                else:
+                    environment_variable_template = ""
+                is_template = False
             else:
                 is_template = True
             with tempfile.NamedTemporaryFile(dir=directory, prefix="tool_env_", delete=False) as temp:

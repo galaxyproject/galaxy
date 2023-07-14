@@ -6242,6 +6242,7 @@ define.</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="api_key" />
+      <xs:enumeration value="entry_point_path" />
     </xs:restriction>
   </xs:simpleType>
   <xs:complexType name="ConfigFiles">
