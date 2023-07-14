@@ -7,6 +7,7 @@ import { withPrefix } from "@/utils/redirect";
 
 import { getRedirectOnImportPath } from "../redirectPath";
 
+import GAlert from "@/component-library/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const loading = ref(false);
@@ -89,10 +90,10 @@ async function submit(ev: SubmitEvent) {
             <b-form-file v-model="sourceFile" :accept="acceptedWorkflowFormats" />
             If the workflow is in a file on your computer, choose it and then click Import.
         </b-form-group>
-        <b-alert :show="hasErrorMessage" variant="danger">{{ errorMessage }}</b-alert>
-        <b-alert v-if="loading" show variant="info">
+        <GAlert :show="hasErrorMessage" variant="danger">{{ errorMessage }}</GAlert>
+        <GAlert v-if="loading" show variant="info">
             <LoadingSpan message="Loading your workflow, this may take a while - please be patient." />
-        </b-alert>
+        </GAlert>
         <b-button
             id="workflow-import-button"
             type="submit"

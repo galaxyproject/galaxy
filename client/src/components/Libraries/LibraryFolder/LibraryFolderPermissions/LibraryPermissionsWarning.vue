@@ -1,19 +1,24 @@
 <template>
     <div>
         <div class="text-center">
-            <b-alert v-if="is_admin" show variant="warning">
+            <GAlert v-if="is_admin" show variant="warning">
                 You are logged in as an <strong>administrator</strong> therefore you can manage any folder on this
                 Galaxy instance.
-            </b-alert>
-            <b-alert v-else show variant="warning">
+            </GAlert>
+            <GAlert v-else show variant="warning">
                 You can assign any number of roles to any of the following permission types.
-            </b-alert>
+            </GAlert>
         </div>
     </div>
 </template>
 
 <script>
+import GAlert from "@/component-library/GAlert.vue";
+
 export default {
+    components: {
+        GAlert,
+    },
     props: {
         is_admin: {
             type: Boolean,

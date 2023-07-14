@@ -5,6 +5,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import { getSelectableObjectStores } from "./services";
 
+import GAlert from "@/component-library/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DescribeObjectStore from "@/components/ObjectStore/DescribeObjectStore.vue";
 import ObjectStoreBadges from "@/components/ObjectStore/ObjectStoreBadges.vue";
@@ -84,9 +85,9 @@ async function handleSubmit(preferredObjectStoreId: string) {
     <div>
         <LoadingSpan v-if="loading" :message="loadingObjectStoreInfoMessage" />
         <div v-else>
-            <b-alert v-if="error" variant="danger" class="object-store-selection-error" show>
+            <GAlert v-if="error" variant="danger" class="object-store-selection-error" show>
                 {{ error }}
-            </b-alert>
+            </GAlert>
             <b-row>
                 <b-col cols="7">
                     <b-button-group vertical size="lg" style="width: 100%">

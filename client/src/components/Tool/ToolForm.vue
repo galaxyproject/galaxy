@@ -1,20 +1,20 @@
 <template>
     <div v-if="currentUser && currentHistoryId">
-        <b-alert :show="messageShow" :variant="messageVariant">
+        <GAlert :show="messageShow" :variant="messageVariant">
             {{ messageText }}
-        </b-alert>
+        </GAlert>
         <LoadingSpan v-if="showLoading" message="Loading Tool" />
         <div v-if="showEntryPoints">
             <ToolEntryPoints v-for="job in entryPoints" :key="job.id" :job-id="job.id" />
         </div>
         <b-modal v-model="showError" size="sm" :title="errorTitle | l" scrollable ok-only>
-            <b-alert v-if="errorMessage" show variant="danger">
+            <GAlert v-if="errorMessage" show variant="danger">
                 {{ errorMessage }}
-            </b-alert>
-            <b-alert show variant="warning">
+            </GAlert>
+            <GAlert show variant="warning">
                 The server could not complete this request. Please verify your parameter settings, retry submission and
                 contact the Galaxy Team if this error persists. A transcript of the submitted data is shown below.
-            </b-alert>
+            </GAlert>
             <small class="text-muted">
                 <pre>{{ errorContentPretty }}</pre>
             </small>
@@ -119,8 +119,11 @@ import { getToolFormData, submitJob, updateToolFormData } from "./services";
 import ToolCard from "./ToolCard";
 import { allowCachedJobs } from "./utilities";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 export default {
     components: {
+        GAlert,
         ButtonSpinner,
         LoadingSpan,
         FormDisplay,

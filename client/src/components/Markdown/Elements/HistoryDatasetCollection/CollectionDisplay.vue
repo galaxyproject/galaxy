@@ -34,9 +34,9 @@
         <b-card-body>
             <LoadingSpan v-if="loading" message="Loading Collection" />
             <div v-else class="content-height">
-                <b-alert v-if="!!messageText" :variant="messageVariant" show>
+                <GAlert v-if="!!messageText" :variant="messageVariant" show>
                     {{ messageText }}
-                </b-alert>
+                </GAlert>
                 <CollectionTree :node="itemContent" :skip-head="true" />
             </div>
         </b-card-body>
@@ -55,9 +55,12 @@ import { useUserStore } from "@/stores/userStore";
 
 import CollectionTree from "./CollectionTree";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 export default {
     components: {
         CollectionTree,
+        GAlert,
         LoadingSpan,
     },
     props: {

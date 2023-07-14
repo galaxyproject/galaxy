@@ -1,20 +1,20 @@
 <template>
     <div class="paired-list-collection-creator">
         <div v-if="state == 'error'">
-            <b-alert show variant="danger">
+            <GAlert show variant="danger">
                 {{ errorText }}
-            </b-alert>
+            </GAlert>
         </div>
         <div v-else>
             <div v-if="noElementsSelected">
-                <b-alert show variant="warning" dismissible>
+                <GAlert show variant="warning" dismissible>
                     {{ noElementsHeader }}
                     {{ allInvalidElementsPartOne }}
                     <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
                         {{ cancelText }}
                     </a>
                     {{ allInvalidElementsPartTwo }}
-                </b-alert>
+                </GAlert>
                 <div class="float-left">
                     <button class="cancel-create btn" tabindex="-1" @click="oncancel">
                         {{ l("Cancel") }}
@@ -22,7 +22,7 @@
                 </div>
             </div>
             <div v-else-if="allElementsAreInvalid">
-                <b-alert show variant="warning" dismissible>
+                <GAlert show variant="warning" dismissible>
                     {{ invalidHeader }}
                     <ul>
                         <li v-for="problem in returnInvalidElements" :key="problem">
@@ -34,7 +34,7 @@
                         {{ cancelText }}
                     </a>
                     {{ allInvalidElementsPartTwo }}
-                </b-alert>
+                </GAlert>
                 <div class="float-left">
                     <button class="cancel-create btn" tabindex="-1" @click="oncancel">
                         {{ l("Cancel") }}
@@ -43,22 +43,22 @@
             </div>
             <div v-else-if="tooFewElementsSelected">
                 <div v-if="returnInvalidElementsLength">
-                    <b-alert show variant="warning" dismissible>
+                    <GAlert show variant="warning" dismissible>
                         {{ invalidHeader }}
                         <ul>
                             <li v-for="problem in returnInvalidElements" :key="problem">
                                 {{ problem }}
                             </li>
                         </ul>
-                    </b-alert>
+                    </GAlert>
                 </div>
-                <b-alert show variant="warning" dismissible>
+                <GAlert show variant="warning" dismissible>
                     {{ allInvalidElementsPartOne }}
                     <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
                         {{ cancelText }}
                     </a>
                     {{ allInvalidElementsPartTwo }}
-                </b-alert>
+                </GAlert>
                 <div class="float-left">
                     <button class="cancel-create btn" tabindex="-1" @click="oncancel">
                         {{ l("Cancel") }}
@@ -67,17 +67,17 @@
             </div>
             <div v-else>
                 <div v-if="returnInvalidElementsLength">
-                    <b-alert show variant="warning" dismissible>
+                    <GAlert show variant="warning" dismissible>
                         {{ invalidHeader }}
                         <ul>
                             <li v-for="problem in returnInvalidElements" :key="problem">
                                 {{ problem }}
                             </li>
                         </ul>
-                    </b-alert>
+                    </GAlert>
                 </div>
                 <div v-if="!initialPairsPossible">
-                    <b-alert show variant="danger" dismissible>
+                    <GAlert show variant="danger" dismissible>
                         {{
                             l(
                                 "Could not automatically create any pairs from the given dataset names. You may want to choose or enter different filters and try auto-pairing again."
@@ -87,16 +87,16 @@
                             {{ cancelText }}
                         </a>
                         {{ allInvalidElementsPartTwo }}
-                    </b-alert>
+                    </GAlert>
                 </div>
                 <div v-if="state == 'duplicates'">
-                    <b-alert show variant="danger">
+                    <GAlert show variant="danger">
                         {{ l("Collections cannot have duplicated names. The following list names are duplicated: ") }}
                         <ul>
                             <li v-for="name in duplicatePairNames" :key="name">{{ name }}</li>
                         </ul>
                         {{ l("Please fix these duplicates and try again.") }}
-                    </b-alert>
+                    </GAlert>
                 </div>
                 <collection-creator
                     :oncancel="oncancel"
@@ -327,9 +327,9 @@
                         <Splitpanes horizontal style="height: 400px">
                             <Pane>
                                 <div v-if="noUnpairedElementsDisplayed">
-                                    <b-alert show variant="warning">
+                                    <GAlert show variant="warning">
                                         {{ l("No datasets were found matching the current filters.") }}
-                                    </b-alert>
+                                    </GAlert>
                                 </div>
                                 <div class="unpaired-columns flex-column-container scroll-container flex-row">
                                     <div class="forward-column flex-column column truncate">
@@ -422,9 +422,12 @@ import mixin from "./common/mixin";
 import PairedElementView from "./PairedElementView";
 import UnpairedDatasetElementView from "./UnpairedDatasetElementView";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 Vue.use(BootstrapVue);
 export default {
     components: {
+        GAlert,
         UnpairedDatasetElementView,
         PairedElementView,
         Splitpanes,

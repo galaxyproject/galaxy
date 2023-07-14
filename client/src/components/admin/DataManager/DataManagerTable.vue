@@ -1,10 +1,10 @@
 <template>
     <div>
         <b-breadcrumb v-if="dataTable && !loading" id="breadcrumb" :items="breadcrumbItems" />
-        <Alert :message="message" :variant="status" />
-        <Alert v-if="viewOnly" message="Not implemented" variant="dark" />
-        <Alert v-else-if="loading" message="Waiting for data" status="info" />
-        <Alert
+        <GAlert :message="message" :variant="status" />
+        <GAlert v-if="viewOnly" message="Not implemented" variant="dark" />
+        <GAlert v-else-if="loading" message="Waiting for data" status="info" />
+        <GAlert
             v-else-if="dataTable && !dataTable['data'].length"
             message="There are currently no entries in this tool data table."
             variant="primary" />
@@ -43,11 +43,11 @@
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 
-import Alert from "components/Alert.vue";
+import GAlert from "@/component-library/GAlert.vue";
 
 export default {
     components: {
-        Alert,
+        GAlert,
     },
     props: {
         name: {

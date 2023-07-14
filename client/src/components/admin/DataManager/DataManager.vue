@@ -1,13 +1,13 @@
 <template>
     <div>
-        <Alert :message="message" :variant="status" />
-        <Alert v-if="viewOnly" message="Not implemented" variant="dark" />
-        <Alert v-else-if="loading" message="Waiting for data" variant="info" />
+        <GAlert :message="message" :variant="status" />
+        <GAlert v-if="viewOnly" message="Not implemented" variant="dark" />
+        <GAlert v-else-if="loading" message="Waiting for data" variant="info" />
         <div v-else-if="dataManagers && !dataManagers.length">
-            <Alert variant="primary">
+            <GAlert variant="primary">
                 <span class="alert-heading h-sm">None installed</span>
                 You do not currently have any Data Managers installed.
-            </Alert>
+            </GAlert>
         </div>
         <div v-else-if="dataManagers && dataTables">
             <b-container fluid>
@@ -79,11 +79,11 @@ import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 import { debounce } from "underscore";
 
-import Alert from "components/Alert.vue";
+import GAlert from "@/component-library/GAlert.vue";
 
 export default {
     components: {
-        Alert,
+        GAlert,
     },
     beforeRouteEnter(to, from, next) {
         console.log("beforeRouteEnter");

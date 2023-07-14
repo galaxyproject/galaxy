@@ -9,6 +9,8 @@ import { computed, ref, watch } from "vue";
 
 import { getPublishedHistories, updateTags } from "./services";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 const validFilters = {
     name: contains("name"),
     annotation: contains("annotation"),
@@ -110,7 +112,7 @@ watch([filterText, sortBy, sortDesc], () => {
     <section id="published-histories" class="d-flex flex-column">
         <Heading h1>Published Histories</Heading>
 
-        <b-alert v-if="noItems" variant="info" show>No published histories found.</b-alert>
+        <GAlert v-if="noItems" variant="info" show>No published histories found.</GAlert>
 
         <div v-else>
             <b-input-group class="mb-2">
@@ -182,13 +184,13 @@ watch([filterText, sortBy, sortDesc], () => {
                 </div>
             </div>
 
-            <b-alert v-if="noResults" variant="info" show>
+            <GAlert v-if="noResults" variant="info" show>
                 No matching entries found for: <span class="font-weight-bold">{{ filterText }}</span>
-            </b-alert>
+            </GAlert>
 
-            <b-alert v-if="loading" variant="info" show>
+            <GAlert v-if="loading" variant="info" show>
                 <LoadingSpan message="Loading published histories" />
-            </b-alert>
+            </GAlert>
 
             <b-table
                 v-if="items.length"

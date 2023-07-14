@@ -82,10 +82,10 @@ describe("WorkflowRun.vue", () => {
 
         expect(wrapper.vm.error).toBeNull();
         expect(wrapper.vm.loading).toBe(false);
-        expect(wrapper.find("b-alert-stub").exists()).toBe(false);
+        expect(wrapper.find("[data-description='workflow submission error']").exists()).toBe(false);
         wrapper.vm.handleSubmissionError("Some exception here");
         await localVue.nextTick();
         expect(wrapper.vm.submissionError).toBe("Some exception here");
-        expect(wrapper.find("b-alert-stub").attributes("variant")).toEqual("danger");
+        expect(wrapper.find("[data-description='workflow submission error']").attributes("variant")).toEqual("danger");
     });
 });

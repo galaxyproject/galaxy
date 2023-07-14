@@ -2,12 +2,12 @@
     <div class="container">
         <div class="row justify-content-md-center">
             <div class="col col-lg-6">
-                <b-alert :show="!!registrationWarningMessage" variant="info">
+                <GAlert :show="!!registrationWarningMessage" variant="info">
                     {{ registrationWarningMessage }}
-                </b-alert>
-                <b-alert :show="!!messageText" :variant="messageVariant">
+                </GAlert>
+                <GAlert :show="!!messageText" :variant="messageVariant">
                     {{ messageText }}
-                </b-alert>
+                </GAlert>
                 <b-form id="registration" @submit.prevent="submit()">
                     <b-card no-body>
                         <!-- OIDC and Custos enabled and prioritized: encourage users to use it instead of local registration -->
@@ -107,10 +107,13 @@ import _l from "utils/localization";
 import { withPrefix } from "utils/redirect";
 import Vue from "vue";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GAlert,
         ExternalLogin,
     },
     props: {

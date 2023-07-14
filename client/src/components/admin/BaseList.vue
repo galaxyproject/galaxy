@@ -1,6 +1,6 @@
 <template>
     <div>
-        <b-alert :show="messageVisible" :variant="messageVariant"> {{ messageText }} </b-alert>
+        <GAlert :show="messageVisible" :variant="messageVariant"> {{ messageText }} </GAlert>
         <div v-if="itemsVisible" class="card-header">
             There are {{ itemsLength }}
             <b-button
@@ -36,9 +36,14 @@
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 Vue.use(BootstrapVue);
 
 export default {
+    components: {
+        GAlert,
+    },
     props: {
         icon: {
             type: String,

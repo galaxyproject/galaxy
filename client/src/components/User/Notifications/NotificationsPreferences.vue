@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BCard, BCol, BFormCheckbox, BRow } from "bootstrap-vue";
+import { BButton, BCard, BCol, BFormCheckbox, BRow } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import {
@@ -18,6 +18,7 @@ import {
 } from "@/composables/utils/pushNotifications";
 import type { components } from "@/schema";
 
+import GAlert from "@/component-library/GAlert.vue";
 import AsyncButton from "@/components/Common/AsyncButton.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -105,13 +106,13 @@ watch(
         </span>
         <span v-else v-localize class="mb-2"> You can manage push notifications preferences here. </span>
 
-        <BAlert v-if="errorMessage" show dismissible fade variant="warning" @dismissed="errorMessage = null">
+        <GAlert v-if="errorMessage" show dismissible fade variant="warning" @dismissed="errorMessage = null">
             {{ errorMessage }}
-        </BAlert>
+        </GAlert>
 
-        <BAlert v-if="loading" class="m-2" show variant="info">
+        <GAlert v-if="loading" class="m-2" show variant="info">
             <LoadingSpan message="Loading notifications preferences" />
-        </BAlert>
+        </GAlert>
 
         <BRow v-else-if="showPreferences" class="mx-1">
             <BCol v-for="category in categories" :key="category">
@@ -172,7 +173,7 @@ watch(
                     Enable push notifications
                 </BButton>
             </BCard>
-            <BAlert
+            <GAlert
                 v-else-if="browserSupportsPushNotifications() && pushNotificationsGranted"
                 show
                 variant="info"
@@ -180,11 +181,11 @@ watch(
                 <FontAwesomeIcon icon="check-circle" />
                 Push notifications are enabled. You can disable them by revoking the site notification privilege in your
                 browser.
-            </BAlert>
-            <BAlert v-else show variant="warning" class="my-2">
+            </GAlert>
+            <GAlert v-else show variant="warning" class="my-2">
                 <FontAwesomeIcon icon="exclamation-circle" />
                 Push notifications are not supported by this browser. You can still receive in-app notifications.
-            </BAlert>
+            </GAlert>
         </BRow>
 
         <BRow v-if="!loading && config.enable_notification_system" class="m-1" align-h="center">

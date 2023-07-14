@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCopy, faEye, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BBadge, BButton, BButtonGroup, BListGroup, BListGroupItem, BPagination } from "bootstrap-vue";
+import { BBadge, BButton, BButtonGroup, BListGroup, BListGroupItem, BPagination } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -16,6 +16,7 @@ import {
 } from "@/stores/services/historyArchive.services";
 import localize from "@/utils/localization";
 
+import GAlert from "@/component-library/GAlert.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -142,16 +143,16 @@ async function onImportCopy(history: ArchivedHistorySummary) {
                 class="m-1 mb-3"
                 placeholder="Search by name"
                 @change="updateSearchQuery" />
-            <BAlert v-if="isLoading" variant="info" show>
+            <GAlert v-if="isLoading" variant="info" show>
                 <LoadingSpan v-if="isLoading" message="Loading archived histories" />
-            </BAlert>
-            <BAlert v-else-if="noHistoriesMatchingFilter" variant="info" show>
+            </GAlert>
+            <GAlert v-else-if="noHistoriesMatchingFilter" variant="info" show>
                 There are no archived histories matching your current filter: <b>{{ searchText }}</b>
-            </BAlert>
-            <BAlert v-else-if="noResults" variant="info" show>
+            </GAlert>
+            <GAlert v-else-if="noResults" variant="info" show>
                 You do not have any archived histories. You can select the 'Archive History' option from the history
                 menu to archive a history.
-            </BAlert>
+            </GAlert>
             <BListGroup v-else>
                 <BListGroupItem v-for="history in archivedHistories" :key="history.id" :data-pk="history.id">
                     <div class="d-flex justify-content-between align-items-center">

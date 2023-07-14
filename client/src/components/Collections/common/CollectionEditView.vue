@@ -1,13 +1,13 @@
 <template>
     <div aria-labelledby="collection-edit-view-heading">
         <h1 id="collection-edit-view-heading" class="h-lg">{{ l("Edit Collection Attributes") }}</h1>
-        <b-alert show variant="info" dismissible>
+        <GAlert show variant="info" dismissible>
             {{ l(infoMessage) }}
-        </b-alert>
+        </GAlert>
         <div v-if="jobError">
-            <b-alert show variant="danger" dismissible>
+            <GAlert show variant="danger" dismissible>
                 {{ l(errorMessage) }}
-            </b-alert>
+            </GAlert>
         </div>
         <b-tabs content-class="mt-3">
             <b-tab
@@ -73,6 +73,7 @@ import ChangeDatatypeTab from "./ChangeDatatypeTab";
 import DatabaseEditTab from "./DatabaseEditTab";
 import SuitableConvertersTab from "./SuitableConvertersTab";
 
+import GAlert from "@/component-library/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 library.add(faDatabase, faTable, faBars, faUser, faCog);
@@ -83,6 +84,7 @@ export default {
         DatabaseEditTab,
         SuitableConvertersTab,
         FontAwesomeIcon,
+        GAlert,
         DbKeyProvider,
         SuitableConvertersProvider,
         ChangeDatatypeTab,

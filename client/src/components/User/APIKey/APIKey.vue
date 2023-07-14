@@ -6,6 +6,8 @@ import { ref } from "vue";
 import APIKeyItem from "./APIKeyItem";
 import svc from "./model/service";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 const apiKey = ref(null);
 const loading = ref(false);
 const errorMessage = ref(null);
@@ -40,13 +42,13 @@ getAPIKey();
             access your account and should be treated with the same care as your login password.
         </span>
 
-        <b-alert :show="errorMessage" dismissible fade variant="warning" @dismissed="errorMessage = null">
+        <GAlert :show="errorMessage" dismissible fade variant="warning" @dismissed="errorMessage = null">
             {{ errorMessage }}
-        </b-alert>
+        </GAlert>
 
-        <b-alert v-if="loading" class="m-2" show variant="info">
+        <GAlert v-if="loading" class="m-2" show variant="info">
             <LoadingSpan message="Loading API keys" />
-        </b-alert>
+        </GAlert>
 
         <b-button
             v-else-if="!loading && !apiKey"

@@ -10,9 +10,9 @@
                 <span class="loading-message">Loading repository details...</span>
             </span>
             <div v-else>
-                <b-alert v-if="error" variant="danger" show>
+                <GAlert v-if="error" variant="danger" show>
                     {{ error }}
-                </b-alert>
+                </GAlert>
                 <div v-else class="border rounded">
                     <b-table borderless :items="repoTable" :fields="repoFields" class="text-center m-0">
                         <template v-slot:cell(numeric_revision)="data">
@@ -73,11 +73,13 @@ import { Services } from "../services";
 import InstallationActions from "./InstallationActions.vue";
 import InstallationSettings from "./InstallationSettings.vue";
 import RepositoryTools from "./RepositoryTools.vue";
+import GAlert from "@/component-library/GAlert.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GAlert,
         ToolPanelViewProvider,
         InstallationSettings,
         InstallationActions,

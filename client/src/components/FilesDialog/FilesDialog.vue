@@ -10,16 +10,17 @@
             <data-dialog-search v-model="filter" />
         </template>
         <template v-slot:helper>
-            <b-alert v-if="showFTPHelper" id="helper" variant="info" show>
+            <GAlert v-if="showFTPHelper" id="helper" variant="info" show>
                 This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at
                 <strong>{{ ftpUploadSite }}</strong> using your Galaxy credentials. For help visit the
                 <a href="https://galaxyproject.org/ftp-upload/" target="_blank">tutorial</a>.
-                <span v-if="oidcEnabled"
-                    ><br />If you are signed-in to Galaxy using a third-party identity and you
+                <span v-if="oidcEnabled">
+                    <br />
+                    If you are signed-in to Galaxy using a third-party identity and you
                     <strong>do not have a Galaxy password</strong> please use the reset password option in the login
-                    form with your email to create a password for your account.</span
-                >
-            </b-alert>
+                    form with your email to create a password for your account.
+                </span>
+            </GAlert>
         </template>
         <template v-slot:options>
             <data-dialog-table
@@ -71,9 +72,12 @@ import { getGalaxyInstance } from "../../app";
 import { Model } from "./model";
 import { browseRemoteFiles, getFileSources } from "./services";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 library.add(faCaretLeft);
 export default {
     components: {
+        GAlert,
         FontAwesomeIcon,
     },
     mixins: [SelectionDialogMixin],

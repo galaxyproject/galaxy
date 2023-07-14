@@ -1,10 +1,10 @@
 <template>
     <b-modal v-bind="$attrs" :title="title" title-tag="h2" v-on="$listeners">
         <transition name="fade">
-            <b-alert v-localize :show="isAnonymous" variant="warning">
+            <GAlert v-localize :show="isAnonymous" variant="warning">
                 As an anonymous user, unless you login or register, you will lose your current history after copying
                 this history. You can <a href="/user/login">log in here</a> or <a href="/user/create">register here</a>.
-            </b-alert>
+            </GAlert>
         </transition>
 
         <transition name="fade">
@@ -35,7 +35,7 @@
 
         <div slot="modal-footer" slot-scope="{ ok, cancel }">
             <div>
-                <b-button class="mr-3" @click="cancel()"> Cancel </b-button>
+                <b-button class="mr-3" @click="cancel()"> Cancel</b-button>
                 <b-button :variant="saveVariant" :disabled="!formValid" @click="copy(ok)">
                     {{ saveTitle | localize }}
                 </b-button>
@@ -50,10 +50,12 @@ import { mapActions, mapState } from "pinia";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
+import GAlert from "@/component-library/GAlert.vue";
 import GInput from "@/component-library/GInput.vue";
 
 export default {
     components: {
+        GAlert,
         GInput,
     },
     props: {

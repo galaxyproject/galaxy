@@ -1,20 +1,20 @@
 <template>
     <div class="list-collection-creator">
         <div v-if="state == 'error'">
-            <b-alert show variant="danger">
+            <GAlert show variant="danger">
                 {{ errorText }}
-            </b-alert>
+            </GAlert>
         </div>
         <div v-else>
             <div v-if="noElementsSelected">
-                <b-alert show variant="warning" dismissible>
+                <GAlert show variant="warning" dismissible>
                     {{ noElementsHeader }}
                     {{ allInvalidElementsPartOne }}
                     <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
                         {{ cancelText }}
                     </a>
                     {{ allInvalidElementsPartTwo }}
-                </b-alert>
+                </GAlert>
                 <div class="float-left">
                     <button class="cancel-create btn" tabindex="-1" @click="oncancel">
                         {{ l("Cancel") }}
@@ -22,7 +22,7 @@
                 </div>
             </div>
             <div v-else-if="allElementsAreInvalid">
-                <b-alert show variant="warning" dismissible>
+                <GAlert show variant="warning" dismissible>
                     {{ invalidHeader }}
                     <ul>
                         <li v-for="problem in returnInvalidElements" :key="problem">
@@ -34,7 +34,7 @@
                         {{ cancelText }}
                     </a>
                     {{ allInvalidElementsPartTwo }}
-                </b-alert>
+                </GAlert>
                 <div class="float-left">
                     <button class="cancel-create btn" tabindex="-1" @click="oncancel">
                         {{ l("Cancel") }}
@@ -43,23 +43,23 @@
             </div>
             <div v-else>
                 <div v-if="returnInvalidElementsLength">
-                    <b-alert show variant="warning" dismissible>
+                    <GAlert show variant="warning" dismissible>
                         {{ invalidHeader }}
                         <ul>
                             <li v-for="problem in returnInvalidElements" :key="problem">
                                 {{ problem }}
                             </li>
                         </ul>
-                    </b-alert>
+                    </GAlert>
                 </div>
                 <div v-if="showDuplicateError">
-                    <b-alert show variant="danger">
+                    <GAlert show variant="danger">
                         {{ l("Collections cannot have duplicated names. The following list names are duplicated: ") }}
                         <ol>
                             <li v-for="name in duplicateNames" :key="name">{{ name }}</li>
                         </ol>
                         {{ l("Please fix these duplicates and try again.") }}
-                    </b-alert>
+                    </GAlert>
                 </div>
                 <collection-creator
                     :oncancel="oncancel"
@@ -171,13 +171,13 @@
                             @start="drag = true"
                             @end="drag = false">
                             <div v-if="noMoreValidDatasets">
-                                <b-alert show variant="warning" dismissible>
+                                <GAlert show variant="warning" dismissible>
                                     {{ discardedElementsHeader }}
                                     <a class="reset-text" href="javascript:void(0)" role="button" @click="reset">
                                         {{ startOverText }}
                                     </a>
                                     ?
-                                </b-alert>
+                                </GAlert>
                             </div>
                             <DatasetCollectionElementView
                                 v-for="element in returnWorkingElements"
@@ -211,11 +211,18 @@ import draggable from "vuedraggable";
 import mixin from "./common/mixin";
 import DatasetCollectionElementView from "./ListDatasetCollectionElementView";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 library.add(faSortAlphaDown, faUndo);
 
 Vue.use(BootstrapVue);
 export default {
-    components: { DatasetCollectionElementView, draggable, FontAwesomeIcon },
+    components: {
+        GAlert,
+        DatasetCollectionElementView,
+        draggable,
+        FontAwesomeIcon,
+    },
     mixins: [mixin],
     data: function () {
         return {

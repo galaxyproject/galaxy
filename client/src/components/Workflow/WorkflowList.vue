@@ -3,10 +3,10 @@
         <h1 id="workflows-title" class="mb-3 h-lg">
             {{ title }}
         </h1>
-        <b-alert class="index-grid-message" :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
-        <b-alert class="index-grid-message" dismissible :variant="importStatus" :show="Boolean(importMessage)">
+        <GAlert class="index-grid-message" :variant="messageVariant" :show="showMessage">{{ message }}</GAlert>
+        <GAlert class="index-grid-message" dismissible :variant="importStatus" :show="Boolean(importMessage)">
             {{ importMessage }}
-        </b-alert>
+        </GAlert>
         <b-row class="mb-3">
             <b-col cols="6" class="m-1">
                 <IndexFilter v-bind="filterAttrs" id="workflow-search" v-model="filter" />
@@ -18,13 +18,13 @@
         <b-table v-model="workflowItemsModel" v-bind="{ ...defaultTableAttrs, ...indexTableAttrs }">
             <template v-slot:empty>
                 <loading-span v-if="loading" message="Loading workflows" />
-                <b-alert v-else id="no-workflows" variant="info" show>
+                <GAlert v-else id="no-workflows" variant="info" show>
                     <div v-if="isFiltered">
                         No matching entries found for: <span class="font-weight-bold">{{ filter }}</span
                         >.
                     </div>
                     <div v-else>No workflows found. You may create or import new workflows.</div>
-                </b-alert>
+                </GAlert>
             </template>
             <template v-slot:cell(name)="row">
                 <WorkflowDropdown
@@ -101,6 +101,7 @@ import WorkflowDropdown from "./WorkflowDropdown";
 import WorkflowIndexActions from "./WorkflowIndexActions";
 
 import WorkflowRunButton from "./WorkflowRunButton.vue";
+import GAlert from "@/component-library/GAlert.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 const helpHtml = `<div>
@@ -166,6 +167,7 @@ const PUBLISHED_FIELDS = [NAME_FIELD, TAGS_FIELD, UPDATED_FIELD, OWNER_FIELD];
 
 export default {
     components: {
+        GAlert,
         UtcDate,
         StatelessTags,
         WorkflowDropdown,

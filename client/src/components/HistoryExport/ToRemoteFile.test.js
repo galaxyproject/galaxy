@@ -44,7 +44,7 @@ describe("ToRemoteFile.vue", () => {
         const putData = JSON.parse(request.data);
         expect(putData.directory_uri).toEqual("gxfiles://");
         expect(putData.file_name).toEqual("export.tar.gz");
-        expect(wrapper.find("b-alert-stub").attributes("variant")).toEqual("success");
+        expect(wrapper.find("[data-description='history export done']").attributes("variant")).toEqual("success");
     });
 
     afterEach(() => {

@@ -1,6 +1,8 @@
 <script setup>
 import { computed } from "vue";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 const emit = defineEmits(["input"]);
 const props = defineProps({
     value: {
@@ -32,5 +34,5 @@ const hasOptions = computed(() => {
             {{ option[0] }}
         </b-form-radio>
     </b-form-radio-group>
-    <b-alert v-else v-localize variant="warning" show> No options available. </b-alert>
+    <GAlert v-else v-localize variant="warning" show> No options available. </GAlert>
 </template>

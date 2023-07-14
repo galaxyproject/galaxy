@@ -1,9 +1,9 @@
 <template>
     <b-container fluid class="p-0">
         <h1 v-localize class="h-lg">User preferences</h1>
-        <b-alert :variant="messageVariant" :show="!!message">
+        <GAlert :variant="messageVariant" :show="!!message">
             {{ message }}
-        </b-alert>
+        </GAlert>
         <p>
             <span v-localize>You are signed in as</span>
             <strong id="user-preferences-current-email">{{ email }}</strong>
@@ -132,11 +132,13 @@ import UserPreferencesElement from "./UserPreferencesElement";
 import UserPreferredObjectStore from "./UserPreferredObjectStore";
 
 import ThemeSelector from "./ThemeSelector.vue";
+import GAlert from "@/component-library/GAlert.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GAlert,
         UserActivityBarSettings,
         UserDeletion,
         UserPreferencesElement,

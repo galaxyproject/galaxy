@@ -1,9 +1,9 @@
 <template>
     <div aria-labelledby="dataset-attributes-heading">
         <h1 id="dataset-attributes-heading" v-localize class="h-lg">Edit Dataset Attributes</h1>
-        <b-alert v-if="messageText" class="dataset-attributes-alert" :variant="messageVariant" show>
+        <GAlert v-if="messageText" class="dataset-attributes-alert" :variant="messageVariant" show>
             {{ messageText | l }}
-        </b-alert>
+        </GAlert>
         <DatasetAttributesProvider :id="datasetId" v-slot="{ result, loading }" @error="onError">
             <div v-if="!loading" class="mt-3">
                 <b-tabs>
@@ -100,6 +100,8 @@ import { DatasetAttributesProvider } from "components/providers/DatasetProvider"
 
 import { setAttributes } from "./services";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 library.add(faBars, faCog, faDatabase, faExchangeAlt, faRedo, faSave, faUser);
 
 export default {
@@ -107,6 +109,7 @@ export default {
         DatasetAttributesProvider,
         FontAwesomeIcon,
         FormDisplay,
+        GAlert,
     },
     props: {
         datasetId: {

@@ -2,14 +2,14 @@
     <div class="history-import-component" aria-labelledby="history-import-heading">
         <h1 id="history-import-heading" class="h-lg">Import a history from an archive</h1>
 
-        <b-alert v-if="errorMessage" variant="danger" dismissible show @dismissed="errorMessage = null">
+        <GAlert v-if="errorMessage" variant="danger" dismissible show @dismissed="errorMessage = null">
             {{ errorMessage }}
             <JobError
                 v-if="jobError"
                 style="margin-top: 15px"
                 header="History import job ended in error"
                 :job="jobError" />
-        </b-alert>
+        </GAlert>
 
         <div v-if="initializing">
             <LoadingSpan message="Loading server configuration." />
@@ -18,10 +18,10 @@
             <LoadingSpan message="Waiting on history import job, this may take a while." />
         </div>
         <div v-else-if="complete">
-            <b-alert :show="complete" variant="success" dismissible @dismissed="complete = false">
+            <GAlert :show="complete" variant="success" dismissible @dismissed="complete = false">
                 <span class="mb-1 h-sm">Done!</span>
                 <p>History imported, check out <a :href="historyLink">your histories</a>.</p>
-            </b-alert>
+            </GAlert>
         </div>
         <div v-else>
             <b-form @submit.prevent="submit">
@@ -47,14 +47,14 @@
                 </b-form-group>
 
                 <b-form-group v-if="importType === 'externalUrl'" label="Archived History URL">
-                    <b-alert v-if="showImportUrlWarning" variant="warning" show>
+                    <GAlert v-if="showImportUrlWarning" variant="warning" show>
                         It looks like you are trying to import a published history from another galaxy instance. You can
                         only import histories via an archive URL.
                         <ExternalLink
                             href="https://training.galaxyproject.org/training-material/faqs/galaxy/histories_transfer_entire_histories_from_one_galaxy_server_to_another.html">
                             Read more on the GTN
                         </ExternalLink>
-                    </b-alert>
+                    </GAlert>
 
                     <b-form-input v-model="sourceURL" type="url" />
                 </b-form-group>
@@ -92,6 +92,7 @@ import { getFileSources } from "@/components/FilesDialog/services";
 
 import ExternalLink from "./ExternalLink";
 
+import GAlert from "@/component-library/GAlert.vue";
 import FilesInput from "components/FilesDialog/FilesInput.vue";
 
 library.add(faFolderOpen);
@@ -100,7 +101,14 @@ library.add(faExternalLinkAlt);
 Vue.use(BootstrapVue);
 
 export default {
-    components: { FilesInput, FontAwesomeIcon, JobError, LoadingSpan, ExternalLink },
+    components: {
+        GAlert,
+        FilesInput,
+        FontAwesomeIcon,
+        JobError,
+        LoadingSpan,
+        ExternalLink,
+    },
     setup() {
         const sourceURL = ref("");
         const debouncedURL = refDebounced(sourceURL, 200);

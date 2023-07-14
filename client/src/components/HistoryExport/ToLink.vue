@@ -1,13 +1,13 @@
 <template>
     <div>
-        <b-alert v-if="errorMessage" show variant="danger" dismissible @dismissed="errorMessage = null">
+        <GAlert v-if="errorMessage" show variant="danger" dismissible @dismissed="errorMessage = null">
             {{ errorMessage }}
             <JobError
                 v-if="jobError"
                 style="margin-top: 15px"
                 header="History export job ended in error"
                 :job="jobError" />
-        </b-alert>
+        </GAlert>
         <div v-if="loadingExports">
             <LoadingSpan message="Loading history export information from Galaxy server." />
         </div>
@@ -18,10 +18,10 @@
             Link for download ready
             <ExportLink :history-export="latestExport" />
             <p>Use this link to download the archive or import it on another Galaxy server.</p>
-            <b-alert show variant="warning"
+            <GAlert show variant="warning"
                 >History archives are removed at regular intervals. For permanent storage download the archive, export
                 to a remote file or import the archive on another Galaxy server.
-            </b-alert>
+            </GAlert>
         </div>
         <div v-else-if="hasReadyExport">
             <p>An out of date export is ready <ExportLink :history-export="latestReadyExport" />.</p>
@@ -57,11 +57,17 @@ import { errorMessageAsString } from "utils/simple-error";
 import Vue from "vue";
 
 import ExportLink from "./ExportLink.vue";
+import GAlert from "@/component-library/GAlert.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
-    components: { LoadingSpan, ExportLink, JobError },
+    components: {
+        GAlert,
+        LoadingSpan,
+        ExportLink,
+        JobError,
+    },
     props: {
         historyId: {
             type: String,

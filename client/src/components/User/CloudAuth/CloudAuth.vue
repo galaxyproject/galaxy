@@ -1,9 +1,9 @@
 <template>
     <section class="cloud-auth">
         <header>
-            <b-alert dismissible fade variant="warning" :show="errorMessage !== null" @dismissed="errorMessage = null">
+            <GAlert dismissible fade variant="warning" :show="errorMessage !== null" @dismissed="errorMessage = null">
                 {{ errorMessage }}
-            </b-alert>
+            </GAlert>
 
             <hgroup class="cloud-auth-title">
                 <h1 v-localize class="h-lg">Manage Cloud Authorization</h1>
@@ -97,11 +97,14 @@ import CloudAuthItem from "./CloudAuthItem";
 import { Credential } from "./model";
 import svc from "./model/service";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 Vue.use(BootstrapVue);
 
 export default {
     components: {
         CloudAuthItem,
+        GAlert,
     },
     data() {
         return {

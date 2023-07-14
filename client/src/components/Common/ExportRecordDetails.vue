@@ -8,11 +8,13 @@ import {
     faLink,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BCard, BCardTitle } from "bootstrap-vue";
+import { BCard, BCardTitle } from "bootstrap-vue";
 import LoadingSpan from "components/LoadingSpan";
 import { computed } from "vue";
 
 import { ExportRecordModel } from "./models/exportRecordModel";
+
+import GAlert from "@/component-library/GAlert.vue";
 
 library.add(faExclamationCircle, faExclamationTriangle, faCheckCircle, faClock, faLink);
 
@@ -80,7 +82,7 @@ function onMessageDismissed() {
                     Something failed during this export. Please try again and if the problem persist contact your
                     administrator.
                 </span>
-                <BAlert show variant="danger">{{ props.record.errorMessage }}</BAlert>
+                <GAlert show variant="danger">{{ props.record.errorMessage }}</GAlert>
             </div>
             <div v-else-if="props.record.isUpToDate" title="Up to date">
                 <FontAwesomeIcon icon="check-circle" class="text-success record-up-to-date-icon" />
@@ -107,7 +109,7 @@ function onMessageDismissed() {
 
             <div v-if="props.record.isReady">
                 <p class="mt-3">You can do the following actions with this {{ props.objectType }} export:</p>
-                <BAlert
+                <GAlert
                     v-if="props.actionMessage !== null"
                     :variant="props.actionMessageVariant"
                     show
@@ -115,7 +117,7 @@ function onMessageDismissed() {
                     dismissible
                     @dismissed="onMessageDismissed">
                     {{ props.actionMessage }}
-                </BAlert>
+                </GAlert>
                 <div v-else class="actions">
                     <b-button
                         v-if="props.record.canDownload"

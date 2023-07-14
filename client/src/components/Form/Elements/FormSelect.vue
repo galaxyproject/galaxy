@@ -4,6 +4,8 @@ import Multiselect from "vue-multiselect";
 
 import { useMultiselect } from "@/composables/useMultiselect";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 type SelectValue = string | number | null;
 const { ariaExpanded, onOpen, onClose } = useMultiselect();
 
@@ -158,5 +160,5 @@ onMounted(() => {
         label="label"
         @open="onOpen"
         @close="onClose" />
-    <b-alert v-else v-localize variant="warning" show> No options available. </b-alert>
+    <GAlert v-else v-localize variant="warning" show> No options available. </GAlert>
 </template>

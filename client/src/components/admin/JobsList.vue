@@ -1,9 +1,9 @@
 <template>
     <div aria-labelledby="jobs-title">
         <h1 id="jobs-title" class="h-lg">Jobs</h1>
-        <b-alert v-if="message" :variant="status" show>
+        <GAlert v-if="message" :variant="status" show>
             {{ message }}
-        </b-alert>
+        </GAlert>
         <Heading h2 size="md" separator>Job Lock</Heading>
         <JobLock />
         <Heading h2 size="md" separator>Job Overview</Heading>
@@ -108,6 +108,8 @@ import { errorMessageAsString } from "utils/simple-error";
 import { commonJobFields } from "./JobFields";
 import JobLock from "./JobLock";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 function cancelJob(jobId, message) {
     const url = `${getAppRoot()}api/jobs/${jobId}`;
     return axios.delete(url, { data: { message: message } });
@@ -140,7 +142,12 @@ returned. So <code>tool:'cat1'</code> would show only jobs from the <code>cat1</
 `;
 
 export default {
-    components: { JobLock, JobsTable, Heading },
+    components: {
+        GAlert,
+        JobLock,
+        JobsTable,
+        Heading,
+    },
     mixins: [filtersMixin],
     data() {
         return {

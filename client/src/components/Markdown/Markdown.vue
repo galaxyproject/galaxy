@@ -34,12 +34,12 @@
                 <div class="float-right m-1">Identifier: {{ markdownConfig.id }}</div>
             </b-badge>
             <div>
-                <b-alert v-if="markdownErrors.length > 0" variant="warning" show>
+                <GAlert v-if="markdownErrors.length > 0" variant="warning" show>
                     <div v-for="(obj, index) in markdownErrors" :key="index" class="mb-1">
                         <h2 class="h-text">{{ obj.error || "Error" }}</h2>
                         {{ obj.line }}
                     </div>
-                </b-alert>
+                </GAlert>
             </div>
             <div v-for="(obj, index) in markdownObjects" :key="index" class="markdown-components">
                 <p v-if="obj.name == 'default'" class="text-justify m-2" v-html="obj.content" />
@@ -71,6 +71,7 @@ import store from "store";
 import Vue from "vue";
 
 import MarkdownContainer from "./MarkdownContainer.vue";
+import GAlert from "@/component-library/GAlert.vue";
 import LoadingSpan from "components/LoadingSpan.vue";
 import StsDownloadButton from "components/StsDownloadButton.vue";
 
@@ -93,6 +94,7 @@ library.add(faDownload, faEdit);
 export default {
     store: store,
     components: {
+        GAlert,
         MarkdownContainer,
         FontAwesomeIcon,
         LoadingSpan,

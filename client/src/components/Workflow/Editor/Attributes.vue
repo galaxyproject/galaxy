@@ -1,8 +1,8 @@
 <template>
     <div id="edit-attributes" class="right-content p-2" itemscope itemtype="http://schema.org/CreativeWork">
-        <b-alert :variant="messageVariant" :show="!!message">
+        <GAlert :variant="messageVariant" :show="!!message">
             {{ message }}
-        </b-alert>
+        </GAlert>
         <div id="workflow-name-area">
             <b>Name</b>
             <meta itemprop="name" :content="name" />
@@ -62,6 +62,7 @@ import Vue from "vue";
 
 import { UntypedParameters } from "./modules/parameters";
 
+import GAlert from "@/component-library/GAlert.vue";
 import GInput from "@/component-library/GInput.vue";
 
 Vue.use(BootstrapVue);
@@ -69,6 +70,7 @@ Vue.use(BootstrapVue);
 export default {
     name: "Attributes",
     components: {
+        GAlert,
         StatelessTags,
         LicenseSelector,
         CreatorEditor,

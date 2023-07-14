@@ -12,10 +12,10 @@
                 </div>
                 <hr />
             </div>
-            <b-alert v-else variant="info" show>
+            <GAlert v-else variant="info" show>
                 This workflow is not accessible. Please use the sharing option to "Make Workflow Accessible and Publish"
                 to obtain a URL for importing to another Galaxy.
-            </b-alert>
+            </GAlert>
             <a :href="downloadUrl">Download Workflow</a>
             <div>
                 <small class="text-muted">
@@ -28,13 +28,13 @@
                 <small class="text-muted"> Download an image of the workflow in SVG format. </small>
             </div>
         </div>
-        <b-alert v-else-if="!!error" variant="danger" show>
+        <GAlert v-else-if="!!error" variant="danger" show>
             <span>
                 {{ error }}. Click
                 <router-link class="require-login-link" to="/login/start">here</router-link>
                 to login.
             </span>
-        </b-alert>
+        </GAlert>
         <LoadingSpan v-else message="Loading workflow" />
     </div>
 </template>
@@ -45,10 +45,13 @@ import { withPrefix } from "utils/redirect";
 import { urlData } from "utils/url";
 import Vue from "vue";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GAlert,
         LoadingSpan,
     },
     props: {

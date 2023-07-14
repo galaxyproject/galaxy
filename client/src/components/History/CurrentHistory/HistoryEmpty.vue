@@ -1,5 +1,5 @@
 <template>
-    <b-alert show>
+    <GAlert show>
         <h4 class="mb-1">
             <i class="fa fa-info-circle empty-message"></i>
             <span>{{ message | l }}</span>
@@ -9,13 +9,18 @@
             <span v-localize>or</span>
             <a v-localize href="#" @click.prevent="clickDataLink">get data from an external source</a>.
         </p>
-    </b-alert>
+    </GAlert>
 </template>
 
 <script>
 import { useGlobalUploadModal } from "composables/globalUploadModal";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 export default {
+    components: {
+        GAlert,
+    },
     props: {
         message: { type: String, default: "This history is empty." },
         writable: { type: Boolean, default: true },

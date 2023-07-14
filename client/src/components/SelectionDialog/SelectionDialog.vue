@@ -4,9 +4,9 @@
             <slot name="search"> </slot>
         </template>
         <slot name="helper"> </slot>
-        <b-alert v-if="errorMessage" variant="danger" show>
+        <GAlert v-if="errorMessage" variant="danger" show>
             {{ errorMessage }}
-        </b-alert>
+        </GAlert>
         <div v-else>
             <slot v-if="optionsShow" name="options"> </slot>
             <div v-else><span class="fa fa-spinner fa-spin" /> <span>Please wait...</span></div>
@@ -38,10 +38,13 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GAlert,
         FontAwesomeIcon,
     },
     props: {

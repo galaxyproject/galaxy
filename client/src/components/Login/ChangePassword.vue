@@ -1,8 +1,8 @@
 <template>
     <b-form @submit.prevent="submit">
-        <b-alert v-if="!!message" :variant="variant" show>
+        <GAlert v-if="!!message" :variant="variant" show>
             {{ message }}
-        </b-alert>
+        </GAlert>
         <b-card header="Change your password">
             <b-form-group v-if="expiredUser" label="Current Password">
                 <b-form-input v-model="current" type="password" />
@@ -19,9 +19,14 @@ import BootstrapVue from "bootstrap-vue";
 import { withPrefix } from "utils/redirect";
 import Vue from "vue";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 Vue.use(BootstrapVue);
 
 export default {
+    components: {
+        GAlert,
+    },
     props: {
         token: {
             type: String,

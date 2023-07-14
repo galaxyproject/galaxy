@@ -8,6 +8,7 @@ import { computed, type ComputedRef, type Ref, ref } from "vue";
 
 import { type Activity, useActivityStore } from "@/stores/activityStore";
 
+import GAlert from "@/component-library/GAlert.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 
 library.add({
@@ -101,7 +102,7 @@ function onQuery(newQuery: string) {
             </div>
         </div>
         <div v-else class="activity-settings-content">
-            <b-alert v-localize class="py-1 px-2" show> No matching activities found. </b-alert>
+            <GAlert v-localize class="py-1 px-2" show> No matching activities found. </GAlert>
         </div>
     </div>
 </template>

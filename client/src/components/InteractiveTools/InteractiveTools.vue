@@ -1,6 +1,6 @@
 <template>
     <div aria-labelledby="interactive-tools-heading">
-        <b-alert v-for="(message, index) in messages" :key="index" :show="3" variant="danger">{{ message }}</b-alert>
+        <GAlert v-for="(message, index) in messages" :key="index" :show="3" variant="danger">{{ message }}</GAlert>
         <h1 id="interactive-tools-heading" class="h-lg">Active Interactive Tools</h1>
         <b-row class="mb-3">
             <b-col cols="6">
@@ -75,10 +75,13 @@ import { mapActions, mapState } from "pinia";
 import { useEntryPointStore } from "../../stores/entryPointStore";
 import { Services } from "./services";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 library.add(faExternalLinkAlt);
 
 export default {
     components: {
+        GAlert,
         UtcDate,
         FontAwesomeIcon,
     },

@@ -16,7 +16,7 @@
             ok-only
             @show="getDetails">
             <div>
-                <b-alert :show="hasError" variant="danger" data-testid="error-alert"> {{ error }} </b-alert>
+                <GAlert :show="hasError" variant="danger" data-testid="error-alert"> {{ error }} </GAlert>
                 <div v-if="libraryDetails">
                     <b-table-lite
                         :fields="fields"
@@ -70,11 +70,14 @@ import UtcDate from "components/UtcDate";
 import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 library.add(faInfoCircle);
 
 export default {
     components: {
         FontAwesomeIcon,
+        GAlert,
         UtcDate,
     },
     props: {

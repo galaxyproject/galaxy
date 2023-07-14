@@ -14,9 +14,9 @@
                         {{ label }}
                     </b-form-radio>
                 </div>
-                <b-alert v-else show variant="info">
+                <GAlert v-else show variant="info">
                     No labels found. Please specify labels in the Workflow Editor.
-                </b-alert>
+                </GAlert>
                 <p class="mt-3 text-muted">
                     You may add new labels by selecting a step in the workflow editor and then editing the corresponding
                     label field in the step form.
@@ -30,9 +30,14 @@
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 Vue.use(BootstrapVue);
 
 export default {
+    components: {
+        GAlert,
+    },
     props: {
         labelTitle: {
             type: String,

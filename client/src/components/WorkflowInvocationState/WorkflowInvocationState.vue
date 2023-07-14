@@ -21,14 +21,14 @@
             <div v-if="invocationAndJobTerminal">
                 <WorkflowInvocationExportOptions :invocation-id="invocation.id" />
             </div>
-            <b-alert v-else variant="info" show>
+            <GAlert v-else variant="info" show>
                 <LoadingSpan message="Waiting to complete invocation" />
-            </b-alert>
+            </GAlert>
         </b-tab>
     </b-tabs>
-    <b-alert v-else variant="info" show>
+    <GAlert v-else variant="info" show>
         <LoadingSpan message="Loading invocation" />
-    </b-alert>
+    </GAlert>
 </template>
 <script>
 import mixin from "components/JobStates/mixin";
@@ -41,9 +41,11 @@ import { cancelWorkflowScheduling } from "./services";
 import WorkflowInvocationDetails from "./WorkflowInvocationDetails.vue";
 import WorkflowInvocationExportOptions from "./WorkflowInvocationExportOptions.vue";
 import WorkflowInvocationSummary from "./WorkflowInvocationSummary.vue";
+import GAlert from "@/component-library/GAlert.vue";
 
 export default {
     components: {
+        GAlert,
         LoadingSpan,
         WorkflowInvocationSummary,
         WorkflowInvocationDetails,

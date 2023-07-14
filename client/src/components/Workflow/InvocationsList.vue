@@ -3,10 +3,10 @@
         <h1 id="invocations-title" class="mb-3 h-lg">
             {{ title }}
         </h1>
-        <b-alert v-if="headerMessage" variant="info" show>
+        <GAlert v-if="headerMessage" variant="info" show>
             {{ headerMessage }}
-        </b-alert>
-        <b-alert v-bind="alertAttrs">{{ message }}</b-alert>
+        </GAlert>
+        <GAlert v-bind="alertAttrs">{{ message }}</GAlert>
         <b-table
             v-bind="indexTableAttrs"
             v-model="invocationItemsModel"
@@ -15,9 +15,9 @@
             class="invocations-table">
             <template v-slot:empty>
                 <loading-span v-if="loading" message="Loading workflow invocations" />
-                <b-alert v-else id="no-invocations" variant="info" show>
+                <GAlert v-else id="no-invocations" variant="info" show>
                     {{ effectiveNoInvocationsMessage }}
-                </b-alert>
+                </GAlert>
             </template>
             <template v-slot:row-details="row">
                 <b-card>
@@ -98,9 +98,11 @@ import { useWorkflowStore } from "@/stores/workflowStore";
 import paginationMixin from "./paginationMixin";
 
 import WorkflowRunButton from "./WorkflowRunButton.vue";
+import GAlert from "@/component-library/GAlert.vue";
 
 export default {
     components: {
+        GAlert,
         UtcDate,
         WorkflowInvocationState,
         WorkflowRunButton,

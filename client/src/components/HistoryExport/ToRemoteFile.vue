@@ -1,21 +1,21 @@
 <template>
     <div class="export-to-remote-file">
-        <b-alert v-if="errorMessage" show variant="danger" dismissible @dismissed="errorMessage = null">
+        <GAlert v-if="errorMessage" show variant="danger" dismissible @dismissed="errorMessage = null">
             {{ errorMessage }}
             <JobError
                 v-if="jobError"
                 style="margin-top: 15px"
                 header="History export job ended in error"
                 :job="jobError" />
-        </b-alert>
+        </GAlert>
         <div v-if="waitingOnJob">
             <LoadingSpan message="Executing history export job, this will likely take a while." />
         </div>
         <div v-else-if="jobComplete">
-            <b-alert show variant="success" dismissible @dismissed="reset">
+            <GAlert show variant="success" dismissible data-description="history export done" @dismissed="reset">
                 <h2 class="h-sm">Done!</h2>
                 <p>History successfully exported.</p>
-            </b-alert>
+            </GAlert>
         </div>
         <ExportForm v-else what="history archive" @export="doExport" />
     </div>
@@ -32,10 +32,13 @@ import { getAppRoot } from "onload/loadConfig";
 import { errorMessageAsString } from "utils/simple-error";
 import Vue from "vue";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GAlert,
         ExportForm,
         LoadingSpan,
         JobError,

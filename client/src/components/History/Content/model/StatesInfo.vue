@@ -48,9 +48,9 @@ function onFilter(value: string) {
         <dl v-for="(state, key, index) in states" :key="index">
             <div :class="['alert', 'content-item', 'alert-' + state.status]" :data-state="key">
                 <dt>
-                    <a class="text-decoration-none" href="javascript:void(0)" @click="onFilter(key)"
-                        ><code>{{ key }}</code></a
-                    >
+                    <a class="text-decoration-none" href="javascript:void(0)" @click="onFilter(key)">
+                        <code>{{ key }}</code>
+                    </a>
                     <icon v-if="state.icon" :icon="state.icon" />
                 </dt>
                 <dd>{{ helpText[key] || state.text }}</dd>

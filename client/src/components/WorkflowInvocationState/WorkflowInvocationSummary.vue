@@ -16,9 +16,9 @@
             </span>
         </div>
         <div v-else-if="!invocationSchedulingTerminal">
-            <b-alert variant="info" show>
+            <GAlert variant="info" show>
                 <LoadingSpan :message="`Waiting to complete invocation ${indexStr}`" />
-            </b-alert>
+            </GAlert>
             <span
                 v-b-tooltip.hover
                 class="fa fa-times cancel-workflow-scheduling"
@@ -70,12 +70,14 @@ import ProgressBar from "components/ProgressBar";
 import { getRootFromIndexLink } from "onload";
 import { mapGetters } from "vuex";
 
+import GAlert from "@/component-library/GAlert.vue";
 import InvocationMessage from "@/components/WorkflowInvocationState/InvocationMessage.vue";
 
 const getUrl = (path) => getRootFromIndexLink() + path;
 
 export default {
     components: {
+        GAlert,
         InvocationMessage,
         ProgressBar,
         LoadingSpan,

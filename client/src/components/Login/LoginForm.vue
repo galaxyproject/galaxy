@@ -3,14 +3,14 @@
         <div class="row justify-content-md-center">
             <template v-if="!confirmURL">
                 <div class="col col-lg-6">
-                    <b-alert :show="!!messageText" :variant="messageVariant">
+                    <GAlert :show="!!messageText" :variant="messageVariant">
                         <span v-html="messageText" />
-                    </b-alert>
-                    <b-alert :show="!!connectExternalProvider" variant="info">
+                    </GAlert>
+                    <GAlert :show="!!connectExternalProvider" variant="info">
                         There already exists a user with the email <i>{{ connectExternalEmail }}</i
                         >. In order to associate this account with <i>{{ connectExternalLabel }}</i
                         >, you must first login to your existing account.
-                    </b-alert>
+                    </GAlert>
                     <b-form id="login" @submit.prevent="submitLogin()">
                         <b-card no-body>
                             <b-card-header v-if="!connectExternalProvider">
@@ -110,10 +110,13 @@ import Vue from "vue";
 
 import NewUserConfirmation from "./NewUserConfirmation";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GAlert,
         ExternalLogin,
         NewUserConfirmation,
     },

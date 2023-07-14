@@ -1,14 +1,19 @@
 <template>
     <div>
-        <b-alert :show="messageVisible" variant="danger"> {{ messageText }} </b-alert>
-        <b-alert :show="infoVisible" variant="info"> No errors available. </b-alert>
+        <GAlert :show="messageVisible" variant="danger"> {{ messageText }} </GAlert>
+        <GAlert :show="infoVisible" variant="info"> No errors available. </GAlert>
         <b-table v-if="errorStackVisible" striped :fields="errorStackAttributes" :items="errorStack" />
     </div>
 </template>
 <script>
 import { getErrorStack } from "./AdminServices";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 export default {
+    components: {
+        GAlert,
+    },
     data() {
         return {
             errorStack: [],

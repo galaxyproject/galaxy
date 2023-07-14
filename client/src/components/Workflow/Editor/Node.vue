@@ -69,9 +69,9 @@
             </span>
             <span class="node-title">{{ title }}</span>
         </div>
-        <b-alert v-if="!!errors" variant="danger" show class="node-error" @click="makeActive">
+        <GAlert v-if="!!errors" variant="danger" show class="node-error" @click="makeActive">
             {{ errors }}
-        </b-alert>
+        </GAlert>
         <div v-else class="node-body" @click="makeActive" @keyup.enter="makeActive">
             <NodeInput
                 v-for="(input, index) in inputs"
@@ -126,6 +126,7 @@ import type { Step } from "@/stores/workflowStepStore";
 
 import type { OutputTerminals } from "./modules/terminals";
 
+import GAlert from "@/component-library/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DraggableWrapper from "@/components/Workflow/Editor/DraggablePan.vue";
 import NodeInput from "@/components/Workflow/Editor/NodeInput.vue";

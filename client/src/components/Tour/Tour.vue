@@ -8,7 +8,7 @@
             static
             ok-only
             hide-header>
-            <b-alert show variant="danger"> You must log in to Galaxy to use this tour. </b-alert>
+            <GAlert show variant="danger"> You must log in to Galaxy to use this tour. </GAlert>
         </b-modal>
         <b-modal
             v-else-if="adminRequired(currentUser)"
@@ -17,7 +17,7 @@
             static
             ok-only
             hide-header>
-            <b-alert show variant="danger"> You must be an admin user to use this tour. </b-alert>
+            <GAlert show variant="danger"> You must be an admin user to use this tour. </GAlert>
         </b-modal>
         <b-modal
             v-else-if="newHistoryRequired(currentHistory)"
@@ -26,10 +26,10 @@
             static
             ok-only
             hide-header>
-            <b-alert show variant="danger">
+            <GAlert show variant="danger">
                 This tour is designed to run on a new history, please create a new history before running it.
                 <a @click.prevent="createNewHistory()">Click here</a> to create a new history.
-            </b-alert>
+            </GAlert>
         </b-modal>
         <TourStep
             v-else-if="currentStep"
@@ -51,11 +51,14 @@ import { useUserStore } from "@/stores/userStore";
 
 import TourStep from "./TourStep";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 // popup display duration when auto-playing the tour
 const playDelay = 3000;
 
 export default {
     components: {
+        GAlert,
         TourStep,
     },
     props: {

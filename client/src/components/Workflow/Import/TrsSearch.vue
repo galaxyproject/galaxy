@@ -12,6 +12,7 @@ import type { TrsSelection } from "./types";
 
 import TrsServerSelection from "./TrsServerSelection.vue";
 import TrsTool from "./TrsTool.vue";
+import GAlert from "@/component-library/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 type TrsSearchData = {
@@ -122,7 +123,7 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
 
 <template>
     <BCard class="workflow-import-trs-search" title="GA4GH Tool Registry Server (TRS) Workflow Search">
-        <b-alert :show="hasErrorMessage" variant="danger">{{ errorMessage }}</b-alert>
+        <GAlert :show="hasErrorMessage" variant="danger">{{ errorMessage }}</GAlert>
 
         <div class="mb-3">
             <b>TRS Server:</b>
@@ -157,13 +158,13 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
             </b-input-group>
         </div>
         <div>
-            <b-alert v-if="loading" variant="info" show>
+            <GAlert v-if="loading" variant="info" show>
                 <LoadingSpan :message="`Searching for ${query}, this may take a while - please be patient`" />
-            </b-alert>
-            <b-alert v-else-if="!query" variant="info" show> Enter search query to begin search. </b-alert>
-            <b-alert v-else-if="results.length == 0" variant="info" show>
+            </GAlert>
+            <GAlert v-else-if="!query" variant="info" show> Enter search query to begin search. </GAlert>
+            <GAlert v-else-if="results.length == 0" variant="info" show>
                 No search results found, refine your search.
-            </b-alert>
+            </GAlert>
             <b-table
                 v-else
                 :fields="fields"
@@ -175,9 +176,9 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
                 @row-clicked="showRowDetails">
                 <template v-slot:row-details="row">
                     <BCard>
-                        <b-alert v-if="importing" variant="info" show>
+                        <GAlert v-if="importing" variant="info" show>
                             <LoadingSpan message="Importing workflow" />
-                        </b-alert>
+                        </GAlert>
                         <TrsTool
                             :trs-tool="row.item.data"
                             @onImport="(versionId) => importVersion(trsSelection?.id, row.item.data.id, versionId)" />

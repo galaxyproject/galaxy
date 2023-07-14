@@ -32,12 +32,12 @@
                 </span>
             </div>
             <div ref="scrollContainer" class="overflow-auto">
-                <b-alert v-if="loading" class="m-2" variant="info" show>
+                <GAlert v-if="loading" class="m-2" variant="info" show>
                     <LoadingSpan message="Loading Advanced Search Results" />
-                </b-alert>
-                <b-alert v-else-if="!itemsLoaded || itemsLoaded.length == 0" class="m-2" variant="info" show>
+                </GAlert>
+                <GAlert v-else-if="!itemsLoaded || itemsLoaded.length == 0" class="m-2" variant="info" show>
                     No tools found for the entered filters.
-                </b-alert>
+                </GAlert>
                 <div v-else>
                     <ToolsListTable :tools="itemsLoaded" />
                 </div>
@@ -59,10 +59,13 @@ import { ref } from "vue";
 import ScrollToTopButton from "./ScrollToTopButton";
 import ToolsListTable from "./ToolsListTable";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 library.add(faTimes);
 
 export default {
     components: {
+        GAlert,
         LoadingSpan,
         ToolsListTable,
         ToolsProvider,

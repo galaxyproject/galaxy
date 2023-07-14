@@ -12,7 +12,7 @@
                 :tabs="tabs"
                 :window-tab="windowTab"
                 @open-url="openUrl" />
-            <Alert
+            <GAlert
                 v-if="config.message_box_visible && config.message_box_content"
                 id="messagebox"
                 class="rounded-0 m-0 p-2"
@@ -20,8 +20,8 @@
                 <span class="fa fa-fw mr-1 fa-exclamation" />
                 <!-- eslint-disable-next-line vue/no-v-html -->
                 <span v-html="config.message_box_content"></span>
-            </Alert>
-            <Alert
+            </GAlert>
+            <GAlert
                 v-if="config.show_inactivity_warning && config.inactivity_box_content"
                 id="inactivebox"
                 class="rounded-0 m-0 p-2"
@@ -31,7 +31,7 @@
                 <span>
                     <a class="ml-1" :href="resendUrl">Resend Verification</a>
                 </span>
-            </Alert>
+            </GAlert>
             <router-view @update:confirmation="confirmation = $event" />
         </div>
         <div id="dd-helper" />
@@ -62,7 +62,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import { useUserStore } from "@/stores/userStore";
 
-import Alert from "@/components/Alert.vue";
+import GAlert from "@/component-library/GAlert.vue";
 import DragGhost from "@/components/DragGhost.vue";
 import BroadcastsOverlay from "@/components/Notifications/Broadcasts/BroadcastsOverlay.vue";
 import Masthead from "components/Masthead/Masthead.vue";
@@ -70,7 +70,7 @@ import UploadModal from "components/Upload/UploadModal.vue";
 
 export default {
     components: {
-        Alert,
+        GAlert,
         DragGhost,
         Masthead,
         Toast,

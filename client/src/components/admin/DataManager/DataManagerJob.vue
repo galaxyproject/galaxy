@@ -1,10 +1,10 @@
 <template>
     <div>
         <b-breadcrumb v-if="dataManager && jobId && !loading" id="breadcrumb" :items="breadcrumbItems" />
-        <Alert :message="message" :variant="status" />
-        <Alert v-for="(error, index) in errorMessages" :key="index" :message="error" variant="error" />
-        <Alert v-if="viewOnly" message="Not implemented" variant="dark" />
-        <Alert v-else-if="loading" message="Waiting for data" variant="info" />
+        <GAlert :message="message" :variant="status" />
+        <GAlert v-for="(error, index) in errorMessages" :key="index" :message="error" variant="error" />
+        <GAlert v-if="viewOnly" message="Not implemented" variant="dark" />
+        <GAlert v-else-if="loading" message="Waiting for data" variant="info" />
         <b-container v-else-if="dataManager">
             <b-row>
                 <b-col>
@@ -76,11 +76,11 @@
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 
-import Alert from "components/Alert.vue";
+import GAlert from "@/component-library/GAlert.vue";
 
 export default {
     components: {
-        Alert,
+        GAlert,
     },
     props: {
         id: {

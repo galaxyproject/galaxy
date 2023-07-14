@@ -2,13 +2,14 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCircle, faHourglassHalf, faRetweet } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BButtonGroup, BCard, BCol, BCollapse, BFormCheckbox, BRow } from "bootstrap-vue";
+import { BButton, BButtonGroup, BCard, BCol, BCollapse, BFormCheckbox, BRow } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
 import type { UserNotification } from "@/components/Notifications";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 
+import GAlert from "@/component-library/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import NotificationItem from "@/components/Notifications/NotificationItem.vue";
 import NotificationsPreferences from "@/components/User/Notifications/NotificationsPreferences.vue";
@@ -80,13 +81,13 @@ function togglePreferences() {
             </BCard>
         </BCollapse>
 
-        <BAlert v-if="loadingNotifications" show>
+        <GAlert v-if="loadingNotifications" show>
             <LoadingSpan message="Loading notifications" />
-        </BAlert>
+        </GAlert>
 
-        <BAlert v-else-if="notifications.length === 0" id="no-notifications" show variant="info">
+        <GAlert v-else-if="notifications.length === 0" id="no-notifications" show variant="info">
             No notifications to show.
-        </BAlert>
+        </GAlert>
 
         <div v-else class="mx-1">
             <BCard class="mb-2">
@@ -140,9 +141,9 @@ function togglePreferences() {
                 </BRow>
             </BCard>
 
-            <BAlert v-show="filteredNotifications.length === 0" show variant="info">
+            <GAlert v-show="filteredNotifications.length === 0" show variant="info">
                 No matching notifications with current filters.
-            </BAlert>
+            </GAlert>
 
             <TransitionGroup name="notifications-list" tag="div">
                 <BCard

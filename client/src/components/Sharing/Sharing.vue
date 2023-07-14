@@ -4,9 +4,9 @@
             Share or Publish {{ modelClass }} <span v-if="ready">`{{ item.title }}`</span>
         </h1>
         <div v-for="error in errors" :key="error">
-            <b-alert show variant="danger" dismissible @dismissed="errors = errors.filter((e) => e !== error)">
+            <GAlert show variant="danger" dismissible @dismissed="errors = errors.filter((e) => e !== error)">
                 <ErrorMessage :message="error" :root="root()"> </ErrorMessage>
-            </b-alert>
+            </GAlert>
         </div>
         <br />
         <div v-if="!hasUsername">
@@ -77,7 +77,7 @@
                             be able to view, import and run it.
                         </p>
 
-                        <b-alert
+                        <GAlert
                             :show="dismissCountDown"
                             dismissible
                             class="success-alert"
@@ -85,7 +85,7 @@
                             @dismissed="dismissCountDown = 0"
                             @dismiss-count-down="dismissCountDown = $event">
                             Sharing preferences are saved!
-                        </b-alert>
+                        </GAlert>
 
                         <div class="share_with_view">
                             <Multiselect
@@ -155,7 +155,7 @@
                             </div>
                         </div>
                     </div>
-                    <b-alert variant="warning" dismissible fade :show="permissionsChangeRequired(item)">
+                    <GAlert variant="warning" dismissible fade :show="permissionsChangeRequired(item)">
                         <div class="text-center">
                             {{
                                 item.extra.can_change.length > 0
@@ -163,7 +163,7 @@
                                     : `You are not authorized to share ${item.extra.cannot_change.length} datasets`
                             }}
                         </div>
-                    </b-alert>
+                    </GAlert>
                     <b-row v-if="permissionsChangeRequired(item)">
                         <b-col v-if="item.extra.can_change.length > 0">
                             <b-card>
@@ -276,6 +276,8 @@ import { useUserStore } from "@/stores/userStore";
 
 import ErrorMessage from "./ErrorMessage";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 Vue.use(BootstrapVue);
 library.add(faCopy, faEdit, faUserPlus, faUserSlash, faCaretDown, faCaretUp);
 const defaultExtra = () => {
@@ -287,6 +289,7 @@ const defaultExtra = () => {
 };
 export default {
     components: {
+        GAlert,
         ErrorMessage,
         FontAwesomeIcon,
         SlugInput,

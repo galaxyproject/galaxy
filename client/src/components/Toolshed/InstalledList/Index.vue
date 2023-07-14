@@ -4,7 +4,7 @@
         <div v-else>
             <LoadingSpan v-if="loading" message="Loading installed repositories" />
             <div v-else>
-                <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
+                <GAlert :variant="messageVariant" :show="showMessage">{{ message }}</GAlert>
                 <div class="m-1">
                     <span class="installed-message text-muted">
                         {{ repositories.length }} repositories installed on this instance.
@@ -61,10 +61,13 @@ import { Services } from "../services";
 import RepositoryDetails from "./Details";
 import Monitor from "./Monitor";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GAlert,
         LoadingSpan,
         Monitor,
         RepositoryDetails,

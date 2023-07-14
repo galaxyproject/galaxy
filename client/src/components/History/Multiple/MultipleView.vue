@@ -10,6 +10,7 @@ import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 
 import MultipleViewList from "./MultipleViewList.vue";
+import GAlert from "@/component-library/GAlert.vue";
 import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -72,9 +73,9 @@ function updateFilter(newFilter: string) {
 
 <template>
     <div v-if="currentUser">
-        <b-alert v-if="loadingPinnedHistories" class="m-2" variant="info" show>
+        <GAlert v-if="loadingPinnedHistories" class="m-2" variant="info" show>
             <LoadingSpan message="Loading Histories" />
-        </b-alert>
+        </GAlert>
         <div v-else-if="histories.length" class="multi-history-panel d-flex flex-column h-100">
             <b-input-group class="w-100">
                 <b-form-input
@@ -98,9 +99,9 @@ function updateFilter(newFilter: string) {
                 :selected-histories="selectedHistories"
                 :show-modal.sync="showSelectModal" />
         </div>
-        <b-alert v-else class="m-2" variant="danger" show>
+        <GAlert v-else class="m-2" variant="danger" show>
             <span v-localize class="font-weight-bold">No History found.</span>
-        </b-alert>
+        </GAlert>
         <SelectorModal
             v-show="showSelectModal"
             :multiple="true"

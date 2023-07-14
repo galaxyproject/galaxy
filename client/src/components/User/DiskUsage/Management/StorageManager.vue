@@ -11,6 +11,7 @@ import type { CleanableItem, CleanupOperation, CleanupResult } from "./Cleanup/m
 import CleanupOperationSummary from "./Cleanup/CleanupOperationSummary.vue";
 import CleanupResultDialog from "./Cleanup/CleanupResultDialog.vue";
 import ReviewCleanupDialog from "./Cleanup/ReviewCleanupDialog.vue";
+import GAlert from "@/component-library/GAlert.vue";
 
 interface ModalDialog {
     openModal: () => void;
@@ -57,16 +58,16 @@ async function onConfirmCleanupSelected(selectedItems: CleanableItem[]) {
         </h2>
 
         <b-row class="justify-content-md-center">
-            <b-alert show dismissible variant="warning">
+            <GAlert show dismissible variant="warning">
                 {{ localize("This feature is currently in Beta, if you find any issues please report them") }}
                 <b-link :href="issuesUrl" target="_blank">here</b-link>.
-            </b-alert>
+            </GAlert>
         </b-row>
         <b-row class="justify-content-md-center mb-5">
-            <b-alert v-if="config.enable_quotas" show>
+            <GAlert v-if="config.enable_quotas" show>
                 {{ localize("The storage manager only shows elements that count towards your disk quota.") }}
                 <b-link :href="config.quota_url" target="_blank">{{ localize("Learn more") }}</b-link>
-            </b-alert>
+            </GAlert>
         </b-row>
 
         <div id="categories-panel">

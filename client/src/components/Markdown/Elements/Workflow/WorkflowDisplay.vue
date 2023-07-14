@@ -6,6 +6,7 @@ import { withPrefix } from "@/utils/redirect";
 import { isEmpty } from "@/utils/utils";
 
 import WorkflowTree from "./WorkflowTree.vue";
+import GAlert from "@/component-library/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface WorkflowDisplayProps {
@@ -83,7 +84,7 @@ onMounted(async () => {
         <b-card-body>
             <LoadingSpan v-if="loading" message="Loading Workflow" />
             <div v-else :class="!expanded && 'content-height'">
-                <b-alert v-if="!isEmpty(errorContent)" variant="danger" show>
+                <GAlert v-if="!isEmpty(errorContent)" variant="danger" show>
                     <b>Please fix the following error(s):</b>
                     <ul v-if="typeof errorContent === 'object'" class="my-2">
                         <li v-for="(errorValue, errorKey) in errorContent" :key="errorKey">
@@ -91,7 +92,7 @@ onMounted(async () => {
                         </li>
                     </ul>
                     <div v-else>{{ errorContent }}</div>
-                </b-alert>
+                </GAlert>
                 <div v-if="itemContent !== null">
                     <div v-for="step in itemContent?.steps" :key="step.order_index" class="mb-2">
                         <div>Step {{ step.order_index + 1 }}: {{ step.label }}</div>

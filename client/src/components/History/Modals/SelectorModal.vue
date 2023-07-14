@@ -25,6 +25,7 @@ import { useUserStore } from "@/stores/userStore";
 import Filtering, { contains, expandNameTag } from "@/utils/filtering";
 import localize from "@/utils/localization";
 
+import GAlert from "@/component-library/GAlert.vue";
 import Heading from "@/components/Common/Heading.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import UtcDate from "@/components/UtcDate.vue";
@@ -225,7 +226,7 @@ async function loadMore(noScroll = false) {
             </BFormGroup>
 
             <BBadge v-if="filter && !validFilter" class="alert-danger w-100">Search string too short!</BBadge>
-            <b-alert v-else-if="!busy && hasNoResults" variant="danger" show>No histories found.</b-alert>
+            <GAlert v-else-if="!busy && hasNoResults" variant="danger" show>No histories found.</GAlert>
 
             <div ref="scrollableDiv" class="history-selector-modal-list">
                 <BListGroup>

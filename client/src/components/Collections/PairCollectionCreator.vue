@@ -1,20 +1,20 @@
 <template>
     <div class="pair-collection-creator">
         <div v-if="state == 'error'">
-            <b-alert show variant="danger">
+            <GAlert show variant="danger">
                 {{ errorText }}
-            </b-alert>
+            </GAlert>
         </div>
         <div v-else>
             <div v-if="noElementsSelected">
-                <b-alert show variant="warning" dismissible>
+                <GAlert show variant="warning" dismissible>
                     {{ noElementsHeader }}
                     {{ allInvalidElementsPartOne }}
                     <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
                         {{ cancelText }}
                     </a>
                     {{ allInvalidElementsPartTwo }}
-                </b-alert>
+                </GAlert>
                 <div class="float-left">
                     <button class="cancel-create btn" tabindex="-1" @click="oncancel">
                         {{ l("Cancel") }}
@@ -22,7 +22,7 @@
                 </div>
             </div>
             <div v-else-if="allElementsAreInvalid">
-                <b-alert show variant="warning" dismissible>
+                <GAlert show variant="warning" dismissible>
                     {{ invalidHeader }}
                     <ul>
                         <li v-for="problem in returnInvalidElements" :key="problem">
@@ -34,7 +34,7 @@
                         {{ cancelText }}
                     </a>
                     {{ allInvalidElementsPartTwo }}
-                </b-alert>
+                </GAlert>
                 <div class="float-left">
                     <button class="cancel-create btn" tabindex="-1" @click="oncancel">
                         {{ l("Cancel") }}
@@ -43,22 +43,22 @@
             </div>
             <div v-else-if="!exactlyTwoValidElements">
                 <div v-if="returnInvalidElementsLength">
-                    <b-alert show variant="warning" dismissible>
+                    <GAlert show variant="warning" dismissible>
                         {{ invalidHeader }}
                         <ul>
                             <li v-for="problem in returnInvalidElements" :key="problem">
                                 {{ problem }}
                             </li>
                         </ul>
-                    </b-alert>
+                    </GAlert>
                 </div>
-                <b-alert show variant="warning" dismissible>
+                <GAlert show variant="warning" dismissible>
                     {{ exactlyTwoValidElementsPartOne }}
                     <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
                         {{ cancelText }}
                     </a>
                     {{ exactlyTwoValidElementsPartTwo }}
-                </b-alert>
+                </GAlert>
                 <div class="float-left">
                     <button class="cancel-create btn" tabindex="-1" @click="oncancel">
                         {{ l("Cancel") }}
@@ -67,14 +67,14 @@
             </div>
             <div v-else>
                 <div v-if="returnInvalidElementsLength">
-                    <b-alert show variant="warning" dismissible>
+                    <GAlert show variant="warning" dismissible>
                         {{ invalidHeader }}
                         <ul>
                             <li v-for="problem in returnInvalidElements" :key="problem">
                                 {{ problem }}
                             </li>
                         </ul>
-                    </b-alert>
+                    </GAlert>
                 </div>
                 <collection-creator
                     :oncancel="oncancel"
@@ -156,8 +156,13 @@ import Vue from "vue";
 
 import mixin from "./common/mixin";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 Vue.use(BootstrapVue);
 export default {
+    components: {
+        GAlert,
+    },
     mixins: [mixin],
     data: function () {
         return {

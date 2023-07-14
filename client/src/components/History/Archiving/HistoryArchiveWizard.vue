@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faArchive } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BCard, BTab, BTabs } from "bootstrap-vue";
+import { BCard, BTab, BTabs } from "bootstrap-vue";
 import { computed, ref } from "vue";
 import { RouterLink } from "vue-router";
 
@@ -11,6 +11,7 @@ import { useFileSources } from "@/composables/fileSources";
 import { useToast } from "@/composables/toast";
 import { type HistorySummary, useHistoryStore } from "@/stores/historyStore";
 
+import GAlert from "@/component-library/GAlert.vue";
 import HistoryArchiveExportSelector from "@/components/History/Archiving/HistoryArchiveExportSelector.vue";
 import HistoryArchiveSimple from "@/components/History/Archiving/HistoryArchiveSimple.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -75,15 +76,15 @@ async function onArchiveHistory(exportRecordId?: string) {
             <b v-else>{{ history.name }}</b>
         </h1>
 
-        <BAlert v-if="isHistoryAlreadyArchived" id="history-archived-alert" show variant="success">
+        <GAlert v-if="isHistoryAlreadyArchived" id="history-archived-alert" show variant="success">
             This history has been archived. You can access it from the
             <RouterLink :to="archivedHistoriesRoute">Archived Histories</RouterLink> section.
-        </BAlert>
+        </GAlert>
         <div v-else-if="history">
-            <BAlert show variant="info">
+            <GAlert show variant="info">
                 Archiving a history will remove it from your <i>active histories</i>. You can still access it from the
                 <RouterLink :to="archivedHistoriesRoute">Archived Histories</RouterLink> section.
-            </BAlert>
+            </GAlert>
 
             <div v-if="canFreeStorage">
                 <h2 class="h-md">How do you want to archive this history?</h2>

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 export interface FormCheckProps {
     value?: string | string[];
     options: Array<[string, string]>;
@@ -56,5 +58,5 @@ function onSelectAll(selected: boolean): void {
             </b-form-checkbox>
         </b-form-checkbox-group>
     </div>
-    <b-alert v-else v-localize variant="warning" show> No options available. </b-alert>
+    <GAlert v-else v-localize variant="warning" show> No options available. </GAlert>
 </template>

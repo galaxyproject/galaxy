@@ -2,7 +2,7 @@
     <div class="overflow-auto h-100" @scroll="onScroll">
         <div v-if="error" class="alert alert-danger" show>{{ error }}</div>
         <div v-else>
-            <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
+            <GAlert :variant="messageVariant" :show="showMessage">{{ message }}</GAlert>
             <DelayedInput class="m-1 mb-3" placeholder="Search Datasets" @change="onQuery" />
             <b-table
                 id="dataset-table"
@@ -51,8 +51,11 @@ import DatasetHistory from "./DatasetHistory";
 import DatasetName from "./DatasetName";
 import { copyDataset, getDatasets, updateTags } from "./services";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 export default {
     components: {
+        GAlert,
         DatasetHistory,
         DatasetName,
         LoadingSpan,

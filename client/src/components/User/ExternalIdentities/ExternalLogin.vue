@@ -1,8 +1,8 @@
 <template>
     <div>
-        <b-alert :show="messageShow" :variant="messageVariant">
+        <GAlert :show="messageShow" :variant="messageVariant">
             {{ messageText }}
-        </b-alert>
+        </GAlert>
         <b-form id="externalLogin">
             <!-- OIDC login-->
             <hr class="my-4" />
@@ -104,10 +104,13 @@ import { getAppRoot } from "onload";
 import Vue from "vue";
 import Multiselect from "vue-multiselect";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GAlert,
         Multiselect,
         LoadingSpan,
     },

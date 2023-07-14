@@ -13,6 +13,7 @@ import type { TrsSelection, TrsTool as TrsToolInterface } from "./types";
 import TrsServerSelection from "./TrsServerSelection.vue";
 import TrsTool from "./TrsTool.vue";
 import TrsUrlImport from "./TrsUrlImport.vue";
+import GAlert from "@/component-library/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const props = defineProps({
@@ -167,9 +168,9 @@ async function importVersionFromUrl(url: string, isRunFormRedirect = false) {
                     @onError="onTrsSelectionError"
                     @onTrsSelection="onTrsSelection" />
             </div>
-            <b-alert v-if="isAutoImport && !hasErrorMessage" show variant="info">
+            <GAlert v-if="isAutoImport && !hasErrorMessage" show variant="info">
                 <LoadingSpan message="Loading your Workflow" />
-            </b-alert>
+            </GAlert>
             <div v-else>
                 <div class="my-3">
                     <b-form-group label="TRS ID:" label-for="trs-id-input" label-class="font-weight-bold">
@@ -177,13 +178,13 @@ async function importVersionFromUrl(url: string, isRunFormRedirect = false) {
                     </b-form-group>
                 </div>
                 <div>
-                    <b-alert v-if="loading" show variant="info">
+                    <GAlert v-if="loading" show variant="info">
                         <LoadingSpan :message="`Loading ${toolIdTrimmed}, this may take a while - please be patient`" />
-                    </b-alert>
-                    <b-alert :show="hasErrorMessage" variant="danger">{{ errorMessage }}</b-alert>
-                    <b-alert v-if="importing" show variant="info">
+                    </GAlert>
+                    <GAlert :show="hasErrorMessage" variant="danger">{{ errorMessage }}</GAlert>
+                    <GAlert v-if="importing" show variant="info">
                         <LoadingSpan message="Importing workflow" />
-                    </b-alert>
+                    </GAlert>
                 </div>
                 <TrsTool
                     v-if="trsTool"
@@ -197,8 +198,8 @@ async function importVersionFromUrl(url: string, isRunFormRedirect = false) {
                     @onImport="(url) => importVersionFromUrl(url, isRun)" />
             </div>
         </b-card>
-        <b-alert v-else class="text-center my-2" show variant="danger">
+        <GAlert v-else class="text-center my-2" show variant="danger">
             Anonymous user cannot import workflows, please register or log in
-        </b-alert>
+        </GAlert>
     </div>
 </template>

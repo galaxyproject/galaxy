@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faFileExport } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BCard, BTab, BTabs } from "bootstrap-vue";
+import { BButton, BCard, BTab, BTabs } from "bootstrap-vue";
 import LoadingSpan from "components/LoadingSpan";
 import { useConfirmDialog } from "composables/confirmDialog";
 import { useFileSources } from "composables/fileSources";
@@ -17,6 +17,7 @@ import { absPath } from "@/utils/redirect";
 import { exportToFileSource, getExportRecords, reimportHistoryFromRecord } from "./services";
 
 import ExportOptions from "./ExportOptions.vue";
+import GAlert from "@/component-library/GAlert.vue";
 import ExportForm from "components/Common/ExportForm.vue";
 import ExportRecordDetails from "components/Common/ExportRecordDetails.vue";
 import ExportRecordTable from "components/Common/ExportRecordTable.vue";
@@ -196,11 +197,11 @@ function updateExportParams(newParams) {
                         Here you can generate a temporal download for your history. When your download link expires or
                         your history changes you can re-generate it again.
                     </p>
-                    <BAlert show variant="warning">
+                    <GAlert show variant="warning">
                         History archive downloads can expire and are removed at regular intervals. For permanent
                         storage, export to a <b>remote file</b> or download and then import the archive on another
                         Galaxy server.
-                    </BAlert>
+                    </GAlert>
                     <BButton
                         class="gen-direct-download-btn"
                         :disabled="!canGenerateDownload"
@@ -211,10 +212,10 @@ function updateExportParams(newParams) {
                     <span v-if="isPreparingDownload">
                         <LoadingSpan message="Galaxy is preparing your download, this will likely take a while" />
                     </span>
-                    <BAlert v-else-if="isLatestExportRecordReadyToDownload" variant="success" class="mt-3" show>
+                    <GAlert v-else-if="isLatestExportRecordReadyToDownload" variant="success" class="mt-3" show>
                         The latest export record is ready. Use the download button below to download it or change the
                         advanced export options above to generate a new one.
-                    </BAlert>
+                    </GAlert>
                 </BTab>
                 <BTab
                     v-if="hasWritableFileSources"
@@ -231,9 +232,9 @@ function updateExportParams(newParams) {
             </BTabs>
         </BCard>
 
-        <BAlert v-if="errorMessage" id="last-export-record-error-alert" variant="danger" class="mt-3" show>
+        <GAlert v-if="errorMessage" id="last-export-record-error-alert" variant="danger" class="mt-3" show>
             {{ errorMessage }}
-        </BAlert>
+        </GAlert>
         <div v-else-if="latestExportRecord">
             <h2 class="h-md mt-3">Latest Export Record</h2>
             <ExportRecordDetails
@@ -247,9 +248,9 @@ function updateExportParams(newParams) {
                 @onReimport="reimportFromRecord"
                 @onActionMessageDismissed="onActionMessageDismissedFromRecord" />
         </div>
-        <BAlert v-else id="no-export-records-alert" variant="info" class="mt-3" show>
+        <GAlert v-else id="no-export-records-alert" variant="info" class="mt-3" show>
             {{ availableRecordsMessage }}
-        </BAlert>
+        </GAlert>
 
         <ExportRecordTable
             v-if="hasPreviousExports"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BButton, BFormCheckbox, BModal } from "bootstrap-vue";
+import { BButton, BFormCheckbox, BModal } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 
 import type { ExportRecord } from "@/components/Common/models/exportRecordModel";
@@ -9,6 +9,7 @@ import { useTaskMonitor } from "@/composables/taskMonitor";
 import type { HistorySummary } from "@/stores/historyStore";
 
 import ExportRecordCard from "./ExportRecordCard.vue";
+import GAlert from "@/component-library/GAlert.vue";
 import ExportToFileSourceForm from "@/components/Common/ExportForm.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -132,17 +133,17 @@ function onArchiveHistoryWithExport() {
             To be able to recreate your archived history later, you need to export it first to a permanent remote
             location. Then you will be able to import it back to Galaxy from the remote source, as a new copy.
         </p>
-        <BAlert v-if="isLoading" show variant="info">
+        <GAlert v-if="isLoading" show variant="info">
             <LoadingSpan message="Retrieving export records..." />
-        </BAlert>
-        <BAlert v-else-if="exportErrorMessage" show variant="danger">
+        </GAlert>
+        <GAlert v-else-if="exportErrorMessage" show variant="danger">
             <p>
                 <b>Something went wrong</b>
             </p>
             <p>{{ exportErrorMessage }}</p>
-        </BAlert>
+        </GAlert>
         <div v-else-if="mostUpToDateExport && mostUpToDateExportIsReady">
-            <BAlert show variant="success">
+            <GAlert show variant="success">
                 <p>
                     <b>There is an up-to-date export record of this history ready.</b>
                 </p>
@@ -151,13 +152,13 @@ function onArchiveHistoryWithExport() {
                     importing it.
                 </p>
                 <ExportRecordCard id="export-record-ready" class="mt-3" :export-record="mostUpToDateExport" />
-            </BAlert>
+            </GAlert>
         </div>
         <div v-else>
-            <BAlert v-if="isExportingRecord" id="generating-export-record-alert" show variant="info">
+            <GAlert v-if="isExportingRecord" id="generating-export-record-alert" show variant="info">
                 <LoadingSpan message="Generating export record. This may take a while..." />
-            </BAlert>
-            <BAlert v-else show variant="info">
+            </GAlert>
+            <GAlert v-else show variant="info">
                 <p>
                     <b>
                         There is no up-to-date export record of this history. You need to create a new export record to
@@ -172,7 +173,7 @@ function onArchiveHistoryWithExport() {
                     @click="onCreateExportRecord">
                     Create export record
                 </BButton>
-            </BAlert>
+            </GAlert>
         </div>
         <p v-if="!isDeleteContentsConfirmed" class="mt-3 mb-0">
             To continue, you need to confirm that you want to delete the contents of the original history before you can
@@ -182,10 +183,10 @@ function onArchiveHistoryWithExport() {
         <BFormCheckbox id="confirm-delete-checkbox" v-model="isDeleteContentsConfirmed" class="my-3">
             <b>I am aware that the contents of the original history will be permanently deleted.</b>
         </BFormCheckbox>
-        <BAlert show variant="warning">
+        <GAlert show variant="warning">
             Remember that you cannot undo this action. Once you archive and delete the history, you can only recover it
             by importing it as a new copy from the export record.
-        </BAlert>
+        </GAlert>
         <BButton
             id="archive-history-btn"
             class="mt-3"

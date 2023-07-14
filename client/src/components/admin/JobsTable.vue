@@ -18,9 +18,9 @@
             </template>
             <template v-slot:empty>
                 <LoadingSpan v-if="loading" message="Loading jobs" />
-                <b-alert v-else class="no-jobs" variant="info" show>
+                <GAlert v-else class="no-jobs" variant="info" show>
                     {{ noItemsMessage }}
-                </b-alert>
+                </GAlert>
             </template>
             <template v-slot:cell(update_time)="data">
                 <UtcDate :date="data.value" mode="elapsed" />
@@ -72,8 +72,15 @@ import JobDetails from "components/JobInformation/JobDetails";
 import LoadingSpan from "components/LoadingSpan";
 import UtcDate from "components/UtcDate";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 export default {
-    components: { UtcDate, JobDetails, LoadingSpan },
+    components: {
+        GAlert,
+        UtcDate,
+        JobDetails,
+        LoadingSpan,
+    },
     props: {
         tableCaption: {
             type: String,

@@ -1,8 +1,8 @@
 <template>
     <div>
-        <b-alert v-if="errorMessage" class="mt-2" :show="dismissCountDown" variant="info" @dismissed="resetAlert">
+        <GAlert v-if="errorMessage" class="mt-2" :show="dismissCountDown" variant="info" @dismissed="resetAlert">
             {{ errorMessage }}
-        </b-alert>
+        </GAlert>
         <b-row align-v="center">
             <b-col :sm="isRangeValid ? defaultInputSizeWithSlider : false">
                 <!-- regular dot and dot on numpad have different codes -->
@@ -24,7 +24,12 @@
 </template>
 
 <script>
+import GAlert from "@/component-library/GAlert.vue";
+
 export default {
+    components: {
+        GAlert,
+    },
     props: {
         value: {
             required: true,

@@ -33,7 +33,7 @@
                     initiated the query to negotiate further information exchange or data access.
                 </p>
 
-                <BAlert v-if="enabled" show>
+                <GAlert v-if="enabled" show>
                     <div class="flex-row space-between">
                         <div class="no-shrink">
                             Beacon sharing is <span class="bold">enabled</span> for your profile
@@ -43,10 +43,10 @@
                             <BButton variant="danger" @click="optOut">Disable</BButton>
                         </div>
                     </div>
-                </BAlert>
+                </GAlert>
 
                 <!-- Setting to show when beacon is disabled -->
-                <BAlert v-if="!enabled" show>
+                <GAlert v-if="!enabled" show>
                     <div class="flex-row space-between">
                         <div class="no-shrink">
                             Beacon sharing is currently <span class="bold">disabled</span> - no data will be shared
@@ -56,7 +56,7 @@
                             <BButton variant="success" @click="optIn">Enable</BButton>
                         </div>
                     </div>
-                </BAlert>
+                </GAlert>
 
                 <div v-if="enabled">
                     <p>
@@ -118,14 +118,21 @@
 
 <script>
 import axios from "axios";
-import { BAlert, BButton, BModal, BRow } from "bootstrap-vue";
+import { BButton, BModal, BRow } from "bootstrap-vue";
 import { mapActions } from "pinia";
 import { withPrefix } from "utils/redirect";
 
 import { useHistoryStore } from "@/stores/historyStore";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 export default {
-    components: { BButton, BModal, BRow, BAlert },
+    components: {
+        GAlert,
+        BButton,
+        BModal,
+        BRow,
+    },
     props: {
         userId: {
             type: String,

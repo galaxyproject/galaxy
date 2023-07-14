@@ -6,15 +6,19 @@
 // (AdminRequired), but could be used for other client errors that need to be
 // presented to the user interrupting the normal flow and context of the app.
 
-import Alert from "@/components/Alert.vue";
+import GAlert from "@/component-library/GAlert.vue";
 
 const props = defineProps<{
     error: Error;
 }>();
 </script>
+
 <template>
-    <div class="container error-container"><Alert :message="props.error.message" variant="error" /></div>
+    <div class="container error-container">
+        <GAlert :message="props.error.message" variant="error" />
+    </div>
 </template>
+
 <style scoped>
 .error-container {
     margin: 4rem auto;

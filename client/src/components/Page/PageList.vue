@@ -3,7 +3,7 @@
         <h1 id="pages-title" class="mb-3 h-lg">
             {{ title }}
         </h1>
-        <b-alert v-bind="alertAttrs">{{ message }}</b-alert>
+        <GAlert v-bind="alertAttrs">{{ message }}</GAlert>
         <b-row class="mb-3">
             <b-col cols="6">
                 <IndexFilter v-bind="filterAttrs" id="page-search" v-model="filter" />
@@ -15,13 +15,13 @@
         <b-table v-model="pageItemsModel" v-bind="{ ...defaultTableAttrs, ...indexTableAttrs }">
             <template v-slot:empty>
                 <loading-span v-if="loading" message="Loading pages" />
-                <b-alert v-else id="no-pages" variant="info" show>
+                <GAlert v-else id="no-pages" variant="info" show>
                     <div v-if="isFiltered">
                         No matching entries found for: <span class="font-weight-bold">{{ filter }}</span
                         >.
                     </div>
                     <div v-else>No pages found. You may create a new page.</div>
-                </b-alert>
+                </GAlert>
             </template>
             <template v-slot:cell(title)="row">
                 <PageDropdown
@@ -97,6 +97,8 @@ import PageDropdown from "./PageDropdown";
 import PageIndexActions from "./PageIndexActions";
 import { updateTags } from "./services";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 const helpHtml = `<div>
 <p>This textbox can be used to filter the pages displayed.
 
@@ -138,6 +140,7 @@ const PUBLISHED_FIELDS = [TITLE_FIELD, TAGS_FIELD, OWNER_FIELD, UPDATED_FIELD];
 
 export default {
     components: {
+        GAlert,
         UtcDate,
         StatelessTags,
         PageIndexActions,

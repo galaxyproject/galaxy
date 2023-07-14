@@ -16,7 +16,7 @@
                 @hidden="resetModal"
                 @ok="handleOk">
                 <p>
-                    <b-alert variant="danger" :show="showDeleteError">{{ deleteError }}</b-alert>
+                    <GAlert variant="danger" :show="showDeleteError">{{ deleteError }}</GAlert>
                     <b>
                         This action cannot be undone. Your account will be permanently deleted, along with the data
                         contained in it.
@@ -43,9 +43,14 @@ import { userLogoutClient } from "utils/logout";
 import { withPrefix } from "utils/redirect";
 import Vue from "vue";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 Vue.use(BootstrapVue);
 
 export default {
+    components: {
+        GAlert,
+    },
     props: {
         userId: {
             type: String,

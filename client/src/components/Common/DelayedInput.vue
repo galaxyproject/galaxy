@@ -1,6 +1,6 @@
 <template>
     <b-input-group>
-        <g-input
+        <GInput
             ref="toolInput"
             v-model="queryInput"
             class="search-query"

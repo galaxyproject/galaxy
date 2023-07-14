@@ -1,7 +1,7 @@
 <template>
     <div>
         <DatasetProvider :id="datasetId" v-slot="{ result: dataset }">
-            <b-alert
+            <GAlert
                 v-if="
                     (dataset && dataset.display_apps && dataset.display_apps.length > 0) ||
                     (dataset && dataset.display_types && dataset.display_types.length > 0)
@@ -32,15 +32,18 @@
                     </ol>
                 </div>
                 <div>or select a visualization from below.</div>
-            </b-alert>
+            </GAlert>
         </DatasetProvider>
     </div>
 </template>
 <script>
 import { DatasetProvider } from "components/providers";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 export default {
     components: {
+        GAlert,
         DatasetProvider,
     },
     props: {

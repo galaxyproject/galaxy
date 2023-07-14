@@ -48,7 +48,7 @@
         <b-row>
             <b-col>
                 <b-card>
-                    <b-alert
+                    <GAlert
                         fade
                         dismissible
                         :variant="alertType"
@@ -56,7 +56,7 @@
                         @dismissed="dismissCountDown = 0"
                         @dismiss-count-down="countDownChanged">
                         {{ alertMessage }}
-                    </b-alert>
+                    </GAlert>
 
                     <b-form @submit.prevent="save">
                         <b-form-group label="Name" description="Specify a build name, e.g. Hamster." label-for="name">
@@ -155,10 +155,13 @@ import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 import Multiselect from "vue-multiselect";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GAlert,
         Multiselect,
     },
     data() {

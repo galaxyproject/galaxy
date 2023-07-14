@@ -1,8 +1,8 @@
 <template>
     <div v-if="currentUser && history" class="d-flex flex-column h-100">
-        <b-alert v-if="showHistoryStateInfo" variant="info" show data-description="history state info">
+        <GAlert v-if="showHistoryStateInfo" variant="info" show data-description="history state info">
             {{ historyStateInfoMessage }}
-        </b-alert>
+        </GAlert>
         <div v-else class="flex-row flex-grow-0 pb-3">
             <b-button
                 v-if="userOwnsHistory"
@@ -51,8 +51,11 @@ import CollectionPanel from "./CurrentCollection/CollectionPanel";
 import HistoryPanel from "./CurrentHistory/HistoryPanel";
 import CopyModal from "./Modals/CopyModal";
 
+import GAlert from "@/component-library/GAlert.vue";
+
 export default {
     components: {
+        GAlert,
         HistoryPanel,
         CollectionPanel,
         CopyModal,
