@@ -1,5 +1,6 @@
-import { getFileSources } from "components/FilesDialog/services";
 import { onMounted, readonly, ref } from "vue";
+
+import { FilesSourcePlugin, getFileSources } from "@/components/FilesDialog/services";
 
 /**
  * Composable for accessing and working with file sources.
@@ -7,7 +8,7 @@ import { onMounted, readonly, ref } from "vue";
 export function useFileSources() {
     const isLoading = ref(true);
     const hasWritable = ref(false);
-    const fileSources = ref([]);
+    const fileSources = ref<FilesSourcePlugin[]>([]);
 
     onMounted(async () => {
         fileSources.value = await getFileSources();
