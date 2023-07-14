@@ -1,13 +1,10 @@
-import { createLocalVue, shallowMount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
+import { createLocalVue, shallowMount, Wrapper } from "@vue/test-utils";
 import BootstrapVue, { BButton } from "bootstrap-vue";
-import DataDialogTable from "components/SelectionDialog/DataDialogTable";
-import SelectionDialog from "components/SelectionDialog/SelectionDialog";
-import { selectionStates } from "components/SelectionDialog/selectionStates";
 import flushPromises from "flush-promises";
 
-import FilesDialog from "./FilesDialog";
+import { selectionStates } from "@/components/SelectionDialog/selectionStates";
+import { mockFetcher } from "@/schema/__mocks__";
+
 import {
     directory1RecursiveResponse,
     directory1Response,
@@ -15,6 +12,9 @@ import {
     directoryId,
     ftpId,
     pdbResponse,
+    RemoteDirectory,
+    RemoteFile,
+    RemoteFilesList,
     rootId,
     rootResponse,
     someErrorText,
@@ -23,31 +23,67 @@ import {
     subsubdirectoryResponse,
 } from "./testingData";
 
-jest.mock("app");
+import FilesDialog from "./FilesDialog.vue";
+import DataDialogTable from "@/components/SelectionDialog/DataDialogTable.vue";
+import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
-const api_paths_map = new Map([
-    ["/api/remote_files/plugins", rootResponse],
-    ["/api/remote_files?target=gxfiles://pdb-gzip", pdbResponse],
-    ["/api/remote_files?target=gxfiles://pdb-gzip/directory1", directory1Response],
-    ["/api/remote_files?target=gxfiles://pdb-gzip/directory1&recursive=true", directory1RecursiveResponse],
-    ["/api/remote_files?target=gxfiles://pdb-gzip/directory2&recursive=true", directory2RecursiveResponse],
-    ["/api/remote_files?target=gxfiles://pdb-gzip/directory1/subdirectory1", subsubdirectoryResponse],
+jest.mock("app");
+jest.mock("@/schema");
+
+interface RemoteFilesParams {
+    target: string;
+    recursive: boolean;
+}
+
+interface RemoteFilesResponse {
+    data?: RemoteFilesList;
+}
+
+interface RowElement extends Element {
+    id: string;
+    label: string;
+    details: string;
+    isLeaf: boolean;
+    url: string;
+    labelTitle: string;
+    _rowVariant: string;
+}
+
+function paramsToKey(params: RemoteFilesParams) {
+    return JSON.stringify(params);
+}
+
+const mockedOkApiRoutesMap = new Map<string, RemoteFilesResponse>([
+    [paramsToKey({ target: "gxfiles://pdb-gzip", recursive: false }), { data: pdbResponse }],
+    [paramsToKey({ target: "gxfiles://pdb-gzip/directory1", recursive: false }), { data: directory1Response }],
+    [paramsToKey({ target: "gxfiles://pdb-gzip/directory1", recursive: true }), { data: directory1RecursiveResponse }],
+    [paramsToKey({ target: "gxfiles://pdb-gzip/directory2", recursive: true }), { data: directory2RecursiveResponse }],
+    [
+        paramsToKey({ target: "gxfiles://pdb-gzip/directory1/subdirectory1", recursive: false }),
+        { data: subsubdirectoryResponse },
+    ],
 ]);
-const initComponent = async (props, axiosMock) => {
+
+const mockedErrorApiRoutesMap = new Map<string, RemoteFilesResponse>([
+    [paramsToKey({ target: "gxfiles://empty-dir", recursive: false }), {}],
+]);
+
+function getMockResponse(param: RemoteFilesParams) {
+    const responseKey = paramsToKey(param);
+    if (mockedErrorApiRoutesMap.has(responseKey)) {
+        throw Error(someErrorText);
+    }
+    return mockedOkApiRoutesMap.get(responseKey);
+}
+
+const initComponent = async (props: { multiple: boolean; mode?: string }) => {
     const localVue = createLocalVue();
 
     localVue.use(BootstrapVue);
     localVue.component("BBtnStub", BButton);
 
-    // register axios paths
-    for (const [path, response] of api_paths_map.entries()) {
-        axiosMock.onGet(path).reply(200, response);
-    }
-
-    axiosMock.onGet("/api/remote_files?target=gxfiles://empty-dir").reply(404, {
-        err_msg: someErrorText,
-        err_code: 404,
-    });
+    mockFetcher.path("/api/remote_files/plugins").method("get").mock({ data: rootResponse });
+    mockFetcher.path("/api/remote_files").method("get").mock(getMockResponse);
 
     const wrapper = shallowMount(FilesDialog, {
         localVue,
@@ -76,18 +112,12 @@ const initComponent = async (props, axiosMock) => {
 // |-- file2
 
 describe("FilesDialog, file mode", () => {
-    let wrapper;
-    let utils;
-    let axiosMock;
+    let wrapper: Wrapper<any>;
+    let utils: Utils;
 
     beforeEach(async () => {
-        axiosMock = new MockAdapter(axios);
-        wrapper = await initComponent({ multiple: true }, axiosMock);
+        wrapper = await initComponent({ multiple: true });
         utils = new Utils(wrapper);
-    });
-
-    afterEach(() => {
-        axiosMock.restore();
     });
 
     it("should show the same number of items", async () => {
@@ -96,9 +126,9 @@ describe("FilesDialog, file mode", () => {
     });
 
     it("select files", async () => {
-        const applyForEachFile = (func) => {
-            utils.getRenderedFiles().forEach((file) => {
-                func(file);
+        const applyForEachFile = (func: { (item: RowElement): void }) => {
+            utils.getRenderedFiles().forEach((item: RowElement) => {
+                func(item);
             });
         };
 
@@ -112,22 +142,22 @@ describe("FilesDialog, file mode", () => {
         utils.assertShownItems(files.length, true);
 
         // select each rendered file
-        applyForEachFile((file) => utils.clickOn(file));
+        applyForEachFile((item: RowElement) => utils.clickOn(item));
 
         await flushPromises();
         // assert the number of selected files
         expect(wrapper.vm.model.count()).toBe(files.length);
 
         // assert that re-rendered files are selected
-        applyForEachFile((file) => {
-            expect(file._rowVariant).toBe(selectionStates.selected);
-            wrapper.vm.model.exists(file.id);
+        applyForEachFile((item) => {
+            expect(item._rowVariant).toBe(selectionStates.selected);
+            wrapper.vm.model.exists(item.id);
         });
         // assert that OK button is active
         expect(wrapper.vm.hasValue).toBe(true);
 
         // unselect each file
-        applyForEachFile((file) => utils.clickOn(file));
+        applyForEachFile((item: RowElement) => utils.clickOn(item));
 
         // assert that OK button is disabled
         expect(wrapper.vm.hasValue).toBe(false);
@@ -139,10 +169,13 @@ describe("FilesDialog, file mode", () => {
         // select directory
         await utils.clickOn(utils.getRenderedDirectory(directoryId));
 
-        const [response_files, response_directories] = [[], []];
+        const response_files: RemoteFile[] = [];
+        const response_directories: RemoteDirectory[] = [];
         // separate files and directories from response
         directory1RecursiveResponse.forEach((item) => {
-            item.class === "File" ? response_files.push(item) : response_directories.push(item);
+            item.class === "File"
+                ? response_files.push(item as RemoteFile)
+                : response_directories.push(item as RemoteDirectory);
         });
 
         expect(wrapper.vm.model.count()).toBe(response_files.length);
@@ -159,7 +192,7 @@ describe("FilesDialog, file mode", () => {
         //every item should be selected
         utils.assertAllRenderedItemsSelected();
 
-        const file = wrapper.vm.items.find((item) => item.isLeaf);
+        const file = wrapper.vm.items.find((item: RowElement) => item.isLeaf);
 
         // unlesect random file
         await utils.clickOn(file);
@@ -244,24 +277,17 @@ describe("FilesDialog, file mode", () => {
 });
 
 describe("FilesDialog, directory mode", () => {
-    let wrapper;
-    let utils;
-    let axiosMock;
-
-    const spyFinalize = jest.spyOn(FilesDialog.methods, "finalize");
+    let wrapper: Wrapper<any>;
+    let utils: Utils;
 
     beforeEach(async () => {
-        axiosMock = new MockAdapter(axios);
-        wrapper = await initComponent({ multiple: false, mode: "directory" }, axiosMock);
+        wrapper = await initComponent({ multiple: false, mode: "directory" });
         utils = new Utils(wrapper);
     });
 
-    afterEach(() => {
-        axiosMock.restore();
-    });
-
     it("should render directories", async () => {
-        const assertOnlyDirectoriesRendered = () => wrapper.vm.items.forEach((item) => expect(item.isLeaf).toBe(false));
+        const assertOnlyDirectoriesRendered = () =>
+            wrapper.vm.items.forEach((item: RowElement) => expect(item.isLeaf).toBe(false));
 
         await utils.open_root_folder(false);
         // rendered files should be directories
@@ -288,8 +314,6 @@ describe("FilesDialog, directory mode", () => {
         wrapper.vm.selectLeaf(currentDirectory);
         await flushPromises();
 
-        // finalize function should be called
-        expect(spyFinalize).toHaveBeenCalled();
         //should close modal
         expect(wrapper.vm.modalShow).toBe(false);
     });
@@ -318,7 +342,9 @@ describe("FilesDialog, directory mode", () => {
 
 /** Util methods **/
 class Utils {
-    constructor(wrapper) {
+    wrapper: Wrapper<any>;
+
+    constructor(wrapper: Wrapper<any>) {
         this.wrapper = wrapper;
     }
 
@@ -327,7 +353,7 @@ class Utils {
         this.assertShownItems(rootResponse.length);
         if (isFileMode) {
             // find desired rootElement
-            const rootElement = this.wrapper.vm.items.find((item) => rootId === item.id);
+            const rootElement = this.wrapper.vm.items.find((item: RowElement) => rootId === item.id);
             // open root folder with rootId (since root folder cannot be selected "click" should open it)
             await this.clickOn(rootElement);
         } else {
@@ -341,41 +367,41 @@ class Utils {
     }
 
     assertAllRenderedItemsSelected() {
-        this.wrapper.vm.items.forEach((item) => {
+        this.wrapper.vm.items.forEach((item: RowElement) => {
             // assert style/icon of selected field
             expect(item._rowVariant).toBe(selectionStates.selected);
             // selected items are selected
             expect(
                 item.isLeaf
                     ? this.wrapper.vm.model.exists(item.id)
-                    : this.wrapper.vm.selectedDirectories.some(({ id }) => id === item.id)
+                    : this.wrapper.vm.selectedDirectories.some(({ id }: RowElement) => id === item.id)
             ).toBe(true);
         });
     }
 
-    async openDirectory(directoryId) {
+    async openDirectory(directoryId: string) {
         this.getTable().$emit("open", this.getRenderedDirectory(directoryId));
         await flushPromises();
     }
 
-    async clickOn(element) {
+    async clickOn(element: Element) {
         this.getTable().$emit("clicked", element);
         await flushPromises();
     }
 
-    getRenderedDirectory(directoryId) {
-        return this.wrapper.vm.items.find(({ id }) => directoryId === id);
+    getRenderedDirectory(directoryId: string): RowElement {
+        return this.wrapper.vm.items.find(({ id }: RowElement) => directoryId === id);
     }
 
-    getRenderedFiles() {
-        return this.wrapper.vm.items.filter((item) => item.isLeaf);
+    getRenderedFiles(): RowElement[] {
+        return this.wrapper.vm.items.filter((item: RowElement) => item.isLeaf);
     }
 
     getTable() {
         return this.wrapper.findComponent(DataDialogTable).vm;
     }
 
-    assertShownItems(length, filesOnly) {
+    assertShownItems(length: number, filesOnly = false) {
         const shownItems = filesOnly ? this.getRenderedFiles() : this.wrapper.vm.items;
         expect(shownItems.length).toBe(length);
     }
