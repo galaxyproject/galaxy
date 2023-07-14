@@ -2,7 +2,7 @@
     <div v-if="!loading" class="m-1 text-muted">
         <span class="description"> {{ total }} repositories available at </span>
         <span v-if="showDropdown" class="dropdown">
-            <b-link
+            <GLink
                 id="dropdownToolshedUrl"
                 data-toggle="dropdown"
                 aria-haspopup="true"
@@ -10,7 +10,7 @@
                 class="font-weight-bold">
                 {{ toolshedUrl }}
                 <span class="fa fa-caret-down" />
-            </b-link>
+            </GLink>
             <div class="dropdown-menu" aria-labelledby="dropdownToolshedUrl">
                 <a
                     v-for="url in toolshedUrls"
@@ -24,9 +24,9 @@
             </div>
         </span>
         <span v-else>
-            <b-link :href="toolshedUrl" target="_blank" class="font-weight-bold">
+            <GLink :href="toolshedUrl" target="_blank" class="font-weight-bold">
                 {{ toolshedUrl }}
-            </b-link>
+            </GLink>
         </span>
     </div>
 </template>
@@ -34,9 +34,14 @@
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
+import GLink from "@/component-library/GLink.vue";
+
 Vue.use(BootstrapVue);
 
 export default {
+    components: {
+        GLink,
+    },
     props: {
         toolshedUrl: {
             type: String,

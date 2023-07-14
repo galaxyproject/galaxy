@@ -2,9 +2,9 @@
     <div>
         <b-table id="shed-search-results" striped :items="repositories" :fields="fields">
             <template v-slot:cell(name)="row">
-                <b-link href="javascript:void(0)" role="button" class="font-weight-bold" @click="row.toggleDetails">
+                <GLink href="javascript:void(0)" role="button" class="font-weight-bold" @click="row.toggleDetails">
                     {{ row.item.name }}
-                </b-link>
+                </GLink>
                 <div>{{ row.item.description }}</div>
             </template>
             <template v-slot:row-details="row">
@@ -23,6 +23,7 @@ import Vue from "vue";
 import { Services } from "../services";
 
 import RepositoryDetails from "../RepositoryDetails/Index.vue";
+import GLink from "@/component-library/GLink.vue";
 
 Vue.use(BootstrapVue);
 
@@ -31,6 +32,7 @@ const LOADING = 1;
 const COMPLETE = 2;
 export default {
     components: {
+        GLink,
         LoadingSpan,
         RepositoryDetails,
     },

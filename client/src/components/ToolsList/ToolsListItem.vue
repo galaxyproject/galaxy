@@ -15,6 +15,8 @@ import ToolFavoriteButton from "components/Tool/Buttons/ToolFavoriteButton";
 import { useFormattedToolHelp } from "composables/formattedToolHelp";
 import { computed, ref } from "vue";
 
+import GLink from "@/component-library/GLink.vue";
+
 library.add(faWrench, faExternalLinkAlt, faCheck, faTimes, faAngleDown, faAngleUp, faExclamationTriangle, faUser);
 
 const props = defineProps({
@@ -85,7 +87,7 @@ const formattedToolHelp = computed(() => {
         <div class="tool-list-item-content">
             <div class="d-flex flex-gapx-1 py-2">
                 <span v-if="props.section" class="tag info">
-                    <b>Section:</b> <b-link :to="`/tools/list?section=${props.section}`">{{ section }}</b-link>
+                    <b>Section:</b> <GLink :to="`/tools/list?section=${props.section}`">{{ section }}</GLink>
                 </span>
 
                 <span v-if="!props.local" class="tag info">
@@ -100,7 +102,7 @@ const formattedToolHelp = computed(() => {
 
                 <span v-if="props.owner" class="tag success">
                     <FontAwesomeIcon icon="fa-user" />
-                    <b>Owner:</b> <b-link :to="`/tools/list?owner=${props.owner}`">{{ props.owner }}</b-link>
+                    <b>Owner:</b> <GLink :to="`/tools/list?owner=${props.owner}`">{{ props.owner }}</GLink>
                 </span>
             </div>
 

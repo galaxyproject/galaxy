@@ -9,7 +9,7 @@
                     <span class="installed-message text-muted">
                         {{ repositories.length }} repositories installed on this instance.
                     </span>
-                    <b-link class="font-weight-bold" @click="toggleMonitor">
+                    <GLink class="font-weight-bold" @click="toggleMonitor">
                         <span v-if="showMonitor">
                             <span class="fa fa-angle-double-up" />
                             <span>Hide installation progress.</span>
@@ -18,7 +18,7 @@
                             <span class="fa fa-angle-double-down" />
                             <span>Show installation progress.</span>
                         </span>
-                    </b-link>
+                    </GLink>
                 </div>
                 <Monitor v-if="showMonitor" @onQuery="onQuery" />
                 <b-table
@@ -30,12 +30,12 @@
                     :filter="filter"
                     @filtered="filtered">
                     <template v-slot:cell(name)="row">
-                        <b-link href="#" role="button" class="font-weight-bold" @click="row.toggleDetails">
+                        <GLink href="#" role="button" class="font-weight-bold" @click="row.toggleDetails">
                             <div v-if="!isLatest(row.item)">
                                 <b-badge variant="danger" class="mb-2"> Newer version available! </b-badge>
                             </div>
                             <div class="name">{{ row.item.name }}</div>
-                        </b-link>
+                        </GLink>
                         <div>{{ row.item.description }}</div>
                     </template>
                     <template v-slot:row-details="row">
@@ -62,11 +62,13 @@ import RepositoryDetails from "./Details";
 import Monitor from "./Monitor";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GLink from "@/component-library/GLink.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GLink,
         GAlert,
         LoadingSpan,
         Monitor,

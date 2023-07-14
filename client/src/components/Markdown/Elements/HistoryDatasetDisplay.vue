@@ -85,7 +85,7 @@
                                 </pre>
                         </div>
                         <div v-else>No content found.</div>
-                        <b-link v-if="itemContent.truncated" :href="itemContent.item_url"> Show More... </b-link>
+                        <GLink v-if="itemContent.truncated" :href="itemContent.item_url"> Show More... </GLink>
                     </div>
                 </UrlDataProvider>
             </UrlDataProvider>
@@ -99,8 +99,11 @@ import LoadingSpan from "components/LoadingSpan";
 import { UrlDataProvider } from "components/providers/UrlDataProvider";
 import { getAppRoot } from "onload/loadConfig";
 
+import GLink from "@/component-library/GLink.vue";
+
 export default {
     components: {
+        GLink,
         LoadingSpan,
         UrlDataProvider,
     },

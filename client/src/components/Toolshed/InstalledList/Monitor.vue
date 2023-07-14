@@ -12,7 +12,7 @@
                 :items="items"
                 :fields="fields">
                 <template v-slot:cell(name)="row">
-                    <b-link @click="onQuery(row.item.name)"> {{ row.item.name }} ({{ row.item.owner }}) </b-link>
+                    <GLink @click="onQuery(row.item.name)"> {{ row.item.name }} ({{ row.item.owner }}) </GLink>
                 </template>
                 <template v-slot:cell(status)="row">
                     <b>Status: </b><span>{{ row.item.status }}</span>
@@ -36,11 +36,13 @@ import InstallationActions from "../RepositoryDetails/InstallationActions";
 import { Services } from "../services";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GLink from "@/component-library/GLink.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GLink,
         GAlert,
         InstallationActions,
     },

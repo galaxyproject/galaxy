@@ -66,9 +66,9 @@
                     rows="3" />
 
                 <div v-else-if="row.item.deleted && includeDeleted" class="deleted-item">{{ row.item.name }}</div>
-                <b-link v-else :to="{ path: `/libraries/folders/${row.item.root_folder_id}` }">
+                <GLink v-else :to="{ path: `/libraries/folders/${row.item.root_folder_id}` }">
                     {{ row.item.name }}
-                </b-link>
+                </GLink>
             </template>
             <template v-slot:cell(description)="{ item }">
                 <LibraryEditField
@@ -198,12 +198,15 @@ import { useUserStore } from "@/stores/userStore";
 import { Services } from "./services";
 import { fields } from "./table-fields";
 
+import GLink from "@/component-library/GLink.vue";
+
 initLibrariesIcons();
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GLink,
         FontAwesomeIcon,
         LibraryEditField,
         SearchField,

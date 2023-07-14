@@ -31,13 +31,13 @@
                 </b-card>
             </template>
             <template v-slot:cell(expand)="data">
-                <b-link
+                <GLink
                     v-if="!data.detailsShowing"
                     v-b-tooltip.hover.top
                     title="Show Details"
                     class="btn-sm fa fa-lg fa-chevron-down toggle-invocation-details"
                     @click.stop="swapRowDetails(data)" />
-                <b-link
+                <GLink
                     v-if="data.detailsShowing"
                     v-b-tooltip.hover.top
                     title="Hide Details"
@@ -49,9 +49,9 @@
                     v-b-tooltip.hover.top
                     :title="getStoredWorkflowNameByInstanceId(data.item.workflow_id)"
                     class="truncate">
-                    <b-link href="#" @click.stop="swapRowDetails(data)">
+                    <GLink href="#" @click.stop="swapRowDetails(data)">
                         <b>{{ getStoredWorkflowNameByInstanceId(data.item.workflow_id) }}</b>
-                    </b-link>
+                    </GLink>
                 </div>
             </template>
             <template v-slot:cell(history_id)="data">
@@ -59,9 +59,9 @@
                     v-b-tooltip.hover.top.html
                     :title="`<b>Switch to</b><br>${getHistoryNameById(data.item.history_id)}`"
                     class="truncate">
-                    <b-link id="switch-to-history" href="#" @click.stop="switchHistory(data.item.history_id)">
+                    <GLink id="switch-to-history" href="#" @click.stop="switchHistory(data.item.history_id)">
                         <b>{{ getHistoryNameById(data.item.history_id) }}</b>
-                    </b-link>
+                    </GLink>
                 </div>
             </template>
             <template v-slot:cell(create_time)="data">
@@ -99,9 +99,11 @@ import paginationMixin from "./paginationMixin";
 
 import WorkflowRunButton from "./WorkflowRunButton.vue";
 import GAlert from "@/component-library/GAlert.vue";
+import GLink from "@/component-library/GLink.vue";
 
 export default {
     components: {
+        GLink,
         GAlert,
         UtcDate,
         WorkflowInvocationState,

@@ -24,9 +24,9 @@
             <div v-if="selectionType == 'dataset'" id="upload-rule-dataset-option" class="upload-rule-option">
                 <div class="upload-rule-option-title">History dataset</div>
                 <div>
-                    <BLink v-if="selectedDatasetName == null" @click="onSelectDataset">
+                    <GLink v-if="selectedDatasetName == null" @click="onSelectDataset">
                         {{ "Select" | l }}
-                    </BLink>
+                    </GLink>
                     <span v-else>
                         {{ selectedDatasetName }} <FontAwesomeIcon icon="edit" @click="onSelectDataset" />
                     </span>
@@ -78,17 +78,23 @@ import { faEdit } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
-import { BButton, BLink } from "bootstrap-vue";
+import { BButton } from "bootstrap-vue";
 import UploadUtils from "components/Upload/utils";
 import { getAppRoot } from "onload/loadConfig";
 import { filesDialog } from "utils/data";
+
+import { GLink } from "@/component-library";
 
 import UploadBoxMixin from "./UploadBoxMixin";
 
 library.add(faEdit);
 
 export default {
-    components: { BLink, BButton, FontAwesomeIcon },
+    components: {
+        BButton,
+        FontAwesomeIcon,
+        GLink,
+    },
     mixins: [UploadBoxMixin],
     data() {
         return {

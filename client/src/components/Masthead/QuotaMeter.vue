@@ -1,7 +1,7 @@
 <template>
     <div>
         <div v-if="!hasQuota" class="quota-text d-flex align-items-center">
-            <b-link
+            <GLink
                 v-b-tooltip.hover.left
                 to="/storage"
                 :disabled="isAnonymous"
@@ -9,10 +9,10 @@
                 :title="title"
                 data-description="storage dashboard link">
                 {{ usingString + " " + totalUsageString }}
-            </b-link>
+            </GLink>
         </div>
         <div v-else class="quota-meter d-flex align-items-center">
-            <b-link
+            <GLink
                 v-b-tooltip.hover.left
                 class="quota-progress"
                 :disabled="isAnonymous"
@@ -23,7 +23,7 @@
                     <b-progress-bar aria-label="Quota usage" :value="usage" :variant="variant" />
                 </b-progress>
                 <span>{{ usingString + " " + usage.toFixed(0) }}%</span>
-            </b-link>
+            </GLink>
         </div>
     </div>
 </template>
@@ -35,8 +35,13 @@ import { bytesToString } from "utils/utils";
 import { useConfigStore } from "@/stores/configurationStore";
 import { useUserStore } from "@/stores/userStore";
 
+import GLink from "@/component-library/GLink.vue";
+
 export default {
     name: "QuotaMeter",
+    components: {
+        GLink,
+    },
     data() {
         return {
             usingString: this.l("Using"),

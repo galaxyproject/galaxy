@@ -15,7 +15,7 @@
                             <span class="font-weight-bold">{{ displayApp.label }}</span>
                             <span v-for="(link, linkKey) in displayApp.links" :key="linkKey">
                                 <span v-if="linkKey == 0">(</span>
-                                <b-link :href="link.href" :target="link.target">{{ link.text }}</b-link>
+                                <GLink :href="link.href" :target="link.target">{{ link.text }}</GLink>
                                 <span v-if="linkKey != displayApp.links.length - 1">, </span>
                                 <span v-else>)</span>
                             </span>
@@ -24,7 +24,7 @@
                             <span class="font-weight-bold">{{ displayType.label }}</span>
                             <span v-for="(link, linkKey) in displayType.links" :key="linkKey">
                                 <span v-if="linkKey == 0">(</span>
-                                <b-link :href="link.href" :target="link.target">{{ link.text }}</b-link>
+                                <GLink :href="link.href" :target="link.target">{{ link.text }}</GLink>
                                 <span v-if="linkKey != displayType.links.length - 1">, </span>
                                 <span v-else>)</span>
                             </span>
@@ -40,9 +40,11 @@
 import { DatasetProvider } from "components/providers";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GLink from "@/component-library/GLink.vue";
 
 export default {
     components: {
+        GLink,
         GAlert,
         DatasetProvider,
     },

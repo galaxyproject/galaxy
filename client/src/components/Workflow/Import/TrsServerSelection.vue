@@ -4,6 +4,8 @@ import { computed, type Ref, ref, watch } from "vue";
 import { Services } from "../services";
 import type { TrsSelection } from "./types";
 
+import GLink from "@/component-library/GLink.vue";
+
 const props = defineProps<{
     queryTrsServer?: string;
     trsSelection?: TrsSelection | null;
@@ -88,7 +90,7 @@ function possibleServeUrlsMatch(a: string, b: string) {
 <template>
     <span v-if="!loading" class="m-1 text-muted">
         <span v-if="showDropdown" class="dropdown">
-            <b-link
+            <GLink
                 id="dropdownTrsServer"
                 data-toggle="dropdown"
                 aria-haspopup="true"
@@ -96,7 +98,7 @@ function possibleServeUrlsMatch(a: string, b: string) {
                 class="font-weight-bold">
                 {{ selection?.label }}
                 <span class="fa fa-caret-down" />
-            </b-link>
+            </GLink>
             <div class="dropdown-menu" aria-labelledby="dropdownTrsServer">
                 <a
                     v-for="serverSelection in trsServers"
@@ -110,9 +112,9 @@ function possibleServeUrlsMatch(a: string, b: string) {
             </div>
         </span>
         <span v-else>
-            <b-link :href="selection?.link_url" target="_blank" class="font-weight-bold" :title="selection?.doc">
+            <GLink :href="selection?.link_url" target="_blank" class="font-weight-bold" :title="selection?.doc">
                 {{ selection?.label }}
-            </b-link>
+            </GLink>
         </span>
     </span>
 </template>

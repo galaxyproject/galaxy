@@ -20,7 +20,7 @@
                 </option>
             </datalist>
         </b-form-group>
-        <b-link variant="primary" @click="onAdvanced"> {{ advancedTitle }} advanced settings. </b-link>
+        <GLink variant="primary" @click="onAdvanced"> {{ advancedTitle }} advanced settings. </GLink>
         <b-collapse id="advanced-collapse" v-model="advancedShow" class="mt-2">
             <b-card>
                 <b-form-group v-if="showConfig" label="Tool Configuration:" description="Choose a tool configuration.">
@@ -46,7 +46,12 @@
     </b-modal>
 </template>
 <script>
+import GLink from "@/component-library/GLink.vue";
+
 export default {
+    components: {
+        GLink,
+    },
     props: {
         repo: {
             type: Object,

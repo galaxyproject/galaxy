@@ -10,22 +10,23 @@
         <b>Please notice your selection has changed.</b> Manually unselecting items or adding new ones will disable the
         `select all` status.
         <BProgress variant="info" :max="dismissSecs" :value="dismissCountDown" height="4px" />
-        <BLink @click="onDoNotShowAgain">Do not show again</BLink>
+        <GLink @click="onDoNotShowAgain">Do not show again</GLink>
     </GAlert>
 </template>
 
 <script>
-import { BLink, BProgress } from "bootstrap-vue";
+import { BProgress } from "bootstrap-vue";
 import { mapActions, mapState } from "pinia";
 
 import { useUserFlagsStore } from "@/stores/userFlagsStore";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GLink from "@/component-library/GLink.vue";
 
 export default {
     components: {
         GAlert,
-        BLink,
+        GLink,
         BProgress,
     },
     props: {

@@ -78,20 +78,20 @@
                     <textarea v-else :ref="'name' + row.item.id" class="form-control" :value="row.item.name" rows="3" />
                 </div>
                 <div v-else-if="!row.item.deleted">
-                    <b-link
+                    <GLink
                         v-if="row.item.type === 'folder'"
                         :to="{ name: `LibraryFolder`, params: { folder_id: `${row.item.id}` } }">
                         {{ row.item.name }}
-                    </b-link>
+                    </GLink>
 
-                    <b-link
+                    <GLink
                         v-else
                         :to="{
                             name: `LibraryDataset`,
                             params: { folder_id: folder_id, dataset_id: `${row.item.id}` },
                         }">
                         {{ row.item.name }}
-                    </b-link>
+                    </GLink>
                 </div>
                 <!-- Deleted Item-->
                 <div v-else>
@@ -279,6 +279,8 @@ import { Services } from "./services";
 import { fields } from "./table-fields";
 import FolderTopBar from "./TopToolbar/FolderTopBar";
 
+import GLink from "@/component-library/GLink.vue";
+
 initFolderTableIcons();
 
 Vue.use(BootstrapVue);
@@ -295,6 +297,7 @@ function initialFolderState() {
 }
 export default {
     components: {
+        GLink,
         FolderTopBar,
         UtcDate,
         FontAwesomeIcon,

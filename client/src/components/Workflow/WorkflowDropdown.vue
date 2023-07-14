@@ -1,6 +1,6 @@
 <template>
     <div>
-        <b-link
+        <GLink
             aria-expanded="false"
             class="workflow-dropdown font-weight-bold"
             data-toggle="dropdown"
@@ -24,7 +24,7 @@
                 :title="getWorkflowTooltip(sourceType, workflow)">
                 <Icon fixed-width icon="link" class="mr-1 workflow-external-link" />
             </span>
-        </b-link>
+        </GLink>
         <p v-if="workflow.description" class="workflow-dropdown-description">
             <TextSummary :description="workflow.description" :show-details.sync="showDetails" />
         </p>
@@ -103,6 +103,8 @@ import { clearDrag, setDrag } from "@/utils/setDrag.js";
 
 import { Services } from "./services";
 
+import GLink from "@/component-library/GLink.vue";
+
 library.add(faCaretDown);
 library.add(faSignature);
 library.add(faTimes);
@@ -110,6 +112,7 @@ library.add(faEdit);
 
 export default {
     components: {
+        GLink,
         TextSummary,
     },
     props: {

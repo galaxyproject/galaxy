@@ -3,13 +3,9 @@
         <LoadingSpan v-if="loading" message="Loading categories" />
         <b-table v-else striped no-sort-reset :items="categories" :fields="fields">
             <template v-slot:cell(name)="data">
-                <b-link
-                    href="javascript:void(0)"
-                    role="button"
-                    class="font-weight-bold"
-                    @click="onCategory(data.value)">
+                <GLink href="javascript:void(0)" role="button" class="font-weight-bold" @click="onCategory(data.value)">
                     {{ data.value }}
-                </b-link>
+                </GLink>
             </template>
         </b-table>
     </div>
@@ -21,10 +17,12 @@ import Vue from "vue";
 
 import { Services } from "../services";
 
+import GLink from "@/component-library/GLink.vue";
+
 Vue.use(BootstrapVue);
 
 export default {
-    components: { LoadingSpan },
+    components: { GLink, LoadingSpan },
     props: {
         toolshedUrl: {
             type: String,

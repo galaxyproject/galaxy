@@ -36,9 +36,9 @@
                         </div>
                         <div v-else @click.stop="open(data.item)">
                             <FontAwesomeIcon icon="folder" />
-                            <b-link :title="`label-${data.item.labelTitle}`">{{
-                                data.value ? data.value : "-"
-                            }}</b-link>
+                            <GLink :title="`label-${data.item.labelTitle}`">
+                                {{ data.value ? data.value : "-" }}
+                            </GLink>
                         </div>
                     </span>
                 </div>
@@ -80,6 +80,8 @@ import BootstrapVue from "bootstrap-vue";
 import { selectionStates } from "components/SelectionDialog/selectionStates";
 import Vue from "vue";
 
+import GLink from "@/component-library/GLink.vue";
+
 Vue.use(BootstrapVue);
 library.add(faCheckSquare, faSquare, faFolder, faMinusSquare);
 
@@ -90,6 +92,7 @@ const SELECT_ICON_FIELD = { key: "select_icon", label: "", sortable: false };
 
 export default {
     components: {
+        GLink,
         FontAwesomeIcon,
     },
     props: {
