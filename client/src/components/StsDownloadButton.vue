@@ -1,6 +1,6 @@
 <template>
-    <config-provider v-slot="{ config, loading }">
-        <b-button
+    <ConfigProvider v-slot="{ config, loading }">
+        <BButton
             v-if="!loading && canDownload(config)"
             v-b-tooltip.hover.bottom
             :title="title"
@@ -9,10 +9,10 @@
             role="button"
             @click="onDownload(config)">
             Generate
-            <font-awesome-icon v-if="waiting" icon="spinner" spin />
-            <font-awesome-icon v-else icon="download" />
-        </b-button>
-    </config-provider>
+            <FontAwesomeIcon v-if="waiting" icon="spinner" spin />
+            <FontAwesomeIcon v-else icon="download" />
+        </BButton>
+    </ConfigProvider>
 </template>
 
 <script>

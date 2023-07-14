@@ -31,15 +31,15 @@ defineExpose({
         <div>
             <span v-localize>{{ what }}</span>
             <span v-if="storageInfo.name" class="display-os-by-name">
-                a Galaxy <object-store-restriction-span :is-private="isPrivate" /> object store named
+                a Galaxy <ObjectStoreRestrictionSpan :is-private="isPrivate" /> object store named
                 <b>{{ storageInfo.name }}</b>
             </span>
             <span v-else-if="storageInfo.object_store_id" class="display-os-by-id">
-                a Galaxy <object-store-restriction-span :is-private="isPrivate" /> object store with id
+                a Galaxy <ObjectStoreRestrictionSpan :is-private="isPrivate" /> object store with id
                 <b>{{ storageInfo.object_store_id }}</b>
             </span>
             <span v-else class="display-os-default">
-                the default configured Galaxy <object-store-restriction-span :is-private="isPrivate" /> object store </span
+                the default configured Galaxy <ObjectStoreRestrictionSpan :is-private="isPrivate" /> object store </span
             >.
         </div>
         <ObjectStoreBadges :badges="badges"> </ObjectStoreBadges>

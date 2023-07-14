@@ -55,7 +55,7 @@
                                 </div>
                                 <div v-if="enableOidc">
                                     <!-- OIDC login-->
-                                    <external-login :login_page="true" :exclude_idps="[connectExternalProvider]" />
+                                    <ExternalLogin :login_page="true" :exclude_idps="[connectExternalProvider]" />
                                 </div>
                             </b-card-body>
                             <b-card-footer>
@@ -88,7 +88,7 @@
                 </div>
             </template>
             <template v-else>
-                <new-user-confirmation
+                <NewUserConfirmation
                     :registration-warning-message="registrationWarningMessage"
                     :terms-url="termsUrl"
                     @setRedirect="setRedirect" />

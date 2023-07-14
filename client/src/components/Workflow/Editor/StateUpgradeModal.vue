@@ -1,5 +1,5 @@
 <template>
-    <b-modal v-model="show" :title="title" scrollable ok-only ok-title="Continue">
+    <BModal v-model="show" :title="title" scrollable ok-only ok-title="Continue">
         <div class="state-upgrade-modal">
             {{ message }}
             <ul class="workflow-state-upgrade-step-summaries">
@@ -16,7 +16,7 @@
                 </li>
             </ul>
         </div>
-    </b-modal>
+    </BModal>
 </template>
 
 <script>

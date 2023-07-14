@@ -57,7 +57,7 @@ const currentOptions = computed(() => {
 </script>
 
 <template>
-    <form-check v-if="display === 'checkboxes'" v-model="currentValue" :options="currentOptions" />
-    <form-radio v-else-if="display === 'radio'" v-model="currentValue" :options="currentOptions" />
-    <form-select v-else v-model="currentValue" :multiple="multiple" :optional="optional" :options="currentOptions" />
+    <FormCheck v-if="display === 'checkboxes'" v-model="currentValue" :options="currentOptions" />
+    <FormRadio v-else-if="display === 'radio'" v-model="currentValue" :options="currentOptions" />
+    <FormSelect v-else v-model="currentValue" :multiple="multiple" :optional="optional" :options="currentOptions" />
 </template>

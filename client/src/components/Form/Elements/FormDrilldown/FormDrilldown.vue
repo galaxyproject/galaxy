@@ -89,7 +89,7 @@ function onSelectAll(selected: boolean): void {
             @change="onSelectAll">
             Select / Deselect All
         </b-form-checkbox>
-        <form-drilldown-list
+        <FormDrilldownList
             :multiple="multiple"
             :current-value="currentValue"
             :options="options"

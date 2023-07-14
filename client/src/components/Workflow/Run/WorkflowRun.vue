@@ -6,9 +6,9 @@
         </b-alert>
         <span v-else>
             <b-alert v-if="loading" variant="info" show>
-                <loading-span message="Loading workflow run data" />
+                <LoadingSpan message="Loading workflow run data" />
             </b-alert>
-            <workflow-run-success v-else-if="!!invocations" :invocations="invocations" :workflow-name="workflowName" />
+            <WorkflowRunSuccess v-else-if="!!invocations" :invocations="invocations" :workflow-name="workflowName" />
             <div v-else class="ui-form-composite">
                 <div class="ui-form-composite-messages mb-4">
                     <b-alert v-if="hasUpgradeMessages" variant="warning" show>
@@ -26,7 +26,7 @@
                         Workflow submission failed: {{ submissionError }}
                     </b-alert>
                 </div>
-                <workflow-run-form-simple
+                <WorkflowRunFormSimple
                     v-if="simpleForm"
                     :model="model"
                     :target-history="simpleFormTargetHistory"
@@ -34,7 +34,7 @@
                     @submissionSuccess="handleInvocations"
                     @submissionError="handleSubmissionError"
                     @showAdvanced="showAdvanced" />
-                <workflow-run-form
+                <WorkflowRunForm
                     v-else
                     :model="model"
                     @submissionSuccess="handleInvocations"

@@ -5,7 +5,7 @@
             class="details-btn"
             title="Show location details"
             data-testid="loc-details-btn">
-            <font-awesome-icon icon="info-circle" /> {{ detailsCaption }}
+            <FontAwesomeIcon icon="info-circle" /> {{ detailsCaption }}
         </b-button>
 
         <b-modal

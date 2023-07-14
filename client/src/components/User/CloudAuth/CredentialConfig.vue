@@ -8,7 +8,7 @@
             label-cols-lg="3"
             :state="config.fieldValid(fieldName)"
             :invalid-feedback="config.errorMessage(fieldName)">
-            <masked-input
+            <MaskedInput
                 :id="'config-' + fieldName"
                 v-model="config[fieldName]"
                 :mask="field.mask"

@@ -24,11 +24,11 @@
             <div v-if="selectionType == 'dataset'" id="upload-rule-dataset-option" class="upload-rule-option">
                 <div class="upload-rule-option-title">History dataset</div>
                 <div>
-                    <b-link v-if="selectedDatasetName == null" @click="onSelectDataset">
+                    <BLink v-if="selectedDatasetName == null" @click="onSelectDataset">
                         {{ "Select" | l }}
-                    </b-link>
+                    </BLink>
                     <span v-else>
-                        {{ selectedDatasetName }} <font-awesome-icon icon="edit" @click="onSelectDataset" />
+                        {{ selectedDatasetName }} <FontAwesomeIcon icon="edit" @click="onSelectDataset" />
                     </span>
                 </div>
             </div>
@@ -41,15 +41,15 @@
                 :disabled="selectionType != 'paste'"></textarea>
         </span>
         <template v-slot:buttons>
-            <b-button
+            <BButton
                 id="btn-close"
                 ref="btnClose"
                 class="ui-button-default"
                 :title="btnCloseTitle"
                 @click="$emit('dismiss')">
                 {{ btnCloseTitle | l }}
-            </b-button>
-            <b-button
+            </BButton>
+            <BButton
                 id="btn-build"
                 ref="btnBuild"
                 class="ui-button-default"
@@ -58,8 +58,8 @@
                 :variant="sourceContent ? 'primary' : ''"
                 @click="_eventBuild">
                 {{ btnBuildTitle | l }}
-            </b-button>
-            <b-button
+            </BButton>
+            <BButton
                 id="btn-reset"
                 ref="btnReset"
                 class="ui-button-default"
@@ -67,7 +67,7 @@
                 :disabled="!enableReset"
                 @click="_eventReset">
                 {{ btnResetTitle | l }}
-            </b-button>
+            </BButton>
         </template>
     </upload-wrapper>
 </template>

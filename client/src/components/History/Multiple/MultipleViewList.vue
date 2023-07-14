@@ -35,7 +35,7 @@ const scrolledRight = computed(() => !isScrollable.value || arrived.right);
 <template>
     <div class="list-container h-100" :class="{ 'scrolled-left': scrolledLeft, 'scrolled-right': scrolledRight }">
         <div ref="scrollContainer" class="d-flex h-100 w-auto overflow-auto">
-            <virtual-list
+            <VirtualList
                 v-if="props.selectedHistories.length"
                 :estimate-size="props.selectedHistories.length"
                 :data-key="'id'"
@@ -47,7 +47,7 @@ const scrolledRight = computed(() => !isScrollable.value || arrived.right);
                 item-class="d-flex mx-1 mt-1"
                 class="d-flex"
                 wrap-class="row flex-nowrap m-0">
-            </virtual-list>
+            </VirtualList>
 
             <div
                 class="history-picker text-primary d-flex m-3 p-5 align-items-center text-nowrap"

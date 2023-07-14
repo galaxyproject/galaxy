@@ -1,5 +1,5 @@
 <template>
-    <prism :language="language" :code="code" :plugins="['normalize-whitespace']"></prism>
+    <Prism :language="language" :code="code" :plugins="['normalize-whitespace']"></Prism>
 </template>
 
 <script>

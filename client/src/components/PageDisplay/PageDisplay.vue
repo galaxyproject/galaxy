@@ -1,9 +1,9 @@
 <template>
-    <config-provider v-slot="{ config, loading }">
+    <ConfigProvider v-slot="{ config, loading }">
         <Published :item="page">
             <template v-slot>
                 <div v-if="!loading">
-                    <markdown
+                    <Markdown
                         v-if="page.content_format == 'markdown'"
                         :markdown-config="page"
                         :enable_beta_markdown_export="config.enable_beta_markdown_export"
@@ -15,7 +15,7 @@
                 <b-alert v-else variant="info" show>Unsupported page format.</b-alert>
             </template>
         </Published>
-    </config-provider>
+    </ConfigProvider>
 </template>
 
 <script>

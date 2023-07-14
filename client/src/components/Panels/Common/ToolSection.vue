@@ -18,7 +18,7 @@
                         v-if="category.text || el.model_class === 'ToolSectionLabel'"
                         :key="key"
                         :definition="el" />
-                    <tool
+                    <Tool
                         v-else
                         :key="key"
                         class="ml-2"
@@ -35,7 +35,7 @@
     </div>
     <div v-else>
         <ToolPanelLabel v-if="category.text" :definition="category" />
-        <tool
+        <Tool
             v-else
             :tool="category"
             :hide-name="hideName"

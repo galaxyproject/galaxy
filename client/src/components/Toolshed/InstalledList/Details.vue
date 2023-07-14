@@ -4,7 +4,7 @@
         <div v-else>
             <span v-if="loading">
                 <b-card>
-                    <loading-span message="Loading installed repository details" />
+                    <LoadingSpan message="Loading installed repository details" />
                 </b-card>
             </span>
             <div v-else>

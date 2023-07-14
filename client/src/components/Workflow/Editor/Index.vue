@@ -43,7 +43,7 @@
                     {{ name }}
                 </div>
             </div>
-            <workflow-graph
+            <WorkflowGraph
                 v-if="!datatypesMapperLoading"
                 :steps="steps"
                 :datatypes-mapper="datatypesMapper"
@@ -60,7 +60,7 @@
                 @onRemove="onRemove"
                 @onUpdateStep="onUpdateStep"
                 @onUpdateStepPosition="onUpdateStepPosition">
-            </workflow-graph>
+            </WorkflowGraph>
         </div>
         <FlexPanel side="right">
             <div class="unified-panel workflow-panel">

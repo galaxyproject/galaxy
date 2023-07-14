@@ -5,7 +5,7 @@
                 <nav class="d-flex justify-content-between mx-3 my-2">
                     <h2 v-localize class="m-1 h-sm">Tools</h2>
                     <div class="panel-header-buttons">
-                        <panel-view-button
+                        <PanelViewButton
                             v-if="panelViews && Object.keys(panelViews).length > 1"
                             :panel-views="panelViews"
                             :current-panel-view="currentPanelView"
@@ -15,7 +15,7 @@
             </div>
         </div>
         <div class="unified-panel-controls">
-            <tool-search
+            <ToolSearch
                 v-b-tooltip.hover
                 aria-haspopup="true"
                 :current-panel-view="currentPanelView"
@@ -33,7 +33,7 @@
         </div>
         <div class="unified-panel-body">
             <div class="toolMenuContainer">
-                <tool-section
+                <ToolSection
                     v-for="category in moduleSections"
                     :key="category.name"
                     :hide-name="true"
@@ -43,20 +43,20 @@
                     :query-filter="query"
                     :disable-filter="true"
                     @onClick="onInsertModule" />
-                <tool-section
+                <ToolSection
                     v-if="hasDataManagerSection"
                     :key="dataManagerSection.id"
                     :category="dataManagerSection"
                     :query-filter="query"
                     :disable-filter="true"
                     @onClick="onInsertTool" />
-                <tool-section
+                <ToolSection
                     v-for="section in sections"
                     :key="section.id"
                     :category="section"
                     :query-filter="query"
                     @onClick="onInsertTool" />
-                <tool-section
+                <ToolSection
                     v-if="hasWorkflowSection"
                     :key="workflowSection.name"
                     :category="workflowSection"

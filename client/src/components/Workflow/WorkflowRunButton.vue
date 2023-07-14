@@ -1,5 +1,5 @@
 <template>
-    <b-button
+    <BButton
         v-b-tooltip.hover.bottom
         :title="title | localize"
         :data-workflow-run="id"

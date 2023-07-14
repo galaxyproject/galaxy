@@ -17,7 +17,7 @@
                         {{ value[0].label || name }}
                     </td>
                     <td>
-                        <generic-history-item
+                        <GenericHistoryItem
                             v-for="(item, index) in value"
                             :key="index"
                             :item-id="item.value.id"

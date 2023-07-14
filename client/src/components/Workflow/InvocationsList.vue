@@ -27,7 +27,7 @@
                             >Invocation ID: <code>{{ row.item.id }}</code></b
                         >
                     </small>
-                    <workflow-invocation-state :invocation-id="row.item.id" @invocation-cancelled="refresh" />
+                    <WorkflowInvocationState :invocation-id="row.item.id" @invocation-cancelled="refresh" />
                 </b-card>
             </template>
             <template v-slot:cell(expand)="data">

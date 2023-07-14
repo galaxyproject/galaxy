@@ -10,8 +10,8 @@
                     variant="link"
                     size="sm"
                     class="float-right">
-                    <font-awesome-icon v-if="expanded" icon="chevron-up" class="fa-fw" />
-                    <font-awesome-icon v-else icon="chevron-down" class="fa-fw" />
+                    <FontAwesomeIcon v-if="expanded" icon="chevron-up" class="fa-fw" />
+                    <FontAwesomeIcon v-else icon="chevron-down" class="fa-fw" />
                 </span>
             </div>
             <span class="portlet-title">

@@ -1,5 +1,5 @@
 <template>
-    <markdown-editor :title="title" :markdown-text="markdownText" :markdown-config="contentData" @onUpdate="onUpdate">
+    <MarkdownEditor :title="title" :markdown-text="markdownText" :markdown-config="contentData" @onUpdate="onUpdate">
         <template v-slot:buttons>
             <b-button
                 id="save-button"
@@ -8,7 +8,7 @@
                 variant="link"
                 role="button"
                 @click="saveContent(false)">
-                <font-awesome-icon icon="save" />
+                <FontAwesomeIcon icon="save" />
             </b-button>
             <b-button
                 id="view-button"
@@ -17,10 +17,10 @@
                 variant="link"
                 role="button"
                 @click="saveContent(true)">
-                <font-awesome-icon icon="eye" />
+                <FontAwesomeIcon icon="eye" />
             </b-button>
         </template>
-    </markdown-editor>
+    </MarkdownEditor>
 </template>
 
 <script>

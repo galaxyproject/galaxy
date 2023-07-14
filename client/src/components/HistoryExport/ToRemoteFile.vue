@@ -9,7 +9,7 @@
                 :job="jobError" />
         </b-alert>
         <div v-if="waitingOnJob">
-            <loading-span message="Executing history export job, this will likely take a while." />
+            <LoadingSpan message="Executing history export job, this will likely take a while." />
         </div>
         <div v-else-if="jobComplete">
             <b-alert show variant="success" dismissible @dismissed="reset">

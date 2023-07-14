@@ -50,16 +50,16 @@ function copyDownloadLink(record) {
 
 <template>
     <div>
-        <b-link
+        <BLink
             :class="isExpanded ? null : 'collapsed'"
             :aria-expanded="isExpanded ? 'true' : 'false'"
             aria-controls="collapse-previous"
             @click="isExpanded = !isExpanded">
             {{ title }}
-        </b-link>
-        <b-collapse id="collapse-previous" v-model="isExpanded">
-            <b-card>
-                <b-table :items="props.records" :fields="fields">
+        </BLink>
+        <BCollapse id="collapse-previous" v-model="isExpanded">
+            <BCard>
+                <BTable :items="props.records" :fields="fields">
                     <template v-slot:cell(elapsedTime)="row">
                         <span :title="row.item.date">{{ row.value }}</span>
                     </template>
@@ -74,68 +74,68 @@ function copyDownloadLink(record) {
                         <span v-else>No</span>
                     </template>
                     <template v-slot:cell(isUpToDate)="row">
-                        <font-awesome-icon
+                        <FontAwesomeIcon
                             v-if="row.item.isUpToDate"
                             icon="check-circle"
                             class="text-success"
                             title="This export record contains the latest changes." />
-                        <font-awesome-icon
+                        <FontAwesomeIcon
                             v-else
                             icon="exclamation-circle"
                             class="text-danger"
                             title="This export record is outdated. Please consider generating a new export if you need the latest changes." />
                     </template>
                     <template v-slot:cell(isReady)="row">
-                        <font-awesome-icon
+                        <FontAwesomeIcon
                             v-if="row.item.isReady"
                             icon="check-circle"
                             class="text-success"
                             title="Ready to download or import." />
-                        <font-awesome-icon
+                        <FontAwesomeIcon
                             v-else-if="row.item.isPreparing"
                             icon="spinner"
                             spin
                             class="text-info"
                             title="Exporting in progress..." />
-                        <font-awesome-icon
+                        <FontAwesomeIcon
                             v-else-if="row.item.hasExpired"
                             icon="exclamation-circle"
                             class="text-danger"
                             title="The export has expired." />
-                        <font-awesome-icon
+                        <FontAwesomeIcon
                             v-else
                             icon="exclamation-circle"
                             class="text-danger"
                             title="The export failed." />
                     </template>
                     <template v-slot:cell(actions)="row">
-                        <b-button-toolbar aria-label="Actions">
-                            <b-button-group>
-                                <b-button
+                        <BButtonToolbar aria-label="Actions">
+                            <BButtonGroup>
+                                <BButton
                                     v-b-tooltip.hover.bottom
                                     :disabled="!row.item.canDownload"
                                     title="Download"
                                     @click="downloadObject(row.item)">
-                                    <font-awesome-icon icon="download" />
-                                </b-button>
-                                <b-button
+                                    <FontAwesomeIcon icon="download" />
+                                </BButton>
+                                <BButton
                                     v-if="row.item.canDownload"
                                     title="Copy Download Link"
                                     @click.stop="copyDownloadLink(row.item)">
-                                    <font-awesome-icon icon="link" />
-                                </b-button>
-                                <b-button
+                                    <FontAwesomeIcon icon="link" />
+                                </BButton>
+                                <BButton
                                     v-b-tooltip.hover.bottom
                                     :disabled="!row.item.canReimport"
                                     title="Reimport"
                                     @click="reimportObject(row.item)">
-                                    <font-awesome-icon icon="file-import" />
-                                </b-button>
-                            </b-button-group>
-                        </b-button-toolbar>
+                                    <FontAwesomeIcon icon="file-import" />
+                                </BButton>
+                            </BButtonGroup>
+                        </BButtonToolbar>
                     </template>
-                </b-table>
-            </b-card>
-        </b-collapse>
+                </BTable>
+            </BCard>
+        </BCollapse>
     </div>
 </template>

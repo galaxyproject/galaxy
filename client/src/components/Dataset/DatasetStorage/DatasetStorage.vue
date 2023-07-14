@@ -2,7 +2,7 @@
     <div>
         <h2 v-if="includeTitle" class="h-md">Dataset Storage</h2>
         <div v-if="errorMessage" class="error">{{ errorMessage }}</div>
-        <loading-span v-else-if="storageInfo == null"> </loading-span>
+        <LoadingSpan v-else-if="storageInfo == null"> </LoadingSpan>
         <div v-else-if="discarded">
             <p>This dataset has been discarded and its files are not available to Galaxy.</p>
         </div>
@@ -16,7 +16,7 @@
             </p>
         </div>
         <div v-else>
-            <describe-object-store what="This dataset is stored in" :storage-info="storageInfo" />
+            <DescribeObjectStore what="This dataset is stored in" :storage-info="storageInfo" />
         </div>
     </div>
 </template>

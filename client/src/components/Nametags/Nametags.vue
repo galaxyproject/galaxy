@@ -1,5 +1,5 @@
 <template>
-    <div class="nametags" :title="title"><nametag v-for="tag in nameTags" :key="tag" :tag="tag" /></div>
+    <div class="nametags" :title="title"><Nametag v-for="tag in nameTags" :key="tag" :tag="tag" /></div>
 </template>
 
 <script>

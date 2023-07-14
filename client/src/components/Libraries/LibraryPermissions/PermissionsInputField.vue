@@ -6,7 +6,7 @@
         <b-row>
             <b-col>
                 <div v-if="options && value" :class="permission_type">
-                    <multiselect
+                    <Multiselect
                         v-model="value"
                         :options="fetched_options"
                         :clear-on-select="true"
@@ -22,7 +22,7 @@
                                 <span class="spinner fa fa-spinner fa-spin fa-1x" />
                             </div>
                         </template>
-                    </multiselect>
+                    </Multiselect>
                 </div>
             </b-col>
             <b-col>

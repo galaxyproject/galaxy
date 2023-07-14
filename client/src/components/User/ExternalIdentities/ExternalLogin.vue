@@ -10,13 +10,13 @@
                 <div v-if="login_page">
                     <!--Only Display if CILogon/Custos is configured-->
                     <b-form-group label="Use existing institutional login">
-                        <multiselect
+                        <Multiselect
                             v-model="selected"
                             placeholder="Select your institution"
                             :options="cilogon_idps"
                             label="DisplayName"
                             track-by="EntityID">
-                        </multiselect>
+                        </Multiselect>
                     </b-form-group>
 
                     <b-form-group v-if="login_page">
@@ -50,13 +50,13 @@
                     <b-button v-if="custos_enabled" @click="toggleCILogon('custos')">Sign in with Custos*</b-button>
 
                     <b-form-group v-if="toggle_cilogon">
-                        <multiselect
+                        <Multiselect
                             v-model="selected"
                             placeholder="Select your institution"
                             :options="cilogon_idps"
                             label="DisplayName"
                             track-by="EntityID">
-                        </multiselect>
+                        </Multiselect>
 
                         <b-button
                             v-if="toggle_cilogon"

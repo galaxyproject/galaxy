@@ -121,7 +121,7 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
 </script>
 
 <template>
-    <b-card class="workflow-import-trs-search" title="GA4GH Tool Registry Server (TRS) Workflow Search">
+    <BCard class="workflow-import-trs-search" title="GA4GH Tool Registry Server (TRS) Workflow Search">
         <b-alert :show="hasErrorMessage" variant="danger">{{ errorMessage }}</b-alert>
 
         <div class="mb-3">
@@ -174,16 +174,16 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
                 :busy="loading"
                 @row-clicked="showRowDetails">
                 <template v-slot:row-details="row">
-                    <b-card>
+                    <BCard>
                         <b-alert v-if="importing" variant="info" show>
                             <LoadingSpan message="Importing workflow" />
                         </b-alert>
                         <TrsTool
                             :trs-tool="row.item.data"
                             @onImport="(versionId) => importVersion(trsSelection?.id, row.item.data.id, versionId)" />
-                    </b-card>
+                    </BCard>
                 </template>
             </b-table>
         </div>
-    </b-card>
+    </BCard>
 </template>

@@ -79,7 +79,7 @@
                         @hide="operationError = null" />
                 </section>
                 <section v-if="!showAdvanced" class="position-relative flex-grow-1 scroller">
-                    <history-drop-zone v-if="showDropZone" />
+                    <HistoryDropZone v-if="showDropZone" />
                     <div>
                         <div v-if="loading && itemsLoaded && itemsLoaded.length === 0">
                             <b-alert class="m-2" variant="info" show>

@@ -12,7 +12,7 @@
         </b-alert>
 
         <div v-if="initializing">
-            <loading-span message="Loading server configuration." />
+            <LoadingSpan message="Loading server configuration." />
         </div>
         <div v-else-if="waitingOnJob">
             <LoadingSpan message="Waiting on history import job, this may take a while." />
@@ -33,15 +33,15 @@
                         stacked>
                         <b-form-radio value="externalUrl">
                             Export URL from another Galaxy instance
-                            <font-awesome-icon icon="external-link-alt" />
+                            <FontAwesomeIcon icon="external-link-alt" />
                         </b-form-radio>
                         <b-form-radio value="upload">
                             Upload local file from your computer
-                            <font-awesome-icon icon="upload" />
+                            <FontAwesomeIcon icon="upload" />
                         </b-form-radio>
                         <b-form-radio v-if="hasFileSources" value="remoteFilesUri">
                             Select a remote file (e.g. Galaxy's FTP)
-                            <font-awesome-icon icon="folder-open" />
+                            <FontAwesomeIcon icon="folder-open" />
                         </b-form-radio>
                     </b-form-radio-group>
                 </b-form-group>
@@ -63,7 +63,7 @@
                 </b-form-group>
                 <b-form-group v-show="importType === 'remoteFilesUri'" label="Remote File">
                     <!-- using v-show so we can have a persistent ref and launch dialog on select -->
-                    <files-input ref="filesInput" v-model="sourceRemoteFilesUri" />
+                    <FilesInput ref="filesInput" v-model="sourceRemoteFilesUri" />
                 </b-form-group>
 
                 <b-button class="import-button" variant="primary" type="submit" :disabled="!importReady">

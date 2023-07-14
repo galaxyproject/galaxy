@@ -13,25 +13,25 @@
             <b-tab
                 title-link-class="collection-edit-change-genome-nav"
                 @click="updateInfoMessage(newCollectionMessage + ' ' + noQuotaIncreaseMessage)">
-                <template v-slot:title> <font-awesome-icon icon="table" /> &nbsp; {{ l("Database/Build") }}</template>
-                <db-key-provider v-slot="{ item, loading }">
+                <template v-slot:title> <FontAwesomeIcon icon="table" /> &nbsp; {{ l("Database/Build") }}</template>
+                <DbKeyProvider v-slot="{ item, loading }">
                     <div v-if="loading"><b-spinner label="Loading Database/Builds..."></b-spinner></div>
                     <div v-else>
-                        <database-edit-tab
+                        <DatabaseEditTab
                             v-if="item && databaseKeyFromElements"
                             :database-key-from-elements="databaseKeyFromElements"
                             :genomes="item"
                             @clicked-save="clickedSave" />
                     </div>
-                </db-key-provider>
+                </DbKeyProvider>
             </b-tab>
             <SuitableConvertersProvider :id="collection_id" v-slot="{ item }">
                 <b-tab
                     v-if="item && item.length"
                     title-link-class="collection-edit-convert-datatype-nav"
                     @click="updateInfoMessage(newCollectionMessage)">
-                    <template v-slot:title> <font-awesome-icon icon="cog" /> &nbsp; {{ l("Convert") }}</template>
-                    <suitable-converters-tab :suitable-converters="item" @clicked-convert="clickedConvert" />
+                    <template v-slot:title> <FontAwesomeIcon icon="cog" /> &nbsp; {{ l("Convert") }}</template>
+                    <SuitableConvertersTab :suitable-converters="item" @clicked-convert="clickedConvert" />
                 </b-tab>
             </SuitableConvertersProvider>
             <ConfigProvider v-slot="{ config }">
@@ -39,19 +39,17 @@
                     v-if="config.enable_celery_tasks"
                     title-link-class="collection-edit-change-datatype-nav"
                     @click="updateInfoMessage(expectWaitTimeMessage)">
-                    <template v-slot:title>
-                        <font-awesome-icon icon="database" /> &nbsp; {{ l("Datatypes") }}
-                    </template>
-                    <datatypes-provider v-slot="{ item, loading }">
-                        <div v-if="loading"><loading-span :message="loadingString" /></div>
+                    <template v-slot:title> <FontAwesomeIcon icon="database" /> &nbsp; {{ l("Datatypes") }} </template>
+                    <DatatypesProvider v-slot="{ item, loading }">
+                        <div v-if="loading"><LoadingSpan :message="loadingString" /></div>
                         <div v-else>
-                            <change-datatype-tab
+                            <ChangeDatatypeTab
                                 v-if="item && datatypeFromElements"
                                 :datatype-from-elements="datatypeFromElements"
                                 :datatypes="item"
                                 @clicked-save="clickedDatatypeChange" />
                         </div>
-                    </datatypes-provider>
+                    </DatatypesProvider>
                 </b-tab>
             </ConfigProvider>
         </b-tabs>

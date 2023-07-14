@@ -7,29 +7,29 @@
             </div>
             <div class="col-8">
                 <div v-if="singleTool">
-                    <tool-display :tool-id="resolution.tool_id" />
+                    <ToolDisplay :tool-id="resolution.tool_id" />
                 </div>
                 <div v-else>
-                    <tools :tool-ids="resolution.tool_ids" :compact="false" />
+                    <Tools :tool-ids="resolution.tool_ids" :compact="false" />
                 </div>
             </div>
         </div>
         <div class="row">
             <div class="col">Requirements</div>
             <div class="col-8">
-                <requirements :requirements="resolution.requirements" />
+                <Requirements :requirements="resolution.requirements" />
             </div>
         </div>
         <div class="row">
             <div class="col">Status Display</div>
             <div class="col-8">
-                <status-display :status="resolution.status" :compact="false" />
+                <StatusDisplay :status="resolution.status" :compact="false" />
             </div>
         </div>
         <div class="row">
             <div class="col">Container</div>
             <div class="col-8">
-                <container-description
+                <ContainerDescription
                     :container-description="resolution.status.container_description"
                     :compact="false" />
             </div>
@@ -37,7 +37,7 @@
         <div class="row">
             <div class="col">Container Resolver</div>
             <div class="col-8">
-                <container-resolver :container-resolver="resolution.status.container_resolver" :compact="false" />
+                <ContainerResolver :container-resolver="resolution.status.container_resolver" :compact="false" />
             </div>
         </div>
     </b-card>

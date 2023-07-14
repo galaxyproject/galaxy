@@ -84,7 +84,7 @@
                     <tool-display :tool-id="row.item.tool_id" />
                 </template>
                 <template v-slot:row-details="row">
-                    <container-resolution-details :resolution="row.item" />
+                    <ContainerResolutionDetails :resolution="row.item" />
                 </template>
             </b-table>
         </template>

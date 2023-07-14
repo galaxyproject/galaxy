@@ -34,8 +34,8 @@ const versionUserDocumentationUrl = computed(() => {
             <Heading h2 separator size="md">Galaxy Version Information</Heading>
             <p>
                 The Galaxy Server is running version
-                <external-link :href="versionUserDocumentationUrl">
-                    <strong> {{ config.version_major }}.{{ config.version_minor }}</strong> </external-link
+                <ExternalLink :href="versionUserDocumentationUrl">
+                    <strong> {{ config.version_major }}.{{ config.version_minor }}</strong> </ExternalLink
                 >, and the web client was built on <UtcDate :date="clientBuildDate" mode="pretty" />.
             </p>
             <template v-if="config.version_extra">
@@ -53,9 +53,9 @@ const versionUserDocumentationUrl = computed(() => {
             <!-- API documentation link -->
             <p>
                 The Galaxy API is available, and explorable, at
-                <external-link :href="apiDocsLink">
+                <ExternalLink :href="apiDocsLink">
                     {{ apiDocsLink }}
-                </external-link>
+                </ExternalLink>
             </p>
         </div>
         <div>
@@ -67,7 +67,7 @@ const versionUserDocumentationUrl = computed(() => {
             <Heading h2 separator size="md">Terms and Conditions</Heading>
             <p>
                 This Galaxy Server has specified Terms and Conditions that apply to use of the service.
-                <external-link :href="config.terms_url">Review them here.</external-link>
+                <ExternalLink :href="config.terms_url">Review them here.</ExternalLink>
             </p>
         </div>
     </div>

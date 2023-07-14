@@ -62,7 +62,7 @@ onMounted(() => {
             @change="handleClick(option.value)">
             {{ option.name }}
         </component>
-        <form-drilldown-list
+        <FormDrilldownList
             v-if="hasOptions"
             v-show="showChildren"
             class="pl-5"

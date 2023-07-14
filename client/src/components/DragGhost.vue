@@ -19,8 +19,8 @@ const name = computed(() => {
 
 <template>
     <span id="drag-ghost" class="py-2 px-3 rounded">
-        <font-awesome-icon icon="paper-plane" class="mr-1" />
-        <text-short class="font-weight-bold" :text="name" />
+        <FontAwesomeIcon icon="paper-plane" class="mr-1" />
+        <TextShort class="font-weight-bold" :text="name" />
     </span>
 </template>
 

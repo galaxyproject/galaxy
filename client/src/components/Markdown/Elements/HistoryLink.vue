@@ -8,11 +8,11 @@
             >Click to Import History: {{ name }}.</b-link
         >
         <div v-if="imported" class="text-success">
-            <font-awesome-icon icon="check" class="mr-1" />
+            <FontAwesomeIcon icon="check" class="mr-1" />
             <span>Successfully Imported History: {{ name }}!</span>
         </div>
         <div v-if="!!error" class="text-danger">
-            <font-awesome-icon icon="exclamation-triangle" class="mr-1" />
+            <FontAwesomeIcon icon="exclamation-triangle" class="mr-1" />
             <span>Failed to Import History: {{ name }}!</span>
             <span>{{ error }}</span>
         </div>

@@ -70,35 +70,35 @@ function onExportToFileSourceFailure() {
 
 <template>
     <div>
-        <b-card class="export-plugin-card mb-1">
-            <b-card-title class="export-plugin-title align-items-center d-flex justify-content-between">
+        <BCard class="export-plugin-card mb-1">
+            <BCardTitle class="export-plugin-title align-items-center d-flex justify-content-between">
                 {{ exportPlugin.title }}
-                <b-button-toolbar aria-label="Export Options">
-                    <b-button-group>
-                        <sts-download-button
+                <BButtonToolbar aria-label="Export Options">
+                    <BButtonGroup>
+                        <StsDownloadButton
                             :title="'Download Invocation as ' + exportPlugin.title"
                             :download-endpoint="invocationDownloadUrl"
                             :post-parameters="downloadParams"
                             class="download-button" />
-                        <export-to-remote-button
+                        <ExportToRemoteButton
                             :title="'Export Invocation as ' + exportPlugin.title + ' and upload to remote source'"
                             :task-id="exportToRemoteTaskId"
                             class="remote-export-button"
                             @onClick="openRemoteExportDialog"
                             @onSuccess="onExportToFileSourceSuccess"
                             @onFailure="onExportToFileSourceFailure" />
-                        <action-button
+                        <ActionButton
                             v-for="action in exportPlugin.additionalActions"
                             :key="action.id"
                             :action="action"
                             class="action-button" />
-                    </b-button-group>
-                </b-button-toolbar>
-            </b-card-title>
+                    </BButtonGroup>
+                </BButtonToolbar>
+            </BCardTitle>
 
             <div class="markdown-description" v-html="descriptionRendered" />
-        </b-card>
-        <export-to-remote-modal
+        </BCard>
+        <ExportToRemoteModal
             ref="exportRemoteModal"
             :invocation-id="props.invocationId"
             :export-plugin="props.exportPlugin"

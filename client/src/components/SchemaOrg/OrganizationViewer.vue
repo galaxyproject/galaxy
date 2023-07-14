@@ -1,6 +1,6 @@
 <template>
     <span itemprop="creator" itemscope itemtype="https://schema.org/Organization">
-        <font-awesome-icon ref="button" icon="building" />
+        <FontAwesomeIcon ref="button" icon="building" />
         <b-popover
             triggers="click blur"
             :placement="hoverPlacement"
@@ -20,7 +20,7 @@
         </span>
         <a v-if="url" v-b-tooltip.hover title="Organization URL" :href="url" target="_blank">
             <link itemprop="url" :href="url" />
-            <font-awesome-icon icon="external-link-alt" />
+            <FontAwesomeIcon icon="external-link-alt" />
         </a>
         <meta
             v-for="attribute in explicitMetaAttributes"

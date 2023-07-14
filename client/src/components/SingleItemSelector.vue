@@ -1,7 +1,7 @@
 <template>
     <div>
         <LoadingSpan v-if="loading" :message="loadingMessage" />
-        <multiselect
+        <Multiselect
             v-if="items"
             v-model="selectedItem"
             deselect-label="Can't remove this value"

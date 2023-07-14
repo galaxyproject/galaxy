@@ -8,7 +8,7 @@
                 There is an InteractiveTool result view available,
                 <a v-b-tooltip title="Open Interactive Tool" :href="entryPointsForJob(jobId)[0].target" target="_blank">
                     Open
-                    <font-awesome-icon icon="external-link-alt" />
+                    <FontAwesomeIcon icon="external-link-alt" />
                 </a>
             </span>
             <span v-else>
@@ -23,7 +23,7 @@
                     <span v-if="entryPoint.active">
                         <a v-b-tooltip title="Open Interactive Tool" :href="entryPoint.target" target="_blank">
                             (Open
-                            <font-awesome-icon icon="external-link-alt" />)
+                            <FontAwesomeIcon icon="external-link-alt" />)
                         </a>
                     </span>
                     <span v-else> (waiting to become active...) </span>

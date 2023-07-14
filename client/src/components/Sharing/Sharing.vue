@@ -35,10 +35,10 @@
                 <p>Anyone can view and import this {{ modelClass }} by visiting the following URL:</p>
                 <blockquote>
                     <b-button v-b-tooltip.hover title="Edit URL" variant="link" size="sm" @click="onEdit">
-                        <font-awesome-icon icon="edit" />
+                        <FontAwesomeIcon icon="edit" />
                     </b-button>
                     <b-button id="tooltip-clipboard" variant="link" size="sm" @click="onCopy" @mouseout="onCopyOut">
-                        <font-awesome-icon :icon="['far', 'copy']" />
+                        <FontAwesomeIcon :icon="['far', 'copy']" />
                     </b-button>
                     <b-tooltip target="tooltip-clipboard" triggers="hover">
                         {{ tooltipClipboard }}
@@ -65,7 +65,7 @@
                     variant="light"
                     @click="isCollapseVisible = !isCollapseVisible">
                     Share {{ modelClass }} with Individual Users
-                    <font-awesome-icon :icon="isCollapseVisible ? `caret-up` : `caret-down`" />
+                    <FontAwesomeIcon :icon="isCollapseVisible ? `caret-up` : `caret-down`" />
                 </b-button>
                 <b-collapse id="accordion-1" accordion="main-accordion" role="tabpanel">
                     <ConfigProvider v-slot="{ config }">
@@ -89,7 +89,7 @@
                             </b-alert>
 
                             <div class="share_with_view">
-                                <multiselect
+                                <Multiselect
                                     v-model="multiselectValues.sharingCandidates"
                                     :options="multiselectValues.userOptions"
                                     :clear-on-select="true"
@@ -130,7 +130,7 @@
                                             {{ elementsNotFoundWarning }}
                                         </div>
                                     </template>
-                                </multiselect>
+                                </Multiselect>
                                 <div class="share-with-card-buttons">
                                     <!--submit/cancel buttons-->
                                     <b-button

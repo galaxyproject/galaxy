@@ -21,7 +21,7 @@
                 >.
             </span>
         </p>
-        <user-preferences-element
+        <UserPreferencesElement
             v-for="(link, index) in activePreferences"
             :id="link.id"
             :key="index"
@@ -29,26 +29,26 @@
             :title="link.title"
             :description="link.description"
             :to="`/user/${index}`" />
-        <user-preferences-element
+        <UserPreferencesElement
             id="edit-preferences-api-key"
             icon="fa-key"
             title="Manage API Key"
             description="Access your current API key or create a new one."
             to="/user/api_key" />
-        <user-preferences-element
+        <UserPreferencesElement
             id="edit-preferences-notifications"
             icon="fa-bell"
             title="Manage Notifications"
             description="Manage your notification settings."
             to="/user/notifications/preferences" />
-        <user-preferences-element
+        <UserPreferencesElement
             id="edit-preferences-cloud-auth"
             icon="fa-cloud"
             title="Manage Cloud Authorization"
             description="Add or modify the configuration that grants Galaxy to access your cloud-based resources."
             to="/user/cloud_auth" />
         <ConfigProvider v-slot="{ config }">
-            <user-preferences-element
+            <UserPreferencesElement
                 v-if="config.enable_oidc"
                 id="manage-third-party-identities"
                 icon="fa-id-card-o"
@@ -56,13 +56,13 @@
                 description="Connect or disconnect access to your third-party identities."
                 to="/user/external_ids" />
         </ConfigProvider>
-        <user-preferences-element
+        <UserPreferencesElement
             id="edit-preferences-custom-builds"
             icon="fa-cubes"
             title="Manage Custom Builds"
             description="Add or remove custom builds using history datasets."
             to="/custom_builds" />
-        <user-preferences-element
+        <UserPreferencesElement
             icon="fa-th-list"
             title="Manage Activity Bar"
             description="Click here to show or hide the activity bar."
@@ -71,8 +71,8 @@
             <b-collapse v-model="toggleActivityBar">
                 <UserActivityBarSettings />
             </b-collapse>
-        </user-preferences-element>
-        <user-preferences-element
+        </UserPreferencesElement>
+        <UserPreferencesElement
             v-if="hasThemes"
             icon="fa-palette"
             title="Pick a Color Theme"
@@ -82,9 +82,9 @@
             <b-collapse v-model="toggleTheme">
                 <ThemeSelector />
             </b-collapse>
-        </user-preferences-element>
+        </UserPreferencesElement>
         <ConfigProvider v-slot="{ config }">
-            <user-preferences-element
+            <UserPreferencesElement
                 v-if="!config.single_user"
                 id="edit-preferences-make-data-private"
                 icon="fa-lock"
@@ -110,7 +110,7 @@
                 :user-id="userId">
             </UserDeletion>
         </ConfigProvider>
-        <user-preferences-element
+        <UserPreferencesElement
             v-if="hasLogout"
             id="edit-preferences-sign-out"
             icon="fa-sign-out"

@@ -1,8 +1,8 @@
 <template>
-    <b-link v-b-tooltip.hover :title="title" class="workflow-bookmark-link" @click="onClick">
-        <font-awesome-icon v-if="checked" :icon="['fas', 'star']" />
-        <font-awesome-icon v-else :icon="['far', 'star']" />
-    </b-link>
+    <BLink v-b-tooltip.hover :title="title" class="workflow-bookmark-link" @click="onClick">
+        <FontAwesomeIcon v-if="checked" :icon="['fas', 'star']" />
+        <FontAwesomeIcon v-else :icon="['far', 'star']" />
+    </BLink>
 </template>
 
 <script>

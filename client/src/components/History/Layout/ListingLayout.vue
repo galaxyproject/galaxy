@@ -1,6 +1,6 @@
 <template>
     <div class="listing-layout">
-        <virtual-list
+        <VirtualList
             ref="listing"
             class="listing"
             role="list"
@@ -17,7 +17,7 @@
             <template v-slot:footer>
                 <LoadingSpan v-if="loading" class="m-2" message="Loading" />
             </template>
-        </virtual-list>
+        </VirtualList>
     </div>
 </template>
 <script>

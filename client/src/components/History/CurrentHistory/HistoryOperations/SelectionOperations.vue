@@ -98,7 +98,7 @@
             title-tag="h2"
             @ok="changeDbkeyOfSelected">
             <p v-localize>Select a new Database/Build for {{ numSelected }} items:</p>
-            <db-key-provider v-slot="{ item: dbkeys, loading: loadingDbKeys }">
+            <DbKeyProvider v-slot="{ item: dbkeys, loading: loadingDbKeys }">
                 <SingleItemSelector
                     collection-name="Database/Builds"
                     :loading="loadingDbKeys"
@@ -106,7 +106,7 @@
                     :current-item-id="selectedDbKey"
                     class="mb-5 pb-5"
                     @update:selected-item="onSelectedDbKey" />
-            </db-key-provider>
+            </DbKeyProvider>
         </b-modal>
         <b-modal
             id="change-datatype-of-selected-content"

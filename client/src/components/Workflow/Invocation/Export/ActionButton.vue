@@ -13,7 +13,7 @@ const props = defineProps({
 
 <template>
     <b-button v-b-tooltip.hover.bottom :title="props.action.title" @click="props.action.run(modal)">
-        <font-awesome-icon v-if="props.action.icon" :icon="props.action.icon" />
+        <FontAwesomeIcon v-if="props.action.icon" :icon="props.action.icon" />
         <div v-else>
             {{ props.action.title }}
         </div>

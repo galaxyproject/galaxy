@@ -16,7 +16,7 @@
                 }" />
         </div>
         <span class="position-relative">
-            <font-awesome-icon icon="upload" class="mr-1" />
+            <FontAwesomeIcon icon="upload" class="mr-1" />
             <b v-localize>Upload Data</b>
         </span>
     </b-button>

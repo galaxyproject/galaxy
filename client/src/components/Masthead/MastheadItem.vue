@@ -70,7 +70,7 @@ function open(tab, event) {
 </script>
 
 <template>
-    <b-nav-item
+    <BNavItem
         v-if="!menu"
         :id="tab.id"
         v-b-tooltip.hover.bottom
@@ -90,8 +90,8 @@ function open(tab, event) {
         <template v-else>
             {{ tab.title }}
         </template>
-    </b-nav-item>
-    <b-nav-item-dropdown
+    </BNavItem>
+    <BNavItemDropdown
         v-else
         :id="tab.id"
         ref="dropdown"
@@ -108,7 +108,7 @@ function open(tab, event) {
         </template>
         <template v-for="(item, idx) in tab.menu">
             <div v-if="item.divider" :key="`divider-${idx}`" class="dropdown-divider" />
-            <b-dropdown-item
+            <BDropdownItem
                 v-else-if="item.hidden !== true"
                 :key="`item-${idx}`"
                 :href="withPrefix(item.url)"
@@ -119,7 +119,7 @@ function open(tab, event) {
                 :disabled="item.disabled"
                 @click="open(item, $event)">
                 {{ item.title }}
-            </b-dropdown-item>
+            </BDropdownItem>
         </template>
-    </b-nav-item-dropdown>
+    </BNavItemDropdown>
 </template>

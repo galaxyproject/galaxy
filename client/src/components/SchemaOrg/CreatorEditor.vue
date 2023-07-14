@@ -11,10 +11,10 @@
                 <CreatorViewer :creator="creator">
                     <template v-slot:buttons>
                         <span v-b-tooltip.hover title="Edit Creator"
-                            ><font-awesome-icon icon="edit" @click="onEdit(index)"
+                            ><FontAwesomeIcon icon="edit" @click="onEdit(index)"
                         /></span>
                         <span v-b-tooltip.hover title="Remove Creator">
-                            <font-awesome-icon icon="times" @click="onRemove(index)" />
+                            <FontAwesomeIcon icon="times" @click="onRemove(index)" />
                         </span>
                     </template>
                 </CreatorViewer>

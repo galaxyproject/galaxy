@@ -1,7 +1,7 @@
 <template>
     <div>
         <div v-for="(elVal, pvIndex) in parameter_value" :key="pvIndex">
-            <generic-history-item
+            <GenericHistoryItem
                 v-if="['hda', 'hdca', 'dce'].includes(elVal.src)"
                 :item-id="elVal.id"
                 :item-src="elVal.src" />

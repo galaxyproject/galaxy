@@ -1,5 +1,5 @@
 <template>
-    <stateless-tags
+    <StatelessTags
         v-model="observedTags"
         :disabled="disabled"
         :autocomplete-items="autocompleteItems"

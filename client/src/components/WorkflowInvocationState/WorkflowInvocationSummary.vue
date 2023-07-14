@@ -25,34 +25,34 @@
                 title="Cancel scheduling of workflow invocation"
                 @click="onCancel"></span>
         </div>
-        <progress-bar v-if="!stepCount" note="Loading step state summary..." :loading="true" class="steps-progress" />
+        <ProgressBar v-if="!stepCount" note="Loading step state summary..." :loading="true" class="steps-progress" />
         <template v-if="invocation.messages?.length">
-            <invocation-message
+            <InvocationMessage
                 v-for="message in invocation.messages"
                 :key="message.reason"
                 class="steps-progress my-1"
                 :invocation-message="message"
                 :invocation="invocation">
-            </invocation-message>
+            </InvocationMessage>
         </template>
-        <progress-bar
+        <ProgressBar
             v-else-if="invocationState == 'cancelled'"
             note="Invocation scheduling cancelled - expected jobs and outputs may not be generated."
             :error-count="1"
             class="steps-progress" />
-        <progress-bar
+        <ProgressBar
             v-else-if="invocationState == 'failed'"
             note="Invocation scheduling failed - Galaxy administrator may have additional details in logs."
             :error-count="1"
             class="steps-progress" />
-        <progress-bar
+        <ProgressBar
             v-else
             :note="stepStatesStr"
             :total="stepCount"
             :ok-count="stepStates.scheduled"
             :loading="!invocationSchedulingTerminal"
             class="steps-progress" />
-        <progress-bar
+        <ProgressBar
             :note="jobStatesStr"
             :total="jobCount"
             :ok-count="okCount"

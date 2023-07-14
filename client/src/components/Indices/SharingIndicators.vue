@@ -14,7 +14,7 @@ const props = defineProps<SharingIndicatorsProps>();
 
 <template>
     <span>
-        <b-button
+        <BButton
             v-if="props.object.published"
             v-b-tooltip.hover
             class="sharing-indicator-published"
@@ -22,9 +22,9 @@ const props = defineProps<SharingIndicatorsProps>();
             variant="link"
             :title="'Find all published items' | localize"
             @click.prevent="$emit('filter', 'is:published')">
-            <font-awesome-icon icon="globe" />
-        </b-button>
-        <b-button
+            <FontAwesomeIcon icon="globe" />
+        </BButton>
+        <BButton
             v-if="props.object.importable"
             v-b-tooltip.hover
             class="sharing-indicator-importable"
@@ -32,9 +32,9 @@ const props = defineProps<SharingIndicatorsProps>();
             variant="link"
             :title="'Find all importable items' | localize"
             @click.prevent="$emit('filter', 'is:importable')">
-            <font-awesome-icon icon="link" />
-        </b-button>
-        <b-button
+            <FontAwesomeIcon icon="link" />
+        </BButton>
+        <BButton
             v-if="props.object.shared"
             v-b-tooltip.hover
             class="sharing-indicator-shared"
@@ -42,7 +42,7 @@ const props = defineProps<SharingIndicatorsProps>();
             variant="link"
             :title="'Find all items shared with me' | localize"
             @click.prevent="$emit('filter', 'is:shared_with_me')">
-            <font-awesome-icon icon="share-alt" />
-        </b-button>
+            <FontAwesomeIcon icon="share-alt" />
+        </BButton>
     </span>
 </template>

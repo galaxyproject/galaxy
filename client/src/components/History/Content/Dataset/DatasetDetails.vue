@@ -13,9 +13,9 @@
                     </span>
                     <span v-if="result.genome_build" class="dbkey">
                         <label v-localize class="prompt">database</label>
-                        <b-link class="value" data-label="Database/Build" @click.stop="$emit('edit')">{{
+                        <BLink class="value" data-label="Database/Build" @click.stop="$emit('edit')">{{
                             result.genome_build
-                        }}</b-link>
+                        }}</BLink>
                     </span>
                     <div v-if="result.misc_info" class="info">
                         <span class="value">{{ result.misc_info }}</span>

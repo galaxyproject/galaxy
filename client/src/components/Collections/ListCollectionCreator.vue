@@ -115,14 +115,14 @@
                             <li>
                                 {{ l("Click ") }}
                                 <i data-target=".reset">
-                                    <font-awesome-icon icon="undo" />
+                                    <FontAwesomeIcon icon="undo" />
                                 </i>
                                 {{ l("to begin again as if you had just opened the interface.") }}
                             </li>
                             <li>
                                 {{ l("Click ") }}
                                 <i data-target=".sort-items">
-                                    <font-awesome-icon icon="sort-alpha-down" />
+                                    <FontAwesomeIcon icon="sort-alpha-down" />
                                 </i>
                                 {{ l("to sort datasets alphabetically.") }}
                             </li>
@@ -150,10 +150,10 @@
                     <template v-slot:middle-content>
                         <div class="collection-elements-controls">
                             <b-button class="reset" :title="titleUndoButton" @click="reset">
-                                <font-awesome-icon icon="undo" />
+                                <FontAwesomeIcon icon="undo" />
                             </b-button>
                             <b-button class="sort-items" :title="titleSortButton" @click="sortByName">
-                                <font-awesome-icon icon="sort-alpha-down" />
+                                <FontAwesomeIcon icon="sort-alpha-down" />
                             </b-button>
                             <a
                                 v-if="atLeastOneDatasetIsSelected"
@@ -179,7 +179,7 @@
                                     ?
                                 </b-alert>
                             </div>
-                            <dataset-collection-element-view
+                            <DatasetCollectionElementView
                                 v-for="element in returnWorkingElements"
                                 v-else
                                 :key="element.id"

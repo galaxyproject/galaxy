@@ -12,7 +12,7 @@
                     @click.prevent.stop="onError">
                     <span class="fa fa-bug" />
                 </b-button>
-                <dataset-download v-if="showDownloads" :item="item" @on-download="onDownload" />
+                <DatasetDownload v-if="showDownloads" :item="item" @on-download="onDownload" />
                 <b-button
                     v-if="showDownloads"
                     class="px-1"

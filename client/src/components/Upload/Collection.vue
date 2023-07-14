@@ -39,15 +39,15 @@
             </select2>
         </template>
         <template v-slot:buttons>
-            <b-button
+            <BButton
                 id="btn-close"
                 ref="btnClose"
                 class="ui-button-default"
                 :title="btnCloseTitle"
                 @click="$emit('dismiss')">
                 {{ btnCloseTitle | localize }}
-            </b-button>
-            <b-button
+            </BButton>
+            <BButton
                 id="btn-reset"
                 ref="btnReset"
                 class="ui-button-default"
@@ -55,8 +55,8 @@
                 :disabled="!enableReset"
                 @click="_eventReset">
                 {{ btnResetTitle }}
-            </b-button>
-            <b-button
+            </BButton>
+            <BButton
                 id="btn-stop"
                 ref="btnStop"
                 class="ui-button-default"
@@ -64,8 +64,8 @@
                 :disabled="counterRunning == 0"
                 @click="_eventStop">
                 {{ btnStopTitle }}
-            </b-button>
-            <b-button
+            </BButton>
+            <BButton
                 id="btn-build"
                 ref="btnBuild"
                 class="ui-button-default"
@@ -74,8 +74,8 @@
                 :variant="enableBuild ? 'primary' : ''"
                 @click="_eventBuild">
                 {{ btnBuildTitle }}
-            </b-button>
-            <b-button
+            </BButton>
+            <BButton
                 id="btn-start"
                 ref="btnStart"
                 class="ui-button-default"
@@ -84,8 +84,8 @@
                 :variant="enableStart ? 'primary' : ''"
                 @click="_eventStart">
                 {{ btnStartTitle }}
-            </b-button>
-            <b-button
+            </BButton>
+            <BButton
                 id="btn-new"
                 ref="btnCreate"
                 class="ui-button-default"
@@ -93,8 +93,8 @@
                 :disabled="!enableSources"
                 @click="_eventCreate()">
                 <span class="fa fa-edit"></span>{{ btnCreateTitle }}
-            </b-button>
-            <b-button
+            </BButton>
+            <BButton
                 v-if="remoteFiles"
                 id="btn-ftp"
                 ref="btnFtp"
@@ -102,8 +102,8 @@
                 :disabled="!enableSources"
                 @click="_eventRemoteFiles">
                 <span class="fa fa-folder-open-o"></span>{{ btnFilesTitle }}
-            </b-button>
-            <b-button
+            </BButton>
+            <BButton
                 id="btn-local"
                 ref="btnLocal"
                 class="ui-button-default"
@@ -111,7 +111,7 @@
                 :disabled="!enableSources"
                 @click="uploadSelect">
                 <span class="fa fa-laptop"></span>{{ btnLocalTitle }}
-            </b-button>
+            </BButton>
         </template>
     </upload-wrapper>
 </template>
