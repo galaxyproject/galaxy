@@ -14,6 +14,7 @@ from sqlalchemy.ext.mutable import Mutable
 from sqlalchemy.inspection import inspect
 from sqlalchemy.types import (
     CHAR,
+    JSON,
     LargeBinary,
     String,
     TypeDecorator,
@@ -94,26 +95,32 @@ class JSONType(TypeDecorator):
     cache_ok = True
 
     def process_bind_param(self, value, dialect):
-        if value is not None:
+        if value is not None and dialect.name in ("postgresql", "mysql"):
             value = json_encoder.encode(value).encode()
         return value
 
     def process_result_value(self, value, dialect):
-        if value is not None:
+        if value is not None and dialect.name == "postgresql":
             value = json_decoder.decode(unicodify(_sniffnfix_pg9_hex(value)))
         return value
 
     def load_dialect_impl(self, dialect):
         if dialect.name == "mysql":
-            return dialect.type_descriptor(sqlalchemy.dialects.mysql.MEDIUMBLOB)
-        else:
-            return self.impl
+            self.impl = dialect.type_descriptor(sqlalchemy.dialects.mysql.MEDIUMBLOB)
+        elif dialect.name == "sqlite":
+            self.impl = dialect.type_descriptor(sqlalchemy.dialects.sqlite.JSON)
+        return self.impl
 
     def copy_value(self, value):
         return copy.deepcopy(value)
 
     def compare_values(self, x, y):
         return x == y
+
+    @property
+    def comparator_factory(self):
+        """express comparison behavior in terms of the base type"""
+        return sqlalchemy.dialects.sqlite.JSON.comparator_factory
 
 
 class MutableJSONType(JSONType):

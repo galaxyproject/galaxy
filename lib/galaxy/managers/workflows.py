@@ -27,9 +27,12 @@ from sqlalchemy import (
     and_,
     desc,
     false,
+    func,
     or_,
+    select,
     true,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import (
     aliased,
     joinedload,
@@ -319,6 +322,31 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
             with transaction(trans.sa_session):
                 trans.sa_session.commit()
             return stored_workflow
+
+    def get_workflow_by_trs_id_and_version(self, sa_session, trs_id: str, trs_version: str, user_id: int) -> Optional[model.Workflow]:
+        def to_json(column, keys: List[str]):
+            if sa_session.bind.dialect.name == "postgresql":
+                cast = func.cast(func.convert_from(column, "UTF8"), JSONB)
+                for key in keys:
+                    cast = cast.__getitem__(key)
+                return cast.astext
+            else:
+                for key in keys:
+                    column = column.__getitem__(key)
+                return column
+
+        return sa_session.execute(
+            select([model.Workflow])
+            .join(model.StoredWorkflow, model.Workflow.stored_workflow_id == model.StoredWorkflow.id)
+            .filter(
+                and_(
+                    to_json(model.Workflow.source_metadata, ["trs_tool_id"]) == trs_id,
+                    to_json(model.Workflow.source_metadata, ["trs_version_id"]) == trs_version,
+                    model.StoredWorkflow.user_id == user_id,
+                    model.StoredWorkflow.latest_workflow_id == model.Workflow.id,
+                )
+            )
+        ).scalar()
 
     def get_owned_workflow(self, trans, encoded_workflow_id):
         """Get a workflow (non-stored) from a encoded workflow id and

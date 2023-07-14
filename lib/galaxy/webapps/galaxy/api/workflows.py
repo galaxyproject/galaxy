@@ -289,6 +289,16 @@ class WorkflowsAPIController(
                         trs_tool_id = payload.get("trs_tool_id")
                         trs_version_id = payload.get("trs_version_id")
 
+                    workflow = self.workflow_manager.get_workflow_by_trs_id_and_version(
+                        trans.sa_session, trs_tool_id, trs_version_id, trans.user.id
+                    )
+                    if workflow and workflow.stored_workflow:
+                        return self.__import_response(
+                            trans,
+                            workflow,
+                            workflow.stored_workflow.id,
+                            message=f"Workflow '{escape(workflow.name)}' already imported.",
+                        )
                     archive_data = server.get_version_descriptor(trs_tool_id, trs_version_id)
                 else:
                     try:
@@ -622,6 +632,23 @@ class WorkflowsAPIController(
     #
     # -- Helper methods --
     #
+    def __import_response(self, trans: GalaxyWebTransaction, workflow: model.Workflow, workflow_id: str, message: str):
+        response = {
+            "message": message,
+            "status": "success",
+            "id": trans.security.encode_id(workflow_id),
+        }
+        if workflow.has_errors:
+            response["message"] = "Imported, but some steps in this workflow have validation errors."
+            response["status"] = "error"
+        elif len(workflow.steps) == 0:
+            response["message"] = "Imported, but this workflow has no steps."
+            response["status"] = "error"
+        elif workflow.has_cycles:
+            response["message"] = "Imported, but this workflow contains cycles."
+            response["status"] = "error"
+        return response
+
     def __api_import_from_archive(self, trans: GalaxyWebTransaction, archive_data, source=None, payload=None):
         payload = payload or {}
         try:
@@ -640,22 +667,12 @@ class WorkflowsAPIController(
         )
         workflow_id = workflow.id
         workflow = workflow.latest_workflow
-
-        response = {
-            "message": f"Workflow '{escape(workflow.name)}' imported successfully.",
-            "status": "success",
-            "id": trans.security.encode_id(workflow_id),
-        }
-        if workflow.has_errors:
-            response["message"] = "Imported, but some steps in this workflow have validation errors."
-            response["status"] = "error"
-        elif len(workflow.steps) == 0:
-            response["message"] = "Imported, but this workflow has no steps."
-            response["status"] = "error"
-        elif workflow.has_cycles:
-            response["message"] = "Imported, but this workflow contains cycles."
-            response["status"] = "error"
-        return response
+        self.__import_response(
+            trans,
+            workflow,
+            workflow_id=workflow_id,
+            message=f"Workflow '{escape(workflow.name)}' imported successfully.",
+        )
 
     def __api_import_new_workflow(self, trans: GalaxyWebTransaction, payload, **kwd):
         data = payload["workflow"]
