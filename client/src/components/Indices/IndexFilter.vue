@@ -2,7 +2,7 @@
     <span>
         <BInputGroup>
             <DebouncedInput v-slot="{ value: debouncedValue, input }" v-model="localFilter" :delay="debounceDelay">
-                <b-form-input
+                <GInput
                     :id="id"
                     name="query"
                     :value="debouncedValue"
@@ -44,6 +44,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestion, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BInputGroup, BInputGroupAppend, BModal } from "bootstrap-vue";
+import GInput from "component-library/GInput";
 import DebouncedInput from "components/DebouncedInput";
 
 library.add(faTimes, faQuestion);
@@ -59,6 +60,7 @@ export default {
         BButton,
         BModal,
         FontAwesomeIcon,
+        GInput,
     },
     props: {
         id: {

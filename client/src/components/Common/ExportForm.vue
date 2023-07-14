@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { BButton, BCol, BFormGroup, BFormInput, BRow } from "bootstrap-vue";
+import { BButton, BCol, BFormGroup, BRow } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import localize from "@/utils/localization";
 
+import GInput from "@/component-library/GInput.vue";
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";
 
 interface Props {
@@ -46,7 +47,7 @@ const doExport = () => {
             <FilesInput id="directory" v-model="directory" mode="directory" :require-writable="true" />
         </BFormGroup>
         <BFormGroup id="fieldset-name" label-for="name" :description="nameDescription" class="mt-3">
-            <BFormInput id="name" v-model="name" :placeholder="namePlaceholder" required />
+            <GInput id="name" v-model="name" :placeholder="namePlaceholder" required />
         </BFormGroup>
         <BRow align-h="end">
             <BCol>

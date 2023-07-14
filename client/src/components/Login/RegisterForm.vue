@@ -35,24 +35,24 @@
                             accordion="registration_acc">
                             <b-card-body>
                                 <b-form-group :label="labelEmailAddress" label-for="register-form-email">
-                                    <b-form-input id="register-form-email" v-model="email" name="email" type="text" />
+                                    <GInput id="register-form-email" v-model="email" name="email" type="text" />
                                 </b-form-group>
                                 <b-form-group :label="labelPassword" label-for="register-form-password">
-                                    <b-form-input
+                                    <GInput
                                         id="register-form-password"
                                         v-model="password"
                                         name="password"
                                         type="password" />
                                 </b-form-group>
                                 <b-form-group :label="labelConfirmPassword" label-for="register-form-confirm">
-                                    <b-form-input
+                                    <GInput
                                         id="register-form-confirm"
                                         v-model="confirm"
                                         name="confirm"
                                         type="password" />
                                 </b-form-group>
                                 <b-form-group :label="labelPublicName" label-for="register-form-username">
-                                    <b-form-input
+                                    <GInput
                                         id="register-form-username"
                                         v-model="username"
                                         name="username"
@@ -102,6 +102,7 @@
 <script>
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
+import GInput from "component-library/GInput";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin";
 import _l from "utils/localization";
 import { withPrefix } from "utils/redirect";
@@ -115,6 +116,7 @@ export default {
     components: {
         GAlert,
         ExternalLogin,
+        GInput,
     },
     props: {
         enableOidc: {

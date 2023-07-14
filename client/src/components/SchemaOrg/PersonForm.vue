@@ -6,12 +6,11 @@
             <span v-b-tooltip.hover title="Hide Attribute"
                 ><FontAwesomeIcon icon="eye-slash" @click="onHide(attribute.key)"
             /></span>
-            <b-form-input
+            <GInput
                 :id="attribute.key"
                 v-model="currentValues[attribute.key]"
                 :placeholder="'Enter ' + attribute.placeholder + '.'"
-                :type="attribute.type">
-            </b-form-input>
+                :type="attribute.type" />
         </div>
         <div role="group" class="form-group">
             <b-form-select v-model="addAttribute" :options="addAttributes" size="sm"></b-form-select>
@@ -25,6 +24,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEyeSlash, faLink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import GInput from "component-library/GInput";
 
 import ThingFormMixin from "./ThingFormMixin";
 
@@ -51,6 +51,7 @@ library.add(faEyeSlash, faLink);
 export default {
     components: {
         FontAwesomeIcon,
+        GInput,
     },
     mixins: [ThingFormMixin],
     props: {

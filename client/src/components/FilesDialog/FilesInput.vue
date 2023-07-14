@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { BFormInput } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { filesDialog } from "@/utils/data";
+
+import GInput from "@/component-library/GInput.vue";
 
 interface Props {
     value: string;
@@ -46,5 +47,5 @@ const placeholder = `Click to select ${props.mode}`;
 </script>
 
 <template>
-    <BFormInput v-model="currentValue" class="directory-form-input" :placeholder="placeholder" @click="selectFile" />
+    <GInput v-model="currentValue" class="directory-form-input" :placeholder="placeholder" @click="selectFile" />
 </template>

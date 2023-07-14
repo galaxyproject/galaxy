@@ -7,6 +7,7 @@ import _l from "@/utils/localization";
 
 import { flattenTools } from "../utilities.js";
 
+import GInput from "@/component-library/GInput.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 
 const router = useRouter();
@@ -158,7 +159,7 @@ function onToggle(toggleAdvanced: boolean) {
             @keyup.enter="onSearch"
             @keyup.esc="onToggle(false)">
             <small class="mt-1">Filter by {{ sectionLabel }}:</small>
-            <b-form-input
+            <GInput
                 v-model="filterSettings['section']"
                 autocomplete="off"
                 size="sm"
@@ -166,11 +167,11 @@ function onToggle(toggleAdvanced: boolean) {
                 list="sectionSelect" />
             <b-form-datalist id="sectionSelect" :options="sectionNames"></b-form-datalist>
             <small class="mt-1">Filter by id:</small>
-            <b-form-input v-model="filterSettings['id']" size="sm" placeholder="any id" />
+            <GInput v-model="filterSettings['id']" size="sm" placeholder="any id" />
             <small class="mt-1">Filter by repository owner:</small>
-            <b-form-input v-model="filterSettings['owner']" size="sm" placeholder="any owner" />
+            <GInput v-model="filterSettings['owner']" size="sm" placeholder="any owner" />
             <small class="mt-1">Filter by help text:</small>
-            <b-form-input v-model="filterSettings['help']" size="sm" placeholder="any help text" />
+            <GInput v-model="filterSettings['help']" size="sm" placeholder="any help text" />
             <div class="mt-3">
                 <b-button class="mr-1 filter-search-btn" size="sm" variant="primary" @click="onSearch">
                     <icon icon="search" />

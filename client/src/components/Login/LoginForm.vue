@@ -20,13 +20,13 @@
                                 <div>
                                     <!-- standard internal galaxy login -->
                                     <b-form-group :label="labelNameAddress" label-for="login-form-name">
-                                        <b-form-input
+                                        <GInput
                                             v-if="!connectExternalProvider"
                                             id="login-form-name"
                                             v-model="login"
                                             name="login"
                                             type="text" />
-                                        <b-form-input
+                                        <GInput
                                             v-else
                                             id="login-form-name"
                                             disabled
@@ -35,7 +35,7 @@
                                             type="text" />
                                     </b-form-group>
                                     <b-form-group :label="labelPassword" label-for="login-form-password">
-                                        <b-form-input
+                                        <GInput
                                             id="login-form-password"
                                             v-model="password"
                                             name="password"
@@ -103,6 +103,7 @@
 <script>
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
+import GInput from "component-library/GInput";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin";
 import _l from "utils/localization";
 import { withPrefix } from "utils/redirect";
@@ -118,6 +119,7 @@ export default {
     components: {
         GAlert,
         ExternalLogin,
+        GInput,
         NewUserConfirmation,
     },
     props: {

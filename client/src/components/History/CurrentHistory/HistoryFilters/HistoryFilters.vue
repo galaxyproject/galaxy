@@ -2,7 +2,7 @@
     <div>
         <b-input-group>
             <DebouncedInput v-slot="{ value, input }" v-model="localFilter">
-                <b-form-input
+                <GInput
                     size="sm"
                     :class="filterText && 'font-weight-bold'"
                     :value="value"
@@ -44,14 +44,14 @@
             @keyup.enter="onSearch"
             @keyup.esc="onToggle">
             <small>Filter by name:</small>
-            <b-form-input v-model="filterSettings['name:']" size="sm" placeholder="any name" />
+            <GInput v-model="filterSettings['name:']" size="sm" placeholder="any name" />
             <small class="mt-1">Filter by extension:</small>
-            <b-form-input v-model="filterSettings['extension:']" size="sm" placeholder="any extension" />
+            <GInput v-model="filterSettings['extension:']" size="sm" placeholder="any extension" />
             <small class="mt-1">Filter by tag:</small>
-            <b-form-input v-model="filterSettings['tag:']" size="sm" placeholder="any tag" />
+            <GInput v-model="filterSettings['tag:']" size="sm" placeholder="any tag" />
             <small class="mt-1">Filter by state:</small>
             <b-input-group>
-                <b-form-input
+                <GInput
                     v-model="filterSettings['state:']"
                     v-b-tooltip.focus.v-danger="hasError('state:')"
                     :class="hasError('state:') && 'ui-input-error'"
@@ -67,9 +67,9 @@
                 <StatesInfo :show-help.sync="showHelp" :exclude-states="excludeStates" @set-filter="onOption" />
             </b-input-group>
             <small>Filter by database:</small>
-            <b-form-input v-model="filterSettings['genome_build:']" size="sm" placeholder="any database" />
+            <GInput v-model="filterSettings['genome_build:']" size="sm" placeholder="any database" />
             <small class="mt-1">Filter by related to item index:</small>
-            <b-form-input
+            <GInput
                 v-model="filterSettings['related:']"
                 v-b-tooltip.focus.v-danger="hasError('related:')"
                 :class="hasError('related:') && 'ui-input-error'"
@@ -78,13 +78,13 @@
             <small class="mt-1">Filter by item index:</small>
             <b-form-group class="m-0">
                 <b-input-group>
-                    <b-form-input
+                    <GInput
                         v-model="filterSettings['hid>']"
                         v-b-tooltip.focus.v-danger="hasError('hid>')"
                         :class="hasError('hid>') && 'ui-input-error'"
                         size="sm"
                         placeholder="index greater" />
-                    <b-form-input
+                    <GInput
                         v-model="filterSettings['hid<']"
                         v-b-tooltip.focus.v-danger="hasError('hid<')"
                         :class="hasError('hid<') && 'ui-input-error'"
@@ -95,7 +95,7 @@
             <small class="mt-1">Filter by creation time:</small>
             <b-form-group class="m-0">
                 <b-input-group>
-                    <b-form-input
+                    <GInput
                         v-model="create_time_gt"
                         v-b-tooltip.focus.v-danger="hasError('create_time>')"
                         :class="hasError('create_time>') && 'ui-input-error'"
@@ -104,7 +104,7 @@
                     <b-input-group-append>
                         <b-form-datepicker v-model="create_time_gt" reset-button button-only size="sm" />
                     </b-input-group-append>
-                    <b-form-input
+                    <GInput
                         v-model="create_time_lt"
                         v-b-tooltip.focus.v-danger="hasError('create_time<')"
                         :class="hasError('create_time<') && 'ui-input-error'"
@@ -131,6 +131,7 @@
 </template>
 
 <script>
+import GInput from "component-library/GInput";
 import DebouncedInput from "components/DebouncedInput";
 import { STATES } from "components/History/Content/model/states";
 import StatesInfo from "components/History/Content/model/StatesInfo";
@@ -141,6 +142,7 @@ import HistoryFiltersDefault from "./HistoryFiltersDefault";
 export default {
     components: {
         DebouncedInput,
+        GInput,
         HistoryFiltersDefault,
         StatesInfo,
     },

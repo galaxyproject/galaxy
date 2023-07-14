@@ -11,7 +11,7 @@
                     <b-col md="6">
                         <b-form-group description="Search for strings or regular expressions">
                             <b-input-group>
-                                <b-form-input
+                                <GInput
                                     v-model="filter"
                                     placeholder="Type to Search"
                                     @keyup.esc.native="filter = ''" />
@@ -74,6 +74,7 @@
 
 <script>
 import axios from "axios";
+import GInput from "component-library/GInput";
 import { getAppRoot } from "onload/loadConfig";
 
 import GAlert from "@/component-library/GAlert.vue";
@@ -81,6 +82,7 @@ import GAlert from "@/component-library/GAlert.vue";
 export default {
     components: {
         GAlert,
+        GInput,
     },
     props: {
         id: {

@@ -29,9 +29,9 @@
             <b-card>
                 <b-form @submit.prevent="newLibrary">
                     <b-input-group class="mb-2 new-row">
-                        <b-form-input v-model="newLibraryForm.name" required :placeholder="titleName" />
-                        <b-form-input v-model="newLibraryForm.description" required :placeholder="titleDescription" />
-                        <b-form-input v-model="newLibraryForm.synopsis" :placeholder="titleSynopsis" />
+                        <GInput v-model="newLibraryForm.name" required :placeholder="titleName" />
+                        <GInput v-model="newLibraryForm.description" required :placeholder="titleDescription" />
+                        <GInput v-model="newLibraryForm.synopsis" :placeholder="titleSynopsis" />
                         <template v-slot:append>
                             <b-button id="save_new_library" type="submit" :title="titleSave">
                                 <FontAwesomeIcon :icon="['far', 'save']" />
@@ -159,7 +159,7 @@
                     <table>
                         <tr>
                             <td class="m-0 p-0">
-                                <b-form-input
+                                <GInput
                                     id="paginationPerPage"
                                     v-model="perPage"
                                     class="pagination-input-field"
@@ -183,6 +183,7 @@
 <script>
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
+import GInput from "component-library/GInput";
 import { initLibrariesIcons } from "components/Libraries/icons";
 import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH, onError } from "components/Libraries/library-utils";
 import LibraryEditField from "components/Libraries/LibraryEditField";
@@ -208,6 +209,7 @@ export default {
     components: {
         GLink,
         FontAwesomeIcon,
+        GInput,
         LibraryEditField,
         SearchField,
     },

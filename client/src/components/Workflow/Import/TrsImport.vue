@@ -14,6 +14,7 @@ import TrsServerSelection from "./TrsServerSelection.vue";
 import TrsTool from "./TrsTool.vue";
 import TrsUrlImport from "./TrsUrlImport.vue";
 import GAlert from "@/component-library/GAlert.vue";
+import GInput from "@/component-library/GInput.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const props = defineProps({
@@ -174,7 +175,7 @@ async function importVersionFromUrl(url: string, isRunFormRedirect = false) {
             <div v-else>
                 <div class="my-3">
                     <b-form-group label="TRS ID:" label-for="trs-id-input" label-class="font-weight-bold">
-                        <b-form-input id="trs-id-input" v-model="toolId" debounce="500" />
+                        <GInput id="trs-id-input" v-model="toolId" debounce="500" />
                     </b-form-group>
                 </div>
                 <div>

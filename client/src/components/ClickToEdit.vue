@@ -14,7 +14,7 @@
                 :state-validator="stateValidator">
                 <DebouncedInput v-model="localValue" :delay="debounceDelay">
                     <template v-slot="{ value: debouncedValue, input }">
-                        <b-form-input
+                        <GInput
                             ref="clickToEditInput"
                             :value="debouncedValue"
                             :placeholder="placeholder"
@@ -29,6 +29,8 @@
 </template>
 
 <script>
+import GInput from "component-library/GInput";
+
 import DebouncedInput from "./DebouncedInput";
 
 const defaultStateValidator = (val, origVal) => {
@@ -41,6 +43,7 @@ const defaultStateValidator = (val, origVal) => {
 export default {
     components: {
         DebouncedInput,
+        GInput,
     },
     props: {
         value: { type: String, required: true },

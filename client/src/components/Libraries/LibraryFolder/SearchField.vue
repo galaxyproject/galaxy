@@ -1,6 +1,6 @@
 <template>
     <b-input-group size="sm">
-        <b-form-input
+        <GInput
             id="filterInput"
             v-model="search"
             class="mr-1"
@@ -11,10 +11,14 @@
 </template>
 
 <script>
+import GInput from "component-library/GInput";
 import _l from "utils/localization";
 
 export default {
     name: "SearchField",
+    components: {
+        GInput,
+    },
     props: {
         typingDelay: {
             type: Number,

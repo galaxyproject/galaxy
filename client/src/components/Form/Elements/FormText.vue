@@ -9,7 +9,7 @@
                 :readonly="readonly"
                 :placeholder="placeholder"
                 :style="style" />
-            <b-form-input
+            <GInput
                 v-else
                 :id="id"
                 v-model="currentValue"
@@ -27,7 +27,12 @@
 </template>
 
 <script>
+import GInput from "component-library/GInput";
+
 export default {
+    components: {
+        GInput,
+    },
     props: {
         value: {
             // String; Array for multiple

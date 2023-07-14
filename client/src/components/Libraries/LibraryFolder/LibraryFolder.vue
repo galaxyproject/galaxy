@@ -241,7 +241,7 @@
                     <table>
                         <tr>
                             <td class="m-0 p-0">
-                                <b-form-input
+                                <GInput
                                     id="paginationPerPage"
                                     v-model="perPage"
                                     class="pagination-input-field"
@@ -262,6 +262,7 @@
 <script>
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
+import GInput from "component-library/GInput";
 import { initFolderTableIcons } from "components/Libraries/icons";
 import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH } from "components/Libraries/library-utils";
 import UtcDate from "components/UtcDate";
@@ -301,6 +302,7 @@ export default {
         FolderTopBar,
         UtcDate,
         FontAwesomeIcon,
+        GInput,
     },
     beforeRouteUpdate(to, from, next) {
         this.getFolder(to.params.folder_id, to.params.page);

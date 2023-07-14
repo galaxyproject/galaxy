@@ -60,10 +60,10 @@
 
                     <b-form @submit.prevent="save">
                         <b-form-group label="Name" description="Specify a build name, e.g. Hamster." label-for="name">
-                            <b-form-input id="name" v-model="form.name" tour_id="name" required />
+                            <GInput id="name" v-model="form.name" tour_id="name" required />
                         </b-form-group>
                         <b-form-group label="Key" description="Specify a build key, e.g. hamster_v1." label-for="id">
-                            <b-form-input id="id" v-model="form.id" tour_id="id" required />
+                            <GInput id="id" v-model="form.id" tour_id="id" required />
                         </b-form-group>
                         <b-form-group label="Definition" description="Provide the data source." label-for="type">
                             <b-form-select
@@ -152,6 +152,7 @@ import "vue-multiselect/dist/vue-multiselect.min.css";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
+import GInput from "component-library/GInput";
 import Vue from "vue";
 import Multiselect from "vue-multiselect";
 
@@ -163,6 +164,7 @@ export default {
     components: {
         GAlert,
         Multiselect,
+        GInput,
     },
     data() {
         const Galaxy = getGalaxyInstance();

@@ -1,4 +1,5 @@
 <script setup>
+import GInput from "component-library/GInput";
 import Heading from "components/Common/Heading";
 import DebouncedInput from "components/DebouncedInput";
 import LoadingSpan from "components/LoadingSpan";
@@ -117,7 +118,7 @@ watch([filterText, sortBy, sortDesc], () => {
         <div v-else>
             <b-input-group class="mb-2">
                 <DebouncedInput v-slot="{ value, input }" v-model="localFilter">
-                    <b-form-input
+                    <GInput
                         id="published-histories-filter"
                         size="sm"
                         :class="filterText && 'font-weight-bold'"
@@ -153,15 +154,15 @@ watch([filterText, sortBy, sortDesc], () => {
 
             <div v-if="showAdvanced" class="mt-2" @keyup.esc="onToggle" @keyup.enter="onSearch">
                 <small>Filter by name:</small>
-                <b-form-input
+                <GInput
                     id="published-histories-advanced-filter-name"
                     v-model="filterSettings['name:']"
                     size="sm"
                     placeholder="any name" />
                 <small class="mt-1">Filter by annotation:</small>
-                <b-form-input v-model="filterSettings['annotation:']" size="sm" placeholder="any annotation" />
+                <GInput v-model="filterSettings['annotation:']" size="sm" placeholder="any annotation" />
                 <small class="mt-1">Filter by community tag:</small>
-                <b-form-input
+                <GInput
                     id="published-histories-advanced-filter-tag"
                     v-model="filterSettings['tag:']"
                     size="sm"

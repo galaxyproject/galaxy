@@ -6,7 +6,7 @@
         <b-row align-v="center">
             <b-col :sm="isRangeValid ? defaultInputSizeWithSlider : false">
                 <!-- regular dot and dot on numpad have different codes -->
-                <b-form-input
+                <GInput
                     v-model="currentValue"
                     :no-wheel="true"
                     :step="step"
@@ -17,18 +17,20 @@
                     @keydown.110.capture="onFloatInput" />
             </b-col>
             <b-col v-if="isRangeValid" class="pl-0">
-                <b-form-input v-model="currentValue" :min="min" :max="max" :step="step" type="range" />
+                <GInput v-model="currentValue" :min="min" :max="max" :step="step" type="range" />
             </b-col>
         </b-row>
     </div>
 </template>
 
 <script>
-import GAlert from "@/component-library/GAlert.vue";
+import GAlert from "component-library/GAlert";
+import GInput from "component-library/GInput";
 
 export default {
     components: {
         GAlert,
+        GInput,
     },
     props: {
         value: {

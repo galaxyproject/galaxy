@@ -54,7 +54,7 @@ describe("HistoryFilters", () => {
 
         // only add name filter in the advanced menu
         let filterName = wrapper.find("[placeholder='any name']");
-        if (filterName.vm && filterName.props().type == "text") {
+        if (filterName.vm && filterName.attributes().type == "text") {
             filterName.setValue(filterInputs["[placeholder='any name']"]);
         }
 
@@ -75,7 +75,7 @@ describe("HistoryFilters", () => {
         // Now add filters in all input fields in the advanced menu
         Object.entries(filterInputs).forEach(([selector, value]) => {
             const filterInput = wrapper.find(selector);
-            if (filterInput.vm && filterInput.props().type == "text") {
+            if (filterInput.vm && filterInput.attributes().type == "text") {
                 filterInput.setValue(value);
             }
         });
@@ -101,7 +101,7 @@ describe("HistoryFilters", () => {
 
         // find name field again (could be destroyed beacause of toggling out)
         filterName = wrapper.find("[placeholder='any name']");
-        if (filterName.vm && filterName.props().type == "text") {
+        if (filterName.vm && filterName.attributes().type == "text") {
             filterName.setValue("newnamefilter");
         }
 

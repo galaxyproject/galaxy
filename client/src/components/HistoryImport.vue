@@ -56,7 +56,7 @@
                         </ExternalLink>
                     </GAlert>
 
-                    <b-form-input v-model="sourceURL" type="url" />
+                    <GInput v-model="sourceURL" type="url" />
                 </b-form-group>
                 <b-form-group v-else-if="importType === 'upload'" label="Archived History File">
                     <b-form-file v-model="sourceFile" />
@@ -81,6 +81,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { refDebounced } from "@vueuse/core";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
+import GInput from "component-library/GInput";
 import JobError from "components/JobInformation/JobError";
 import { waitOnJob } from "components/JobStates/wait";
 import LoadingSpan from "components/LoadingSpan";
@@ -103,6 +104,7 @@ Vue.use(BootstrapVue);
 export default {
     components: {
         GAlert,
+        GInput,
         FilesInput,
         FontAwesomeIcon,
         JobError,

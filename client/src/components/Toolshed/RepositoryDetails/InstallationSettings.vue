@@ -13,7 +13,7 @@
             v-if="requiresPanel"
             label="Target Section:"
             description="Choose an existing tool panel section or create a new section to contain the installed tools (optional).">
-            <b-form-input v-model="toolSection" list="sectionSelect" />
+            <GInput v-model="toolSection" list="sectionSelect" />
             <datalist id="sectionSelect">
                 <option v-for="section in toolSections" :key="section.id">
                     {{ section.name }}
@@ -46,10 +46,12 @@
     </b-modal>
 </template>
 <script>
-import GLink from "@/component-library/GLink.vue";
+import GInput from "component-library/GInput";
+import GLink from "component-library/GLink";
 
 export default {
     components: {
+        GInput,
         GLink,
     },
     props: {

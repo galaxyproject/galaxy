@@ -2,7 +2,7 @@
     <b-form :validated="credential.isValid">
         <!-- user label -->
         <b-form-group label="Description" label-for="credentialDescription" label-cols-lg="3">
-            <b-form-input
+            <GInput
                 id="credentialDescription"
                 v-model="credential.description"
                 :state="credential.fieldValid('description')"
@@ -48,6 +48,8 @@
 </template>
 
 <script>
+import GInput from "component-library/GInput";
+
 import CredentialConfig from "./CredentialConfig";
 import { Credential, ResourceProviders } from "./model";
 import { getIdentityProviders } from "./model/service";
@@ -55,6 +57,7 @@ import { getIdentityProviders } from "./model/service";
 export default {
     components: {
         CredentialConfig,
+        GInput,
     },
     props: {
         value: { type: Credential, required: true },

@@ -59,7 +59,7 @@ There are a number of ways text gets used in the codebase, especially the new Vu
 
    .. code-block:: html
 
-       <b-form-input v-model="newLibraryForm.synopsis" placeholder="Synopsis of the library" />
+       <GInput v-model="newLibraryForm.synopsis" placeholder="Synopsis of the library" />
 
 And each of these have different ways of being updated to support translations:
 
@@ -81,8 +81,8 @@ And each of these have different ways of being updated to support translations:
 
    .. code-block:: diff
 
-       -<b-form-input v-model="newLibraryForm.synopsis" placeholder="Synopsis of the library" />
-       +<b-form-input v-model="newLibraryForm.synopsis" :placeholder="titleSynopsis" />
+       -<GInput v-model="newLibraryForm.synopsis" placeholder="Synopsis of the library" />
+       +<GInput v-model="newLibraryForm.synopsis" :placeholder="titleSynopsis" />
 
 The first one is the easiest, we can just add the ``v-localize`` tag and we're done, the library knows how to translate it. The second two are a bit more complicated. You'll notice we introduced a new variable in each (``titleSomeText``, ``titleSynopsis``). Because we can't translate the terms directly there, we need to put the translated text into a variable.
 

@@ -8,6 +8,7 @@ import { withPrefix } from "@/utils/redirect";
 import { getRedirectOnImportPath } from "../redirectPath";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GInput from "@/component-library/GInput.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const loading = ref(false);
@@ -79,7 +80,7 @@ async function submit(ev: SubmitEvent) {
     <b-form class="mt-4 workflow-import-file" @submit="submit">
         <h2 class="h-sm">Import from a Galaxy workflow export URL or a workflow file</h2>
         <b-form-group label="Archived Workflow URL">
-            <b-form-input
+            <GInput
                 id="workflow-import-url-input"
                 v-model="sourceURL"
                 aria-label="Workflow Import URL"

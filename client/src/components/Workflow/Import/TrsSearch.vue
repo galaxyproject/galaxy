@@ -13,6 +13,7 @@ import type { TrsSelection } from "./types";
 import TrsServerSelection from "./TrsServerSelection.vue";
 import TrsTool from "./TrsTool.vue";
 import GAlert from "@/component-library/GAlert.vue";
+import GInput from "@/component-library/GInput.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 type TrsSearchData = {
@@ -135,7 +136,7 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
 
         <div>
             <b-input-group class="mb-3">
-                <b-form-input
+                <GInput
                     id="trs-search-query"
                     v-model="query"
                     debounce="500"

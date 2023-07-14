@@ -9,7 +9,6 @@ import {
     BButton,
     BButtonGroup,
     BFormGroup,
-    BFormInput,
     BListGroup,
     BListGroupItem,
     BModal,
@@ -26,6 +25,7 @@ import Filtering, { contains, expandNameTag } from "@/utils/filtering";
 import localize from "@/utils/localization";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GInput from "@/component-library/GInput.vue";
 import Heading from "@/components/Common/Heading.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import UtcDate from "@/components/UtcDate.vue";
@@ -222,7 +222,7 @@ async function loadMore(noScroll = false) {
             </template>
 
             <BFormGroup :description="localize('Filter histories')">
-                <BFormInput v-model="filter" type="search" debounce="400" :placeholder="localize('Search Filter')" />
+                <GInput v-model="filter" type="search" debounce="400" :placeholder="localize('Search Filter')" />
             </BFormGroup>
 
             <BBadge v-if="filter && !validFilter" class="alert-danger w-100">Search string too short!</BBadge>

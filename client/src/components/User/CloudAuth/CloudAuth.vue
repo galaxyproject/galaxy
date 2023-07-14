@@ -51,7 +51,7 @@
             <transition name="fade">
                 <hgroup v-if="showFilter">
                     <b-form-group :description="filterDescription">
-                        <b-form-input v-model="filter" type="text" placeholder="Filter" />
+                        <GInput v-model="filter" type="text" placeholder="Filter" />
                     </b-form-group>
                 </hgroup>
             </transition>
@@ -91,6 +91,7 @@
 
 <script>
 import BootstrapVue from "bootstrap-vue";
+import GInput from "component-library/GInput";
 import Vue from "vue";
 
 import CloudAuthItem from "./CloudAuthItem";
@@ -105,6 +106,7 @@ export default {
     components: {
         CloudAuthItem,
         GAlert,
+        GInput,
     },
     data() {
         return {

@@ -5,10 +5,10 @@
         </GAlert>
         <b-card header="Change your password">
             <b-form-group v-if="expiredUser" label="Current Password">
-                <b-form-input v-model="current" type="password" />
+                <GInput v-model="current" type="password" />
             </b-form-group>
-            <b-form-group label="New Password"> <b-form-input v-model="password" type="password" /> </b-form-group>
-            <b-form-group label="Confirm password"> <b-form-input v-model="confirm" type="password" /> </b-form-group>
+            <b-form-group label="New Password"> <GInput v-model="password" type="password" /> </b-form-group>
+            <b-form-group label="Confirm password"> <GInput v-model="confirm" type="password" /> </b-form-group>
             <b-button type="submit">Save new password</b-button>
         </b-card>
     </b-form>
@@ -16,6 +16,7 @@
 <script>
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
+import GInput from "component-library/GInput";
 import { withPrefix } from "utils/redirect";
 import Vue from "vue";
 
@@ -26,6 +27,7 @@ Vue.use(BootstrapVue);
 export default {
     components: {
         GAlert,
+        GInput,
     },
     props: {
         token: {

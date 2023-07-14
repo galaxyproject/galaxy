@@ -5,6 +5,8 @@ import { useRouter } from "vue-router/composables";
 import { createWorkflowQuery } from "@/components/Panels/utilities";
 import _l from "@/utils/localization";
 
+import GInput from "@/component-library/GInput.vue";
+
 const router = useRouter();
 
 type FilterSettings = {
@@ -37,9 +39,9 @@ function onSearch() {
     <div>
         <div description="advanced workflow filters" @keyup.enter="onSearch">
             <small class="mt-1">Filter by name:</small>
-            <b-form-input v-model="filterSettings.name" size="sm" placeholder="any name" />
+            <GInput v-model="filterSettings.name" size="sm" placeholder="any name" />
             <small class="mt-1">Filter by tag:</small>
-            <b-form-input v-model="filterSettings.tag" size="sm" placeholder="any tag" />
+            <GInput v-model="filterSettings.tag" size="sm" placeholder="any tag" />
             <small>Search published workflows:</small>
             <b-form-group class="m-0">
                 <b-form-radio-group

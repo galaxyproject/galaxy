@@ -28,7 +28,7 @@
                         label="Enter your user email for this account as confirmation."
                         label-for="Email"
                         invalid-feedback="Incorrect email">
-                        <b-form-input id="name-input" v-model="name" :state="nameState" required></b-form-input>
+                        <GInput id="name-input" v-model="name" :state="nameState" required />
                     </b-form-group>
                 </b-form>
             </b-modal>
@@ -39,6 +39,7 @@
 <script>
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
+import GInput from "component-library/GInput";
 import { userLogoutClient } from "utils/logout";
 import { withPrefix } from "utils/redirect";
 import Vue from "vue";
@@ -50,6 +51,7 @@ Vue.use(BootstrapVue);
 export default {
     components: {
         GAlert,
+        GInput,
     },
     props: {
         userId: {

@@ -20,7 +20,7 @@
             cancel-title="Cancel"
             @ok="doSaveAs">
             <b-form-group label="Name">
-                <b-form-input v-model="saveAsName" />
+                <GInput v-model="saveAsName" />
             </b-form-group>
             <b-form-group label="Annotation">
                 <b-form-textarea v-model="saveAsAnnotation" />
@@ -184,6 +184,7 @@ import WorkflowOptions from "./Options.vue";
 import RefactorConfirmationModal from "./RefactorConfirmationModal.vue";
 import StateUpgradeModal from "./StateUpgradeModal.vue";
 import WorkflowGraph from "./WorkflowGraph.vue";
+import GInput from "@/component-library/GInput.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import ProviderAwareToolBoxWorkflow from "@/components/Panels/ProviderAwareToolBoxWorkflow.vue";
@@ -198,6 +199,7 @@ export default {
         ProviderAwareToolBoxWorkflow,
         FormDefault,
         FormTool,
+        GInput,
         WorkflowOptions,
         WorkflowAttributes,
         WorkflowLint,

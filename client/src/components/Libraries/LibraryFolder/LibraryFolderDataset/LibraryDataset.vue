@@ -72,7 +72,7 @@
             </template>
             <template v-slot:cell(value)="row">
                 <div v-if="isEditMode">
-                    <b-form-input
+                    <GInput
                         v-if="row.item.name === fieldTitles.name"
                         v-model="modifiedDataset.name"
                         :value="row.item.value" />
@@ -96,11 +96,11 @@
                             :current-item-id="dataset.genome_build"
                             @update:selected-item="onSelectedDbKey" />
                     </DbKeyProvider>
-                    <b-form-input
+                    <GInput
                         v-else-if="row.item.name === fieldTitles.message"
                         v-model="modifiedDataset.message"
                         :value="row.item.value" />
-                    <b-form-input
+                    <GInput
                         v-else-if="row.item.name === fieldTitles.misc_info"
                         v-model="modifiedDataset.misc_info"
                         :value="row.item.value" />
@@ -132,6 +132,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faSave } from "@fortawesome/free-regular-svg-icons";
 import { faBook, faDownload, faPencilAlt, faRedo, faTimes, faUsers } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import GInput from "component-library/GInput";
 import CopyToClipboard from "components/CopyToClipboard";
 import { buildFields } from "components/Libraries/library-utils";
 import LibraryBreadcrumb from "components/Libraries/LibraryFolder/LibraryBreadcrumb";
@@ -155,6 +156,7 @@ export default {
         FontAwesomeIcon,
         DbKeyProvider,
         DatatypesProvider,
+        GInput,
         SingleItemSelector,
     },
     props: {

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 
+import GInput from "@/component-library/GInput.vue";
+
 const props = defineProps({
     queryTrsUrl: {
         type: String,
@@ -37,7 +39,7 @@ if (trsUrl.value) {
     <b-form class="mt-4" @submit="submit">
         <h2 class="h-sm">alternatively, provide a TRS URL directly</h2>
         <b-form-group label="TRS URL:" label-class="font-weight-bold">
-            <b-form-input id="trs-import-url-input" v-model="trsUrl" aria-label="TRS URL" type="url" />
+            <GInput id="trs-import-url-input" v-model="trsUrl" aria-label="TRS URL" type="url" />
             If the workflow is accessible via a TRS URL, enter the URL above and click Import.
         </b-form-group>
         <b-button

@@ -11,6 +11,7 @@ import localize from "@/utils/localization";
 
 import MultipleViewList from "./MultipleViewList.vue";
 import GAlert from "@/component-library/GAlert.vue";
+import GInput from "@/component-library/GInput.vue";
 import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -78,7 +79,7 @@ function updateFilter(newFilter: string) {
         </GAlert>
         <div v-else-if="histories.length" class="multi-history-panel d-flex flex-column h-100">
             <b-input-group class="w-100">
-                <b-form-input
+                <GInput
                     v-model="filter"
                     size="sm"
                     debounce="500"

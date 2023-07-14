@@ -63,7 +63,7 @@ describe("ToolSearch", () => {
         // Now add remaining filters (other than name) in the advanced menu
         Object.entries(filterInputs).forEach(([selector, value]) => {
             const filterInput = wrapper.find(selector);
-            if (filterInput.vm && filterInput.props().type == "text") {
+            if (filterInput.vm && filterInput.attributes().type == "text") {
                 filterInput.setValue(value);
             }
         });

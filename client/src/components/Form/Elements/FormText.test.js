@@ -57,14 +57,14 @@ describe("FormText", () => {
         const v = "something";
         const wrapper = await mountFormText({ value: v });
         const el = wrapper.find("input");
-        expect(el.props("value")).toEqual(v);
+        expect(el.attributes("value")).toEqual(v);
     });
 
     it("should be able to accept an array as value", async () => {
         const v = ["field_1", "field_2", "field_3"];
         const wrapper = await mountFormText({ value: v });
         const el = wrapper.find("input");
-        expect(el.props("value")).toEqual("field_1");
+        expect(el.attributes("value")).toEqual("field_1");
         await wrapper.setProps({ multiple: true });
         const elMultiple = wrapper.find("textarea");
         expect(elMultiple.props("value")).toEqual("field_1\nfield_2\nfield_3\n");
@@ -74,6 +74,6 @@ describe("FormText", () => {
         const v = [];
         const wrapper = await mountFormText({ value: v });
         const el = wrapper.find("input");
-        expect(el.props("value")).toEqual("");
+        expect(el.attributes("value")).toEqual("");
     });
 });

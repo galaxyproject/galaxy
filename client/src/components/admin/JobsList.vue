@@ -31,7 +31,7 @@
                         label="Cutoff in minutes"
                         description="Display jobs that had their state updated in the given time period.">
                         <b-input-group>
-                            <b-form-input id="cutoff" v-model="cutoffMin" type="number"> </b-form-input>
+                            <GInput id="cutoff" v-model="cutoffMin" type="number" />
                         </b-input-group>
                     </b-form-group>
                 </b-form>
@@ -44,8 +44,7 @@
             <b-form v-if="unfinishedJobs.length && selectedStopJobIds.length" @submit.prevent="onStopJobs">
                 <b-form-group label="Stop Selected Jobs" description="Stop message will be displayed to the user">
                     <b-input-group>
-                        <b-form-input id="stop-message" v-model="stopMessage" placeholder="Stop message" required>
-                        </b-form-input>
+                        <GInput id="stop-message" v-model="stopMessage" placeholder="Stop message" required />
                         <b-input-group-append>
                             <b-btn type="submit">Submit</b-btn>
                         </b-input-group-append>
@@ -97,6 +96,7 @@
 
 <script>
 import axios from "axios";
+import GInput from "component-library/GInput";
 import JobsTable from "components/admin/JobsTable";
 import Heading from "components/Common/Heading";
 import filtersMixin from "components/Indices/filtersMixin";
@@ -144,6 +144,7 @@ returned. So <code>tool:'cat1'</code> would show only jobs from the <code>cat1</
 export default {
     components: {
         GAlert,
+        GInput,
         JobLock,
         JobsTable,
         Heading,
