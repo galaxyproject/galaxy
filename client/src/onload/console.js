@@ -19,6 +19,9 @@ export function overrideProductionConsole() {
     let storedConsole = null;
 
     const disableConsole = () => {
+        console.log(
+            "The Galaxy console has been disabled.  You can enable it by running enableDebugging() in devtools."
+        );
         storedConsole = console;
         // eslint-disable-next-line no-global-assign
         console = {};
@@ -28,6 +31,9 @@ export function overrideProductionConsole() {
     };
 
     const enableConsole = () => {
+        console.log(
+            "The Galaxy console has been enabled.  You can disable it by running disableDebugging() in devtools."
+        );
         if (storedConsole) {
             // eslint-disable-next-line no-global-assign
             console = storedConsole;
