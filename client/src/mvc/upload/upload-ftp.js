@@ -2,7 +2,7 @@
 import { getGalaxyInstance } from "app";
 import Backbone from "backbone";
 import $ from "jquery";
-import UploadUtils from "mvc/upload/upload-utils";
+import UploadUtils from "components/Upload/utils";
 import _ from "underscore";
 import Utils from "utils/utils";
 

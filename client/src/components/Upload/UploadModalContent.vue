@@ -30,7 +30,7 @@ import Backbone from "backbone";
 import { BTab, BTabs } from "bootstrap-vue";
 import { getDatatypesMapper } from "components/Datatypes";
 import LoadingSpan from "components/LoadingSpan";
-import UploadUtils from "mvc/upload/upload-utils";
+import UploadUtils from "components/Upload/utils";
 
 import Collection from "./Collection";
 import Composite from "./Composite";

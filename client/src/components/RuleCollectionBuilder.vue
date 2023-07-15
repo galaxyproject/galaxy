@@ -585,7 +585,7 @@ import SaveRules from "components/RuleBuilder/SaveRules";
 import StateDiv from "components/RuleBuilder/StateDiv";
 import Select2 from "components/Select2";
 import $ from "jquery";
-import UploadUtils from "mvc/upload/upload-utils";
+import UploadUtils from "components/Upload/utils";
 import { getAppRoot } from "onload/loadConfig";
 import _ from "underscore";
 import { refreshContentsWrapper } from "utils/data";

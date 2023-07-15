@@ -79,7 +79,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
 import { BButton, BLink } from "bootstrap-vue";
-import UploadUtils from "mvc/upload/upload-utils";
+import UploadUtils from "components/Upload/utils";
 import { getAppRoot } from "onload/loadConfig";
 import { filesDialog } from "utils/data";
 
