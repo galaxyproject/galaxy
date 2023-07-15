@@ -40,9 +40,9 @@
                     <GButton id="tooltip-clipboard" variant="link" size="sm" @click="onCopy" @mouseout="onCopyOut">
                         <FontAwesomeIcon :icon="['far', 'copy']" />
                     </GButton>
-                    <b-tooltip target="tooltip-clipboard" triggers="hover">
+                    <GTooltip target="tooltip-clipboard" triggers="hover">
                         {{ tooltipClipboard }}
-                    </b-tooltip>
+                    </GTooltip>
                     <a v-if="showUrl" id="item-url" :href="itemUrl" target="_top" class="ml-2">
                         url:
                         {{ itemUrl }}
@@ -280,6 +280,7 @@ import GButton from "@/component-library/GButton.vue";
 import GCardHeader from "@/component-library/GCardHeader.vue";
 import GCol from "@/component-library/GCol.vue";
 import GRow from "@/component-library/GRow.vue";
+import GTooltip from "@/component-library/GTooltip.vue";
 
 Vue.use(BootstrapVue);
 library.add(faCopy, faEdit, faUserPlus, faUserSlash, faCaretDown, faCaretUp);
@@ -297,6 +298,7 @@ export default {
         GCol,
         GAlert,
         GButton,
+        GTooltip,
         ErrorMessage,
         FontAwesomeIcon,
         SlugInput,
