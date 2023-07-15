@@ -1,6 +1,6 @@
 <script setup>
 import axios from "axios";
-import { BCard, BCardTitle } from "bootstrap-vue";
+import { BCard } from "bootstrap-vue";
 import { useMarkdown } from "composables/markdown";
 import { Toast } from "composables/toast";
 import { computed, provide, ref } from "vue";
@@ -8,6 +8,7 @@ import { computed, provide, ref } from "vue";
 import { InvocationExportPlugin } from "./model";
 
 import ActionButton from "./ActionButton.vue";
+import GCardTitle from "@/component-library/GCardTitle.vue";
 import GButtonGroup from "component-library/GButtonGroup.vue";
 import GButtonToolbar from "component-library/GButtonToolbar.vue";
 import StsDownloadButton from "components/StsDownloadButton.vue";
@@ -73,7 +74,7 @@ function onExportToFileSourceFailure() {
 <template>
     <div>
         <BCard class="export-plugin-card mb-1">
-            <BCardTitle class="export-plugin-title align-items-center d-flex justify-content-between">
+            <GCardTitle class="export-plugin-title align-items-center d-flex justify-content-between">
                 {{ exportPlugin.title }}
                 <GButtonToolbar aria-label="Export Options">
                     <GButtonGroup>
@@ -96,7 +97,7 @@ function onExportToFileSourceFailure() {
                             class="action-button" />
                     </GButtonGroup>
                 </GButtonToolbar>
-            </BCardTitle>
+            </GCardTitle>
 
             <div class="markdown-description" v-html="descriptionRendered" />
         </BCard>
@@ -105,5 +106,5 @@ function onExportToFileSourceFailure() {
             :invocation-id="props.invocationId"
             :export-plugin="props.exportPlugin"
             @onExportToFileSource="exportToFileSource" />
-    </div>
+    </b-card></div>
 </template>
