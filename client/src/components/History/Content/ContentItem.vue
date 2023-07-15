@@ -49,9 +49,9 @@
                     <span class="content-title name">{{ name }}</span>
                 </span>
                 <span v-if="item.purged" class="align-self-start btn-group p-1">
-                    <b-badge variant="secondary" title="This dataset has been permanently deleted">
+                    <GBadge variant="secondary" title="This dataset has been permanently deleted">
                         <icon icon="burn" /> Purged
-                    </b-badge>
+                    </GBadge>
                 </span>
                 <ContentOptions
                     v-else
@@ -117,11 +117,13 @@ import ContentOptions from "./ContentOptions";
 import DatasetDetails from "./Dataset/DatasetDetails";
 import { HIERARCHICAL_COLLECTION_JOB_STATES, STATES } from "./model/states";
 
+import GBadge from "@/component-library/GBadge.vue";
 import GCollapse from "@/component-library/GCollapse.vue";
 
 library.add(faArrowCircleUp, faArrowCircleDown, faCheckCircle);
 export default {
     components: {
+        GBadge,
         GCollapse,
         CollectionDescription,
         ContentOptions,

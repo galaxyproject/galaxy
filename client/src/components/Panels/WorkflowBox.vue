@@ -9,6 +9,7 @@ import { withPrefix } from "@/utils/redirect";
 
 import GButton from "@/component-library/GButton.vue";
 import GButtonGroup from "@/component-library/GButtonGroup.vue";
+import GBadge from "@/component-library/GBadge.vue";
 import WorkflowSearch from "@/components/Workflow/WorkflowSearch.vue";
 
 // @ts-ignore bad library types
@@ -67,9 +68,9 @@ function userTitle(title: string) {
         </div>
         <div class="unified-panel-controls">
             <div v-if="isAnonymous">
-                <b-badge class="alert-info w-100">
+                <GBadge class="alert-info w-100">
                     Please <a :href="withPrefix('/login')">log in or register</a> to create workflows.
-                </b-badge>
+                </GBadge>
             </div>
             <WorkflowSearch v-else />
         </div>

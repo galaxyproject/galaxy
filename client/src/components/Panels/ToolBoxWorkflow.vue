@@ -26,19 +26,19 @@
                 @onQuery="onQuery"
                 @onResults="onResults" />
             <div v-if="closestTerm" class="pb-2">
-                <b-badge class="alert-danger w-100">
+                <GBadge class="alert-danger w-100">
                     Did you mean:
                     <i>
                         <a href="javascript:void(0)" @click="onQuery(closestTerm)">{{ closestTerm }}</a>
                     </i>
                     ?
-                </b-badge>
+                </GBadge>
             </div>
             <div v-else-if="queryTooShort" class="pb-2">
                 <b-badge class="alert-danger w-100">Search string too short!</b-badge>
             </div>
             <div v-else-if="noResults" class="pb-2">
-                <b-badge class="alert-danger w-100">No results found!</b-badge>
+                <GBadge class="alert-danger w-100">No results found!</GBadge>
             </div>
         </div>
         <div class="unified-panel-body">
@@ -91,9 +91,12 @@ import ToolSearch from "./Common/ToolSearch";
 import ToolSection from "./Common/ToolSection";
 import { filterToolSections, removeDisabledTools } from "./utilities";
 
+import GBadge from "@/component-library/GBadge.vue";
+
 export default {
     name: "ToolBox",
     components: {
+        GBadge,
         ToolSection,
         ToolSearch,
         PanelViewButton,

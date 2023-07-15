@@ -1,4 +1,5 @@
 <script setup>
+import GBadge from "@/component-library/GBadge.vue";
 import GRow from "@/component-library/GRow.vue";
 
 defineProps({
@@ -32,9 +33,9 @@ defineProps({
     <GRow class="ml-3 mb-1">
         <i :class="['pref-icon pt-1 fa fa-lg', icon]" />
         <div class="pref-content pr-1">
-            <b-badge v-if="!!badge" variant="danger">
+            <GBadge v-if="!!badge" variant="danger">
                 {{ badge }}
-            </b-badge>
+            </GBadge>
             <router-link v-if="to" :id="id" :to="to">
                 <b v-localize>{{ title }}</b>
             </router-link>

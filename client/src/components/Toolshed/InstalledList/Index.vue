@@ -32,7 +32,7 @@
                     <template v-slot:cell(name)="row">
                         <GLink href="#" role="button" class="font-weight-bold" @click="row.toggleDetails">
                             <div v-if="!isLatest(row.item)">
-                                <b-badge variant="danger" class="mb-2"> Newer version available! </b-badge>
+                                <GBadge variant="danger" class="mb-2"> Newer version available! </GBadge>
                             </div>
                             <div class="name">{{ row.item.name }}</div>
                         </GLink>
@@ -62,12 +62,14 @@ import RepositoryDetails from "./Details";
 import Monitor from "./Monitor";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GBadge from "@/component-library/GBadge.vue";
 import GLink from "@/component-library/GLink.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GBadge,
         GLink,
         GAlert,
         LoadingSpan,

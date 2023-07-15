@@ -60,9 +60,9 @@
                             :to="{ name: 'DataManagerTable', params: { name: dataTable['name'] } }"
                             :variant="dataTable['managed'] === true ? 'primary' : 'link'">
                             {{ dataTable["name"] }}
-                            <b-badge v-if="dataTable['managed'] === true" variant="primary" pill
-                                ><span class="fa fa-exchange"
-                            /></b-badge>
+                            <GBadge v-if="dataTable['managed'] === true" variant="primary" pill>
+                                <span class="fa fa-exchange" />
+                            </GBadge>
                         </b-list-group-item>
                     </b-list-group>
                 </GCard>
@@ -79,6 +79,7 @@ import { debounce } from "underscore";
 import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
 import GButtonGroup from "@/component-library/GButtonGroup.vue";
+import GBadge from "@/component-library/GBadge.vue";
 import GCard from "@/component-library/GCard.vue";
 import GCardGroup from "@/component-library/GCardGroup.vue";
 import GCol from "@/component-library/GCol.vue";
@@ -94,6 +95,7 @@ export default {
         GButton,
         GButtonGroup,
         GInput,
+        GBadge,
         GContainer,
         GCard,
         GCardGroup,

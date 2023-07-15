@@ -29,10 +29,10 @@
                     </h1>
                 </span>
             </div>
-            <b-badge variant="info" class="w-100 rounded mb-3 white-space-normal">
+            <GBadge variant="info" class="w-100 rounded mb-3 white-space-normal">
                 <div class="float-left m-1 text-break">Generated with Galaxy {{ version }} on {{ time }}</div>
                 <div class="float-right m-1">Identifier: {{ markdownConfig.id }}</div>
-            </b-badge>
+            </GBadge>
             <div>
                 <GAlert v-if="markdownErrors.length > 0" variant="warning" show>
                     <div v-for="(obj, index) in markdownErrors" :key="index" class="mb-1">
@@ -73,6 +73,7 @@ import Vue from "vue";
 import MarkdownContainer from "./MarkdownContainer.vue";
 import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
+import GBadge from "@/component-library/GBadge.vue";
 import LoadingSpan from "components/LoadingSpan.vue";
 import StsDownloadButton from "components/StsDownloadButton.vue";
 
@@ -95,6 +96,7 @@ library.add(faDownload, faEdit);
 export default {
     store: store,
     components: {
+        GBadge,
         GAlert,
         GButton,
         MarkdownContainer,
