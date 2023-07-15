@@ -1,5 +1,5 @@
 <template>
-    <b-breadcrumb>
+    <GBreadcrumb>
         <GBreadcrumbItem title="Return to the list of libraries" :to="{ path: `/libraries` }">
             Libraries
         </GBreadcrumbItem>
@@ -13,14 +13,16 @@
                 {{ path_item[1] }}
             </GBreadcrumbItem>
         </template>
-    </b-breadcrumb>
+    </GBreadcrumb>
 </template>
 
 <script>
+import GBreadcrumb from "@/component-library/GBreadcrumb.vue";
 import GBreadcrumbItem from "@/component-library/GBreadcrumbItem.vue";
 
 export default {
     components: {
+        GBreadcrumb,
         GBreadcrumbItem,
     },
     props: {
