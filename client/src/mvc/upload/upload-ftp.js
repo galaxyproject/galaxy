@@ -1,8 +1,8 @@
 /** This renders the content of the ftp popup **/
 import { getGalaxyInstance } from "app";
 import Backbone from "backbone";
-import $ from "jquery";
 import UploadUtils from "components/Upload/utils";
+import $ from "jquery";
 import _ from "underscore";
 import Utils from "utils/utils";
 
