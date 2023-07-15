@@ -14,21 +14,21 @@
                 <template v-slot:button-content>
                     <span class="fa fa-cog" />
                 </template>
-                <b-dropdown-form>
-                    <b-form-checkbox v-model="sendToNewHistory" class="workflow-run-settings-target"
-                        >Send results to a new history</b-form-checkbox
-                    >
+                <GDropdownForm>
+                    <b-form-checkbox v-model="sendToNewHistory" class="workflow-run-settings-target">
+                        Send results to a new history
+                    </b-form-checkbox>
                     <b-form-checkbox
                         v-if="reuseAllowed(currentUser)"
                         v-model="useCachedJobs"
-                        title="This may skip executing jobs that you have already run."
-                        >Attempt to re-use jobs with identical parameters?</b-form-checkbox
-                    >
+                        title="This may skip executing jobs that you have already run.">
+                        Attempt to re-use jobs with identical parameters?
+                    </b-form-checkbox>
                     <b-form-checkbox
                         v-if="isConfigLoaded && config.object_store_allows_id_selection"
-                        v-model="splitObjectStore"
-                        >Send outputs and intermediate to different object stores?</b-form-checkbox
-                    >
+                        v-model="splitObjectStore">
+                        Send outputs and intermediate to different object stores?
+                    </b-form-checkbox>
                     <WorkflowStorageConfiguration
                         v-if="isConfigLoaded && config.object_store_allows_id_selection"
                         :split-object-store="splitObjectStore"
@@ -36,7 +36,7 @@
                         :invocation-intermediate-preferred-object-store-id="preferredIntermediateObjectStoreId"
                         @updated="onStorageUpdate">
                     </WorkflowStorageConfiguration>
-                </b-dropdown-form>
+                </GDropdownForm>
             </b-dropdown>
         </div>
         <FormDisplay :inputs="formInputs" @onChange="onChange" />
@@ -59,8 +59,11 @@ import { useUserStore } from "@/stores/userStore";
 import { invokeWorkflow } from "./services";
 import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration";
 
+import GDropdownForm from "@/component-library/GDropdownForm.vue";
+
 export default {
     components: {
+        GDropdownForm,
         ButtonSpinner,
         FormDisplay,
         WorkflowStorageConfiguration,
