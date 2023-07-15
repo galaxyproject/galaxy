@@ -79,7 +79,7 @@
                                 </GButton>
                             </GCardBody>
                         </b-collapse>
-                        <b-card-footer v-if="showLoginLink">
+                        <GCardFooter v-if="showLoginLink">
                             <span v-localize>Already have an account?</span>
                             <a
                                 id="login-toggle"
@@ -89,7 +89,7 @@
                                 @click.prevent="toggleLogin">
                                 Log in here.
                             </a>
-                        </b-card-footer>
+                        </GCardFooter>
                     </b-card>
                 </b-form>
             </div>
@@ -110,12 +110,14 @@ import Vue from "vue";
 import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
 import GCardBody from "@/component-library/GCardBody.vue";
+import GCardFooter from "@/component-library/GCardFooter.vue";
 import GInput from "@/component-library/GInput.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GCardFooter,
         GCardBody,
         GAlert,
         ExternalLogin,
