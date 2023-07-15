@@ -66,9 +66,9 @@
             description="Click here to show or hide the activity bar."
             badge="New!"
             @click="toggleActivityBar = !toggleActivityBar">
-            <b-collapse v-model="toggleActivityBar">
+            <GCollapse v-model="toggleActivityBar">
                 <UserActivityBarSettings />
-            </b-collapse>
+            </GCollapse>
         </UserPreferencesElement>
         <UserPreferencesElement
             v-if="hasThemes"
@@ -77,9 +77,9 @@
             description="Click here to change the user interface color theme."
             badge="New!"
             @click="toggleTheme = !toggleTheme">
-            <b-collapse v-model="toggleTheme">
+            <GCollapse v-model="toggleTheme">
                 <ThemeSelector />
-            </b-collapse>
+            </GCollapse>
         </UserPreferencesElement>
         <UserPreferencesElement
             v-if="isConfigLoaded && !config.single_user"
@@ -133,11 +133,13 @@ import UserPreferredObjectStore from "./UserPreferredObjectStore";
 
 import ThemeSelector from "./ThemeSelector.vue";
 import GAlert from "@/component-library/GAlert.vue";
+import GCollapse from "@/component-library/GCollapse.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GCollapse,
         GAlert,
         UserActivityBarSettings,
         UserDeletion,

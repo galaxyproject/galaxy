@@ -25,7 +25,7 @@
                 exclude restricted
             </b-form-checkbox>
         </div>
-        <b-collapse id="collapse-2" v-model="isNewLibFormVisible">
+        <GCollapse id="collapse-2" v-model="isNewLibFormVisible">
             <GCard>
                 <b-form @submit.prevent="newLibrary">
                     <GInputGroup class="mb-2 new-row">
@@ -41,7 +41,7 @@
                     </GInputGroup>
                 </b-form>
             </GCard>
-        </b-collapse>
+        </GCollapse>
         <b-table
             id="libraries_list"
             ref="libraries_list"
@@ -202,6 +202,7 @@ import { fields } from "./table-fields";
 
 import GCard from "@/component-library/GCard.vue";
 import GCol from "@/component-library/GCol.vue";
+import GCollapse from "@/component-library/GCollapse.vue";
 import GInputGroup from "@/component-library/GInputGroup.vue";
 import GLink from "@/component-library/GLink.vue";
 import GRow from "@/component-library/GRow.vue";
@@ -213,6 +214,7 @@ Vue.use(BootstrapVue);
 export default {
     components: {
         GButton,
+        GCollapse,
         GCard,
         GRow,
         GCol,

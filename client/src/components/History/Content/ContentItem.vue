@@ -87,7 +87,7 @@
             @input="onTags"
             @tag-click="onTagClick" />
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->
-        <b-collapse :visible="expandDataset">
+        <GCollapse :visible="expandDataset">
             <DatasetDetails
                 v-if="expandDataset"
                 :dataset="item"
@@ -96,7 +96,7 @@
                 :item-urls="itemUrls"
                 @edit="onEdit"
                 @toggleHighlights="toggleHighlights" />
-        </b-collapse>
+        </GCollapse>
     </div>
 </template>
 
@@ -117,9 +117,12 @@ import ContentOptions from "./ContentOptions";
 import DatasetDetails from "./Dataset/DatasetDetails";
 import { HIERARCHICAL_COLLECTION_JOB_STATES, STATES } from "./model/states";
 
+import GCollapse from "@/component-library/GCollapse.vue";
+
 library.add(faArrowCircleUp, faArrowCircleDown, faCheckCircle);
 export default {
     components: {
+        GCollapse,
         CollectionDescription,
         ContentOptions,
         DatasetDetails,

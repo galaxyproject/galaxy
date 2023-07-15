@@ -15,20 +15,20 @@
                             <GCardHeader v-b-toggle.accordion-oidc role="button">
                                 Register using institutional account
                             </GCardHeader>
-                            <b-collapse id="accordion-oidc" visible role="tabpanel" accordion="registration_acc">
+                            <GCollapse id="accordion-oidc" visible role="tabpanel" accordion="registration_acc">
                                 <GCardBody>
                                     Create a Galaxy account using an institutional account (e.g.:Google/JHU). This will
                                     redirect you to your institutional login through Custos.
                                     <ExternalLogin :login_page="false" />
                                 </GCardBody>
-                            </b-collapse>
+                            </GCollapse>
                         </span>
                         <!-- Local Galaxy Registration -->
                         <GCardHeader v-if="!custosPreferred" v-localize>Create a Galaxy account</GCardHeader>
                         <GCardHeader v-else v-localize v-b-toggle.accordion-register role="button">
                             Or, register with email
                         </GCardHeader>
-                        <b-collapse
+                        <GCollapse
                             id="accordion-register"
                             :visible="!custosPreferred"
                             role="tabpanel"
@@ -78,7 +78,7 @@
                                     Create
                                 </GButton>
                             </GCardBody>
-                        </b-collapse>
+                        </GCollapse>
                         <GCardFooter v-if="showLoginLink">
                             <span v-localize>Already have an account?</span>
                             <a
@@ -114,11 +114,13 @@ import GCardBody from "@/component-library/GCardBody.vue";
 import GCardFooter from "@/component-library/GCardFooter.vue";
 import GCardHeader from "@/component-library/GCardHeader.vue";
 import GInput from "@/component-library/GInput.vue";
+import GCollapse from "@/component-library/GCollapse.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GCollapse,
         GCard,
         GCardHeader,
         GCardFooter,

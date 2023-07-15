@@ -14,6 +14,7 @@ import JobParameters from "./Elements/JobParameters.vue";
 import ToolStd from "./Elements/ToolStd.vue";
 import Visualization from "./Elements/Visualization.vue";
 import WorkflowDisplay from "./Elements/Workflow/WorkflowDisplay.vue";
+import GCollapse from "@/component-library/GCollapse.vue";
 import GLink from "@/component-library/GLink.vue";
 
 const toggle = ref(false);
@@ -69,7 +70,7 @@ const isVisible = computed(() => !isCollapsible.value || toggle.value);
         <GLink v-if="isCollapsible" class="font-weight-bold" @click="toggle = !toggle">
             {{ args.collapse }}
         </GLink>
-        <b-collapse :visible="isVisible">
+        <GCollapse :visible="isVisible">
             <div v-if="name == 'generate_galaxy_version'" class="galaxy-version">
                 <pre><code>{{ version }}</code></pre>
             </div>
@@ -110,6 +111,6 @@ const isVisible = computed(() => !isCollapsible.value || toggle.value);
                 :name="name"
                 :args="args"
                 :datasets="datasets" />
-        </b-collapse>
+        </GCollapse>
     </div>
 </template>

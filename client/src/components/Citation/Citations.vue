@@ -29,7 +29,7 @@
         </GCard>
         <div v-else-if="citations.length">
             <GButton v-b-toggle="id" variant="primary">Citations</GButton>
-            <b-collapse
+            <GCollapse
                 :id="id.replace(/ /g, '_')"
                 class="mt-2"
                 @show="$emit('show')"
@@ -44,7 +44,7 @@
                         :citation="citation"
                         :output-format="outputFormat" />
                 </GCard>
-            </b-collapse>
+            </GCollapse>
         </div>
     </div>
 </template>
@@ -59,6 +59,7 @@ import Citation from "./Citation";
 import { getCitations } from "./services";
 
 import GCard from "@/component-library/GCard.vue";
+import GCollapse from "@/component-library/GCollapse.vue";
 
 Vue.use(BootstrapVue);
 
@@ -70,6 +71,7 @@ const outputFormats = Object.freeze({
 
 export default {
     components: {
+        GCollapse,
         GCard,
         Citation,
         GButton,

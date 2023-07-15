@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCircle, faHourglassHalf, faRetweet } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BCollapse, BFormCheckbox } from "bootstrap-vue";
+import { BFormCheckbox } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
@@ -14,6 +14,7 @@ import GButton from "@/component-library/GButton.vue";
 import GButtonGroup from "@/component-library/GButtonGroup.vue";
 import GCard from "@/component-library/GCard.vue";
 import GCol from "@/component-library/GCol.vue";
+import GCollapse from "@/component-library/GCollapse.vue";
 import GRow from "@/component-library/GRow.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import NotificationItem from "@/components/Notifications/NotificationItem.vue";
@@ -80,11 +81,11 @@ function togglePreferences() {
             </GButton>
         </div>
 
-        <BCollapse v-model="preferencesOpen">
+        <GCollapse v-model="preferencesOpen">
             <GCard class="m-2">
                 <NotificationsPreferences v-if="preferencesOpen" header-size="h-md" />
             </GCard>
-        </BCollapse>
+        </GCollapse>
 
         <GAlert v-if="loadingNotifications" show>
             <LoadingSpan message="Loading notifications" />
