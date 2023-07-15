@@ -19,7 +19,7 @@ defineProps({
 const attrs = useAttrs();
 
 const galaxyKwdToBootstrap = computed(() => {
-    const variant: string = (attrs.status as string) || (attrs.variant as string) || "done";
+    const variant: string = (attrs.status as string) || (attrs.variant as string);
 
     if (variant in galaxyKwdToBoostrapDict) {
         return galaxyKwdToBoostrapDict[variant];
