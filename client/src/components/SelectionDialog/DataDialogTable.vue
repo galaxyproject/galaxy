@@ -62,7 +62,7 @@
             </div>
             <div v-else>No entries.</div>
         </div>
-        <b-pagination
+        <GPagination
             v-if="nItems > perPage"
             v-model="currentPage"
             class="justify-content-md-center"
@@ -81,6 +81,7 @@ import { selectionStates } from "components/SelectionDialog/selectionStates";
 import Vue from "vue";
 
 import GLink from "@/component-library/GLink.vue";
+import GPagination from "@/component-library/GPagination.vue";
 
 Vue.use(BootstrapVue);
 library.add(faCheckSquare, faSquare, faFolder, faMinusSquare);
@@ -92,6 +93,7 @@ const SELECT_ICON_FIELD = { key: "select_icon", label: "", sortable: false };
 
 export default {
     components: {
+        GPagination,
         GLink,
         FontAwesomeIcon,
     },

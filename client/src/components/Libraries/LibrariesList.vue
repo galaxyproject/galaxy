@@ -148,12 +148,11 @@
         <b-container>
             <GRow class="justify-content-md-center">
                 <GCol md="auto">
-                    <b-pagination
+                    <GPagination
                         v-model="currentPage"
                         :total-rows="rows"
                         :per-page="perPage"
-                        aria-controls="libraries_list">
-                    </b-pagination>
+                        aria-controls="libraries_list" />
                 </GCol>
                 <GCol cols="1.5">
                     <table>
@@ -205,6 +204,7 @@ import GCol from "@/component-library/GCol.vue";
 import GCollapse from "@/component-library/GCollapse.vue";
 import GInputGroup from "@/component-library/GInputGroup.vue";
 import GLink from "@/component-library/GLink.vue";
+import GPagination from "@/component-library/GPagination.vue";
 import GRow from "@/component-library/GRow.vue";
 
 initLibrariesIcons();
@@ -214,6 +214,7 @@ Vue.use(BootstrapVue);
 export default {
     components: {
         GButton,
+        GPagination,
         GCollapse,
         GCard,
         GRow,

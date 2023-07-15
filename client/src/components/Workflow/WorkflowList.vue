@@ -78,11 +78,11 @@
                 </GCard>
             </template>
         </b-table>
-        <b-pagination
+        <GPagination
             v-show="rows >= perPage"
             v-model="currentPage"
             class="gx-workflows-grid-pager"
-            v-bind="paginationAttrs"></b-pagination>
+            v-bind="paginationAttrs" />
     </div>
 </template>
 <script>
@@ -104,6 +104,7 @@ import WorkflowRunButton from "./WorkflowRunButton.vue";
 import GAlert from "@/component-library/GAlert.vue";
 import GCard from "@/component-library/GCard.vue";
 import GCol from "@/component-library/GCol.vue";
+import GPagination from "@/component-library/GPagination.vue";
 import GRow from "@/component-library/GRow.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
@@ -170,6 +171,7 @@ const PUBLISHED_FIELDS = [NAME_FIELD, TAGS_FIELD, UPDATED_FIELD, OWNER_FIELD];
 
 export default {
     components: {
+        GPagination,
         GCard,
         GRow,
         GCol,

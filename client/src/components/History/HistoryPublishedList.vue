@@ -14,6 +14,7 @@ import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
 import GInputGroup from "@/component-library/GInputGroup.vue";
 import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
+import GPagination from "@/component-library/GPagination.vue";
 
 const validFilters = {
     name: contains("name"),
@@ -227,7 +228,7 @@ watch([filterText, sortBy, sortDesc], () => {
                 </template>
             </b-table>
 
-            <b-pagination
+            <GPagination
                 v-if="items.length > perPage"
                 v-model="currentPage"
                 :per-page="perPage"

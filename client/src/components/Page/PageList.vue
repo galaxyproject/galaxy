@@ -70,7 +70,7 @@
                 <UtcDate :date="data.value" mode="elapsed" />
             </template>
         </b-table>
-        <b-pagination
+        <GPagination
             v-if="rows >= perPage"
             v-model="currentPage"
             class="gx-pages-grid-pager"
@@ -99,6 +99,7 @@ import { updateTags } from "./services";
 
 import GAlert from "@/component-library/GAlert.vue";
 import GCol from "@/component-library/GCol.vue";
+import GPagination from "@/component-library/GPagination.vue";
 import GRow from "@/component-library/GRow.vue";
 
 const helpHtml = `<div>
@@ -144,6 +145,7 @@ export default {
     components: {
         GAlert,
         GCol,
+        GPagination,
         GRow,
         UtcDate,
         StatelessTags,

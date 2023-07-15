@@ -227,14 +227,13 @@
                         <b-spinner small type="grow"></b-spinner>
                         <b-spinner small type="grow"></b-spinner>
                     </div>
-                    <b-pagination
+                    <GPagination
                         v-else
                         :value="currentPage"
                         :total-rows="total_rows"
                         :per-page="perPage"
                         aria-controls="folder_list_body"
-                        @input="changePage">
-                    </b-pagination>
+                        @input="changePage" />
                 </GCol>
 
                 <GCol cols="1.5">
@@ -283,6 +282,7 @@ import GButton from "@/component-library/GButton.vue";
 import GCol from "@/component-library/GCol.vue";
 import GInput from "@/component-library/GInput.vue";
 import GLink from "@/component-library/GLink.vue";
+import GPagination from "@/component-library/GPagination.vue";
 import GRow from "@/component-library/GRow.vue";
 
 initFolderTableIcons();
@@ -301,6 +301,7 @@ function initialFolderState() {
 }
 export default {
     components: {
+        GPagination,
         GRow,
         GCol,
         GLink,

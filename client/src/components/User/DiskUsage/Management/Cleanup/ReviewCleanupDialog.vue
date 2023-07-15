@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BFormCheckbox, BModal, BPagination, BTable } from "bootstrap-vue";
+import { BFormCheckbox, BModal, BTable } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import localize from "@/utils/localization";
@@ -8,6 +8,7 @@ import { bytesToString } from "@/utils/utils";
 import { type CleanableItem, type CleanupOperation, PaginationOptions, type SortableKey } from "./model";
 
 import GButton from "@/component-library/GButton.vue";
+import GPagination from "@/component-library/GPagination.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
 interface ReviewCleanupDialogProps {
@@ -230,6 +231,7 @@ defineExpose({
                     @change="toggleSelectAll" />
             </template>
             <template v-slot:cell(selected)="data">
+                <!-- DBTODO -- both vmodel and v-bind value? -->
                 <BFormCheckbox :key="data.index" v-model="selectedItems" :checked="allSelected" :value="data.item" />
             </template>
             <template v-slot:cell(update_time)="data">
@@ -237,7 +239,7 @@ defineExpose({
             </template>
         </BTable>
         <template v-slot:modal-footer>
-            <BPagination
+            <GPagination
                 v-if="hasPages"
                 v-model="currentPage"
                 :total-rows="totalRows"

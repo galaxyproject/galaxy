@@ -77,11 +77,11 @@
                     :root="root" />
             </template>
         </b-table>
-        <b-pagination
+        <GPagination
             v-if="rows >= perPage"
             v-model="currentPage"
             class="gx-invocations-grid-pager"
-            v-bind="paginationAttrs"></b-pagination>
+            v-bind="paginationAttrs" />
     </div>
 </template>
 
@@ -101,9 +101,11 @@ import WorkflowRunButton from "./WorkflowRunButton.vue";
 import GAlert from "@/component-library/GAlert.vue";
 import GCard from "@/component-library/GCard.vue";
 import GLink from "@/component-library/GLink.vue";
+import GPagination from "@/component-library/GPagination.vue";
 
 export default {
     components: {
+        GPagination,
         GCard,
         GLink,
         GAlert,
