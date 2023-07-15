@@ -10,11 +10,11 @@
                     class="text-center m-2 border-0 new-user-welcome-topic"
                     :data-new-user-welcome-topic-title="subject.title"
                     body-class="d-flex flex-column">
-                    <b-card-img
+                    <GCardImg
                         class="section-header mb-3"
                         height="50h"
                         :src="imgUrl(subject.image)"
-                        :alt="subject.alt"></b-card-img>
+                        :alt="subject.alt" />
                     <GCardText class="font-weight-light">{{ subject.blurb | localize }}</GCardText>
                     <GButton class="mt-auto" variant="info" @click="$emit('select', idx)">{{
                         subject.title | localize
@@ -29,12 +29,14 @@ import GButton from "component-library/GButton";
 import { getAppRoot } from "onload/loadConfig";
 
 import GCardGroup from "@/component-library/GCardGroup.vue";
+import GCardImg from "@/component-library/GCardImg.vue";
 import GCardText from "@/component-library/GCardText.vue";
 import GRow from "@/component-library/GRow.vue";
 
 export default {
     components: {
         GButton,
+        GCardImg,
         GCardGroup,
         GCardText,
         GRow,
