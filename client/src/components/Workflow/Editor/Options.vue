@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { BButton, BDropdown, BDropdownItem } from "bootstrap-vue";
+import { BDropdown, BDropdownItem } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { useConfirmDialog } from "@/composables/confirmDialog";
+
+import GButton from "@/component-library/GButton.vue";
+import GButtonGroup from "@/component-library/GButtonGroup.vue";
 
 const emit = defineEmits<{
     (e: "onAttributes"): void;
@@ -54,7 +57,7 @@ async function onSave() {
 </script>
 <template>
     <div class="panel-header-buttons">
-        <BButton
+        <GButton
             id="workflow-home-button"
             v-b-tooltip.hover
             role="button"
@@ -64,9 +67,9 @@ async function onSave() {
             class="editor-button-attributes"
             @click="$emit('onAttributes')">
             <span class="fa fa-pencil-alt" />
-        </BButton>
-        <b-button-group v-b-tooltip class="editor-button-save-group" :title="saveHover">
-            <BButton
+        </GButton>
+        <GButtonGroup v-b-tooltip class="editor-button-save-group" :title="saveHover">
+            <GButton
                 id="workflow-save-button"
                 role="button"
                 variant="link"
@@ -75,9 +78,9 @@ async function onSave() {
                 :disabled="!hasChanges"
                 @click="onSave">
                 <span class="fa fa-floppy-o" />
-            </BButton>
-        </b-button-group>
-        <BButton
+            </GButton>
+        </GButtonGroup>
+        <GButton
             id="workflow-report-button"
             v-b-tooltip.hover
             role="button"
@@ -87,7 +90,7 @@ async function onSave() {
             class="editor-button-report"
             @click="$emit('onReport')">
             <span class="fa fa-edit" />
-        </BButton>
+        </GButton>
         <BDropdown
             id="workflow-options-button"
             v-b-tooltip.hover
@@ -111,7 +114,7 @@ async function onSave() {
             >
             <BDropdownItem href="#" @click="$emit('onDownload')"><span class="fa fa-download" />Download</BDropdownItem>
         </BDropdown>
-        <BButton
+        <GButton
             id="workflow-run-button"
             v-b-tooltip.hover
             role="button"
@@ -121,6 +124,6 @@ async function onSave() {
             class="editor-button-run"
             @click="$emit('onRun')">
             <span class="fa fa-play" />
-        </BButton>
+        </GButton>
     </div>
 </template>

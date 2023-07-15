@@ -1,6 +1,6 @@
 <script setup>
 import axios from "axios";
-import { BButtonGroup, BButtonToolbar, BCard, BCardTitle } from "bootstrap-vue";
+import { BCard, BCardTitle } from "bootstrap-vue";
 import { useMarkdown } from "composables/markdown";
 import { Toast } from "composables/toast";
 import { computed, provide, ref } from "vue";
@@ -8,6 +8,8 @@ import { computed, provide, ref } from "vue";
 import { InvocationExportPlugin } from "./model";
 
 import ActionButton from "./ActionButton.vue";
+import GButtonGroup from "component-library/GButtonGroup.vue";
+import GButtonToolbar from "component-library/GButtonToolbar.vue";
 import StsDownloadButton from "components/StsDownloadButton.vue";
 import ExportToRemoteButton from "components/Workflow/Invocation/Export/ExportToRemoteButton.vue";
 import ExportToRemoteModal from "components/Workflow/Invocation/Export/ExportToRemoteModal.vue";
@@ -73,8 +75,8 @@ function onExportToFileSourceFailure() {
         <BCard class="export-plugin-card mb-1">
             <BCardTitle class="export-plugin-title align-items-center d-flex justify-content-between">
                 {{ exportPlugin.title }}
-                <BButtonToolbar aria-label="Export Options">
-                    <BButtonGroup>
+                <GButtonToolbar aria-label="Export Options">
+                    <GButtonGroup>
                         <StsDownloadButton
                             :title="'Download Invocation as ' + exportPlugin.title"
                             :download-endpoint="invocationDownloadUrl"
@@ -92,8 +94,8 @@ function onExportToFileSourceFailure() {
                             :key="action.id"
                             :action="action"
                             class="action-button" />
-                    </BButtonGroup>
-                </BButtonToolbar>
+                    </GButtonGroup>
+                </GButtonToolbar>
             </BCardTitle>
 
             <div class="markdown-description" v-html="descriptionRendered" />

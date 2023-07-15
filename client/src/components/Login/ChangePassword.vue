@@ -9,24 +9,26 @@
             </b-form-group>
             <b-form-group label="New Password"> <GInput v-model="password" type="password" /> </b-form-group>
             <b-form-group label="Confirm password"> <GInput v-model="confirm" type="password" /> </b-form-group>
-            <b-button type="submit">Save new password</b-button>
+            <GButton type="submit">Save new password</GButton>
         </b-card>
     </b-form>
 </template>
 <script>
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
-import GInput from "component-library/GInput";
 import { withPrefix } from "utils/redirect";
 import Vue from "vue";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
+import GInput from "@/component-library/GInput.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
         GAlert,
+        GButton,
         GInput,
     },
     props: {

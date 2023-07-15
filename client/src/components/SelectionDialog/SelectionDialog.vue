@@ -15,18 +15,18 @@
             <div class="w-100">
                 <div v-if="!errorMessage">
                     <slot name="buttons"> </slot>
-                    <b-btn size="sm" class="float-right selection-dialog-modal-cancel" @click="hideModal">
+                    <GButton size="sm" class="float-right selection-dialog-modal-cancel" @click="hideModal">
                         Cancel
-                    </b-btn>
+                    </GButton>
                 </div>
                 <div v-else>
-                    <b-btn v-if="undoShow" id="back-btn" size="sm" class="float-left" @click="backFunc">
+                    <GButton v-if="undoShow" id="back-btn" size="sm" class="float-left" @click="backFunc">
                         <FontAwesomeIcon :icon="['fas', 'caret-left']" />
                         Back
-                    </b-btn>
-                    <b-btn id="close-btn" size="sm" class="float-right" variant="primary" @click="hideModal">
+                    </GButton>
+                    <GButton id="close-btn" size="sm" class="float-right" variant="primary" @click="hideModal">
                         Close
-                    </b-btn>
+                    </GButton>
                 </div>
             </div>
         </template>
@@ -39,12 +39,14 @@ import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
         GAlert,
+        GButton,
         FontAwesomeIcon,
     },
     props: {

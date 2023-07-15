@@ -17,15 +17,15 @@
                 @open="onLoad" />
         </template>
         <template v-slot:buttons>
-            <b-btn v-if="undoShow" size="sm" class="float-left" @click="load()">
+            <GButton v-if="undoShow" size="sm" class="float-left" @click="load()">
                 <div class="fa fa-caret-left mr-1" />
                 Back
-            </b-btn>
-            <b-btn v-if="allowUpload" size="sm" class="float-left mr-1" @click="onUpload">
+            </GButton>
+            <GButton v-if="allowUpload" size="sm" class="float-left mr-1" @click="onUpload">
                 <div class="fa fa-upload ml-1" />
                 Upload
-            </b-btn>
-            <b-btn
+            </GButton>
+            <GButton
                 v-if="multiple"
                 size="sm"
                 class="float-right ml-1"
@@ -33,13 +33,14 @@
                 :disabled="!hasValue"
                 @click="onOk">
                 Ok
-            </b-btn>
+            </GButton>
         </template>
     </selection-dialog>
 </template>
 
 <script>
 import BootstrapVue from "bootstrap-vue";
+import GButton from "component-library/GButton";
 import SelectionDialogMixin from "components/SelectionDialog/SelectionDialogMixin";
 import { useGlobalUploadModal } from "composables/globalUploadModal";
 import { getAppRoot } from "onload/loadConfig";
@@ -54,6 +55,9 @@ import { UrlTracker } from "./utilities";
 Vue.use(BootstrapVue);
 
 export default {
+    components: {
+        GButton,
+    },
     mixins: [SelectionDialogMixin],
     props: {
         multiple: {

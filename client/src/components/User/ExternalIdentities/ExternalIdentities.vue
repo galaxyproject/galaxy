@@ -34,7 +34,7 @@
 
         <div v-if="items.length" class="external-subheading">
             <h2 class="h-md">Connected External Identities</h2>
-            <b-button
+            <GButton
                 v-for="item in items"
                 :key="item.email"
                 aria-label="Disconnect External Identity"
@@ -42,7 +42,7 @@
                 class="d-block mt-3"
                 @click="onDisconnect(item)">
                 Disconnect {{ item.provider.charAt(0).toUpperCase() + item.provider.slice(1) }} - {{ item.email }}
-            </b-button>
+            </GButton>
 
             <b-modal
                 id="disconnectIDModal"
@@ -91,6 +91,7 @@ import Vue from "vue";
 import svc from "./service";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin.vue";
 
 Vue.use(BootstrapVue);
@@ -98,6 +99,7 @@ Vue.use(BootstrapVue);
 export default {
     components: {
         GAlert,
+        GButton,
         ExternalLogin,
     },
     data() {

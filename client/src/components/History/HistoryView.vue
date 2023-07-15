@@ -4,7 +4,7 @@
             {{ historyStateInfoMessage }}
         </GAlert>
         <div v-else class="flex-row flex-grow-0 pb-3">
-            <b-button
+            <GButton
                 v-if="userOwnsHistory"
                 size="sm"
                 variant="outline-info"
@@ -13,8 +13,8 @@
                 data-description="switch to history button"
                 @click="setCurrentHistory(history.id)">
                 Switch to this history
-            </b-button>
-            <b-button
+            </GButton>
+            <GButton
                 v-else
                 v-b-modal:copy-history-modal
                 size="sm"
@@ -22,7 +22,7 @@
                 title="Import this history"
                 data-description="import history button">
                 Import this history
-            </b-button>
+            </GButton>
         </div>
         <CollectionPanel
             v-if="selectedCollections.length && selectedCollections[0].history_id == id"
@@ -52,10 +52,12 @@ import HistoryPanel from "./CurrentHistory/HistoryPanel";
 import CopyModal from "./Modals/CopyModal";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
 
 export default {
     components: {
         GAlert,
+        GButton,
         HistoryPanel,
         CollectionPanel,
         CopyModal,

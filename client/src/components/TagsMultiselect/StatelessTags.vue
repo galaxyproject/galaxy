@@ -12,6 +12,7 @@ import { useUserTags } from "@/composables/user";
 import { useUid } from "@/composables/utils/uid";
 
 import Tag from "./Tag.vue";
+import GButton from "@/component-library/GButton.vue";
 
 interface StatelessTagsProps {
     value?: string[];
@@ -141,10 +142,10 @@ function onTagClicked(tag: string) {
             </template>
 
             <template v-slot:caret>
-                <b-button v-if="!editing" class="toggle-button" variant="link" tabindex="-1" @click="openMultiselect">
+                <GButton v-if="!editing" class="toggle-button" variant="link" tabindex="-1" @click="openMultiselect">
                     {{ props.placeholder }}
                     <FontAwesomeIcon icon="fa-tags" />
-                </b-button>
+                </GButton>
             </template>
 
             <template v-slot:option="{ option }">
@@ -179,14 +180,14 @@ function onTagClicked(tag: string) {
                     :editable="false"
                     :clickable="props.clickable"
                     @click="onTagClicked"></Tag>
-                <b-button
+                <GButton
                     v-if="slicedTags.length > 0 && !toggledOpen"
                     :id="toggleButtonId"
                     variant="link"
                     class="toggle-link"
                     @click="() => (toggledOpen = true)">
                     {{ slicedTags.length }} more...
-                </b-button>
+                </GButton>
 
                 <b-tooltip
                     v-if="slicedTags.length > 0 && !toggledOpen"

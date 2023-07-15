@@ -6,6 +6,8 @@ import { computed } from "vue";
 
 import { keyedColorScheme } from "@/utils/color";
 
+import GButton from "@/component-library/GButton.vue";
+
 interface TagProps {
     option: string;
     search?: string;
@@ -47,7 +49,7 @@ const searched = computed(() => props.option?.toLowerCase() === props.search?.to
         <span :class="{ 'font-weight-bold': named }">
             {{ props.option }}
         </span>
-        <b-button
+        <GButton
             v-if="editable"
             size="sm"
             variant="link"
@@ -55,7 +57,7 @@ const searched = computed(() => props.option?.toLowerCase() === props.search?.to
             tabindex="-1"
             @click.prevent.stop="onDelete">
             <FontAwesomeIcon icon="fa-times"></FontAwesomeIcon>
-        </b-button>
+        </GButton>
     </div>
 </template>
 

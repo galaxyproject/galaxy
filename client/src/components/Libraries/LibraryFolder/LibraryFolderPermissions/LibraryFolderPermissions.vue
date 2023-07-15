@@ -1,6 +1,6 @@
 <template>
     <div>
-        <b-button variant="link" @click="onGoBack">Go back</b-button>
+        <GButton variant="link" @click="onGoBack">Go back</GButton>
         <PermissionsHeader v-if="folder" :name="folder.name" />
         <b-container fluid>
             <div class="dataset_table">
@@ -42,6 +42,7 @@
 <script>
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
+import GButton from "component-library/GButton";
 import { initPermissionsIcons } from "components/Libraries/icons";
 import { extractRoles } from "components/Libraries/library-utils";
 import PermissionsHeader from "components/Libraries/LibraryPermissions/PermissionsHeader";
@@ -59,6 +60,7 @@ export default {
         PermissionsInputField,
         PermissionsHeader,
         FontAwesomeIcon,
+        GButton,
     },
     props: {
         folder_id: {

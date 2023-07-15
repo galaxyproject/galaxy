@@ -11,6 +11,7 @@ import { computed, ref, watch } from "vue";
 import { getPublishedHistories, updateTags } from "./services";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
 import GInputGroup from "@/component-library/GInputGroup.vue";
 import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
 
@@ -132,7 +133,7 @@ watch([filterText, sortBy, sortDesc], () => {
                         @keyup.esc="updateFilter('')" />
                 </DebouncedInput>
                 <GInputGroupAppend>
-                    <b-button
+                    <GButton
                         id="published-histories-advanced-filter-toggle"
                         size="sm"
                         :pressed="showAdvanced"
@@ -143,14 +144,14 @@ watch([filterText, sortBy, sortDesc], () => {
                         @click="onToggle">
                         <icon v-if="showAdvanced" icon="angle-double-up" />
                         <icon v-else icon="angle-double-down" />
-                    </b-button>
-                    <b-button
+                    </GButton>
+                    <GButton
                         size="sm"
                         aria-label="Clear filters"
                         data-description="clear filters"
                         @click="updateFilter('')">
                         <icon icon="times" />
-                    </b-button>
+                    </GButton>
                 </GInputGroupAppend>
             </GInputGroup>
 
@@ -170,7 +171,7 @@ watch([filterText, sortBy, sortDesc], () => {
                     size="sm"
                     placeholder="any community tag" />
                 <div class="mt-3">
-                    <b-button
+                    <GButton
                         id="published-histories-advanced-filter-submit"
                         class="mr-1"
                         size="sm"
@@ -179,11 +180,11 @@ watch([filterText, sortBy, sortDesc], () => {
                         @click="onSearch">
                         <icon icon="search" />
                         <span>{{ "Search" | localize }}</span>
-                    </b-button>
-                    <b-button size="sm" @click="onToggle">
+                    </GButton>
+                    <GButton size="sm" @click="onToggle">
                         <icon icon="redo" />
                         <span>{{ "Cancel" | localize }}</span>
-                    </b-button>
+                    </GButton>
                 </div>
             </div>
 

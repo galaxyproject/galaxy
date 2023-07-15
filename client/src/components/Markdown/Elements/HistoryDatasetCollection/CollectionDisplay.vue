@@ -2,7 +2,7 @@
     <b-card body-class="p-0">
         <b-card-header>
             <span class="float-right">
-                <b-button
+                <GButton
                     v-b-tooltip.hover
                     :href="downloadUrl"
                     variant="link"
@@ -12,8 +12,8 @@
                     type="button"
                     class="py-0 px-1">
                     <span class="fa fa-download" />
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="vcurrentUser && currentHistoryId"
                     v-b-tooltip.hover
                     href="#"
@@ -24,7 +24,7 @@
                     class="py-0 px-1"
                     @click="onCopyCollection(currentHistoryId)">
                     <span class="fa fa-file-import" />
-                </b-button>
+                </GButton>
             </span>
             <span>
                 <span>Dataset Collection:</span>
@@ -56,11 +56,13 @@ import { useUserStore } from "@/stores/userStore";
 import CollectionTree from "./CollectionTree";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
 
 export default {
     components: {
         CollectionTree,
         GAlert,
+        GButton,
         LoadingSpan,
     },
     props: {

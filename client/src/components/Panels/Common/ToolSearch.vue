@@ -7,6 +7,7 @@ import _l from "@/utils/localization";
 
 import { flattenTools } from "../utilities.js";
 
+import GButton from "@/component-library/GButton.vue";
 import GInput from "@/component-library/GInput.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 
@@ -173,17 +174,17 @@ function onToggle(toggleAdvanced: boolean) {
             <small class="mt-1">Filter by help text:</small>
             <GInput v-model="filterSettings['help']" size="sm" placeholder="any help text" />
             <div class="mt-3">
-                <b-button class="mr-1 filter-search-btn" size="sm" variant="primary" @click="onSearch">
+                <GButton class="mr-1 filter-search-btn" size="sm" variant="primary" @click="onSearch">
                     <icon icon="search" />
                     <span>{{ _l("Search") }}</span>
-                </b-button>
-                <b-button size="sm" @click="onToggle(false)">
+                </GButton>
+                <GButton size="sm" @click="onToggle(false)">
                     <icon icon="redo" />
                     <span>{{ _l("Cancel") }}</span>
-                </b-button>
-                <b-button title="Search Help" size="sm" @click="showHelp = true">
+                </GButton>
+                <GButton title="Search Help" size="sm" @click="showHelp = true">
                     <icon icon="question" />
-                </b-button>
+                </GButton>
                 <b-modal v-model="showHelp" title="Tool Advanced Search Help" ok-only>
                     <div>
                         <p>

@@ -2,17 +2,17 @@
     <div class="mb-3 workflow-invocation-state-component">
         <div v-if="invocationAndJobTerminal">
             <span>
-                <b-button v-b-tooltip.hover size="sm" class="invocation-report-link" :href="invocationLink">
+                <GButton v-b-tooltip.hover size="sm" class="invocation-report-link" :href="invocationLink">
                     View Report
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-b-tooltip.hover
                     size="sm"
                     class="invocation-pdf-link"
                     :href="invocationPdfLink"
                     target="_blank">
                     Generate PDF
-                </b-button>
+                </GButton>
             </span>
         </div>
         <div v-else-if="!invocationSchedulingTerminal">
@@ -71,6 +71,7 @@ import { getRootFromIndexLink } from "onload";
 import { mapGetters } from "vuex";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
 import InvocationMessage from "@/components/WorkflowInvocationState/InvocationMessage.vue";
 
 const getUrl = (path) => getRootFromIndexLink() + path;
@@ -78,6 +79,7 @@ const getUrl = (path) => getRootFromIndexLink() + path;
 export default {
     components: {
         GAlert,
+        GButton,
         InvocationMessage,
         ProgressBar,
         LoadingSpan,

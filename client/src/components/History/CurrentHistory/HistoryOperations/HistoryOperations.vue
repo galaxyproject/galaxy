@@ -1,8 +1,8 @@
 <template>
     <section>
         <nav class="content-operations d-flex justify-content-between bg-secondary">
-            <b-button-group>
-                <b-button
+            <GButtonGroup>
+                <GButton
                     title="Select Items"
                     class="show-history-content-selectors-btn rounded-0"
                     size="sm"
@@ -11,8 +11,8 @@
                     :pressed="showSelection"
                     @click="toggleSelection">
                     <Icon icon="check-square" />
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     title="Collapse Items"
                     class="rounded-0"
                     size="sm"
@@ -20,11 +20,11 @@
                     :disabled="!expandedCount"
                     @click="$emit('collapse-all')">
                     <Icon icon="compress" />
-                </b-button>
-            </b-button-group>
-            <b-button-group v-show="showSelection">
+                </GButton>
+            </GButtonGroup>
+            <GButtonGroup v-show="showSelection">
                 <slot name="selection-operations" />
-            </b-button-group>
+            </GButtonGroup>
             <DefaultOperations
                 v-show="!showSelection"
                 :history="history"
@@ -34,11 +34,16 @@
 </template>
 
 <script>
+import GButton from "component-library/GButton";
+import GButtonGroup from "component-library/GButtonGroup";
+
 import DefaultOperations from "./DefaultOperations";
 
 export default {
     components: {
         DefaultOperations,
+        GButton,
+        GButtonGroup,
     },
     props: {
         history: { type: Object, required: true },

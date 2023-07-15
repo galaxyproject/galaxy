@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCopy, faEye, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BBadge, BButton, BButtonGroup, BListGroup, BListGroupItem, BPagination } from "bootstrap-vue";
+import { BBadge, BListGroup, BListGroupItem, BPagination } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -17,6 +17,8 @@ import {
 import localize from "@/utils/localization";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
+import GButtonGroup from "@/component-library/GButtonGroup.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -193,8 +195,8 @@ async function onImportCopy(history: ArchivedHistorySummary) {
                     </div>
 
                     <div class="d-flex justify-content-start align-items-center mt-1">
-                        <BButtonGroup class="actions">
-                            <BButton
+                        <GButtonGroup class="actions">
+                            <GButton
                                 v-b-tooltip
                                 :title="localize('View this history')"
                                 variant="link"
@@ -202,8 +204,8 @@ async function onImportCopy(history: ArchivedHistorySummary) {
                                 @click.stop="() => onViewHistoryInCenterPanel(history)">
                                 <FontAwesomeIcon icon="fa-eye" size="lg" />
                                 View
-                            </BButton>
-                            <BButton
+                            </GButton>
+                            <GButton
                                 v-b-tooltip
                                 :title="localize('Unarchive this history and move it back to your active histories')"
                                 variant="link"
@@ -211,9 +213,9 @@ async function onImportCopy(history: ArchivedHistorySummary) {
                                 @click.stop="() => onRestoreHistory(history)">
                                 <FontAwesomeIcon icon="fa-undo" size="lg" />
                                 Unarchive
-                            </BButton>
+                            </GButton>
 
-                            <BButton
+                            <GButton
                                 v-if="canImportCopy(history)"
                                 v-b-tooltip
                                 :title="localize('Import a new copy of this history from the associated export record')"
@@ -222,8 +224,8 @@ async function onImportCopy(history: ArchivedHistorySummary) {
                                 @click.stop="() => onImportCopy(history)">
                                 <FontAwesomeIcon icon="fa-copy" size="lg" />
                                 Import Copy
-                            </BButton>
-                        </BButtonGroup>
+                            </GButton>
+                        </GButtonGroup>
                     </div>
 
                     <p v-if="history.annotation" class="my-1">{{ history.annotation }}</p>

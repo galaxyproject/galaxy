@@ -1,12 +1,12 @@
 <template>
     <div>
-        <b-button
+        <GButton
             v-b-modal.details-modal
             class="details-btn"
             title="Show location details"
             data-testid="loc-details-btn">
             <FontAwesomeIcon icon="info-circle" /> {{ detailsCaption }}
-        </b-button>
+        </GButton>
 
         <b-modal
             id="details-modal"
@@ -71,6 +71,7 @@ import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
 
 library.add(faInfoCircle);
 
@@ -78,6 +79,7 @@ export default {
     components: {
         FontAwesomeIcon,
         GAlert,
+        GButton,
         UtcDate,
     },
     props: {

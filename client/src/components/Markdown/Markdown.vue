@@ -11,7 +11,7 @@
                     size="sm"
                     title="Generate PDF">
                 </StsDownloadButton>
-                <b-button
+                <GButton
                     v-if="!readOnly"
                     v-b-tooltip.hover
                     class="float-right markdown-edit mr-2"
@@ -21,7 +21,7 @@
                     @click="$emit('onEdit')">
                     Edit
                     <FontAwesomeIcon icon="edit" />
-                </b-button>
+                </GButton>
                 <h1 class="float-right align-middle mr-2 mt-1 h-md">Galaxy {{ markdownConfig.model_class }}</h1>
                 <span class="float-left font-weight-light">
                     <h1 class="text-break align-middle">
@@ -72,6 +72,7 @@ import Vue from "vue";
 
 import MarkdownContainer from "./MarkdownContainer.vue";
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
 import LoadingSpan from "components/LoadingSpan.vue";
 import StsDownloadButton from "components/StsDownloadButton.vue";
 
@@ -95,6 +96,7 @@ export default {
     store: store,
     components: {
         GAlert,
+        GButton,
         MarkdownContainer,
         FontAwesomeIcon,
         LoadingSpan,

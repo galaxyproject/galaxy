@@ -40,7 +40,7 @@
                         </div>
                         <div class="fill"></div>
                         <div class="no-shrink">
-                            <BButton variant="danger" @click="optOut">Disable</BButton>
+                            <GButton variant="danger" @click="optOut">Disable</GButton>
                         </div>
                     </div>
                 </GAlert>
@@ -53,7 +53,7 @@
                         </div>
                         <div class="fill"></div>
                         <div>
-                            <BButton variant="success" @click="optIn">Enable</BButton>
+                            <GButton variant="success" @click="optIn">Enable</GButton>
                         </div>
                     </div>
                 </GAlert>
@@ -77,7 +77,7 @@
                         <div class="no-shrink">No beacon history found</div>
                         <div class="fill"></div>
                         <div class="no-shrink">
-                            <BButton @click="createBeaconHistory">Create Beacon History</BButton>
+                            <GButton @click="createBeaconHistory">Create Beacon History</GButton>
                         </div>
                     </div>
 
@@ -94,7 +94,7 @@
                         </div>
                         <div class="fill"></div>
                         <div class="no-shrink">
-                            <BButton @click="switchHistory(beaconHistory.id)">Switch to History</BButton>
+                            <GButton @click="switchHistory(beaconHistory.id)">Switch to History</GButton>
                         </div>
                     </div>
                 </div>
@@ -118,18 +118,19 @@
 
 <script>
 import axios from "axios";
-import { BButton, BModal, BRow } from "bootstrap-vue";
+import { BModal, BRow } from "bootstrap-vue";
 import { mapActions } from "pinia";
 import { withPrefix } from "utils/redirect";
 
 import { useHistoryStore } from "@/stores/historyStore";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
 
 export default {
     components: {
         GAlert,
-        BButton,
+        GButton,
         BModal,
         BRow,
     },

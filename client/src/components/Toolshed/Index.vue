@@ -11,9 +11,9 @@
                     @change="setQuery"
                     @keydown.esc="setQuery()" />
                 <GInputGroupAppend v-b-tooltip.hover :title="titleClearSearch">
-                    <b-btn @click="setQuery()">
+                    <GButton @click="setQuery()">
                         <i class="fa fa-times" />
-                    </b-btn>
+                    </GButton>
                 </GInputGroupAppend>
             </GInputGroup>
             <b-form-radio-group v-model="tabValue" class="mb-3" :options="tabOptions" />
@@ -31,11 +31,13 @@ import _l from "utils/localization";
 
 import InstalledList from "./InstalledList/Index.vue";
 import SearchList from "./SearchList/Index.vue";
+import GButton from "@/component-library/GButton.vue";
 import GInputGroup from "@/component-library/GInputGroup.vue";
 import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
 
 export default {
     components: {
+        GButton,
         GInputGroup,
         GInputGroupAppend,
         SearchList,

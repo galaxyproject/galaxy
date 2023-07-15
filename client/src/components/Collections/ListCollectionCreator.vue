@@ -149,12 +149,13 @@
                     </template>
                     <template v-slot:middle-content>
                         <div class="collection-elements-controls">
-                            <b-button class="reset" :title="titleUndoButton" @click="reset">
+                            <GButton class="reset" :title="titleUndoButton" @click="reset">
+                                <font-awesome-icon icon="undo" />
                                 <FontAwesomeIcon icon="undo" />
-                            </b-button>
-                            <b-button class="sort-items" :title="titleSortButton" @click="sortByName">
+                            </GButton>
+                            <GButton class="sort-items" :title="titleSortButton" @click="sortByName">
                                 <FontAwesomeIcon icon="sort-alpha-down" />
-                            </b-button>
+                            </GButton>
                             <a
                                 v-if="atLeastOneDatasetIsSelected"
                                 class="clear-selected"
@@ -212,6 +213,7 @@ import mixin from "./common/mixin";
 import DatasetCollectionElementView from "./ListDatasetCollectionElementView";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
 
 library.add(faSortAlphaDown, faUndo);
 
@@ -219,6 +221,7 @@ Vue.use(BootstrapVue);
 export default {
     components: {
         GAlert,
+        GButton,
         DatasetCollectionElementView,
         draggable,
         FontAwesomeIcon,

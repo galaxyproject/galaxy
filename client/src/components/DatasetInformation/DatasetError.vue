@@ -69,13 +69,13 @@
                             v-model="message"
                             :area="true"
                             title="Please provide detailed information on the activities leading to this issue:" />
-                        <b-button
+                        <GButton
                             id="dataset-error-submit"
                             variant="primary"
                             class="mt-3"
                             @click="submit(dataset, jobDetails.user_email)">
                             <FontAwesomeIcon icon="bug" class="mr-1" />Report
-                        </b-button>
+                        </GButton>
                     </div>
                 </div>
             </JobDetailsProvider>
@@ -92,7 +92,7 @@ import { DatasetProvider } from "components/providers";
 import { JobDetailsProvider, JobProblemProvider } from "components/providers/JobProvider";
 import { mapState } from "pinia";
 
-import { GAlert } from "@/component-library";
+import { GAlert, GButton } from "@/component-library";
 import { useMarkdown } from "@/composables/markdown";
 import { useUserStore } from "@/stores/userStore";
 
@@ -103,11 +103,12 @@ library.add(faBug);
 
 export default {
     components: {
+        GAlert,
+        GButton,
         DatasetProvider,
         DatasetErrorDetails,
         FontAwesomeIcon,
         FormElement,
-        GAlert,
         JobDetailsProvider,
         JobProblemProvider,
     },

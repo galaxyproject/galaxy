@@ -33,15 +33,15 @@
             </select2>
         </template>
         <template v-slot:buttons>
-            <BButton
+            <GButton
                 id="btn-close"
                 ref="btnClose"
                 class="ui-button-default upload-close"
                 :title="btnCloseTitle"
                 @click="$emit('dismiss')">
                 {{ btnCloseTitle }}
-            </BButton>
-            <BButton
+            </GButton>
+            <GButton
                 id="btn-reset"
                 ref="btnReset"
                 class="ui-button-default"
@@ -49,8 +49,8 @@
                 :disabled="!enableReset"
                 @click="_eventReset">
                 {{ btnResetTitle }}
-            </BButton>
-            <BButton
+            </GButton>
+            <GButton
                 id="btn-stop"
                 ref="btnStop"
                 class="ui-button-default"
@@ -58,8 +58,8 @@
                 :disabled="counterRunning == 0"
                 @click="_eventStop">
                 {{ btnStopTitle }}
-            </BButton>
-            <BButton
+            </GButton>
+            <GButton
                 id="btn-start"
                 ref="btnStart"
                 class="ui-button-default upload-start"
@@ -68,8 +68,8 @@
                 :variant="enableStart ? 'primary' : ''"
                 @click="_eventStart">
                 {{ btnStartTitle }}
-            </BButton>
-            <BButton
+            </GButton>
+            <GButton
                 id="btn-new"
                 ref="btnCreate"
                 class="ui-button-default upload-paste"
@@ -77,8 +77,8 @@
                 :disabled="!enableSources"
                 @click="_eventCreate()">
                 <span class="fa fa-edit"></span>{{ btnCreateTitle }}
-            </BButton>
-            <BButton
+            </GButton>
+            <GButton
                 v-if="remoteFiles"
                 id="btn-ftp"
                 ref="btnFtp"
@@ -86,8 +86,8 @@
                 :disabled="!enableSources"
                 @click="_eventRemoteFiles">
                 <span class="fa fa-folder-open-o"></span>{{ btnFilesTitle }}
-            </BButton>
-            <BButton
+            </GButton>
+            <GButton
                 id="btn-local"
                 ref="btnLocal"
                 class="ui-button-default"
@@ -95,13 +95,13 @@
                 :disabled="!enableSources"
                 @click="uploadSelect">
                 <span class="fa fa-laptop"></span>{{ btnLocalTitle }}
-            </BButton>
+            </GButton>
         </template>
     </upload-wrapper>
 </template>
 
 <script>
-import { BButton } from "bootstrap-vue";
+import GButton from "component-library/GButton";
 import UploadRow from "mvc/upload/default/default-row";
 import _ from "underscore";
 import _l from "utils/localization";
@@ -110,7 +110,7 @@ import { uploadModelsToPayload } from "./helpers";
 import UploadBoxMixin from "./UploadBoxMixin";
 
 export default {
-    components: { BButton },
+    components: { GButton },
     mixins: [UploadBoxMixin],
     props: {
         multiple: {

@@ -38,11 +38,11 @@
                 @toggleSelectAll="toggleSelectAll" />
         </template>
         <template v-slot:buttons>
-            <b-btn v-if="undoShow" id="back-btn" size="sm" class="float-left" @click="load()">
+            <GButton v-if="undoShow" id="back-btn" size="sm" class="float-left" @click="load()">
                 <FontAwesomeIcon :icon="['fas', 'caret-left']" />
                 Back
-            </b-btn>
-            <b-btn
+            </GButton>
+            <GButton
                 v-if="multiple || !fileMode"
                 id="ok-btn"
                 size="sm"
@@ -51,7 +51,7 @@
                 :disabled="(fileMode && !hasValue) || isBusy || (!fileMode && urlTracker.atRoot())"
                 @click="fileMode ? finalize() : selectLeaf(currentDirectory)">
                 {{ fileMode ? "Ok" : "Select this folder" }}
-            </b-btn>
+            </GButton>
         </template>
     </selection-dialog>
 </template>
@@ -73,11 +73,13 @@ import { Model } from "./model";
 import { browseRemoteFiles, getFileSources } from "./services";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
 
 library.add(faCaretLeft);
 export default {
     components: {
         GAlert,
+        GButton,
         FontAwesomeIcon,
     },
     mixins: [SelectionDialogMixin],

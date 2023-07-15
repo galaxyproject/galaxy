@@ -13,7 +13,7 @@
                             <GInputGroup>
                                 <GInput v-model="filter" placeholder="Type to Search" @keyup.esc.native="filter = ''" />
                                 <GInputGroupAppend>
-                                    <b-btn :disabled="!filter" @click="filter = ''">Clear (esc)</b-btn>
+                                    <GButton :disabled="!filter" @click="filter = ''">Clear (esc)</GButton>
                                 </GInputGroupAppend>
                             </GInputGroup>
                         </b-form-group>
@@ -21,9 +21,9 @@
                 </b-row>
                 <b-row>
                     <b-col>
-                        <b-button :pressed.sync="showCommandLine" variant="outline-secondary">
+                        <GButton :pressed.sync="showCommandLine" variant="outline-secondary">
                             {{ showCommandLine ? "Hide" : "Show" }} Command Line
-                        </b-button>
+                        </GButton>
                     </b-col>
                 </b-row>
             </b-container>
@@ -36,31 +36,31 @@
                 responsive
                 striped>
                 <template v-slot:cell(actions)="row">
-                    <b-button-group>
-                        <b-button v-b-tooltip.hover title="Rerun" target="_top" :href="jobs[row.index]['runUrl']">
+                    <GButtonGroup>
+                        <GButton v-b-tooltip.hover title="Rerun" target="_top" :href="jobs[row.index]['runUrl']">
                             <span class="fa fa-redo" />
-                        </b-button>
-                        <b-button
+                        </GButton>
+                        <GButton
                             :id="'job-' + jobs[row.index]['encId']"
                             v-b-tooltip.hover
                             title="View Info"
                             :to="{ name: 'DataManagerJob', params: { id: jobs[row.index]['encId'] } }">
                             <span class="fa fa-info-circle" />
-                        </b-button>
-                        <b-button
+                        </GButton>
+                        <GButton
                             v-if="!showCommandLine"
                             :pressed.sync="row.detailsShowing"
                             @click.stop="row.toggleDetails()">
                             {{ row.detailsShowing ? "Hide" : "Show" }} Command Line
-                        </b-button>
-                    </b-button-group>
+                        </GButton>
+                    </GButtonGroup>
                 </template>
                 <template v-slot:row-details="row">
                     <b-card>
                         <h2 class="h-text">Command Line</h2>
                         <pre class="code"><code class="command-line">{{ row.item.commandLine }}</code></pre>
                         <template v-slot:footer>
-                            <b-button class="mt-3" @click="row.toggleDetails">Hide Info</b-button>
+                            <GButton class="mt-3" @click="row.toggleDetails">Hide Info</GButton>
                         </template>
                     </b-card>
                 </template>
@@ -71,19 +71,23 @@
 
 <script>
 import axios from "axios";
-import GInput from "component-library/GInput";
 import { getAppRoot } from "onload/loadConfig";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
+import GButtonGroup from "@/component-library/GButtonGroup.vue";
+import GInput from "@/component-library/GInput.vue";
 import GInputGroup from "@/component-library/GInputGroup.vue";
 import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
 
 export default {
     components: {
+        GAlert,
+        GButton,
+        GButtonGroup,
+        GInput,
         GInputGroup,
         GInputGroupAppend,
-        GAlert,
-        GInput,
     },
     props: {
         id: {

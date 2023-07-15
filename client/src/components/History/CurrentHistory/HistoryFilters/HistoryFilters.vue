@@ -12,7 +12,7 @@
                     @keyup.esc="updateFilter('')" />
             </DebouncedInput>
             <GInputGroupAppend>
-                <b-button
+                <GButton
                     v-b-tooltip.hover
                     aria-haspopup="true"
                     size="sm"
@@ -24,8 +24,8 @@
                     @click="onToggle">
                     <icon v-if="showAdvanced" fixed-width icon="angle-double-up" />
                     <icon v-else fixed-width icon="angle-double-down" />
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-b-tooltip.hover
                     aria-haspopup="true"
                     size="sm"
@@ -34,7 +34,7 @@
                     data-description="clear filters"
                     @click="updateFilter('')">
                     <icon fixed-width icon="times" />
-                </b-button>
+                </GButton>
             </GInputGroupAppend>
         </GInputGroup>
         <div
@@ -60,9 +60,9 @@
                     list="stateSelect" />
                 <b-form-datalist id="stateSelect" :options="states"></b-form-datalist>
                 <GInputGroupAppend>
-                    <b-button title="States Help" size="sm" @click="showHelp = true">
+                    <GButton title="States Help" size="sm" @click="showHelp = true">
                         <icon icon="question" />
-                    </b-button>
+                    </GButton>
                 </GInputGroupAppend>
                 <StatesInfo :show-help.sync="showHelp" :exclude-states="excludeStates" @set-filter="onOption" />
             </GInputGroup>
@@ -117,21 +117,20 @@
             </b-form-group>
             <HistoryFiltersDefault :settings="filterSettings" @change="onOption" />
             <div class="mt-3">
-                <b-button class="mr-1" size="sm" variant="primary" description="apply filters" @click="onSearch">
+                <GButton class="mr-1" size="sm" variant="primary" description="apply filters" @click="onSearch">
                     <icon icon="search" />
                     <span>{{ "Search" | localize }}</span>
-                </b-button>
-                <b-button size="sm" @click="onToggle">
+                </GButton>
+                <GButton size="sm" @click="onToggle">
                     <icon icon="redo" />
                     <span>{{ "Cancel" | localize }}</span>
-                </b-button>
+                </GButton>
             </div>
         </div>
     </div>
 </template>
 
 <script>
-import GInput from "component-library/GInput";
 import DebouncedInput from "components/DebouncedInput";
 import { STATES } from "components/History/Content/model/states";
 import StatesInfo from "components/History/Content/model/StatesInfo";
@@ -139,15 +138,18 @@ import { HistoryFilters } from "components/History/HistoryFilters";
 
 import HistoryFiltersDefault from "./HistoryFiltersDefault";
 
+import GButton from "@/component-library/GButton.vue";
+import GInput from "@/component-library/GInput.vue";
 import GInputGroup from "@/component-library/GInputGroup.vue";
 import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
 
 export default {
     components: {
+        GButton,
+        GInput,
         GInputGroup,
         GInputGroupAppend,
         DebouncedInput,
-        GInput,
         HistoryFiltersDefault,
         StatesInfo,
     },

@@ -5,8 +5,8 @@
     <div>
         <nav class="d-flex justify-content-between mx-3 my-2" aria-label="current history management">
             <h2 class="m-1 h-sm">History</h2>
-            <b-button-group>
-                <b-button
+            <GButtonGroup>
+                <GButton
                     v-b-tooltip.bottom.hover
                     class="create-hist-btn"
                     data-description="create new history"
@@ -16,9 +16,9 @@
                     :title="userTitle('Create new history')"
                     @click="createNewHistory">
                     <Icon fixed-width icon="plus" />
-                </b-button>
+                </GButton>
 
-                <b-button
+                <GButton
                     v-b-tooltip.bottom.hover
                     data-description="switch to another history"
                     size="sm"
@@ -27,7 +27,7 @@
                     :title="userTitle('Switch to history')"
                     @click="showSwitchModal = !showSwitchModal">
                     <Icon fixed-width icon="exchange-alt" />
-                </b-button>
+                </GButton>
 
                 <b-dropdown
                     v-b-tooltip.bottom.hover
@@ -148,7 +148,7 @@
                         <span v-localize>Make Private</span>
                     </b-dropdown-item>
                 </b-dropdown>
-            </b-button-group>
+            </GButtonGroup>
         </nav>
 
         <SelectorModal
@@ -184,6 +184,8 @@
 </template>
 
 <script>
+import GButton from "component-library/GButton";
+import GButtonGroup from "component-library/GButtonGroup";
 import CopyModal from "components/History/Modals/CopyModal";
 import SelectorModal from "components/History/Modals/SelectorModal";
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
@@ -195,6 +197,8 @@ import { useUserStore } from "@/stores/userStore";
 export default {
     components: {
         CopyModal,
+        GButton,
+        GButtonGroup,
         SelectorModal,
     },
     mixins: [legacyNavigationMixin],

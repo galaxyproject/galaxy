@@ -56,9 +56,9 @@
                 </hgroup>
             </transition>
 
-            <b-button-group class="mb-4">
+            <GButtonGroup class="mb-4">
                 <button name="createNewKey" @click="onCreate">Create New Authorization Key</button>
-            </b-button-group>
+            </GButtonGroup>
         </header>
 
         <div class="scroll-container">
@@ -91,7 +91,6 @@
 
 <script>
 import BootstrapVue from "bootstrap-vue";
-import GInput from "component-library/GInput";
 import Vue from "vue";
 
 import CloudAuthItem from "./CloudAuthItem";
@@ -99,6 +98,8 @@ import { Credential } from "./model";
 import svc from "./model/service";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButtonGroup from "@/component-library/GButtonGroup.vue";
+import GInput from "@/component-library/GInput.vue";
 
 Vue.use(BootstrapVue);
 
@@ -106,6 +107,7 @@ export default {
     components: {
         CloudAuthItem,
         GAlert,
+        GButtonGroup,
         GInput,
     },
     data() {

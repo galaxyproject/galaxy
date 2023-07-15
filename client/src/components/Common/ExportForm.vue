@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { BButton, BCol, BFormGroup, BRow } from "bootstrap-vue";
+import { BCol, BFormGroup, BRow } from "bootstrap-vue";
+import GButton from "component-library/GButton";
 import { computed, ref } from "vue";
 
 import localize from "@/utils/localization";
@@ -51,14 +52,14 @@ const doExport = () => {
         </BFormGroup>
         <BRow align-h="end">
             <BCol>
-                <BButton
+                <GButton
                     v-localize
                     class="export-button"
                     variant="primary"
                     :disabled="!canExport"
                     @click.prevent="doExport">
                     Export
-                </BButton>
+                </GButton>
             </BCol>
         </BRow>
     </div>

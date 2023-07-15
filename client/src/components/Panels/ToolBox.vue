@@ -6,14 +6,14 @@
                     <h2 v-if="!showAdvanced" id="toolbox-heading" v-localize class="m-1 h-sm">Tools</h2>
                     <h2 v-else id="toolbox-heading" v-localize class="m-1 h-sm">Advanced Tool Search</h2>
                     <div class="panel-header-buttons">
-                        <b-button-group>
+                        <GButtonGroup>
                             <FavoritesButton v-if="!showAdvanced" :query="query" @onFavorites="onQuery" />
                             <PanelViewButton
                                 v-if="panelViews && Object.keys(panelViews).length > 1"
                                 :panel-views="panelViews"
                                 :current-panel-view="currentPanelView"
                                 @updatePanelView="updatePanelView" />
-                        </b-button-group>
+                        </GButtonGroup>
                     </div>
                 </nav>
             </div>
@@ -32,10 +32,10 @@
             <section v-if="!showAdvanced">
                 <UploadButton />
                 <div v-if="hasResults" class="pb-2">
-                    <b-button size="sm" class="w-100" @click="onToggle">
+                    <GButton size="sm" class="w-100" @click="onToggle">
                         <span :class="buttonIcon" />
                         <span class="mr-1">{{ buttonText }}</span>
-                    </b-button>
+                    </GButton>
                 </div>
                 <div v-else-if="queryTooShort" class="pb-2">
                     <b-badge class="alert-danger w-100">Search string too short!</b-badge>
@@ -78,6 +78,8 @@
 
 <script>
 import { getGalaxyInstance } from "app";
+import GButton from "component-library/GButton";
+import GButtonGroup from "component-library/GButtonGroup";
 import UploadButton from "components/Upload/UploadButton";
 import { useGlobalUploadModal } from "composables/globalUploadModal";
 import { getAppRoot } from "onload";
@@ -93,6 +95,8 @@ export default {
     components: {
         UploadButton,
         FavoritesButton,
+        GButton,
+        GButtonGroup,
         PanelViewButton,
         ToolSection,
         ToolSearch,

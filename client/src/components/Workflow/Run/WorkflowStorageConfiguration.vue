@@ -1,12 +1,12 @@
 <template>
     <span class="workflow-storage-indicators">
-        <b-button
+        <GButton
             id="workflow-storage-indicator-primary"
             class="workflow-storage-indicator workflow-storage-indicator-primary"
             v-bind="buttonProps"
             @click="showPreferredObjectStoreModal = true">
             <span class="fa fa-hdd" />
-        </b-button>
+        </GButton>
         <WorkflowTargetPreferredObjectStorePopover
             target="workflow-storage-indicator-primary"
             :title-suffix="suffixPrimary"
@@ -21,14 +21,14 @@
                 :invocation-preferred-object-store-id="selectedObjectStoreId"
                 @updated="onUpdate" />
         </b-modal>
-        <b-button
+        <GButton
             v-if="splitObjectStore"
             id="workflow-storage-indicator-intermediate"
             v-bind="buttonProps"
             class="workflow-storage-indicator workflow-storage-indicator-intermediate"
             @click="showIntermediatePreferredObjectStoreModal = true">
             <span class="fa fa-hdd" />
-        </b-button>
+        </GButton>
         <WorkflowTargetPreferredObjectStorePopover
             v-if="splitObjectStore"
             target="workflow-storage-indicator-intermediate"
@@ -48,11 +48,14 @@
 </template>
 
 <script>
+import GButton from "component-library/GButton";
+
 import WorkflowSelectPreferredObjectStore from "./WorkflowSelectPreferredObjectStore";
 import WorkflowTargetPreferredObjectStorePopover from "./WorkflowTargetPreferredObjectStorePopover";
 
 export default {
     components: {
+        GButton,
         WorkflowSelectPreferredObjectStore,
         WorkflowTargetPreferredObjectStorePopover,
     },

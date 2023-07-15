@@ -36,10 +36,10 @@
                                     I have read and accept these terms to create a new Galaxy account.
                                 </b-form-checkbox>
                             </b-form-group>
-                            <b-button name="confirm" type="submit" :disabled="!termsRead" @click.prevent="submit">
+                            <GButton name="confirm" type="submit" :disabled="!termsRead" @click.prevent="submit">
                                 Yes, create new account
-                            </b-button>
-                            <b-button name="cancel" type="submit" @click.prevent="login">No, go back to login</b-button>
+                            </GButton>
+                            <GButton name="cancel" type="submit" @click.prevent="login">No, go back to login</GButton>
                         </b-card-body>
                         <b-card-footer>
                             Already have an account?
@@ -63,12 +63,14 @@ import { withPrefix } from "utils/redirect";
 import Vue from "vue";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
         GAlert,
+        GButton,
     },
     props: {
         registrationWarningMessage: {

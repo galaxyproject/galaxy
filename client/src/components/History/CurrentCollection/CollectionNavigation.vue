@@ -1,6 +1,6 @@
 <template>
     <div class="mx-1 mt-1">
-        <b-button
+        <GButton
             v-b-tooltip:hover="historyName"
             size="sm"
             class="text-left text-decoration-none overflow-hidden text-nowrap w-100"
@@ -10,15 +10,20 @@
             <icon icon="angle-double-left" class="mr-1" data-description="back to history" /><span
                 >History: {{ historyName }}</span
             >
-        </b-button>
-        <b-button v-if="previousName" size="sm" class="text-decoration-none" variant="link" @click="back">
+        </GButton>
+        <GButton v-if="previousName" size="sm" class="text-decoration-none" variant="link" @click="back">
             <span class="fa fa-angle-left mr-1" /><span>{{ previousName }}</span>
-        </b-button>
+        </GButton>
     </div>
 </template>
 
 <script>
+import GButton from "component-library/GButton";
+
 export default {
+    components: {
+        GButton,
+    },
     props: {
         historyName: { type: String, required: true },
         selectedCollections: { type: Array, required: true, validate: (val) => val.length > 0 },

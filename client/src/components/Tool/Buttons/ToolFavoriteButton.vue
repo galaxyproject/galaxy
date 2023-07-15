@@ -8,6 +8,8 @@ import { computed } from "vue";
 
 import { useUserStore } from "@/stores/userStore";
 
+import GButton from "@/component-library/GButton.vue";
+
 library.add(fasStar, farStar);
 
 const props = defineProps({
@@ -68,8 +70,8 @@ async function onRemoveFavorite() {
 </script>
 
 <template>
-    <b-button v-b-tooltip.hover role="button" variant="link" size="sm" :title="title" @click="onToggleFavorite">
+    <GButton v-b-tooltip.hover role="button" variant="link" size="sm" :title="title" @click="onToggleFavorite">
         <icon v-if="showAddFavorite" icon="far fa-star" />
         <icon v-if="showRemoveFavorite" icon="fas fa-star" />
-    </b-button>
+    </GButton>
 </template>

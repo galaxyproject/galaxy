@@ -11,7 +11,7 @@
             @change="setQuery"
             @keydown.esc="setQuery('')" />
         <GInputGroupAppend>
-            <b-button
+            <GButton
                 v-if="enableAdvanced"
                 v-b-tooltip.hover.noninteractive
                 aria-haspopup="true"
@@ -23,9 +23,9 @@
                 @click="onToggle">
                 <icon v-if="showAdvanced" fixed-width icon="angle-double-up" />
                 <icon v-else fixed-width icon="angle-double-down" />
-            </b-button>
-            <b-button
-                v-b-tooltip.hover.noninteractive
+            </GButton>
+            <GButton
+                v-b-tooltip.hover
                 aria-haspopup="true"
                 class="search-clear"
                 size="sm"
@@ -34,11 +34,12 @@
                 @click="clearBox">
                 <icon v-if="loading" fixed-width icon="spinner" spin />
                 <icon v-else fixed-width icon="times" />
-            </b-button>
+            </GButton>
         </GInputGroupAppend>
     </GInputGroup>
 </template>
 <script>
+import GButton from "@/component-library/GButton.vue";
 import GInput from "@/component-library/GInput.vue";
 import GInputGroup from "@/component-library/GInputGroup.vue";
 import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
@@ -46,6 +47,7 @@ import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
 export default {
     components: {
         GInput,
+        GButton,
         GInputGroup,
         GInputGroupAppend,
     },

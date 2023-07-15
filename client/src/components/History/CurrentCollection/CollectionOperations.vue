@@ -1,8 +1,8 @@
 <template>
     <section>
         <nav class="content-operations d-flex justify-content-between bg-secondary">
-            <b-button-group>
-                <b-button
+            <GButtonGroup>
+                <GButton
                     title="Download Collection"
                     class="rounded-0 text-decoration-none"
                     size="sm"
@@ -11,14 +11,21 @@
                     @click="onDownload">
                     <Icon class="mr-1" icon="download" />
                     <span>Download</span>
-                </b-button>
-            </b-button-group>
+                </GButton>
+            </GButtonGroup>
         </nav>
     </section>
 </template>
 
 <script>
+import GButton from "component-library/GButton";
+import GButtonGroup from "component-library/GButtonGroup";
+
 export default {
+    components: {
+        GButton,
+        GButtonGroup,
+    },
     props: {
         dsc: { type: Object, required: true },
     },

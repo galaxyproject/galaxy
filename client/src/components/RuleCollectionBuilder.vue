@@ -317,14 +317,14 @@
                                         >{{ mappingTargets()[target].label }}</a
                                     >
                                 </div>
-                                <b-button
+                                <GButton
                                     v-if="!hasActiveMappingEdit"
                                     v-b-tooltip.hover.bottom
                                     :title="titleApplyColumnDefinitions"
                                     class="rule-mapping-ok"
-                                    @click="displayRuleType = null"
-                                    >{{ l("Apply") }}</b-button
-                                >
+                                    @click="displayRuleType = null">
+                                    {{ l("Apply") }}
+                                </GButton>
                             </div>
                         </div>
                         <div v-if="displayRuleType == null" class="rule-summary">
@@ -462,15 +462,15 @@
             </div>
         </RuleModalMiddle>
         <RuleModalFooter v-if="ruleView == 'source'">
-            <b-button v-b-tooltip.hover :title="titleSourceCancel" class="rule-btn-cancel" @click="cancelSourceEdit">{{
+            <GButton v-b-tooltip.hover :title="titleSourceCancel" class="rule-btn-cancel" @click="cancelSourceEdit">{{
                 l("Cancel")
-            }}</b-button>
-            <b-button v-b-tooltip.hover :title="titleSourceReset" class="creator-reset-btn rule-btn-reset">{{
+            }}</GButton>
+            <GButton v-b-tooltip.hover :title="titleSourceReset" class="creator-reset-btn rule-btn-reset">{{
                 l("Reset")
-            }}</b-button>
-            <b-button v-b-tooltip.hover :title="titleSourceApply" class="rule-btn-okay" @click="attemptRulePreview">{{
+            }}</GButton>
+            <GButton v-b-tooltip.hover :title="titleSourceApply" class="rule-btn-okay" @click="attemptRulePreview">{{
                 l("Apply")
-            }}</b-button>
+            }}</GButton>
         </RuleModalFooter>
         <RuleModalFooter v-else-if="ruleView == 'normal'">
             <template v-slot:inputs>
@@ -505,27 +505,23 @@
                 </div>
             </template>
             <b-row class="mx-auto">
-                <b-button
-                    :help="titleCancel"
-                    class="creator-cancel-btn rule-btn-cancel"
-                    tabindex="-1"
-                    @click="cancel"
-                    >{{ l("Cancel") }}</b-button
-                >
+                <GButton :help="titleCancel" class="creator-cancel-btn rule-btn-cancel" tabindex="-1" @click="cancel">
+                    {{ l("Cancel") }}
+                </GButton>
 
                 <TooltipOnHover class="menu-option" :title="titleReset">
-                    <b-button class="creator-reset-btn rule-btn-reset" @click="resetRulesAndState">{{
+                    <GButton class="creator-reset-btn rule-btn-reset" @click="resetRulesAndState">{{
                         l("Reset")
-                    }}</b-button>
+                    }}</GButton>
                 </TooltipOnHover>
                 <TooltipOnHover class="menu-option" :disabled="!validInput" :title="titleFinish">
-                    <b-button
+                    <GButton
                         class="create-collection rule-btn-okay"
                         variant="primary"
                         :disabled="!validInput"
-                        @click="createCollection"
-                        >{{ finishButtonTitle }}</b-button
-                    >
+                        @click="createCollection">
+                        {{ finishButtonTitle }}
+                    </GButton>
                 </TooltipOnHover>
             </b-row>
         </RuleModalFooter>
@@ -546,7 +542,7 @@
             }}
         </RuleModalHeader>
         <RuleModalFooter>
-            <b-button class="creator-cancel-btn" tabindex="-1" @click="cancel">{{ l("Close") }}</b-button>
+            <GButton class="creator-cancel-btn" tabindex="-1" @click="cancel">{{ l("Close") }}</GButton>
         </RuleModalFooter>
     </StateDiv>
     <StateDiv v-else-if="state == 'error'" class="rule-collection-builder">
@@ -556,12 +552,12 @@
             <p class="errormessagelarge">{{ errorMessage }}</p>
         </RuleModalMiddle>
         <RuleModalFooter>
-            <b-button v-b-tooltip.hover :title="titleCancel" class="creator-cancel-btn" tabindex="-1" @click="cancel">{{
+            <GButton v-b-tooltip.hover :title="titleCancel" class="creator-cancel-btn" tabindex="-1" @click="cancel">{{
                 l("Close")
-            }}</b-button>
-            <b-button v-b-tooltip.hover :title="titleErrorOkay" tabindex="-1" @click="state = 'build'">{{
+            }}</GButton>
+            <GButton v-b-tooltip.hover :title="titleErrorOkay" tabindex="-1" @click="state = 'build'">{{
                 l("Okay")
-            }}</b-button>
+            }}</GButton>
         </RuleModalFooter>
     </StateDiv>
 </template>
@@ -594,6 +590,7 @@ import _l from "utils/localization";
 import Vue from "vue";
 
 import GAlert from "component-library/GAlert.vue";
+import GButton from "component-library/GButton.vue";
 import GInput from "component-library/GInput.vue";
 import TooltipOnHover from "components/TooltipOnHover.vue";
 
@@ -613,6 +610,7 @@ const deferredToPromise = (d) => {
 export default {
     components: {
         GAlert,
+        GButton,
         GInput,
         TooltipOnHover,
         HotTable,

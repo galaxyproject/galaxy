@@ -5,6 +5,7 @@ import { useRouter } from "vue-router/composables";
 import { createWorkflowQuery } from "@/components/Panels/utilities";
 import _l from "@/utils/localization";
 
+import GButton from "@/component-library/GButton.vue";
 import GInput from "@/component-library/GInput.vue";
 
 const router = useRouter();
@@ -70,10 +71,10 @@ function onSearch() {
                     description="filter deleted" />
             </b-form-group>
             <div class="mt-3">
-                <b-button class="mr-1" size="sm" variant="primary" @click="onSearch">
+                <GButton class="mr-1" size="sm" variant="primary" @click="onSearch">
                     <icon icon="search" />
                     <span>{{ _l("Search") }}</span>
-                </b-button>
+                </GButton>
             </div>
         </div>
     </div>

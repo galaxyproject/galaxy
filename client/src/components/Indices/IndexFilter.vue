@@ -15,22 +15,22 @@
                     @keyup.esc="onReset" />
             </DebouncedInput>
             <GInputGroupAppend>
-                <BButton
+                <GButton
                     v-b-tooltip.hover
                     aria-haspopup="true"
                     title="Advanced Filtering Help"
                     :size="size"
                     @click="onHelp">
                     <FontAwesomeIcon icon="question" />
-                </BButton>
-                <BButton
+                </GButton>
+                <GButton
                     v-b-tooltip.hover
                     aria-haspopup="true"
                     title="Clear Filters (esc)"
                     :size="size"
                     @click="onReset">
                     <FontAwesomeIcon icon="times" />
-                </BButton>
+                </GButton>
             </GInputGroupAppend>
         </GInputGroup>
         <BModal v-model="showHelp" title="Filtering Options Help" ok-only>
@@ -43,10 +43,11 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestion, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BModal } from "bootstrap-vue";
-import GInput from "component-library/GInput";
+import { BModal } from "bootstrap-vue";
 import DebouncedInput from "components/DebouncedInput";
 
+import GButton from "component-library/GButton.vue";
+import GInput from "component-library/GInput.vue";
 import GInputGroup from "component-library/GInputGroup.vue";
 import GInputGroupAppend from "component-library/GInputGroupAppend.vue";
 
@@ -58,9 +59,9 @@ library.add(faTimes, faQuestion);
 export default {
     components: {
         DebouncedInput,
+        GButton,
         GInputGroup,
         GInputGroupAppend,
-        BButton,
         BModal,
         FontAwesomeIcon,
         GInput,

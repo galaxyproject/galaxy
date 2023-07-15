@@ -13,16 +13,16 @@
                         </template>
                         <FormDisplay :inputs="result['attribute_inputs']" @onChange="onAttribute" />
                         <div class="mt-2">
-                            <b-button
+                            <GButton
                                 id="dataset-attributes-default-save"
                                 variant="primary"
                                 class="mr-1"
                                 @click="submit('attribute', 'attributes')">
                                 <FontAwesomeIcon icon="save" class="mr-1" />{{ "Save" | l }}
-                            </b-button>
-                            <b-button v-if="!result['metadata_disable']" @click="submit('attribute', 'autodetect')">
+                            </GButton>
+                            <GButton v-if="!result['metadata_disable']" @click="submit('attribute', 'autodetect')">
                                 <FontAwesomeIcon icon="redo" class="mr-1" />{{ "Auto-detect" | l }}
-                            </b-button>
+                            </GButton>
                         </div>
                     </b-tab>
                     <b-tab
@@ -45,12 +45,12 @@
                             <div class="portlet-content">
                                 <FormDisplay :inputs="result['datatype_inputs']" @onChange="onDatatype" />
                                 <div class="mt-2">
-                                    <b-button variant="primary" class="mr-1" @click="submit('datatype', 'datatype')">
+                                    <GButton variant="primary" class="mr-1" @click="submit('datatype', 'datatype')">
                                         <FontAwesomeIcon icon="save" class="mr-1" />{{ "Save" | l }}
-                                    </b-button>
-                                    <b-button @click="submit('datatype', 'datatype_detect')">
+                                    </GButton>
+                                    <GButton @click="submit('datatype', 'datatype_detect')">
                                         <FontAwesomeIcon icon="redo" class="mr-1" />{{ "Auto-detect" | l }}
-                                    </b-button>
+                                    </GButton>
                                 </div>
                             </div>
                         </div>
@@ -66,9 +66,9 @@
                             <div class="portlet-content">
                                 <FormDisplay :inputs="result['conversion_inputs']" @onChange="onConversion" />
                                 <div class="mt-2">
-                                    <b-button variant="primary" @click="submit('conversion', 'conversion')">
+                                    <GButton variant="primary" @click="submit('conversion', 'conversion')">
                                         <FontAwesomeIcon icon="exchange-alt" class="mr-1" />{{ "Create Dataset" | l }}
-                                    </b-button>
+                                    </GButton>
                                 </div>
                             </div>
                         </div>
@@ -79,9 +79,9 @@
                         </template>
                         <FormDisplay :inputs="result['permission_inputs']" @onChange="onPermission" />
                         <div class="mt-2">
-                            <b-button variant="primary" @click="submit('permission', 'permission')">
+                            <GButton variant="primary" @click="submit('permission', 'permission')">
                                 <FontAwesomeIcon icon="save" class="mr-1" />{{ "Save" | l }}
-                            </b-button>
+                            </GButton>
                         </div>
                     </b-tab>
                 </b-tabs>
@@ -101,6 +101,7 @@ import { DatasetAttributesProvider } from "components/providers/DatasetProvider"
 import { setAttributes } from "./services";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
 
 library.add(faBars, faCog, faDatabase, faExchangeAlt, faRedo, faSave, faUser);
 
@@ -110,6 +111,7 @@ export default {
         FontAwesomeIcon,
         FormDisplay,
         GAlert,
+        GButton,
     },
     props: {
         datasetId: {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BButton, BFormCheckbox, BModal } from "bootstrap-vue";
+import { BFormCheckbox, BModal } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 
 import type { ExportRecord } from "@/components/Common/models/exportRecordModel";
@@ -10,6 +10,7 @@ import type { HistorySummary } from "@/stores/historyStore";
 
 import ExportRecordCard from "./ExportRecordCard.vue";
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
 import ExportToFileSourceForm from "@/components/Common/ExportForm.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -166,13 +167,13 @@ function onArchiveHistoryWithExport() {
                     </b>
                 </p>
                 <p>Use the button below to create a new export record before archiving the history.</p>
-                <BButton
+                <GButton
                     id="create-export-record-btn"
                     :disabled="!canCreateExportRecord"
                     variant="primary"
                     @click="onCreateExportRecord">
                     Create export record
-                </BButton>
+                </GButton>
             </GAlert>
         </div>
         <p v-if="!isDeleteContentsConfirmed" class="mt-3 mb-0">
@@ -187,14 +188,14 @@ function onArchiveHistoryWithExport() {
             Remember that you cannot undo this action. Once you archive and delete the history, you can only recover it
             by importing it as a new copy from the export record.
         </GAlert>
-        <BButton
+        <GButton
             id="archive-history-btn"
             class="mt-3"
             :disabled="!canArchiveHistory"
             variant="primary"
             @click="onArchiveHistoryWithExport">
             Archive (and purge) history
-        </BButton>
+        </GButton>
 
         <BModal v-model="isExportDialogOpen" title="Export history to permanent storage" size="lg" hide-footer>
             <ExportToFileSourceForm what="history" @export="doExportToFileSource" />

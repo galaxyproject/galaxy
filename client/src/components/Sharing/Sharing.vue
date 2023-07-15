@@ -14,7 +14,7 @@
             <form class="form-group" @submit.prevent="setUsername()">
                 <input v-model="newUsername" class="form-control" type="text" />
             </form>
-            <b-button type="submit" variant="primary" @click="setUsername()">Set Username</b-button>
+            <GButton type="submit" variant="primary" @click="setUsername()">Set Username</GButton>
         </div>
         <div v-else-if="ready">
             <b-form-checkbox v-model="item.importable" switch class="make-accessible" @change="onImportable">
@@ -34,12 +34,12 @@
                 <div>This {{ modelClass }} is currently {{ itemStatus }}.</div>
                 <p>Anyone can view and import this {{ modelClass }} by visiting the following URL:</p>
                 <blockquote>
-                    <b-button v-b-tooltip.hover title="Edit URL" variant="link" size="sm" @click="onEdit">
+                    <GButton v-b-tooltip.hover title="Edit URL" variant="link" size="sm" @click="onEdit">
                         <FontAwesomeIcon icon="edit" />
-                    </b-button>
-                    <b-button id="tooltip-clipboard" variant="link" size="sm" @click="onCopy" @mouseout="onCopyOut">
+                    </GButton>
+                    <GButton id="tooltip-clipboard" variant="link" size="sm" @click="onCopy" @mouseout="onCopyOut">
                         <FontAwesomeIcon :icon="['far', 'copy']" />
-                    </b-button>
+                    </GButton>
                     <b-tooltip target="tooltip-clipboard" triggers="hover">
                         {{ tooltipClipboard }}
                     </b-tooltip>
@@ -59,14 +59,14 @@
             </div>
             <br />
             <b-card no-body>
-                <b-button
+                <GButton
                     v-b-toggle.accordion-1
                     class="share-with-collapse"
                     variant="light"
                     @click="isCollapseVisible = !isCollapseVisible">
                     Share {{ modelClass }} with Individual Users
                     <FontAwesomeIcon :icon="isCollapseVisible ? `caret-up` : `caret-down`" />
-                </b-button>
+                </GButton>
                 <b-collapse id="accordion-1" accordion="main-accordion" role="tabpanel">
                     <div v-if="currentUser && isConfigLoaded && !permissionsChangeRequired(item)">
                         <p v-if="item.users_shared_with.length === 0" class="share_with_title">
@@ -118,7 +118,7 @@
                                             aria-hidden="true"
                                             tabindex="0"
                                             class="multiselect__tag-icon"
-                                            @click="remove(option)"></i>
+                                            @click="remove(option)" />
                                     </span>
                                 </template>
                                 <template slot="noOptions">
@@ -132,13 +132,13 @@
                             </Multiselect>
                             <div class="share-with-card-buttons">
                                 <!--submit/cancel buttons-->
-                                <b-button
+                                <GButton
                                     variant="outline-danger"
                                     class="sharing_icon cancel-sharing-with"
                                     @click="getSharing()">
                                     Cancel
-                                </b-button>
-                                <b-button
+                                </GButton>
+                                <GButton
                                     v-b-tooltip.hover.bottom
                                     variant="outline-primary"
                                     :disabled="!(sharedWithUsersChanged || !!multiselectValues.currentUserSearch)"
@@ -151,7 +151,7 @@
                                         )
                                     ">
                                     {{ multiselectValues.currentUserSearch ? `Add` : `Save` }}
-                                </b-button>
+                                </GButton>
                             </div>
                         </div>
                     </div>
@@ -168,15 +168,15 @@
                         <b-col v-if="item.extra.can_change.length > 0">
                             <b-card>
                                 <b-card-header header-tag="header" class="p-1" role="tab">
-                                    <b-button v-b-toggle.can-share block variant="warning">
+                                    <GButton v-b-toggle.can-share block variant="warning">
                                         Datasets can be shared by updating their permissions
-                                    </b-button>
+                                    </GButton>
                                 </b-card-header>
                                 <b-collapse id="can-share" visible accordion="can-share-accordion" role="tabpanel">
                                     <b-list-group>
-                                        <b-list-group-item v-for="dataset in item.extra.can_change" :key="dataset.id">{{
-                                            dataset.name
-                                        }}</b-list-group-item>
+                                        <b-list-group-item v-for="dataset in item.extra.can_change" :key="dataset.id">
+                                            {{ dataset.name }}
+                                        </b-list-group-item>
                                     </b-list-group>
                                 </b-collapse>
                             </b-card>
@@ -184,10 +184,9 @@
                         <b-col v-if="item.extra.cannot_change.length > 0">
                             <b-card>
                                 <b-card-header header-tag="header" class="p-1" role="tab">
-                                    <b-button v-b-toggle.cannot-share block variant="danger"
-                                        >Datasets cannot be shared, you are not authorized to change
-                                        permissions</b-button
-                                    >
+                                    <GButton v-b-toggle.cannot-share block variant="danger">
+                                        Datasets cannot be shared, you are not authorized to change permissions
+                                    </GButton>
                                 </b-card-header>
                                 <b-collapse id="cannot-share" visible accordion="cannot-accordion2" role="tabpanel">
                                     <b-list-group>
@@ -207,7 +206,7 @@
                                 header-bg-variant="primary"
                                 header-text-variant="white"
                                 align="center">
-                                <b-button
+                                <GButton
                                     v-if="item.extra.can_change.length > 0"
                                     block
                                     variant="outline-primary"
@@ -218,9 +217,9 @@
                                             share_option.make_public
                                         )
                                     "
-                                    >Make datasets public</b-button
-                                >
-                                <b-button
+                                    >Make datasets public
+                                </GButton>
+                                <GButton
                                     v-if="item.extra.can_change.length > 0"
                                     block
                                     variant="outline-primary"
@@ -232,9 +231,9 @@
                                         )
                                     "
                                     >Make datasets private to me and
-                                    {{ multiselectValues.sharingCandidates.map(({ email }) => email).join() }}</b-button
-                                >
-                                <b-button
+                                    {{ multiselectValues.sharingCandidates.map(({ email }) => email).join() }}
+                                </GButton>
+                                <GButton
                                     block
                                     variant="outline-primary"
                                     @click="
@@ -245,8 +244,8 @@
                                         )
                                     ">
                                     Share Anyway
-                                </b-button>
-                                <b-button block variant="outline-danger" @click="getSharing()">Cancel </b-button>
+                                </GButton>
+                                <GButton block variant="outline-danger" @click="getSharing()">Cancel</GButton>
                             </b-card>
                         </b-col>
                     </b-row>
@@ -277,6 +276,7 @@ import { useUserStore } from "@/stores/userStore";
 import ErrorMessage from "./ErrorMessage";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
 
 Vue.use(BootstrapVue);
 library.add(faCopy, faEdit, faUserPlus, faUserSlash, faCaretDown, faCaretUp);
@@ -290,6 +290,7 @@ const defaultExtra = () => {
 export default {
     components: {
         GAlert,
+        GButton,
         ErrorMessage,
         FontAwesomeIcon,
         SlugInput,

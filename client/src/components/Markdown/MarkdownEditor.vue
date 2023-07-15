@@ -9,14 +9,9 @@
                     <div class="unified-panel-header-inner">
                         <div class="panel-header-buttons">
                             <slot name="buttons" />
-                            <b-button
-                                v-b-tooltip.hover.bottom
-                                title="Help"
-                                variant="link"
-                                role="button"
-                                @click="onHelp">
+                            <GButton v-b-tooltip.hover.bottom title="Help" variant="link" role="button" @click="onHelp">
                                 <FontAwesomeIcon icon="question" />
-                            </b-button>
+                            </GButton>
                         </div>
                         <div class="my-1">
                             {{ title }}
@@ -42,6 +37,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
+import GButton from "component-library/GButton";
 import FlexPanel from "components/Panels/FlexPanel";
 import _ from "underscore";
 import Vue from "vue";
@@ -60,6 +56,7 @@ export default {
         MarkdownToolBox,
         FlexPanel,
         FontAwesomeIcon,
+        GButton,
         MarkdownHelp,
     },
     props: {

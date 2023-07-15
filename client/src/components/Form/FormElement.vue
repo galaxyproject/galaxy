@@ -22,6 +22,7 @@ import FormSelection from "./Elements/FormSelection.vue";
 import FormTags from "./Elements/FormTags.vue";
 import FormText from "./Elements/FormText.vue";
 import FormUpload from "./Elements/FormUpload.vue";
+import GButton from "@/component-library/GButton.vue";
 
 interface FormElementProps {
     id?: string;
@@ -186,19 +187,19 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
 
         <div class="ui-form-title">
             <span v-if="collapsible || connectable">
-                <b-button
+                <GButton
                     v-if="collapsible && !connected"
                     class="ui-form-collapsible-icon"
                     :title="collapseText"
                     @click="onCollapse">
                     <FontAwesomeIcon v-if="collapsed" :icon="props.collapsedEnableIcon" />
                     <FontAwesomeIcon v-else :icon="props.collapsedDisableIcon" />
-                </b-button>
+                </GButton>
 
-                <b-button v-if="connectable" class="ui-form-connected-icon" :title="connectText" @click="onConnect">
+                <GButton v-if="connectable" class="ui-form-connected-icon" :title="connectText" @click="onConnect">
                     <FontAwesomeIcon v-if="connected" :icon="props.connectedEnableIcon" />
                     <FontAwesomeIcon v-else :icon="props.connectedDisableIcon" />
-                </b-button>
+                </GButton>
 
                 <span v-if="props.title" class="ui-form-title-text ml-1">
                     <label :for="props.id">{{ props.title }}</label>

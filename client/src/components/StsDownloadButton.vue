@@ -1,5 +1,5 @@
 <template>
-    <BButton
+    <GButton
         v-if="isConfigLoaded && canDownload(config)"
         v-b-tooltip.hover.bottom
         :title="title"
@@ -10,7 +10,7 @@
         Generate
         <FontAwesomeIcon v-if="waiting" icon="spinner" spin />
         <FontAwesomeIcon v-else icon="download" />
-    </BButton>
+    </GButton>
 </template>
 
 <script>
@@ -22,7 +22,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faDownload, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import { BButton } from "bootstrap-vue";
+import GButton from "component-library/GButton";
 import { Toast } from "composables/toast";
 import { getAppRoot } from "onload/loadConfig";
 import { withPrefix } from "utils/redirect";
@@ -33,7 +33,7 @@ library.add(faDownload, faSpinner);
 export default {
     components: {
         FontAwesomeIcon,
-        BButton,
+        GButton,
     },
     props: {
         title: {

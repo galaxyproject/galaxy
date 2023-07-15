@@ -17,7 +17,7 @@
                             <GInputGroup>
                                 <GInput v-model="filter" placeholder="Type to Search" @keyup.esc.native="filter = ''" />
                                 <GInputGroupAppend>
-                                    <b-btn :disabled="!filter" @click="filter = ''">Clear (esc)</b-btn>
+                                    <GButton :disabled="!filter" @click="filter = ''">Clear (esc)</GButton>
                                 </GInputGroupAppend>
                             </GInputGroup>
                         </b-form-group>
@@ -28,8 +28,8 @@
                 <b-card id="data-managers-card" no-body header="Installed Data Managers">
                     <b-list-group flush>
                         <b-list-group-item v-for="(dataManager, index) in dataManagersFiltered" :key="index">
-                            <b-button-group vertical>
-                                <b-button
+                            <GButtonGroup vertical>
+                                <GButton
                                     :id="kebabCase(dataManager['name'])"
                                     :href="dataManager['toolUrl']"
                                     target="_blank"
@@ -38,16 +38,16 @@
                                     <div v-if="dataManager['description']">
                                         <i>{{ dataManager["description"] }}</i>
                                     </div>
-                                </b-button>
-                                <b-button
+                                </GButton>
+                                <GButton
                                     :id="kebabCase(dataManager['name']) + '-jobs'"
                                     :to="{
                                         name: 'DataManagerJobs',
                                         params: { id: encodeURIComponent(dataManager['id']) },
                                     }">
                                     Jobs
-                                </b-button>
-                            </b-button-group>
+                                </GButton>
+                            </GButtonGroup>
                         </b-list-group-item>
                     </b-list-group>
                 </b-card>
@@ -73,20 +73,24 @@
 
 <script>
 import axios from "axios";
-import GInput from "component-library/GInput";
 import { getAppRoot } from "onload/loadConfig";
 import { debounce } from "underscore";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
+import GButtonGroup from "@/component-library/GButtonGroup.vue";
+import GInput from "@/component-library/GInput.vue";
 import GInputGroup from "@/component-library/GInputGroup.vue";
 import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
 
 export default {
     components: {
+        GAlert,
+        GButton,
+        GButtonGroup,
+        GInput,
         GInputGroup,
         GInputGroupAppend,
-        GAlert,
-        GInput,
     },
     beforeRouteEnter(to, from, next) {
         console.log("beforeRouteEnter");

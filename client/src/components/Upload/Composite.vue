@@ -33,10 +33,10 @@
             </select2>
         </template>
         <template v-slot:buttons>
-            <b-button ref="btnClose" class="ui-button-default" :title="btnCloseTitle" @click="$emit('dismiss')">
+            <GButton ref="btnClose" class="ui-button-default" :title="btnCloseTitle" @click="$emit('dismiss')">
                 {{ btnCloseTitle | localize }}
-            </b-button>
-            <b-button
+            </GButton>
+            <GButton
                 id="btn-start"
                 ref="btnStart"
                 class="ui-button-default"
@@ -45,20 +45,21 @@
                 :variant="readyStart ? 'primary' : ''"
                 @click="_eventStart">
                 {{ btnStartTitle }}
-            </b-button>
-            <b-button
+            </GButton>
+            <GButton
                 id="btn-reset"
                 ref="btnReset"
                 class="ui-button-default"
                 :title="btnResetTitle"
                 @click="_eventReset">
                 {{ btnResetTitle }}
-            </b-button>
+            </GButton>
         </template>
     </upload-wrapper>
 </template>
 
 <script>
+import GButton from "component-library/GButton";
 import UploadRow from "mvc/upload/composite/composite-row";
 import _ from "underscore";
 import { refreshContentsWrapper } from "utils/data";
@@ -69,6 +70,9 @@ import { uploadModelsToPayload } from "./helpers";
 import UploadBoxMixin from "./UploadBoxMixin";
 
 export default {
+    components: {
+        GButton,
+    },
     mixins: [UploadBoxMixin],
     data() {
         return {

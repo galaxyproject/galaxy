@@ -1,13 +1,13 @@
 <template>
     <div>
         <div class="form-inline d-flex align-items-center mb-2">
-            <b-button
+            <GButton
                 class="mr-1 btn btn-secondary"
                 :to="{ path: `/libraries` }"
                 data-toggle="tooltip"
                 title="Go to libraries list">
                 <FontAwesomeIcon icon="home" />
-            </b-button>
+            </GButton>
             <div>
                 <div class="form-inline">
                     <SearchField @updateSearch="updateSearch($event)"></SearchField>
@@ -119,6 +119,7 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
 import BootstrapVue from "bootstrap-vue";
+import GButton from "component-library/GButton";
 import { initTopBarIcons } from "components/Libraries/icons";
 import FolderDetails from "components/Libraries/LibraryFolder/FolderDetails/FolderDetails";
 import LibraryBreadcrumb from "components/Libraries/LibraryFolder/LibraryBreadcrumb";
@@ -146,6 +147,7 @@ export default {
         FontAwesomeIcon,
         LibraryBreadcrumb,
         FolderDetails,
+        GButton,
     },
     props: {
         folder_id: {

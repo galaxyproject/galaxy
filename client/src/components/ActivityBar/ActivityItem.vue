@@ -2,6 +2,7 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useRouter } from "vue-router/composables";
 
+import GButton from "@/component-library/GButton.vue";
 import TextShort from "@/components/Common/TextShort.vue";
 import Popper from "@/components/Popper/Popper.vue";
 
@@ -87,9 +88,9 @@ function onClick(evt: MouseEvent): void {
             <small v-else>No tooltip available for this item</small>
             <div v-if="options" class="nav-options p-1">
                 <router-link v-for="(option, index) in options" :key="index" :to="option.value">
-                    <b-button size="sm" variant="outline-primary" class="w-100 my-1 text-break text-light">
+                    <GButton size="sm" variant="outline-primary" class="w-100 my-1 text-break text-light">
                         {{ option.name }}
-                    </b-button>
+                    </GButton>
                 </router-link>
             </div>
         </div>

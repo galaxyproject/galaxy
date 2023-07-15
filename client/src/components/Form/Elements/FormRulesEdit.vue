@@ -3,6 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
+import GButton from "component-library/GButton";
 import RuleCollectionBuilder from "components/RuleCollectionBuilder";
 import RulesDisplay from "components/RulesDisplay/RulesDisplay";
 import { getAppRoot } from "onload/loadConfig";
@@ -62,10 +63,10 @@ function onCancel() {
 <template>
     <div class="form-rules-edit">
         <RulesDisplay :input-rules="displayRules" />
-        <b-button title="Edit Rules" @click="onEdit">
+        <GButton title="Edit Rules" @click="onEdit">
             <FontAwesomeIcon icon="fa-edit" />
             <span>Edit</span>
-        </b-button>
+        </GButton>
 
         <b-modal ref="modal" modal-class="ui-form-rules-edit-modal" hide-footer>
             <template v-slot:modal-title>

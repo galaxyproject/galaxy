@@ -2,13 +2,14 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faArchive, faChartBar, faInfoCircle, faTrash, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
 import { computed } from "vue";
 
 import localize from "@/utils/localization";
 import { bytesToString } from "@/utils/utils";
 
 import type { DataValuePoint } from "./Charts";
+
+import GButton from "@/component-library/GButton.vue";
 
 type ItemTypes = "history" | "dataset";
 
@@ -63,15 +64,15 @@ function onPermanentlyDeleteItem() {
         </div>
 
         <div class="my-2">
-            <BButton
+            <GButton
                 variant="outline-primary"
                 size="sm"
                 class="mx-2"
                 :title="localize(`Go to the details of this ${itemType}`)"
                 @click="onViewItem">
                 <FontAwesomeIcon :icon="viewDetailsIcon" />
-            </BButton>
-            <BButton
+            </GButton>
+            <GButton
                 v-if="isRecoverable"
                 variant="outline-primary"
                 size="sm"
@@ -79,8 +80,8 @@ function onPermanentlyDeleteItem() {
                 :title="localize(`Undelete this ${itemType}`)"
                 @click="onUndeleteItem">
                 <FontAwesomeIcon icon="undo" />
-            </BButton>
-            <BButton
+            </GButton>
+            <GButton
                 v-if="isRecoverable"
                 variant="outline-danger"
                 size="sm"
@@ -88,7 +89,7 @@ function onPermanentlyDeleteItem() {
                 :title="localize(`Permanently delete this ${itemType}`)"
                 @click="onPermanentlyDeleteItem">
                 <FontAwesomeIcon icon="trash" />
-            </BButton>
+            </GButton>
         </div>
     </div>
 </template>

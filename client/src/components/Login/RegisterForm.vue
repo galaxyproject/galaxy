@@ -74,9 +74,9 @@
                                         name="subscribe"
                                         type="checkbox" />
                                 </b-form-group>
-                                <b-button v-localize name="create" type="submit" :disabled="disableCreate"
-                                    >Create</b-button
-                                >
+                                <GButton v-localize name="create" type="submit" :disabled="disableCreate">
+                                    Create
+                                </GButton>
                             </b-card-body>
                         </b-collapse>
                         <b-card-footer v-if="showLoginLink">
@@ -102,20 +102,22 @@
 <script>
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
-import GInput from "component-library/GInput";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin";
 import _l from "utils/localization";
 import { withPrefix } from "utils/redirect";
 import Vue from "vue";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
+import GInput from "@/component-library/GInput.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
-        GAlert,
         ExternalLogin,
+        GAlert,
+        GButton,
         GInput,
     },
     props: {

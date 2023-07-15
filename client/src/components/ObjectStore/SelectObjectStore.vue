@@ -6,6 +6,8 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import { getSelectableObjectStores } from "./services";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
+import GButtonGroup from "@/component-library/GButtonGroup.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DescribeObjectStore from "@/components/ObjectStore/DescribeObjectStore.vue";
 import ObjectStoreBadges from "@/components/ObjectStore/ObjectStoreBadges.vue";
@@ -90,16 +92,16 @@ async function handleSubmit(preferredObjectStoreId: string) {
             </GAlert>
             <b-row>
                 <b-col cols="7">
-                    <b-button-group vertical size="lg" style="width: 100%">
-                        <b-button
+                    <GButtonGroup vertical size="lg" style="width: 100%">
+                        <GButton
                             id="no-preferred-object-store-button"
                             :variant="variant(null)"
                             class="preferred-object-store-select-button"
                             data-object-store-id="__null__"
                             @click="handleSubmit(null)"
-                            ><i>{{ defaultOptionTitle | localize }}</i></b-button
+                            ><i>{{ defaultOptionTitle | localize }}</i></GButton
                         >
-                        <b-button
+                        <GButton
                             v-for="object_store in objectStores"
                             :id="`preferred-object-store-button-${object_store.object_store_id}`"
                             :key="object_store.object_store_id"
@@ -111,8 +113,8 @@ async function handleSubmit(preferredObjectStoreId: string) {
                             <ObjectStoreBadges :badges="object_store.badges" size="lg" :more-on-hover="false" />
                             <ProvidedQuotaSourceUsageBar :object-store="object_store" :compact="true">
                             </ProvidedQuotaSourceUsageBar>
-                        </b-button>
-                    </b-button-group>
+                        </GButton>
+                    </GButtonGroup>
                 </b-col>
                 <b-col cols="5">
                     <p v-localize style="float: right">

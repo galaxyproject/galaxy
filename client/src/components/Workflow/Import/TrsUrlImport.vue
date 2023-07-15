@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 
+import GButton from "@/component-library/GButton.vue";
 import GInput from "@/component-library/GInput.vue";
 
 const props = defineProps({
@@ -42,13 +43,13 @@ if (trsUrl.value) {
             <GInput id="trs-import-url-input" v-model="trsUrl" aria-label="TRS URL" type="url" />
             If the workflow is accessible via a TRS URL, enter the URL above and click Import.
         </b-form-group>
-        <b-button
+        <GButton
             id="trs-url-import-button"
             type="submit"
             :disabled="isImportDisabled"
             :title="importTooltip"
             variant="primary">
             Import workflow
-        </b-button>
+        </GButton>
     </b-form>
 </template>

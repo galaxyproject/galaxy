@@ -10,11 +10,11 @@
         <div class="p-1 cursor-pointer" draggable @dragstart="onDragStart" @dragend="onDragEnd" @click.stop="onClick">
             <div class="d-flex justify-content-between">
                 <span class="p-1 font-weight-bold" data-description="content item header info">
-                    <b-button v-if="selectable" class="selector p-0" @click.stop="$emit('update:selected', !selected)">
+                    <GButton v-if="selectable" class="selector p-0" @click.stop="$emit('update:selected', !selected)">
                         <icon v-if="selected" fixed-width size="lg" :icon="['far', 'check-square']" />
                         <icon v-else fixed-width size="lg" :icon="['far', 'square']" />
-                    </b-button>
-                    <b-button
+                    </GButton>
+                    <GButton
                         v-if="highlight == 'input'"
                         v-b-tooltip.hover
                         variant="link"
@@ -22,8 +22,8 @@
                         title="Input"
                         @click.stop="toggleHighlights">
                         <FontAwesomeIcon class="text-info" icon="arrow-circle-up" />
-                    </b-button>
-                    <b-button
+                    </GButton>
+                    <GButton
                         v-else-if="highlight == 'active'"
                         v-b-tooltip.hover
                         variant="link"
@@ -32,8 +32,8 @@
                         @click.stop="toggleHighlights"
                         @keypress="toggleHighlights">
                         <FontAwesomeIcon icon="check-circle" />
-                    </b-button>
-                    <b-button
+                    </GButton>
+                    <GButton
                         v-else-if="highlight == 'output'"
                         v-b-tooltip.hover
                         variant="link"
@@ -41,7 +41,7 @@
                         title="Output"
                         @click.stop="toggleHighlights">
                         <FontAwesomeIcon class="text-info" icon="arrow-circle-down" />
-                    </b-button>
+                    </GButton>
                     <span v-if="hasStateIcon" class="state-icon">
                         <icon fixed-width :icon="contentState.icon" :spin="contentState.spin" />
                     </span>
@@ -104,6 +104,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faArrowCircleDown, faArrowCircleUp, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import GButton from "component-library/GButton";
 import { updateContentFields } from "components/History/model/queries";
 import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import { useEntryPointStore } from "stores/entryPointStore";
@@ -124,6 +125,7 @@ export default {
         DatasetDetails,
         StatelessTags,
         FontAwesomeIcon,
+        GButton,
     },
     props: {
         writable: { type: Boolean, default: true },

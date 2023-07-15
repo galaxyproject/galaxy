@@ -1,4 +1,6 @@
 <script setup>
+import GButton from "component-library/GButton";
+import GButtonGroup from "component-library/GButtonGroup";
 import Heading from "components/Common/Heading";
 import FormMessage from "components/Form/FormMessage";
 import ToolFooter from "components/Tool/ToolFooter";
@@ -115,7 +117,7 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
                     <span>(Galaxy Version {{ props.version }})</span>
                 </div>
                 <div class="d-flex flex-nowrap align-items-start flex-gapx-1">
-                    <b-button-group class="tool-card-buttons">
+                    <GButtonGroup class="tool-card-buttons">
                         <ToolFavoriteButton v-if="hasUser" :id="props.id" @onSetError="onSetError" />
                         <ToolVersionsButton
                             v-if="showVersions"
@@ -126,7 +128,7 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
                             :id="props.id"
                             :sharable-url="props.options.sharable_url"
                             :options="props.options" />
-                        <b-button
+                        <GButton
                             v-if="allowObjectStoreSelection"
                             id="tool-storage"
                             role="button"
@@ -135,7 +137,7 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
                             class="float-right tool-storage"
                             @click="onShowObjectStoreSelect">
                             <span class="fa fa-hdd" />
-                        </b-button>
+                        </GButton>
                         <ToolTargetPreferredObjectStorePopover
                             v-if="allowObjectStoreSelection"
                             :tool-preferred-object-store-id="toolPreferredObjectStoreId"
@@ -153,7 +155,7 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
                                 :root="root"
                                 @updated="onUpdatePreferredObjectStoreId" />
                         </b-modal>
-                    </b-button-group>
+                    </GButtonGroup>
                     <slot name="header-buttons" />
                 </div>
             </div>

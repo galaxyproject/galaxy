@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCircle, faHourglassHalf, faRetweet } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BButtonGroup, BCard, BCol, BCollapse, BFormCheckbox, BRow } from "bootstrap-vue";
+import { BCard, BCol, BCollapse, BFormCheckbox, BRow } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
@@ -10,6 +10,8 @@ import type { UserNotification } from "@/components/Notifications";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
+import GButtonGroup from "@/component-library/GButtonGroup.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import NotificationItem from "@/components/Notifications/NotificationItem.vue";
 import NotificationsPreferences from "@/components/User/Notifications/NotificationsPreferences.vue";
@@ -69,10 +71,10 @@ function togglePreferences() {
     <div aria-labelledby="notifications-list">
         <div class="d-flex justify-content-between">
             <h1 id="notifications-title" class="h-lg">Notifications</h1>
-            <BButton class="mb-2" variant="outline-primary" :pressed="preferencesOpen" @click="togglePreferences">
+            <GButton class="mb-2" variant="outline-primary" :pressed="preferencesOpen" @click="togglePreferences">
                 <FontAwesomeIcon icon="cog" />
                 Notifications preferences
-            </BButton>
+            </GButton>
         </div>
 
         <BCollapse v-model="preferencesOpen">
@@ -104,20 +106,20 @@ function togglePreferences() {
                         </BFormCheckbox>
                     </BCol>
                     <BCol v-if="haveSelected">
-                        <BButton size="sm" variant="outline-primary" @click="updateNotifications({ seen: true })">
+                        <GButton size="sm" variant="outline-primary" @click="updateNotifications({ seen: true })">
                             <FontAwesomeIcon icon="check" />
                             Mark as read
-                        </BButton>
-                        <BButton size="sm" variant="outline-primary" @click="updateNotifications({ deleted: true })">
+                        </GButton>
+                        <GButton size="sm" variant="outline-primary" @click="updateNotifications({ deleted: true })">
                             <FontAwesomeIcon icon="trash" />
                             Delete
-                        </BButton>
+                        </GButton>
                     </BCol>
                     <BCol>
                         <BRow align-h="end" align-v="center">
                             <span class="mx-2"> Filters: </span>
-                            <BButtonGroup>
-                                <BButton
+                            <GButtonGroup>
+                                <GButton
                                     id="show-unread-filter"
                                     size="sm"
                                     :pressed="showUnread"
@@ -125,8 +127,8 @@ function togglePreferences() {
                                     @click="showUnread = !showUnread">
                                     <FontAwesomeIcon icon="check" />
                                     Unread
-                                </BButton>
-                                <BButton
+                                </GButton>
+                                <GButton
                                     id="show-shared-filter"
                                     size="sm"
                                     :pressed="showShared"
@@ -134,8 +136,8 @@ function togglePreferences() {
                                     @click="showShared = !showShared">
                                     <FontAwesomeIcon icon="retweet" />
                                     Shared
-                                </BButton>
-                            </BButtonGroup>
+                                </GButton>
+                            </GButtonGroup>
                         </BRow>
                     </BCol>
                 </BRow>
@@ -154,7 +156,7 @@ function togglePreferences() {
                     :class="!item.seen_time ? 'border-dark' : ''">
                     <BRow align-h="start" align-v="center">
                         <BCol cols="auto">
-                            <BButtonGroup>
+                            <GButtonGroup>
                                 <FontAwesomeIcon
                                     v-if="!item.seen_time"
                                     size="sm"
@@ -163,7 +165,7 @@ function togglePreferences() {
                                 <BFormCheckbox
                                     :checked="selectedNotificationIds.includes(item.id)"
                                     @change="selectOrDeselectNotification([item])" />
-                            </BButtonGroup>
+                            </GButtonGroup>
                         </BCol>
                         <NotificationItem :notification="item" />
                     </BRow>

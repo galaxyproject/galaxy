@@ -1,6 +1,6 @@
 <template>
     <section class="m-3 details" data-description="edit details">
-        <b-button
+        <GButton
             :disabled="isAnonymous || !writeable"
             class="edit-button ml-1 float-right"
             data-description="editor toggle"
@@ -10,7 +10,7 @@
             :pressed="editing"
             @click="onToggle">
             <Icon icon="pen" />
-        </b-button>
+        </GButton>
         <slot name="name" />
 
         <!-- display annotation, tags -->
@@ -43,7 +43,7 @@
                 data-description="annotation input"
                 @keyup.esc="onToggle" />
             <StatelessTags v-if="localProps.tags" v-model="localProps.tags" class="mb-3 tags" />
-            <b-button
+            <GButton
                 class="save-button mb-1"
                 data-description="editor save button"
                 size="sm"
@@ -52,8 +52,8 @@
                 @click="onSave">
                 <Icon icon="save" />
                 <span v-localize>Save</span>
-            </b-button>
-            <b-button
+            </GButton>
+            <GButton
                 class="cancel-button mb-1"
                 data-description="editor cancel button"
                 size="sm"
@@ -61,7 +61,7 @@
                 @click="onToggle">
                 <Icon icon="undo" />
                 <span v-localize>Cancel</span>
-            </b-button>
+            </GButton>
         </div>
     </section>
 </template>
@@ -72,10 +72,12 @@ import { mapState } from "pinia";
 import short from "@/components/plugins/short.js";
 import { useUserStore } from "@/stores/userStore";
 
+import GButton from "@/component-library/GButton.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 export default {
     components: {
+        GButton,
         StatelessTags,
     },
     directives: {

@@ -10,10 +10,10 @@
                 <span v-if="itemsLoaded.length !== 0" class="row">
                     <span v-if="filterCount" class="col d-inline-block d-flex align-items-baseline flex-gapx-1">
                         Found {{ itemsLoaded.length }} tools for
-                        <b-button id="popover-filters" class="ui-link">
+                        <GButton id="popover-filters" class="ui-link">
                             {{ filterCount }}
                             {{ filterCount === 1 ? "filter" : "filters" }}.
-                        </b-button>
+                        </GButton>
                         <b-popover target="popover-filters" triggers="hover focus" placement="bottom">
                             <template v-slot:title>Filters</template>
                             <div v-for="(value, filter) in filterSettings" :key="filter">
@@ -21,10 +21,10 @@
                                 >: {{ value }}
                             </div>
                         </b-popover>
-                        <b-button variant="link" size="sm" @click.stop="showAllTools">
+                        <GButton variant="link" size="sm" @click.stop="showAllTools">
                             <FontAwesomeIcon icon="fa-times" />
                             Clear filters
-                        </b-button>
+                        </GButton>
                     </span>
                     <span v-else class="col d-inline-block">
                         No filters applied. Please add filters to the Advanced Tool Search in the Tool Panel.
@@ -60,12 +60,14 @@ import ScrollToTopButton from "./ScrollToTopButton";
 import ToolsListTable from "./ToolsListTable";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
 
 library.add(faTimes);
 
 export default {
     components: {
         GAlert,
+        GButton,
         LoadingSpan,
         ToolsListTable,
         ToolsProvider,

@@ -12,17 +12,19 @@
         </template>
         <template v-slot:actions>
             <div>
-                <b-button @click="deleteSelected"> Delete Selected Environments </b-button>
+                <GButton @click="deleteSelected"> Delete Selected Environments </GButton>
             </div>
         </template>
     </DependencyIndexWrapper>
 </template>
 <script>
+import GButton from "component-library/GButton";
+
 import { deletedUnusedPaths, getDependencyUnusedPaths } from "../AdminServices";
 import DependencyIndexWrapper from "./DependencyIndexWrapper";
 
 export default {
-    components: { DependencyIndexWrapper },
+    components: { DependencyIndexWrapper, GButton },
     data() {
         return {
             error: null,

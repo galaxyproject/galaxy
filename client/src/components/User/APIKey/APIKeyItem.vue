@@ -6,6 +6,7 @@ import { ref } from "vue";
 
 import svc from "./model/service";
 
+import GButton from "@/component-library/GButton.vue";
 import GInputGroup from "@/component-library/GInputGroup.vue";
 import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
 import GInputGroupPrepend from "@/component-library/GInputGroupPrepend.vue";
@@ -62,9 +63,9 @@ const deleteKey = () => {
                         <GInputGroupText>
                             <CopyToClipboard message="Key was copied to clipboard" :text="item.key" title="Copy key" />
                         </GInputGroupText>
-                        <b-button title="Delete api key" @click="toggleDeleteModal">
+                        <GButton title="Delete api key" @click="toggleDeleteModal">
                             <icon icon="trash" />
-                        </b-button>
+                        </GButton>
                     </GInputGroupAppend>
                 </GInputGroup>
                 <span class="small text-black-50">

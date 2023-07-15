@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
 import { ref } from "vue";
+
+import GButton from "@/component-library/GButton.vue";
 
 const loading = ref(false);
 
@@ -39,7 +40,7 @@ async function onClick() {
 </script>
 
 <template>
-    <BButton
+    <GButton
         v-b-tooltip.hover="!title"
         :title="title"
         :size="size"
@@ -49,5 +50,5 @@ async function onClick() {
         <span v-if="loading" class="loading-icon fa fa-spinner fa-spin" title="loading"></span>
         <FontAwesomeIcon v-else :icon="props.icon" @click="onClick" />
         <slot></slot>
-    </BButton>
+    </GButton>
 </template>

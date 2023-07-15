@@ -1,5 +1,5 @@
 <template>
-    <b-button
+    <GButton
         id="activity-upload"
         v-b-tooltip.hover.noninteractive.bottom
         :aria-label="title | localize"
@@ -19,7 +19,7 @@
             <FontAwesomeIcon icon="upload" class="mr-1" />
             <b v-localize>Upload Data</b>
         </span>
-    </b-button>
+    </GButton>
 </template>
 
 <script>
@@ -27,13 +27,14 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { VBTooltip } from "bootstrap-vue";
+import GButton from "component-library/GButton";
 import { useGlobalUploadModal } from "composables/globalUploadModal";
 import Query from "utils/query-string-parsing";
 
 library.add(faUpload);
 
 export default {
-    components: { FontAwesomeIcon },
+    components: { FontAwesomeIcon, GButton },
     directives: {
         "v-b-tooltip": VBTooltip,
     },

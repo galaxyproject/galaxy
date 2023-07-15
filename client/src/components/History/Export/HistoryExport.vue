@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faFileExport } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BCard, BTab, BTabs } from "bootstrap-vue";
+import { BCard, BTab, BTabs } from "bootstrap-vue";
 import LoadingSpan from "components/LoadingSpan";
 import { useConfirmDialog } from "composables/confirmDialog";
 import { useFileSources } from "composables/fileSources";
@@ -18,6 +18,7 @@ import { exportToFileSource, getExportRecords, reimportHistoryFromRecord } from 
 
 import ExportOptions from "./ExportOptions.vue";
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
 import ExportForm from "components/Common/ExportForm.vue";
 import ExportRecordDetails from "components/Common/ExportRecordDetails.vue";
 import ExportRecordTable from "components/Common/ExportRecordTable.vue";
@@ -202,13 +203,13 @@ function updateExportParams(newParams) {
                         storage, export to a <b>remote file</b> or download and then import the archive on another
                         Galaxy server.
                     </GAlert>
-                    <BButton
+                    <GButton
                         class="gen-direct-download-btn"
                         :disabled="!canGenerateDownload"
                         variant="primary"
                         @click="prepareDownload">
                         Generate direct download
-                    </BButton>
+                    </GButton>
                     <span v-if="isPreparingDownload">
                         <LoadingSpan message="Galaxy is preparing your download, this will likely take a while" />
                     </span>

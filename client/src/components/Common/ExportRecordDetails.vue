@@ -15,6 +15,7 @@ import { computed } from "vue";
 import { ExportRecordModel } from "./models/exportRecordModel";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
 
 library.add(faExclamationCircle, faExclamationTriangle, faCheckCircle, faClock, faLink);
 
@@ -119,28 +120,28 @@ function onMessageDismissed() {
                     {{ props.actionMessage }}
                 </GAlert>
                 <div v-else class="actions">
-                    <b-button
+                    <GButton
                         v-if="props.record.canDownload"
                         class="record-download-btn"
                         variant="primary"
                         @click="downloadObject">
                         Download
-                    </b-button>
-                    <b-button
+                    </GButton>
+                    <GButton
                         v-if="props.record.canDownload"
                         title="Copy Download Link"
                         size="sm"
                         variant="link"
                         @click.stop="copyDownloadLink">
                         <FontAwesomeIcon icon="link" />
-                    </b-button>
-                    <b-button
+                    </GButton>
+                    <GButton
                         v-if="props.record.canReimport"
                         class="record-reimport-btn"
                         variant="primary"
                         @click="reimportObject">
                         Reimport
-                    </b-button>
+                    </GButton>
                 </div>
             </div>
         </div>

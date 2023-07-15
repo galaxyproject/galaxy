@@ -1,21 +1,22 @@
 <template>
-    <b-button-group size="sm">
-        <b-button v-if="hasSelection" variant="link" data-test-id="clear-btn" @click="resetSelection">
+    <GButtonGroup size="sm">
+        <GButton v-if="hasSelection" variant="link" data-test-id="clear-btn" @click="resetSelection">
             <span class="fa fa-fw fa-times" title="Clear selection" />
-        </b-button>
-        <b-button v-else variant="link" data-test-id="select-all-btn" @click="selectAll">
+        </GButton>
+        <GButton v-else variant="link" data-test-id="select-all-btn" @click="selectAll">
             <span>Select All</span>
-        </b-button>
-    </b-button-group>
+        </GButton>
+    </GButtonGroup>
 </template>
 
 <script>
-import { BButton, BButtonGroup } from "bootstrap-vue";
+import GButton from "component-library/GButton";
+import GButtonGroup from "component-library/GButtonGroup";
 
 export default {
     components: {
-        "b-button": BButton,
-        "b-button-group": BButtonGroup,
+        GButton,
+        GButtonGroup,
     },
     props: {
         selectionSize: { type: Number, required: true },

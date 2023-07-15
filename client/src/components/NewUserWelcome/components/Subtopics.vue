@@ -16,22 +16,26 @@
                         :src="imgUrl(subject.image)"
                         :alt="subject.alt"></b-card-img>
                     <b-card-text class="font-weight-light">{{ subject.intro | localize }}</b-card-text>
-                    <b-button class="mt-auto" variant="info" @click="$emit('select', idx)">{{
+                    <GButton class="mt-auto" variant="info" @click="$emit('select', idx)">{{
                         subject.title | localize
-                    }}</b-button>
+                    }}</GButton>
                 </b-card>
             </b-card-group>
         </b-row>
-        <b-button class="mt-auto new-user-welcome-return" variant="primary" role="link" @click="$emit('back')">
+        <GButton class="mt-auto new-user-welcome-return" variant="primary" role="link" @click="$emit('back')">
             <span class="fa fa-caret-left mr-1" />
             <span>Return</span>
-        </b-button>
+        </GButton>
     </div>
 </template>
 <script>
+import GButton from "component-library/GButton";
 import { getAppRoot } from "onload/loadConfig";
 
 export default {
+    components: {
+        GButton,
+    },
     props: {
         topics: { type: Array, required: true },
         title: { type: String, required: true },

@@ -1,5 +1,5 @@
 <template>
-    <b-button
+    <GButton
         v-if="wait"
         v-b-tooltip.hover.bottom
         disabled
@@ -7,8 +7,8 @@
         title="Please Wait..."
         class="d-flex flex-nowrap align-items-center text-nowrap">
         <FontAwesomeIcon icon="spinner" class="mr-2" spin />{{ title }}
-    </b-button>
-    <b-button
+    </GButton>
+    <GButton
         v-else
         v-b-tooltip.hover.bottom
         variant="primary"
@@ -16,12 +16,13 @@
         :title="tooltip"
         @click="$emit('onClick')">
         <FontAwesomeIcon icon="play" class="mr-2" />{{ title }}
-    </b-button>
+    </GButton>
 </template>
 <script>
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPlay, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import GButton from "component-library/GButton";
 
 library.add(faSpinner);
 library.add(faPlay);
@@ -29,6 +30,7 @@ library.add(faPlay);
 export default {
     components: {
         FontAwesomeIcon,
+        GButton,
     },
     props: {
         title: {

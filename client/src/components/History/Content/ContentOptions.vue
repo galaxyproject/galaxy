@@ -1,7 +1,7 @@
 <template>
     <span class="align-self-start btn-group">
         <!-- Special case for collections -->
-        <b-button
+        <GButton
             v-if="isCollection && canShowCollectionDetails"
             class="collection-job-details-btn px-1"
             title="Show Details"
@@ -10,9 +10,9 @@
             :href="showCollectionDetailsUrl"
             @click.prevent.stop="$emit('showCollectionInfo')">
             <icon icon="info-circle" />
-        </b-button>
+        </GButton>
         <!-- Common for all content items -->
-        <b-button
+        <GButton
             v-if="isDataset"
             :disabled="displayDisabled"
             :title="displayButtonTitle"
@@ -23,8 +23,8 @@
             :href="displayUrl"
             @click.prevent.stop="onDisplay($event)">
             <icon icon="eye" />
-        </b-button>
-        <b-button
+        </GButton>
+        <GButton
             v-if="writable && isHistoryItem"
             :disabled="editDisabled"
             :title="editButtonTitle"
@@ -35,8 +35,8 @@
             :href="editUrl"
             @click.prevent.stop="$emit('edit')">
             <icon icon="pen" />
-        </b-button>
-        <b-button
+        </GButton>
+        <GButton
             v-if="writable && isHistoryItem && !isDeleted"
             :tabindex="tabindex"
             class="delete-btn px-1"
@@ -45,8 +45,8 @@
             variant="link"
             @click.stop="$emit('delete')">
             <icon icon="trash" />
-        </b-button>
-        <b-button
+        </GButton>
+        <GButton
             v-if="writable && isHistoryItem && isDeleted"
             :tabindex="tabindex"
             class="undelete-btn px-1"
@@ -55,8 +55,8 @@
             variant="link"
             @click.stop="$emit('undelete')">
             <icon icon="trash-restore" />
-        </b-button>
-        <b-button
+        </GButton>
+        <GButton
             v-if="writable && isHistoryItem && !isVisible"
             :tabindex="tabindex"
             class="unhide-btn px-1"
@@ -65,14 +65,19 @@
             variant="link"
             @click.stop="$emit('unhide')">
             <icon icon="eye-slash" />
-        </b-button>
+        </GButton>
     </span>
 </template>
 
 <script>
+import GButton from "component-library/GButton";
+
 import { prependPath } from "@/utils/redirect";
 
 export default {
+    components: {
+        GButton,
+    },
     props: {
         writable: { type: Boolean, default: true },
         isDataset: { type: Boolean, required: true },

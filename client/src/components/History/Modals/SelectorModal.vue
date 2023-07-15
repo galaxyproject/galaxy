@@ -4,7 +4,7 @@ import { faListAlt } from "@fortawesome/free-regular-svg-icons";
 import { faArrowDown, faColumns, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useInfiniteScroll } from "@vueuse/core";
-import { BBadge, BButton, BButtonGroup, BFormGroup, BListGroup, BListGroupItem, BModal } from "bootstrap-vue";
+import { BBadge, BFormGroup, BListGroup, BListGroupItem, BModal } from "bootstrap-vue";
 import isEqual from "lodash.isequal";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, onUnmounted, type PropType, type Ref, ref, watch } from "vue";
@@ -17,6 +17,8 @@ import Filtering, { contains, expandNameTag } from "@/utils/filtering";
 import localize from "@/utils/localization";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
+import GButtonGroup from "@/component-library/GButtonGroup.vue";
 import GInput from "@/component-library/GInput.vue";
 import Heading from "@/components/Common/Heading.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
@@ -258,8 +260,8 @@ async function loadMore(noScroll = false) {
                         <div
                             v-if="props.additionalOptions.length > 0"
                             class="d-flex justify-content-end align-items-center mt-1">
-                            <BButtonGroup>
-                                <BButton
+                            <GButtonGroup>
+                                <GButton
                                     v-if="props.additionalOptions.includes('set-current')"
                                     v-b-tooltip
                                     :title="localize('Set as current history')"
@@ -267,9 +269,9 @@ async function loadMore(noScroll = false) {
                                     class="p-0 px-1"
                                     @click.stop="() => setCurrentHistory(history)">
                                     <FontAwesomeIcon icon="fa-sign-in-alt" />
-                                </BButton>
+                                </GButton>
 
-                                <BButton
+                                <GButton
                                     v-if="props.additionalOptions.includes('multi')"
                                     v-b-tooltip
                                     :title="localize('Open in multi-view')"
@@ -277,9 +279,9 @@ async function loadMore(noScroll = false) {
                                     class="p-0 px-1"
                                     @click.stop="() => openInMulti(history)">
                                     <FontAwesomeIcon icon="fa-columns" />
-                                </BButton>
+                                </GButton>
 
-                                <BButton
+                                <GButton
                                     v-if="props.additionalOptions.includes('center')"
                                     v-b-tooltip
                                     :title="localize('Open in center panel')"
@@ -287,8 +289,8 @@ async function loadMore(noScroll = false) {
                                     class="p-0 px-1"
                                     @click.stop="() => setCenterPanelHistory(history)">
                                     <FontAwesomeIcon icon="far fa-list-alt" />
-                                </BButton>
-                            </BButtonGroup>
+                                </GButton>
+                            </GButtonGroup>
                         </div>
                     </BListGroupItem>
                     <div>
@@ -304,7 +306,7 @@ async function loadMore(noScroll = false) {
             <template v-slot:modal-footer>
                 <div v-if="!allLoaded" class="mr-auto">
                     <i>Loaded {{ filtered.length }} out of {{ totalHistoryCount }} histories</i>
-                    <BButton
+                    <GButton
                         v-b-tooltip.noninteractive.hover
                         class="load-more-hist-button"
                         size="sm"
@@ -312,16 +314,16 @@ async function loadMore(noScroll = false) {
                         variant="link"
                         @click="loadMore()">
                         <FontAwesomeIcon icon="fa-arrow-down" />
-                    </BButton>
+                    </GButton>
                 </div>
-                <BButton
+                <GButton
                     v-if="multiple"
                     v-localize
                     :disabled="selectedHistories.length === 0 || isEqual(selectedHistories, pinnedHistories)"
                     variant="primary"
                     @click="selectHistories">
                     Change Selected
-                </BButton>
+                </GButton>
                 <span v-else v-localize> Click a history to switch to it </span>
             </template>
         </BModal>

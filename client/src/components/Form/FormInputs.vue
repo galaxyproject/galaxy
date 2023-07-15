@@ -36,7 +36,7 @@
                     data-description="repeat block"
                     :title="repeatTitle(cacheId, input.title)">
                     <template v-slot:operations>
-                        <b-button
+                        <GButton
                             v-if="!sustainRepeats"
                             v-b-tooltip.hover.bottom
                             role="button"
@@ -45,16 +45,16 @@
                             class="float-right"
                             @click="repeatDelete(input, cacheId)">
                             <FontAwesomeIcon icon="trash-alt" />
-                        </b-button>
+                        </GButton>
                     </template>
                     <template v-slot:body>
                         <FormNode v-bind="$props" :inputs="cache" :prefix="getPrefix(input.name, cacheId)" />
                     </template>
                 </FormCard>
-                <b-button v-if="!sustainRepeats" @click="repeatInsert(input)">
+                <GButton v-if="!sustainRepeats" @click="repeatInsert(input)">
                     <FontAwesomeIcon icon="plus" class="mr-1" />
                     <span data-description="repeat insert">Insert {{ input.title || "Repeat" }}</span>
-                </b-button>
+                </GButton>
             </div>
             <div v-else-if="input.type == 'section'">
                 <FormCard :title="input.title || input.name" :expanded.sync="input.expanded" :collapsible="true">
@@ -90,6 +90,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPlus, faTrashAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import GButton from "component-library/GButton";
 import FormCard from "components/Form/FormCard";
 import FormElement from "components/Form/FormElement";
 import { matchCase } from "components/Form/utilities";
@@ -99,6 +100,7 @@ library.add(faPlus, faTrashAlt);
 export default {
     name: "FormNode",
     components: {
+        GButton,
         FontAwesomeIcon,
         FormCard,
         FormElement,

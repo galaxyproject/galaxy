@@ -35,10 +35,10 @@
 
         <div slot="modal-footer" slot-scope="{ ok, cancel }">
             <div>
-                <b-button class="mr-3" @click="cancel()"> Cancel</b-button>
-                <b-button :variant="saveVariant" :disabled="!formValid" @click="copy(ok)">
+                <GButton class="mr-3" @click="cancel()"> Cancel</GButton>
+                <GButton :variant="saveVariant" :disabled="!formValid" @click="copy(ok)">
                     {{ saveTitle | localize }}
-                </b-button>
+                </GButton>
             </div>
         </div>
     </b-modal>

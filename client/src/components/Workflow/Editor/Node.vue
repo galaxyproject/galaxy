@@ -11,9 +11,9 @@
         @move="onMoveTo"
         @pan-by="onPanBy">
         <div class="node-header unselectable clearfix" @click="makeActive" @keyup.enter="makeActive">
-            <b-button-group class="float-right">
+            <GButtonGroup class="float-right">
                 <LoadingSpan v-if="isLoading" spinner-only />
-                <b-button
+                <GButton
                     v-if="canClone"
                     v-b-tooltip.hover
                     class="node-clone py-0"
@@ -23,8 +23,8 @@
                     title="Duplicate"
                     @click.prevent.stop="onClone">
                     <i class="fa fa-files-o" />
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-b-tooltip.hover
                     class="node-destroy py-0"
                     variant="primary"
@@ -33,8 +33,8 @@
                     title="Remove"
                     @click.prevent.stop="remove">
                     <i class="fa fa-times" />
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="isEnabled"
                     :id="popoverId"
                     class="node-recommendations py-0"
@@ -42,7 +42,7 @@
                     size="sm"
                     aria-label="tool recommendations">
                     <i class="fa fa-arrow-right" />
-                </b-button>
+                </GButton>
                 <b-popover
                     v-if="isEnabled"
                     :target="popoverId"
@@ -57,7 +57,7 @@
                             @onCreate="onCreate" />
                     </div>
                 </b-popover>
-            </b-button-group>
+            </GButtonGroup>
             <i :class="iconClass" />
             <span v-if="step.when" v-b-tooltip.hover title="This step is conditionally executed.">
                 <FontAwesomeIcon icon="fa-code-branch" />
@@ -127,6 +127,8 @@ import type { Step } from "@/stores/workflowStepStore";
 import type { OutputTerminals } from "./modules/terminals";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
+import GButtonGroup from "@/component-library/GButtonGroup.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DraggableWrapper from "@/components/Workflow/Editor/DraggablePan.vue";
 import NodeInput from "@/components/Workflow/Editor/NodeInput.vue";

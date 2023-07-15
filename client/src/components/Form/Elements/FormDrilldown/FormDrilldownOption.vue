@@ -5,6 +5,7 @@ import { computed, type ComputedRef, onMounted, ref } from "vue";
 import { getAllValues, type Option } from "./utilities";
 
 import FormDrilldownList from "./FormDrilldownList.vue";
+import GButton from "@/component-library/GButton.vue";
 
 const props = defineProps<{
     currentValue: string[];
@@ -50,10 +51,10 @@ onMounted(() => {
 
 <template>
     <div>
-        <b-button v-if="hasOptions" variant="link" class="btn p-0" @click="toggleChildren">
+        <GButton v-if="hasOptions" variant="link" class="btn p-0" @click="toggleChildren">
             <i v-if="showChildren" class="fa fa-minus-square" />
             <i v-else class="fa fa-plus-square" />
-        </b-button>
+        </GButton>
         <component
             :is="isComponent"
             class="drilldown-option d-inline"

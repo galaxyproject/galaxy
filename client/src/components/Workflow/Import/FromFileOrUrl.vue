@@ -8,6 +8,7 @@ import { withPrefix } from "@/utils/redirect";
 import { getRedirectOnImportPath } from "../redirectPath";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
 import GInput from "@/component-library/GInput.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -91,13 +92,13 @@ async function submit(ev: SubmitEvent) {
         <GAlert v-if="loading" show variant="info">
             <LoadingSpan message="Loading your workflow, this may take a while - please be patient." />
         </GAlert>
-        <b-button
+        <GButton
             id="workflow-import-button"
             type="submit"
             :disabled="isImportDisabled"
             :title="importTooltip"
             variant="primary">
             Import workflow
-        </b-button>
+        </GButton>
     </b-form>
 </template>

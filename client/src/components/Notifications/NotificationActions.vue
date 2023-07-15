@@ -2,12 +2,13 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faHourglassHalf } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BCol, BRow } from "bootstrap-vue";
+import { BCol, BRow } from "bootstrap-vue";
 import { formatDistanceToNow, parseISO } from "date-fns";
 
 import type { UserNotification } from "@/components/Notifications";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 
+import GButton from "@/component-library/GButton.vue";
 import GInputGroup from "@/component-library/GInputGroup.vue";
 import AsyncButton from "@/components/Common/AsyncButton.vue";
 import UtcDate from "@/components/UtcDate.vue";
@@ -45,14 +46,14 @@ function getNotificationExpirationTitle(notification: UserNotification) {
                     title="Mark as read"
                     icon="check"
                     :action="() => notificationsStore.updateNotification(notification, { seen: true })" />
-                <BButton
+                <GButton
                     v-else-if="notification.expiration_time"
                     id="expiration-time-button"
                     v-b-tooltip.hover
                     variant="link"
                     :title="getNotificationExpirationTitle(notification)">
                     <FontAwesomeIcon icon="hourglass-half" />
-                </BButton>
+                </GButton>
                 <AsyncButton
                     id="delete-button"
                     icon="trash"

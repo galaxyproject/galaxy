@@ -9,9 +9,12 @@ import {
     faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BButtonGroup, BButtonToolbar, BCard, BCollapse, BTable } from "bootstrap-vue";
+import { BCard, BCollapse, BTable } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
+import GButton from "@/component-library/GButton.vue";
+import GButtonGroup from "@/component-library/GButtonGroup.vue";
+import GButtonToolbar from "@/component-library/GButtonToolbar.vue";
 import GLink from "@/component-library/GLink.vue";
 
 library.add(faExclamationCircle, faCheckCircle, faDownload, faFileImport, faSpinner, faLink);
@@ -111,30 +114,30 @@ function copyDownloadLink(record) {
                             title="The export failed." />
                     </template>
                     <template v-slot:cell(actions)="row">
-                        <BButtonToolbar aria-label="Actions">
-                            <BButtonGroup>
-                                <BButton
+                        <GButtonToolbar aria-label="Actions">
+                            <GButtonGroup>
+                                <GButton
                                     v-b-tooltip.hover.bottom
                                     :disabled="!row.item.canDownload"
                                     title="Download"
                                     @click="downloadObject(row.item)">
                                     <FontAwesomeIcon icon="download" />
-                                </BButton>
-                                <BButton
+                                </GButton>
+                                <GButton
                                     v-if="row.item.canDownload"
                                     title="Copy Download Link"
                                     @click.stop="copyDownloadLink(row.item)">
                                     <FontAwesomeIcon icon="link" />
-                                </BButton>
-                                <BButton
+                                </GButton>
+                                <GButton
                                     v-b-tooltip.hover.bottom
                                     :disabled="!row.item.canReimport"
                                     title="Reimport"
                                     @click="reimportObject(row.item)">
                                     <FontAwesomeIcon icon="file-import" />
-                                </BButton>
-                            </BButtonGroup>
-                        </BButtonToolbar>
+                                </GButton>
+                            </GButtonGroup>
+                        </GButtonToolbar>
                     </template>
                 </BTable>
             </BCard>

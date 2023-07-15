@@ -1,10 +1,10 @@
 <template>
     <div>
         <div class="form-inline d-flex align-items-center mb-2">
-            <b-button class="mr-1" title="go to first page" @click="gotoFirstPage">
+            <GButton class="mr-1" title="go to first page" @click="gotoFirstPage">
                 <FontAwesomeIcon icon="home" />
-            </b-button>
-            <b-button
+            </GButton>
+            <GButton
                 v-if="currentUser && currentUser.is_admin"
                 id="create-new-lib"
                 v-b-toggle.collapse-2
@@ -12,7 +12,7 @@
                 class="mr-1">
                 <FontAwesomeIcon icon="plus" />
                 {{ titleLibrary }}
-            </b-button>
+            </GButton>
             <SearchField :typing-delay="0" @updateSearch="searchValue($event)" />
             <b-form-checkbox
                 v-if="currentUser && currentUser.is_admin"
@@ -33,10 +33,10 @@
                         <GInput v-model="newLibraryForm.description" required :placeholder="titleDescription" />
                         <GInput v-model="newLibraryForm.synopsis" :placeholder="titleSynopsis" />
                         <template v-slot:append>
-                            <b-button id="save_new_library" type="submit" :title="titleSave">
+                            <GButton id="save_new_library" type="submit" :title="titleSave">
                                 <FontAwesomeIcon :icon="['far', 'save']" />
                                 {{ titleSave }}
-                            </b-button>
+                            </GButton>
                         </template>
                     </GInputGroup>
                 </b-form>
@@ -92,15 +92,15 @@
                 <FontAwesomeIcon v-if="row.item.public && !row.item.deleted" title="Public library" icon="globe" />
             </template>
             <template v-slot:cell(buttons)="row">
-                <b-button
+                <GButton
                     v-if="row.item.deleted"
                     size="sm"
                     :title="'Undelete ' + row.item.name"
                     @click="undelete(row.item)">
                     <FontAwesomeIcon icon="unlock" />
                     {{ titleUndelete }}
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="row.item.can_user_modify && row.item.editMode"
                     size="sm"
                     class="lib-btn permission_folder_btn"
@@ -108,8 +108,8 @@
                     @click="saveChanges(row.item)">
                     <FontAwesomeIcon :icon="['far', 'save']" />
                     {{ titleSave }}
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="row.item.can_user_modify && !row.item.deleted"
                     size="sm"
                     class="lib-btn edit_library_btn save_library_btn"
@@ -123,8 +123,8 @@
                         <FontAwesomeIcon :icon="['fas', 'times']" />
                         {{ titleCancel }}
                     </div>
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="currentUser && currentUser.is_admin && !row.item.deleted"
                     size="sm"
                     class="lib-btn permission_library_btn"
@@ -132,8 +132,8 @@
                     :to="{ path: `/libraries/${row.item.id}/permissions` }">
                     <FontAwesomeIcon icon="users" />
                     Manage
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="currentUser && currentUser.is_admin && row.item.editMode && !row.item.deleted"
                     size="sm"
                     class="lib-btn delete-lib-btn"
@@ -141,7 +141,7 @@
                     @click="deleteLibrary(row.item)">
                     <FontAwesomeIcon icon="trash" />
                     {{ titleDelete }}
-                </b-button>
+                </GButton>
             </template>
         </b-table>
 
@@ -183,6 +183,7 @@
 <script>
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
+import GButton from "component-library/GButton";
 import GInput from "component-library/GInput";
 import { initLibrariesIcons } from "components/Libraries/icons";
 import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH, onError } from "components/Libraries/library-utils";
@@ -208,6 +209,7 @@ Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GButton,
         GInputGroup,
         GLink,
         FontAwesomeIcon,

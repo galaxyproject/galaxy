@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BButton, BFormCheckbox, BModal, BPagination, BTable } from "bootstrap-vue";
+import { BFormCheckbox, BModal, BPagination, BTable } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import localize from "@/utils/localization";
@@ -7,6 +7,7 @@ import { bytesToString } from "@/utils/utils";
 
 import { type CleanableItem, type CleanupOperation, PaginationOptions, type SortableKey } from "./model";
 
+import GButton from "@/component-library/GButton.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
 interface ReviewCleanupDialogProps {
@@ -241,14 +242,14 @@ defineExpose({
                 v-model="currentPage"
                 :total-rows="totalRows"
                 :per-page="MAXIMUM_ITEMS_PER_PAGE" />
-            <BButton
+            <GButton
                 v-b-modal.confirmation-modal
                 :disabled="!hasItemsSelected"
                 :variant="deleteButtonVariant"
                 class="mx-2"
                 data-test-id="delete-button">
                 {{ permanentlyDeleteText }} {{ deleteItemsText }}
-            </BButton>
+            </GButton>
         </template>
 
         <BModal

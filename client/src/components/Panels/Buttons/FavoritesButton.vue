@@ -1,5 +1,5 @@
 <template>
-    <b-button
+    <GButton
         v-b-tooltip.hover.noninteractive
         class="panel-header-button-toolbox"
         size="sm"
@@ -10,16 +10,20 @@
         @click="onFavorites">
         <icon v-if="toggle" :icon="['fas', 'star']" />
         <icon v-else :icon="['far', 'star']" />
-    </b-button>
+    </GButton>
 </template>
 
 <script>
+import GButton from "component-library/GButton";
 import { mapState } from "pinia";
 
 import { useUserStore } from "@/stores/userStore";
 
 export default {
     name: "FavoritesButton",
+    components: {
+        GButton,
+    },
     props: {
         query: {
             type: String,

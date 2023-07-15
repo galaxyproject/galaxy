@@ -66,9 +66,9 @@
                     <FilesInput ref="filesInput" v-model="sourceRemoteFilesUri" />
                 </b-form-group>
 
-                <b-button class="import-button" variant="primary" type="submit" :disabled="!importReady">
+                <GButton class="import-button" variant="primary" type="submit" :disabled="!importReady">
                     Import history
-                </b-button>
+                </GButton>
             </b-form>
         </div>
     </div>
@@ -81,6 +81,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { refDebounced } from "@vueuse/core";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
+import GButton from "component-library/GButton";
 import GInput from "component-library/GInput";
 import JobError from "components/JobInformation/JobError";
 import { waitOnJob } from "components/JobStates/wait";
@@ -104,6 +105,7 @@ Vue.use(BootstrapVue);
 export default {
     components: {
         GAlert,
+        GButton,
         GInput,
         FilesInput,
         FontAwesomeIcon,

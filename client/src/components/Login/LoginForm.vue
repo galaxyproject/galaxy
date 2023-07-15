@@ -51,7 +51,7 @@
                                             </a>
                                         </b-form-text>
                                     </b-form-group>
-                                    <b-button v-localize name="login" type="submit">Login</b-button>
+                                    <GButton v-localize name="login" type="submit">Login</GButton>
                                 </div>
                                 <div v-if="enableOidc">
                                     <!-- OIDC login-->
@@ -103,7 +103,6 @@
 <script>
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
-import GInput from "component-library/GInput";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin";
 import _l from "utils/localization";
 import { withPrefix } from "utils/redirect";
@@ -112,14 +111,17 @@ import Vue from "vue";
 import NewUserConfirmation from "./NewUserConfirmation";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
+import GInput from "@/component-library/GInput.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
-        GAlert,
         ExternalLogin,
+        GAlert,
         GInput,
+        GButton,
         NewUserConfirmation,
     },
     props: {

@@ -3,26 +3,26 @@
         <GAlert :show="messageVisible" :variant="messageVariant"> {{ messageText }} </GAlert>
         <div v-if="itemsVisible" class="card-header">
             There are {{ itemsLength }}
-            <b-button
+            <GButton
                 size="sm"
                 :disabled="busy"
                 :title="tooltipAll"
                 data-placement="bottom"
                 @click.prevent="executeAll()">
                 <span :class="icon" />
-            </b-button>
+            </GButton>
             {{ plural }} available.
         </div>
         <b-table v-if="itemsVisible" striped no-sort-reset :fields="fields" :items="items">
             <template v-slot:cell(execute)="data">
-                <b-button
+                <GButton
                     size="sm"
                     :disabled="busy"
                     :title="tooltip"
                     data-placement="bottom"
                     @click.prevent="execute([data.item.id])">
                     <span :class="icon" />
-                </b-button>
+                </GButton>
             </template>
             <template v-slot:cell(links)="data">
                 <li v-for="link in data.item.links" :key="link.name">
@@ -37,12 +37,14 @@ import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
         GAlert,
+        GButton,
     },
     props: {
         icon: {

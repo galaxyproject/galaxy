@@ -1,24 +1,22 @@
 <template>
     <div>
         <div v-if="!url">
-            <b-button id="select-btn" @click="reset">
-                <FontAwesomeIcon icon="folder-open" /> {{ selectText }}
-            </b-button>
+            <GButton id="select-btn" @click="reset"> <FontAwesomeIcon icon="folder-open" /> {{ selectText }} </GButton>
             <FilesDialog :key="modalKey" mode="directory" :callback="setUrl" :require-writable="true" />
         </div>
         <b-breadcrumb v-if="url">
             <b-breadcrumb-item title="Select another folder" class="align-items-center" @click="reset">
-                <b-button class="pathname" variant="primary">
-                    <FontAwesomeIcon icon="folder-open" /> {{ url.protocol }}</b-button
-                >
+                <GButton class="pathname" variant="primary">
+                    <FontAwesomeIcon icon="folder-open" /> {{ url.protocol }}
+                </GButton>
             </b-breadcrumb-item>
             <b-breadcrumb-item
                 v-for="({ pathChunk, editable }, index) in pathChunks"
                 :key="index"
                 class="existent-url-path align-items-center">
-                <b-button class="regular-path-chunk" :disabled="!editable" variant="dark" @click="removePath(index)">
-                    {{ pathChunk }}</b-button
-                >
+                <GButton class="regular-path-chunk" :disabled="!editable" variant="dark" @click="removePath(index)">
+                    {{ pathChunk }}
+                </GButton>
             </b-breadcrumb-item>
             <b-breadcrumb-item class="directory-input-field align-items-center">
                 <b-input
@@ -40,6 +38,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faFolder, faFolderOpen } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import GButton from "component-library/GButton";
 import { FilesDialog } from "components/FilesDialog";
 import _l from "utils/localization";
 
@@ -56,6 +55,7 @@ export default {
     components: {
         FontAwesomeIcon,
         FilesDialog,
+        GButton,
     },
     data() {
         return { ...getDefaultValues(), modalKey: 0, selectText: _l("Select") };

@@ -2,9 +2,10 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheckCircle, faCloudUploadAlt, faExclamationCircle, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
 import { useTaskMonitor } from "composables/taskMonitor";
 import { watch } from "vue";
+
+import GButton from "@/component-library/GButton.vue";
 
 library.add(faCloudUploadAlt, faSpinner, faCheckCircle, faExclamationCircle);
 
@@ -37,10 +38,10 @@ watch([isCompleted, hasFailed, requestHasFailed], ([newIsCompleted, newHasFailed
 </script>
 
 <template>
-    <BButton v-b-tooltip.hover.bottom :title="props.title" @click="() => emit('onClick')">
+    <GButton v-b-tooltip.hover.bottom :title="props.title" @click="() => emit('onClick')">
         <FontAwesomeIcon v-if="isRunning" icon="spinner" spin />
         <FontAwesomeIcon v-else-if="hasFailed || requestHasFailed" icon="exclamation-circle" />
         <FontAwesomeIcon v-else-if="isCompleted" icon="check-circle" />
         <FontAwesomeIcon v-else icon="cloud-upload-alt" />
-    </BButton>
+    </GButton>
 </template>

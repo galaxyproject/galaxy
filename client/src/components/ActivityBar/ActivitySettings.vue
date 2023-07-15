@@ -9,6 +9,7 @@ import { computed, type ComputedRef, type Ref, ref } from "vue";
 import { type Activity, useActivityStore } from "@/stores/activityStore";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 
 library.add({
@@ -85,7 +86,7 @@ function onQuery(newQuery: string) {
                                 }}</span>
                             </small>
                         </span>
-                        <b-button
+                        <GButton
                             v-if="activity.mutable"
                             data-description="delete activity"
                             class="button-delete"
@@ -93,7 +94,7 @@ function onQuery(newQuery: string) {
                             variant="link"
                             @click.stop="onRemove(activity)">
                             <FontAwesomeIcon icon="fa-trash" fa-fw />
-                        </b-button>
+                        </GButton>
                     </div>
                     <small v-localize>
                         {{ activity.description || "No description available" }}

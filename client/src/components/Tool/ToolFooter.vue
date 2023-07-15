@@ -2,7 +2,7 @@
     <b-card v-if="hasContent" class="tool-footer">
         <div v-if="hasCitations" class="mb-1">
             <span v-localize class="footer-section-name">Citations</span>
-            <b-button
+            <GButton
                 v-b-tooltip.hover
                 title="Copy all citations as BibTeX"
                 style="cursor: pointer"
@@ -10,7 +10,7 @@
                 size="sm"
                 @click="copyBibtex">
                 <FontAwesomeIcon icon="copy" />
-            </b-button>
+            </GButton>
             <Citation
                 v-for="(citation, index) in citations"
                 :key="index"
@@ -75,6 +75,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faAngleDoubleDown, faAngleDoubleUp, faCopy, faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import GButton from "component-library/GButton";
 import Citation from "components/Citation/Citation";
 import { getCitations } from "components/Citation/services";
 import License from "components/License/License";
@@ -89,6 +90,7 @@ export default {
         License,
         Creators,
         FontAwesomeIcon,
+        GButton,
     },
     props: {
         id: {

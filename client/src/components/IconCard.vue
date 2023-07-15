@@ -6,7 +6,7 @@
                 <b-col cols="auto"><i :class="icon"></i></b-col>
             </b-row>
         </b-container>
-        <b-button variant="primary" @click="onButtonClick">{{ buttonText }}</b-button>
+        <GButton variant="primary" @click="onButtonClick">{{ buttonText }}</GButton>
     </b-card>
 </template>
 
@@ -14,7 +14,12 @@
 /** A generic Card, used as a template, that displays an action button,
  * an icon (font-awesome), along with a title and description.
  * Clicking the button emits an "onButtonClick" event. */
+import GButton from "component-library/GButton";
+
 export default {
+    components: {
+        GButton,
+    },
     props: {
         title: {
             type: String,

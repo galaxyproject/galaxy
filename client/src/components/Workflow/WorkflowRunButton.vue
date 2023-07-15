@@ -1,5 +1,5 @@
 <template>
-    <BButton
+    <GButton
         v-b-tooltip.hover.bottom
         :title="title | localize"
         :data-workflow-run="id"
@@ -8,11 +8,12 @@
 </template>
 
 <script>
-import { BButton, VBTooltip } from "bootstrap-vue";
+import { VBTooltip } from "bootstrap-vue";
+import GButton from "component-library/GButton";
 
 export default {
     components: {
-        BButton,
+        GButton,
     },
     directives: {
         VBTooltip,

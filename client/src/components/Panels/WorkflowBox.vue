@@ -7,6 +7,8 @@ import { computed } from "vue";
 import { useUserStore } from "@/stores/userStore";
 import { withPrefix } from "@/utils/redirect";
 
+import GButton from "@/component-library/GButton.vue";
+import GButtonGroup from "@/component-library/GButtonGroup.vue";
 import WorkflowSearch from "@/components/Workflow/WorkflowSearch.vue";
 
 // @ts-ignore bad library types
@@ -29,8 +31,8 @@ function userTitle(title: string) {
             <div class="unified-panel-header-inner">
                 <nav class="d-flex justify-content-between mx-3 my-2">
                     <h2 v-localize class="m-1 h-sm">Workflows</h2>
-                    <b-button-group>
-                        <b-button
+                    <GButtonGroup>
+                        <GButton
                             v-b-tooltip.bottom.hover
                             data-description="create new workflow"
                             size="sm"
@@ -39,8 +41,8 @@ function userTitle(title: string) {
                             :disabled="isAnonymous"
                             @click="$router.push('/workflows/create')">
                             <Icon fixed-width icon="plus" />
-                        </b-button>
-                        <b-button
+                        </GButton>
+                        <GButton
                             v-b-tooltip.bottom.hover
                             data-description="import workflow"
                             size="sm"
@@ -49,8 +51,8 @@ function userTitle(title: string) {
                             :disabled="isAnonymous"
                             @click="$router.push('/workflows/import')">
                             <FontAwesomeIcon icon="upload" />
-                        </b-button>
-                        <b-button
+                        </GButton>
+                        <GButton
                             v-b-tooltip.bottom.hover
                             data-description="published workflows"
                             size="sm"
@@ -58,8 +60,8 @@ function userTitle(title: string) {
                             title="Published workflows"
                             @click="$router.push('/workflows/list_published')">
                             <FontAwesomeIcon icon="fa-globe" />
-                        </b-button>
-                    </b-button-group>
+                        </GButton>
+                    </GButtonGroup>
                 </nav>
             </div>
         </div>

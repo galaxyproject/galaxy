@@ -46,7 +46,7 @@
                     <GInputGroup>
                         <GInput id="stop-message" v-model="stopMessage" placeholder="Stop message" required />
                         <GInputGroupAppend>
-                            <b-btn type="submit">Submit</b-btn>
+                            <GButton type="submit">Submit</GButton>
                         </GInputGroupAppend>
                     </GInputGroup>
                 </b-form-group>
@@ -109,6 +109,7 @@ import { commonJobFields } from "./JobFields";
 import JobLock from "./JobLock";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
 import GInputGroup from "@/component-library/GInputGroup.vue";
 import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
 
@@ -148,6 +149,7 @@ export default {
         GInputGroup,
         GInputGroupAppend,
         GAlert,
+        GButton,
         GInput,
         JobLock,
         JobsTable,

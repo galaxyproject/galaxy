@@ -7,6 +7,7 @@ import APIKeyItem from "./APIKeyItem";
 import svc from "./model/service";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
 
 const apiKey = ref(null);
 const loading = ref(false);
@@ -50,7 +51,7 @@ getAPIKey();
             <LoadingSpan message="Loading API keys" />
         </GAlert>
 
-        <b-button
+        <GButton
             v-else-if="!loading && !apiKey"
             :disabled="createLoading"
             class="create-button"
@@ -59,7 +60,7 @@ getAPIKey();
             <icon v-if="!createLoading" icon="plus" />
             <icon v-else icon="spinner" spin />
             <span v-localize>Create a new key</span>
-        </b-button>
+        </GButton>
 
         <div v-else-if="apiKey" class="mx-2">
             <APIKeyItem :item="apiKey" @getAPIKey="getAPIKey" />

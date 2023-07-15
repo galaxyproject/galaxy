@@ -2,7 +2,7 @@
     <b-card body-class="p-0">
         <b-card-header v-if="!embedded">
             <span class="float-right">
-                <b-button
+                <GButton
                     v-b-tooltip.hover
                     :href="downloadUrl"
                     variant="link"
@@ -12,8 +12,8 @@
                     type="button"
                     class="py-0 px-1">
                     <span class="fa fa-download" />
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-b-tooltip.hover
                     :href="importUrl"
                     role="button"
@@ -22,8 +22,8 @@
                     type="button"
                     class="py-0 px-1">
                     <span class="fa fa-file-import" />
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="expanded"
                     v-b-tooltip.hover
                     href="#"
@@ -34,8 +34,8 @@
                     class="py-0 px-1"
                     @click="onExpand">
                     <span class="fa fa-angle-double-up" />
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-else
                     v-b-tooltip.hover
                     href="#"
@@ -46,7 +46,7 @@
                     class="py-0 px-1"
                     @click="onExpand">
                     <span class="fa fa-angle-double-down" />
-                </b-button>
+                </GButton>
             </span>
             <span>
                 <span>Dataset:</span>
@@ -99,10 +99,12 @@ import LoadingSpan from "components/LoadingSpan";
 import { UrlDataProvider } from "components/providers/UrlDataProvider";
 import { getAppRoot } from "onload/loadConfig";
 
+import GButton from "@/component-library/GButton.vue";
 import GLink from "@/component-library/GLink.vue";
 
 export default {
     components: {
+        GButton,
         GLink,
         LoadingSpan,
         UrlDataProvider,

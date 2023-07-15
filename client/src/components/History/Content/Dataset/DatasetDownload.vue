@@ -26,7 +26,7 @@
             Download {{ metaFile.file_type }}
         </b-dropdown-item>
     </b-dropdown>
-    <b-button
+    <GButton
         v-else
         class="download-btn px-1"
         title="Download"
@@ -35,15 +35,19 @@
         :href="downloadUrl"
         @click.prevent.stop="onDownload(downloadUrl)">
         <span class="fa fa-save" />
-    </b-button>
+    </GButton>
 </template>
 
 <script>
+import GButton from "component-library/GButton";
 import { prependPath } from "utils/redirect";
 
 import { downloadUrlMixin } from "./mixins.js";
 
 export default {
+    components: {
+        GButton,
+    },
     mixins: [downloadUrlMixin],
     props: {
         item: { type: Object, required: true },

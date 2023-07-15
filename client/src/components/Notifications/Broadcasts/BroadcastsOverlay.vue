@@ -2,7 +2,6 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faInfoCircle, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
@@ -10,6 +9,7 @@ import { useRouter } from "vue-router/composables";
 import { useMarkdown } from "@/composables/markdown";
 import { type BroadcastNotification, useBroadcastsStore } from "@/stores/broadcastsStore";
 
+import GButton from "@/component-library/GButton.vue";
 import Heading from "@/components/Common/Heading.vue";
 
 library.add(faInfoCircle, faTimes);
@@ -82,26 +82,26 @@ function onDismiss(item: BroadcastNotification) {
                 </BRow>
                 <BRow>
                     <div v-if="currentBroadcast.content.action_links">
-                        <BButton
+                        <GButton
                             v-for="actionLink in currentBroadcast.content.action_links"
                             :key="actionLink.action_name"
                             :title="actionLink.action_name"
                             variant="primary"
                             @click="onActionClick(currentBroadcast, actionLink.link)">
                             {{ actionLink.action_name }}
-                        </BButton>
+                        </GButton>
                     </div>
                 </BRow>
             </BCol>
             <BCol cols="auto" align-self="center" class="p-0">
-                <BButton
+                <GButton
                     id="dismiss-button"
                     variant="light"
                     class="align-items-center d-flex"
                     @click="onDismiss(currentBroadcast)">
                     <FontAwesomeIcon class="mx-1" icon="times" />
                     Dismiss
-                </BButton>
+                </GButton>
                 <div v-if="remainingBroadcastsCountText" class="text-center mt-2">
                     {{ remainingBroadcastsCountText }}...
                 </div>

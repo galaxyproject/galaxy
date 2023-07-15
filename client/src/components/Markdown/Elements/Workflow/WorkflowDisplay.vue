@@ -7,6 +7,7 @@ import { isEmpty } from "@/utils/utils";
 
 import WorkflowTree from "./WorkflowTree.vue";
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface WorkflowDisplayProps {
@@ -52,7 +53,7 @@ onMounted(async () => {
     <b-card body-class="p-0" class="workflow-display">
         <b-card-header v-if="!embedded">
             <span class="float-right">
-                <b-button
+                <GButton
                     v-b-tooltip.hover
                     :href="downloadUrl"
                     variant="link"
@@ -63,8 +64,8 @@ onMounted(async () => {
                     class="py-0 px-1"
                     data-description="workflow download">
                     <span class="fa fa-download" />
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-b-tooltip.hover
                     :href="importUrl"
                     role="button"
@@ -74,7 +75,7 @@ onMounted(async () => {
                     class="py-0 px-1"
                     data-description="workflow import">
                     <span class="fa fa-upload" />
-                </b-button>
+                </GButton>
             </span>
             <span>
                 <span>Workflow:</span>

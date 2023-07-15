@@ -24,16 +24,20 @@
             </b-carousel-slide>
         </b-carousel>
         <div class="button-housing">
-            <b-button class="mt-auto carousel-button new-user-welcome-return" variant="primary" @click="$emit('back')"
-                >Return</b-button
-            >
+            <GButton class="mt-auto carousel-button new-user-welcome-return" variant="primary" @click="$emit('back')">
+                Return
+            </GButton>
         </div>
     </div>
 </template>
 <script>
+import GButton from "component-library/GButton";
 import { getAppRoot } from "onload/loadConfig";
 
 export default {
+    components: {
+        GButton,
+    },
     props: {
         header: { type: String, required: true },
         slides: { type: Array, required: true },

@@ -34,12 +34,12 @@ describe("WorkflowIndexActions", () => {
 
     describe("naviation", () => {
         it("should create a workflow when create is clicked", async () => {
-            await wrapper.find(ROOT_COMPONENT.workflows.new_button.selector).trigger("click");
+            await wrapper.find(ROOT_COMPONENT.workflows.new_button.selector).vm.$emit("click");
             expect(getCurrentPath($router)).toBe("/workflows/create");
         });
 
         it("should import a workflow when create is clicked", async () => {
-            await wrapper.find(ROOT_COMPONENT.workflows.import_button.selector).trigger("click");
+            await wrapper.find(ROOT_COMPONENT.workflows.import_button.selector).vm.$emit("click");
             expect(getCurrentPath($router)).toBe("/workflows/import");
         });
 

@@ -35,19 +35,20 @@
         <CredentialConfig v-model="credential.config" />
 
         <footer class="border-top">
-            <b-button variant="secondary" @click.prevent="$emit('delete', credential)"> Delete Key </b-button>
-            <b-button
+            <GButton variant="secondary" @click.prevent="$emit('delete', credential)"> Delete Key </GButton>
+            <GButton
                 aria-label="Save Key"
                 :variant="saveButtonVariant"
                 :disabled="saveButtonDisabled"
                 @click.prevent="$emit('save', credential)">
                 {{ saveButtonTitle }}
-            </b-button>
+            </GButton>
         </footer>
     </b-form>
 </template>
 
 <script>
+import GButton from "component-library/GButton";
 import GInput from "component-library/GInput";
 
 import CredentialConfig from "./CredentialConfig";
@@ -57,6 +58,7 @@ import { getIdentityProviders } from "./model/service";
 export default {
     components: {
         CredentialConfig,
+        GButton,
         GInput,
     },
     props: {

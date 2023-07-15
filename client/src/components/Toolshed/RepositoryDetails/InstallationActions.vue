@@ -1,4 +1,5 @@
 <script setup>
+import GButton from "component-library/GButton";
 import { computed } from "vue";
 
 const props = defineProps({
@@ -19,20 +20,20 @@ function onCancel() {
 
 <template>
     <div>
-        <b-button v-if="installState" variant="primary" class="btn-sm" @click="() => emit('onInstall')">
+        <GButton v-if="installState" variant="primary" class="btn-sm" @click="() => emit('onInstall')">
             Install
-        </b-button>
-        <b-button v-else-if="uninstallState" variant="danger" class="btn-sm" @click="() => emit('onUninstall')">
+        </GButton>
+        <GButton v-else-if="uninstallState" variant="danger" class="btn-sm" @click="() => emit('onUninstall')">
             Uninstall
-        </b-button>
-        <b-button
+        </GButton>
+        <GButton
             v-else
             variant="warning"
             class="btn-sm"
             :title="l('Reset Broken or Stuck Installation')"
             @click="onCancel">
             Reset
-        </b-button>
+        </GButton>
     </div>
 </template>
 

@@ -3,41 +3,41 @@
         <div v-if="!isEditMode">
             <LibraryBreadcrumb :current-id="dataset_id" :full_path="dataset.full_path" />
             <!-- Toolbar -->
-            <b-button
+            <GButton
                 title="Download dataset"
                 class="mr-1 mb-2"
                 data-test-id="download-btn"
                 @click="download(datasetDownloadFormat, dataset_id)">
                 <FontAwesomeIcon icon="download" />
                 Download
-            </b-button>
-            <b-button
+            </GButton>
+            <GButton
                 title="Import dataset into history"
                 class="mr-1 mb-2"
                 data-test-id="import-history-btn"
                 @click="importToHistory">
                 <FontAwesomeIcon icon="book" />
                 to History
-            </b-button>
+            </GButton>
             <span v-if="dataset.can_user_modify">
-                <b-button
+                <GButton
                     title="Modify library item"
                     class="mr-1 mb-2"
                     data-test-id="modify-btn"
                     @click="isEditMode = true">
                     <FontAwesomeIcon icon="pencil-alt" />
                     Modify
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     title="Attempt to detect the format of dataset"
                     class="mr-1 mb-2"
                     data-test-id="auto-detect-btn"
                     @click="detectDatatype">
                     <FontAwesomeIcon icon="redo" />
                     Auto-detect datatype
-                </b-button>
+                </GButton>
             </span>
-            <b-button
+            <GButton
                 v-if="currentUser.is_admin"
                 title="Manage permissions"
                 class="mr-1 mb-2"
@@ -48,7 +48,7 @@
                 data-test-id="permissions-btn">
                 <FontAwesomeIcon icon="users" />
                 Permissions
-            </b-button>
+            </GButton>
         </div>
         <div v-if="dataset.is_unrestricted" data-test-id="unrestricted-msg">
             This dataset is unrestricted so everybody with the link can access it.
@@ -113,14 +113,14 @@
         </b-table>
         <!-- Edit Controls -->
         <div v-if="isEditMode">
-            <b-button class="mr-1 mb-2" @click="isEditMode = false">
+            <GButton class="mr-1 mb-2" @click="isEditMode = false">
                 <FontAwesomeIcon :icon="['fas', 'times']" />
                 Cancel
-            </b-button>
-            <b-button class="mr-1 mb-2" @click="updateDataset">
+            </GButton>
+            <GButton class="mr-1 mb-2" @click="updateDataset">
                 <FontAwesomeIcon :icon="['far', 'save']" />
                 Save
-            </b-button>
+            </GButton>
         </div>
         <!-- Peek View -->
         <div v-if="dataset.peek" data-test-id="peek-view" v-html="dataset.peek" />
@@ -132,6 +132,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faSave } from "@fortawesome/free-regular-svg-icons";
 import { faBook, faDownload, faPencilAlt, faRedo, faTimes, faUsers } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import GButton from "component-library/GButton";
 import GInput from "component-library/GInput";
 import CopyToClipboard from "components/CopyToClipboard";
 import { buildFields } from "components/Libraries/library-utils";
@@ -156,6 +157,7 @@ export default {
         FontAwesomeIcon,
         DbKeyProvider,
         DatatypesProvider,
+        GButton,
         GInput,
         SingleItemSelector,
     },

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { TrsTool, TrsToolVersion } from "./types";
 
+import GButton from "@/component-library/GButton.vue";
+
 const props = defineProps<{ trsTool: TrsTool }>();
 
 const emit = defineEmits<{
@@ -31,13 +33,13 @@ function importVersion(version: TrsToolVersion) {
             <b>Versions</b>
             <ul>
                 <li v-for="version in props.trsTool.versions" :key="version.id">
-                    <b-button
+                    <GButton
                         class="m-1 workflow-import"
                         :data-version-name="version.name"
                         @click="importVersion(version)">
                         {{ version.name }}
                         <icon icon="upload" />
-                    </b-button>
+                    </GButton>
                 </li>
             </ul>
         </div>

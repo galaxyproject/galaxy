@@ -145,7 +145,7 @@
         :steps="steps"
         @onUpdate="onReportUpdate">
         <template v-slot:buttons>
-            <b-button
+            <GButton
                 id="workflow-canvas-button"
                 v-b-tooltip.hover.bottom
                 title="Return to Workflow"
@@ -153,7 +153,7 @@
                 role="button"
                 @click="onEdit">
                 <span class="fa fa-times" />
-            </b-button>
+            </GButton>
         </template>
     </MarkdownEditor>
 </template>
@@ -184,6 +184,7 @@ import WorkflowOptions from "./Options.vue";
 import RefactorConfirmationModal from "./RefactorConfirmationModal.vue";
 import StateUpgradeModal from "./StateUpgradeModal.vue";
 import WorkflowGraph from "./WorkflowGraph.vue";
+import GButton from "@/component-library/GButton.vue";
 import GInput from "@/component-library/GInput.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
@@ -199,6 +200,7 @@ export default {
         ProviderAwareToolBoxWorkflow,
         FormDefault,
         FormTool,
+        GButton,
         GInput,
         WorkflowOptions,
         WorkflowAttributes,

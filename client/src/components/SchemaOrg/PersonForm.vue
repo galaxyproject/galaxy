@@ -15,8 +15,8 @@
         <div role="group" class="form-group">
             <b-form-select v-model="addAttribute" :options="addAttributes" size="sm"></b-form-select>
         </div>
-        <b-button type="submit" variant="primary">Save</b-button>
-        <b-button type="reset" variant="danger">Cancel</b-button>
+        <GButton type="submit" variant="primary">Save</GButton>
+        <GButton type="reset" variant="danger">Cancel</GButton>
     </b-form>
 </template>
 
@@ -24,6 +24,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEyeSlash, faLink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import GButton from "component-library/GButton";
 import GInput from "component-library/GInput";
 
 import ThingFormMixin from "./ThingFormMixin";
@@ -51,6 +52,7 @@ library.add(faEyeSlash, faLink);
 export default {
     components: {
         FontAwesomeIcon,
+        GButton,
         GInput,
     },
     mixins: [ThingFormMixin],

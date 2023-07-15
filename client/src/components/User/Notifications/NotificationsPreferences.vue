@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BCard, BCol, BFormCheckbox, BRow } from "bootstrap-vue";
+import { BCard, BCol, BFormCheckbox, BRow } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import {
@@ -19,6 +19,7 @@ import {
 import type { components } from "@/schema";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
 import AsyncButton from "@/components/Common/AsyncButton.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -165,13 +166,13 @@ watch(
         <BRow v-if="!loading" class="m-1" align-h="center">
             <BCard v-if="browserSupportsPushNotifications() && !pushNotificationsGranted" class="my-2">
                 Allow push and tab notifications. To disable, revoke the site notification privilege in your browser.
-                <BButton
+                <GButton
                     v-b-tooltip.hover
                     class="mx-2"
                     title="Enable push notifications"
                     @click="onTogglePushNotifications">
                     Enable push notifications
-                </BButton>
+                </GButton>
             </BCard>
             <GAlert
                 v-else-if="browserSupportsPushNotifications() && pushNotificationsGranted"

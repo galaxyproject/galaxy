@@ -94,14 +94,14 @@
                             </b-form-group>
                         </div>
 
-                        <b-button
+                        <GButton
                             id="save"
                             v-b-tooltip.bottom.hover
                             type="submit"
                             variant="primary"
                             title="Create new build">
                             <i class="icon fa fa-save" /> Save
-                        </b-button>
+                        </GButton>
                     </b-form>
                 </b-card>
             </b-col>
@@ -152,19 +152,21 @@ import "vue-multiselect/dist/vue-multiselect.min.css";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
-import GInput from "component-library/GInput";
 import Vue from "vue";
 import Multiselect from "vue-multiselect";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
+import GInput from "@/component-library/GInput.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
         GAlert,
-        Multiselect,
+        GButton,
         GInput,
+        Multiselect,
     },
     data() {
         const Galaxy = getGalaxyInstance();

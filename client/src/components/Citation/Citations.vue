@@ -28,7 +28,7 @@
             </div>
         </b-card>
         <div v-else-if="citations.length">
-            <b-btn v-b-toggle="id" variant="primary">Citations</b-btn>
+            <GButton v-b-toggle="id" variant="primary">Citations</GButton>
             <b-collapse
                 :id="id.replace(/ /g, '_')"
                 class="mt-2"
@@ -50,6 +50,7 @@
 </template>
 <script>
 import BootstrapVue from "bootstrap-vue";
+import GButton from "component-library/GButton";
 import Vue from "vue";
 
 import { useConfig } from "@/composables/config";
@@ -68,6 +69,7 @@ const outputFormats = Object.freeze({
 export default {
     components: {
         Citation,
+        GButton,
     },
     props: {
         source: {

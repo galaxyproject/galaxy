@@ -53,14 +53,14 @@
             No matching entries found for: <span class="font-weight-bold">{{ filter }}</span
             >.
         </div>
-        <b-button
+        <GButton
             v-if="isCheckboxMarked"
             id="stopInteractiveTool"
             v-b-tooltip.hover.bottom
             title="Terminate selected tools"
             @click.stop="stopInteractiveToolSession()"
             >Stop
-        </b-button>
+        </GButton>
     </div>
 </template>
 
@@ -76,12 +76,14 @@ import { useEntryPointStore } from "../../stores/entryPointStore";
 import { Services } from "./services";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GButton from "@/component-library/GButton.vue";
 
 library.add(faExternalLinkAlt);
 
 export default {
     components: {
         GAlert,
+        GButton,
         UtcDate,
         FontAwesomeIcon,
     },

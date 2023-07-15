@@ -186,7 +186,7 @@
                     </button>
                 </div>
                 <div v-else>
-                    <b-button
+                    <GButton
                         v-if="row.item.can_manage && !row.item.deleted && row.item.type === 'folder'"
                         data-toggle="tooltip"
                         data-placement="top"
@@ -196,8 +196,8 @@
                         @click="toggleEditMode(row.item)">
                         <FontAwesomeIcon icon="pencil-alt" />
                         Edit
-                    </b-button>
-                    <b-button
+                    </GButton>
+                    <GButton
                         v-if="currentUser.is_admin"
                         size="sm"
                         class="lib-btn permission_lib_btn"
@@ -205,7 +205,7 @@
                         :to="{ path: `${navigateToPermission(row.item)}` }">
                         <FontAwesomeIcon icon="users" />
                         Manage
-                    </b-button>
+                    </GButton>
                     <button
                         v-if="row.item.deleted"
                         :title="'Undelete ' + row.item.name"
@@ -262,7 +262,6 @@
 <script>
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
-import GInput from "component-library/GInput";
 import { initFolderTableIcons } from "components/Libraries/icons";
 import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH } from "components/Libraries/library-utils";
 import UtcDate from "components/UtcDate";
@@ -280,6 +279,8 @@ import { Services } from "./services";
 import { fields } from "./table-fields";
 import FolderTopBar from "./TopToolbar/FolderTopBar";
 
+import GButton from "@/component-library/GButton.vue";
+import GInput from "@/component-library/GInput.vue";
 import GLink from "@/component-library/GLink.vue";
 
 initFolderTableIcons();
@@ -298,11 +299,12 @@ function initialFolderState() {
 }
 export default {
     components: {
-        GLink,
         FolderTopBar,
-        UtcDate,
         FontAwesomeIcon,
+        GButton,
         GInput,
+        GLink,
+        UtcDate,
     },
     beforeRouteUpdate(to, from, next) {
         this.getFolder(to.params.folder_id, to.params.page);
