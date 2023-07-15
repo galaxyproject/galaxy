@@ -10,6 +10,7 @@ import { useMarkdown } from "@/composables/markdown";
 import { type BroadcastNotification, useBroadcastsStore } from "@/stores/broadcastsStore";
 
 import GButton from "@/component-library/GButton.vue";
+import GCol from "@/component-library/GCol.vue";
 import Heading from "@/components/Common/Heading.vue";
 
 library.add(faInfoCircle, faTimes);
@@ -64,14 +65,14 @@ function onDismiss(item: BroadcastNotification) {
             align-v="center"
             class="broadcast-banner m-0"
             :class="{ 'non-urgent': currentBroadcast.variant !== 'urgent' }">
-            <BCol cols="auto">
+            <GCol cols="auto">
                 <FontAwesomeIcon
                     class="mx-2"
                     size="2xl"
                     :class="`text-${getBroadcastVariant(currentBroadcast)}`"
                     :icon="faInfoCircle" />
-            </BCol>
-            <BCol>
+            </GCol>
+            <GCol>
                 <BRow align-v="center">
                     <Heading size="md" bold>
                         {{ currentBroadcast.content.subject }}
@@ -92,8 +93,8 @@ function onDismiss(item: BroadcastNotification) {
                         </GButton>
                     </div>
                 </BRow>
-            </BCol>
-            <BCol cols="auto" align-self="center" class="p-0">
+            </GCol>
+            <GCol cols="auto" align-self="center" class="p-0">
                 <GButton
                     id="dismiss-button"
                     variant="light"
@@ -105,7 +106,7 @@ function onDismiss(item: BroadcastNotification) {
                 <div v-if="remainingBroadcastsCountText" class="text-center mt-2">
                     {{ remainingBroadcastsCountText }}...
                 </div>
-            </BCol>
+            </GCol>
         </BRow>
     </div>
 </template>

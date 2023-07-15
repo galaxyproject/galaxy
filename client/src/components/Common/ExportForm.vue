@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { BCol, BFormGroup, BRow } from "bootstrap-vue";
+import { BFormGroup, BRow } from "bootstrap-vue";
 import GButton from "component-library/GButton";
 import { computed, ref } from "vue";
 
 import localize from "@/utils/localization";
 
+import GCol from "@/component-library/GCol.vue";
 import GInput from "@/component-library/GInput.vue";
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";
 
@@ -51,7 +52,7 @@ const doExport = () => {
             <GInput id="name" v-model="name" :placeholder="namePlaceholder" required />
         </BFormGroup>
         <BRow align-h="end">
-            <BCol>
+            <GCol>
                 <GButton
                     v-localize
                     class="export-button"
@@ -60,7 +61,7 @@ const doExport = () => {
                     @click.prevent="doExport">
                     Export
                 </GButton>
-            </BCol>
+            </GCol>
         </BRow>
     </div>
 </template>

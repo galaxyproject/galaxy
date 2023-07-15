@@ -8,12 +8,12 @@
             {{ importMessage }}
         </GAlert>
         <b-row class="mb-3">
-            <b-col cols="6" class="m-1">
+            <GCol cols="6" class="m-1">
                 <IndexFilter v-bind="filterAttrs" id="workflow-search" v-model="filter" />
-            </b-col>
-            <b-col>
+            </GCol>
+            <GCol>
                 <WorkflowIndexActions :root="root" class="float-right"></WorkflowIndexActions>
-            </b-col>
+            </GCol>
         </b-row>
         <b-table v-model="workflowItemsModel" v-bind="{ ...defaultTableAttrs, ...indexTableAttrs }">
             <template v-slot:empty>
@@ -102,6 +102,7 @@ import WorkflowIndexActions from "./WorkflowIndexActions";
 
 import WorkflowRunButton from "./WorkflowRunButton.vue";
 import GAlert from "@/component-library/GAlert.vue";
+import GCol from "@/component-library/GCol.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 const helpHtml = `<div>
@@ -167,6 +168,7 @@ const PUBLISHED_FIELDS = [NAME_FIELD, TAGS_FIELD, UPDATED_FIELD, OWNER_FIELD];
 
 export default {
     components: {
+        GCol,
         GAlert,
         UtcDate,
         StatelessTags,

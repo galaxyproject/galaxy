@@ -3,7 +3,7 @@
         <GAlert v-for="(message, index) in messages" :key="index" :show="3" variant="danger">{{ message }}</GAlert>
         <h1 id="interactive-tools-heading" class="h-lg">Active Interactive Tools</h1>
         <b-row class="mb-3">
-            <b-col cols="6">
+            <GCol cols="6">
                 <b-input
                     id="interactivetool-search"
                     v-model="filter"
@@ -12,7 +12,7 @@
                     placeholder="Search Interactive Tool"
                     autocomplete="off"
                     type="text" />
-            </b-col>
+            </GCol>
         </b-row>
         <b-table
             id="interactive-tool-table"
@@ -77,11 +77,13 @@ import { Services } from "./services";
 
 import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
+import GCol from "@/component-library/GCol.vue";
 
 library.add(faExternalLinkAlt);
 
 export default {
     components: {
+        GCol,
         GAlert,
         GButton,
         UtcDate,

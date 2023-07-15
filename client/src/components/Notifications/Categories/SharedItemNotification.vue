@@ -2,12 +2,13 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExternalLinkAlt, faRetweet } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BCol, BRow } from "bootstrap-vue";
+import { BRow } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { SharedItemNotification } from "@/components/Notifications";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 
+import GCol from "@/component-library/GCol.vue";
 import GLink from "@/component-library/GLink.vue";
 import Heading from "@/components/Common/Heading.vue";
 import NotificationActions from "@/components/Notifications/NotificationActions.vue";
@@ -51,7 +52,7 @@ function onClick(link: string) {
 </script>
 
 <template>
-    <BCol>
+    <GCol>
         <BRow align-v="center">
             <Heading size="md" :bold="!notification.seen_time" class="mb-0">
                 <FontAwesomeIcon :class="`text-${notificationVariant}`" icon="retweet" />
@@ -76,5 +77,5 @@ function onClick(link: string) {
                 <span> with you.</span>
             </p>
         </BRow>
-    </BCol>
+    </GCol>
 </template>

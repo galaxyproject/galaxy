@@ -5,12 +5,12 @@
         </h1>
         <GAlert v-bind="alertAttrs">{{ message }}</GAlert>
         <b-row class="mb-3">
-            <b-col cols="6">
+            <GCol cols="6">
                 <IndexFilter v-bind="filterAttrs" id="page-search" v-model="filter" />
-            </b-col>
-            <b-col>
+            </GCol>
+            <GCol>
                 <PageIndexActions class="float-right" />
-            </b-col>
+            </GCol>
         </b-row>
         <b-table v-model="pageItemsModel" v-bind="{ ...defaultTableAttrs, ...indexTableAttrs }">
             <template v-slot:empty>
@@ -98,6 +98,7 @@ import PageIndexActions from "./PageIndexActions";
 import { updateTags } from "./services";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GCol from "@/component-library/GCol.vue";
 
 const helpHtml = `<div>
 <p>This textbox can be used to filter the pages displayed.
@@ -141,6 +142,7 @@ const PUBLISHED_FIELDS = [TITLE_FIELD, TAGS_FIELD, OWNER_FIELD, UPDATED_FIELD];
 export default {
     components: {
         GAlert,
+        GCol,
         UtcDate,
         StatelessTags,
         PageIndexActions,

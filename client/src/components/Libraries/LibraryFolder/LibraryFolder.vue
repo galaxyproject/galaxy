@@ -221,7 +221,7 @@
         <!-- hide pagination if the table is loading-->
         <b-container>
             <b-row align-v="center" class="justify-content-md-center">
-                <b-col md="auto">
+                <GCol md="auto">
                     <div v-if="isBusy">
                         <b-spinner small type="grow"></b-spinner>
                         <b-spinner small type="grow"></b-spinner>
@@ -235,9 +235,9 @@
                         aria-controls="folder_list_body"
                         @input="changePage">
                     </b-pagination>
-                </b-col>
+                </GCol>
 
-                <b-col cols="1.5">
+                <GCol cols="1.5">
                     <table>
                         <tr>
                             <td class="m-0 p-0">
@@ -253,7 +253,7 @@
                             </td>
                         </tr>
                     </table>
-                </b-col>
+                </GCol>
             </b-row>
         </b-container>
     </div>
@@ -280,6 +280,7 @@ import { fields } from "./table-fields";
 import FolderTopBar from "./TopToolbar/FolderTopBar";
 
 import GButton from "@/component-library/GButton.vue";
+import GCol from "@/component-library/GCol.vue";
 import GInput from "@/component-library/GInput.vue";
 import GLink from "@/component-library/GLink.vue";
 
@@ -299,6 +300,8 @@ function initialFolderState() {
 }
 export default {
     components: {
+        GCol,
+        GLink,
         FolderTopBar,
         FontAwesomeIcon,
         GButton,

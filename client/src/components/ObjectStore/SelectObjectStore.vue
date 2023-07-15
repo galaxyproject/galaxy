@@ -8,6 +8,7 @@ import { getSelectableObjectStores } from "./services";
 import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
 import GButtonGroup from "@/component-library/GButtonGroup.vue";
+import GCol from "@/component-library/GCol.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DescribeObjectStore from "@/components/ObjectStore/DescribeObjectStore.vue";
 import ObjectStoreBadges from "@/components/ObjectStore/ObjectStoreBadges.vue";
@@ -91,7 +92,7 @@ async function handleSubmit(preferredObjectStoreId: string) {
                 {{ error }}
             </GAlert>
             <b-row>
-                <b-col cols="7">
+                <GCol cols="7">
                     <GButtonGroup vertical size="lg" style="width: 100%">
                         <GButton
                             id="no-preferred-object-store-button"
@@ -115,12 +116,12 @@ async function handleSubmit(preferredObjectStoreId: string) {
                             </ProvidedQuotaSourceUsageBar>
                         </GButton>
                     </GButtonGroup>
-                </b-col>
-                <b-col cols="5">
+                </GCol>
+                <GCol cols="5">
                     <p v-localize style="float: right">
                         {{ whyIsSelectionPreferredText }}
                     </p>
-                </b-col>
+                </GCol>
             </b-row>
             <b-popover target="no-preferred-object-store-button" triggers="hover" v-bind="popoverProps">
                 <template v-slot:title

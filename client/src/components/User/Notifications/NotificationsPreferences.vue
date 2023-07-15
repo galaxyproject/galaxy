@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BCard, BCol, BFormCheckbox, BRow } from "bootstrap-vue";
+import { BCard, BFormCheckbox, BRow } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import {
@@ -20,6 +20,7 @@ import type { components } from "@/schema";
 
 import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
+import GCol from "@/component-library/GCol.vue";
 import AsyncButton from "@/components/Common/AsyncButton.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -116,10 +117,10 @@ watch(
         </GAlert>
 
         <BRow v-else-if="showPreferences" class="mx-1">
-            <BCol v-for="category in categories" :key="category">
+            <GCol v-for="category in categories" :key="category">
                 <BCard class="my-2 px-2">
                     <BRow align-h="between" align-v="center">
-                        <BCol cols="auto" class="mx-2">
+                        <GCol cols="auto" class="mx-2">
                             <BRow>
                                 <span v-localize class="category-title">{{ capitalizeWords(category) }}</span>
                             </BRow>
@@ -128,8 +129,8 @@ watch(
                                     {{ categoryDescriptionMap[category] }}
                                 </span>
                             </BRow>
-                        </BCol>
-                        <BCol cols="auto" class="p-0">
+                        </GCol>
+                        <GCol cols="auto" class="p-0">
                             <BFormCheckbox
                                 v-model="notificationsPreferences[category].enabled"
                                 v-b-tooltip.hover
@@ -139,10 +140,10 @@ watch(
                                         : 'Enable notifications'
                                 "
                                 switch />
-                        </BCol>
+                        </GCol>
                     </BRow>
                     <BRow class="p-2">
-                        <BCol
+                        <GCol
                             v-for="channel in Object.keys(notificationsPreferences[category].channels)"
                             :key="channel"
                             class="d-flex align-items-center">
@@ -157,10 +158,10 @@ watch(
                                 v-b-tooltip.hover="'Push notifications need to be enabled'"
                                 class="mx-2"
                                 icon="exclamation-circle" />
-                        </BCol>
+                        </GCol>
                     </BRow>
                 </BCard>
-            </BCol>
+            </GCol>
         </BRow>
 
         <BRow v-if="!loading" class="m-1" align-h="center">

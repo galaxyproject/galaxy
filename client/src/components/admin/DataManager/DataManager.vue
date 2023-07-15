@@ -12,7 +12,7 @@
         <div v-else-if="dataManagers && dataTables">
             <b-container fluid>
                 <b-row>
-                    <b-col md="6">
+                    <GCol md="6">
                         <b-form-group description="Search for strings or regular expressions">
                             <GInputGroup>
                                 <GInput v-model="filter" placeholder="Type to Search" @keyup.esc.native="filter = ''" />
@@ -21,7 +21,7 @@
                                 </GInputGroupAppend>
                             </GInputGroup>
                         </b-form-group>
-                    </b-col>
+                    </GCol>
                 </b-row>
             </b-container>
             <b-card-group columns>
@@ -79,6 +79,7 @@ import { debounce } from "underscore";
 import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
 import GButtonGroup from "@/component-library/GButtonGroup.vue";
+import GCol from "@/component-library/GCol.vue";
 import GInput from "@/component-library/GInput.vue";
 import GInputGroup from "@/component-library/GInputGroup.vue";
 import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
@@ -89,6 +90,7 @@ export default {
         GButton,
         GButtonGroup,
         GInput,
+        GCol,
         GInputGroup,
         GInputGroupAppend,
     },

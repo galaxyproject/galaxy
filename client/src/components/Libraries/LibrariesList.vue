@@ -147,15 +147,15 @@
 
         <b-container>
             <b-row class="justify-content-md-center">
-                <b-col md="auto">
+                <GCol md="auto">
                     <b-pagination
                         v-model="currentPage"
                         :total-rows="rows"
                         :per-page="perPage"
                         aria-controls="libraries_list">
                     </b-pagination>
-                </b-col>
-                <b-col cols="1.5">
+                </GCol>
+                <GCol cols="1.5">
                     <table>
                         <tr>
                             <td class="m-0 p-0">
@@ -174,7 +174,7 @@
                             </td>
                         </tr>
                     </table>
-                </b-col>
+                </GCol>
             </b-row>
         </b-container>
     </div>
@@ -200,6 +200,7 @@ import { useUserStore } from "@/stores/userStore";
 import { Services } from "./services";
 import { fields } from "./table-fields";
 
+import GCol from "@/component-library/GCol.vue";
 import GInputGroup from "@/component-library/GInputGroup.vue";
 import GLink from "@/component-library/GLink.vue";
 
@@ -210,6 +211,7 @@ Vue.use(BootstrapVue);
 export default {
     components: {
         GButton,
+        GCol,
         GInputGroup,
         GLink,
         FontAwesomeIcon,

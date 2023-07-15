@@ -10,19 +10,19 @@
             variant="primary" />
         <b-container v-else-if="dataTable">
             <b-row>
-                <b-col>
+                <GCol>
                     <b-card id="data-table-card" flush>
                         <template v-slot:header>
                             <b-container>
                                 <b-row align-v="center">
-                                    <b-col cols="auto">
+                                    <GCol cols="auto">
                                         <GButton v-b-tooltip.hover :title="buttonLabel" @click="reload()">
                                             <span class="fa fa-sync" />
                                         </GButton>
-                                    </b-col>
-                                    <b-col>
+                                    </GCol>
+                                    <GCol>
                                         <b>{{ dataTableName }}</b>
-                                    </b-col>
+                                    </GCol>
                                 </b-row>
                             </b-container>
                         </template>
@@ -33,7 +33,7 @@
                             hover
                             striped />
                     </b-card>
-                </b-col>
+                </GCol>
             </b-row>
         </b-container>
     </div>
@@ -45,9 +45,11 @@ import { getAppRoot } from "onload/loadConfig";
 
 import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
+import GCol from "@/component-library/GCol.vue";
 
 export default {
     components: {
+        GCol,
         GAlert,
         GButton,
     },

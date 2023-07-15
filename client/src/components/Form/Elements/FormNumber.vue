@@ -4,7 +4,7 @@
             {{ errorMessage }}
         </GAlert>
         <b-row align-v="center">
-            <b-col :sm="isRangeValid ? defaultInputSizeWithSlider : false">
+            <GCol :sm="isRangeValid ? defaultInputSizeWithSlider : false">
                 <!-- regular dot and dot on numpad have different codes -->
                 <GInput
                     v-model="currentValue"
@@ -15,10 +15,10 @@
                     @change="onInputChange"
                     @keydown.190.capture="onFloatInput"
                     @keydown.110.capture="onFloatInput" />
-            </b-col>
-            <b-col v-if="isRangeValid" class="pl-0">
+            </GCol>
+            <GCol v-if="isRangeValid" class="pl-0">
                 <GInput v-model="currentValue" :min="min" :max="max" :step="step" type="range" />
-            </b-col>
+            </GCol>
         </b-row>
     </div>
 </template>
@@ -27,8 +27,11 @@
 import GAlert from "component-library/GAlert";
 import GInput from "component-library/GInput";
 
+import GCol from "@/component-library/GCol.vue";
+
 export default {
     components: {
+        GCol,
         GAlert,
         GInput,
     },

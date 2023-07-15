@@ -1,12 +1,12 @@
 <template>
     <b-container>
         <b-row>
-            <b-col>
+            <GCol>
                 <h1 class="h-sm">Current Custom Builds</h1>
-            </b-col>
+            </GCol>
         </b-row>
         <b-row>
-            <b-col>
+            <GCol>
                 <b-table small show-empty class="grid" :items="customBuilds" :fields="fields">
                     <template v-slot:cell(action)="row">
                         <a
@@ -18,16 +18,16 @@
                         </a>
                     </template>
                 </b-table>
-            </b-col>
+            </GCol>
         </b-row>
         <template v-if="installedBuilds.length > 0">
             <b-row class="mt-2">
-                <b-col>
+                <GCol>
                     <h2 class="h-sm">System Installed Builds</h2>
-                </b-col>
+                </GCol>
             </b-row>
             <b-row>
-                <b-col id="installed-builds" class="mb-4">
+                <GCol id="installed-builds" class="mb-4">
                     <Multiselect
                         v-model="selectedInstalledBuilds"
                         multiple
@@ -37,16 +37,16 @@
                         :searchable="false"
                         :options="installedBuilds">
                     </Multiselect>
-                </b-col>
+                </GCol>
             </b-row>
         </template>
         <b-row>
-            <b-col>
+            <GCol>
                 <h2 class="h-sm">Add a Custom Build</h2>
-            </b-col>
+            </GCol>
         </b-row>
         <b-row>
-            <b-col>
+            <GCol>
                 <b-card>
                     <GAlert
                         fade
@@ -104,8 +104,8 @@
                         </GButton>
                     </b-form>
                 </b-card>
-            </b-col>
-            <b-col>
+            </GCol>
+            <GCol>
                 <b-card v-if="selectedDataSource === 'fasta'" class="alert-info">
                     <h2 class="h-sm">FASTA format</h2>
                     <p class="card-text">
@@ -141,7 +141,7 @@ chr5    152537259</pre
                         option), or directly enter the information into the box (Len Entry option).
                     </p>
                 </b-card>
-            </b-col>
+            </GCol>
         </b-row>
     </b-container>
 </template>
@@ -157,12 +157,14 @@ import Multiselect from "vue-multiselect";
 
 import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
+import GCol from "@/component-library/GCol.vue";
 import GInput from "@/component-library/GInput.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GCol,
         GAlert,
         GButton,
         GInput,

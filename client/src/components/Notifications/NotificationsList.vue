@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCircle, faHourglassHalf, faRetweet } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BCard, BCol, BCollapse, BFormCheckbox, BRow } from "bootstrap-vue";
+import { BButton, BButtonGroup, BCard, BCol, BCollapse, BFormCheckbox, BRow } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
@@ -12,6 +12,7 @@ import { useNotificationsStore } from "@/stores/notificationsStore";
 import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
 import GButtonGroup from "@/component-library/GButtonGroup.vue";
+import GCol from "@/component-library/GCol.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import NotificationItem from "@/components/Notifications/NotificationItem.vue";
 import NotificationsPreferences from "@/components/User/Notifications/NotificationsPreferences.vue";
@@ -94,7 +95,7 @@ function togglePreferences() {
         <div v-else class="mx-1">
             <BCard class="mb-2">
                 <BRow class="align-items-center" no-gutters>
-                    <BCol cols="1">
+                    <GCol cols="1">
                         <BFormCheckbox
                             :checked="allSelected"
                             :indeterminate="
@@ -104,8 +105,8 @@ function togglePreferences() {
                             @change="selectOrDeselectNotification(notifications)">
                             {{ haveSelected ? `${selectedNotificationIds.length} selected` : "Select all" }}
                         </BFormCheckbox>
-                    </BCol>
-                    <BCol v-if="haveSelected">
+                    </GCol>
+                    <GCol v-if="haveSelected">
                         <GButton size="sm" variant="outline-primary" @click="updateNotifications({ seen: true })">
                             <FontAwesomeIcon icon="check" />
                             Mark as read
@@ -114,8 +115,8 @@ function togglePreferences() {
                             <FontAwesomeIcon icon="trash" />
                             Delete
                         </GButton>
-                    </BCol>
-                    <BCol>
+                    </GCol>
+                    <GCol>
                         <BRow align-h="end" align-v="center">
                             <span class="mx-2"> Filters: </span>
                             <GButtonGroup>
@@ -139,7 +140,7 @@ function togglePreferences() {
                                 </GButton>
                             </GButtonGroup>
                         </BRow>
-                    </BCol>
+                    </GCol>
                 </BRow>
             </BCard>
 
@@ -155,7 +156,7 @@ function togglePreferences() {
                     class="my-2 notification-card"
                     :class="!item.seen_time ? 'border-dark' : ''">
                     <BRow align-h="start" align-v="center">
-                        <BCol cols="auto">
+                        <GCol cols="auto">
                             <GButtonGroup>
                                 <FontAwesomeIcon
                                     v-if="!item.seen_time"
@@ -166,7 +167,7 @@ function togglePreferences() {
                                     :checked="selectedNotificationIds.includes(item.id)"
                                     @change="selectOrDeselectNotification([item])" />
                             </GButtonGroup>
-                        </BCol>
+                        </GCol>
                         <NotificationItem :notification="item" />
                     </BRow>
                 </BCard>

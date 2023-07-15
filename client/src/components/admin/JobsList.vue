@@ -18,7 +18,7 @@
             For more information or help, report this error".
         </p>
         <b-row>
-            <b-col class="col-sm-4">
+            <GCol class="col-sm-4">
                 <b-form-group description="Select whether or not to use the cutoff below.">
                     <b-form-checkbox id="show-all-running" v-model="showAllRunning" switch size="lg" @change="update">
                         {{ showAllRunning ? "Showing all unfinished jobs" : "Time cutoff applied to query" }}
@@ -38,7 +38,7 @@
                 <b-form-group description="Use strings or regular expressions to search jobs.">
                     <IndexFilter v-bind="filterAttrs" id="job-search" v-model="filter" />
                 </b-form-group>
-            </b-col>
+            </GCol>
         </b-row>
         <transition name="fade">
             <b-form v-if="unfinishedJobs.length && selectedStopJobIds.length" @submit.prevent="onStopJobs">
@@ -110,6 +110,7 @@ import JobLock from "./JobLock";
 
 import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
+import GCol from "@/component-library/GCol.vue";
 import GInputGroup from "@/component-library/GInputGroup.vue";
 import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
 
@@ -146,6 +147,7 @@ returned. So <code>tool:'cat1'</code> would show only jobs from the <code>cat1</
 
 export default {
     components: {
+        GCol,
         GInputGroup,
         GInputGroupAppend,
         GAlert,

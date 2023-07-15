@@ -2,8 +2,8 @@
     <b-card :title="title" class="mx-4 icon-card">
         <b-container class="p-0">
             <b-row>
-                <b-col>{{ description }}</b-col>
-                <b-col cols="auto"><i :class="icon"></i></b-col>
+                <GCol>{{ description }}</GCol>
+                <GCol cols="auto"><i :class="icon"></i></GCol>
             </b-row>
         </b-container>
         <GButton variant="primary" @click="onButtonClick">{{ buttonText }}</GButton>
@@ -16,9 +16,12 @@
  * Clicking the button emits an "onButtonClick" event. */
 import GButton from "component-library/GButton";
 
+import GCol from "@/component-library/GCol.vue";
+
 export default {
     components: {
         GButton,
+        GCol,
     },
     props: {
         title: {

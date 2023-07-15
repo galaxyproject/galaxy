@@ -4,7 +4,7 @@
             {{ title }}
         </h2>
         <b-row>
-            <b-col>
+            <GCol>
                 <div v-if="options && value" :class="permission_type">
                     <Multiselect
                         v-model="value"
@@ -24,12 +24,12 @@
                         </template>
                     </Multiselect>
                 </div>
-            </b-col>
-            <b-col>
+            </GCol>
+            <GCol>
                 <GAlert show variant="info">
                     <div v-html="alert" />
                 </GAlert>
-            </b-col>
+            </GCol>
         </b-row>
     </div>
 </template>
@@ -43,10 +43,12 @@ import Multiselect from "vue-multiselect";
 import VueObserveVisibility from "vue-observe-visibility";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GCol from "@/component-library/GCol.vue";
 
 Vue.use(VueObserveVisibility);
 export default {
     components: {
+        GCol,
         GAlert,
         Multiselect,
     },
