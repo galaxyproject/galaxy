@@ -5121,6 +5121,17 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``celery_user_rate_limit``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    If set to a non-0 value, upper limit on number of tasks that can
+    be executed per user per second.
+:Default: ``0.0``
+:Type: float
+
+
 ~~~~~~~~~~~~~~
 ``use_pbkdf2``
 ~~~~~~~~~~~~~~

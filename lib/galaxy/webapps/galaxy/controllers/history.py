@@ -304,7 +304,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                         f"History ({history.name}) has been shared with others, unshare it before deleting it."
                     )
                 if purge:
-                    self.history_manager.purge(history)
+                    self.history_manager.purge(history, user=trans.user)
                 else:
                     self.history_manager.delete(history)
                 if history == current_history:

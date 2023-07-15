@@ -28,6 +28,11 @@ from galaxy import (
     jobs,
     tools,
 )
+from galaxy.celery.base_task import (
+    GalaxyTaskBeforeStart,
+    GalaxyTaskBeforeStartUserRateLimitPostgres,
+    GalaxyTaskBeforeStartUserRateLimitStandard,
+)
 from galaxy.config_watchers import ConfigWatchers
 from galaxy.datatypes.registry import Registry
 from galaxy.files import ConfiguredFileSources
@@ -68,6 +73,7 @@ from galaxy.model.database_heartbeat import DatabaseHeartbeat
 from galaxy.model.database_utils import (
     database_exists,
     is_one_database,
+    is_postgres,
 )
 from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.model.migrations import verify_databases
@@ -581,8 +587,29 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
 
         self._configure_tool_shed_registry()
         self._register_singleton(tool_shed_registry.Registry, self.tool_shed_registry)
-        # Tool Data Tables
+        #  Tool Data Tables
         self._configure_tool_data_tables(from_shed_config=False)
+        self._register_celery_galaxy_task_components()
+
+    def _register_celery_galaxy_task_components(self):
+        """
+        Register subtype class instance to support implementation of a user rate limit for execution of celery tasks.
+        The default supertype class does not enforce a user rate limit. This is the case if the celery_user_rate_limit
+        config param is the default value.
+        """
+        task_before_start: GalaxyTaskBeforeStart
+        if self.config.celery_user_rate_limit:
+            if is_postgres(self.config.database_connection):  # type: ignore[arg-type]
+                task_before_start = GalaxyTaskBeforeStartUserRateLimitPostgres(
+                    self.config.celery_user_rate_limit, self.model.session
+                )
+            else:
+                task_before_start = GalaxyTaskBeforeStartUserRateLimitStandard(
+                    self.config.celery_user_rate_limit, self.model.session
+                )
+        else:
+            task_before_start = GalaxyTaskBeforeStart()
+        self._register_singleton(GalaxyTaskBeforeStart, task_before_start)
 
     def _configure_tool_shed_registry(self) -> None:
         # Set up the tool sheds registry

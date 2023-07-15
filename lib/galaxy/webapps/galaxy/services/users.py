@@ -34,7 +34,7 @@ class UsersService(ServiceBase):
         if trans.app.config.enable_celery_tasks:
             from galaxy.celery.tasks import recalculate_user_disk_usage
 
-            result = recalculate_user_disk_usage.delay(user_id=trans.user.id)
+            result = recalculate_user_disk_usage.delay(task_user_id=getattr(trans.user, "id", None))
             return async_task_summary(result)
         else:
             send_local_control_task(

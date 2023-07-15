@@ -2736,6 +2736,10 @@ galaxy:
   # https://docs.galaxyproject.org/en/master/admin/production.html
   #enable_celery_tasks: false
 
+  # If set to a non-0 value, upper limit on number of tasks that can be
+  # executed per user per second.
+  #celery_user_rate_limit: 0.0
+
   # Allow disabling pbkdf2 hashing of passwords for legacy situations.
   # This should normally be left enabled unless there is a specific
   # reason to disable it.

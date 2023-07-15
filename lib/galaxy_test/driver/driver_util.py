@@ -342,6 +342,13 @@ def copy_database_template(source, db_path):
         raise Exception(f"Failed to copy database template from source {source}")
 
 
+def init_database(database_connection):
+    # We pass by migrations and instantiate the current table
+    create_database(database_connection)
+    mapping.init("/tmp", database_connection, create_tables=True, map_install_models=True)
+    toolshed_mapping.init(database_connection, create_tables=True)
+
+
 def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
     """Find (and populate if needed) Galaxy database connection."""
     database_auto_migrate = False
@@ -359,10 +366,7 @@ def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
             actual_database_parsed = database_template_parsed._replace(path=f"/{actual_db}")
             database_connection = actual_database_parsed.geturl()
             if not database_exists(database_connection):
-                # We pass by migrations and instantiate the current table
-                create_database(database_connection)
-                mapping.init("/tmp", database_connection, create_tables=True, map_install_models=True)
-                toolshed_mapping.init(database_connection, create_tables=True)
+                init_database(database_connection)
                 check_migrate_databases = False
     else:
         default_db_filename = f"{prefix.lower()}.sqlite"

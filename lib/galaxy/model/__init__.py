@@ -10395,6 +10395,24 @@ class CleanupEventImplicitlyConvertedDatasetAssociationAssociation(Base):
     icda_id = Column(Integer, ForeignKey("implicitly_converted_dataset_association.id"), index=True)
 
 
+class CeleryUserRateLimit(Base):
+    """
+    For each user stores the last time a task was scheduled for execution.
+    Used to limit the number of tasks allowed per user per second.
+    """
+
+    __tablename__ = "celery_user_rate_limit"
+
+    user_id = Column(Integer, ForeignKey("galaxy_user.id", ondelete="CASCADE"), primary_key=True)
+    last_scheduled_time = Column(DateTime, nullable=False)
+
+    def __repr__(self):
+        return (
+            f"CeleryUserRateLimit(id_type={self.id_type!r}, "
+            f"id={self.id!r}, last_scheduled_time={self.last_scheduled_time!r})"
+        )
+
+
 # The following models (HDA, LDDA) are mapped imperatively (for details see discussion in PR #12064)
 # TLDR: there are issues ('metadata' property, Galaxy object wrapping) that need to be addressed separately
 # before these models can be mapped declaratively. Keeping them in the mapping module breaks the auth package

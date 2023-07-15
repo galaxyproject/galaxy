@@ -3734,6 +3734,14 @@ mapping:
           Activate this only if you have setup a Celery worker for Galaxy.
           For details, see https://docs.galaxyproject.org/en/master/admin/production.html
 
+      celery_user_rate_limit:
+        type: float
+        default: 0.0
+        required: false
+        desc: |
+          If set to a non-0 value, upper limit on number of
+          tasks that can be executed per user per second.
+
       use_pbkdf2:
         type: bool
         default: true
