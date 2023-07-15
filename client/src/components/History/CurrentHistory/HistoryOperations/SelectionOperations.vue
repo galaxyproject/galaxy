@@ -30,7 +30,7 @@
             <GDropdownItem v-b-modal:purge-selected-content data-description="purge option">
                 <span v-localize>Delete (permanently)</span>
             </GDropdownItem>
-            <b-dropdown-divider v-if="showBuildOptions" />
+            <GDropdownDivider v-if="showBuildOptions" />
             <GDropdownItem v-if="showBuildOptions" data-description="build list" @click="buildDatasetList">
                 <span v-localize>Build Dataset List</span>
             </GDropdownItem>
@@ -46,11 +46,11 @@
                 @click="buildCollectionFromRules">
                 <span v-localize>Build Collection from Rules</span>
             </GDropdownItem>
-            <b-dropdown-divider v-if="showBuildOptionForAll" />
+            <GDropdownDivider v-if="showBuildOptionForAll" />
             <GDropdownItem v-if="showBuildOptionForAll" data-description="build list all" @click="buildDatasetListAll">
                 <span v-localize>Build Dataset List</span>
             </GDropdownItem>
-            <b-dropdown-divider />
+            <GDropdownDivider />
             <GDropdownItem v-b-modal:change-dbkey-of-selected-content data-description="change database build">
                 <span v-localize>Change Database/Build</span>
             </GDropdownItem>
@@ -159,11 +159,13 @@ import { StatelessTags } from "components/Tags";
 
 import { useConfig } from "@/composables/config";
 
+import GDropdownDivider from "@/component-library/GDropdownDivider.vue";
 import GDropdownItem from "@/component-library/GDropdownItem.vue";
 import GDropdownText from "@/component-library/GDropdownText.vue";
 
 export default {
     components: {
+        GDropdownDivider,
         GDropdownItem,
         GDropdownText,
         DbKeyProvider,

@@ -26,7 +26,7 @@
                 :panel-view="panelView"
                 @onSelect="updatePanelView" />
         </b-dropdown-group>
-        <b-dropdown-divider v-if="ungroupedPanelViews.length > 0" />
+        <GDropdownDivider v-if="ungroupedPanelViews.length > 0" />
         <PanelViewMenuItem
             v-for="(panelView, key) in ungroupedPanelViews"
             :key="key"
@@ -39,6 +39,8 @@
 <script>
 import PanelViewMenuItem from "./PanelViewMenuItem";
 
+import GDropdownDivider from "@/component-library/GDropdownDivider.vue";
+
 const groupsDefinitions = [
     { type: "ontology", title: "...by Ontology" },
     { type: "activity", title: "...for Activity" },
@@ -47,7 +49,10 @@ const groupsDefinitions = [
 ];
 
 export default {
-    components: { PanelViewMenuItem },
+    components: {
+        GDropdownDivider,
+        PanelViewMenuItem,
+    },
     props: {
         panelViews: {
             type: Object,

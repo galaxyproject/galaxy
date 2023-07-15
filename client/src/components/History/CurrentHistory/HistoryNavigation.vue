@@ -59,7 +59,7 @@
                         <span v-localize>Show Histories Side-by-Side</span>
                     </GDropdownItem>
 
-                    <b-dropdown-divider></b-dropdown-divider>
+                    <GDropdownDivider />
 
                     <GDropdownItem
                         :title="l('Resume all Paused Jobs in this History')"
@@ -69,7 +69,7 @@
                         <span v-localize>Resume Paused Jobs</span>
                     </GDropdownItem>
 
-                    <b-dropdown-divider></b-dropdown-divider>
+                    <GDropdownDivider />
 
                     <GDropdownItem
                         v-b-modal:copy-current-history-modal
@@ -133,7 +133,7 @@
                         <span v-localize>Show Invocations</span>
                     </GDropdownItem>
 
-                    <b-dropdown-divider></b-dropdown-divider>
+                    <GDropdownDivider />
 
                     <GDropdownItem
                         :disabled="isAnonymous"
@@ -209,11 +209,13 @@ import { mapActions, mapState } from "pinia";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
+import GDropdownDivider from "@/component-library/GDropdownDivider.vue";
 import GDropdownItem from "@/component-library/GDropdownItem.vue";
 import GDropdownText from "@/component-library/GDropdownText.vue";
 
 export default {
     components: {
+        GDropdownDivider,
         GDropdownItem,
         GDropdownText,
         CopyModal,
