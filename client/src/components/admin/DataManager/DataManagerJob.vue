@@ -6,7 +6,7 @@
         <GAlert v-if="viewOnly" message="Not implemented" variant="dark" />
         <GAlert v-else-if="loading" message="Waiting for data" variant="info" />
         <b-container v-else-if="dataManager">
-            <b-row>
+            <GRow>
                 <GCol>
                     <b-card
                         id="data-manager-card"
@@ -16,7 +16,7 @@
                         class="mb-3">
                         <template v-slot:header>
                             <b-container>
-                                <b-row align-v="center">
+                                <GRow align-v="center">
                                     <GCol cols="auto">
                                         <GButton v-b-tooltip.hover title="Rerun" :href="runUrl">
                                             <span class="fa fa-redo" />
@@ -25,7 +25,7 @@
                                     <GCol>
                                         <b>{{ dataManager["name"] }}</b> <i>{{ dataManager["description"] }}</i>
                                     </GCol>
-                                </b-row>
+                                </GRow>
                             </b-container>
                         </template>
                         <b-card v-for="(hda, i) in hdaInfo" :id="'data-card-' + i" :key="i" class="mb-4">
@@ -33,7 +33,7 @@
                                 <b-table :fields="fields" :items="[hda]" caption-top small stacked>
                                     <template v-slot:table-caption>
                                         <b-container>
-                                            <b-row align-v="center">
+                                            <GRow align-v="center">
                                                 <GCol cols="auto">
                                                     <GButton
                                                         v-b-tooltip.hover
@@ -46,7 +46,7 @@
                                                 <GCol>
                                                     <b>{{ hda["name"] }}</b>
                                                 </GCol>
-                                            </b-row>
+                                            </GRow>
                                         </b-container>
                                     </template>
                                 </b-table>
@@ -67,7 +67,7 @@
                         </b-card>
                     </b-card>
                 </GCol>
-            </b-row>
+            </GRow>
         </b-container>
     </div>
 </template>
@@ -79,9 +79,11 @@ import { getAppRoot } from "onload/loadConfig";
 import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
 import GCol from "@/component-library/GCol.vue";
+import GRow from "@/component-library/GRow.vue";
 
 export default {
     components: {
+        GRow,
         GCol,
         GAlert,
         GButton,

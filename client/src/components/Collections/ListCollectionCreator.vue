@@ -150,7 +150,7 @@
                     <template v-slot:middle-content>
                         <div class="collection-elements-controls">
                             <GButton class="reset" :title="titleUndoButton" @click="reset">
-                                <font-awesome-icon icon="undo" />
+                                <FontAwesomeIcon icon="undo" />
                                 <FontAwesomeIcon icon="undo" />
                             </GButton>
                             <GButton class="sort-items" :title="titleSortButton" @click="sortByName">

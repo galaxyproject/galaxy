@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BCard, BFormCheckbox, BRow } from "bootstrap-vue";
+import { BCard, BFormCheckbox } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import {
@@ -21,6 +21,7 @@ import type { components } from "@/schema";
 import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
 import GCol from "@/component-library/GCol.vue";
+import GRow from "@/component-library/GRow.vue";
 import AsyncButton from "@/components/Common/AsyncButton.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -116,19 +117,19 @@ watch(
             <LoadingSpan message="Loading notifications preferences" />
         </GAlert>
 
-        <BRow v-else-if="showPreferences" class="mx-1">
+        <GRow v-else-if="showPreferences" class="mx-1">
             <GCol v-for="category in categories" :key="category">
                 <BCard class="my-2 px-2">
-                    <BRow align-h="between" align-v="center">
+                    <GRow align-h="between" align-v="center">
                         <GCol cols="auto" class="mx-2">
-                            <BRow>
+                            <GRow>
                                 <span v-localize class="category-title">{{ capitalizeWords(category) }}</span>
-                            </BRow>
-                            <BRow v-if="categoryDescriptionMap[category]">
+                            </GRow>
+                            <GRow v-if="categoryDescriptionMap[category]">
                                 <span v-localize class="category-description">
                                     {{ categoryDescriptionMap[category] }}
                                 </span>
-                            </BRow>
+                            </GRow>
                         </GCol>
                         <GCol cols="auto" class="p-0">
                             <BFormCheckbox
@@ -141,8 +142,8 @@ watch(
                                 "
                                 switch />
                         </GCol>
-                    </BRow>
-                    <BRow class="p-2">
+                    </GRow>
+                    <GRow class="p-2">
                         <GCol
                             v-for="channel in Object.keys(notificationsPreferences[category].channels)"
                             :key="channel"
@@ -159,12 +160,12 @@ watch(
                                 class="mx-2"
                                 icon="exclamation-circle" />
                         </GCol>
-                    </BRow>
+                    </GRow>
                 </BCard>
             </GCol>
-        </BRow>
+        </GRow>
 
-        <BRow v-if="!loading" class="m-1" align-h="center">
+        <GRow v-if="!loading" class="m-1" align-h="center">
             <BCard v-if="browserSupportsPushNotifications() && !pushNotificationsGranted" class="my-2">
                 Allow push and tab notifications. To disable, revoke the site notification privilege in your browser.
                 <GButton
@@ -188,13 +189,13 @@ watch(
                 <FontAwesomeIcon icon="exclamation-circle" />
                 Push notifications are not supported by this browser. You can still receive in-app notifications.
             </GAlert>
-        </BRow>
+        </GRow>
 
-        <BRow v-if="!loading && config.enable_notification_system" class="m-1" align-h="center">
+        <GRow v-if="!loading && config.enable_notification_system" class="m-1" align-h="center">
             <AsyncButton :action="updateNotificationsPreferences" icon="save" variant="primary" size="md">
                 <span v-localize>Save</span>
             </AsyncButton>
-        </BRow>
+        </GRow>
     </section>
 </template>
 

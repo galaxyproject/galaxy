@@ -1,5 +1,5 @@
 <template>
-    <BRow class="ml-3 mb-1">
+    <GRow class="ml-3 mb-1">
         <i class="pref-icon pt-1 fa fa-lg fa-hdd" />
         <div class="pref-content pr-1">
             <a
@@ -33,23 +33,25 @@
                     @onSubmit="handleSubmit" />
             </BModal>
         </div>
-    </BRow>
+    </GRow>
 </template>
 
 <script>
 import axios from "axios";
-import { BModal, BRow, VBModal } from "bootstrap-vue";
+import { BModal, VBModal } from "bootstrap-vue";
 import SelectObjectStore from "components/ObjectStore/SelectObjectStore";
 import { prependPath } from "utils/redirect";
 import { errorMessageAsString } from "utils/simple-error";
 import Vue from "vue";
+
+import GRow from "@/component-library/GRow.vue";
 
 Vue.use(VBModal);
 
 export default {
     components: {
         BModal,
-        BRow,
+        GRow,
         SelectObjectStore,
     },
     props: {

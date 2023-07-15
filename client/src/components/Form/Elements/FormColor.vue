@@ -3,6 +3,7 @@ import { computed } from "vue";
 
 import GCol from "@/component-library/GCol.vue";
 import GInput from "@/component-library/GInput.vue";
+import GRow from "@/component-library/GRow.vue";
 
 export interface FormColorProps {
     value?: string;
@@ -28,14 +29,14 @@ const currentValue = computed({
 </script>
 
 <template>
-    <b-row>
+    <GRow>
         <GCol class="form-color-input">
             <GInput :id="id" v-model="currentValue" class="cursor-pointer" type="color" size="sm" />
         </GCol>
         <GCol class="pl-0">
             <label class="pt-1 cursor-pointer" :for="id">Select a color</label>
         </GCol>
-    </b-row>
+    </GRow>
 </template>
 
 <style scoped>

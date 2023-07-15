@@ -11,7 +11,7 @@
         </div>
         <div v-else-if="dataManagers && dataTables">
             <b-container fluid>
-                <b-row>
+                <GRow>
                     <GCol md="6">
                         <b-form-group description="Search for strings or regular expressions">
                             <GInputGroup>
@@ -22,7 +22,7 @@
                             </GInputGroup>
                         </b-form-group>
                     </GCol>
-                </b-row>
+                </GRow>
             </b-container>
             <b-card-group columns>
                 <b-card id="data-managers-card" no-body header="Installed Data Managers">
@@ -83,6 +83,7 @@ import GCol from "@/component-library/GCol.vue";
 import GInput from "@/component-library/GInput.vue";
 import GInputGroup from "@/component-library/GInputGroup.vue";
 import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
+import GRow from "@/component-library/GRow.vue";
 
 export default {
     components: {
@@ -90,6 +91,7 @@ export default {
         GButton,
         GButtonGroup,
         GInput,
+        GRow,
         GCol,
         GInputGroup,
         GInputGroupAppend,

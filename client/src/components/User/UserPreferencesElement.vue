@@ -1,5 +1,5 @@
 <script setup>
-import { BRow } from "bootstrap-vue";
+import GRow from "@/component-library/GRow.vue";
 
 defineProps({
     id: {
@@ -29,7 +29,7 @@ defineProps({
 });
 </script>
 <template>
-    <BRow class="ml-3 mb-1">
+    <GRow class="ml-3 mb-1">
         <i :class="['pref-icon pt-1 fa fa-lg', icon]" />
         <div class="pref-content pr-1">
             <b-badge v-if="!!badge" variant="danger">
@@ -46,7 +46,7 @@ defineProps({
             </div>
             <slot />
         </div>
-    </BRow>
+    </GRow>
 </template>
 <style scoped>
 .pref-content {

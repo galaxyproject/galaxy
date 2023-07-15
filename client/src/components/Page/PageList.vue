@@ -4,14 +4,14 @@
             {{ title }}
         </h1>
         <GAlert v-bind="alertAttrs">{{ message }}</GAlert>
-        <b-row class="mb-3">
+        <GRow class="mb-3">
             <GCol cols="6">
                 <IndexFilter v-bind="filterAttrs" id="page-search" v-model="filter" />
             </GCol>
             <GCol>
                 <PageIndexActions class="float-right" />
             </GCol>
-        </b-row>
+        </GRow>
         <b-table v-model="pageItemsModel" v-bind="{ ...defaultTableAttrs, ...indexTableAttrs }">
             <template v-slot:empty>
                 <loading-span v-if="loading" message="Loading pages" />
@@ -99,6 +99,7 @@ import { updateTags } from "./services";
 
 import GAlert from "@/component-library/GAlert.vue";
 import GCol from "@/component-library/GCol.vue";
+import GRow from "@/component-library/GRow.vue";
 
 const helpHtml = `<div>
 <p>This textbox can be used to filter the pages displayed.
@@ -143,6 +144,7 @@ export default {
     components: {
         GAlert,
         GCol,
+        GRow,
         UtcDate,
         StatelessTags,
         PageIndexActions,

@@ -146,7 +146,7 @@
         </b-table>
 
         <b-container>
-            <b-row class="justify-content-md-center">
+            <GRow class="justify-content-md-center">
                 <GCol md="auto">
                     <b-pagination
                         v-model="currentPage"
@@ -175,7 +175,7 @@
                         </tr>
                     </table>
                 </GCol>
-            </b-row>
+            </GRow>
         </b-container>
     </div>
 </template>
@@ -203,6 +203,7 @@ import { fields } from "./table-fields";
 import GCol from "@/component-library/GCol.vue";
 import GInputGroup from "@/component-library/GInputGroup.vue";
 import GLink from "@/component-library/GLink.vue";
+import GRow from "@/component-library/GRow.vue";
 
 initLibrariesIcons();
 
@@ -211,6 +212,7 @@ Vue.use(BootstrapVue);
 export default {
     components: {
         GButton,
+        GRow,
         GCol,
         GInputGroup,
         GLink,

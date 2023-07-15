@@ -4,7 +4,7 @@
             <h1 class="text-center my-3">{{ title | localize }}</h1>
             <h2 class="text-center my-3 h-sm">{{ intro | localize }}</h2>
         </header>
-        <b-row class="justify-content-md-center mb-3" :data-new-user-welcome-topic-title="title">
+        <GRow class="justify-content-md-center mb-3" :data-new-user-welcome-topic-title="title">
             <b-card-group v-for="(subject, idx) in topics" :key="idx">
                 <b-card
                     class="text-center m-2 border-0 new-user-welcome-subtopic"
@@ -21,7 +21,7 @@
                     }}</GButton>
                 </b-card>
             </b-card-group>
-        </b-row>
+        </GRow>
         <GButton class="mt-auto new-user-welcome-return" variant="primary" role="link" @click="$emit('back')">
             <span class="fa fa-caret-left mr-1" />
             <span>Return</span>
@@ -32,9 +32,12 @@
 import GButton from "component-library/GButton";
 import { getAppRoot } from "onload/loadConfig";
 
+import GRow from "@/component-library/GRow.vue";
+
 export default {
     components: {
         GButton,
+        GRow,
     },
     props: {
         topics: { type: Array, required: true },

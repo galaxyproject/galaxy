@@ -13,6 +13,7 @@ import CleanupResultDialog from "./Cleanup/CleanupResultDialog.vue";
 import ReviewCleanupDialog from "./Cleanup/ReviewCleanupDialog.vue";
 import GAlert from "@/component-library/GAlert.vue";
 import GLink from "@/component-library/GLink.vue";
+import GRow from "@/component-library/GRow.vue";
 
 interface ModalDialog {
     openModal: () => void;
@@ -58,27 +59,27 @@ async function onConfirmCleanupSelected(selectedItems: CleanableItem[]) {
             <b>{{ localize("Manage your account storage") }}</b> <sup class="text-beta">(Beta)</sup>
         </h2>
 
-        <b-row class="justify-content-md-center">
+        <GRow class="justify-content-md-center">
             <GAlert show dismissible variant="warning">
                 {{ localize("This feature is currently in Beta, if you find any issues please report them") }}
                 <GLink :href="issuesUrl" target="_blank">here</GLink>.
             </GAlert>
-        </b-row>
-        <b-row class="justify-content-md-center mb-5">
+        </GRow>
+        <GRow class="justify-content-md-center mb-5">
             <GAlert v-if="config.enable_quotas" show>
                 {{ localize("The storage manager only shows elements that count towards your disk quota.") }}
                 <GLink :href="config.quota_url" target="_blank">{{ localize("Learn more") }}</GLink>
             </GAlert>
-        </b-row>
+        </GRow>
 
         <div id="categories-panel">
             <b-container v-for="category in cleanupCategories" :key="category.id">
-                <b-row class="justify-content-md-center mb-2">
+                <GRow class="justify-content-md-center mb-2">
                     <h3>
                         <b>{{ category.name }}</b>
                     </h3>
-                </b-row>
-                <b-row class="justify-content-md-center mb-5">
+                </GRow>
+                <GRow class="justify-content-md-center mb-5">
                     <b-card-group deck>
                         <CleanupOperationSummary
                             v-for="operation in category.operations"
@@ -87,7 +88,7 @@ async function onConfirmCleanupSelected(selectedItems: CleanableItem[]) {
                             :refresh-operation-id="refreshOperationId"
                             @onReviewItems="onReviewItems" />
                     </b-card-group>
-                </b-row>
+                </GRow>
             </b-container>
         </div>
 

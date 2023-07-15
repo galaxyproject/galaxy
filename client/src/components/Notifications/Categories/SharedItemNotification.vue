@@ -2,7 +2,6 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExternalLinkAlt, faRetweet } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BRow } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { SharedItemNotification } from "@/components/Notifications";
@@ -10,6 +9,7 @@ import { useNotificationsStore } from "@/stores/notificationsStore";
 
 import GCol from "@/component-library/GCol.vue";
 import GLink from "@/component-library/GLink.vue";
+import GRow from "@/component-library/GRow.vue";
 import Heading from "@/components/Common/Heading.vue";
 import NotificationActions from "@/components/Notifications/NotificationActions.vue";
 
@@ -53,14 +53,14 @@ function onClick(link: string) {
 
 <template>
     <GCol>
-        <BRow align-v="center">
+        <GRow align-v="center">
             <Heading size="md" :bold="!notification.seen_time" class="mb-0">
                 <FontAwesomeIcon :class="`text-${notificationVariant}`" icon="retweet" />
                 {{ sharedItemType }} shared with you by <em>{{ content.owner_name }}</em>
             </Heading>
             <NotificationActions :notification="notification" />
-        </BRow>
-        <BRow>
+        </GRow>
+        <GRow>
             <p id="notification-message" class="m-0">
                 <span>The user</span>
                 <b>{{ content.owner_name }}</b>
@@ -76,6 +76,6 @@ function onClick(link: string) {
                 <em>{{ content.item_type }}</em>
                 <span> with you.</span>
             </p>
-        </BRow>
+        </GRow>
     </GCol>
 </template>

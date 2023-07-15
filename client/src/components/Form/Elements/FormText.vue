@@ -1,5 +1,5 @@
 <template>
-    <b-row align-v="center">
+    <GRow align-v="center">
         <GCol>
             <b-form-textarea
                 v-if="inputArea"
@@ -23,16 +23,18 @@
                 <option v-for="data in datalist" :key="data.value" :label="data.label" :value="data.value" />
             </datalist>
         </GCol>
-    </b-row>
+    </GRow>
 </template>
 
 <script>
 import GInput from "component-library/GInput";
 
 import GCol from "@/component-library/GCol.vue";
+import GRow from "@/component-library/GRow.vue";
 
 export default {
     components: {
+        GRow,
         GCol,
         GInput,
     },

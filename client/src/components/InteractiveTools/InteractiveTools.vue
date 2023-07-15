@@ -2,7 +2,7 @@
     <div aria-labelledby="interactive-tools-heading">
         <GAlert v-for="(message, index) in messages" :key="index" :show="3" variant="danger">{{ message }}</GAlert>
         <h1 id="interactive-tools-heading" class="h-lg">Active Interactive Tools</h1>
-        <b-row class="mb-3">
+        <GRow class="mb-3">
             <GCol cols="6">
                 <b-input
                     id="interactivetool-search"
@@ -13,7 +13,7 @@
                     autocomplete="off"
                     type="text" />
             </GCol>
-        </b-row>
+        </GRow>
         <b-table
             id="interactive-tool-table"
             striped
@@ -78,11 +78,13 @@ import { Services } from "./services";
 import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
 import GCol from "@/component-library/GCol.vue";
+import GRow from "@/component-library/GRow.vue";
 
 library.add(faExternalLinkAlt);
 
 export default {
     components: {
+        GRow,
         GCol,
         GAlert,
         GButton,

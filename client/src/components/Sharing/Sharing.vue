@@ -164,7 +164,7 @@
                             }}
                         </div>
                     </GAlert>
-                    <b-row v-if="permissionsChangeRequired(item)">
+                    <GRow v-if="permissionsChangeRequired(item)">
                         <GCol v-if="item.extra.can_change.length > 0">
                             <b-card>
                                 <b-card-header header-tag="header" class="p-1" role="tab">
@@ -248,7 +248,7 @@
                                 <GButton block variant="outline-danger" @click="getSharing()">Cancel</GButton>
                             </b-card>
                         </GCol>
-                    </b-row>
+                    </GRow>
                 </b-collapse>
             </b-card>
         </div>
@@ -278,6 +278,7 @@ import ErrorMessage from "./ErrorMessage";
 import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
 import GCol from "@/component-library/GCol.vue";
+import GRow from "@/component-library/GRow.vue";
 
 Vue.use(BootstrapVue);
 library.add(faCopy, faEdit, faUserPlus, faUserSlash, faCaretDown, faCaretUp);
@@ -290,6 +291,7 @@ const defaultExtra = () => {
 };
 export default {
     components: {
+        GRow,
         GCol,
         GAlert,
         GButton,

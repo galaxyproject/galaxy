@@ -7,7 +7,7 @@
         <GAlert v-else-if="jobs && !jobs.length" message="There are no jobs for this data manager." variant="primary" />
         <div v-else-if="jobs">
             <b-container fluid class="mb-3">
-                <b-row>
+                <GRow>
                     <GCol md="6">
                         <b-form-group description="Search for strings or regular expressions">
                             <GInputGroup>
@@ -18,14 +18,14 @@
                             </GInputGroup>
                         </b-form-group>
                     </GCol>
-                </b-row>
-                <b-row>
+                </GRow>
+                <GRow>
                     <GCol>
                         <GButton :pressed.sync="showCommandLine" variant="outline-secondary">
                             {{ showCommandLine ? "Hide" : "Show" }} Command Line
                         </GButton>
                     </GCol>
-                </b-row>
+                </GRow>
             </b-container>
             <b-table
                 id="jobs-table"
@@ -80,6 +80,7 @@ import GCol from "@/component-library/GCol.vue";
 import GInput from "@/component-library/GInput.vue";
 import GInputGroup from "@/component-library/GInputGroup.vue";
 import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
+import GRow from "@/component-library/GRow.vue";
 
 export default {
     components: {
@@ -87,6 +88,7 @@ export default {
         GButton,
         GButtonGroup,
         GInput,
+        GRow,
         GCol,
         GInputGroup,
         GInputGroupAppend,

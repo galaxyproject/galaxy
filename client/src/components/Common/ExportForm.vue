@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BFormGroup, BRow } from "bootstrap-vue";
+import { BFormGroup } from "bootstrap-vue";
 import GButton from "component-library/GButton";
 import { computed, ref } from "vue";
 
@@ -7,6 +7,7 @@ import localize from "@/utils/localization";
 
 import GCol from "@/component-library/GCol.vue";
 import GInput from "@/component-library/GInput.vue";
+import GRow from "@/component-library/GRow.vue";
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";
 
 interface Props {
@@ -51,7 +52,7 @@ const doExport = () => {
         <BFormGroup id="fieldset-name" label-for="name" :description="nameDescription" class="mt-3">
             <GInput id="name" v-model="name" :placeholder="namePlaceholder" required />
         </BFormGroup>
-        <BRow align-h="end">
+        <GRow align-h="end">
             <GCol>
                 <GButton
                     v-localize
@@ -62,6 +63,6 @@ const doExport = () => {
                     Export
                 </GButton>
             </GCol>
-        </BRow>
+        </GRow>
     </div>
 </template>

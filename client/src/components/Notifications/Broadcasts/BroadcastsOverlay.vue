@@ -11,6 +11,7 @@ import { type BroadcastNotification, useBroadcastsStore } from "@/stores/broadca
 
 import GButton from "@/component-library/GButton.vue";
 import GCol from "@/component-library/GCol.vue";
+import GRow from "@/component-library/GRow.vue";
 import Heading from "@/components/Common/Heading.vue";
 
 library.add(faInfoCircle, faTimes);
@@ -61,7 +62,7 @@ function onDismiss(item: BroadcastNotification) {
 
 <template>
     <div v-if="currentBroadcast">
-        <BRow
+        <GRow
             align-v="center"
             class="broadcast-banner m-0"
             :class="{ 'non-urgent': currentBroadcast.variant !== 'urgent' }">
@@ -73,15 +74,15 @@ function onDismiss(item: BroadcastNotification) {
                     :icon="faInfoCircle" />
             </GCol>
             <GCol>
-                <BRow align-v="center">
+                <GRow align-v="center">
                     <Heading size="md" bold>
                         {{ currentBroadcast.content.subject }}
                     </Heading>
-                </BRow>
-                <BRow align-v="center">
+                </GRow>
+                <GRow align-v="center">
                     <span class="broadcast-message" v-html="renderMarkdown(currentBroadcast.content.message)" />
-                </BRow>
-                <BRow>
+                </GRow>
+                <GRow>
                     <div v-if="currentBroadcast.content.action_links">
                         <GButton
                             v-for="actionLink in currentBroadcast.content.action_links"
@@ -92,7 +93,7 @@ function onDismiss(item: BroadcastNotification) {
                             {{ actionLink.action_name }}
                         </GButton>
                     </div>
-                </BRow>
+                </GRow>
             </GCol>
             <GCol cols="auto" align-self="center" class="p-0">
                 <GButton
@@ -107,7 +108,7 @@ function onDismiss(item: BroadcastNotification) {
                     {{ remainingBroadcastsCountText }}...
                 </div>
             </GCol>
-        </BRow>
+        </GRow>
     </div>
 </template>
 

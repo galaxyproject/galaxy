@@ -504,7 +504,7 @@
                     </div>
                 </div>
             </template>
-            <b-row class="mx-auto">
+            <GRow class="mx-auto">
                 <GButton :help="titleCancel" class="creator-cancel-btn rule-btn-cancel" tabindex="-1" @click="cancel">
                     {{ l("Cancel") }}
                 </GButton>
@@ -523,7 +523,7 @@
                         {{ finishButtonTitle }}
                     </GButton>
                 </TooltipOnHover>
-            </b-row>
+            </GRow>
         </RuleModalFooter>
     </StateDiv>
     <StateDiv v-else-if="state == 'wait'" class="rule-collection-builder">
@@ -589,6 +589,7 @@ import JobStatesModel from "utils/job-states-model";
 import _l from "utils/localization";
 import Vue from "vue";
 
+import GRow from "@/component-library/GRow.vue";
 import GAlert from "component-library/GAlert.vue";
 import GButton from "component-library/GButton.vue";
 import GInput from "component-library/GInput.vue";
@@ -609,6 +610,7 @@ const deferredToPromise = (d) => {
 
 export default {
     components: {
+        GRow,
         GAlert,
         GButton,
         GInput,

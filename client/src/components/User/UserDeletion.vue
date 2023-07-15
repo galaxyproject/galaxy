@@ -1,5 +1,5 @@
 <template>
-    <b-row class="ml-3 mb-1">
+    <GRow class="ml-3 mb-1">
         <i class="pref-icon pt-1 fa fa-lg fa-radiation" />
         <div class="pref-content pr-1">
             <a id="delete-account" href="javascript:void(0)"
@@ -33,7 +33,7 @@
                 </b-form>
             </b-modal>
         </div>
-    </b-row>
+    </GRow>
 </template>
 
 <script>
@@ -45,11 +45,13 @@ import { withPrefix } from "utils/redirect";
 import Vue from "vue";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GRow from "@/component-library/GRow.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GRow,
         GAlert,
         GInput,
     },

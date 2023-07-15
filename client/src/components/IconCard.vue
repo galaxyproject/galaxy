@@ -1,10 +1,10 @@
 <template>
     <b-card :title="title" class="mx-4 icon-card">
         <b-container class="p-0">
-            <b-row>
+            <GRow>
                 <GCol>{{ description }}</GCol>
                 <GCol cols="auto"><i :class="icon"></i></GCol>
-            </b-row>
+            </GRow>
         </b-container>
         <GButton variant="primary" @click="onButtonClick">{{ buttonText }}</GButton>
     </b-card>
@@ -17,10 +17,12 @@
 import GButton from "component-library/GButton";
 
 import GCol from "@/component-library/GCol.vue";
+import GRow from "@/component-library/GRow.vue";
 
 export default {
     components: {
         GButton,
+        GRow,
         GCol,
     },
     props: {

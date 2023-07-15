@@ -4,7 +4,7 @@
         :loading="loading"
         loading-message="Loading tool requirement resolution information">
         <template v-slot:header>
-            <b-row class="m-1">
+            <GRow class="m-1">
                 <b-form inline>
                     <b>Resolution:</b>
                     <label class="mr-sm-2" for="manage-resolver-type">Using resolvers of type</label>
@@ -14,8 +14,8 @@
                         class="mb-2 mr-sm-2 mb-sm-0"
                         :options="resolverTypeOptions"></b-form-select>
                 </b-form>
-            </b-row>
-            <b-row class="m-1">
+            </GRow>
+            <GRow class="m-1">
                 <b-form inline>
                     <b>Filter:</b>
                     <label class="mr-sm-2" for="manage-filter-resolution">Resolution</label>
@@ -28,7 +28,7 @@
                         <option value="resolved">Resolved</option>
                     </b-form-select>
                 </b-form>
-            </b-row>
+            </GRow>
         </template>
         <template v-slot:body>
             <b-table id="requirements-table" striped :fields="fields" :items="items" @row-clicked="showRowDetails">
@@ -58,7 +58,7 @@
             </b-table>
         </template>
         <template v-slot:actions>
-            <b-row class="m-1">
+            <GRow class="m-1">
                 <GButton class="m-1" @click="installSelected">
                     <span class="fa fa-plus" />
                     <!-- v-bind:disabled="!hasSelection"  -->
@@ -77,7 +77,7 @@
                     <span class="fa fa-chevron-up" />
                     Group by Requirements
                 </GButton>
-            </b-row>
+            </GRow>
         </template>
     </dependency-index-wrapper>
 </template>
@@ -90,6 +90,8 @@ import Vue from "vue";
 import { getToolboxDependencies, installDependencies, uninstallDependencies } from "../AdminServices";
 import DependencyIndexMixin from "./DependencyIndexMixin";
 import ResolutionDetails from "./ResolutionDetails";
+
+import GRow from "@/component-library/GRow.vue";
 
 Vue.use(BootstrapVue);
 
@@ -107,7 +109,11 @@ const RESOLVER_TYPE_OPTIONS = _.keys(RESOLVER_DESCRIPTIONS).map((resolverType) =
 RESOLVER_TYPE_OPTIONS.splice(0, 0, { value: null, text: "*any*" });
 
 export default {
-    components: { GButton, ResolutionDetails },
+    components: {
+        GButton,
+        GRow,
+        ResolutionDetails,
+    },
     mixins: [DependencyIndexMixin],
     data() {
         return {

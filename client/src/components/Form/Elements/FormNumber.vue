@@ -3,7 +3,7 @@
         <GAlert v-if="errorMessage" class="mt-2" :show="dismissCountDown" variant="info" @dismissed="resetAlert">
             {{ errorMessage }}
         </GAlert>
-        <b-row align-v="center">
+        <GRow align-v="center">
             <GCol :sm="isRangeValid ? defaultInputSizeWithSlider : false">
                 <!-- regular dot and dot on numpad have different codes -->
                 <GInput
@@ -19,7 +19,7 @@
             <GCol v-if="isRangeValid" class="pl-0">
                 <GInput v-model="currentValue" :min="min" :max="max" :step="step" type="range" />
             </GCol>
-        </b-row>
+        </GRow>
     </div>
 </template>
 
@@ -28,9 +28,11 @@ import GAlert from "component-library/GAlert";
 import GInput from "component-library/GInput";
 
 import GCol from "@/component-library/GCol.vue";
+import GRow from "@/component-library/GRow.vue";
 
 export default {
     components: {
+        GRow,
         GCol,
         GAlert,
         GInput,

@@ -17,7 +17,7 @@
             <strong>&lt;YOUR MESSAGE&gt;</strong>
             For more information or help, report this error".
         </p>
-        <b-row>
+        <GRow>
             <GCol class="col-sm-4">
                 <b-form-group description="Select whether or not to use the cutoff below.">
                     <b-form-checkbox id="show-all-running" v-model="showAllRunning" switch size="lg" @change="update">
@@ -39,7 +39,7 @@
                     <IndexFilter v-bind="filterAttrs" id="job-search" v-model="filter" />
                 </b-form-group>
             </GCol>
-        </b-row>
+        </GRow>
         <transition name="fade">
             <b-form v-if="unfinishedJobs.length && selectedStopJobIds.length" @submit.prevent="onStopJobs">
                 <b-form-group label="Stop Selected Jobs" description="Stop message will be displayed to the user">
@@ -113,6 +113,7 @@ import GButton from "@/component-library/GButton.vue";
 import GCol from "@/component-library/GCol.vue";
 import GInputGroup from "@/component-library/GInputGroup.vue";
 import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
+import GRow from "@/component-library/GRow.vue";
 
 function cancelJob(jobId, message) {
     const url = `${getAppRoot()}api/jobs/${jobId}`;
@@ -147,6 +148,7 @@ returned. So <code>tool:'cat1'</code> would show only jobs from the <code>cat1</
 
 export default {
     components: {
+        GRow,
         GCol,
         GInputGroup,
         GInputGroupAppend,

@@ -26,7 +26,7 @@
     </div>
 </template>
 <script>
-import { BButton, BCard, BCardGroup, BCarousel, BCarouselSlide, BRow, BTab, BTabs } from "bootstrap-vue";
+import { BButton, BCard, BCardGroup, BCarousel, BCarouselSlide, BTab, BTabs } from "bootstrap-vue";
 import Heading from "components/Common/Heading";
 import Slides from "components/NewUserWelcome/components/Slides";
 import Subtopics from "components/NewUserWelcome/components/Subtopics";
@@ -38,6 +38,7 @@ import { useConfig } from "@/composables/config";
 import { getResource } from "./getResource";
 
 import GCol from "@/component-library/GCol.vue";
+import GRow from "@/component-library/GRow.vue";
 
 export default {
     components: {
@@ -49,7 +50,7 @@ export default {
         BCarousel,
         BCarouselSlide,
         BButton,
-        BRow,
+        GRow,
         GCol,
         Topics,
         Subtopics,

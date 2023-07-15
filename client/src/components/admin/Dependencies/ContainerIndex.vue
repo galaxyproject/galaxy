@@ -4,7 +4,7 @@
         :loading="loading"
         loading-message="Loading container resolution information">
         <template v-slot:header>
-            <b-row class="m-1">
+            <GRow class="m-1">
                 <b-form inline>
                     <b>Resolution:</b>
                     <label class="mr-sm-2" for="manage-container-type">Resolve containers of type</label>
@@ -20,8 +20,8 @@
                         class="mb-2 mr-sm-2 mb-sm-0"
                         :options="resolverTypeOptions"></b-form-select>
                 </b-form>
-            </b-row>
-            <b-row class="m-1">
+            </GRow>
+            <GRow class="m-1">
                 <b-form inline>
                     <b>Filter:</b>
                     <label class="mr-sm-2" for="manage-filter-resolution">Resolution</label>
@@ -52,16 +52,16 @@
                         class="mb-2 mr-sm-2 mb-sm-0"
                         :options="resolverTypeOptions"></b-form-select>
                 </b-form>
-            </b-row>
+            </GRow>
         </template>
         <template v-slot:actions>
-            <b-row class="m-1">
+            <GRow class="m-1">
                 <GButton class="mb-2 mr-sm-2 mb-sm-0" @click="installSelected">
                     <!-- v-bind:disabled="!hasSelection"  -->
                     <span class="fa fa-plus" />
                     Attempt Build
                 </GButton>
-            </b-row>
+            </GRow>
         </template>
         <template v-slot:body>
             <b-table id="containers-table" striped :fields="fields" :items="items" @row-clicked="showRowDetails">
@@ -101,13 +101,15 @@ import ContainerResolutionDetails from "./ContainerResolutionDetails";
 import { DESCRIPTION } from "./ContainerResolver";
 import DependencyIndexMixin from "./DependencyIndexMixin";
 
+import GRow from "@/component-library/GRow.vue";
+
 Vue.use(BootstrapVue);
 
 const RESOLVER_TYPE_OPTIONS = _.keys(DESCRIPTION).map((resolverType) => ({ value: resolverType, text: resolverType }));
 RESOLVER_TYPE_OPTIONS.splice(0, 0, { value: null, text: "*any*" });
 
 export default {
-    components: { ContainerResolutionDetails, GButton },
+    components: { GButton, GRow, ContainerResolutionDetails },
     mixins: [DependencyIndexMixin],
     data() {
         return {

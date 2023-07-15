@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCircle, faHourglassHalf, faRetweet } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BButtonGroup, BCard, BCol, BCollapse, BFormCheckbox, BRow } from "bootstrap-vue";
+import { BCard, BCollapse, BFormCheckbox } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
@@ -13,6 +13,7 @@ import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
 import GButtonGroup from "@/component-library/GButtonGroup.vue";
 import GCol from "@/component-library/GCol.vue";
+import GRow from "@/component-library/GRow.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import NotificationItem from "@/components/Notifications/NotificationItem.vue";
 import NotificationsPreferences from "@/components/User/Notifications/NotificationsPreferences.vue";
@@ -94,7 +95,7 @@ function togglePreferences() {
 
         <div v-else class="mx-1">
             <BCard class="mb-2">
-                <BRow class="align-items-center" no-gutters>
+                <GRow class="align-items-center" no-gutters>
                     <GCol cols="1">
                         <BFormCheckbox
                             :checked="allSelected"
@@ -117,7 +118,7 @@ function togglePreferences() {
                         </GButton>
                     </GCol>
                     <GCol>
-                        <BRow align-h="end" align-v="center">
+                        <GRow align-h="end" align-v="center">
                             <span class="mx-2"> Filters: </span>
                             <GButtonGroup>
                                 <GButton
@@ -139,9 +140,9 @@ function togglePreferences() {
                                     Shared
                                 </GButton>
                             </GButtonGroup>
-                        </BRow>
+                        </GRow>
                     </GCol>
-                </BRow>
+                </GRow>
             </BCard>
 
             <GAlert v-show="filteredNotifications.length === 0" show variant="info">
@@ -155,7 +156,7 @@ function togglePreferences() {
                     :key="item.id"
                     class="my-2 notification-card"
                     :class="!item.seen_time ? 'border-dark' : ''">
-                    <BRow align-h="start" align-v="center">
+                    <GRow align-h="start" align-v="center">
                         <GCol cols="auto">
                             <GButtonGroup>
                                 <FontAwesomeIcon
@@ -169,7 +170,7 @@ function togglePreferences() {
                             </GButtonGroup>
                         </GCol>
                         <NotificationItem :notification="item" />
-                    </BRow>
+                    </GRow>
                 </BCard>
             </TransitionGroup>
         </div>

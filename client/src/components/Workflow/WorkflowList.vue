@@ -7,14 +7,14 @@
         <GAlert class="index-grid-message" dismissible :variant="importStatus" :show="Boolean(importMessage)">
             {{ importMessage }}
         </GAlert>
-        <b-row class="mb-3">
+        <GRow class="mb-3">
             <GCol cols="6" class="m-1">
                 <IndexFilter v-bind="filterAttrs" id="workflow-search" v-model="filter" />
             </GCol>
             <GCol>
                 <WorkflowIndexActions :root="root" class="float-right"></WorkflowIndexActions>
             </GCol>
-        </b-row>
+        </GRow>
         <b-table v-model="workflowItemsModel" v-bind="{ ...defaultTableAttrs, ...indexTableAttrs }">
             <template v-slot:empty>
                 <loading-span v-if="loading" message="Loading workflows" />
@@ -103,6 +103,7 @@ import WorkflowIndexActions from "./WorkflowIndexActions";
 import WorkflowRunButton from "./WorkflowRunButton.vue";
 import GAlert from "@/component-library/GAlert.vue";
 import GCol from "@/component-library/GCol.vue";
+import GRow from "@/component-library/GRow.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 const helpHtml = `<div>
@@ -168,6 +169,7 @@ const PUBLISHED_FIELDS = [NAME_FIELD, TAGS_FIELD, UPDATED_FIELD, OWNER_FIELD];
 
 export default {
     components: {
+        GRow,
         GCol,
         GAlert,
         UtcDate,

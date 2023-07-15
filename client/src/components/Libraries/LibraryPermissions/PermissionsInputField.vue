@@ -3,7 +3,7 @@
         <h2 class="h-sm">
             {{ title }}
         </h2>
-        <b-row>
+        <GRow>
             <GCol>
                 <div v-if="options && value" :class="permission_type">
                     <Multiselect
@@ -30,7 +30,7 @@
                     <div v-html="alert" />
                 </GAlert>
             </GCol>
-        </b-row>
+        </GRow>
     </div>
 </template>
 
@@ -44,10 +44,12 @@ import VueObserveVisibility from "vue-observe-visibility";
 
 import GAlert from "@/component-library/GAlert.vue";
 import GCol from "@/component-library/GCol.vue";
+import GRow from "@/component-library/GRow.vue";
 
 Vue.use(VueObserveVisibility);
 export default {
     components: {
+        GRow,
         GCol,
         GAlert,
         Multiselect,
