@@ -1,0 +1,60 @@
+<tool id="interactive_tool_tadviewer" name="tadviewer" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="20.01" license="MIT" tool_type="interactive">
+    <description></description>
+    <!-- <xrefs>
+        <xref type="bio.tools"></xref>
+    </xrefs> -->
+    <entry_points>
+        <entry_point name="tadviewer instance on $infiles.display_name">
+            <port>9000</port>
+        </entry_point>
+    </entry_points>
+    <macros>
+        <token name="@TOOL_VERSION@">0.13.0</token>
+        <token name="@VERSION_SUFFIX@">0</token>
+    </macros>
+    <!-- TODO: please annotate this tool with topics and operations from http://edamontology.org -->
+    <!-- TODO: for more information see: https://galaxy-iuc-standards.readthedocs.io/en/latest/best_practices/tool_xml.html#edam-topics-and-operations -->
+    <!-- <edam_topics>
+        <edam_topic>topic_TODO</edam_topic>
+    </edam_topics>
+    <edam_operations>
+        <edam_operation>operation_TODO</edam_operation>
+    </edam_operations> -->
+    <requirements>
+        <requirement type="docker">recetox/tad:latest</requirement>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+    mkdir -p ./inputs
+    #for $item in $infiles:
+        ln -s '$item' './inputs/${item.element_identifier}.${item.ext}'
+    #end for
+    npm start -- -d ./inputs >> '$logfile'
+    ]]></command>
+    <inputs>
+        <param name="infiles" type="data" multiple="true" format="csv,parquet" label="Tabular dataset."/>
+    </inputs>
+    <outputs>
+        <output name="logfile" type="data" format="txt"/>
+    </outputs>
+    <tests>
+        <!-- Hint: You can use [ctrl+alt+t] after defining the inputs/outputs to auto-scaffold some basic test cases. -->
+    </tests>
+    <help><![CDATA[
+
+.. class:: infomark
+
+**What it does**
+
+TODO: Fill in help in reStructuredText format (https://docutils.sourceforge.io/docs/ref/rst/restructuredtext.html)
+Hint: If you want, you can preview your help section using this online editor: http://rst.ninjs.org/
+
+Usage
+.....
+
+
+**Input**
+
+
+**Output**
+    ]]></help>
+</tool>
