@@ -1,5 +1,4 @@
 import axios from "axios";
-import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import { rethrowSimple } from "utils/simple-error";
 
@@ -109,13 +108,14 @@ async function getRemoteFilesAt(target) {
     }
 }
 
-function getRemoteFiles(success, error) {
-    return $.ajax({
-        url: `${getAppRoot()}api/remote_files`,
-        method: "GET",
-        success: success,
-        error: error,
-    });
+async function getRemoteFiles(success, error) {
+    const url = `${getAppRoot()}api/remote_files`;
+    try {
+        const { data } = await axios.get(url);
+        success(data);
+    } catch (e) {
+        error(rethrowSimple(e));
+    }
 }
 
 export default {
