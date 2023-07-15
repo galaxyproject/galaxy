@@ -3,5 +3,7 @@ import { BCol } from "bootstrap-vue";
 </script>
 
 <template>
-    <BCol v-bind="$attrs" v-on="$listeners"> </BCol>
+    <BCol v-bind="$attrs" v-on="$listeners">
+        <slot></slot>
+    </BCol>
 </template>
