@@ -53,7 +53,7 @@
                 <span class="font-weight-light">{{ datasetName }}</span>
             </span>
         </b-card-header>
-        <b-card-body>
+        <GCardBody>
             <UrlDataProvider v-slot="{ result: itemContent, loading, error }" :url="itemUrl">
                 <UrlDataProvider v-slot="{ result: datatypesModel, loading: datatypesLoading }" :url="datatypesUrl">
                     <LoadingSpan v-if="loading" message="Loading Dataset" />
@@ -89,7 +89,7 @@
                     </div>
                 </UrlDataProvider>
             </UrlDataProvider>
-        </b-card-body>
+        </GCardBody>
     </b-card>
 </template>
 
@@ -100,11 +100,13 @@ import { UrlDataProvider } from "components/providers/UrlDataProvider";
 import { getAppRoot } from "onload/loadConfig";
 
 import GButton from "@/component-library/GButton.vue";
+import GCardBody from "@/component-library/GCardBody.vue";
 import GLink from "@/component-library/GLink.vue";
 
 export default {
     components: {
         GButton,
+        GCardBody,
         GLink,
         LoadingSpan,
         UrlDataProvider,

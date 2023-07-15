@@ -10,7 +10,7 @@
                 </GAlert>
                 <b-form id="confirmation" @submit.prevent="submit()">
                     <b-card no-body header="Confirm new account creation">
-                        <b-card-body>
+                        <GCardBody>
                             <p>Looks like you are about to create a new account!</p>
                             <p>
                                 Do you already have a Galaxy account? If so, click
@@ -40,7 +40,7 @@
                                 Yes, create new account
                             </GButton>
                             <GButton name="cancel" type="submit" @click.prevent="login">No, go back to login</GButton>
-                        </b-card-body>
+                        </GCardBody>
                         <b-card-footer>
                             Already have an account?
                             <a id="login-toggle" href="javascript:void(0)" role="button" @click.prevent="login">
@@ -64,11 +64,13 @@ import Vue from "vue";
 
 import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
+import GCardBody from "@/component-library/GCardBody.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GCardBody,
         GAlert,
         GButton,
     },

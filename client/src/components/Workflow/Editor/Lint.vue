@@ -9,7 +9,7 @@
                 <a class="refactor-button" href="#" @click="onRefactor"> Try to automatically fix issues. </a>
             </div>
         </template>
-        <b-card-body>
+        <GCardBody>
             <LintSection
                 :okay="checkAnnotation"
                 success-message="This workflow is annotated. Ideally, this helps the executors of the workflow
@@ -70,7 +70,7 @@
                 <FontAwesomeIcon icon="exclamation-triangle" class="text-warning" />
                 <span>This workflow has no labeled outputs, please select and label at least one output.</span>
             </div>
-        </b-card-body>
+        </GCardBody>
     </b-card>
 </template>
 
@@ -98,6 +98,8 @@ import {
     getUntypedParameters,
 } from "./modules/linting";
 
+import GCardBody from "@/component-library/GCardBody.vue";
+
 Vue.use(BootstrapVue);
 
 library.add(faExclamationTriangle);
@@ -105,6 +107,7 @@ library.add(faMagic);
 
 export default {
     components: {
+        GCardBody,
         FontAwesomeIcon,
         LintSection,
     },
