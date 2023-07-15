@@ -13,6 +13,7 @@ import CleanupResultDialog from "./Cleanup/CleanupResultDialog.vue";
 import ReviewCleanupDialog from "./Cleanup/ReviewCleanupDialog.vue";
 import GAlert from "@/component-library/GAlert.vue";
 import GCardGroup from "@/component-library/GCardGroup.vue";
+import GContainer from "@/component-library/GContainer.vue";
 import GLink from "@/component-library/GLink.vue";
 import GRow from "@/component-library/GRow.vue";
 
@@ -54,7 +55,7 @@ async function onConfirmCleanupSelected(selectedItems: CleanableItem[]) {
 </script>
 
 <template>
-    <b-container fluid>
+    <GContainer fluid>
         <GLink to="StorageDashboard">{{ localize("Back to Dashboard") }}</GLink>
         <h2 class="text-center my-3">
             <b>{{ localize("Manage your account storage") }}</b> <sup class="text-beta">(Beta)</sup>
@@ -74,7 +75,7 @@ async function onConfirmCleanupSelected(selectedItems: CleanableItem[]) {
         </GRow>
 
         <div id="categories-panel">
-            <b-container v-for="category in cleanupCategories" :key="category.id">
+            <GContainer v-for="category in cleanupCategories" :key="category.id">
                 <GRow class="justify-content-md-center mb-2">
                     <h3>
                         <b>{{ category.name }}</b>
@@ -90,7 +91,7 @@ async function onConfirmCleanupSelected(selectedItems: CleanableItem[]) {
                             @onReviewItems="onReviewItems" />
                     </GCardGroup>
                 </GRow>
-            </b-container>
+            </GContainer>
         </div>
 
         <ReviewCleanupDialog
@@ -100,7 +101,7 @@ async function onConfirmCleanupSelected(selectedItems: CleanableItem[]) {
             @onConfirmCleanupSelectedItems="onConfirmCleanupSelected" />
 
         <CleanupResultDialog ref="resultModal" :result="cleanupResult" />
-    </b-container>
+    </GContainer>
 </template>
 
 <style lang="css" scoped>

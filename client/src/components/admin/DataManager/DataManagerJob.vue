@@ -5,7 +5,7 @@
         <GAlert v-for="(error, index) in errorMessages" :key="index" :message="error" variant="error" />
         <GAlert v-if="viewOnly" message="Not implemented" variant="dark" />
         <GAlert v-else-if="loading" message="Waiting for data" variant="info" />
-        <b-container v-else-if="dataManager">
+        <GContainer v-else-if="dataManager">
             <GRow>
                 <GCol>
                     <GCard
@@ -15,7 +15,7 @@
                         border-variant="primary"
                         class="mb-3">
                         <template v-slot:header>
-                            <b-container>
+                            <GContainer>
                                 <GRow align-v="center">
                                     <GCol cols="auto">
                                         <GButton v-b-tooltip.hover title="Rerun" :href="runUrl">
@@ -26,13 +26,13 @@
                                         <b>{{ dataManager["name"] }}</b> <i>{{ dataManager["description"] }}</i>
                                     </GCol>
                                 </GRow>
-                            </b-container>
+                            </GContainer>
                         </template>
                         <GCard v-for="(hda, i) in hdaInfo" :id="'data-card-' + i" :key="i" class="mb-4">
                             <template v-slot:header>
                                 <b-table :fields="fields" :items="[hda]" caption-top small stacked>
                                     <template v-slot:table-caption>
-                                        <b-container>
+                                        <GContainer>
                                             <GRow align-v="center">
                                                 <GCol cols="auto">
                                                     <GButton
@@ -47,7 +47,7 @@
                                                     <b>{{ hda["name"] }}</b>
                                                 </GCol>
                                             </GRow>
-                                        </b-container>
+                                        </GContainer>
                                     </template>
                                 </b-table>
                             </template>
@@ -68,7 +68,7 @@
                     </GCard>
                 </GCol>
             </GRow>
-        </b-container>
+        </GContainer>
     </div>
 </template>
 
@@ -80,10 +80,12 @@ import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
 import GCard from "@/component-library/GCard.vue";
 import GCol from "@/component-library/GCol.vue";
+import GContainer from "@/component-library/GContainer.vue";
 import GRow from "@/component-library/GRow.vue";
 
 export default {
     components: {
+        GContainer,
         GCard,
         GRow,
         GCol,

@@ -4,15 +4,15 @@
             <h2 class="alert-heading h-sm">{{ errorMessageTitle }}</h2>
             {{ errorMessage }}
         </GAlert>
-        <b-container v-if="currentUser">
+        <GContainer v-if="currentUser">
             <GRow v-if="isConfigLoaded && config.enable_quotas" class="justify-content-md-center">
                 <QuotaUsageSummary v-if="quotaUsages" :quota-usages="quotaUsages" />
             </GRow>
             <h2 v-else id="basic-disk-usage-summary" class="text-center my-3">
                 You're using <b>{{ getTotalDiskUsage(currentUser) }}</b> of disk space.
             </h2>
-        </b-container>
-        <b-container class="text-center mb-5 w-75">
+        </GContainer>
+        <GContainer class="text-center mb-5 w-75">
             <button
                 title="Recalculate disk usage"
                 :disabled="isRecalculating"
@@ -33,7 +33,7 @@
                 @dismiss-count-down="countDownChanged">
                 Recalculating disk usage... this may take some time, please check back later.
             </GAlert>
-        </b-container>
+        </GContainer>
     </div>
 </template>
 
@@ -52,10 +52,12 @@ import { useUserStore } from "@/stores/userStore";
 import { QuotaUsage } from "./Quota/model";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GContainer from "@/component-library/GContainer.vue";
 import GRow from "@/component-library/GRow.vue";
 
 export default {
     components: {
+        GContainer,
         GRow,
         GAlert,
         QuotaUsageSummary,

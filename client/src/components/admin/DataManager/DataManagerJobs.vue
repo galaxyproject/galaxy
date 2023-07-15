@@ -6,7 +6,7 @@
         <GAlert v-else-if="loading" message="Waiting for data" variant="info" />
         <GAlert v-else-if="jobs && !jobs.length" message="There are no jobs for this data manager." variant="primary" />
         <div v-else-if="jobs">
-            <b-container fluid class="mb-3">
+            <GContainer fluid class="mb-3">
                 <GRow>
                     <GCol md="6">
                         <b-form-group description="Search for strings or regular expressions">
@@ -26,7 +26,7 @@
                         </GButton>
                     </GCol>
                 </GRow>
-            </b-container>
+            </GContainer>
             <b-table
                 id="jobs-table"
                 :fields="tableFields"
@@ -79,6 +79,7 @@ import GButtonGroup from "@/component-library/GButtonGroup.vue";
 import GCard from "@/component-library/GCard.vue";
 import GCol from "@/component-library/GCol.vue";
 import GInput from "@/component-library/GInput.vue";
+import GContainer from "@/component-library/GContainer.vue";
 import GInputGroup from "@/component-library/GInputGroup.vue";
 import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
 import GRow from "@/component-library/GRow.vue";
@@ -89,6 +90,7 @@ export default {
         GButton,
         GButtonGroup,
         GInput,
+        GContainer,
         GCard,
         GRow,
         GCol,

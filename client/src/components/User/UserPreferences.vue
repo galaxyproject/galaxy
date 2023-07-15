@@ -1,5 +1,5 @@
 <template>
-    <b-container fluid class="p-0">
+    <GContainer fluid class="p-0">
         <h1 v-localize class="h-lg">User preferences</h1>
         <GAlert :variant="messageVariant" :show="!!message">
             {{ message }}
@@ -107,7 +107,7 @@
             title="Sign Out"
             description="Click here to sign out of all sessions."
             @click="signOut" />
-    </b-container>
+    </GContainer>
 </template>
 
 <script>
@@ -134,11 +134,13 @@ import UserPreferredObjectStore from "./UserPreferredObjectStore";
 import ThemeSelector from "./ThemeSelector.vue";
 import GAlert from "@/component-library/GAlert.vue";
 import GCollapse from "@/component-library/GCollapse.vue";
+import GContainer from "@/component-library/GContainer.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GContainer,
         GCollapse,
         GAlert,
         UserActivityBarSettings,

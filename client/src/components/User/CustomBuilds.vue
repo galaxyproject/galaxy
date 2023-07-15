@@ -1,5 +1,5 @@
 <template>
-    <b-container>
+    <GContainer>
         <GRow>
             <GCol>
                 <h1 class="h-sm">Current Custom Builds</h1>
@@ -143,7 +143,7 @@ chr5    152537259</pre
                 </GCard>
             </GCol>
         </GRow>
-    </b-container>
+    </GContainer>
 </template>
 
 <script>
@@ -160,12 +160,14 @@ import GButton from "@/component-library/GButton.vue";
 import GCard from "@/component-library/GCard.vue";
 import GCol from "@/component-library/GCol.vue";
 import GInput from "@/component-library/GInput.vue";
+import GContainer from "@/component-library/GContainer.vue";
 import GRow from "@/component-library/GRow.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GContainer,
         GCard,
         GRow,
         GCol,

@@ -2,7 +2,7 @@
     <div>
         <GButton variant="link" @click="onGoBack">Go back</GButton>
         <PermissionsHeader v-if="folder" :name="folder.name" />
-        <b-container fluid>
+        <GContainer fluid>
             <div class="dataset_table">
                 <h2 class="text-center">Folder permissions</h2>
                 <PermissionsInputField
@@ -35,7 +35,7 @@
                     &nbsp;Save
                 </button>
             </div>
-        </b-container>
+        </GContainer>
     </div>
 </template>
 
@@ -52,11 +52,14 @@ import { Toast } from "composables/toast";
 import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 
+import GContainer from "@/component-library/GContainer.vue";
+
 Vue.use(BootstrapVue);
 initPermissionsIcons();
 
 export default {
     components: {
+        GContainer,
         PermissionsInputField,
         PermissionsHeader,
         FontAwesomeIcon,
