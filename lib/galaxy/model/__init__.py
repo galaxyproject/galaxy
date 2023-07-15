@@ -578,11 +578,7 @@ def calculate_user_disk_usage_statements(user_id, quota_source_map, for_sqlite=F
     default_cond = "dataset.object_store_id IS NULL" if default_quota_enabled and default_exclude_ids else ""
     exclude_cond = "dataset.object_store_id NOT IN :exclude_object_store_ids" if default_exclude_ids else ""
     use_or = " OR " if (default_cond != "" and exclude_cond != "") else ""
-    default_usage_dataset_condition = "{default_cond} {use_or} {exclude_cond}".format(
-        default_cond=default_cond,
-        exclude_cond=exclude_cond,
-        use_or=use_or,
-    )
+    default_usage_dataset_condition = f"{default_cond} {use_or} {exclude_cond}"
     if default_usage_dataset_condition.strip():
         default_usage_dataset_condition = f"AND ( {default_usage_dataset_condition} )"
     default_usage = UNIQUE_DATASET_USER_USAGE.format(and_dataset_condition=default_usage_dataset_condition)
