@@ -15,7 +15,7 @@
             :current-panel-view="currentPanelView"
             :panel-view="defaultPanelView"
             @onSelect="updatePanelView" />
-        <b-dropdown-group v-for="group in groupedPanelViews" :id="group.type" :key="group.type">
+        <GDropdownGroup v-for="group in groupedPanelViews" :id="group.type" :key="group.type">
             <template v-slot:header>
                 <small class="font-weight-bold">{{ group.title }}</small>
             </template>
@@ -25,7 +25,7 @@
                 :current-panel-view="currentPanelView"
                 :panel-view="panelView"
                 @onSelect="updatePanelView" />
-        </b-dropdown-group>
+        </GDropdownGroup>
         <GDropdownDivider v-if="ungroupedPanelViews.length > 0" />
         <PanelViewMenuItem
             v-for="(panelView, key) in ungroupedPanelViews"
@@ -40,6 +40,7 @@
 import PanelViewMenuItem from "./PanelViewMenuItem";
 
 import GDropdownDivider from "@/component-library/GDropdownDivider.vue";
+import GDropdownGroup from "@/component-library/GDropdownGroup.vue";
 
 const groupsDefinitions = [
     { type: "ontology", title: "...by Ontology" },
@@ -50,6 +51,7 @@ const groupsDefinitions = [
 
 export default {
     components: {
+        GDropdownGroup,
         GDropdownDivider,
         PanelViewMenuItem,
     },
