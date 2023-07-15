@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { BCard, BTab, BTabs } from "bootstrap-vue";
+import { BCard } from "bootstrap-vue";
 
 import { useFileSources } from "@/composables/fileSources";
 
 import ToLink from "./ToLink.vue";
 import ToRemoteFile from "./ToRemoteFile.vue";
+import GCardText from "@/component-library/GCardText.vue";
+import GTab from "@/component-library/GTab.vue";
+import GTabs from "@/component-library/GTabs.vue";
 
 const { isLoading: initializingFileSources, hasWritable: hasWritableFileSources } = useFileSources();
 
@@ -24,14 +27,14 @@ const props = defineProps<ExportHistoryProps>();
             <BCard no-body>
                 <GTabs pills card vertical>
                     <GTab title="to a link" title-link-class="tab-export-to-link" active>
-                        <b-card-text>
+                        <GCardText>
                             <ToLink :history-id="props.historyId" />
-                        </b-card-text>
+                        </GCardText>
                     </GTab>
                     <GTab title="to a remote file" title-link-class="tab-export-to-file">
-                        <b-card-text>
+                        <GCardText>
                             <ToRemoteFile :history-id="props.historyId" />
-                        </b-card-text>
+                        </GCardText>
                     </GTab>
                 </GTabs>
             </BCard>

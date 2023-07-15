@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BCard, BCardText } from "bootstrap-vue";
+import { BCard } from "bootstrap-vue";
 import { computed, onMounted, ref, watchEffect } from "vue";
 
 import localize from "@/utils/localization";
@@ -8,6 +8,7 @@ import { wait } from "@/utils/utils";
 import type { CleanableSummary, CleanupOperation } from "./model";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GCardText from "@/component-library/GCardText.vue";
 import GLink from "@/component-library/GLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -74,9 +75,9 @@ function onReviewItems() {
         footer-bg-variant="white"
         footer-border-variant="white">
         <LoadingSpan v-if="loading" />
-        <BCardText v-if="!loading">
+        <GCardText v-if="!loading">
             {{ operation.description }}
-        </BCardText>
+        </GCardText>
         <template v-slot:footer>
             <div v-if="!loading">
                 <GAlert v-if="errorMessage" variant="danger" show data-test-id="error-alert">
