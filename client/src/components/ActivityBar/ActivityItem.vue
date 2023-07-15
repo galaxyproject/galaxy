@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useRouter } from "vue-router/composables";
 
 import GButton from "@/component-library/GButton.vue";
+import GNavItem from "@/component-library/GNavItem.vue";
 import TextShort from "@/components/Common/TextShort.vue";
 import Popper from "@/components/Popper/Popper.vue";
 
@@ -56,7 +57,7 @@ function onClick(evt: MouseEvent): void {
     <Popper reference-is="span" popper-is="span" :placement="tooltipPlacement">
         <template v-slot:reference>
             <div :id="id" class="activity-item" @click="onClick">
-                <b-nav-item
+                <GNavItem
                     class="position-relative my-1 p-2"
                     :class="{ 'nav-item-active': isActive }"
                     :aria-label="title | l">
@@ -80,7 +81,7 @@ function onClick(evt: MouseEvent): void {
                         </div>
                         <TextShort v-if="title" :text="title" class="nav-title" />
                     </span>
-                </b-nav-item>
+                </GNavItem>
             </div>
         </template>
         <div class="text-center px-2 py-1">

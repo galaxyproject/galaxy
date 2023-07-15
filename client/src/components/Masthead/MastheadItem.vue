@@ -1,8 +1,10 @@
 <script setup>
-import { BNavItem, GDropdownItem, VBPopoverPlugin, VBTooltipPlugin } from "bootstrap-vue";
+import { VBPopoverPlugin, VBTooltipPlugin } from "bootstrap-vue";
 import { withPrefix } from "utils/redirect";
 import Vue, { computed, getCurrentInstance, ref } from "vue";
 
+import GDropdownItem from "@/component-library/GDropdownItem.vue";
+import GNavItem from "@/component-library/GNavItem.vue";
 import GNavItemDropdown from "@/component-library/GNavItemDropdown.vue";
 
 Vue.use(VBPopoverPlugin);
@@ -72,7 +74,7 @@ function open(tab, event) {
 </script>
 
 <template>
-    <BNavItem
+    <GNavItem
         v-if="!menu"
         :id="tab.id"
         v-b-tooltip.hover.bottom
@@ -92,7 +94,7 @@ function open(tab, event) {
         <template v-else>
             {{ tab.title }}
         </template>
-    </BNavItem>
+    </GNavItem>
     <GNavItemDropdown
         v-else
         :id="tab.id"
