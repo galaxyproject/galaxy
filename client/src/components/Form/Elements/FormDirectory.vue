@@ -5,20 +5,20 @@
             <FilesDialog :key="modalKey" mode="directory" :callback="setUrl" :require-writable="true" />
         </div>
         <b-breadcrumb v-if="url">
-            <b-breadcrumb-item title="Select another folder" class="align-items-center" @click="reset">
+            <GBreadcrumbItem title="Select another folder" class="align-items-center" @click="reset">
                 <GButton class="pathname" variant="primary">
                     <FontAwesomeIcon icon="folder-open" /> {{ url.protocol }}
                 </GButton>
-            </b-breadcrumb-item>
-            <b-breadcrumb-item
+            </GBreadcrumbItem>
+            <GBreadcrumbItem
                 v-for="({ pathChunk, editable }, index) in pathChunks"
                 :key="index"
                 class="existent-url-path align-items-center">
                 <GButton class="regular-path-chunk" :disabled="!editable" variant="dark" @click="removePath(index)">
                     {{ pathChunk }}
                 </GButton>
-            </b-breadcrumb-item>
-            <b-breadcrumb-item class="directory-input-field align-items-center">
+            </GBreadcrumbItem>
+            <GBreadcrumbItem class="directory-input-field align-items-center">
                 <b-input
                     id="path-input-breadcrumb"
                     v-model="currentDirectoryName"
@@ -29,7 +29,7 @@
                     @keyup.enter="addPath"
                     @keydown.191.capture.prevent.stop="addPath"
                     @keydown.8.capture="removeLastPath" />
-            </b-breadcrumb-item>
+            </GBreadcrumbItem>
         </b-breadcrumb>
     </div>
 </template>
@@ -42,6 +42,8 @@ import GButton from "component-library/GButton";
 import { FilesDialog } from "components/FilesDialog";
 import _l from "utils/localization";
 
+import GBreadcrumbItem from "@/component-library/GBreadcrumbItem.vue";
+
 library.add(faFolder, faFolderOpen);
 
 const getDefaultValues = () => ({
@@ -53,6 +55,7 @@ const getDefaultValues = () => ({
 
 export default {
     components: {
+        GBreadcrumbItem,
         FontAwesomeIcon,
         FilesDialog,
         GButton,
