@@ -5,7 +5,7 @@
             <h2 class="text-center my-3 h-sm">{{ intro | localize }}</h2>
         </header>
         <GRow class="justify-content-md-center mb-3">
-            <b-card-group v-for="(subject, idx) in topics" :key="idx">
+            <GCardGroup v-for="(subject, idx) in topics" :key="idx">
                 <b-card
                     class="text-center m-2 border-0 new-user-welcome-topic"
                     :data-new-user-welcome-topic-title="subject.title"
@@ -20,7 +20,7 @@
                         subject.title | localize
                     }}</GButton>
                 </b-card>
-            </b-card-group>
+            </GCardGroup>
         </GRow>
     </div>
 </template>
@@ -28,12 +28,14 @@
 import GButton from "component-library/GButton";
 import { getAppRoot } from "onload/loadConfig";
 
+import GCardGroup from "@/component-library/GCardGroup.vue";
 import GCardText from "@/component-library/GCardText.vue";
 import GRow from "@/component-library/GRow.vue";
 
 export default {
     components: {
         GButton,
+        GCardGroup,
         GCardText,
         GRow,
     },

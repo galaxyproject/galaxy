@@ -24,7 +24,7 @@
                     </GCol>
                 </GRow>
             </b-container>
-            <b-card-group columns>
+            <GCardGroup columns>
                 <b-card id="data-managers-card" no-body header="Installed Data Managers">
                     <b-list-group flush>
                         <b-list-group-item v-for="(dataManager, index) in dataManagersFiltered" :key="index">
@@ -66,7 +66,7 @@
                         </b-list-group-item>
                     </b-list-group>
                 </b-card>
-            </b-card-group>
+            </GCardGroup>
         </div>
     </div>
 </template>
@@ -79,6 +79,7 @@ import { debounce } from "underscore";
 import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
 import GButtonGroup from "@/component-library/GButtonGroup.vue";
+import GCardGroup from "@/component-library/GCardGroup.vue";
 import GCol from "@/component-library/GCol.vue";
 import GInput from "@/component-library/GInput.vue";
 import GInputGroup from "@/component-library/GInputGroup.vue";
@@ -91,6 +92,7 @@ export default {
         GButton,
         GButtonGroup,
         GInput,
+        GCardGroup,
         GRow,
         GCol,
         GInputGroup,

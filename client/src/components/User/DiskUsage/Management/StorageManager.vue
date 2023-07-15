@@ -12,6 +12,7 @@ import CleanupOperationSummary from "./Cleanup/CleanupOperationSummary.vue";
 import CleanupResultDialog from "./Cleanup/CleanupResultDialog.vue";
 import ReviewCleanupDialog from "./Cleanup/ReviewCleanupDialog.vue";
 import GAlert from "@/component-library/GAlert.vue";
+import GCardGroup from "@/component-library/GCardGroup.vue";
 import GLink from "@/component-library/GLink.vue";
 import GRow from "@/component-library/GRow.vue";
 
@@ -80,14 +81,14 @@ async function onConfirmCleanupSelected(selectedItems: CleanableItem[]) {
                     </h3>
                 </GRow>
                 <GRow class="justify-content-md-center mb-5">
-                    <b-card-group deck>
+                    <GCardGroup deck>
                         <CleanupOperationSummary
                             v-for="operation in category.operations"
                             :key="operation.id"
                             :operation="operation"
                             :refresh-operation-id="refreshOperationId"
                             @onReviewItems="onReviewItems" />
-                    </b-card-group>
+                    </GCardGroup>
                 </GRow>
             </b-container>
         </div>
