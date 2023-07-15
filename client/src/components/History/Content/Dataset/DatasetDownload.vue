@@ -1,5 +1,5 @@
 <template>
-    <b-dropdown
+    <GDropdown
         v-if="hasMetaFiles"
         v-b-tooltip.top.hover
         dropup
@@ -25,7 +25,7 @@
             @click.prevent.stop="onDownload(metaDownloadUrl, metaFile.file_type)">
             Download {{ metaFile.file_type }}
         </GDropdownItem>
-    </b-dropdown>
+    </GDropdown>
     <GButton
         v-else
         class="download-btn px-1"
@@ -44,11 +44,13 @@ import { prependPath } from "utils/redirect";
 
 import { downloadUrlMixin } from "./mixins.js";
 
+import GDropdown from "@/component-library/GDropdown.vue";
 import GDropdownItem from "@/component-library/GDropdownItem.vue";
 
 export default {
     components: {
         GButton,
+        GDropdown,
         GDropdownItem,
     },
     mixins: [downloadUrlMixin],

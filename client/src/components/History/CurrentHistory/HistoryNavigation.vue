@@ -29,7 +29,7 @@
                     <Icon fixed-width icon="exchange-alt" />
                 </GButton>
 
-                <b-dropdown
+                <GDropdown
                     v-b-tooltip.bottom.hover
                     size="sm"
                     variant="link"
@@ -162,7 +162,7 @@
                         <Icon fixed-width icon="lock" class="mr-1" />
                         <span v-localize>Make Private</span>
                     </GDropdownItem>
-                </b-dropdown>
+                </GDropdown>
             </GButtonGroup>
         </nav>
 
@@ -209,12 +209,14 @@ import { mapActions, mapState } from "pinia";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
+import GDropdown from "@/component-library/GDropdown.vue";
 import GDropdownDivider from "@/component-library/GDropdownDivider.vue";
 import GDropdownItem from "@/component-library/GDropdownItem.vue";
 import GDropdownText from "@/component-library/GDropdownText.vue";
 
 export default {
     components: {
+        GDropdown,
         GDropdownDivider,
         GDropdownItem,
         GDropdownText,

@@ -3,7 +3,7 @@
         <div class="h4 clearfix mb-3">
             <b>Workflow: {{ model.name }}</b>
             <ButtonSpinner id="run-workflow" class="float-right" title="Run Workflow" @onClick="onExecute" />
-            <b-dropdown
+            <GDropdown
                 v-if="showRuntimeSettings(currentUser)"
                 id="dropdown-form"
                 ref="dropdown"
@@ -37,7 +37,7 @@
                         @updated="onStorageUpdate">
                     </WorkflowStorageConfiguration>
                 </GDropdownForm>
-            </b-dropdown>
+            </GDropdown>
         </div>
         <FormDisplay :inputs="formInputs" @onChange="onChange" />
         <!-- Options to default one way or the other, disable if admins want, etc.. -->
@@ -59,10 +59,12 @@ import { useUserStore } from "@/stores/userStore";
 import { invokeWorkflow } from "./services";
 import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration";
 
+import GDropdown from "@/component-library/GDropdown.vue";
 import GDropdownForm from "@/component-library/GDropdownForm.vue";
 
 export default {
     components: {
+        GDropdown,
         GDropdownForm,
         ButtonSpinner,
         FormDisplay,

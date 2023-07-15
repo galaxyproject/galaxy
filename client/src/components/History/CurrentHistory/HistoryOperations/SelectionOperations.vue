@@ -1,6 +1,6 @@
 <template>
     <section v-if="hasSelection">
-        <b-dropdown text="Selection" size="sm" variant="primary" data-description="selected content menu" no-flip>
+        <GDropdown text="Selection" size="sm" variant="primary" data-description="selected content menu" no-flip>
             <template v-slot:button-content>
                 <span v-if="selectionMatchesQuery" data-test-id="all-filter-selected">
                     All <b>{{ totalItemsInQuery }}</b> selected
@@ -66,7 +66,7 @@
             <GDropdownItem v-b-modal:remove-tags-from-selected-content data-description="remove tags">
                 <span v-localize>Remove tags</span>
             </GDropdownItem>
-        </b-dropdown>
+        </GDropdown>
 
         <b-modal id="hide-selected-content" title="Hide Selected Content?" title-tag="h2" @ok="hideSelected">
             <p v-localize>Really hide {{ numSelected }} content items?</p>
@@ -159,12 +159,14 @@ import { StatelessTags } from "components/Tags";
 
 import { useConfig } from "@/composables/config";
 
+import GDropdown from "@/component-library/GDropdown.vue";
 import GDropdownDivider from "@/component-library/GDropdownDivider.vue";
 import GDropdownItem from "@/component-library/GDropdownItem.vue";
 import GDropdownText from "@/component-library/GDropdownText.vue";
 
 export default {
     components: {
+        GDropdown,
         GDropdownDivider,
         GDropdownItem,
         GDropdownText,

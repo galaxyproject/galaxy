@@ -1,6 +1,6 @@
 <template>
     <section>
-        <b-dropdown
+        <GDropdown
             no-caret
             size="sm"
             variant="link"
@@ -26,7 +26,7 @@
             <GDropdownItem v-if="numItemsDeleted" v-b-modal:purge-all-deleted-content>
                 <span v-localize>Purge All Deleted Content</span>
             </GDropdownItem>
-        </b-dropdown>
+        </GDropdown>
 
         <b-modal id="show-all-hidden-content" title="Show Hidden Datasets" title-tag="h2" @ok="unhideAll">
             <p v-localize>Really unhide all hidden datasets?</p>
@@ -47,11 +47,13 @@ import { iframeRedirect } from "components/plugins/legacyNavigation";
 
 import { usesDetailedHistoryMixin } from "../usesDetailedHistoryMixin.js";
 
+import GDropdown from "@/component-library/GDropdown.vue";
 import GDropdownItem from "@/component-library/GDropdownItem.vue";
 import GDropdownText from "@/component-library/GDropdownText.vue";
 
 export default {
     components: {
+        GDropdown,
         GDropdownItem,
         GDropdownText,
     },

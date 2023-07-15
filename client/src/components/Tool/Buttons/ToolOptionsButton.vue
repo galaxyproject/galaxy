@@ -12,6 +12,7 @@ import { useUserStore } from "@/stores/userStore";
 
 import { copyId, copyLink, downloadTool, openLink } from "../utilities";
 
+import GDropdown from "@/component-library/GDropdown.vue";
 import GDropdownItem from "@/component-library/GDropdownItem.vue";
 
 library.add(faCaretDown, faLink, faDownload, faExternalLinkAlt, faCopy);
@@ -74,7 +75,7 @@ function onLink() {
 </script>
 
 <template>
-    <b-dropdown
+    <GDropdown
         v-b-tooltip.hover
         no-caret
         right
@@ -109,5 +110,5 @@ function onLink() {
         <GDropdownItem v-for="w of webhookDetails" :key="w.title" @click="w.onclick">
             <span :class="w.icon" />{{ l(w.title) }}
         </GDropdownItem>
-    </b-dropdown>
+    </GDropdown>
 </template>

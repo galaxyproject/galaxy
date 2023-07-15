@@ -1,5 +1,5 @@
 <template>
-    <b-dropdown
+    <GDropdown
         v-b-tooltip.hover.noninteractive
         right
         title="Show panel options"
@@ -33,12 +33,13 @@
             :current-panel-view="currentPanelView"
             :panel-view="panelView"
             @onSelect="updatePanelView" />
-    </b-dropdown>
+    </GDropdown>
 </template>
 
 <script>
 import PanelViewMenuItem from "./PanelViewMenuItem";
 
+import GDropdown from "@/component-library/GDropdown.vue";
 import GDropdownDivider from "@/component-library/GDropdownDivider.vue";
 import GDropdownGroup from "@/component-library/GDropdownGroup.vue";
 
@@ -51,6 +52,7 @@ const groupsDefinitions = [
 
 export default {
     components: {
+        GDropdown,
         GDropdownGroup,
         GDropdownDivider,
         PanelViewMenuItem,
