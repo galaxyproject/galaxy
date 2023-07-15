@@ -308,7 +308,6 @@ export default {
         FontAwesomeIcon,
         GButton,
         GInput,
-        GLink,
         UtcDate,
     },
     beforeRouteUpdate(to, from, next) {

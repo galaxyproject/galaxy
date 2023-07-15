@@ -13,9 +13,9 @@
                     </GAlert>
                     <b-form id="login" @submit.prevent="submitLogin()">
                         <b-card no-body>
-                            <b-card-header v-if="!connectExternalProvider">
+                            <GCardHeader v-if="!connectExternalProvider">
                                 <span>{{ headerWelcome }}</span>
-                            </b-card-header>
+                            </GCardHeader>
                             <GCardBody>
                                 <div>
                                     <!-- standard internal galaxy login -->
@@ -114,12 +114,14 @@ import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
 import GCardBody from "@/component-library/GCardBody.vue";
 import GCardFooter from "@/component-library/GCardFooter.vue";
+import GCardHeader from "@/component-library/GCardHeader.vue";
 import GInput from "@/component-library/GInput.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GCardHeader,
         GCardFooter,
         GCardBody,
         GAlert,

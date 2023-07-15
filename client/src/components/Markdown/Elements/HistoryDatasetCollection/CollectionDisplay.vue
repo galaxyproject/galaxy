@@ -1,6 +1,6 @@
 <template>
     <b-card body-class="p-0">
-        <b-card-header>
+        <GCardHeader>
             <span class="float-right">
                 <GButton
                     v-b-tooltip.hover
@@ -30,7 +30,7 @@
                 <span>Dataset Collection:</span>
                 <span class="font-weight-light">{{ collectionName }}</span>
             </span>
-        </b-card-header>
+        </GCardHeader>
         <GCardBody>
             <LoadingSpan v-if="loading" message="Loading Collection" />
             <div v-else class="content-height">
@@ -58,9 +58,11 @@ import CollectionTree from "./CollectionTree";
 import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
 import GCardBody from "@/component-library/GCardBody.vue";
+import GCardHeader from "@/component-library/GCardHeader.vue";
 
 export default {
     components: {
+        GCardHeader,
         GCardBody,
         CollectionTree,
         GAlert,

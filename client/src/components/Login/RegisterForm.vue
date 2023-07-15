@@ -12,9 +12,9 @@
                     <b-card no-body>
                         <!-- OIDC and Custos enabled and prioritized: encourage users to use it instead of local registration -->
                         <span v-if="custosPreferred">
-                            <b-card-header v-b-toggle.accordion-oidc role="button">
+                            <GCardHeader v-b-toggle.accordion-oidc role="button">
                                 Register using institutional account
-                            </b-card-header>
+                            </GCardHeader>
                             <b-collapse id="accordion-oidc" visible role="tabpanel" accordion="registration_acc">
                                 <GCardBody>
                                     Create a Galaxy account using an institutional account (e.g.:Google/JHU). This will
@@ -24,10 +24,10 @@
                             </b-collapse>
                         </span>
                         <!-- Local Galaxy Registration -->
-                        <b-card-header v-if="!custosPreferred" v-localize>Create a Galaxy account</b-card-header>
-                        <b-card-header v-else v-localize v-b-toggle.accordion-register role="button">
+                        <GCardHeader v-if="!custosPreferred" v-localize>Create a Galaxy account</GCardHeader>
+                        <GCardHeader v-else v-localize v-b-toggle.accordion-register role="button">
                             Or, register with email
-                        </b-card-header>
+                        </GCardHeader>
                         <b-collapse
                             id="accordion-register"
                             :visible="!custosPreferred"
@@ -111,12 +111,14 @@ import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
 import GCardBody from "@/component-library/GCardBody.vue";
 import GCardFooter from "@/component-library/GCardFooter.vue";
+import GCardHeader from "@/component-library/GCardHeader.vue";
 import GInput from "@/component-library/GInput.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GCardHeader,
         GCardFooter,
         GCardBody,
         GAlert,

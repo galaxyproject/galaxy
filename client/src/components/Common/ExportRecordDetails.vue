@@ -147,4 +147,4 @@ function onMessageDismissed() {
             </div>
         </div>
     </BCard>
-</b-card></template>
+</template>

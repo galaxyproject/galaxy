@@ -9,6 +9,7 @@ import WorkflowTree from "./WorkflowTree.vue";
 import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
 import GCardBody from "@/component-library/GCardBody.vue";
+import GCardHeader from "@/component-library/GCardHeader.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface WorkflowDisplayProps {
@@ -52,7 +53,7 @@ onMounted(async () => {
 
 <template>
     <b-card body-class="p-0" class="workflow-display">
-        <b-card-header v-if="!embedded">
+        <GCardHeader v-if="!embedded">
             <span class="float-right">
                 <GButton
                     v-b-tooltip.hover
@@ -82,7 +83,7 @@ onMounted(async () => {
                 <span>Workflow:</span>
                 <span class="font-weight-light" data-description="workflow name">{{ workflowName }}</span>
             </span>
-        </b-card-header>
+        </GCardHeader>
         <GCardBody>
             <LoadingSpan v-if="loading" message="Loading Workflow" />
             <div v-else :class="!expanded && 'content-height'">

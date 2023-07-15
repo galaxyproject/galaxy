@@ -106,5 +106,5 @@ function onExportToFileSourceFailure() {
             :invocation-id="props.invocationId"
             :export-plugin="props.exportPlugin"
             @onExportToFileSource="exportToFileSource" />
-    </b-card></div>
+    </div>
 </template>
