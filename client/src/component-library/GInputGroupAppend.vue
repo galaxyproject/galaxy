@@ -3,5 +3,7 @@ import { BInputGroupAppend } from "bootstrap-vue";
 </script>
 
 <template>
-    <BInputGroupAppend v-bind="$attrs" v-on="$listeners"> </BInputGroupAppend>
+    <BInputGroupAppend v-bind="$attrs" v-on="$listeners">
+        <slot></slot>
+    </BInputGroupAppend>
 </template>

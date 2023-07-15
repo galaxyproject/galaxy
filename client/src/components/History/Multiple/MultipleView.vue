@@ -11,9 +11,9 @@ import localize from "@/utils/localization";
 
 import MultipleViewList from "./MultipleViewList.vue";
 import GAlert from "@/component-library/GAlert.vue";
+import GInput from "@/component-library/GInput.vue";
 import GInputGroup from "@/component-library/GInputGroup.vue";
 import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
-import GInput from "@/component-library/GInput.vue";
 import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
