@@ -5,6 +5,8 @@ import { useConfig } from "@/composables/config";
 import { useCurrentTheme } from "@/composables/user";
 import { withPrefix } from "@/utils/redirect";
 
+import GCard from "@/component-library/GCard.vue";
+
 const { currentTheme, setCurrentTheme } = useCurrentTheme();
 const { config, isConfigLoaded } = useConfig();
 
@@ -35,7 +37,7 @@ watch(
 </script>
 
 <template>
-    <b-card :show="show" class="mr-3 overflow-auto">
+    <GCard :show="show" class="mr-3 overflow-auto">
         <b-form-radio-group v-model="currentValue">
             <b-form-radio
                 v-for="(themeDetails, theme, index) in config.themes"
@@ -52,7 +54,7 @@ watch(
                 </div>
             </b-form-radio>
         </b-form-radio-group>
-    </b-card>
+    </GCard>
 </template>
 
 <style lang="scss" scoped>

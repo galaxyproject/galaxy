@@ -1,5 +1,5 @@
 <template>
-    <b-card v-if="hasContent" class="tool-footer">
+    <GCard v-if="hasContent" class="tool-footer">
         <div v-if="hasCitations" class="mb-1">
             <span v-localize class="footer-section-name">Citations</span>
             <GButton
@@ -68,7 +68,7 @@
             <span class="font-weight-bold">Creators:</span>
             <Creators :creators="creators" />
         </div>
-    </b-card>
+    </GCard>
 </template>
 
 <script>
@@ -82,10 +82,13 @@ import License from "components/License/License";
 import Creators from "components/SchemaOrg/Creators";
 import { copy } from "utils/clipboard";
 
+import GCard from "@/component-library/GCard.vue";
+
 library.add(faQuestion, faCopy, faAngleDoubleDown, faAngleDoubleUp);
 
 export default {
     components: {
+        GCard,
         Citation,
         License,
         Creators,

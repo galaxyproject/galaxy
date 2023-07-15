@@ -26,7 +26,7 @@
             </b-form-checkbox>
         </div>
         <b-collapse id="collapse-2" v-model="isNewLibFormVisible">
-            <b-card>
+            <GCard>
                 <b-form @submit.prevent="newLibrary">
                     <GInputGroup class="mb-2 new-row">
                         <GInput v-model="newLibraryForm.name" required :placeholder="titleName" />
@@ -40,7 +40,7 @@
                         </template>
                     </GInputGroup>
                 </b-form>
-            </b-card>
+            </GCard>
         </b-collapse>
         <b-table
             id="libraries_list"
@@ -200,6 +200,7 @@ import { useUserStore } from "@/stores/userStore";
 import { Services } from "./services";
 import { fields } from "./table-fields";
 
+import GCard from "@/component-library/GCard.vue";
 import GCol from "@/component-library/GCol.vue";
 import GInputGroup from "@/component-library/GInputGroup.vue";
 import GLink from "@/component-library/GLink.vue";
@@ -212,6 +213,7 @@ Vue.use(BootstrapVue);
 export default {
     components: {
         GButton,
+        GCard,
         GRow,
         GCol,
         GInputGroup,

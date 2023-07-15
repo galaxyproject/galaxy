@@ -11,7 +11,7 @@
         <b-container v-else-if="dataTable">
             <GRow>
                 <GCol>
-                    <b-card id="data-table-card" flush>
+                    <GCard id="data-table-card" flush>
                         <template v-slot:header>
                             <b-container>
                                 <GRow align-v="center">
@@ -32,7 +32,7 @@
                             small
                             hover
                             striped />
-                    </b-card>
+                    </GCard>
                 </GCol>
             </GRow>
         </b-container>
@@ -45,11 +45,13 @@ import { getAppRoot } from "onload/loadConfig";
 
 import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
+import GCard from "@/component-library/GCard.vue";
 import GCol from "@/component-library/GCol.vue";
 import GRow from "@/component-library/GRow.vue";
 
 export default {
     components: {
+        GCard,
         GRow,
         GCol,
         GAlert,

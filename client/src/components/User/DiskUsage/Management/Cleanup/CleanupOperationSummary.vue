@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BCard } from "bootstrap-vue";
 import { computed, onMounted, ref, watchEffect } from "vue";
 
 import localize from "@/utils/localization";
@@ -8,6 +7,7 @@ import { wait } from "@/utils/utils";
 import type { CleanableSummary, CleanupOperation } from "./model";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GCard from "@/component-library/GCard.vue";
 import GCardText from "@/component-library/GCardText.vue";
 import GLink from "@/component-library/GLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -69,7 +69,7 @@ function onReviewItems() {
 </script>
 
 <template>
-    <BCard
+    <GCard
         :title="props.operation.name"
         class="operation-card mx-2"
         footer-bg-variant="white"
@@ -97,7 +97,7 @@ function onReviewItems() {
                 </b>
             </div>
         </template>
-    </BCard>
+    </GCard>
 </template>
 
 <style scoped>

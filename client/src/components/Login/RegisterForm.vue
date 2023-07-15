@@ -9,7 +9,7 @@
                     {{ messageText }}
                 </GAlert>
                 <b-form id="registration" @submit.prevent="submit()">
-                    <b-card no-body>
+                    <GCard no-body>
                         <!-- OIDC and Custos enabled and prioritized: encourage users to use it instead of local registration -->
                         <span v-if="custosPreferred">
                             <GCardHeader v-b-toggle.accordion-oidc role="button">
@@ -90,7 +90,7 @@
                                 Log in here.
                             </a>
                         </GCardFooter>
-                    </b-card>
+                    </GCard>
                 </b-form>
             </div>
             <div v-if="termsUrl" class="col">
@@ -109,6 +109,7 @@ import Vue from "vue";
 
 import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
+import GCard from "@/component-library/GCard.vue";
 import GCardBody from "@/component-library/GCardBody.vue";
 import GCardFooter from "@/component-library/GCardFooter.vue";
 import GCardHeader from "@/component-library/GCardHeader.vue";
@@ -118,6 +119,7 @@ Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GCard,
         GCardHeader,
         GCardFooter,
         GCardBody,

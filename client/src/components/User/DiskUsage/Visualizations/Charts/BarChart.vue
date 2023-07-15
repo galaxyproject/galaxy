@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { BCard } from "bootstrap-vue";
 import * as d3 from "d3";
 import { computed, onMounted, ref, watch } from "vue";
 
 import type { DataValuePoint } from ".";
+
+import GCard from "@/component-library/GCard.vue";
 
 interface BarChartProps {
     data: DataValuePoint[];
@@ -294,7 +295,7 @@ function setTooltipPosition(mouseX: number, mouseY: number): void {
 </script>
 
 <template>
-    <BCard class="mb-3 mx-3">
+    <GCard class="mb-3 mx-3">
         <template v-slot:header>
             <h3 class="text-center my-1">
                 <slot name="title">
@@ -322,7 +323,7 @@ function setTooltipPosition(mouseX: number, mouseY: number): void {
                 <div>{{ labelFormatter(tooltipDataPoint) }}</div>
             </slot>
         </div>
-    </BCard>
+    </GCard>
 </template>
 
 <style lang="scss" scoped>

@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { BCard } from "bootstrap-vue";
-
 import { useFileSources } from "@/composables/fileSources";
 
 import ToLink from "./ToLink.vue";
 import ToRemoteFile from "./ToRemoteFile.vue";
+import GCard from "@/component-library/GCard.vue";
 import GCardText from "@/component-library/GCardText.vue";
 import GTab from "@/component-library/GTab.vue";
 import GTabs from "@/component-library/GTabs.vue";
@@ -24,7 +23,7 @@ const props = defineProps<ExportHistoryProps>();
             <loading-span message="Loading file sources configuration from Galaxy server." />
         </span>
         <span v-else-if="hasWritableFileSources">
-            <BCard no-body>
+            <GCard no-body>
                 <GTabs pills card vertical>
                     <GTab title="to a link" title-link-class="tab-export-to-link" active>
                         <GCardText>
@@ -37,7 +36,7 @@ const props = defineProps<ExportHistoryProps>();
                         </GCardText>
                     </GTab>
                 </GTabs>
-            </BCard>
+            </GCard>
         </span>
         <span v-else>
             <ToLink :history-id="props.historyId" />

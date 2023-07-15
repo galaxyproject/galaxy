@@ -6,7 +6,7 @@
         </header>
         <GRow class="justify-content-md-center mb-3" :data-new-user-welcome-topic-title="title">
             <GCardGroup v-for="(subject, idx) in topics" :key="idx">
-                <b-card
+                <GCard
                     class="text-center m-2 border-0 new-user-welcome-subtopic"
                     body-class="d-flex flex-column"
                     :data-new-user-welcome-subtopic-title="subject.title">
@@ -19,7 +19,7 @@
                     <GButton class="mt-auto" variant="info" @click="$emit('select', idx)">{{
                         subject.title | localize
                     }}</GButton>
-                </b-card>
+                </GCard>
             </GCardGroup>
         </GRow>
         <GButton class="mt-auto new-user-welcome-return" variant="primary" role="link" @click="$emit('back')">
@@ -32,6 +32,7 @@
 import GButton from "component-library/GButton";
 import { getAppRoot } from "onload/loadConfig";
 
+import GCard from "@/component-library/GCard.vue";
 import GCardGroup from "@/component-library/GCardGroup.vue";
 import GCardImg from "@/component-library/GCardImg.vue";
 import GCardText from "@/component-library/GCardText.vue";
@@ -40,6 +41,7 @@ import GRow from "@/component-library/GRow.vue";
 export default {
     components: {
         GButton,
+        GCard,
         GCardImg,
         GCardGroup,
         GCardText,

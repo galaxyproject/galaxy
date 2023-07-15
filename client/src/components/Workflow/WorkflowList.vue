@@ -73,9 +73,9 @@
                 <div v-else>&#8212;</div>
             </template>
             <template v-slot:row-details="data">
-                <b-card>
+                <GCard>
                     <p class="workflow-dropdown-description">{{ data.item.description }}</p>
-                </b-card>
+                </GCard>
             </template>
         </b-table>
         <b-pagination
@@ -102,6 +102,7 @@ import WorkflowIndexActions from "./WorkflowIndexActions";
 
 import WorkflowRunButton from "./WorkflowRunButton.vue";
 import GAlert from "@/component-library/GAlert.vue";
+import GCard from "@/component-library/GCard.vue";
 import GCol from "@/component-library/GCol.vue";
 import GRow from "@/component-library/GRow.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
@@ -169,6 +170,7 @@ const PUBLISHED_FIELDS = [NAME_FIELD, TAGS_FIELD, UPDATED_FIELD, OWNER_FIELD];
 
 export default {
     components: {
+        GCard,
         GRow,
         GCol,
         GAlert,

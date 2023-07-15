@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import axios from "axios";
-import { BCard } from "bootstrap-vue";
 import { computed, type Ref, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -14,6 +13,7 @@ import TrsServerSelection from "./TrsServerSelection.vue";
 import TrsTool from "./TrsTool.vue";
 import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
+import GCard from "@/component-library/GCard.vue";
 import GInput from "@/component-library/GInput.vue";
 import GInputGroup from "@/component-library/GInputGroup.vue";
 import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
@@ -83,7 +83,7 @@ function onTrsSelectionError(message: string) {
     errorMessage.value = message;
 }
 
-function showRowDetails(row: BCard, index: number, e: MouseEvent) {
+function showRowDetails(row: any, index: number, e: MouseEvent) {
     if ((e.target as Node | undefined)?.nodeName !== "A") {
         row._showDetails = !row._showDetails;
     }
@@ -126,7 +126,7 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
 </script>
 
 <template>
-    <BCard class="workflow-import-trs-search" title="GA4GH Tool Registry Server (TRS) Workflow Search">
+    <GCard class="workflow-import-trs-search" title="GA4GH Tool Registry Server (TRS) Workflow Search">
         <GAlert :show="hasErrorMessage" variant="danger">{{ errorMessage }}</GAlert>
 
         <div class="mb-3">
@@ -179,16 +179,16 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
                 :busy="loading"
                 @row-clicked="showRowDetails">
                 <template v-slot:row-details="row">
-                    <BCard>
+                    <GCard>
                         <GAlert v-if="importing" variant="info" show>
                             <LoadingSpan message="Importing workflow" />
                         </GAlert>
                         <TrsTool
                             :trs-tool="row.item.data"
                             @onImport="(versionId) => importVersion(trsSelection?.id, row.item.data.id, versionId)" />
-                    </BCard>
+                    </GCard>
                 </template>
             </b-table>
         </div>
-    </BCard>
+    </GCard>
 </template>

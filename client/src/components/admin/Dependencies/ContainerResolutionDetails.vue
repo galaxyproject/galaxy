@@ -1,5 +1,5 @@
 <template>
-    <b-card>
+    <GCard>
         <div class="row">
             <div class="col">
                 <span v-if="singleTool || resolution.tool_ids.length == 1">Tool</span>
@@ -40,7 +40,7 @@
                 <ContainerResolver :container-resolver="resolution.status.container_resolver" :compact="false" />
             </div>
         </div>
-    </b-card>
+    </GCard>
 </template>
 
 <script>
@@ -51,8 +51,18 @@ import StatusDisplay from "./StatusDisplay";
 import ToolDisplay from "./ToolDisplay";
 import Tools from "./Tools";
 
+import GCard from "@/component-library/GCard.vue";
+
 export default {
-    components: { ContainerDescription, ContainerResolver, Requirements, StatusDisplay, ToolDisplay, Tools },
+    components: {
+        GCard,
+        ContainerDescription,
+        ContainerResolver,
+        Requirements,
+        StatusDisplay,
+        ToolDisplay,
+        Tools,
+    },
     props: {
         resolution: {
             type: Object,

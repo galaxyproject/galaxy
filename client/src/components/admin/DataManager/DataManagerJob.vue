@@ -8,7 +8,7 @@
         <b-container v-else-if="dataManager">
             <GRow>
                 <GCol>
-                    <b-card
+                    <GCard
                         id="data-manager-card"
                         header-bg-variant="primary"
                         header-text-variant="white"
@@ -28,7 +28,7 @@
                                 </GRow>
                             </b-container>
                         </template>
-                        <b-card v-for="(hda, i) in hdaInfo" :id="'data-card-' + i" :key="i" class="mb-4">
+                        <GCard v-for="(hda, i) in hdaInfo" :id="'data-card-' + i" :key="i" class="mb-4">
                             <template v-slot:header>
                                 <b-table :fields="fields" :items="[hda]" caption-top small stacked>
                                     <template v-slot:table-caption>
@@ -64,8 +64,8 @@
                                     Data Table: <b>{{ output[0] }}</b>
                                 </template>
                             </b-table>
-                        </b-card>
-                    </b-card>
+                        </GCard>
+                    </GCard>
                 </GCol>
             </GRow>
         </b-container>
@@ -78,11 +78,13 @@ import { getAppRoot } from "onload/loadConfig";
 
 import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
+import GCard from "@/component-library/GCard.vue";
 import GCol from "@/component-library/GCol.vue";
 import GRow from "@/component-library/GRow.vue";
 
 export default {
     components: {
+        GCard,
         GRow,
         GCol,
         GAlert,

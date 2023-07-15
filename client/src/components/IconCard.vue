@@ -1,5 +1,5 @@
 <template>
-    <b-card :title="title" class="mx-4 icon-card">
+    <GCard :title="title" class="mx-4 icon-card">
         <b-container class="p-0">
             <GRow>
                 <GCol>{{ description }}</GCol>
@@ -7,21 +7,24 @@
             </GRow>
         </b-container>
         <GButton variant="primary" @click="onButtonClick">{{ buttonText }}</GButton>
-    </b-card>
+    </GCard>
 </template>
 
 <script>
+import GButton from "component-library/GButton";
+
+import GCard from "@/component-library/GCard.vue";
+import GCol from "@/component-library/GCol.vue";
+import GRow from "@/component-library/GRow.vue";
+
 /** A generic Card, used as a template, that displays an action button,
  * an icon (font-awesome), along with a title and description.
  * Clicking the button emits an "onButtonClick" event. */
-import GButton from "component-library/GButton";
-
-import GCol from "@/component-library/GCol.vue";
-import GRow from "@/component-library/GRow.vue";
 
 export default {
     components: {
         GButton,
+        GCard,
         GRow,
         GCol,
     },

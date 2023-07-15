@@ -1,10 +1,11 @@
 <script setup>
-import { BCard, BCollapse, BFormCheckbox, BFormGroup, BFormSelect } from "bootstrap-vue";
+import { BCollapse, BFormCheckbox, BFormGroup, BFormSelect } from "bootstrap-vue";
 import { ExportParamsModel } from "components/Common/models/exportRecordModel";
 import { computed, reactive, ref } from "vue";
 
 import { AVAILABLE_EXPORT_FORMATS } from "./services";
 
+import GCard from "@/component-library/GCard.vue";
 import GLink from "@/component-library/GLink.vue";
 
 const props = defineProps({
@@ -41,7 +42,7 @@ function onValueChanged() {
             {{ title }}
         </GLink>
         <BCollapse id="collapse-options" v-model="isExpanded">
-            <BCard>
+            <GCard>
                 <BFormGroup label="Export Format:" label-for="format">
                     <BFormSelect
                         id="format-selector"
@@ -77,7 +78,7 @@ function onValueChanged() {
                         Include Hidden
                     </BFormCheckbox>
                 </BFormGroup>
-            </BCard>
+            </GCard>
         </BCollapse>
     </div>
 </template>

@@ -8,7 +8,6 @@ import {
     faLink,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BCard } from "bootstrap-vue";
 import LoadingSpan from "components/LoadingSpan";
 import { computed } from "vue";
 
@@ -16,6 +15,7 @@ import { ExportRecordModel } from "./models/exportRecordModel";
 
 import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
+import GCard from "@/component-library/GCard.vue";
 import GCardTitle from "@/component-library/GCardTitle.vue";
 
 library.add(faExclamationCircle, faExclamationTriangle, faCheckCircle, faClock, faLink);
@@ -64,7 +64,7 @@ function onMessageDismissed() {
 </script>
 
 <template>
-    <BCard class="export-record-details">
+    <GCard class="export-record-details">
         <GCardTitle>
             <b>{{ title }}</b> {{ props.record.elapsedTime }}
         </GCardTitle>
@@ -146,5 +146,5 @@ function onMessageDismissed() {
                 </div>
             </div>
         </div>
-    </BCard>
+    </GCard>
 </template>

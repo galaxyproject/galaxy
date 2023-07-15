@@ -1,8 +1,8 @@
 <script setup>
-import { BCard } from "bootstrap-vue";
 import { AVAILABLE_INVOCATION_EXPORT_PLUGINS } from "components/Workflow/Invocation/Export/Plugins";
 import { useConfig } from "composables/config";
 
+import GCard from "@/component-library/GCard.vue";
 import InvocationExportPluginCard from "components/Workflow/Invocation/Export/InvocationExportPluginCard.vue";
 import BioComputeObjectExportCard from "components/Workflow/Invocation/Export/Plugins/BioComputeObject/BioComputeObjectExportCard.vue";
 
@@ -30,8 +30,8 @@ defineProps({
             This is temporal fix and should be dropped once Celery is the default task system in Galaxy.
             The task-based plugin system above should be used instead.
         -->
-        <BCard title="BioCompute Object Export" class="export-plugin-card">
+        <GCard title="BioCompute Object Export" class="export-plugin-card">
             <BioComputeObjectExportCard :invocation-id="invocationId" />
-        </BCard>
+        </GCard>
     </div>
 </template>

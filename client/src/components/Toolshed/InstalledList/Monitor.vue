@@ -3,7 +3,7 @@
         <GAlert v-if="error" variant="danger" show>
             {{ error }}
         </GAlert>
-        <b-card v-if="showItems" no-body class="my-2">
+        <GCard v-if="showItems" no-body class="my-2">
             <h2 class="m-3 h-text">Currently installing...</h2>
             <b-table
                 class="mx-3 mb-0"
@@ -24,7 +24,7 @@
                         @onUninstall="uninstallRepository(row.item)" />
                 </template>
             </b-table>
-        </b-card>
+        </GCard>
         <GAlert v-if="showEmpty" variant="info" show> Currently there are no installing repositories. </GAlert>
     </div>
 </template>
@@ -36,12 +36,14 @@ import InstallationActions from "../RepositoryDetails/InstallationActions";
 import { Services } from "../services";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GCard from "@/component-library/GCard.vue";
 import GLink from "@/component-library/GLink.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GCard,
         GLink,
         GAlert,
         InstallationActions,

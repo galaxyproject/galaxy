@@ -12,7 +12,7 @@
                         >, you must first login to your existing account.
                     </GAlert>
                     <b-form id="login" @submit.prevent="submitLogin()">
-                        <b-card no-body>
+                        <GCard no-body>
                             <GCardHeader v-if="!connectExternalProvider">
                                 <span>{{ headerWelcome }}</span>
                             </GCardHeader>
@@ -83,7 +83,7 @@
                                     </a>
                                 </span>
                             </GCardFooter>
-                        </b-card>
+                        </GCard>
                     </b-form>
                 </div>
             </template>
@@ -112,6 +112,7 @@ import NewUserConfirmation from "./NewUserConfirmation";
 
 import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
+import GCard from "@/component-library/GCard.vue";
 import GCardBody from "@/component-library/GCardBody.vue";
 import GCardFooter from "@/component-library/GCardFooter.vue";
 import GCardHeader from "@/component-library/GCardHeader.vue";
@@ -121,6 +122,7 @@ Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GCard,
         GCardHeader,
         GCardFooter,
         GCardBody,

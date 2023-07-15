@@ -1,9 +1,9 @@
 <template>
-    <b-card body-class="embed-responsive embed-responsive-4by3">
+    <GCard body-class="embed-responsive embed-responsive-4by3">
         <LoadingSpan v-if="loading" class="m-2" message="Loading Visualization" />
         <div v-else-if="error" class="m-2">{{ error }}</div>
         <iframe v-else title="Galaxy Visualization Frame" class="embed-responsive-item" :src="visualizationUrl" />
-    </b-card>
+    </GCard>
 </template>
 
 <script>
@@ -13,10 +13,13 @@ import LoadingSpan from "components/LoadingSpan";
 import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 
+import GCard from "@/component-library/GCard.vue";
+
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GCard,
         LoadingSpan,
     },
     props: {

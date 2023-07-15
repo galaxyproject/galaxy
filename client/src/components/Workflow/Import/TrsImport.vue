@@ -14,6 +14,7 @@ import TrsServerSelection from "./TrsServerSelection.vue";
 import TrsTool from "./TrsTool.vue";
 import TrsUrlImport from "./TrsUrlImport.vue";
 import GAlert from "@/component-library/GAlert.vue";
+import GCard from "@/component-library/GCard.vue";
 import GInput from "@/component-library/GInput.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -160,7 +161,7 @@ async function importVersionFromUrl(url: string, isRunFormRedirect = false) {
 
 <template>
     <div class="workflow-import-trs-id">
-        <b-card v-if="!isAnonymous" title="GA4GH Tool Registry Server (TRS) Workflow Import">
+        <GCard v-if="!isAnonymous" title="GA4GH Tool Registry Server (TRS) Workflow Import">
             <div>
                 <b>TRS Server:</b>
                 <TrsServerSelection
@@ -198,7 +199,7 @@ async function importVersionFromUrl(url: string, isRunFormRedirect = false) {
                     :query-trs-url="props.queryTrsUrl"
                     @onImport="(url) => importVersionFromUrl(url, isRun)" />
             </div>
-        </b-card>
+        </GCard>
         <GAlert v-else class="text-center my-2" show variant="danger">
             Anonymous user cannot import workflows, please register or log in
         </GAlert>

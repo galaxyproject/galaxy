@@ -1,14 +1,17 @@
 <template>
-    <b-card nobody>
+    <GCard nobody>
         <JobParameters class="job-parameters" :job-id="args.job_id" :param="args.param" :include-title="false" />
-    </b-card>
+    </GCard>
 </template>
 
 <script>
 import JobParameters from "components/JobParameters/JobParameters";
 
+import GCard from "@/component-library/GCard.vue";
+
 export default {
     components: {
+        GCard,
         JobParameters,
     },
     props: {

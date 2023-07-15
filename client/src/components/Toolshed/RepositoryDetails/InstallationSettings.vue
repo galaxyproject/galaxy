@@ -22,7 +22,7 @@
         </b-form-group>
         <GLink variant="primary" @click="onAdvanced"> {{ advancedTitle }} advanced settings. </GLink>
         <b-collapse id="advanced-collapse" v-model="advancedShow" class="mt-2">
-            <b-card>
+            <GCard>
                 <b-form-group v-if="showConfig" label="Tool Configuration:" description="Choose a tool configuration.">
                     <b-form-radio
                         v-for="filename in toolConfigs"
@@ -41,7 +41,7 @@
                     </b-form-checkbox>
                     <b-form-checkbox v-model="installToolDependencies"> Install tool dependencies </b-form-checkbox>
                 </b-form-group>
-            </b-card>
+            </GCard>
         </b-collapse>
     </b-modal>
 </template>
@@ -49,8 +49,11 @@
 import GInput from "component-library/GInput";
 import GLink from "component-library/GLink";
 
+import GCard from "@/component-library/GCard.vue";
+
 export default {
     components: {
+        GCard,
         GInput,
         GLink,
     },

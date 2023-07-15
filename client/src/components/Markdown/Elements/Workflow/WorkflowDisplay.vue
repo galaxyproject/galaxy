@@ -8,6 +8,7 @@ import { isEmpty } from "@/utils/utils";
 import WorkflowTree from "./WorkflowTree.vue";
 import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
+import GCard from "@/component-library/GCard.vue";
 import GCardBody from "@/component-library/GCardBody.vue";
 import GCardHeader from "@/component-library/GCardHeader.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -52,7 +53,7 @@ onMounted(async () => {
 </script>
 
 <template>
-    <b-card body-class="p-0" class="workflow-display">
+    <GCard body-class="p-0" class="workflow-display">
         <GCardHeader v-if="!embedded">
             <span class="float-right">
                 <GButton
@@ -104,7 +105,7 @@ onMounted(async () => {
                 </div>
             </div>
         </GCardBody>
-    </b-card>
+    </GCard>
 </template>
 <style scoped>
 .content-height {

@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faArchive } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BCard, BTab, BTabs } from "bootstrap-vue";
+import { BTab, BTabs } from "bootstrap-vue";
 import { computed, ref } from "vue";
 import { RouterLink } from "vue-router";
 
@@ -12,6 +12,7 @@ import { useToast } from "@/composables/toast";
 import { type HistorySummary, useHistoryStore } from "@/stores/historyStore";
 
 import GAlert from "@/component-library/GAlert.vue";
+import GCard from "@/component-library/GCard.vue";
 import HistoryArchiveExportSelector from "@/components/History/Archiving/HistoryArchiveExportSelector.vue";
 import HistoryArchiveSimple from "@/components/History/Archiving/HistoryArchiveSimple.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -88,7 +89,7 @@ async function onArchiveHistory(exportRecordId?: string) {
 
             <div v-if="canFreeStorage">
                 <h2 class="h-md">How do you want to archive this history?</h2>
-                <BCard no-body class="mt-3">
+                <GCard no-body class="mt-3">
                     <GTabs pills card vertical lazy class="archival-option-tabs">
                         <GTab id="keep-storage-tab" title="Keep storage space" active>
                             <HistoryArchiveSimple :history="history" @onArchive="onArchiveHistory" />
@@ -97,7 +98,7 @@ async function onArchiveHistory(exportRecordId?: string) {
                             <HistoryArchiveExportSelector :history="history" @onArchive="onArchiveHistory" />
                         </GTab>
                     </GTabs>
-                </BCard>
+                </GCard>
             </div>
             <HistoryArchiveSimple v-else :history="history" @onArchive="onArchiveHistory" />
         </div>

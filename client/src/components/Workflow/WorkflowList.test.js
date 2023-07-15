@@ -141,7 +141,7 @@ describe("WorkflowList.vue", () => {
             expect(columns.at(0).text()).toContain(annotationHead);
             expect(columns.at(0).text()).not.toContain(annotationTail);
             expect(columns.at(0).find("a > .fa-chevron-down").exists()).toBe(true);
-            // click Down Arrow: full annotation should be visible in a b-card
+            // click Down Arrow: full annotation should be visible in a GCard
             await columns.at(0).find("a.text-summary-expand").trigger("click");
             expect(columns.at(0).find("a > .fa-chevron-down").exists()).toBe(false);
             rows = wrapper.findAll("tbody > tr").wrappers;

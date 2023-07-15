@@ -2,7 +2,6 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faFileExport } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BCard, BTab, BTabs } from "bootstrap-vue";
 import LoadingSpan from "components/LoadingSpan";
 import { useConfirmDialog } from "composables/confirmDialog";
 import { useFileSources } from "composables/fileSources";
@@ -19,6 +18,7 @@ import { exportToFileSource, getExportRecords, reimportHistoryFromRecord } from 
 import ExportOptions from "./ExportOptions.vue";
 import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
+import GCard from "@/component-library/GCard.vue";
 import ExportForm from "components/Common/ExportForm.vue";
 import ExportRecordDetails from "components/Common/ExportRecordDetails.vue";
 import ExportRecordTable from "components/Common/ExportRecordTable.vue";
@@ -191,7 +191,7 @@ function updateExportParams(newParams) {
             @onValueChanged="updateExportParams" />
 
         <h2 class="h-md mt-3">How do you want to export this history?</h2>
-        <BCard no-body class="mt-3">
+        <GCard no-body class="mt-3">
             <GTabs pills card vertical>
                 <GTab id="direct-download-tab" title="to direct download" title-link-class="tab-export-to-link" active>
                     <p>
@@ -231,7 +231,7 @@ function updateExportParams(newParams) {
                     <ExportForm what="history" :clear-input-after-export="true" @export="doExportToFileSource" />
                 </GTab>
             </GTabs>
-        </BCard>
+        </GCard>
 
         <GAlert v-if="errorMessage" id="last-export-record-error-alert" variant="danger" class="mt-3" show>
             {{ errorMessage }}

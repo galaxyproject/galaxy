@@ -20,7 +20,7 @@
                 </GAlert>
             </template>
             <template v-slot:row-details="row">
-                <b-card>
+                <GCard>
                     <small class="float-right" :data-invocation-id="row.item.id">
                         <b>Last updated: <UtcDate :date="row.item.update_time" mode="elapsed" />;</b>
                         <b
@@ -28,7 +28,7 @@
                         >
                     </small>
                     <WorkflowInvocationState :invocation-id="row.item.id" @invocation-cancelled="refresh" />
-                </b-card>
+                </GCard>
             </template>
             <template v-slot:cell(expand)="data">
                 <GLink
@@ -99,10 +99,12 @@ import paginationMixin from "./paginationMixin";
 
 import WorkflowRunButton from "./WorkflowRunButton.vue";
 import GAlert from "@/component-library/GAlert.vue";
+import GCard from "@/component-library/GCard.vue";
 import GLink from "@/component-library/GLink.vue";
 
 export default {
     components: {
+        GCard,
         GLink,
         GAlert,
         UtcDate,

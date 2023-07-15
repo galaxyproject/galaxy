@@ -1,5 +1,5 @@
 <template>
-    <b-card body-class="p-0">
+    <GCard body-class="p-0">
         <GCardHeader v-if="!embedded">
             <span class="float-right">
                 <GButton
@@ -90,7 +90,7 @@
                 </UrlDataProvider>
             </UrlDataProvider>
         </GCardBody>
-    </b-card>
+    </GCard>
 </template>
 
 <script>
@@ -100,6 +100,7 @@ import { UrlDataProvider } from "components/providers/UrlDataProvider";
 import { getAppRoot } from "onload/loadConfig";
 
 import GButton from "@/component-library/GButton.vue";
+import GCard from "@/component-library/GCard.vue";
 import GCardBody from "@/component-library/GCardBody.vue";
 import GCardHeader from "@/component-library/GCardHeader.vue";
 import GLink from "@/component-library/GLink.vue";
@@ -107,10 +108,11 @@ import GLink from "@/component-library/GLink.vue";
 export default {
     components: {
         GButton,
-        GCardHeader,
-        GCardBody,
         GLink,
+        GCard,
         LoadingSpan,
+        GCardBody,
+        GCardHeader,
         UrlDataProvider,
     },
     props: {

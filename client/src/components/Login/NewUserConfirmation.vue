@@ -9,7 +9,7 @@
                     {{ messageText }}
                 </GAlert>
                 <b-form id="confirmation" @submit.prevent="submit()">
-                    <b-card no-body header="Confirm new account creation">
+                    <GCard no-body header="Confirm new account creation">
                         <GCardBody>
                             <p>Looks like you are about to create a new account!</p>
                             <p>
@@ -47,7 +47,7 @@
                                 Log in here.
                             </a>
                         </GCardFooter>
-                    </b-card>
+                    </GCard>
                 </b-form>
             </div>
             <div v-if="termsUrl" class="col">
@@ -64,6 +64,7 @@ import Vue from "vue";
 
 import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
+import GCard from "@/component-library/GCard.vue";
 import GCardBody from "@/component-library/GCardBody.vue";
 import GCardFooter from "@/component-library/GCardFooter.vue";
 
@@ -71,6 +72,7 @@ Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GCard,
         GCardFooter,
         GCardBody,
         GAlert,

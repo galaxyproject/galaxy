@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BCard, BFormCheckbox } from "bootstrap-vue";
+import { BFormCheckbox } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import {
@@ -20,6 +20,7 @@ import type { components } from "@/schema";
 
 import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
+import GCard from "@/component-library/GCard.vue";
 import GCol from "@/component-library/GCol.vue";
 import GRow from "@/component-library/GRow.vue";
 import AsyncButton from "@/components/Common/AsyncButton.vue";
@@ -119,7 +120,7 @@ watch(
 
         <GRow v-else-if="showPreferences" class="mx-1">
             <GCol v-for="category in categories" :key="category">
-                <BCard class="my-2 px-2">
+                <GCard class="my-2 px-2">
                     <GRow align-h="between" align-v="center">
                         <GCol cols="auto" class="mx-2">
                             <GRow>
@@ -161,12 +162,12 @@ watch(
                                 icon="exclamation-circle" />
                         </GCol>
                     </GRow>
-                </BCard>
+                </GCard>
             </GCol>
         </GRow>
 
         <GRow v-if="!loading" class="m-1" align-h="center">
-            <BCard v-if="browserSupportsPushNotifications() && !pushNotificationsGranted" class="my-2">
+            <GCard v-if="browserSupportsPushNotifications() && !pushNotificationsGranted" class="my-2">
                 Allow push and tab notifications. To disable, revoke the site notification privilege in your browser.
                 <GButton
                     v-b-tooltip.hover
@@ -175,7 +176,7 @@ watch(
                     @click="onTogglePushNotifications">
                     Enable push notifications
                 </GButton>
-            </BCard>
+            </GCard>
             <GAlert
                 v-else-if="browserSupportsPushNotifications() && pushNotificationsGranted"
                 show

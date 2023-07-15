@@ -1,6 +1,5 @@
 <script setup>
 import axios from "axios";
-import { BCard } from "bootstrap-vue";
 import { useMarkdown } from "composables/markdown";
 import { Toast } from "composables/toast";
 import { computed, provide, ref } from "vue";
@@ -8,6 +7,7 @@ import { computed, provide, ref } from "vue";
 import { InvocationExportPlugin } from "./model";
 
 import ActionButton from "./ActionButton.vue";
+import GCard from "@/component-library/GCard.vue";
 import GCardTitle from "@/component-library/GCardTitle.vue";
 import GButtonGroup from "component-library/GButtonGroup.vue";
 import GButtonToolbar from "component-library/GButtonToolbar.vue";
@@ -73,7 +73,7 @@ function onExportToFileSourceFailure() {
 
 <template>
     <div>
-        <BCard class="export-plugin-card mb-1">
+        <GCard class="export-plugin-card mb-1">
             <GCardTitle class="export-plugin-title align-items-center d-flex justify-content-between">
                 {{ exportPlugin.title }}
                 <GButtonToolbar aria-label="Export Options">
@@ -100,7 +100,7 @@ function onExportToFileSourceFailure() {
             </GCardTitle>
 
             <div class="markdown-description" v-html="descriptionRendered" />
-        </BCard>
+        </GCard>
         <ExportToRemoteModal
             ref="exportRemoteModal"
             :invocation-id="props.invocationId"

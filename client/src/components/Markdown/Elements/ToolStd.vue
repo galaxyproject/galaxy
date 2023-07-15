@@ -1,13 +1,18 @@
 <template>
-    <b-card nobody class="content-height">
+    <GCard nobody class="content-height">
         <div :class="name" :job_id="args.job_id">
             <pre><code class="word-wrap-normal">{{ jobContent }}</code></pre>
         </div>
-    </b-card>
+    </GCard>
 </template>
 
 <script>
+import GCard from "@/component-library/GCard.vue";
+
 export default {
+    components: {
+        GCard,
+    },
     props: {
         args: {
             type: Object,

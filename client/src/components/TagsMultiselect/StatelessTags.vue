@@ -10,10 +10,10 @@ import { useToast } from "@/composables/toast";
 import { useMultiselect } from "@/composables/useMultiselect";
 import { useUserTags } from "@/composables/user";
 import { useUid } from "@/composables/utils/uid";
-import GTooltip from "@/component-library/GTooltip.vue";
 
 import Tag from "./Tag.vue";
 import GButton from "@/component-library/GButton.vue";
+import GTooltip from "@/component-library/GTooltip.vue";
 
 interface StatelessTagsProps {
     value?: string[];

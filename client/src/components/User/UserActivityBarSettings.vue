@@ -3,6 +3,8 @@ import { computed, type Ref, ref, type WritableComputedRef } from "vue";
 
 import { useUserStore } from "@/stores/userStore";
 
+import GCard from "@/component-library/GCard.vue";
+
 const userStore = useUserStore();
 
 const show: Ref<Boolean> = ref(false);
@@ -23,9 +25,9 @@ const enableActivityBar: WritableComputedRef<Boolean> = computed({
 </script>
 
 <template>
-    <b-card :show="show" class="user-activity-bar-settings mr-3">
+    <GCard :show="show" class="user-activity-bar-settings mr-3">
         <b-form-checkbox v-model="enableActivityBar" switch>
             <b>Enable Activity Bar</b>
         </b-form-checkbox>
-    </b-card>
+    </GCard>
 </template>

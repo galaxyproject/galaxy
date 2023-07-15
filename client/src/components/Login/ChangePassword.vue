@@ -3,14 +3,14 @@
         <GAlert v-if="!!message" :variant="variant" show>
             {{ message }}
         </GAlert>
-        <b-card header="Change your password">
+        <GCard header="Change your password">
             <b-form-group v-if="expiredUser" label="Current Password">
                 <GInput v-model="current" type="password" />
             </b-form-group>
             <b-form-group label="New Password"> <GInput v-model="password" type="password" /> </b-form-group>
             <b-form-group label="Confirm password"> <GInput v-model="confirm" type="password" /> </b-form-group>
             <GButton type="submit">Save new password</GButton>
-        </b-card>
+        </GCard>
     </b-form>
 </template>
 <script>
@@ -21,12 +21,14 @@ import Vue from "vue";
 
 import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
+import GCard from "@/component-library/GCard.vue";
 import GInput from "@/component-library/GInput.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GCard,
         GAlert,
         GButton,
         GInput,

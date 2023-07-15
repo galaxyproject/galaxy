@@ -47,7 +47,7 @@
         </GRow>
         <GRow>
             <GCol>
-                <b-card>
+                <GCard>
                     <GAlert
                         fade
                         dismissible
@@ -103,10 +103,10 @@
                             <i class="icon fa fa-save" /> Save
                         </GButton>
                     </b-form>
-                </b-card>
+                </GCard>
             </GCol>
             <GCol>
-                <b-card v-if="selectedDataSource === 'fasta'" class="alert-info">
+                <GCard v-if="selectedDataSource === 'fasta'" class="alert-info">
                     <h2 class="h-sm">FASTA format</h2>
                     <p class="card-text">
                         This is a multi-fasta file from your current history that provides the genome sequences for each
@@ -122,8 +122,8 @@ GGCGGCCGCGGCGATATAGAACTACTCATTATATATA...
 
 ...</pre
                     >
-                </b-card>
-                <b-card v-else class="alert-info">
+                </GCard>
+                <GCard v-else class="alert-info">
                     <h2 class="h-sm">Length Format</h2>
                     <p class="card-text">The length format is two-column, separated by whitespace, of the form:</p>
                     <pre class="card-text">chrom/contig   length of chrom/contig</pre>
@@ -140,7 +140,7 @@ chr5    152537259</pre
                         maximum basepair of the track browser. You may either upload a .len fileof this format (Len File
                         option), or directly enter the information into the box (Len Entry option).
                     </p>
-                </b-card>
+                </GCard>
             </GCol>
         </GRow>
     </b-container>
@@ -157,6 +157,7 @@ import Multiselect from "vue-multiselect";
 
 import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
+import GCard from "@/component-library/GCard.vue";
 import GCol from "@/component-library/GCol.vue";
 import GInput from "@/component-library/GInput.vue";
 import GRow from "@/component-library/GRow.vue";
@@ -165,6 +166,7 @@ Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GCard,
         GRow,
         GCol,
         GAlert,

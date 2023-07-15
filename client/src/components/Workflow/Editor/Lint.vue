@@ -1,5 +1,5 @@
 <template>
-    <b-card id="lint-panel" header-tag="header" body-class="p-0" class="right-content">
+    <GCard id="lint-panel" header-tag="header" body-class="p-0" class="right-content">
         <template v-slot:header>
             <div class="mb-1 font-weight-bold">
                 <FontAwesomeIcon icon="magic" class="mr-1" />
@@ -71,7 +71,7 @@
                 <span>This workflow has no labeled outputs, please select and label at least one output.</span>
             </div>
         </GCardBody>
-    </b-card>
+    </GCard>
 </template>
 
 <script>
@@ -98,6 +98,7 @@ import {
     getUntypedParameters,
 } from "./modules/linting";
 
+import GCard from "@/component-library/GCard.vue";
 import GCardBody from "@/component-library/GCardBody.vue";
 
 Vue.use(BootstrapVue);
@@ -107,6 +108,7 @@ library.add(faMagic);
 
 export default {
     components: {
+        GCard,
         GCardBody,
         FontAwesomeIcon,
         LintSection,

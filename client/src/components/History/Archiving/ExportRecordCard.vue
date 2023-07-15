@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { BCard } from "bootstrap-vue";
-
 import type { ExportRecord } from "@/components/Common/models/exportRecordModel";
 
 import IncludedBadge from "./IncludedBadge.vue";
+import GCard from "@/component-library/GCard.vue";
 import GCardText from "@/component-library/GCardText.vue";
 
 const props = defineProps<{
@@ -12,7 +11,7 @@ const props = defineProps<{
 </script>
 
 <template>
-    <BCard id="export-record-ready">
+    <GCard id="export-record-ready">
         <GCardText>
             <b>Exported {{ props.exportRecord.elapsedTime }}</b> on {{ props.exportRecord.date }}
         </GCardText>
@@ -23,5 +22,5 @@ const props = defineProps<{
             <IncludedBadge item-name="deleted" :included="props.exportRecord.exportParams.includeDeleted" />
         </GCardText>
         <GCardText> <b>Stored in:</b> {{ props.exportRecord.importUri }} </GCardText>
-    </BCard>
+    </GCard>
 </template>
