@@ -11,7 +11,7 @@ const AUTO_EXTENSION = {
 const DEFAULT_DBKEY = "?";
 const DEFAULT_EXTENSION = "auto";
 
-export function getUploadDatatypes(datatypesDisableAuto, auto) {
+export async function getUploadDatatypes(datatypesDisableAuto, auto) {
     return loadUploadDatatypes().then((result) => {
         const listExtensions = [...result];
         if (!datatypesDisableAuto) {
@@ -22,7 +22,7 @@ export function getUploadDatatypes(datatypesDisableAuto, auto) {
 }
 
 let _cachedDatatypes;
-function loadUploadDatatypes() {
+async function loadUploadDatatypes() {
     if (_cachedDatatypes) {
         return Promise.resolve(_cachedDatatypes);
     }
@@ -54,7 +54,7 @@ function loadUploadDatatypes() {
         });
 }
 
-export function getUploadDbKeys(defaultDbKey) {
+export async function getUploadDbKeys(defaultDbKey) {
     return loadDbKeys().then((result) => {
         const dbKeyList = [...result];
         dbKeyList.sort(dbKeySort(defaultDbKey));
@@ -73,7 +73,7 @@ const dbKeySort = (defaultDbKey) => (a, b) => {
 };
 
 let _cachedDbKeys;
-function loadDbKeys() {
+async function loadDbKeys() {
     if (_cachedDbKeys) {
         return Promise.resolve(_cachedDbKeys);
     }
