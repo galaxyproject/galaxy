@@ -2,7 +2,7 @@
     <div>
         <div v-if="imageUrl" class="w-100 p-2">
             <GCard nobody body-class="p-1">
-                <b-img :src="imageUrl" fluid />
+                <GImg :src="imageUrl" fluid />
             </GCard>
         </div>
         <div v-else>
@@ -16,10 +16,12 @@ import { getAppRoot } from "onload/loadConfig";
 import { mapCacheActions } from "vuex-cache";
 
 import GCard from "@/component-library/GCard.vue";
+import GImg from "@/component-library/GImg.vue";
 
 export default {
     components: {
         GCard,
+        GImg,
     },
     props: {
         history_dataset_id: {
