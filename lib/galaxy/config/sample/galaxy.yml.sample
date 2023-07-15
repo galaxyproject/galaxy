@@ -2740,11 +2740,6 @@ galaxy:
   # executed per user per second.
   #celery_user_rate_limit: 0.0
 
-  # Applies if celery_user_rate_limit is non-zero. Used for testing
-  # against a postgres db. Forces use of standard sql code rather than
-  # postgres specific dialect for database access code.
-  #celery_user_rate_limit_standard_before_start: false
-
   # Allow disabling pbkdf2 hashing of passwords for legacy situations.
   # This should normally be left enabled unless there is a specific
   # reason to disable it.
