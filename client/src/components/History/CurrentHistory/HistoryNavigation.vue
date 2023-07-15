@@ -40,13 +40,13 @@
                     <template v-slot:button-content>
                         <span class="sr-only">History Options</span>
                     </template>
-                    <b-dropdown-text>
+                    <GDropdownText>
                         <div v-if="historiesLoading">
                             <b-spinner v-if="historiesLoading" small />
                             <span>Fetching histories from server</span>
                         </div>
                         <span v-else>You have {{ totalHistoryCount }} histories.</span>
-                    </b-dropdown-text>
+                    </GDropdownText>
 
                     <b-dropdown-item
                         data-description="switch to multi history view"
@@ -194,8 +194,11 @@ import { mapActions, mapState } from "pinia";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
+import GDropdownText from "@/component-library/GDropdownText.vue";
+
 export default {
     components: {
+        GDropdownText,
         CopyModal,
         GButton,
         GButtonGroup,

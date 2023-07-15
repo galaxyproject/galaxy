@@ -9,9 +9,9 @@
                     <b>{{ selectionSize }}</b> of {{ totalItemsInQuery }} selected
                 </span>
             </template>
-            <b-dropdown-text>
+            <GDropdownText>
                 <span v-localize data-description="selected count">With {{ numSelected }} selected...</span>
-            </b-dropdown-text>
+            </GDropdownText>
             <b-dropdown-item v-if="showHidden" v-b-modal:show-selected-content data-description="unhide option">
                 <span v-localize>Unhide</span>
             </b-dropdown-item>
@@ -162,8 +162,11 @@ import { StatelessTags } from "components/Tags";
 
 import { useConfig } from "@/composables/config";
 
+import GDropdownText from "@/component-library/GDropdownText.vue";
+
 export default {
     components: {
+        GDropdownText,
         DbKeyProvider,
         DatatypesProvider,
         SingleItemSelector,

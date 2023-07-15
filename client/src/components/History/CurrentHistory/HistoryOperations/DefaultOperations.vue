@@ -11,9 +11,9 @@
                 <span class="sr-only">History actions</span>
                 <Icon icon="cog" />
             </template>
-            <b-dropdown-text id="history-op-all-content">
+            <GDropdownText id="history-op-all-content">
                 <span v-localize>With entire history...</span>
-            </b-dropdown-text>
+            </GDropdownText>
             <b-dropdown-item data-description="copy datasets" @click="onCopy">
                 <span v-localize>Copy Datasets</span>
             </b-dropdown-item>
@@ -47,7 +47,12 @@ import { iframeRedirect } from "components/plugins/legacyNavigation";
 
 import { usesDetailedHistoryMixin } from "../usesDetailedHistoryMixin.js";
 
+import GDropdownText from "@/component-library/GDropdownText.vue";
+
 export default {
+    components: {
+        GDropdownText,
+    },
     mixins: [usesDetailedHistoryMixin],
     props: {
         history: { type: Object, required: true },
