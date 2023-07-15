@@ -18,11 +18,11 @@
                 >creating a BCO using Galaxy</a
             >.
         </p>
-        <b-tabs lazy>
-            <b-tab title="Download">
+        <GTabs lazy>
+            <GTab title="Download">
                 <a class="bco-json" style="padding-left: 1em" :href="bcoDownloadLink"><b>Download BCO</b></a>
-            </b-tab>
-            <b-tab title="Submit To BCODB">
+            </GTab>
+            <GTab title="Submit To BCODB">
                 <div>
                     <p>
                         To submit to a BCODB you need to already have an authenticated account. Instructions on
@@ -84,8 +84,8 @@
                         </div>
                     </form>
                 </div>
-            </b-tab>
-        </b-tabs>
+            </GTab>
+        </GTabs>
     </div>
 </template>
 

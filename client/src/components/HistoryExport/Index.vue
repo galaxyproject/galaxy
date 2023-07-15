@@ -22,18 +22,18 @@ const props = defineProps<ExportHistoryProps>();
         </span>
         <span v-else-if="hasWritableFileSources">
             <BCard no-body>
-                <BTabs pills card vertical>
-                    <BTab title="to a link" title-link-class="tab-export-to-link" active>
+                <GTabs pills card vertical>
+                    <GTab title="to a link" title-link-class="tab-export-to-link" active>
                         <b-card-text>
                             <ToLink :history-id="props.historyId" />
                         </b-card-text>
-                    </BTab>
-                    <BTab title="to a remote file" title-link-class="tab-export-to-file">
+                    </GTab>
+                    <GTab title="to a remote file" title-link-class="tab-export-to-file">
                         <b-card-text>
                             <ToRemoteFile :history-id="props.historyId" />
                         </b-card-text>
-                    </BTab>
-                </BTabs>
+                    </GTab>
+                </GTabs>
             </BCard>
         </span>
         <span v-else>

@@ -192,8 +192,8 @@ function updateExportParams(newParams) {
 
         <h2 class="h-md mt-3">How do you want to export this history?</h2>
         <BCard no-body class="mt-3">
-            <BTabs pills card vertical>
-                <BTab id="direct-download-tab" title="to direct download" title-link-class="tab-export-to-link" active>
+            <GTabs pills card vertical>
+                <GTab id="direct-download-tab" title="to direct download" title-link-class="tab-export-to-link" active>
                     <p>
                         Here you can generate a temporal download for your history. When your download link expires or
                         your history changes you can re-generate it again.
@@ -217,8 +217,8 @@ function updateExportParams(newParams) {
                         The latest export record is ready. Use the download button below to download it or change the
                         advanced export options above to generate a new one.
                     </GAlert>
-                </BTab>
-                <BTab
+                </GTab>
+                <GTab
                     v-if="hasWritableFileSources"
                     id="file-source-tab"
                     title="to remote file"
@@ -229,8 +229,8 @@ function updateExportParams(newParams) {
                         it remains available on the remote server.
                     </p>
                     <ExportForm what="history" :clear-input-after-export="true" @export="doExportToFileSource" />
-                </BTab>
-            </BTabs>
+                </GTab>
+            </GTabs>
         </BCard>
 
         <GAlert v-if="errorMessage" id="last-export-record-error-alert" variant="danger" class="mt-3" show>
