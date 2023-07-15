@@ -11,17 +11,51 @@ const AUTO_EXTENSION = {
 const DEFAULT_DBKEY = "?";
 const DEFAULT_EXTENSION = "auto";
 
-export async function getUploadDatatypes(datatypesDisableAuto, auto) {
-    return loadUploadDatatypes().then((result) => {
-        const listExtensions = [...result];
-        if (!datatypesDisableAuto) {
-            listExtensions.unshift(auto);
+/**
+ * Local cache.
+ */
+let _cachedDatatypes;
+let _cachedDbKeys;
+
+/*
+ * Local helper utilities.
+ */
+function dbKeySort(defaultDbKey) {
+    return (a, b) => {
+        if (a.id == defaultDbKey) {
+            return -1;
         }
-        return listExtensions;
-    });
+        if (b.id == defaultDbKey) {
+            return 1;
+        }
+        return a.text > b.text ? 1 : a.text < b.text ? -1 : 0;
+    };
 }
 
-let _cachedDatatypes;
+async function loadDbKeys() {
+    if (_cachedDbKeys) {
+        return Promise.resolve(_cachedDbKeys);
+    }
+    const url = `${getAppRoot()}api/genomes`;
+    return axios
+        .get(url)
+        .then((response) => {
+            const dbKeys = response.data;
+            const dbKeyList = [];
+            for (var key in dbKeys) {
+                dbKeyList.push({
+                    id: dbKeys[key][1],
+                    text: dbKeys[key][0],
+                });
+            }
+            return dbKeyList;
+        })
+        .then((result) => {
+            _cachedDbKeys = result;
+            return result;
+        });
+}
+
 async function loadUploadDatatypes() {
     if (_cachedDatatypes) {
         return Promise.resolve(_cachedDatatypes);
@@ -54,6 +88,19 @@ async function loadUploadDatatypes() {
         });
 }
 
+/*
+ * Exported utilities.
+ */
+export async function getUploadDatatypes(datatypesDisableAuto, auto) {
+    return loadUploadDatatypes().then((result) => {
+        const listExtensions = [...result];
+        if (!datatypesDisableAuto) {
+            listExtensions.unshift(auto);
+        }
+        return listExtensions;
+    });
+}
+
 export async function getUploadDbKeys(defaultDbKey) {
     return loadDbKeys().then((result) => {
         const dbKeyList = [...result];
@@ -62,42 +109,17 @@ export async function getUploadDbKeys(defaultDbKey) {
     });
 }
 
-const dbKeySort = (defaultDbKey) => (a, b) => {
-    if (a.id == defaultDbKey) {
-        return -1;
+export async function getRemoteFiles(success, error) {
+    const url = `${getAppRoot()}api/remote_files`;
+    try {
+        const { data } = await axios.get(url);
+        success(data);
+    } catch (e) {
+        error(rethrowSimple(e));
     }
-    if (b.id == defaultDbKey) {
-        return 1;
-    }
-    return a.text > b.text ? 1 : a.text < b.text ? -1 : 0;
-};
-
-let _cachedDbKeys;
-async function loadDbKeys() {
-    if (_cachedDbKeys) {
-        return Promise.resolve(_cachedDbKeys);
-    }
-    const url = `${getAppRoot()}api/genomes`;
-    return axios
-        .get(url)
-        .then((response) => {
-            const dbKeys = response.data;
-            const dbKeyList = [];
-            for (var key in dbKeys) {
-                dbKeyList.push({
-                    id: dbKeys[key][1],
-                    text: dbKeys[key][0],
-                });
-            }
-            return dbKeyList;
-        })
-        .then((result) => {
-            _cachedDbKeys = result;
-            return result;
-        });
 }
 
-async function getRemoteFilesAt(target) {
+export async function getRemoteFilesAt(target) {
     const url = `${getAppRoot()}api/remote_files?target=${target}`;
     try {
         const response = await axios.get(url);
@@ -105,16 +127,6 @@ async function getRemoteFilesAt(target) {
         return files;
     } catch (e) {
         rethrowSimple(e);
-    }
-}
-
-async function getRemoteFiles(success, error) {
-    const url = `${getAppRoot()}api/remote_files`;
-    try {
-        const { data } = await axios.get(url);
-        success(data);
-    } catch (e) {
-        error(rethrowSimple(e));
     }
 }
 
