@@ -4,16 +4,21 @@
             {{ note }}<span v-if="loading">.<span class="blinking">..</span></span>
         </small>
         <b-progress :max="total">
-            <b-progress-bar variant="success" :value="okCount" />
-            <b-progress-bar variant="danger" :value="errorCount" />
-            <b-progress-bar variant="warning" :value="runningCount" />
-            <b-progress-bar variant="warning" :value="newCount" />
+            <GProgressBar variant="success" :value="okCount" />
+            <GProgressBar variant="danger" :value="errorCount" />
+            <GProgressBar variant="warning" :value="runningCount" />
+            <GProgressBar variant="warning" :value="newCount" />
         </b-progress>
     </div>
 </template>
 <script>
 // Not really a very generic ProgressBar - consider renaming to StateProgressBar.
+import GProgressBar from "@/component-library/GProgressBar.vue";
+
 export default {
+    components: {
+        GProgressBar,
+    },
     props: {
         total: {
             type: Number,

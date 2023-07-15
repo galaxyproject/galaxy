@@ -20,7 +20,7 @@
                 :title="title"
                 data-description="storage dashboard link">
                 <b-progress :max="100">
-                    <b-progress-bar aria-label="Quota usage" :value="usage" :variant="variant" />
+                    <GProgressBar aria-label="Quota usage" :value="usage" :variant="variant" />
                 </b-progress>
                 <span>{{ usingString + " " + usage.toFixed(0) }}%</span>
             </GLink>
@@ -36,10 +36,12 @@ import { useConfigStore } from "@/stores/configurationStore";
 import { useUserStore } from "@/stores/userStore";
 
 import GLink from "@/component-library/GLink.vue";
+import GProgressBar from "@/component-library/GProgressBar.vue";
 
 export default {
     name: "QuotaMeter",
     components: {
+        GProgressBar,
         GLink,
     },
     data() {
