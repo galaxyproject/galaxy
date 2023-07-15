@@ -1,5 +1,5 @@
 <script setup>
-import { BDropdownItem, BNavItem, BNavItemDropdown, VBPopoverPlugin, VBTooltipPlugin } from "bootstrap-vue";
+import { BNavItem, BNavItemDropdown, GDropdownItem, VBPopoverPlugin, VBTooltipPlugin } from "bootstrap-vue";
 import { withPrefix } from "utils/redirect";
 import Vue, { computed, getCurrentInstance, ref } from "vue";
 
@@ -108,7 +108,7 @@ function open(tab, event) {
         </template>
         <template v-for="(item, idx) in tab.menu">
             <div v-if="item.divider" :key="`divider-${idx}`" class="dropdown-divider" />
-            <BDropdownItem
+            <GDropdownItem
                 v-else-if="item.hidden !== true"
                 :key="`item-${idx}`"
                 :href="withPrefix(item.url)"
@@ -119,7 +119,7 @@ function open(tab, event) {
                 :disabled="item.disabled"
                 @click="open(item, $event)">
                 {{ item.title }}
-            </BDropdownItem>
+            </GDropdownItem>
         </template>
     </BNavItemDropdown>
 </template>

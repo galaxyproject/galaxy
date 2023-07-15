@@ -48,105 +48,120 @@
                         <span v-else>You have {{ totalHistoryCount }} histories.</span>
                     </GDropdownText>
 
-                    <b-dropdown-item
+                    <GDropdownItem
+                        id="dropdown-item"
+                        class="dropdown-item"
                         data-description="switch to multi history view"
                         :disabled="isAnonymous"
                         :title="userTitle('Open History Multiview')"
                         @click="$router.push('/histories/view_multiple')">
                         <Icon fixed-width class="mr-1" icon="columns" />
                         <span v-localize>Show Histories Side-by-Side</span>
-                    </b-dropdown-item>
+                    </GDropdownItem>
 
                     <b-dropdown-divider></b-dropdown-divider>
 
-                    <b-dropdown-item
+                    <GDropdownItem
                         :title="l('Resume all Paused Jobs in this History')"
+                        class="dropdown-item"
                         @click="iframeRedirect('/history/resume_paused_jobs?current=True')">
                         <Icon fixed-width icon="play" class="mr-1" />
                         <span v-localize>Resume Paused Jobs</span>
-                    </b-dropdown-item>
+                    </GDropdownItem>
 
                     <b-dropdown-divider></b-dropdown-divider>
 
-                    <b-dropdown-item
+                    <GDropdownItem
                         v-b-modal:copy-current-history-modal
+                        class="dropdown-item"
                         :disabled="isAnonymous"
                         :title="userTitle('Copy History to a New History')">
                         <Icon fixed-width icon="copy" class="mr-1" />
                         <span v-localize>Copy this History</span>
-                    </b-dropdown-item>
+                    </GDropdownItem>
 
-                    <b-dropdown-item v-b-modal:delete-history-modal :title="l('Permanently Delete History')">
+                    <GDropdownItem
+                        v-b-modal:delete-history-modal
+                        class="dropdown-item"
+                        :title="l('Permanently Delete History')">
                         <Icon fixed-width icon="trash" class="mr-1" />
                         <span v-localize>Delete this History</span>
-                    </b-dropdown-item>
+                    </GDropdownItem>
 
-                    <b-dropdown-item
+                    <GDropdownItem
                         :title="l('Export Citations for all Tools used in this History')"
+                        class="dropdown-item"
                         @click="$router.push(`/histories/citations?id=${history.id}`)">
                         <Icon fixed-width icon="stream" class="mr-1" />
                         <span v-localize>Export Tool Citations</span>
-                    </b-dropdown-item>
+                    </GDropdownItem>
 
-                    <b-dropdown-item
+                    <GDropdownItem
                         data-description="export to file"
+                        class="dropdown-item"
                         :title="l('Export and Download History as a File')"
                         @click="$router.push(`/histories/${history.id}/export`)">
                         <Icon fixed-width icon="file-archive" class="mr-1" />
                         <span v-localize>Export History to File</span>
-                    </b-dropdown-item>
+                    </GDropdownItem>
 
-                    <b-dropdown-item
+                    <GDropdownItem
                         :disabled="isAnonymous"
+                        class="dropdown-item"
                         data-description="archive history"
                         :title="userTitle('Archive this History')"
                         @click="$router.push(`/histories/${history.id}/archive`)">
                         <Icon fixed-width icon="archive" class="mr-1" />
                         <span v-localize>Archive History</span>
-                    </b-dropdown-item>
+                    </GDropdownItem>
 
-                    <b-dropdown-item
+                    <GDropdownItem
                         :disabled="isAnonymous"
+                        class="dropdown-item"
                         :title="userTitle('Convert History to Workflow')"
                         @click="iframeRedirect('/workflow/build_from_current_history')">
                         <Icon fixed-width icon="file-export" class="mr-1" />
                         <span v-localize>Extract Workflow</span>
-                    </b-dropdown-item>
+                    </GDropdownItem>
 
-                    <b-dropdown-item
+                    <GDropdownItem
                         :disabled="isAnonymous"
+                        class="dropdown-item"
                         :title="userTitle('Display Workflow Invocations')"
                         @click="$router.push(`/histories/${history.id}/invocations`)">
                         <Icon fixed-width icon="sitemap" class="fa-rotate-270 mr-1" />
                         <span v-localize>Show Invocations</span>
-                    </b-dropdown-item>
+                    </GDropdownItem>
 
                     <b-dropdown-divider></b-dropdown-divider>
 
-                    <b-dropdown-item
+                    <GDropdownItem
                         :disabled="isAnonymous"
+                        class="dropdown-item"
                         :title="userTitle('Share or Publish this History')"
                         data-description="share or publish"
                         @click="$router.push(`/histories/sharing?id=${history.id}`)">
                         <Icon fixed-width icon="share-alt" class="mr-1" />
                         <span v-localize>Share or Publish</span>
-                    </b-dropdown-item>
+                    </GDropdownItem>
 
-                    <b-dropdown-item
+                    <GDropdownItem
                         :disabled="isAnonymous"
+                        class="dropdown-item"
                         :title="userTitle('Set who can View or Edit this History')"
                         @click="$router.push(`/histories/permissions?id=${history.id}`)">
                         <Icon fixed-width icon="user-lock" class="mr-1" />
                         <span v-localize>Set Permissions</span>
-                    </b-dropdown-item>
+                    </GDropdownItem>
 
-                    <b-dropdown-item
+                    <GDropdownItem
                         v-b-modal:history-privacy-modal
+                        class="dropdown-item"
                         :disabled="isAnonymous"
                         :title="userTitle('Make this History Private')">
                         <Icon fixed-width icon="lock" class="mr-1" />
                         <span v-localize>Make Private</span>
-                    </b-dropdown-item>
+                    </GDropdownItem>
                 </b-dropdown>
             </GButtonGroup>
         </nav>
@@ -194,10 +209,12 @@ import { mapActions, mapState } from "pinia";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
+import GDropdownItem from "@/component-library/GDropdownItem.vue";
 import GDropdownText from "@/component-library/GDropdownText.vue";
 
 export default {
     components: {
+        GDropdownItem,
         GDropdownText,
         CopyModal,
         GButton,

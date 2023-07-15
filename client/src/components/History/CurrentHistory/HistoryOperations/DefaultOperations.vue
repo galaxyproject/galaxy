@@ -14,18 +14,18 @@
             <GDropdownText id="history-op-all-content">
                 <span v-localize>With entire history...</span>
             </GDropdownText>
-            <b-dropdown-item data-description="copy datasets" @click="onCopy">
+            <GDropdownItem data-description="copy datasets" @click="onCopy">
                 <span v-localize>Copy Datasets</span>
-            </b-dropdown-item>
-            <b-dropdown-item v-if="numItemsHidden" v-b-modal:show-all-hidden-content>
+            </GDropdownItem>
+            <GDropdownItem v-if="numItemsHidden" v-b-modal:show-all-hidden-content>
                 <span v-localize>Unhide All Hidden Content</span>
-            </b-dropdown-item>
-            <b-dropdown-item v-if="numItemsHidden" v-b-modal:delete-all-hidden-content>
+            </GDropdownItem>
+            <GDropdownItem v-if="numItemsHidden" v-b-modal:delete-all-hidden-content>
                 <span v-localize>Delete All Hidden Content</span>
-            </b-dropdown-item>
-            <b-dropdown-item v-if="numItemsDeleted" v-b-modal:purge-all-deleted-content>
+            </GDropdownItem>
+            <GDropdownItem v-if="numItemsDeleted" v-b-modal:purge-all-deleted-content>
                 <span v-localize>Purge All Deleted Content</span>
-            </b-dropdown-item>
+            </GDropdownItem>
         </b-dropdown>
 
         <b-modal id="show-all-hidden-content" title="Show Hidden Datasets" title-tag="h2" @ok="unhideAll">
@@ -47,10 +47,12 @@ import { iframeRedirect } from "components/plugins/legacyNavigation";
 
 import { usesDetailedHistoryMixin } from "../usesDetailedHistoryMixin.js";
 
+import GDropdownItem from "@/component-library/GDropdownItem.vue";
 import GDropdownText from "@/component-library/GDropdownText.vue";
 
 export default {
     components: {
+        GDropdownItem,
         GDropdownText,
     },
     mixins: [usesDetailedHistoryMixin],

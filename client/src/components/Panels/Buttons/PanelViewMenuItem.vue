@@ -1,11 +1,13 @@
 <template>
-    <b-dropdown-item :data-panel-id="panelView.id" :active="isSelected" @click="onClick">
+    <GDropdownItem :data-panel-id="panelView.id" :active="isSelected" @click="onClick">
         <span :class="['fa', `fa-${icon}`]" fixed-width />
         <span v-localize class="ml-1" :title="title">{{ name }}</span>
-    </b-dropdown-item>
+    </GDropdownItem>
 </template>
 
 <script>
+import GDropdownItem from "@/component-library/GDropdownItem.vue";
+
 const types_to_icons = {
     default: "undo",
     generic: "filter",
@@ -16,6 +18,9 @@ const types_to_icons = {
 };
 
 export default {
+    components: {
+        GDropdownItem,
+    },
     props: {
         currentPanelView: {
             type: String,

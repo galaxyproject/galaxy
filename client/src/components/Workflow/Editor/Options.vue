@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BDropdown, BDropdownItem } from "bootstrap-vue";
+import { BDropdown } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { useConfirmDialog } from "@/composables/confirmDialog";
@@ -104,15 +104,26 @@ async function onSave() {
             <template v-slot:button-content>
                 <span class="fa fa-cog" />
             </template>
-            <BDropdownItem href="#" @click="$emit('onSaveAs')"><span class="fa fa-floppy-o" />Save As...</BDropdownItem>
-            <BDropdownItem href="#" @click="$emit('onLayout')"
-                ><span class="fa fa-align-left" />Auto Layout</BDropdownItem
-            >
-            <BDropdownItem href="#" @click="$emit('onLint')"><span class="fa fa-magic" />Best Practices</BDropdownItem>
-            <BDropdownItem href="#" @click="$emit('onUpgrade')"
-                ><span class="fa fa-recycle" />Upgrade Workflow</BDropdownItem
-            >
-            <BDropdownItem href="#" @click="$emit('onDownload')"><span class="fa fa-download" />Download</BDropdownItem>
+            <GDropdownItem href="#" @click="$emit('onSaveAs')">
+                <span class="fa fa-floppy-o" />
+                Save As...
+            </GDropdownItem>
+            <GDropdownItem href="#" @click="$emit('onLayout')">
+                <span class="fa fa-align-left" />
+                Auto Layout
+            </GDropdownItem>
+            <GDropdownItem href="#" @click="$emit('onLint')">
+                <span class="fa fa-magic" />
+                Best Practices
+            </GDropdownItem>
+            <GDropdownItem href="#" @click="$emit('onUpgrade')">
+                <span class="fa fa-recycle" />
+                Upgrade Workflow
+            </GDropdownItem>
+            <GDropdownItem href="#" @click="$emit('onDownload')">
+                <span class="fa fa-download" />
+                Download
+            </GDropdownItem>
         </BDropdown>
         <GButton
             id="workflow-run-button"
