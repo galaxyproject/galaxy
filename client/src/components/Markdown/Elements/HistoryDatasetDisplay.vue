@@ -60,7 +60,7 @@
                     <LoadingSpan v-else-if="datatypesLoading" message="Loading Datatypes" />
                     <div v-else-if="error">{{ error }}</div>
                     <div v-else :class="contentClass">
-                        <b-embed
+                        <GEmbed
                             v-if="isSubTypeOfAny(datasetType, ['pdf', 'html'], datatypesModel)"
                             type="iframe"
                             aspect="16by9"
@@ -103,16 +103,18 @@ import GButton from "@/component-library/GButton.vue";
 import GCard from "@/component-library/GCard.vue";
 import GCardBody from "@/component-library/GCardBody.vue";
 import GCardHeader from "@/component-library/GCardHeader.vue";
+import GEmbed from "@/component-library/GEmbed.vue";
 import GLink from "@/component-library/GLink.vue";
 
 export default {
     components: {
         GButton,
-        GLink,
+        GEmbed,
         GCard,
-        LoadingSpan,
-        GCardBody,
         GCardHeader,
+        GCardBody,
+        GLink,
+        LoadingSpan,
         UrlDataProvider,
     },
     props: {

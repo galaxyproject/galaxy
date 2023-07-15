@@ -51,7 +51,7 @@
                 </b-form>
             </div>
             <div v-if="termsUrl" class="col">
-                <b-embed type="iframe" :src="termsUrlwithRoot" aspect="1by1" />
+                <GEmbed type="iframe" :src="termsUrlwithRoot" aspect="1by1" />
             </div>
         </div>
     </div>
@@ -67,11 +67,13 @@ import GButton from "@/component-library/GButton.vue";
 import GCard from "@/component-library/GCard.vue";
 import GCardBody from "@/component-library/GCardBody.vue";
 import GCardFooter from "@/component-library/GCardFooter.vue";
+import GEmbed from "@/component-library/GEmbed.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GEmbed,
         GCard,
         GCardFooter,
         GCardBody,

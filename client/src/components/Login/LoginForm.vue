@@ -94,7 +94,7 @@
                     @setRedirect="setRedirect" />
             </template>
             <div v-if="showWelcomeWithLogin" class="col">
-                <b-embed type="iframe" :src="welcomeUrlWithRoot" aspect="1by1" />
+                <GEmbed type="iframe" :src="welcomeUrlWithRoot" aspect="1by1" />
             </div>
         </div>
     </div>
@@ -117,11 +117,13 @@ import GCardBody from "@/component-library/GCardBody.vue";
 import GCardFooter from "@/component-library/GCardFooter.vue";
 import GCardHeader from "@/component-library/GCardHeader.vue";
 import GInput from "@/component-library/GInput.vue";
+import GEmbed from "@/component-library/GEmbed.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GEmbed,
         GCard,
         GCardHeader,
         GCardFooter,
