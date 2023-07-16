@@ -133,7 +133,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         },
         "job_queue": {
             "default": "",
-            "map": str,
+            "map": list,
             "required": True,
         },
         "job_role_arn": {
@@ -143,12 +143,12 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         },
         "efs_filesystem_id": {
             "default": "",
-            "map": str,
+            "map": list,
             "required": True,
         },
         "efs_mount_point": {
             "default": "",
-            "map": str,
+            "map": list,
             "required": True,
         },
         "execute_role_arn": {
@@ -165,7 +165,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         },
         "ec2_host_volumes": {
             "default": "",
-            "map": str,
+            "map": list,
         },
         "privileged": {
             "default": False,
@@ -262,7 +262,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
 
         efs_filesystem_id = destination_params.get("efs_filesystem_id")
         efs_mount_point = destination_params.get("efs_mount_point")
-        for efs_id, mnt_point in zip(efs_filesystem_id.split(","), efs_mount_point.split(",")):
+        for efs_id, mnt_point in zip(efs_filesystem_id, efs_mount_point):
             efs_id, mnt_point = efs_id.strip(), mnt_point.strip()
             volumes.append(
                 {
@@ -288,8 +288,10 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
 
         ec2_host_volumes = destination_params.get("ec2_host_volumes")
         if ec2_host_volumes:
-            for ix, vol in enumerate(ec2_host_volumes.split(",")):
+            for ix, vol in enumerate(ec2_host_volumes):
                 vol = vol.strip()
+                if not vol:
+                    continue
                 vol_name = "host_vol_" + str(ix)
                 volumes.append(
                     {
@@ -538,7 +540,12 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             if spec.get("required") and not value:  # type: ignore[attr-defined]
                 check_required.append(k)
             mapper = spec.get("map")    # type: ignore[attr-defined]
-            parsed_params[k] = mapper(value)  # type: ignore[operator]
+            if isinstance(value, mapper):
+                parsed_params[k] = value
+            elif isinstance(value, str) and mapper == list:
+                parsed_params[k] = [value]
+            else:
+                parsed_params[k] = mapper(value)  # type: ignore[operator]
         if check_required:
             raise AWSBatchRunnerException(
                 "AWSBatchJobRunner requires the following params to be provided: %s." % (", ".join(check_required))
@@ -551,6 +558,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         vcpu = parsed_params.get("vcpu")
         memory = parsed_params.get("memory")
         gpu = parsed_params.get("gpu")
+        job_queue = parsed_params.get("job_queue")
 
         if auto_platform and not fargate_version:
             raise AWSBatchRunnerException("AWSBatchJobRunner needs 'farget_version' to be set to enable auto platform!")
@@ -579,13 +587,15 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
                         break
                     c_ix += 1
             # parse JOB QUEUE
-            job_queues = parsed_params.get("job_queue").split(",")  # type: ignore[union-attr]
-            if len(job_queues) < 2:
+            if len(job_queue) != 2:
                 raise AWSBatchRunnerException(
-                    "AWSBatchJobRunner needs to set TWO job queues ('Farget Queue, EC2 Qeueue')"
+                    "AWSBatchJobRunner needs to set TWO job queues ('- Farget Queue, - EC2 Qeueue')"
                     " when 'auto_platform' is enabled!"
                 )
-            parsed_params["job_queue"] = job_queues[platform == "EC2"].strip()
+            parsed_params["job_queue"] = job_queue[platform == "EC2"].strip()
+
+        if isinstance(job_queue, list):
+            parsed_params["job_queue"] = str(job_queue[0])
 
         if platform == "Fargate" and parsed_params.get("ec2_host_volumes") and not auto_platform:
             raise AWSBatchRunnerException(
@@ -597,7 +607,8 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
 
         efs_filesystem_id = parsed_params.get("efs_filesystem_id")
         efs_mount_point = parsed_params.get("efs_mount_point")
-        if efs_filesystem_id.count(",") != efs_mount_point.count(","):  # type: ignore[union-attr]
+
+        if len(efs_filesystem_id) != len(efs_mount_point):  # type: ignore[union-attr]
             raise AWSBatchRunnerException(
                 "AWSBatchJobRunner: the number of EFS file systems provided (`efs_filesystem_id`) doesn't "
                 "match the number of mounting points (`efs_mount_point`)!"
