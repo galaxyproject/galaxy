@@ -27,7 +27,8 @@
 
 <script>
 import Backbone from "backbone";
-import { BTab, BTabs } from "bootstrap-vue";
+import GTab from "component-library/GTab";
+import GTabs from "component-library/GTabs";
 import { getDatatypesMapper } from "components/Datatypes";
 import LoadingSpan from "components/LoadingSpan";
 import {
@@ -49,10 +50,10 @@ export default {
         Collection,
         Composite,
         Default,
+        GTab,
+        GTabs,
         RulesInput,
         LoadingSpan,
-        BTabs,
-        BTab,
     },
     props: {
         currentHistoryId: { type: String, required: true },

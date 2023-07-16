@@ -7,7 +7,8 @@
         <GBreadcrumb v-if="url">
             <GBreadcrumbItem title="Select another folder" class="align-items-center" @click="reset">
                 <GButton class="pathname" variant="primary">
-                    <FontAwesomeIcon icon="folder-open" /> {{ url.protocol }}
+                    <FontAwesomeIcon icon="folder-open" />
+                    {{ url.protocol }}
                 </GButton>
             </GBreadcrumbItem>
             <GBreadcrumbItem
