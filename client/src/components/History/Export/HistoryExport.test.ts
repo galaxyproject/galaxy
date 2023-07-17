@@ -1,8 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/jest/helpers";
 import { shallowMount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 
@@ -12,6 +10,7 @@ import {
     RECENT_STS_DOWNLOAD_RECORD,
 } from "@/components/Common/models/testData/exportData";
 import type { components } from "@/schema";
+import { mockFetcher } from "@/schema/__mocks__";
 import { type HistorySummary, useHistoryStore } from "@/stores/historyStore";
 
 import { getExportRecords } from "./services";
@@ -20,6 +19,7 @@ import HistoryExport from "./HistoryExport.vue";
 
 const localVue = getLocalVue(true);
 
+jest.mock("@/schema");
 jest.mock("./services");
 const mockGetExportRecords = getExportRecords as jest.MockedFunction<typeof getExportRecords>;
 mockGetExportRecords.mockResolvedValue([]);
@@ -67,15 +67,8 @@ async function mountHistoryExport() {
 }
 
 describe("HistoryExport.vue", () => {
-    let axiosMock: MockAdapter;
-
     beforeEach(async () => {
-        axiosMock = new MockAdapter(axios);
-        axiosMock.onGet(REMOTE_FILES_API_ENDPOINT).reply(200, []);
-    });
-
-    afterEach(() => {
-        axiosMock.restore();
+        mockFetcher.path(REMOTE_FILES_API_ENDPOINT).method("get").mock({ data: [] });
     });
 
     it("should render the history name", async () => {
@@ -115,7 +108,7 @@ describe("HistoryExport.vue", () => {
     });
 
     it("should display file sources tab if there are available", async () => {
-        axiosMock.onGet(REMOTE_FILES_API_ENDPOINT).reply(200, REMOTE_FILES_API_RESPONSE);
+        mockFetcher.path(REMOTE_FILES_API_ENDPOINT).method("get").mock({ data: REMOTE_FILES_API_RESPONSE });
         const wrapper = await mountHistoryExport();
 
         expect(wrapper.find("#direct-download-tab").exists()).toBe(true);

@@ -1,14 +1,15 @@
 import { createTestingPinia } from "@pinia/testing";
 import { shallowMount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
+import { mockFetcher } from "@/schema/__mocks__";
 import { type HistorySummary, useHistoryStore } from "@/stores/historyStore";
 
 import HistoryArchiveWizard from "./HistoryArchiveWizard.vue";
+
+jest.mock("@/schema");
 
 jest.mock("@/composables/config", () => ({
     useConfig: jest.fn(() => ({
@@ -54,15 +55,8 @@ async function mountComponentWithHistory(history?: HistorySummary) {
 }
 
 describe("HistoryArchiveWizard.vue", () => {
-    let axiosMock: MockAdapter;
-
     beforeEach(async () => {
-        axiosMock = new MockAdapter(axios);
-        axiosMock.onGet(REMOTE_FILES_API_ENDPOINT).reply(200, []);
-    });
-
-    afterEach(() => {
-        axiosMock.restore();
+        mockFetcher.path(REMOTE_FILES_API_ENDPOINT).method("get").mock({ data: [] });
     });
 
     it("should render the history name in the header", async () => {
@@ -80,18 +74,23 @@ describe("HistoryArchiveWizard.vue", () => {
     });
 
     it("should render both archival modes when writeable file sources and celery tasks are available", async () => {
-        axiosMock.onGet(REMOTE_FILES_API_ENDPOINT).reply(200, [
-            {
-                id: "test-posix-source",
-                type: "posix",
-                uri_root: "gxfiles://test-posix-source",
-                label: "TestSource",
-                doc: "For testing",
-                writable: true,
-                requires_roles: undefined,
-                requires_groups: undefined,
-            },
-        ]);
+        mockFetcher
+            .path(REMOTE_FILES_API_ENDPOINT)
+            .method("get")
+            .mock({
+                data: [
+                    {
+                        id: "test-posix-source",
+                        type: "posix",
+                        uri_root: "gxfiles://test-posix-source",
+                        label: "TestSource",
+                        doc: "For testing",
+                        writable: true,
+                        requires_roles: undefined,
+                        requires_groups: undefined,
+                    },
+                ],
+            });
         const wrapper = await mountComponentWithHistory(TEST_HISTORY as HistorySummary);
 
         const optionTabs = wrapper.findAll(".archival-option-tabs");

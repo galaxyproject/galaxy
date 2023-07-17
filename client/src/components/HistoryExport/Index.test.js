@@ -1,20 +1,20 @@
 import { shallowMount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import { getLocalVue } from "tests/jest/helpers";
+
+import { mockFetcher } from "@/schema/__mocks__";
 
 import Index from "./Index.vue";
 
-const TEST_PLUGINS_URL = "/api/remote_files/plugins";
+jest.mock("@/schema");
 
 const localVue = getLocalVue();
 
 describe("Index.vue", () => {
-    let axiosMock;
-
     beforeEach(() => {
-        axiosMock = new MockAdapter(axios);
-        axiosMock.onGet(TEST_PLUGINS_URL).reply(200, [{ id: "foo", writable: false }]);
+        mockFetcher
+            .path("/api/remote_files/plugins")
+            .method("get")
+            .mock({ data: [{ id: "foo", writable: false }] });
     });
 
     it("should render tabs", () => {
@@ -26,9 +26,5 @@ describe("Index.vue", () => {
             localVue,
         });
         expect(wrapper.exists("b-tabs-stub")).toBeTruthy();
-    });
-
-    afterEach(() => {
-        axiosMock.restore();
     });
 });
