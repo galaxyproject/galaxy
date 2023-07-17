@@ -9,6 +9,8 @@ import re
 import time
 from queue import Empty
 from typing import (
+    Any,
+    Optional,
     Set,
     TYPE_CHECKING,
 )
@@ -536,11 +538,11 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         check_required = []
         parsed_params = {}
         for k, spec in self.DESTINATION_PARAMS_SPEC.items():
-            value = params.get(k, spec.get("default"))  # type: ignore[attr-defined]
-            if spec.get("required") and not value:  # type: ignore[attr-defined]
+            value: Optional[Any] = params.get(k, spec.get("default"))
+            if spec.get("required") and not value:
                 check_required.append(k)
-            mapper = spec.get("map")    # type: ignore[attr-defined]
-            if isinstance(value, mapper):
+            mapper = spec.get("map")
+            if isinstance(value, mapper):  # type: ignore[arg-type]
                 parsed_params[k] = value
             elif isinstance(value, str) and mapper == list:
                 parsed_params[k] = [value]
@@ -587,12 +589,12 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
                         break
                     c_ix += 1
             # parse JOB QUEUE
-            if len(job_queue) != 2:
+            if len(job_queue) != 2:  # type: ignore[arg-type]
                 raise AWSBatchRunnerException(
                     "AWSBatchJobRunner needs to set TWO job queues ('- Farget Queue, - EC2 Qeueue')"
                     " when 'auto_platform' is enabled!"
                 )
-            parsed_params["job_queue"] = job_queue[platform == "EC2"].strip()
+            parsed_params["job_queue"] = job_queue[platform == "EC2"].strip()  # type: ignore[index]
 
         if isinstance(job_queue, list):
             parsed_params["job_queue"] = str(job_queue[0])
@@ -608,7 +610,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         efs_filesystem_id = parsed_params.get("efs_filesystem_id")
         efs_mount_point = parsed_params.get("efs_mount_point")
 
-        if len(efs_filesystem_id) != len(efs_mount_point):  # type: ignore[union-attr]
+        if len(efs_filesystem_id) != len(efs_mount_point):  # type: ignore[arg-type]
             raise AWSBatchRunnerException(
                 "AWSBatchJobRunner: the number of EFS file systems provided (`efs_filesystem_id`) doesn't "
                 "match the number of mounting points (`efs_mount_point`)!"
