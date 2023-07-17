@@ -125,7 +125,7 @@ export default {
             initializing: true,
             importType: "externalUrl",
             sourceFile: null,
-            sourceRemoteFilesUri: null,
+            sourceRemoteFilesUri: "",
             errorMessage: null,
             waitingOnJob: false,
             complete: false,
