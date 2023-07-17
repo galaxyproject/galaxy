@@ -27,7 +27,6 @@ describe("ToLink.vue", () => {
             localVue,
         });
         await wrapper.vm.$nextTick();
-        console.debug(wrapper.html());
         expect(wrapper.find("loadingspan-stub").exists()).toBeTruthy();
         await flushPromises();
     }
