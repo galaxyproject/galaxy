@@ -2,18 +2,14 @@
 API operations on remote files.
 """
 import logging
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-)
+from typing import Optional
 
 from fastapi.param_functions import Query
 
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.remote_files import RemoteFilesManager
 from galaxy.schema.remote_files import (
+    AnyRemoteFilesListResponse,
     FilesSourcePluginList,
     RemoteFilesDisableMode,
     RemoteFilesFormat,
@@ -94,7 +90,7 @@ class FastAPIRemoteFiles:
         format: Optional[RemoteFilesFormat] = FormatQueryParam,
         recursive: Optional[bool] = RecursiveQueryParam,
         disable: Optional[RemoteFilesDisableMode] = DisableModeQueryParam,
-    ) -> List[Dict[str, Any]]:
+    ) -> AnyRemoteFilesListResponse:
         """Lists all remote files available to the user from different sources."""
         return self.manager.index(user_ctx, target, format, recursive, disable)
 
