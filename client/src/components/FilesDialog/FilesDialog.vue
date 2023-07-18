@@ -11,7 +11,7 @@ import { selectionStates } from "@/components/SelectionDialog/selectionStates";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { getGalaxyInstance } from "../../app";
-import { Model } from "./model";
+import { DirectoryRecord, FileRecord, Model, RecordItem } from "./model";
 import { browseRemoteFiles, FilesSourcePlugin, getFileSources, RemoteEntry } from "./services";
 
 import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue";
@@ -27,23 +27,6 @@ interface FilesDialogProps {
     callback?: (files: any) => void;
 }
 
-interface Record {
-    id: string;
-    label: string;
-    details: string;
-    isLeaf: boolean;
-    url: string;
-    labelTitle: string | undefined;
-}
-
-interface FileRecord extends Record {
-    isLeaf: true;
-}
-
-interface DirectoryRecord extends Record {
-    isLeaf: false;
-}
-
 const props = withDefaults(defineProps<FilesDialogProps>(), {
     multiple: false,
     mode: "file",
@@ -57,7 +40,7 @@ const allSelected = ref(false);
 const selectedDirectories = ref<DirectoryRecord[]>([]);
 const errorMessage = ref<string>();
 const filter = ref();
-const items = ref<Record[]>([]);
+const items = ref<RecordItem[]>([]);
 const modalShow = ref(true);
 const optionsShow = ref(false);
 const undoShow = ref(false);
@@ -76,7 +59,7 @@ const urlTracker = ref(new UrlTracker(""));
 const fileMode = computed(() => props.mode == "file");
 
 /** Collects selected datasets in value array **/
-function clicked(record: Record) {
+function clicked(record: RecordItem) {
     // ignore the click during directory mode
     if (!fileMode.value) {
         return;
@@ -263,7 +246,7 @@ function filterByMode(results: RemoteEntry[]): RemoteEntry[] {
     return results;
 }
 
-function entryToRecord(entry: RemoteEntry): Record {
+function entryToRecord(entry: RemoteEntry): RecordItem {
     const result = {
         id: entry.uri,
         label: entry.name,
@@ -277,7 +260,7 @@ function entryToRecord(entry: RemoteEntry): Record {
     return result;
 }
 
-function fileSourcePluginToRecord(plugin: FilesSourcePlugin): Record {
+function fileSourcePluginToRecord(plugin: FilesSourcePlugin): RecordItem {
     const result = {
         id: plugin.id,
         label: plugin.label,
