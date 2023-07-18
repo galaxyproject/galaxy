@@ -426,6 +426,8 @@ class JobSearch:
                     stmt = select([model.HistoryDatasetAssociation.id]).where(
                         model.HistoryDatasetAssociation.id == e.history_dataset_association_id
                     )
+                    # b is the HDA used for the job
+                    query = query.join(b, a.dataset_id == b.id).join(c, c.dataset_id == b.dataset_id)
                     name_condition = []
                     if identifier:
                         query = query.join(d)
@@ -436,8 +438,6 @@ class JobSearch:
                             )
                         )
                     else:
-                        # b is the HDA used for the job
-                        query = query.join(b, a.dataset_id == b.id).join(c, c.dataset_id == b.dataset_id)
                         stmt = stmt.where(e.name == c.name)
                         name_condition.append(b.name == c.name)
                     stmt = (
