@@ -49,8 +49,8 @@ class FilesSourcePlugin(Model):
         description="The type of the plugin.",
         example="gximport",
     )
-    uri_root: Optional[str] = Field(
-        None,
+    uri_root: str = Field(
+        Required,
         title="URI root",
         description="The URI root used by this type of plugin.",
         example="gximport://",

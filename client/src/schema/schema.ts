@@ -4340,7 +4340,7 @@ export interface components {
              * @description The URI root used by this type of plugin.
              * @example gximport://
              */
-            uri_root?: string;
+            uri_root: string;
             /**
              * Writeable
              * @description Whether this files source plugin allows write access.
