@@ -151,7 +151,6 @@
                         <div class="collection-elements-controls">
                             <GButton class="reset" :title="titleUndoButton" @click="reset">
                                 <FontAwesomeIcon icon="undo" />
-                                <FontAwesomeIcon icon="undo" />
                             </GButton>
                             <GButton class="sort-items" :title="titleSortButton" @click="sortByName">
                                 <FontAwesomeIcon icon="sort-alpha-down" />
