@@ -605,14 +605,24 @@ class BaseDatasetPopulator(BasePopulator):
         assert len(hdas) == 1
         return hdas[0]
 
-    def create_deferred_hda(self, history_id: str, uri: str, ext: Optional[str] = None) -> dict[str, Any]:
-        item = {
+    def create_deferred_hda(
+        self,
+        history_id: str,
+        uri: str,
+        name: Union[str, None] = None,
+        ext: Optional[str] = None,
+        hashes: Union[list[dict[str, str]], None] = None,
+    ) -> dict[str, Any]:
+        item: dict[str, Any] = {
+            "name": name,
             "src": "url",
             "url": uri,
             "deferred": True,
         }
         if ext:
             item["ext"] = ext
+        if hashes:
+            item["hashes"] = hashes
         output = self.fetch_hda(history_id, item)
         details = self.get_history_dataset_details(history_id, dataset=output)
         return details
@@ -620,15 +630,7 @@ class BaseDatasetPopulator(BasePopulator):
     def create_deferred_hda_with_hash(self, history_id: str, content: str) -> dict[str, Any]:
         url = f"base64://{base64.b64encode(content.encode()).decode()}"
         hashes = [{"hash_function": "SHA-1", "hash_value": hashlib.sha1(content.encode()).hexdigest()}]
-        item = {
-            "ext": "txt",
-            "src": "url",
-            "url": url,
-            "hashes": hashes,
-            "deferred": True,
-        }
-        output = self.fetch_hda(history_id, item)
-        details = self.get_history_dataset_details(history_id, dataset=output)
+        details = self.create_deferred_hda(history_id, url, ext="txt", hashes=hashes)
         return details
 
     def export_dataset_to_remote_file(self, history_id: str, content: str, name: str, target_uri: str):
@@ -1833,9 +1835,12 @@ class BaseDatasetPopulator(BasePopulator):
     def base64_url_for_string(self, content: str) -> str:
         return self.base64_url_for_bytes(content.encode("utf-8"))
 
-    def base64_url_for_test_file(self, test_filename: str) -> str:
+    def contents_for_test_file(self, test_filename: str) -> bytes:
         test_data_resolver = TestDataResolver()
-        file_contents = open(test_data_resolver.get_filename(test_filename), "rb").read()
+        return open(test_data_resolver.get_filename(test_filename), "rb").read()
+
+    def base64_url_for_test_file(self, test_filename: str) -> str:
+        file_contents = self.contents_for_test_file(test_filename)
         return self.base64_url_for_bytes(file_contents)
 
     def base64_url_for_bytes(self, content: bytes) -> str:
@@ -4080,7 +4085,7 @@ class DescribeJob:
     def _wait_for(self):
         if self._final_details is None:
             self._dataset_populator.wait_for_job(self._job_id, assert_ok=False)
-            self._final_details = self._dataset_populator.get_job_details(self._job_id).json()
+            self._final_details = self._dataset_populator.get_job_details(self._job_id, full=True).json()
 
     @property
     def final_details(self) -> dict[str, Any]:
@@ -4489,27 +4494,34 @@ class TargetHistory:
     def with_deferred_dataset(
         self,
         uri: str,
-        named: Optional[str] = None,
+        name: Optional[str] = None,
         ext: Optional[str] = None,
+        hashes: Union[list[dict[str, str]], None] = None,
     ) -> "HasSrcDict":
-        kwd = {}
-        if named is not None:
-            kwd["name"] = named
         new_dataset = self._dataset_populator.create_deferred_hda(
             history_id=self._history_id,
             uri=uri,
+            name=name,
             ext=ext,
+            hashes=hashes,
         )
         return HasSrcDict("hda", new_dataset)
 
     def with_deferred_dataset_for_test_file(
         self,
         filename: str,
-        named: Optional[str] = None,
+        name: Optional[str] = None,
         ext: Optional[str] = None,
+        include_correct_hash: bool = True,
     ) -> "HasSrcDict":
-        base64_url = self._dataset_populator.base64_url_for_test_file(filename)
-        return self.with_deferred_dataset(base64_url, named=named, ext=ext)
+        file_contents = self._dataset_populator.contents_for_test_file(filename)
+        base64_url = self._dataset_populator.base64_url_for_bytes(file_contents)
+        hashes = (
+            [{"hash_function": "SHA-1", "hash_value": hashlib.sha1(file_contents).hexdigest()}]
+            if include_correct_hash
+            else None
+        )
+        return self.with_deferred_dataset(base64_url, name=name, ext=ext, hashes=hashes)
 
     def with_unpaired(self) -> "HasSrcDict":
         return self._fetch_response(

@@ -599,6 +599,17 @@ def test_map_over_data_param_with_list_of_lists(target_history: TargetHistory, r
     execute.assert_creates_implicit_collection(0)
 
 
+@requires_tool_id("gx_data")
+def test_job_cache_with_dataset_hash(target_history: TargetHistory, required_tool: RequiredTool):
+    hda = target_history.with_dataset("1\t2\t3", "dataset1")
+    execute = required_tool.execute().with_inputs({"parameter": hda.src_dict})
+    execute._assert_executed_ok()
+    new_hda = target_history.with_dataset("1\t2\t3", "dataset1")
+    execute = required_tool.execute(use_cached_job=True).with_inputs({"parameter": new_hda.src_dict})
+    execution = execute.assert_has_single_job
+    assert execution.final_details["copied_from_job_id"]
+
+
 @requires_tool_id("gx_repeat_boolean_min")
 def test_optional_repeats_with_mins_filled_id(target_history: TargetHistory, required_tool: RequiredTool):
     # we have a tool test for this but I wanted to verify it wasn't just the
@@ -723,14 +734,36 @@ def test_null_to_text_tool_with_validation(required_tool: RequiredTool, tool_inp
     required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": ""})).assert_fails()
 
 
-@requires_tool_id("cat|cat1")
-def test_deferred_basic(required_tool: RequiredTool, target_history: TargetHistory):
-    has_src_dict = target_history.with_deferred_dataset_for_test_file("1.bed", ext="bed")
+def _run_deferred(
+    required_tool: RequiredTool,
+    target_history: TargetHistory,
+    use_cached_job: bool = False,
+    expect_cached_job: bool = False,
+    include_correct_hash: bool = True,
+) -> None:
+    has_src_dict = target_history.with_deferred_dataset_for_test_file(
+        "1.bed", ext="bed", include_correct_hash=include_correct_hash
+    )
     inputs = {
         "input1": has_src_dict.src_dict,
     }
-    output = required_tool.execute().with_inputs(inputs).assert_has_single_job.with_single_output
+    job = required_tool.execute(use_cached_job=use_cached_job).with_inputs(inputs).assert_has_single_job
+    output = job.with_single_output
     output.assert_contains("chr1	147962192	147962580	CCDS989.1_cds_0_0_chr1_147962193_r	0	-")
+    if use_cached_job:
+        assert bool(job.final_details["copied_from_job_id"]) == expect_cached_job
+
+
+@requires_tool_id("cat|cat1")
+def test_deferred_with_cached_input(required_tool: RequiredTool, target_history: TargetHistory) -> None:
+    # Basic deferred dataset
+    _run_deferred(required_tool, target_history)
+    # Should just work because input is deferred
+    _run_deferred(required_tool, target_history, use_cached_job=True, expect_cached_job=True)
+    # Should fail to use the cached job because we don't have a source hash for deduplicating materialized dataset
+    _run_deferred(
+        required_tool, target_history, use_cached_job=True, expect_cached_job=False, include_correct_hash=False
+    )
 
 
 @requires_tool_id("metadata_bam")
