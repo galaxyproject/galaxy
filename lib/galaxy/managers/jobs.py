@@ -10,6 +10,8 @@ from typing import (
     Dict,
     List,
     Optional,
+    Type,
+    TypeVar,
     Union,
 )
 
@@ -29,6 +31,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import select
+from sqlalchemy.sql.selectable import Select
 from typing_extensions import TypedDict
 
 from galaxy import model
@@ -115,6 +118,41 @@ def get_path_key(path_tuple):
         else:
             path_key = p
     return path_key
+
+
+S = TypeVar("S", bound=Select)
+
+
+def has_same_source(stmt: S, a: Type[model.HistoryDatasetAssociation], b: Type[model.HistoryDatasetAssociation]) -> S:
+    a_source = aliased(model.DatasetSource)
+    b_source = aliased(model.DatasetSource)
+    stmt = (
+        stmt.outerjoin(a_source, a.dataset_id == a_source.dataset_id)
+        .outerjoin(
+            b_source,
+            and_(
+                or_(
+                    a_source.transform == b_source.transform,
+                    and_(a_source.transform == null(), b_source.transform == null()),
+                ),
+                a_source.source_uri == b_source.source_uri,
+            ),
+        )
+        .join(
+            b,
+            or_(
+                b.dataset_id == a.dataset_id,
+                and_(
+                    or_(
+                        a_source.transform == b_source.transform,
+                        and_(a_source.transform == null(), b_source.transform == null()),
+                    ),
+                    a_source.source_uri == b_source.source_uri,
+                ),
+            ),
+        )
+    )
+    return stmt
 
 
 class JobManager:
@@ -398,7 +436,7 @@ class JobSearch:
         stmt_sq = self._build_job_subquery(tool_id, user.id, tool_version, job_state, wildcard_param_dump)
 
         stmt = select(Job.id).select_from(Job.table.join(stmt_sq, stmt_sq.c.id == Job.id))
-
+        stmt.add_columns
         data_conditions: List = []
 
         # We now build the stmt filters that relate to the input datasets
@@ -561,7 +599,7 @@ class JobSearch:
 
         return stmt.subquery()
 
-    def _build_stmt_for_hda(self, stmt, data_conditions, used_ids, k, v, identifier):
+    def _build_stmt_for_hda(self, stmt: S, data_conditions, used_ids, k, v, identifier) -> S:
         a = aliased(model.JobToInputDatasetAssociation)
         b = aliased(model.HistoryDatasetAssociation)
         c = aliased(model.HistoryDatasetAssociation)
@@ -574,7 +612,8 @@ class JobSearch:
             model.HistoryDatasetAssociation.id == e.history_dataset_association_id
         )
         # b is the HDA used for the job
-        stmt = stmt.join(b, a.dataset_id == b.id).join(c, c.dataset_id == b.dataset_id)  # type:ignore[attr-defined]
+        stmt = stmt.join(b, a.dataset_id == b.id) # type:ignore[attr-defined]
+        stmt = has_same_source(stmt, b, c)
         name_condition = []
         if identifier:
             stmt = stmt.join(d)
