@@ -81,13 +81,14 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { refDebounced } from "@vueuse/core";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
-import { Services } from "components/FilesDialog/services";
 import JobError from "components/JobInformation/JobError";
 import { waitOnJob } from "components/JobStates/wait";
 import LoadingSpan from "components/LoadingSpan";
 import { getAppRoot } from "onload/loadConfig";
 import { errorMessageAsString } from "utils/simple-error";
 import Vue, { ref, watch } from "vue";
+
+import { getFileSources } from "@/components/FilesDialog/services";
 
 import ExternalLink from "./ExternalLink";
 
@@ -162,7 +163,7 @@ export default {
     },
     methods: {
         async initialize() {
-            const fileSources = await new Services().getFileSources();
+            const fileSources = await getFileSources();
             this.hasFileSources = fileSources.length > 0;
             this.initializing = false;
         },

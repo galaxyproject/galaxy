@@ -5,6 +5,8 @@ import { waitOnJob } from "components/JobStates/wait";
 import flushPromises from "flush-promises";
 import { getLocalVue, wait } from "tests/jest/helpers";
 
+import { mockFetcher } from "@/schema/__mocks__";
+
 import HistoryImport from "./HistoryImport.vue";
 
 const localVue = getLocalVue();
@@ -13,6 +15,7 @@ const TEST_HISTORY_URI = "/api/histories";
 const TEST_SOURCE_URL = "http://galaxy.example/import";
 const TEST_PLUGINS_URL = "/api/remote_files/plugins";
 
+jest.mock("@/schema");
 jest.mock("components/JobStates/wait");
 
 describe("HistoryImport.vue", () => {
@@ -21,7 +24,10 @@ describe("HistoryImport.vue", () => {
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
-        axiosMock.onGet(TEST_PLUGINS_URL).reply(200, [{ id: "foo", writable: false }]);
+        mockFetcher
+            .path(TEST_PLUGINS_URL)
+            .method("get")
+            .mock({ data: [{ id: "foo", writable: false }] });
         wrapper = mount(HistoryImport, {
             propsData: {},
             localVue,

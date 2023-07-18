@@ -76,7 +76,6 @@ const historyStore = useHistoryStore();
 
 const history = computed(() => {
     const history = historyStore.getHistoryById(props.historyId);
-    console.log("HISTORY", history);
     return history;
 });
 

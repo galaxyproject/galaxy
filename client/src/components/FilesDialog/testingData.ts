@@ -1,10 +1,32 @@
+import { FilesSourcePlugin } from "./services";
+
 export const ftpId = "_ftp";
 export const rootId = "pdb-gzip";
 export const directoryId = "gxfiles://pdb-gzip/directory1";
 export const subDirectoryId = "gxfiles://pdb-gzip/directory1/subdirectory1";
 export const subSubDirectoryId = "gxfiles://pdb-gzip/directory1/subdirectory1/subsubdirectory";
 
-export const rootResponse = [
+// TODO these types should be generated from the schema
+interface RemoteEntry {
+    class: string;
+    name: string;
+    uri: string;
+    path: string;
+}
+
+export interface RemoteDirectory extends RemoteEntry {
+    class: "Directory";
+}
+
+export interface RemoteFile extends RemoteEntry {
+    class: "File";
+    size: number;
+    ctime: string;
+}
+
+export type RemoteFilesList = (RemoteDirectory | RemoteFile)[];
+
+export const rootResponse: FilesSourcePlugin[] = [
     {
         id: "_ftp",
         type: "gxftp",
@@ -12,8 +34,6 @@ export const rootResponse = [
         label: "FTP Directory",
         doc: "Galaxy User's FTP Directory",
         writable: true,
-        requires_roles: null,
-        requires_groups: null,
     },
     {
         id: "pdb-gzip",
@@ -22,8 +42,6 @@ export const rootResponse = [
         label: "PDB",
         doc: "Protein Data Bank (PDB)",
         writable: true,
-        requires_roles: null,
-        requires_groups: null,
     },
     {
         id: "empty-dir",
@@ -32,12 +50,10 @@ export const rootResponse = [
         label: "Empty Directory",
         doc: "Empty Directory",
         writable: true,
-        requires_roles: null,
-        requires_groups: null,
     },
 ];
 
-export const pdbResponse = [
+export const pdbResponse: RemoteFilesList = [
     {
         class: "File",
         name: "file2",
@@ -58,7 +74,7 @@ export const pdbResponse = [
     { class: "Directory", name: "directory1", uri: "gxfiles://pdb-gzip/directory1", path: "/directory1" },
 ];
 
-export const directory1RecursiveResponse = [
+export const directory1RecursiveResponse: RemoteFilesList = [
     {
         class: "Directory",
         name: "subdirectory1",
@@ -119,7 +135,7 @@ export const directory1RecursiveResponse = [
     },
 ];
 
-export const directory2RecursiveResponse = [
+export const directory2RecursiveResponse: RemoteFilesList = [
     {
         class: "File",
         name: "directory2file1",
@@ -137,7 +153,7 @@ export const directory2RecursiveResponse = [
         path: "directory2/directory2file2",
     },
 ];
-export const directory1Response = [
+export const directory1Response: RemoteFilesList = [
     {
         class: "File",
         name: "directory1file2",
@@ -175,7 +191,7 @@ export const directory1Response = [
         path: "directory1/directory1file3",
     },
 ];
-export const subsubdirectoryResponse = [
+export const subsubdirectoryResponse: RemoteFilesList = [
     {
         class: "Directory",
         name: "subsubdirectory",
