@@ -106,6 +106,10 @@ export default {
     created: function () {
         this.services = new Services();
         this.model = new Model({ multiple: this.multiple, format: this.format });
+        if (this.history) {
+            this.urlTracker = new UrlTracker(this.getHistoryUrl());
+            this.load();
+        }
     },
     methods: {
         /** Returns the default url i.e. the url of the current history **/
