@@ -7,9 +7,9 @@ import { computed } from "vue";
 import { useUserStore } from "@/stores/userStore";
 import { withPrefix } from "@/utils/redirect";
 
+import GBadge from "@/component-library/GBadge.vue";
 import GButton from "@/component-library/GButton.vue";
 import GButtonGroup from "@/component-library/GButtonGroup.vue";
-import GBadge from "@/component-library/GBadge.vue";
 import WorkflowSearch from "@/components/Workflow/WorkflowSearch.vue";
 
 // @ts-ignore bad library types

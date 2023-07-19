@@ -159,8 +159,8 @@ import GAlert from "@/component-library/GAlert.vue";
 import GButton from "@/component-library/GButton.vue";
 import GCard from "@/component-library/GCard.vue";
 import GCol from "@/component-library/GCol.vue";
-import GInput from "@/component-library/GInput.vue";
 import GContainer from "@/component-library/GContainer.vue";
+import GInput from "@/component-library/GInput.vue";
 import GRow from "@/component-library/GRow.vue";
 
 Vue.use(BootstrapVue);

@@ -116,8 +116,8 @@ import GCard from "@/component-library/GCard.vue";
 import GCardBody from "@/component-library/GCardBody.vue";
 import GCardFooter from "@/component-library/GCardFooter.vue";
 import GCardHeader from "@/component-library/GCardHeader.vue";
-import GInput from "@/component-library/GInput.vue";
 import GEmbed from "@/component-library/GEmbed.vue";
+import GInput from "@/component-library/GInput.vue";
 
 Vue.use(BootstrapVue);
 

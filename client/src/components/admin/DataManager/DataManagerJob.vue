@@ -77,8 +77,8 @@ import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 
 import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
 import GBreadcrumb from "@/component-library/GBreadcrumb.vue";
+import GButton from "@/component-library/GButton.vue";
 import GCard from "@/component-library/GCard.vue";
 import GCol from "@/component-library/GCol.vue";
 import GContainer from "@/component-library/GContainer.vue";

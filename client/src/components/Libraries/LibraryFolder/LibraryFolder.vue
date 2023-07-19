@@ -280,8 +280,8 @@ import FolderTopBar from "./TopToolbar/FolderTopBar";
 
 import GButton from "@/component-library/GButton.vue";
 import GCol from "@/component-library/GCol.vue";
-import GInput from "@/component-library/GInput.vue";
 import GContainer from "@/component-library/GContainer.vue";
+import GInput from "@/component-library/GInput.vue";
 import GLink from "@/component-library/GLink.vue";
 import GPagination from "@/component-library/GPagination.vue";
 import GRow from "@/component-library/GRow.vue";

@@ -72,8 +72,8 @@ import Vue from "vue";
 
 import MarkdownContainer from "./MarkdownContainer.vue";
 import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
 import GBadge from "@/component-library/GBadge.vue";
+import GButton from "@/component-library/GButton.vue";
 import LoadingSpan from "components/LoadingSpan.vue";
 import StsDownloadButton from "components/StsDownloadButton.vue";
 
