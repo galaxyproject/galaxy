@@ -189,6 +189,8 @@ if [ $FETCH_WHEELS -eq 1 ]; then
     python -m pip install "pip>=$MIN_PIP_VERSION" wheel
     # shellcheck disable=SC2086
     pip install $requirement_args --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
+
+    set_galaxy_config_file_var
     GALAXY_CONDITIONAL_DEPENDENCIES=$(PYTHONPATH=lib python -c "from __future__ import print_function; import galaxy.dependencies; print('\n'.join(galaxy.dependencies.optional('$GALAXY_CONFIG_FILE')))")
     if [ -n "$GALAXY_CONDITIONAL_DEPENDENCIES" ]; then
         if pip list --format=columns | grep "psycopg2[\(\ ]*2.7.3" > /dev/null; then
