@@ -331,7 +331,7 @@ class JobSearch:
 
         # build one subquery that selects a job with correct job parameters
 
-        subq = select([model.Job.id]).where(
+        subq = select(model.Job.id).where(
             and_(
                 model.Job.tool_id == tool_id,
                 model.Job.user_id == user.id,
@@ -393,7 +393,7 @@ class JobSearch:
                     )
                 )
 
-        query = select([Job.id]).select_from(Job.table.join(subq, subq.c.id == Job.id))
+        query = select(Job.id).select_from(Job.table.join(subq, subq.c.id == Job.id))
 
         data_conditions = []
 
