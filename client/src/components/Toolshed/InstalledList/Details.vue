@@ -17,10 +17,11 @@
 import LoadingSpan from "components/LoadingSpan";
 import { getAppRoot } from "onload/loadConfig";
 
+import { GCard } from "@/component-library";
+
 import { Services } from "../services";
 
 import RepositoryDetails from "../RepositoryDetails/Index.vue";
-import GCard from "@/component-library/GCard.vue";
 
 export default {
     components: {

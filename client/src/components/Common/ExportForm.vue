@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import { BFormGroup } from "bootstrap-vue";
-import GButton from "component-library/GButton";
 import { computed, ref } from "vue";
 
+import { GButton, GCol, GInput, GRow } from "@/component-library";
 import localize from "@/utils/localization";
 
-import GCol from "@/component-library/GCol.vue";
-import GInput from "@/component-library/GInput.vue";
-import GRow from "@/component-library/GRow.vue";
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";
 
 interface Props {

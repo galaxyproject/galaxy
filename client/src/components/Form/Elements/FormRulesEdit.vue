@@ -3,11 +3,12 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import GButton from "component-library/GButton";
 import RuleCollectionBuilder from "components/RuleCollectionBuilder";
 import RulesDisplay from "components/RulesDisplay/RulesDisplay";
 import { getAppRoot } from "onload/loadConfig";
 import { computed, ref } from "vue";
+
+import { GButton } from "@/component-library";
 
 library.add(faEdit);
 

@@ -5,11 +5,10 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import slugify from "slugify";
 import { computed } from "vue";
 
+import { GButton, GCollapse } from "@/component-library";
 import { useToolTrainingMaterial } from "@/composables/toolTrainingMaterial";
 import { useUid } from "@/composables/utils/uid";
 
-import GButton from "@/component-library/GButton.vue";
-import GCollapse from "@/component-library/GCollapse.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
 

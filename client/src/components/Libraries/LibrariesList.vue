@@ -182,8 +182,6 @@
 <script>
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
-import GButton from "component-library/GButton";
-import GInput from "component-library/GInput";
 import { initLibrariesIcons } from "components/Libraries/icons";
 import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH, onError } from "components/Libraries/library-utils";
 import LibraryEditField from "components/Libraries/LibraryEditField";
@@ -194,19 +192,22 @@ import { mapState } from "pinia";
 import _l from "utils/localization";
 import Vue from "vue";
 
+import {
+    GButton,
+    GCard,
+    GCol,
+    GCollapse,
+    GContainer,
+    GInput,
+    GInputGroup,
+    GLink,
+    GPagination,
+    GRow,
+} from "@/component-library";
 import { useUserStore } from "@/stores/userStore";
 
 import { Services } from "./services";
 import { fields } from "./table-fields";
-
-import GCard from "@/component-library/GCard.vue";
-import GCol from "@/component-library/GCol.vue";
-import GCollapse from "@/component-library/GCollapse.vue";
-import GContainer from "@/component-library/GContainer.vue";
-import GInputGroup from "@/component-library/GInputGroup.vue";
-import GLink from "@/component-library/GLink.vue";
-import GPagination from "@/component-library/GPagination.vue";
-import GRow from "@/component-library/GRow.vue";
 
 initLibrariesIcons();
 

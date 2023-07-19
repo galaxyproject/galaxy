@@ -101,10 +101,11 @@
 </template>
 
 <script>
-import GButton from "component-library/GButton";
 import UploadRow from "mvc/upload/default/default-row";
 import _ from "underscore";
 import _l from "utils/localization";
+
+import { GButton } from "@/component-library";
 
 import { uploadModelsToPayload } from "./helpers";
 import UploadBoxMixin from "./UploadBoxMixin";

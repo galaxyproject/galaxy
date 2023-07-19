@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import GCol from "@/component-library/GCol.vue";
-import GInput from "@/component-library/GInput.vue";
-import GRow from "@/component-library/GRow.vue";
+import { GCol, GInput, GRow } from "@/component-library";
 
 export interface FormColorProps {
     value?: string;

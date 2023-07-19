@@ -6,6 +6,7 @@ import { BListGroup, BListGroupItem } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { GAlert, GBadge, GButton, GButtonGroup, GPagination } from "@/component-library";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useToast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -16,11 +17,6 @@ import {
 } from "@/stores/services/historyArchive.services";
 import localize from "@/utils/localization";
 
-import GAlert from "@/component-library/GAlert.vue";
-import GBadge from "@/component-library/GBadge.vue";
-import GButton from "@/component-library/GButton.vue";
-import GButtonGroup from "@/component-library/GButtonGroup.vue";
-import GPagination from "@/component-library/GPagination.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";

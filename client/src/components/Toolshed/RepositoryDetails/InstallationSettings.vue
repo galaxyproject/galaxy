@@ -46,11 +46,7 @@
     </b-modal>
 </template>
 <script>
-import GInput from "component-library/GInput";
-import GLink from "component-library/GLink";
-
-import GCard from "@/component-library/GCard.vue";
-import GCollapse from "@/component-library/GCollapse.vue";
+import { GCard, GCollapse, GInput, GLink } from "@/component-library";
 
 export default {
     components: {

@@ -8,7 +8,7 @@
         @keydown.esc="onCancel" />
 </template>
 <script>
-import GInput from "@/component-library/GInput.vue";
+import { GInput } from "@/component-library";
 
 export default {
     components: {

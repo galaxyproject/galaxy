@@ -2,9 +2,9 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref } from "vue";
 
-import { InvocationExportPluginAction } from "./model";
+import { GButton } from "@/component-library";
 
-import GButton from "@/component-library/GButton.vue";
+import { InvocationExportPluginAction } from "./model";
 
 const modal = ref(null);
 

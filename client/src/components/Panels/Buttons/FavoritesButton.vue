@@ -14,9 +14,9 @@
 </template>
 
 <script>
-import GButton from "component-library/GButton";
 import { mapState } from "pinia";
 
+import { GButton } from "@/component-library";
 import { useUserStore } from "@/stores/userStore";
 
 export default {

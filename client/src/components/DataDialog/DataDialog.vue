@@ -40,12 +40,12 @@
 
 <script>
 import BootstrapVue from "bootstrap-vue";
-import GButton from "component-library/GButton";
 import SelectionDialogMixin from "components/SelectionDialog/SelectionDialogMixin";
 import { useGlobalUploadModal } from "composables/globalUploadModal";
 import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 
+import { GButton } from "@/component-library";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { Model } from "./model";

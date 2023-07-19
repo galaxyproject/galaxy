@@ -88,10 +88,10 @@ import { sanitize } from "dompurify";
 import { userLogout } from "utils/logout";
 import Vue from "vue";
 
+import { GAlert, GButton } from "@/component-library";
+
 import svc from "./service";
 
-import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin.vue";
 
 Vue.use(BootstrapVue);

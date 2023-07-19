@@ -119,7 +119,6 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
 import BootstrapVue from "bootstrap-vue";
-import GButton from "component-library/GButton";
 import { initTopBarIcons } from "components/Libraries/icons";
 import FolderDetails from "components/Libraries/LibraryFolder/FolderDetails/FolderDetails";
 import LibraryBreadcrumb from "components/Libraries/LibraryFolder/LibraryBreadcrumb";
@@ -127,6 +126,8 @@ import { Toast } from "composables/toast";
 import { getAppRoot } from "onload/loadConfig";
 import mod_utils from "utils/utils";
 import Vue from "vue";
+
+import { GButton } from "@/component-library";
 
 import SearchField from "../SearchField";
 import { Services } from "../services";

@@ -86,12 +86,12 @@
 <script>
 import _l from "utils/localization";
 
+import { GBadge } from "@/component-library";
+
 import PanelViewButton from "./Buttons/PanelViewButton";
 import ToolSearch from "./Common/ToolSearch";
 import ToolSection from "./Common/ToolSection";
 import { filterToolSections, removeDisabledTools } from "./utilities";
-
-import GBadge from "@/component-library/GBadge.vue";
 
 export default {
     name: "ToolBox",

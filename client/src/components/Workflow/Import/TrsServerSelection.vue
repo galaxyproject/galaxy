@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, type Ref, ref, watch } from "vue";
 
+import { GLink } from "@/component-library";
+
 import { Services } from "../services";
 import type { TrsSelection } from "./types";
-
-import GLink from "@/component-library/GLink.vue";
 
 const props = defineProps<{
     queryTrsServer?: string;

@@ -10,17 +10,13 @@ import { storeToRefs } from "pinia";
 import { computed, onMounted, onUnmounted, type PropType, type Ref, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { GAlert, GBadge, GButton, GButtonGroup, GInput } from "@/component-library";
 import type { components } from "@/schema";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import Filtering, { contains, expandNameTag } from "@/utils/filtering";
 import localize from "@/utils/localization";
 
-import GAlert from "@/component-library/GAlert.vue";
-import GBadge from "@/component-library/GBadge.vue";
-import GButton from "@/component-library/GButton.vue";
-import GButtonGroup from "@/component-library/GButtonGroup.vue";
-import GInput from "@/component-library/GInput.vue";
 import Heading from "@/components/Common/Heading.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import UtcDate from "@/components/UtcDate.vue";

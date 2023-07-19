@@ -35,7 +35,7 @@
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
-import GLink from "@/component-library/GLink.vue";
+import { GLink } from "@/component-library";
 
 Vue.use(BootstrapVue);
 

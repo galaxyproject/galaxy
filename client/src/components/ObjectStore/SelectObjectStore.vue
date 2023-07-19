@@ -1,15 +1,11 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
 
+import { GAlert, GButton, GButtonGroup, GCol, GRow } from "@/component-library";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { getSelectableObjectStores } from "./services";
 
-import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
-import GButtonGroup from "@/component-library/GButtonGroup.vue";
-import GCol from "@/component-library/GCol.vue";
-import GRow from "@/component-library/GRow.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DescribeObjectStore from "@/components/ObjectStore/DescribeObjectStore.vue";
 import ObjectStoreBadges from "@/components/ObjectStore/ObjectStoreBadges.vue";

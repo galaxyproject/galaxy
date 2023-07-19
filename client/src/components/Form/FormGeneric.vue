@@ -31,10 +31,9 @@ import { visitInputs } from "components/Form/utilities";
 import { UrlDataProvider } from "components/providers/UrlDataProvider";
 import { withPrefix } from "utils/redirect";
 
-import { submitData } from "./services";
+import { GAlert, GButton } from "@/component-library";
 
-import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
+import { submitData } from "./services";
 
 export default {
     components: {

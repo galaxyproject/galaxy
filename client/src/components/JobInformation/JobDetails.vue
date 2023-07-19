@@ -32,10 +32,11 @@
 <script>
 import JobMetrics from "components/JobMetrics/JobMetrics";
 
+import { GCard } from "@/component-library";
+
 import JobInformation from "./JobInformation";
 
 import CodeRow from "./CodeRow.vue";
-import GCard from "@/component-library/GCard.vue";
 import JobParameters from "components/JobParameters/JobParameters.vue";
 
 export default {

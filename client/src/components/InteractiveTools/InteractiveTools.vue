@@ -72,13 +72,10 @@ import UtcDate from "components/UtcDate";
 import { getAppRoot } from "onload/loadConfig";
 import { mapActions, mapState } from "pinia";
 
+import { GAlert, GButton, GCol, GRow } from "@/component-library";
+
 import { useEntryPointStore } from "../../stores/entryPointStore";
 import { Services } from "./services";
-
-import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
-import GCol from "@/component-library/GCol.vue";
-import GRow from "@/component-library/GRow.vue";
 
 library.add(faExternalLinkAlt);
 

@@ -15,7 +15,7 @@
 <script>
 import { useGlobalUploadModal } from "composables/globalUploadModal";
 
-import GAlert from "@/component-library/GAlert.vue";
+import { GAlert } from "@/component-library";
 
 export default {
     components: {

@@ -45,13 +45,12 @@ import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import UtcDate from "components/UtcDate";
 import { mapActions } from "pinia";
 
+import { GAlert } from "@/component-library";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import DatasetHistory from "./DatasetHistory";
 import DatasetName from "./DatasetName";
 import { copyDataset, getDatasets, updateTags } from "./services";
-
-import GAlert from "@/component-library/GAlert.vue";
 
 export default {
     components: {

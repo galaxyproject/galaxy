@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+import { GInput } from "@/component-library";
 import { filesDialog } from "@/utils/data";
-
-import GInput from "@/component-library/GInput.vue";
 
 interface Props {
     value: string;

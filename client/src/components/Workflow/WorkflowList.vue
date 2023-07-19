@@ -94,6 +94,8 @@ import UtcDate from "components/UtcDate";
 import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 
+import { GAlert, GCard, GCol, GPagination, GRow } from "@/component-library";
+
 import paginationMixin from "./paginationMixin";
 import { Services } from "./services";
 import WorkflowBookmark from "./WorkflowBookmark";
@@ -101,11 +103,6 @@ import WorkflowDropdown from "./WorkflowDropdown";
 import WorkflowIndexActions from "./WorkflowIndexActions";
 
 import WorkflowRunButton from "./WorkflowRunButton.vue";
-import GAlert from "@/component-library/GAlert.vue";
-import GCard from "@/component-library/GCard.vue";
-import GCol from "@/component-library/GCol.vue";
-import GPagination from "@/component-library/GPagination.vue";
-import GRow from "@/component-library/GRow.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 const helpHtml = `<div>

@@ -41,12 +41,12 @@
 </template>
 
 <script>
-import GButton from "component-library/GButton";
 import CollectionPanel from "components/History/CurrentCollection/CollectionPanel";
 import HistoryPanel from "components/History/CurrentHistory/HistoryPanel";
 import LoadingSpan from "components/LoadingSpan";
 import { mapActions, mapState } from "pinia";
 
+import { GButton } from "@/component-library";
 import { useHistoryStore } from "@/stores/historyStore";
 
 export default {

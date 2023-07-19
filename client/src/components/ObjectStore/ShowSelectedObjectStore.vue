@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 
+import { GAlert } from "@/component-library";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { getObjectStoreDetails } from "./services";
 import type { ConcreteObjectStoreModel } from "./types";
 
-import GAlert from "@/component-library/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DescribeObjectStore from "@/components/ObjectStore/DescribeObjectStore.vue";
 

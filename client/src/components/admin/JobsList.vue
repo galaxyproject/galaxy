@@ -96,7 +96,6 @@
 
 <script>
 import axios from "axios";
-import GInput from "component-library/GInput";
 import JobsTable from "components/admin/JobsTable";
 import Heading from "components/Common/Heading";
 import filtersMixin from "components/Indices/filtersMixin";
@@ -105,15 +104,10 @@ import { getAppRoot } from "onload/loadConfig";
 import JOB_STATES_MODEL from "utils/job-states-model";
 import { errorMessageAsString } from "utils/simple-error";
 
+import { GAlert, GButton, GCol, GInput, GInputGroup, GInputGroupAppend, GRow } from "@/component-library";
+
 import { commonJobFields } from "./JobFields";
 import JobLock from "./JobLock";
-
-import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
-import GCol from "@/component-library/GCol.vue";
-import GInputGroup from "@/component-library/GInputGroup.vue";
-import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
-import GRow from "@/component-library/GRow.vue";
 
 function cancelJob(jobId, message) {
     const url = `${getAppRoot()}api/jobs/${jobId}`;

@@ -154,6 +154,8 @@ import { useHistoryStore } from "stores/historyStore";
 import { getOperatorForAlias } from "utils/filtering";
 import Vue from "vue";
 
+import { GAlert } from "@/component-library";
+
 import HistoryCounter from "./HistoryCounter";
 import HistoryDetails from "./HistoryDetails";
 import HistoryDropZone from "./HistoryDropZone";
@@ -165,8 +167,6 @@ import OperationErrorDialog from "./HistoryOperations/OperationErrorDialog";
 import SelectionChangeWarning from "./HistoryOperations/SelectionChangeWarning";
 import HistorySelectionOperations from "./HistoryOperations/SelectionOperations";
 import HistorySelectionStatus from "./HistoryOperations/SelectionStatus";
-
-import GAlert from "@/component-library/GAlert.vue";
 
 export default {
     components: {

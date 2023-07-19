@@ -46,9 +46,9 @@ import ToolSection from "components/Panels/Common/ToolSection";
 import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 
-import MarkdownDialog from "./MarkdownDialog";
+import { GAlert } from "@/component-library";
 
-import GAlert from "@/component-library/GAlert.vue";
+import MarkdownDialog from "./MarkdownDialog";
 
 Vue.use(BootstrapVue);
 

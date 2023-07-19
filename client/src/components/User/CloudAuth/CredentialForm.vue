@@ -48,8 +48,7 @@
 </template>
 
 <script>
-import GButton from "component-library/GButton";
-import GInput from "component-library/GInput";
+import { GButton, GInput } from "@/component-library";
 
 import CredentialConfig from "./CredentialConfig";
 import { Credential, ResourceProviders } from "./model";

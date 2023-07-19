@@ -8,12 +8,10 @@ import { storeToRefs } from "pinia";
 import Webhooks from "utils/webhooks";
 import { computed, ref } from "vue";
 
+import { GDropdown, GDropdownItem } from "@/component-library";
 import { useUserStore } from "@/stores/userStore";
 
 import { copyId, copyLink, downloadTool, openLink } from "../utilities";
-
-import GDropdown from "@/component-library/GDropdown.vue";
-import GDropdownItem from "@/component-library/GDropdownItem.vue";
 
 library.add(faCaretDown, faLink, faDownload, faExternalLinkAlt, faCopy);
 

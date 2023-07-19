@@ -1,6 +1,7 @@
 <script setup>
-import GButton from "component-library/GButton";
 import { computed } from "vue";
+
+import { GButton } from "@/component-library";
 
 const props = defineProps({
     status: String,

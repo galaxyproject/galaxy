@@ -27,8 +27,6 @@
 
 <script>
 import Backbone from "backbone";
-import GTab from "component-library/GTab";
-import GTabs from "component-library/GTabs";
 import { getDatatypesMapper } from "components/Datatypes";
 import LoadingSpan from "components/LoadingSpan";
 import {
@@ -38,6 +36,8 @@ import {
     getUploadDatatypes,
     getUploadDbKeys,
 } from "components/Upload/utils";
+
+import { GTab, GTabs } from "@/component-library";
 
 import Collection from "./Collection";
 import Composite from "./Composite";

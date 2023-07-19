@@ -11,10 +11,9 @@
 </template>
 
 <script>
-import GInput from "component-library/GInput";
 import _l from "utils/localization";
 
-import GInputGroup from "@/component-library/GInputGroup.vue";
+import { GInput, GInputGroup } from "@/component-library";
 
 export default {
     name: "SearchField",

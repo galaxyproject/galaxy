@@ -5,15 +5,12 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref } from "vue";
 import { RouterLink } from "vue-router";
 
+import { GAlert, GCard, GTab, GTabs } from "@/component-library";
 import { useConfig } from "@/composables/config";
 import { useFileSources } from "@/composables/fileSources";
 import { useToast } from "@/composables/toast";
 import { type HistorySummary, useHistoryStore } from "@/stores/historyStore";
 
-import GAlert from "@/component-library/GAlert.vue";
-import GCard from "@/component-library/GCard.vue";
-import GTab from "@/component-library/GTab.vue";
-import GTabs from "@/component-library/GTabs.vue";
 import HistoryArchiveExportSelector from "@/components/History/Archiving/HistoryArchiveExportSelector.vue";
 import HistoryArchiveSimple from "@/components/History/Archiving/HistoryArchiveSimple.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";

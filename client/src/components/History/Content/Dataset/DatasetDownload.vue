@@ -39,13 +39,11 @@
 </template>
 
 <script>
-import GButton from "component-library/GButton";
 import { prependPath } from "utils/redirect";
 
-import { downloadUrlMixin } from "./mixins.js";
+import { GButton, GDropdown, GDropdownItem } from "@/component-library";
 
-import GDropdown from "@/component-library/GDropdown.vue";
-import GDropdownItem from "@/component-library/GDropdownItem.vue";
+import { downloadUrlMixin } from "./mixins.js";
 
 export default {
     components: {

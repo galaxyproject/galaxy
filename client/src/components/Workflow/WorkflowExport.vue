@@ -45,7 +45,7 @@ import { withPrefix } from "utils/redirect";
 import { urlData } from "utils/url";
 import Vue from "vue";
 
-import GAlert from "@/component-library/GAlert.vue";
+import { GAlert } from "@/component-library";
 
 Vue.use(BootstrapVue);
 

@@ -59,12 +59,13 @@
 </template>
 
 <script>
-import GButton from "component-library/GButton";
 import UploadRow from "mvc/upload/composite/composite-row";
 import _ from "underscore";
 import { refreshContentsWrapper } from "utils/data";
 import _l from "utils/localization";
 import { submitUpload } from "utils/uploadbox";
+
+import { GButton } from "@/component-library";
 
 import { uploadModelsToPayload } from "./helpers";
 import UploadBoxMixin from "./UploadBoxMixin";

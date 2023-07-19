@@ -11,12 +11,9 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import LoadingSpan from "components/LoadingSpan";
 import { computed } from "vue";
 
-import { ExportRecordModel } from "./models/exportRecordModel";
+import { GAlert, GButton, GCard, GCardTitle } from "@/component-library";
 
-import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
-import GCard from "@/component-library/GCard.vue";
-import GCardTitle from "@/component-library/GCardTitle.vue";
+import { ExportRecordModel } from "./models/exportRecordModel";
 
 library.add(faExclamationCircle, faExclamationTriangle, faCheckCircle, faClock, faLink);
 

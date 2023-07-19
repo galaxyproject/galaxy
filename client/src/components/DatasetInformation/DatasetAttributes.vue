@@ -98,10 +98,9 @@ import { getGalaxyInstance } from "app";
 import FormDisplay from "components/Form/FormDisplay";
 import { DatasetAttributesProvider } from "components/providers/DatasetProvider";
 
-import { setAttributes } from "./services";
+import { GAlert, GButton } from "@/component-library";
 
-import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
+import { setAttributes } from "./services";
 
 library.add(faBars, faCog, faDatabase, faExchangeAlt, faRedo, faSave, faUser);
 

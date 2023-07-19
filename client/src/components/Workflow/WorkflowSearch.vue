@@ -2,11 +2,9 @@
 import { type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { GButton, GInput } from "@/component-library";
 import { createWorkflowQuery } from "@/components/Panels/utilities";
 import _l from "@/utils/localization";
-
-import GButton from "@/component-library/GButton.vue";
-import GInput from "@/component-library/GInput.vue";
 
 const router = useRouter();
 

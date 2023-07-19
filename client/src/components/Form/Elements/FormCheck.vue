@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import GAlert from "@/component-library/GAlert.vue";
+import { GAlert } from "@/component-library";
 
 export interface FormCheckProps {
     value?: string | string[];

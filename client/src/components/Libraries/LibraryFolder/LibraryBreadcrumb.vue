@@ -17,8 +17,7 @@
 </template>
 
 <script>
-import GBreadcrumb from "@/component-library/GBreadcrumb.vue";
-import GBreadcrumbItem from "@/component-library/GBreadcrumbItem.vue";
+import { GBreadcrumb, GBreadcrumbItem } from "@/component-library";
 
 export default {
     components: {

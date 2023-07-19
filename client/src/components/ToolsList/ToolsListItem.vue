@@ -15,8 +15,7 @@ import ToolFavoriteButton from "components/Tool/Buttons/ToolFavoriteButton";
 import { useFormattedToolHelp } from "composables/formattedToolHelp";
 import { computed, ref } from "vue";
 
-import GButton from "@/component-library/GButton.vue";
-import GLink from "@/component-library/GLink.vue";
+import { GButton, GLink } from "@/component-library";
 
 library.add(faWrench, faExternalLinkAlt, faCheck, faTimes, faAngleDown, faAngleUp, faExclamationTriangle, faUser);
 

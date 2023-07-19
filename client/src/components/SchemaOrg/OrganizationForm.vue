@@ -24,8 +24,8 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEyeSlash, faLink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import GButton from "component-library/GButton";
-import GInput from "component-library/GInput";
+
+import { GButton, GInput } from "@/component-library";
 
 import ThingFormMixin from "./ThingFormMixin";
 

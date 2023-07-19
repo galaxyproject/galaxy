@@ -45,11 +45,9 @@
 import { deleteAllHiddenContent, purgeAllDeletedContent, unhideAllHiddenContent } from "components/History/model/crud";
 import { iframeRedirect } from "components/plugins/legacyNavigation";
 
-import { usesDetailedHistoryMixin } from "../usesDetailedHistoryMixin.js";
+import { GDropdown, GDropdownItem, GDropdownText } from "@/component-library";
 
-import GDropdown from "@/component-library/GDropdown.vue";
-import GDropdownItem from "@/component-library/GDropdownItem.vue";
-import GDropdownText from "@/component-library/GDropdownText.vue";
+import { usesDetailedHistoryMixin } from "../usesDetailedHistoryMixin.js";
 
 export default {
     components: {

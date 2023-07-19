@@ -70,8 +70,7 @@
 </template>
 
 <script>
-import GButton from "component-library/GButton";
-
+import { GButton } from "@/component-library";
 import { prependPath } from "@/utils/redirect";
 
 export default {

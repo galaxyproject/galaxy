@@ -29,14 +29,9 @@
     </div>
 </template>
 <script>
-import GButton from "component-library/GButton";
 import { getAppRoot } from "onload/loadConfig";
 
-import GCard from "@/component-library/GCard.vue";
-import GCardGroup from "@/component-library/GCardGroup.vue";
-import GCardImg from "@/component-library/GCardImg.vue";
-import GCardText from "@/component-library/GCardText.vue";
-import GRow from "@/component-library/GRow.vue";
+import { GButton, GCard, GCardGroup, GCardImg, GCardText, GRow } from "@/component-library";
 
 export default {
     components: {

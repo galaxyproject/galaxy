@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 
-import GButton from "@/component-library/GButton.vue";
-import GInput from "@/component-library/GInput.vue";
+import { GButton, GInput } from "@/component-library";
 
 const props = defineProps({
     queryTrsUrl: {

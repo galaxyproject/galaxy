@@ -34,5 +34,5 @@
     "vueCompilerOptions": {
         "target": 2.7
     },
-    "include": ["./types/*.d.ts", "./src/**/*.ts", "./src/**/*.tsx", "./src/**/*.vue", "./tests/**/*.ts"]
+    "include": ["./types/*.d.ts", "./src/**/*.ts", "./src/**/*.tsx", "./src/**/*.vue", "./tests/**/*.ts", "src/component-library/index.js"]
 }

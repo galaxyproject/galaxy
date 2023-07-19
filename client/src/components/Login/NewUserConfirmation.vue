@@ -62,12 +62,7 @@ import BootstrapVue from "bootstrap-vue";
 import { withPrefix } from "utils/redirect";
 import Vue from "vue";
 
-import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
-import GCard from "@/component-library/GCard.vue";
-import GCardBody from "@/component-library/GCardBody.vue";
-import GCardFooter from "@/component-library/GCardFooter.vue";
-import GEmbed from "@/component-library/GEmbed.vue";
+import { GAlert, GButton, GCard, GCardBody, GCardFooter, GEmbed } from "@/component-library";
 
 Vue.use(BootstrapVue);
 

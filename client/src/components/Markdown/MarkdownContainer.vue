@@ -1,6 +1,8 @@
 <script setup>
 import { computed, ref } from "vue";
 
+import { GCollapse, GLink } from "@/component-library";
+
 import HistoryDatasetAsImage from "./Elements/HistoryDatasetAsImage.vue";
 import HistoryDatasetCollectionDisplay from "./Elements/HistoryDatasetCollection/CollectionDisplay.vue";
 import HistoryDatasetDetails from "./Elements/HistoryDatasetDetails.vue";
@@ -14,8 +16,6 @@ import JobParameters from "./Elements/JobParameters.vue";
 import ToolStd from "./Elements/ToolStd.vue";
 import Visualization from "./Elements/Visualization.vue";
 import WorkflowDisplay from "./Elements/Workflow/WorkflowDisplay.vue";
-import GCollapse from "@/component-library/GCollapse.vue";
-import GLink from "@/component-library/GLink.vue";
 
 const toggle = ref(false);
 const props = defineProps({

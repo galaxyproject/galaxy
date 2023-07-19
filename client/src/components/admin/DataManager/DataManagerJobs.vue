@@ -73,13 +73,7 @@
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 
-import GAlert from "@/component-library/GAlert.vue";
-import GBreadcrumb from "@/component-library/GBreadcrumb.vue";
-import GButton from "@/component-library/GButton.vue";
-import GButtonGroup from "@/component-library/GButtonGroup.vue";
-import GInputGroup from "@/component-library/GInputGroup.vue";
-import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
-import GRow from "@/component-library/GRow.vue";
+import { GAlert, GBreadcrumb, GButton, GButtonGroup, GInputGroup, GInputGroupAppend, GRow } from "@/component-library";
 
 export default {
     components: {

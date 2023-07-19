@@ -66,14 +66,12 @@ import SelectionDialogMixin from "components/SelectionDialog/SelectionDialogMixi
 import { selectionStates } from "components/SelectionDialog/selectionStates";
 import Vue from "vue";
 
+import { GAlert, GButton } from "@/component-library";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { getGalaxyInstance } from "../../app";
 import { Model } from "./model";
 import { browseRemoteFiles, getFileSources } from "./services";
-
-import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
 
 library.add(faCaretLeft);
 export default {

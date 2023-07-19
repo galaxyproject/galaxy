@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 
+import { GAlert, GCardGroup, GContainer, GLink, GRow } from "@/component-library";
 import { useConfig } from "@/composables/config";
 import localize from "@/utils/localization";
 import { wait } from "@/utils/utils";
@@ -11,11 +12,6 @@ import type { CleanableItem, CleanupOperation, CleanupResult } from "./Cleanup/m
 import CleanupOperationSummary from "./Cleanup/CleanupOperationSummary.vue";
 import CleanupResultDialog from "./Cleanup/CleanupResultDialog.vue";
 import ReviewCleanupDialog from "./Cleanup/ReviewCleanupDialog.vue";
-import GAlert from "@/component-library/GAlert.vue";
-import GCardGroup from "@/component-library/GCardGroup.vue";
-import GContainer from "@/component-library/GContainer.vue";
-import GLink from "@/component-library/GLink.vue";
-import GRow from "@/component-library/GRow.vue";
 
 interface ModalDialog {
     openModal: () => void;

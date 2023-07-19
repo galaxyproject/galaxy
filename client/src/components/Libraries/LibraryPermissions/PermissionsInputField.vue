@@ -42,9 +42,7 @@ import Vue from "vue";
 import Multiselect from "vue-multiselect";
 import VueObserveVisibility from "vue-observe-visibility";
 
-import GAlert from "@/component-library/GAlert.vue";
-import GCol from "@/component-library/GCol.vue";
-import GRow from "@/component-library/GRow.vue";
+import { GAlert, GCol, GRow } from "@/component-library";
 
 Vue.use(VueObserveVisibility);
 export default {

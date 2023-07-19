@@ -37,8 +37,9 @@
 </template>
 
 <script>
-import GButton from "component-library/GButton";
 import GenericHistoryItem from "components/History/Content/GenericItem";
+
+import { GButton } from "@/component-library";
 
 export default {
     components: {

@@ -2,9 +2,9 @@
 import * as d3 from "d3";
 import { computed, onMounted, ref, watch } from "vue";
 
-import type { DataValuePoint } from ".";
+import { GCard } from "@/component-library";
 
-import GCard from "@/component-library/GCard.vue";
+import type { DataValuePoint } from ".";
 
 interface BarChartProps {
     data: DataValuePoint[];

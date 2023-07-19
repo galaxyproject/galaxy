@@ -15,7 +15,7 @@
 <script>
 import { getAppRoot } from "onload/loadConfig";
 
-import GLink from "@/component-library/GLink.vue";
+import { GLink } from "@/component-library";
 
 export default {
     components: { GLink },

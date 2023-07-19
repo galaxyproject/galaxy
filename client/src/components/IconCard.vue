@@ -11,12 +11,7 @@
 </template>
 
 <script>
-import GButton from "component-library/GButton";
-
-import GCard from "@/component-library/GCard.vue";
-import GCol from "@/component-library/GCol.vue";
-import GContainer from "@/component-library/GContainer.vue";
-import GRow from "@/component-library/GRow.vue";
+import { GButton, GCard, GCol, GContainer, GRow } from "@/component-library";
 
 /** A generic Card, used as a template, that displays an action button,
  * an icon (font-awesome), along with a title and description.

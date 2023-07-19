@@ -22,11 +22,10 @@ import Markdown from "components/Markdown/Markdown";
 import { withPrefix } from "utils/redirect";
 import { urlData } from "utils/url";
 
+import { GAlert } from "@/component-library";
 import { useConfig } from "@/composables/config";
 
 import PageHtml from "./PageHtml";
-
-import GAlert from "@/component-library/GAlert.vue";
 
 export default {
     components: {

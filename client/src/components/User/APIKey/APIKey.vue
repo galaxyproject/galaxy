@@ -3,11 +3,10 @@ import { getGalaxyInstance } from "app";
 import LoadingSpan from "components/LoadingSpan";
 import { ref } from "vue";
 
+import { GAlert, GButton } from "@/component-library";
+
 import APIKeyItem from "./APIKeyItem";
 import svc from "./model/service";
-
-import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
 
 const apiKey = ref(null);
 const loading = ref(false);

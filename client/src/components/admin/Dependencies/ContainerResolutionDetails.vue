@@ -44,14 +44,14 @@
 </template>
 
 <script>
+import { GCard } from "@/component-library";
+
 import ContainerDescription from "./ContainerDescription";
 import ContainerResolver from "./ContainerResolver";
 import Requirements from "./Requirements";
 import StatusDisplay from "./StatusDisplay";
 import ToolDisplay from "./ToolDisplay";
 import Tools from "./Tools";
-
-import GCard from "@/component-library/GCard.vue";
 
 export default {
     components: {

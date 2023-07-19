@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { TrsTool, TrsToolVersion } from "./types";
+import { GButton } from "@/component-library";
 
-import GButton from "@/component-library/GButton.vue";
+import type { TrsTool, TrsToolVersion } from "./types";
 
 const props = defineProps<{ trsTool: TrsTool }>();
 

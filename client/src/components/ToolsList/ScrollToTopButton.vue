@@ -14,7 +14,8 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import GButton from "component-library/GButton";
+
+import { GButton } from "@/component-library";
 
 library.add(faChevronUp);
 

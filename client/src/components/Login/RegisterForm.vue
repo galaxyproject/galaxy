@@ -107,15 +107,17 @@ import _l from "utils/localization";
 import { withPrefix } from "utils/redirect";
 import Vue from "vue";
 
-import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
-import GCard from "@/component-library/GCard.vue";
-import GCardBody from "@/component-library/GCardBody.vue";
-import GCardFooter from "@/component-library/GCardFooter.vue";
-import GCardHeader from "@/component-library/GCardHeader.vue";
-import GCollapse from "@/component-library/GCollapse.vue";
-import GEmbed from "@/component-library/GEmbed.vue";
-import GInput from "@/component-library/GInput.vue";
+import {
+    GAlert,
+    GButton,
+    GCard,
+    GCardBody,
+    GCardFooter,
+    GCardHeader,
+    GCollapse,
+    GEmbed,
+    GInput,
+} from "@/component-library";
 
 Vue.use(BootstrapVue);
 

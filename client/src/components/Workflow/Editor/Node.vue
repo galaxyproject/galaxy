@@ -117,6 +117,7 @@ import type { PropType, Ref } from "vue";
 import Vue, { computed, reactive, ref } from "vue";
 
 import { getGalaxyInstance } from "@/app";
+import { GAlert, GButton, GButtonGroup } from "@/component-library";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useNodePosition } from "@/components/Workflow/Editor/composables/useNodePosition";
 import WorkflowIcons from "@/components/Workflow/icons";
@@ -126,9 +127,6 @@ import type { Step } from "@/stores/workflowStepStore";
 
 import type { OutputTerminals } from "./modules/terminals";
 
-import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
-import GButtonGroup from "@/component-library/GButtonGroup.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DraggableWrapper from "@/components/Workflow/Editor/DraggablePan.vue";
 import NodeInput from "@/components/Workflow/Editor/NodeInput.vue";

@@ -50,17 +50,13 @@
 </template>
 <script>
 import BootstrapVue from "bootstrap-vue";
-import GButton from "component-library/GButton";
 import Vue from "vue";
 
+import { GButton, GCard, GCollapse, GNavItem } from "@/component-library";
 import { useConfig } from "@/composables/config";
 
 import Citation from "./Citation";
 import { getCitations } from "./services";
-
-import GCard from "@/component-library/GCard.vue";
-import GCollapse from "@/component-library/GCollapse.vue";
-import GNavItem from "@/component-library/GNavItem.vue";
 
 Vue.use(BootstrapVue);
 

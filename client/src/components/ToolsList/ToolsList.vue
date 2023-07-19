@@ -56,11 +56,10 @@ import { ToolsProvider } from "components/providers/storeProviders";
 import { useAnimationFrameScroll } from "composables/sensors/animationFrameScroll";
 import { ref } from "vue";
 
+import { GAlert, GButton } from "@/component-library";
+
 import ScrollToTopButton from "./ScrollToTopButton";
 import ToolsListTable from "./ToolsListTable";
-
-import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
 
 library.add(faTimes);
 

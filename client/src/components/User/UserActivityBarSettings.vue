@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { computed, type Ref, ref, type WritableComputedRef } from "vue";
 
+import { GCard } from "@/component-library";
 import { useUserStore } from "@/stores/userStore";
-
-import GCard from "@/component-library/GCard.vue";
 
 const userStore = useUserStore();
 

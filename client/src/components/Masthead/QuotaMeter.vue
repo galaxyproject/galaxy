@@ -32,11 +32,9 @@
 import { mapState } from "pinia";
 import { bytesToString } from "utils/utils";
 
+import { GLink, GProgressBar } from "@/component-library";
 import { useConfigStore } from "@/stores/configurationStore";
 import { useUserStore } from "@/stores/userStore";
-
-import GLink from "@/component-library/GLink.vue";
-import GProgressBar from "@/component-library/GProgressBar.vue";
 
 export default {
     name: "QuotaMeter",

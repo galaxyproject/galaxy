@@ -3,13 +3,11 @@ import axios, { type AxiosError } from "axios";
 import { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { GAlert, GButton, GInput } from "@/component-library";
 import { withPrefix } from "@/utils/redirect";
 
 import { getRedirectOnImportPath } from "../redirectPath";
 
-import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
-import GInput from "@/component-library/GInput.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const loading = ref(false);

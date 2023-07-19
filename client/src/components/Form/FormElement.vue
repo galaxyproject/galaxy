@@ -6,6 +6,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { ComputedRef } from "vue";
 import { computed, ref, useAttrs } from "vue";
 
+import { GButton } from "@/component-library";
+
 import type { FormParameterAttributes, FormParameterTypes, FormParameterValue } from "./parameterTypes";
 
 import FormBoolean from "./Elements/FormBoolean.vue";
@@ -22,7 +24,6 @@ import FormSelection from "./Elements/FormSelection.vue";
 import FormTags from "./Elements/FormTags.vue";
 import FormText from "./Elements/FormText.vue";
 import FormUpload from "./Elements/FormUpload.vue";
-import GButton from "@/component-library/GButton.vue";
 
 interface FormElementProps {
     id?: string;

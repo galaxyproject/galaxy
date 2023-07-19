@@ -58,11 +58,11 @@ import { storeToRefs } from "pinia";
 import { withPrefix } from "utils/redirect";
 import { ref } from "vue";
 
+import { GAlert } from "@/component-library";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import { useUserStore } from "@/stores/userStore";
 
-import GAlert from "@/component-library/GAlert.vue";
 import DragGhost from "@/components/DragGhost.vue";
 import BroadcastsOverlay from "@/components/Notifications/Broadcasts/BroadcastsOverlay.vue";
 import Masthead from "components/Masthead/Masthead.vue";

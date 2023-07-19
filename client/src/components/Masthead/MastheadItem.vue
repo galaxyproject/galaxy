@@ -3,9 +3,7 @@ import { VBPopoverPlugin, VBTooltipPlugin } from "bootstrap-vue";
 import { withPrefix } from "utils/redirect";
 import Vue, { computed, getCurrentInstance, ref } from "vue";
 
-import GDropdownItem from "@/component-library/GDropdownItem.vue";
-import GNavItem from "@/component-library/GNavItem.vue";
-import GNavItemDropdown from "@/component-library/GNavItemDropdown.vue";
+import { GDropdownItem, GNavItem, GNavItemDropdown } from "@/component-library";
 
 Vue.use(VBPopoverPlugin);
 Vue.use(VBTooltipPlugin);

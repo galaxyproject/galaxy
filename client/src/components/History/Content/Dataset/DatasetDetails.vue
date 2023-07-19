@@ -88,9 +88,9 @@
 import { STATES } from "components/History/Content/model/states";
 import { DatasetProvider } from "components/providers/storeProviders";
 
-import DatasetActions from "./DatasetActions";
+import { GLink } from "@/component-library";
 
-import GLink from "@/component-library/GLink.vue";
+import DatasetActions from "./DatasetActions";
 
 export default {
     components: {

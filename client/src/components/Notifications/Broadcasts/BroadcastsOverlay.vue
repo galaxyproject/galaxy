@@ -6,12 +6,10 @@ import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { GButton, GCol, GRow } from "@/component-library";
 import { useMarkdown } from "@/composables/markdown";
 import { type BroadcastNotification, useBroadcastsStore } from "@/stores/broadcastsStore";
 
-import GButton from "@/component-library/GButton.vue";
-import GCol from "@/component-library/GCol.vue";
-import GRow from "@/component-library/GRow.vue";
 import Heading from "@/components/Common/Heading.vue";
 
 library.add(faInfoCircle, faTimes);

@@ -132,8 +132,6 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faSave } from "@fortawesome/free-regular-svg-icons";
 import { faBook, faDownload, faPencilAlt, faRedo, faTimes, faUsers } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import GButton from "component-library/GButton";
-import GInput from "component-library/GInput";
 import CopyToClipboard from "components/CopyToClipboard";
 import { buildFields } from "components/Libraries/library-utils";
 import LibraryBreadcrumb from "components/Libraries/LibraryFolder/LibraryBreadcrumb";
@@ -146,6 +144,7 @@ import SingleItemSelector from "components/SingleItemSelector";
 import { Toast } from "composables/toast";
 import { mapState } from "pinia";
 
+import { GButton, GInput } from "@/component-library";
 import { useUserStore } from "@/stores/userStore";
 
 library.add(faUsers, faRedo, faBook, faDownload, faPencilAlt, faTimes, faSave);

@@ -6,9 +6,9 @@
     </div>
 </template>
 <script>
-import { getErrorStack } from "./AdminServices";
+import { GAlert } from "@/component-library";
 
-import GAlert from "@/component-library/GAlert.vue";
+import { getErrorStack } from "./AdminServices";
 
 export default {
     components: {

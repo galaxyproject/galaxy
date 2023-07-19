@@ -3,6 +3,7 @@ import { storeToRefs } from "pinia";
 import { computed, type Ref, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { GAlert, GCard, GInput } from "@/component-library";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 
@@ -13,9 +14,6 @@ import type { TrsSelection, TrsTool as TrsToolInterface } from "./types";
 import TrsServerSelection from "./TrsServerSelection.vue";
 import TrsTool from "./TrsTool.vue";
 import TrsUrlImport from "./TrsUrlImport.vue";
-import GAlert from "@/component-library/GAlert.vue";
-import GCard from "@/component-library/GCard.vue";
-import GInput from "@/component-library/GInput.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const props = defineProps({

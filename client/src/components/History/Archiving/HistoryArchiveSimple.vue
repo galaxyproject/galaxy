@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import GButton from "@/component-library/GButton.vue";
+import { GButton } from "@/component-library";
 
 const emit = defineEmits(["onArchive"]);
 

@@ -4,8 +4,7 @@ import { faCheck, faCube, faCubes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
-import GDropdown from "@/component-library/GDropdown.vue";
-import GDropdownItem from "@/component-library/GDropdownItem.vue";
+import { GDropdown, GDropdownItem } from "@/component-library";
 
 library.add(faCheck, faCubes, faCube);
 

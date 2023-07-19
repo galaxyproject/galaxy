@@ -15,8 +15,7 @@
 import { getAppRoot } from "onload/loadConfig";
 import { mapCacheActions } from "vuex-cache";
 
-import GCard from "@/component-library/GCard.vue";
-import GImg from "@/component-library/GImg.vue";
+import { GCard, GImg } from "@/component-library";
 
 export default {
     components: {

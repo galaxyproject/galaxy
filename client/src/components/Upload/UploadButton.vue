@@ -27,9 +27,10 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { VBTooltip } from "bootstrap-vue";
-import GButton from "component-library/GButton";
 import { useGlobalUploadModal } from "composables/globalUploadModal";
 import Query from "utils/query-string-parsing";
+
+import { GButton } from "@/component-library";
 
 library.add(faUpload);
 

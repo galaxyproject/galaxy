@@ -60,10 +60,9 @@ import { Services } from "components/Workflow/services";
 import { format, parseISO } from "date-fns";
 import Vue from "vue";
 
-import { UntypedParameters } from "./modules/parameters";
+import { GAlert, GInput } from "@/component-library";
 
-import GAlert from "@/component-library/GAlert.vue";
-import GInput from "@/component-library/GInput.vue";
+import { UntypedParameters } from "./modules/parameters";
 
 Vue.use(BootstrapVue);
 

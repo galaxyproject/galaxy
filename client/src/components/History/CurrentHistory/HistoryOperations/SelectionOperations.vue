@@ -157,12 +157,8 @@ import { DatatypesProvider, DbKeyProvider } from "components/providers";
 import SingleItemSelector from "components/SingleItemSelector";
 import { StatelessTags } from "components/Tags";
 
+import { GDropdown, GDropdownDivider, GDropdownItem, GDropdownText } from "@/component-library";
 import { useConfig } from "@/composables/config";
-
-import GDropdown from "@/component-library/GDropdown.vue";
-import GDropdownDivider from "@/component-library/GDropdownDivider.vue";
-import GDropdownItem from "@/component-library/GDropdownItem.vue";
-import GDropdownText from "@/component-library/GDropdownText.vue";
 
 export default {
     components: {

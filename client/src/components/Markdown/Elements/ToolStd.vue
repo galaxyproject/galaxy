@@ -7,7 +7,7 @@
 </template>
 
 <script>
-import GCard from "@/component-library/GCard.vue";
+import { GCard } from "@/component-library";
 
 export default {
     components: {

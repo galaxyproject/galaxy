@@ -99,12 +99,7 @@ import LoadingSpan from "components/LoadingSpan";
 import { UrlDataProvider } from "components/providers/UrlDataProvider";
 import { getAppRoot } from "onload/loadConfig";
 
-import GButton from "@/component-library/GButton.vue";
-import GCard from "@/component-library/GCard.vue";
-import GCardBody from "@/component-library/GCardBody.vue";
-import GCardHeader from "@/component-library/GCardHeader.vue";
-import GEmbed from "@/component-library/GEmbed.vue";
-import GLink from "@/component-library/GLink.vue";
+import { GButton, GCard, GCardBody, GCardHeader, GEmbed, GLink } from "@/component-library";
 
 export default {
     components: {

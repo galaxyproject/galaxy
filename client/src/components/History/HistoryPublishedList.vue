@@ -1,5 +1,4 @@
 <script setup>
-import GInput from "component-library/GInput";
 import Heading from "components/Common/Heading";
 import DebouncedInput from "components/DebouncedInput";
 import LoadingSpan from "components/LoadingSpan";
@@ -8,13 +7,9 @@ import UtcDate from "components/UtcDate";
 import Filtering, { contains, expandNameTag } from "utils/filtering";
 import { computed, ref, watch } from "vue";
 
-import { getPublishedHistories, updateTags } from "./services";
+import { GAlert, GButton, GInput, GInputGroup, GInputGroupAppend, GPagination } from "@/component-library";
 
-import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
-import GInputGroup from "@/component-library/GInputGroup.vue";
-import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
-import GPagination from "@/component-library/GPagination.vue";
+import { getPublishedHistories, updateTags } from "./services";
 
 const validFilters = {
     name: contains("name"),

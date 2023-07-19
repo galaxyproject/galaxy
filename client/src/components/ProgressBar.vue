@@ -13,7 +13,7 @@
 </template>
 <script>
 // Not really a very generic ProgressBar - consider renaming to StateProgressBar.
-import GProgressBar from "@/component-library/GProgressBar.vue";
+import { GProgressBar } from "@/component-library";
 
 export default {
     components: {

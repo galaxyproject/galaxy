@@ -39,12 +39,10 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faFolder, faFolderOpen } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import GButton from "component-library/GButton";
 import { FilesDialog } from "components/FilesDialog";
 import _l from "utils/localization";
 
-import GBreadcrumb from "@/component-library/GBreadcrumb.vue";
-import GBreadcrumbItem from "@/component-library/GBreadcrumbItem.vue";
+import { GBreadcrumb, GBreadcrumbItem, GButton } from "@/component-library";
 
 library.add(faFolder, faFolderOpen);
 

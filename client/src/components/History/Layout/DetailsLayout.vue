@@ -69,10 +69,10 @@
 <script>
 import { mapState } from "pinia";
 
+import { GButton } from "@/component-library";
 import short from "@/components/plugins/short.js";
 import { useUserStore } from "@/stores/userStore";
 
-import GButton from "@/component-library/GButton.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 export default {

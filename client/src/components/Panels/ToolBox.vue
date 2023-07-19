@@ -78,20 +78,18 @@
 
 <script>
 import { getGalaxyInstance } from "app";
-import GButton from "component-library/GButton";
-import GButtonGroup from "component-library/GButtonGroup";
 import UploadButton from "components/Upload/UploadButton";
 import { useGlobalUploadModal } from "composables/globalUploadModal";
 import { getAppRoot } from "onload";
 import _l from "utils/localization";
+
+import { GBadge, GButton, GButtonGroup } from "@/component-library";
 
 import FavoritesButton from "./Buttons/FavoritesButton";
 import PanelViewButton from "./Buttons/PanelViewButton";
 import ToolSearch from "./Common/ToolSearch";
 import ToolSection from "./Common/ToolSection";
 import { filterTools, filterToolSections, hasResults, hideToolsSection } from "./utilities";
-
-import GBadge from "@/component-library/GBadge.vue";
 
 export default {
     components: {

@@ -4,7 +4,7 @@ import { faGlobe, faLink, faShareAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { VBTooltip } from "bootstrap-vue";
 
-import GButton from "@/component-library/GButton.vue";
+import { GButton } from "@/component-library";
 
 library.add(faGlobe, faShareAlt, faLink);
 

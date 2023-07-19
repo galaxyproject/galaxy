@@ -75,14 +75,13 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faAngleDoubleDown, faAngleDoubleUp, faCopy, faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import GButton from "component-library/GButton";
 import Citation from "components/Citation/Citation";
 import { getCitations } from "components/Citation/services";
 import License from "components/License/License";
 import Creators from "components/SchemaOrg/Creators";
 import { copy } from "utils/clipboard";
 
-import GCard from "@/component-library/GCard.vue";
+import { GButton, GCard } from "@/component-library";
 
 library.add(faQuestion, faCopy, faAngleDoubleDown, faAngleDoubleUp);
 

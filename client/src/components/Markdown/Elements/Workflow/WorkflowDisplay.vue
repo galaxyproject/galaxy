@@ -2,15 +2,11 @@
 import axios from "axios";
 import { computed, onMounted, ref } from "vue";
 
+import { GAlert, GButton, GCard, GCardBody, GCardHeader } from "@/component-library";
 import { withPrefix } from "@/utils/redirect";
 import { isEmpty } from "@/utils/utils";
 
 import WorkflowTree from "./WorkflowTree.vue";
-import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
-import GCard from "@/component-library/GCard.vue";
-import GCardBody from "@/component-library/GCardBody.vue";
-import GCardHeader from "@/component-library/GCardHeader.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface WorkflowDisplayProps {

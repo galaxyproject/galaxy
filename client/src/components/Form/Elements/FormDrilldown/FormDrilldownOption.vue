@@ -2,10 +2,11 @@
 import { BFormCheckbox, BFormRadio } from "bootstrap-vue";
 import { computed, type ComputedRef, onMounted, ref } from "vue";
 
+import { GButton } from "@/component-library";
+
 import { getAllValues, type Option } from "./utilities";
 
 import FormDrilldownList from "./FormDrilldownList.vue";
-import GButton from "@/component-library/GButton.vue";
 
 const props = defineProps<{
     currentValue: string[];

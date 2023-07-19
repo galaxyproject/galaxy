@@ -208,11 +208,10 @@ import _l from "utils/localization";
 import Vue from "vue";
 import draggable from "vuedraggable";
 
+import { GAlert, GButton } from "@/component-library";
+
 import mixin from "./common/mixin";
 import DatasetCollectionElementView from "./ListDatasetCollectionElementView";
-
-import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
 
 library.add(faSortAlphaDown, faUndo);
 

@@ -70,8 +70,7 @@ import UtcDate from "components/UtcDate";
 import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 
-import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
+import { GAlert, GButton } from "@/component-library";
 
 library.add(faInfoCircle);
 

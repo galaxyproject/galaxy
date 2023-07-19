@@ -6,7 +6,7 @@
 // (AdminRequired), but could be used for other client errors that need to be
 // presented to the user interrupting the normal flow and context of the app.
 
-import GAlert from "@/component-library/GAlert.vue";
+import { GAlert } from "@/component-library";
 
 const props = defineProps<{
     error: Error;

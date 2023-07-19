@@ -39,13 +39,11 @@
 <script>
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
-import GInput from "component-library/GInput";
 import { userLogoutClient } from "utils/logout";
 import { withPrefix } from "utils/redirect";
 import Vue from "vue";
 
-import GAlert from "@/component-library/GAlert.vue";
-import GRow from "@/component-library/GRow.vue";
+import { GAlert, GInput, GRow } from "@/component-library";
 
 Vue.use(BootstrapVue);
 

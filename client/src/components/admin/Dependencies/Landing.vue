@@ -14,11 +14,11 @@
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
+import { GNavItem } from "@/component-library";
+
 import ContainerIndex from "./ContainerIndex";
 import ResolutionIndex from "./ResolutionIndex";
 import UnusedIndex from "./UnusedIndex";
-
-import GNavItem from "@/component-library/GNavItem.vue";
 
 Vue.use(BootstrapVue);
 

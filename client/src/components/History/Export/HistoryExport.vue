@@ -10,15 +10,13 @@ import { useTaskMonitor } from "composables/taskMonitor";
 import { copy as sendToClipboard } from "utils/clipboard";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
+import { GAlert, GButton, GCard } from "@/component-library";
 import { useHistoryStore } from "@/stores/historyStore";
 import { absPath } from "@/utils/redirect";
 
 import { exportToFileSource, getExportRecords, reimportHistoryFromRecord } from "./services";
 
 import ExportOptions from "./ExportOptions.vue";
-import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
-import GCard from "@/component-library/GCard.vue";
 import ExportForm from "components/Common/ExportForm.vue";
 import ExportRecordDetails from "components/Common/ExportRecordDetails.vue";
 import ExportRecordTable from "components/Common/ExportRecordTable.vue";

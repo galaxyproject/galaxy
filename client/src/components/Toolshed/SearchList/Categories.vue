@@ -15,9 +15,9 @@ import BootstrapVue from "bootstrap-vue";
 import LoadingSpan from "components/LoadingSpan";
 import Vue from "vue";
 
-import { Services } from "../services";
+import { GLink } from "@/component-library";
 
-import GLink from "@/component-library/GLink.vue";
+import { Services } from "../services";
 
 Vue.use(BootstrapVue);
 

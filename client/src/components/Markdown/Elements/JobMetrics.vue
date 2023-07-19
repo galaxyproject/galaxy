@@ -7,7 +7,7 @@
 <script>
 import JobMetrics from "components/JobMetrics/JobMetrics";
 
-import GCard from "@/component-library/GCard.vue";
+import { GCard } from "@/component-library";
 
 export default {
     components: {

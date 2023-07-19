@@ -5,6 +5,7 @@ import { withPrefix } from "utils/redirect";
 import { onBeforeMount, onMounted, reactive, ref, watch } from "vue";
 import { useRoute } from "vue-router/composables";
 
+import { GNavbar, GNavbarBrand, GNavbarNav } from "@/component-library";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 
@@ -13,9 +14,6 @@ import MastheadItem from "./MastheadItem";
 import QuotaMeter from "./QuotaMeter";
 import { getActiveTab } from "./utilities";
 
-import GNavbar from "@/component-library/GNavbar.vue";
-import GNavbarBrand from "@/component-library/GNavbarBrand.vue";
-import GNavbarNav from "@/component-library/GNavbarNav.vue";
 import NotificationsBell from "@/components/Notifications/NotificationsBell.vue";
 
 const { isAnonymous, showActivityBar } = storeToRefs(useUserStore());

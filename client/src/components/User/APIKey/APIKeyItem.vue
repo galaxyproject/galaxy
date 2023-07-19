@@ -4,14 +4,16 @@ import CopyToClipboard from "components/CopyToClipboard";
 import UtcDate from "components/UtcDate";
 import { ref } from "vue";
 
-import svc from "./model/service";
+import {
+    GButton,
+    GCard,
+    GInputGroup,
+    GInputGroupAppend,
+    GInputGroupPrepend,
+    GInputGroupText,
+} from "@/component-library";
 
-import GButton from "@/component-library/GButton.vue";
-import GCard from "@/component-library/GCard.vue";
-import GInputGroup from "@/component-library/GInputGroup.vue";
-import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
-import GInputGroupPrepend from "@/component-library/GInputGroupPrepend.vue";
-import GInputGroupText from "@/component-library/GInputGroupText.vue";
+import svc from "./model/service";
 
 defineProps({
     item: {

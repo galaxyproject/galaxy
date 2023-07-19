@@ -6,7 +6,7 @@
 </template>
 
 <script>
-import GDropdownItem from "@/component-library/GDropdownItem.vue";
+import { GDropdownItem } from "@/component-library";
 
 const types_to_icons = {
     default: "undo",

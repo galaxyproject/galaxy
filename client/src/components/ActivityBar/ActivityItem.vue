@@ -2,8 +2,8 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useRouter } from "vue-router/composables";
 
-import GButton from "@/component-library/GButton.vue";
-import GNavItem from "@/component-library/GNavItem.vue";
+import { GButton, GNavItem } from "@/component-library";
+
 import TextShort from "@/components/Common/TextShort.vue";
 import Popper from "@/components/Popper/Popper.vue";
 

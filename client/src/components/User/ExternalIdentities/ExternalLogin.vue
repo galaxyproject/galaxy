@@ -104,8 +104,7 @@ import { getAppRoot } from "onload";
 import Vue from "vue";
 import Multiselect from "vue-multiselect";
 
-import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
+import { GAlert, GButton } from "@/component-library";
 
 Vue.use(BootstrapVue);
 

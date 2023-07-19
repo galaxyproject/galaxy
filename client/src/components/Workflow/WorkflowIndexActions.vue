@@ -29,9 +29,9 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPlus, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import GButton from "component-library/GButton";
 import { mapState } from "pinia";
 
+import { GButton } from "@/component-library";
 import { useUserStore } from "@/stores/userStore";
 
 library.add(faPlus, faUpload);

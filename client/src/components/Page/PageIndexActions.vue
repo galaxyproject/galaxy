@@ -4,7 +4,7 @@ import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useRouter } from "vue-router/composables";
 
-import GButton from "@/component-library/GButton.vue";
+import { GButton } from "@/component-library";
 
 const router = useRouter();
 library.add(faPlus);

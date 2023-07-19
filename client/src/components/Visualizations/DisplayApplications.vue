@@ -39,8 +39,7 @@
 <script>
 import { DatasetProvider } from "components/providers";
 
-import GAlert from "@/component-library/GAlert.vue";
-import GLink from "@/component-library/GLink.vue";
+import { GAlert, GLink } from "@/component-library";
 
 export default {
     components: {

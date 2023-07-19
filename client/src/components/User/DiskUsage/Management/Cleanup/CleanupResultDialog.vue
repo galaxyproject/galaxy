@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 
+import { GAlert } from "@/component-library";
 import localize from "@/utils/localization";
 
 import type { CleanupResult } from "./model";
-
-import GAlert from "@/component-library/GAlert.vue";
 
 interface CleanupResultDialogProps {
     result?: CleanupResult;

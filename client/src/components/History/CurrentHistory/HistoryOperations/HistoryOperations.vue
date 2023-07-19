@@ -34,8 +34,7 @@
 </template>
 
 <script>
-import GButton from "component-library/GButton";
-import GButtonGroup from "component-library/GButtonGroup";
+import { GButton, GButtonGroup } from "@/component-library";
 
 import DefaultOperations from "./DefaultOperations";
 

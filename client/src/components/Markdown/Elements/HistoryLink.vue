@@ -27,7 +27,7 @@ import { withPrefix } from "utils/redirect";
 import { errorMessageAsString } from "utils/simple-error";
 import Vue from "vue";
 
-import GLink from "@/component-library/GLink.vue";
+import { GLink } from "@/component-library";
 
 Vue.use(BootstrapVue);
 

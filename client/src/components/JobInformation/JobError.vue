@@ -24,9 +24,9 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
+import { GCard, GCardText } from "@/component-library";
+
 import JobInformation from "./JobInformation.vue";
-import GCard from "@/component-library/GCard.vue";
-import GCardText from "@/component-library/GCardText.vue";
 
 library.add(faInfoCircle);
 Vue.use(BootstrapVue);

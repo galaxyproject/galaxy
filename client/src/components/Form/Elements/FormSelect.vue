@@ -2,9 +2,8 @@
 import { computed, type ComputedRef, onMounted, watch } from "vue";
 import Multiselect from "vue-multiselect";
 
+import { GAlert } from "@/component-library";
 import { useMultiselect } from "@/composables/useMultiselect";
-
-import GAlert from "@/component-library/GAlert.vue";
 
 type SelectValue = string | number | null;
 const { ariaExpanded, onOpen, onClose } = useMultiselect();

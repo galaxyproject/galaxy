@@ -5,16 +5,12 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, type Ref, ref, watchEffect, type WatchStopHandle } from "vue";
 
+import { GAlert, GButton, GInput, GInputGroup, GInputGroupAppend } from "@/component-library";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 
 import MultipleViewList from "./MultipleViewList.vue";
-import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
-import GInput from "@/component-library/GInput.vue";
-import GInputGroup from "@/component-library/GInputGroup.vue";
-import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
 import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 

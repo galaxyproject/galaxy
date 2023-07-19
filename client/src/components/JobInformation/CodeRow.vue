@@ -26,8 +26,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCompressAlt, faExpandAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-import GCol from "@/component-library/GCol.vue";
-import GRow from "@/component-library/GRow.vue";
+import { GCol, GRow } from "@/component-library";
 
 library.add(faCompressAlt, faExpandAlt);
 export default {

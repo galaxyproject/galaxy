@@ -122,11 +122,8 @@ import { BModal } from "bootstrap-vue";
 import { mapActions } from "pinia";
 import { withPrefix } from "utils/redirect";
 
+import { GAlert, GButton, GRow } from "@/component-library";
 import { useHistoryStore } from "@/stores/historyStore";
-
-import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
-import GRow from "@/component-library/GRow.vue";
 
 export default {
     components: {

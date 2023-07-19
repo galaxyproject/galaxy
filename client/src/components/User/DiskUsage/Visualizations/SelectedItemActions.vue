@@ -4,12 +4,11 @@ import { faArchive, faChartBar, faInfoCircle, faTrash, faUndo } from "@fortaweso
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
+import { GButton } from "@/component-library";
 import localize from "@/utils/localization";
 import { bytesToString } from "@/utils/utils";
 
 import type { DataValuePoint } from "./Charts";
-
-import GButton from "@/component-library/GButton.vue";
 
 type ItemTypes = "history" | "dataset";
 

@@ -47,11 +47,9 @@
 <script>
 import { mapActions, mapState } from "pinia";
 
+import { GAlert, GInput } from "@/component-library";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
-
-import GAlert from "@/component-library/GAlert.vue";
-import GInput from "@/component-library/GInput.vue";
 
 export default {
     components: {

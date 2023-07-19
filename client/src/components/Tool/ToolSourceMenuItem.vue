@@ -5,10 +5,10 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useConfig } from "composables/config";
 import { storeToRefs } from "pinia";
 
+import { GDropdownItem } from "@/component-library";
 import { useUserStore } from "@/stores/userStore";
 
 import ToolSource from "./ToolSource.vue";
-import GDropdownItem from "@/component-library/GDropdownItem.vue";
 
 library.add(faEye);
 

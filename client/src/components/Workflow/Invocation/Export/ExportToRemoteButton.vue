@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useTaskMonitor } from "composables/taskMonitor";
 import { watch } from "vue";
 
-import GButton from "@/component-library/GButton.vue";
+import { GButton } from "@/component-library";
 
 library.add(faCloudUploadAlt, faSpinner, faCheckCircle, faExclamationCircle);
 

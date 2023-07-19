@@ -92,16 +92,13 @@ import UtcDate from "components/UtcDate";
 import WorkflowInvocationState from "components/WorkflowInvocationState/WorkflowInvocationState";
 import { mapActions, mapState } from "pinia";
 
+import { GAlert, GCard, GLink, GPagination } from "@/component-library";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 
 import paginationMixin from "./paginationMixin";
 
 import WorkflowRunButton from "./WorkflowRunButton.vue";
-import GAlert from "@/component-library/GAlert.vue";
-import GCard from "@/component-library/GCard.vue";
-import GLink from "@/component-library/GLink.vue";
-import GPagination from "@/component-library/GPagination.vue";
 
 export default {
     components: {

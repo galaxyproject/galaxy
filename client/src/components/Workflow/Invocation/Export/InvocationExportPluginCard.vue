@@ -4,13 +4,11 @@ import { useMarkdown } from "composables/markdown";
 import { Toast } from "composables/toast";
 import { computed, provide, ref } from "vue";
 
+import { GButtonGroup, GButtonToolbar, GCard, GCardTitle } from "@/component-library";
+
 import { InvocationExportPlugin } from "./model";
 
 import ActionButton from "./ActionButton.vue";
-import GCard from "@/component-library/GCard.vue";
-import GCardTitle from "@/component-library/GCardTitle.vue";
-import GButtonGroup from "component-library/GButtonGroup.vue";
-import GButtonToolbar from "component-library/GButtonToolbar.vue";
 import StsDownloadButton from "components/StsDownloadButton.vue";
 import ExportToRemoteButton from "components/Workflow/Invocation/Export/ExportToRemoteButton.vue";
 import ExportToRemoteModal from "components/Workflow/Invocation/Export/ExportToRemoteModal.vue";

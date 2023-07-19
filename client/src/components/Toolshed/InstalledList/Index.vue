@@ -57,13 +57,11 @@ import LoadingSpan from "components/LoadingSpan";
 import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 
+import { GAlert, GBadge, GLink } from "@/component-library";
+
 import { Services } from "../services";
 import RepositoryDetails from "./Details";
 import Monitor from "./Monitor";
-
-import GAlert from "@/component-library/GAlert.vue";
-import GBadge from "@/component-library/GBadge.vue";
-import GLink from "@/component-library/GLink.vue";
 
 Vue.use(BootstrapVue);
 

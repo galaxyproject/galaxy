@@ -418,11 +418,11 @@ import naturalSort from "utils/natural-sort";
 import Vue from "vue";
 import draggable from "vuedraggable";
 
+import { GAlert } from "@/component-library";
+
 import mixin from "./common/mixin";
 import PairedElementView from "./PairedElementView";
 import UnpairedDatasetElementView from "./UnpairedDatasetElementView";
-
-import GAlert from "@/component-library/GAlert.vue";
 
 Vue.use(BootstrapVue);
 export default {

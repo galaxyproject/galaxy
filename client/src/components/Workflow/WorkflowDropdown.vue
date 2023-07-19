@@ -98,12 +98,11 @@ import TextSummary from "components/Common/TextSummary";
 import { mapState } from "pinia";
 import { withPrefix } from "utils/redirect";
 
+import { GLink } from "@/component-library";
 import { useUserStore } from "@/stores/userStore";
 import { clearDrag, setDrag } from "@/utils/setDrag.js";
 
 import { Services } from "./services";
-
-import GLink from "@/component-library/GLink.vue";
 
 library.add(faCaretDown);
 library.add(faSignature);

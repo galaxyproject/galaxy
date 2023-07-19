@@ -2,9 +2,9 @@
 import BootstrapVue from "bootstrap-vue";
 import Vue, { computed } from "vue";
 
-import { getZoomInLevel, getZoomOutLevel, isMaxZoom, isMinZoom } from "./modules/zoomLevels";
+import { GButton } from "@/component-library";
 
-import GButton from "@/component-library/GButton.vue";
+import { getZoomInLevel, getZoomOutLevel, isMaxZoom, isMinZoom } from "./modules/zoomLevels";
 
 Vue.use(BootstrapVue);
 

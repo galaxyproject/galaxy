@@ -2,6 +2,7 @@
 import { BFormCheckbox, BModal } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 
+import { GAlert, GButton } from "@/component-library";
 import type { ExportRecord } from "@/components/Common/models/exportRecordModel";
 import { exportToFileSource, getExportRecords } from "@/components/History/Export/services";
 import { DEFAULT_EXPORT_PARAMS } from "@/composables/shortTermStorage";
@@ -9,8 +10,6 @@ import { useTaskMonitor } from "@/composables/taskMonitor";
 import type { HistorySummary } from "@/stores/historyStore";
 
 import ExportRecordCard from "./ExportRecordCard.vue";
-import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
 import ExportToFileSourceForm from "@/components/Common/ExportForm.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 

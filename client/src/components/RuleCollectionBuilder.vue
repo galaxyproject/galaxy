@@ -589,10 +589,8 @@ import JobStatesModel from "utils/job-states-model";
 import _l from "utils/localization";
 import Vue from "vue";
 
-import GRow from "@/component-library/GRow.vue";
-import GAlert from "component-library/GAlert.vue";
-import GButton from "component-library/GButton.vue";
-import GInput from "component-library/GInput.vue";
+import { GAlert, GButton, GInput, GRow } from "@/component-library";
+
 import TooltipOnHover from "components/TooltipOnHover.vue";
 
 Vue.use(BootstrapVue);

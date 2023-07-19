@@ -56,8 +56,9 @@ import { getAppRoot } from "onload/loadConfig";
 import { errorMessageAsString } from "utils/simple-error";
 import Vue from "vue";
 
+import { GAlert } from "@/component-library";
+
 import ExportLink from "./ExportLink.vue";
-import GAlert from "@/component-library/GAlert.vue";
 
 Vue.use(BootstrapVue);
 

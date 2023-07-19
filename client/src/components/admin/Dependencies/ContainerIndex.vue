@@ -92,16 +92,15 @@
 </template>
 <script>
 import BootstrapVue from "bootstrap-vue";
-import GButton from "component-library/GButton";
 import _ from "underscore";
 import Vue from "vue";
+
+import { GButton, GRow } from "@/component-library";
 
 import { getContainerResolutionToolbox, resolveContainersWithInstall } from "../AdminServices";
 import ContainerResolutionDetails from "./ContainerResolutionDetails";
 import { DESCRIPTION } from "./ContainerResolver";
 import DependencyIndexMixin from "./DependencyIndexMixin";
-
-import GRow from "@/component-library/GRow.vue";
 
 Vue.use(BootstrapVue);
 

@@ -1,12 +1,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+import { GButton, GButtonGroup, GDropdown, GDropdownItem } from "@/component-library";
 import { useConfirmDialog } from "@/composables/confirmDialog";
-
-import GButton from "@/component-library/GButton.vue";
-import GButtonGroup from "@/component-library/GButtonGroup.vue";
-import GDropdown from "@/component-library/GDropdown.vue";
-import GDropdownItem from "@/component-library/GDropdownItem.vue";
 
 const emit = defineEmits<{
     (e: "onAttributes"): void;

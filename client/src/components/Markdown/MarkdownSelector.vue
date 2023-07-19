@@ -30,7 +30,7 @@
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
-import GAlert from "@/component-library/GAlert.vue";
+import { GAlert } from "@/component-library";
 
 Vue.use(BootstrapVue);
 

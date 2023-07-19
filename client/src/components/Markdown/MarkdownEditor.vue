@@ -37,10 +37,11 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
-import GButton from "component-library/GButton";
 import FlexPanel from "components/Panels/FlexPanel";
 import _ from "underscore";
 import Vue from "vue";
+
+import { GButton } from "@/component-library";
 
 import MarkdownHelp from "./MarkdownHelp";
 import MarkdownToolBox from "./MarkdownToolBox";

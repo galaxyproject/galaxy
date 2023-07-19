@@ -46,12 +46,11 @@
 <script>
 import { mapActions, mapState } from "pinia";
 
+import { GAlert } from "@/component-library";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
 import TourStep from "./TourStep";
-
-import GAlert from "@/component-library/GAlert.vue";
 
 // popup display duration when auto-playing the tour
 const playDelay = 3000;

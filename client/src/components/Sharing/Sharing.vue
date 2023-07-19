@@ -270,19 +270,11 @@ import { errorMessageAsString } from "utils/simple-error";
 import Vue from "vue";
 import Multiselect from "vue-multiselect";
 
+import { GAlert, GButton, GCard, GCardHeader, GCol, GCollapse, GRow, GTooltip } from "@/component-library";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 
 import ErrorMessage from "./ErrorMessage";
-
-import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
-import GCard from "@/component-library/GCard.vue";
-import GCardHeader from "@/component-library/GCardHeader.vue";
-import GCol from "@/component-library/GCol.vue";
-import GCollapse from "@/component-library/GCollapse.vue";
-import GRow from "@/component-library/GRow.vue";
-import GTooltip from "@/component-library/GTooltip.vue";
 
 Vue.use(BootstrapVue);
 library.add(faCopy, faEdit, faUserPlus, faUserSlash, faCaretDown, faCaretUp);

@@ -28,9 +28,9 @@ model, so probably has to go eventually.-->
     </div>
 </template>
 <script>
-import { JobStateSummary } from "./JobStateSummary";
+import { GProgressBar } from "@/component-library";
 
-import GProgressBar from "@/component-library/GProgressBar.vue";
+import { JobStateSummary } from "./JobStateSummary";
 
 export default {
     components: {

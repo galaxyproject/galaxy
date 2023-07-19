@@ -22,7 +22,8 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPlay, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import GButton from "component-library/GButton";
+
+import { GButton } from "@/component-library";
 
 library.add(faSpinner);
 library.add(faPlay);

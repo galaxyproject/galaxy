@@ -50,16 +50,11 @@ import { copyCollection } from "components/Markdown/services";
 import { getAppRoot } from "onload/loadConfig";
 import { mapState } from "pinia";
 
+import { GAlert, GButton, GCard, GCardBody, GCardHeader } from "@/component-library";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
 import CollectionTree from "./CollectionTree";
-
-import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
-import GCard from "@/component-library/GCard.vue";
-import GCardBody from "@/component-library/GCardBody.vue";
-import GCardHeader from "@/component-library/GCardHeader.vue";
 
 export default {
     components: {

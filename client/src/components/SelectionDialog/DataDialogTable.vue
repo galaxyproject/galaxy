@@ -80,8 +80,7 @@ import BootstrapVue from "bootstrap-vue";
 import { selectionStates } from "components/SelectionDialog/selectionStates";
 import Vue from "vue";
 
-import GLink from "@/component-library/GLink.vue";
-import GPagination from "@/component-library/GPagination.vue";
+import { GLink, GPagination } from "@/component-library";
 
 Vue.use(BootstrapVue);
 library.add(faCheckSquare, faSquare, faFolder, faMinusSquare);

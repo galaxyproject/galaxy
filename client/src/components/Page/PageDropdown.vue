@@ -5,12 +5,11 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, unref } from "vue";
 
+import { GLink } from "@/component-library";
 import { useUserStore } from "@/stores/userStore";
 import _l from "@/utils/localization";
 
 import { deletePage } from "./services";
-
-import GLink from "@/component-library/GLink.vue";
 
 library.add(faCaretDown);
 

@@ -3,11 +3,9 @@ import { BFormCheckbox, BFormGroup, BFormSelect } from "bootstrap-vue";
 import { ExportParamsModel } from "components/Common/models/exportRecordModel";
 import { computed, reactive, ref } from "vue";
 
-import { AVAILABLE_EXPORT_FORMATS } from "./services";
+import { GCard, GCollapse, GLink } from "@/component-library";
 
-import GCard from "@/component-library/GCard.vue";
-import GCollapse from "@/component-library/GCollapse.vue";
-import GLink from "@/component-library/GLink.vue";
+import { AVAILABLE_EXPORT_FORMATS } from "./services";
 
 const props = defineProps({
     exportParams: {

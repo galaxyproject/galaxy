@@ -9,7 +9,7 @@
 import LoadingSpan from "components/LoadingSpan";
 import { ToolSourceProvider } from "components/providers/ToolSourceProvider";
 
-import GAlert from "@/component-library/GAlert.vue";
+import { GAlert } from "@/component-library";
 
 export default {
     components: {

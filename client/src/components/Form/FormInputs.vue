@@ -90,10 +90,11 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPlus, faTrashAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import GButton from "component-library/GButton";
 import FormCard from "components/Form/FormCard";
 import FormElement from "components/Form/FormElement";
 import { matchCase } from "components/Form/utilities";
+
+import { GButton } from "@/component-library";
 
 library.add(faPlus, faTrashAlt);
 

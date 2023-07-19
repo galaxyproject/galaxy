@@ -27,10 +27,7 @@
 </template>
 
 <script>
-import GInput from "component-library/GInput";
-
-import GCol from "@/component-library/GCol.vue";
-import GRow from "@/component-library/GRow.vue";
+import { GCol, GInput, GRow } from "@/component-library";
 
 export default {
     components: {

@@ -272,19 +272,12 @@ import { mapState } from "pinia";
 import Utils from "utils/utils";
 import Vue from "vue";
 
+import { GButton, GCol, GContainer, GInput, GLink, GPagination, GRow } from "@/component-library";
 import { useUserStore } from "@/stores/userStore";
 
 import { Services } from "./services";
 import { fields } from "./table-fields";
 import FolderTopBar from "./TopToolbar/FolderTopBar";
-
-import GButton from "@/component-library/GButton.vue";
-import GCol from "@/component-library/GCol.vue";
-import GContainer from "@/component-library/GContainer.vue";
-import GInput from "@/component-library/GInput.vue";
-import GLink from "@/component-library/GLink.vue";
-import GPagination from "@/component-library/GPagination.vue";
-import GRow from "@/component-library/GRow.vue";
 
 initFolderTableIcons();
 

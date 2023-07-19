@@ -50,6 +50,7 @@ import { mapState } from "pinia";
 import { useHistoryItemsStore } from "stores/history/historyItemsStore";
 import { errorMessageAsString } from "utils/simple-error";
 
+import { GAlert } from "@/component-library";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import { WorkflowRunModel } from "./model";
@@ -57,8 +58,6 @@ import { getRunData } from "./services";
 import WorkflowRunForm from "./WorkflowRunForm";
 import WorkflowRunFormSimple from "./WorkflowRunFormSimple";
 import WorkflowRunSuccess from "./WorkflowRunSuccess";
-
-import GAlert from "@/component-library/GAlert.vue";
 
 export default {
     components: {

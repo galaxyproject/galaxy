@@ -18,10 +18,8 @@
 import { BProgress } from "bootstrap-vue";
 import { mapActions, mapState } from "pinia";
 
+import { GAlert, GLink } from "@/component-library";
 import { useUserFlagsStore } from "@/stores/userFlagsStore";
-
-import GAlert from "@/component-library/GAlert.vue";
-import GLink from "@/component-library/GLink.vue";
 
 export default {
     components: {

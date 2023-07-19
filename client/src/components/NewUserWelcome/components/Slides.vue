@@ -31,8 +31,9 @@
     </div>
 </template>
 <script>
-import GButton from "component-library/GButton";
 import { getAppRoot } from "onload/loadConfig";
+
+import { GButton } from "@/component-library";
 
 export default {
     components: {

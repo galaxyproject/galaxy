@@ -118,11 +118,12 @@
 
 <script>
 import { getGalaxyInstance } from "app";
-import GButton from "component-library/GButton";
 import UploadRow from "mvc/upload/collection/collection-row";
 import _ from "underscore";
 import { refreshContentsWrapper } from "utils/data";
 import _l from "utils/localization";
+
+import { GButton } from "@/component-library";
 
 import { uploadModelsToPayload } from "./helpers";
 import UploadBoxMixin from "./UploadBoxMixin";

@@ -6,10 +6,9 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, type ComputedRef, type Ref, ref } from "vue";
 
+import { GAlert, GButton } from "@/component-library";
 import { type Activity, useActivityStore } from "@/stores/activityStore";
 
-import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 
 library.add({

@@ -61,6 +61,7 @@
         </div>
     </GCard>
 </template>
+
 <script>
 import BootstrapVue from "bootstrap-vue";
 import ToolPanelViewProvider from "components/providers/ToolPanelViewProvider";
@@ -68,14 +69,13 @@ import Vue from "vue";
 
 import { useConfig } from "@/composables/config";
 
+import { GAlert, GCard, GLink } from "@/component-library";
+
 import { Services } from "../services";
 
 import InstallationActions from "./InstallationActions.vue";
 import InstallationSettings from "./InstallationSettings.vue";
 import RepositoryTools from "./RepositoryTools.vue";
-import GAlert from "@/component-library/GAlert.vue";
-import GCard from "@/component-library/GCard.vue";
-import GLink from "@/component-library/GLink.vue";
 
 Vue.use(BootstrapVue);
 

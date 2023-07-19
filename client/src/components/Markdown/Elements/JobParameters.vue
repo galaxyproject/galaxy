@@ -7,7 +7,7 @@
 <script>
 import JobParameters from "components/JobParameters/JobParameters";
 
-import GCard from "@/component-library/GCard.vue";
+import { GCard } from "@/component-library";
 
 export default {
     components: {

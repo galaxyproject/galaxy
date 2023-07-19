@@ -28,7 +28,7 @@ import { JobProvider } from "components/providers";
 import UtcDate from "components/UtcDate";
 import Vue from "vue";
 
-import GCard from "@/component-library/GCard.vue";
+import { GCard } from "@/component-library";
 
 Vue.use(BootstrapVue);
 

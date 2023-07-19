@@ -2,7 +2,7 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref } from "vue";
 
-import GButton from "@/component-library/GButton.vue";
+import { GButton } from "@/component-library";
 
 const loading = ref(false);
 

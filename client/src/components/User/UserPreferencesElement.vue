@@ -1,6 +1,5 @@
 <script setup>
-import GBadge from "@/component-library/GBadge.vue";
-import GRow from "@/component-library/GRow.vue";
+import { GBadge, GRow } from "@/component-library";
 
 defineProps({
     id: {

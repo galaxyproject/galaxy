@@ -72,7 +72,7 @@ import JobDetails from "components/JobInformation/JobDetails";
 import LoadingSpan from "components/LoadingSpan";
 import UtcDate from "components/UtcDate";
 
-import GAlert from "@/component-library/GAlert.vue";
+import { GAlert } from "@/component-library";
 
 export default {
     components: {

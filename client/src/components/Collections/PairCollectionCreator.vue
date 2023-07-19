@@ -154,9 +154,9 @@ import STATES from "mvc/dataset/states";
 import _l from "utils/localization";
 import Vue from "vue";
 
-import mixin from "./common/mixin";
+import { GAlert } from "@/component-library";
 
-import GAlert from "@/component-library/GAlert.vue";
+import mixin from "./common/mixin";
 
 Vue.use(BootstrapVue);
 export default {

@@ -81,8 +81,6 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { refDebounced } from "@vueuse/core";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
-import GButton from "component-library/GButton";
-import GInput from "component-library/GInput";
 import JobError from "components/JobInformation/JobError";
 import { waitOnJob } from "components/JobStates/wait";
 import LoadingSpan from "components/LoadingSpan";
@@ -90,11 +88,11 @@ import { getAppRoot } from "onload/loadConfig";
 import { errorMessageAsString } from "utils/simple-error";
 import Vue, { ref, watch } from "vue";
 
+import { GAlert, GButton, GInput } from "@/component-library";
 import { getFileSources } from "@/components/FilesDialog/services";
 
 import ExternalLink from "./ExternalLink";
 
-import GAlert from "@/component-library/GAlert.vue";
 import FilesInput from "components/FilesDialog/FilesInput.vue";
 
 library.add(faFolderOpen);

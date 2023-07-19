@@ -12,7 +12,7 @@ import { faStar } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { VBTooltip } from "bootstrap-vue";
 
-import GLink from "@/component-library/GLink.vue";
+import { GLink } from "@/component-library";
 
 library.add(faStar, farStar);
 

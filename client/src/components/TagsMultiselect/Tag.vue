@@ -4,9 +4,8 @@ import { faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
+import { GButton } from "@/component-library";
 import { keyedColorScheme } from "@/utils/color";
-
-import GButton from "@/component-library/GButton.vue";
 
 interface TagProps {
     option: string;

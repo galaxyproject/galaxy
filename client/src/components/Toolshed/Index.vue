@@ -29,11 +29,10 @@
 <script>
 import _l from "utils/localization";
 
+import { GButton, GInputGroup, GInputGroupAppend } from "@/component-library";
+
 import InstalledList from "./InstalledList/Index.vue";
 import SearchList from "./SearchList/Index.vue";
-import GButton from "@/component-library/GButton.vue";
-import GInputGroup from "@/component-library/GInputGroup.vue";
-import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
 
 export default {
     components: {

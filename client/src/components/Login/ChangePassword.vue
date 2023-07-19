@@ -19,10 +19,7 @@ import BootstrapVue from "bootstrap-vue";
 import { withPrefix } from "utils/redirect";
 import Vue from "vue";
 
-import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
-import GCard from "@/component-library/GCard.vue";
-import GInput from "@/component-library/GInput.vue";
+import { GAlert, GButton, GCard, GInput } from "@/component-library";
 
 Vue.use(BootstrapVue);
 

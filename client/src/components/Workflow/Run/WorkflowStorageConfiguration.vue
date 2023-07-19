@@ -48,7 +48,7 @@
 </template>
 
 <script>
-import GButton from "component-library/GButton";
+import { GButton } from "@/component-library";
 
 import WorkflowSelectPreferredObjectStore from "./WorkflowSelectPreferredObjectStore";
 import WorkflowTargetPreferredObjectStorePopover from "./WorkflowTargetPreferredObjectStorePopover";

@@ -136,12 +136,9 @@ import { STATES } from "components/History/Content/model/states";
 import StatesInfo from "components/History/Content/model/StatesInfo";
 import { HistoryFilters } from "components/History/HistoryFilters";
 
-import HistoryFiltersDefault from "./HistoryFiltersDefault";
+import { GButton, GInput, GInputGroup, GInputGroupAppend } from "@/component-library";
 
-import GButton from "@/component-library/GButton.vue";
-import GInput from "@/component-library/GInput.vue";
-import GInputGroup from "@/component-library/GInputGroup.vue";
-import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
+import HistoryFiltersDefault from "./HistoryFiltersDefault";
 
 export default {
     components: {

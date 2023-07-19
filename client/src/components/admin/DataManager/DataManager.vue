@@ -76,18 +76,20 @@ import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 import { debounce } from "underscore";
 
-import GAlert from "@/component-library/GAlert.vue";
-import GBadge from "@/component-library/GBadge.vue";
-import GButton from "@/component-library/GButton.vue";
-import GButtonGroup from "@/component-library/GButtonGroup.vue";
-import GCard from "@/component-library/GCard.vue";
-import GCardGroup from "@/component-library/GCardGroup.vue";
-import GCol from "@/component-library/GCol.vue";
-import GContainer from "@/component-library/GContainer.vue";
-import GInput from "@/component-library/GInput.vue";
-import GInputGroup from "@/component-library/GInputGroup.vue";
-import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
-import GRow from "@/component-library/GRow.vue";
+import {
+    GAlert,
+    GBadge,
+    GButton,
+    GButtonGroup,
+    GCard,
+    GCardGroup,
+    GCol,
+    GContainer,
+    GInput,
+    GInputGroup,
+    GInputGroupAppend,
+    GRow,
+} from "@/component-library";
 
 export default {
     components: {

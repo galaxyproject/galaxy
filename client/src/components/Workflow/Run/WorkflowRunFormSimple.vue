@@ -53,14 +53,12 @@ import { isWorkflowInput } from "components/Workflow/constants";
 import { mapState } from "pinia";
 import { errorMessageAsString } from "utils/simple-error";
 
+import { GDropdown, GDropdownForm } from "@/component-library";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 
 import { invokeWorkflow } from "./services";
 import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration";
-
-import GDropdown from "@/component-library/GDropdown.vue";
-import GDropdownForm from "@/component-library/GDropdownForm.vue";
 
 export default {
     components: {

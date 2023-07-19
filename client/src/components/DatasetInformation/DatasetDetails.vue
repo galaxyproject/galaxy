@@ -53,6 +53,7 @@
 <script>
 import { mapState } from "pinia";
 
+import { GAlert } from "@/component-library";
 import DatasetStorage from "@/components/Dataset/DatasetStorage/DatasetStorage";
 import DatasetInformation from "@/components/DatasetInformation/DatasetInformation";
 import JobDependencies from "@/components/JobDependencies/JobDependencies";
@@ -67,8 +68,6 @@ import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 
 import InheritanceChain from "../InheritanceChain/InheritanceChain";
-
-import GAlert from "@/component-library/GAlert.vue";
 
 export default {
     components: {

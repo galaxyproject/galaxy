@@ -199,20 +199,14 @@
 </template>
 
 <script>
-import GButton from "component-library/GButton";
-import GButtonGroup from "component-library/GButtonGroup";
 import CopyModal from "components/History/Modals/CopyModal";
 import SelectorModal from "components/History/Modals/SelectorModal";
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import { mapActions, mapState } from "pinia";
 
+import { GButton, GButtonGroup, GDropdown, GDropdownDivider, GDropdownItem, GDropdownText } from "@/component-library";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
-
-import GDropdown from "@/component-library/GDropdown.vue";
-import GDropdownDivider from "@/component-library/GDropdownDivider.vue";
-import GDropdownItem from "@/component-library/GDropdownItem.vue";
-import GDropdownText from "@/component-library/GDropdownText.vue";
 
 export default {
     components: {

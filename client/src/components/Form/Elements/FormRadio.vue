@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from "vue";
 
-import GAlert from "@/component-library/GAlert.vue";
+import { GAlert } from "@/component-library";
 
 const emit = defineEmits(["input"]);
 const props = defineProps({

@@ -1,11 +1,10 @@
 <script setup>
 import { computed, ref, watch } from "vue";
 
+import { GCard } from "@/component-library";
 import { useConfig } from "@/composables/config";
 import { useCurrentTheme } from "@/composables/user";
 import { withPrefix } from "@/utils/redirect";
-
-import GCard from "@/component-library/GCard.vue";
 
 const { currentTheme, setCurrentTheme } = useCurrentTheme();
 const { config, isConfigLoaded } = useConfig();

@@ -6,9 +6,8 @@ import { storeToRefs } from "pinia";
 import ariaAlert from "utils/ariaAlert";
 import { computed } from "vue";
 
+import { GButton } from "@/component-library";
 import { useUserStore } from "@/stores/userStore";
-
-import GButton from "@/component-library/GButton.vue";
 
 library.add(fasStar, farStar);
 

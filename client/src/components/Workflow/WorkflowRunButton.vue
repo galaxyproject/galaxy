@@ -9,7 +9,8 @@
 
 <script>
 import { VBTooltip } from "bootstrap-vue";
-import GButton from "component-library/GButton";
+
+import { GButton } from "@/component-library";
 
 export default {
     components: {

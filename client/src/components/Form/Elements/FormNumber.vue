@@ -24,11 +24,7 @@
 </template>
 
 <script>
-import GAlert from "component-library/GAlert";
-import GInput from "component-library/GInput";
-
-import GCol from "@/component-library/GCol.vue";
-import GRow from "@/component-library/GRow.vue";
+import { GAlert, GCol, GInput, GRow } from "@/component-library";
 
 export default {
     components: {

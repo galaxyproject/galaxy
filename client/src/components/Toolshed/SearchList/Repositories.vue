@@ -20,10 +20,11 @@ import BootstrapVue from "bootstrap-vue";
 import LoadingSpan from "components/LoadingSpan";
 import Vue from "vue";
 
+import { GLink } from "@/component-library";
+
 import { Services } from "../services";
 
 import RepositoryDetails from "../RepositoryDetails/Index.vue";
-import GLink from "@/component-library/GLink.vue";
 
 Vue.use(BootstrapVue);
 

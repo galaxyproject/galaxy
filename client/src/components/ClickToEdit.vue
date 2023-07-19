@@ -29,7 +29,7 @@
 </template>
 
 <script>
-import GInput from "component-library/GInput";
+import { GInput } from "@/component-library";
 
 import DebouncedInput from "./DebouncedInput";
 

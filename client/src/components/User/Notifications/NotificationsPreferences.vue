@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BFormCheckbox } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
+import { GAlert, GButton, GCard, GCol, GRow } from "@/component-library";
 import {
     getNotificationsPreferencesFromServer,
     updateNotificationsPreferencesOnServer,
@@ -18,11 +19,6 @@ import {
 } from "@/composables/utils/pushNotifications";
 import type { components } from "@/schema";
 
-import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
-import GCard from "@/component-library/GCard.vue";
-import GCol from "@/component-library/GCol.vue";
-import GRow from "@/component-library/GRow.vue";
 import AsyncButton from "@/components/Common/AsyncButton.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 

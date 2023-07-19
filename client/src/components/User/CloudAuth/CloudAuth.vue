@@ -93,13 +93,11 @@
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
+import { GAlert, GButtonGroup, GInput } from "@/component-library";
+
 import CloudAuthItem from "./CloudAuthItem";
 import { Credential } from "./model";
 import svc from "./model/service";
-
-import GAlert from "@/component-library/GAlert.vue";
-import GButtonGroup from "@/component-library/GButtonGroup.vue";
-import GInput from "@/component-library/GInput.vue";
 
 Vue.use(BootstrapVue);
 

@@ -91,16 +91,12 @@ import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 import { useRouter } from "vue-router/composables";
 
+import { GAlert, GCol, GPagination, GRow } from "@/component-library";
 import { absPath } from "@/utils/redirect";
 
 import PageDropdown from "./PageDropdown";
 import PageIndexActions from "./PageIndexActions";
 import { updateTags } from "./services";
-
-import GAlert from "@/component-library/GAlert.vue";
-import GCol from "@/component-library/GCol.vue";
-import GPagination from "@/component-library/GPagination.vue";
-import GRow from "@/component-library/GRow.vue";
 
 const helpHtml = `<div>
 <p>This textbox can be used to filter the pages displayed.

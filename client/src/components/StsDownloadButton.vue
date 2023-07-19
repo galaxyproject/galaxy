@@ -22,11 +22,11 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faDownload, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import GButton from "component-library/GButton";
 import { Toast } from "composables/toast";
 import { getAppRoot } from "onload/loadConfig";
 import { withPrefix } from "utils/redirect";
 
+import { GButton } from "@/component-library";
 import { useConfig } from "@/composables/config";
 
 library.add(faDownload, faSpinner);

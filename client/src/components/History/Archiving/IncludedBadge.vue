@@ -4,7 +4,7 @@ import { faCheck, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
-import GBadge from "@/component-library/GBadge.vue";
+import { GBadge } from "@/component-library";
 
 library.add(faCheck, faTimes);
 

@@ -84,6 +84,7 @@ import { UntypedParameters } from "components/Workflow/Editor/modules/parameters
 import { storeToRefs } from "pinia";
 import Vue from "vue";
 
+import { GCard, GCardBody } from "@/component-library";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useWorkflowStores } from "@/composables/workflowStores";
 
@@ -97,9 +98,6 @@ import {
     getUnlabeledOutputs,
     getUntypedParameters,
 } from "./modules/linting";
-
-import GCard from "@/component-library/GCard.vue";
-import GCardBody from "@/component-library/GCardBody.vue";
 
 Vue.use(BootstrapVue);
 

@@ -44,7 +44,7 @@ import { prependPath } from "utils/redirect";
 import { errorMessageAsString } from "utils/simple-error";
 import Vue from "vue";
 
-import GRow from "@/component-library/GRow.vue";
+import { GRow } from "@/component-library";
 
 Vue.use(VBModal);
 

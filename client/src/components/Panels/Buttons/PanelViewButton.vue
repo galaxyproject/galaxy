@@ -37,11 +37,9 @@
 </template>
 
 <script>
-import PanelViewMenuItem from "./PanelViewMenuItem";
+import { GDropdown, GDropdownDivider, GDropdownGroup } from "@/component-library";
 
-import GDropdown from "@/component-library/GDropdown.vue";
-import GDropdownDivider from "@/component-library/GDropdownDivider.vue";
-import GDropdownGroup from "@/component-library/GDropdownGroup.vue";
+import PanelViewMenuItem from "./PanelViewMenuItem";
 
 const groupsDefinitions = [
     { type: "ontology", title: "...by Ontology" },

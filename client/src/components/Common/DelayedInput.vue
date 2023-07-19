@@ -39,10 +39,7 @@
     </GInputGroup>
 </template>
 <script>
-import GButton from "@/component-library/GButton.vue";
-import GInput from "@/component-library/GInput.vue";
-import GInputGroup from "@/component-library/GInputGroup.vue";
-import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
+import { GButton, GInput, GInputGroup, GInputGroupAppend } from "@/component-library";
 
 export default {
     components: {

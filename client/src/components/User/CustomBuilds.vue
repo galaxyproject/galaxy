@@ -155,13 +155,7 @@ import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 import Multiselect from "vue-multiselect";
 
-import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
-import GCard from "@/component-library/GCard.vue";
-import GCol from "@/component-library/GCol.vue";
-import GContainer from "@/component-library/GContainer.vue";
-import GInput from "@/component-library/GInput.vue";
-import GRow from "@/component-library/GRow.vue";
+import { GAlert, GButton, GCard, GCol, GContainer, GInput, GRow } from "@/component-library";
 
 Vue.use(BootstrapVue);
 

@@ -122,6 +122,7 @@ import QueryStringParsing from "utils/query-string-parsing";
 import { withPrefix } from "utils/redirect";
 import Vue from "vue";
 
+import { GAlert, GCollapse, GContainer } from "@/component-library";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 
@@ -132,9 +133,6 @@ import UserPreferencesElement from "./UserPreferencesElement";
 import UserPreferredObjectStore from "./UserPreferredObjectStore";
 
 import ThemeSelector from "./ThemeSelector.vue";
-import GAlert from "@/component-library/GAlert.vue";
-import GCollapse from "@/component-library/GCollapse.vue";
-import GContainer from "@/component-library/GContainer.vue";
 
 Vue.use(BootstrapVue);
 

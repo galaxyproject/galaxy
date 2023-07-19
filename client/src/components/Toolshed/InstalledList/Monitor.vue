@@ -32,12 +32,10 @@
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
+import { GAlert, GCard, GLink } from "@/component-library";
+
 import InstallationActions from "../RepositoryDetails/InstallationActions";
 import { Services } from "../services";
-
-import GAlert from "@/component-library/GAlert.vue";
-import GCard from "@/component-library/GCard.vue";
-import GLink from "@/component-library/GLink.vue";
 
 Vue.use(BootstrapVue);
 

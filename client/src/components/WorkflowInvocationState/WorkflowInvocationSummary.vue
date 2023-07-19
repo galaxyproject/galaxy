@@ -70,8 +70,8 @@ import ProgressBar from "components/ProgressBar";
 import { getRootFromIndexLink } from "onload";
 import { mapGetters } from "vuex";
 
-import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
+import { GAlert, GButton } from "@/component-library";
+
 import InvocationMessage from "@/components/WorkflowInvocationState/InvocationMessage.vue";
 
 const getUrl = (path) => getRootFromIndexLink() + path;

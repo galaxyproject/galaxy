@@ -1,15 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watchEffect } from "vue";
 
+import { GAlert, GCard, GCardText, GLink } from "@/component-library";
 import localize from "@/utils/localization";
 import { wait } from "@/utils/utils";
 
 import type { CleanableSummary, CleanupOperation } from "./model";
 
-import GAlert from "@/component-library/GAlert.vue";
-import GCard from "@/component-library/GCard.vue";
-import GCardText from "@/component-library/GCardText.vue";
-import GLink from "@/component-library/GLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface CleanupOperationSummaryProps {

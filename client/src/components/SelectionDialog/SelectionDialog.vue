@@ -38,8 +38,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
-import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
+import { GAlert, GButton } from "@/component-library";
 
 Vue.use(BootstrapVue);
 

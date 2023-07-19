@@ -3,6 +3,7 @@ import axios from "axios";
 import { computed, type Ref, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { GAlert, GButton, GCard, GInput, GInputGroup, GInputGroupAppend } from "@/component-library";
 import { withPrefix } from "@/utils/redirect";
 
 import { getRedirectOnImportPath } from "../redirectPath";
@@ -11,12 +12,6 @@ import type { TrsSelection } from "./types";
 
 import TrsServerSelection from "./TrsServerSelection.vue";
 import TrsTool from "./TrsTool.vue";
-import GAlert from "@/component-library/GAlert.vue";
-import GButton from "@/component-library/GButton.vue";
-import GCard from "@/component-library/GCard.vue";
-import GInput from "@/component-library/GInput.vue";
-import GInputGroup from "@/component-library/GInputGroup.vue";
-import GInputGroupAppend from "@/component-library/GInputGroupAppend.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 type TrsSearchData = {

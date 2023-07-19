@@ -83,15 +83,14 @@
 </template>
 <script>
 import BootstrapVue from "bootstrap-vue";
-import GButton from "component-library/GButton";
 import _ from "underscore";
 import Vue from "vue";
+
+import { GButton, GRow } from "@/component-library";
 
 import { getToolboxDependencies, installDependencies, uninstallDependencies } from "../AdminServices";
 import DependencyIndexMixin from "./DependencyIndexMixin";
 import ResolutionDetails from "./ResolutionDetails";
-
-import GRow from "@/component-library/GRow.vue";
 
 Vue.use(BootstrapVue);
 

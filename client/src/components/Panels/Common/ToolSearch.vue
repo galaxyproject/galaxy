@@ -3,12 +3,11 @@ import { computed, onMounted, onUnmounted, type PropType, type Ref, ref } from "
 import { useRouter } from "vue-router/composables";
 
 import { getGalaxyInstance } from "@/app";
+import { GButton, GInput } from "@/component-library";
 import _l from "@/utils/localization";
 
 import { flattenTools } from "../utilities.js";
 
-import GButton from "@/component-library/GButton.vue";
-import GInput from "@/component-library/GInput.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 
 const router = useRouter();

@@ -1,6 +1,4 @@
 <script setup>
-import GButton from "component-library/GButton";
-import GButtonGroup from "component-library/GButtonGroup";
 import Heading from "components/Common/Heading";
 import FormMessage from "components/Form/FormMessage";
 import ToolFooter from "components/Tool/ToolFooter";
@@ -9,6 +7,7 @@ import { getAppRoot } from "onload/loadConfig";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
+import { GButton, GButtonGroup } from "@/component-library";
 import { useUserStore } from "@/stores/userStore";
 
 import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore";

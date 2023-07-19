@@ -70,9 +70,9 @@
 </template>
 
 <script>
-import GButton from "component-library/GButton";
 import { copy as sendToClipboard } from "utils/clipboard";
 
+import { GButton } from "@/component-library";
 import { absPath, prependPath } from "@/utils/redirect";
 
 import DatasetDownload from "./DatasetDownload";

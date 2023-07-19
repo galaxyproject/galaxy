@@ -79,7 +79,6 @@ import "vue-multiselect/dist/vue-multiselect.min.css";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
 import BootstrapVue from "bootstrap-vue";
-import GButton from "component-library/GButton";
 import { initPermissionsIcons } from "components/Libraries/icons";
 import { extractRoles } from "components/Libraries/library-utils";
 import LibraryBreadcrumb from "components/Libraries/LibraryFolder/LibraryBreadcrumb";
@@ -91,7 +90,7 @@ import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 import VueObserveVisibility from "vue-observe-visibility";
 
-import GContainer from "@/component-library/GContainer.vue";
+import { GButton, GContainer } from "@/component-library";
 
 Vue.use(VueObserveVisibility);
 Vue.use(BootstrapVue);

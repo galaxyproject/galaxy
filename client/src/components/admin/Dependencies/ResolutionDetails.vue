@@ -67,6 +67,8 @@
     </GCard>
 </template>
 <script>
+import { GCard } from "@/component-library";
+
 import ContainerResolutionDetails from "./ContainerResolutionDetails";
 import DependencyResolver from "./DependencyResolver";
 import Requirement from "./Requirement";
@@ -74,8 +76,6 @@ import Requirements from "./Requirements";
 import StatusDisplay from "./StatusDisplay";
 import ToolDisplay from "./ToolDisplay";
 import Tools from "./Tools";
-
-import GCard from "@/component-library/GCard.vue";
 
 export default {
     components: {

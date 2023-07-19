@@ -1,9 +1,8 @@
 <script setup lang="ts">
+import { GCard, GCardText } from "@/component-library";
 import type { ExportRecord } from "@/components/Common/models/exportRecordModel";
 
 import IncludedBadge from "./IncludedBadge.vue";
-import GCard from "@/component-library/GCard.vue";
-import GCardText from "@/component-library/GCardText.vue";
 
 const props = defineProps<{
     exportRecord: ExportRecord;

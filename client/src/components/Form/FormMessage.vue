@@ -4,7 +4,7 @@
     </GAlert>
 </template>
 <script>
-import GAlert from "@/component-library/GAlert.vue";
+import { GAlert } from "@/component-library";
 
 export default {
     components: {

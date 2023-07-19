@@ -104,11 +104,11 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faArrowCircleDown, faArrowCircleUp, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import GButton from "component-library/GButton";
 import { updateContentFields } from "components/History/model/queries";
 import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import { useEntryPointStore } from "stores/entryPointStore";
 
+import { GBadge, GButton, GCollapse } from "@/component-library";
 import { clearDrag, setDrag } from "@/utils/setDrag.js";
 
 import CollectionDescription from "./Collection/CollectionDescription";
@@ -116,9 +116,6 @@ import { JobStateSummary } from "./Collection/JobStateSummary";
 import ContentOptions from "./ContentOptions";
 import DatasetDetails from "./Dataset/DatasetDetails";
 import { HIERARCHICAL_COLLECTION_JOB_STATES, STATES } from "./model/states";
-
-import GBadge from "@/component-library/GBadge.vue";
-import GCollapse from "@/component-library/GCollapse.vue";
 
 library.add(faArrowCircleUp, faArrowCircleDown, faCheckCircle);
 export default {

@@ -13,7 +13,7 @@ import LoadingSpan from "components/LoadingSpan";
 import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 
-import GCard from "@/component-library/GCard.vue";
+import { GCard } from "@/component-library";
 
 Vue.use(BootstrapVue);
 

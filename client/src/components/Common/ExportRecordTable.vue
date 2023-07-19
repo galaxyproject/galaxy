@@ -12,12 +12,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BTable } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import GButton from "@/component-library/GButton.vue";
-import GButtonGroup from "@/component-library/GButtonGroup.vue";
-import GButtonToolbar from "@/component-library/GButtonToolbar.vue";
-import GCard from "@/component-library/GCard.vue";
-import GCollapse from "@/component-library/GCollapse.vue";
-import GLink from "@/component-library/GLink.vue";
+import { GButton, GButtonGroup, GButtonToolbar, GCard, GCollapse, GLink } from "@/component-library";
 
 library.add(faExclamationCircle, faCheckCircle, faDownload, faFileImport, faSpinner, faLink);
 
