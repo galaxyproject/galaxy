@@ -457,6 +457,24 @@ class ExecutionTracker:
                 )
                 trans.sa_session.add(implicit_collection.collection)
         else:
+            completed_collections = {}
+            if (
+                self.completed_jobs
+                and self.implicit_collection_jobs
+                and len(self.completed_jobs) == len(self.successful_jobs)
+            ):
+                # If the same number of implicit collection jobs went into
+                # creating the collection and those jobs are all cached
+                # the HDCA has effectively been copied.
+                # We mark this here so that the job cache query in subsequent
+                # jobs considers this to be a valid cached input.
+                completed_job_ids = {job.id for job in self.completed_jobs.values() if job}
+                if all(job.copied_from_job_id in completed_job_ids for job in self.implicit_collection_jobs.job_list):
+                    completed_collections = {
+                        jtodca.name: jtodca.dataset_collection_instance
+                        for jtodca in self.completed_jobs[0].output_dataset_collection_instances
+                    }
+            implicit_collection = None
             for i, implicit_collection in enumerate(self.implicit_collections.values()):
                 if i == 0:
                     implicit_collection_jobs = implicit_collection.implicit_collection_jobs
@@ -465,7 +483,18 @@ class ExecutionTracker:
                 implicit_collection.collection.finalize(
                     collection_type_description=self.collection_info.structure.collection_type_description
                 )
+
+                # Mark implicit HDCA as copied
+                completed_implicit_collection = implicit_collection and completed_collections.get(
+                    implicit_collection.implicit_output_name
+                )
+                if completed_implicit_collection:
+                    implicit_collection.copied_from_history_dataset_collection_association_id = (
+                        completed_implicit_collection.id
+                    )
+
                 trans.sa_session.add(implicit_collection.collection)
+
         with transaction(trans.sa_session):
             trans.sa_session.commit()
 

@@ -4549,6 +4549,48 @@ steps:
             ), f"first output:\n{first_wf_output}\nsecond output:\n{second_wf_output}"
 
     @skip_without_tool("cat1")
+    @skip_without_tool("identifier_multiple")
+    def test_workflow_rerun_with_cached_job_consumes_implicit_hdca(self, history_id: str):
+        workflow = """
+class: GalaxyWorkflow
+inputs:
+  collection_input:
+    type: data_collection_input
+steps:
+  map_over:
+    tool_id: cat1
+    in:
+      input1: collection_input
+  consume_hdca:
+    tool_id: identifier_multiple
+    in:
+      input1: map_over/out_file1
+"""
+        workflow_id = self.workflow_populator.upload_yaml_workflow(name="Consume HDCA", yaml_content=workflow)
+        hdca1 = self.dataset_collection_populator.create_list_in_history(
+            history_id, contents=[("sample1-1", "1 2 3"), ("sample2-1", "7 8 9")]
+        ).json()
+        hdca1 = self.dataset_collection_populator.wait_for_fetched_collection(hdca1)
+        workflow_request = {
+            "inputs": json.dumps({"collection_input": self._ds_entry(hdca1)}),
+            "history": f"hist_id={history_id}",
+            "use_cached_job": True,
+            "inputs_by": "name",
+        }
+        first_invocation_summary = self.workflow_populator.invoke_workflow_and_wait(
+            workflow_id, request=workflow_request
+        ).json()
+        first_invocation = self.workflow_populator.get_invocation(first_invocation_summary["id"], step_details=True)
+        final_job_id_first_invocation = first_invocation["steps"][2]["jobs"][0]["id"]
+        second_invocation_summary = self.workflow_populator.invoke_workflow_and_wait(
+            workflow_id, request=workflow_request
+        ).json()
+        second_invocation = self.workflow_populator.get_invocation(second_invocation_summary["id"], step_details=True)
+        final_job_id_second_invocation = second_invocation["steps"][2]["jobs"][0]["id"]
+        final_job = self.dataset_populator.get_job_details(final_job_id_second_invocation, full=True).json()
+        assert final_job["copied_from_job_id"] == final_job_id_first_invocation
+
+    @skip_without_tool("cat1")
     def test_nested_workflow_rerun_with_use_cached_job(self):
         with self.dataset_populator.test_history() as history_id_one, self.dataset_populator.test_history() as history_id_two:
             test_data = """
