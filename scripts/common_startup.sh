@@ -200,7 +200,12 @@ if [ $FETCH_WHEELS -eq 1 ]; then
 fi
 
 # Install node if not installed
-if [ -n "$VIRTUAL_ENV" ]; then
+if [ -n "$CONDA_DEFAULT_ENV" ] && [ -n "$CONDA_EXE" ]; then
+    if ! in_conda_env "$(command -v node)"; then
+        echo "Installing node into '$CONDA_DEFAULT_ENV' Conda environment with conda."
+        $CONDA_EXE install --yes --override-channels --channel conda-forge --name "$CONDA_DEFAULT_ENV" nodejs="$NODE_VERSION"
+    fi
+elif [ -n "$VIRTUAL_ENV" ]; then
     if ! command -v node >/dev/null || [ "$(node --version)" != "v${NODE_VERSION}" ]; then
         echo "Installing node into $VIRTUAL_ENV with nodeenv."
         if [ -d "${VIRTUAL_ENV}/lib/node_modules" ]; then
@@ -208,11 +213,6 @@ if [ -n "$VIRTUAL_ENV" ]; then
             rm -rf "${VIRTUAL_ENV}/lib/node_modules"
         fi
         nodeenv -n "$NODE_VERSION" -p
-    fi
-elif [ -n "$CONDA_DEFAULT_ENV" ] && [ -n "$CONDA_EXE" ]; then
-    if ! in_conda_env "$(command -v node)"; then
-        echo "Installing node into '$CONDA_DEFAULT_ENV' Conda environment with conda."
-        $CONDA_EXE install --yes --override-channels --channel conda-forge --name "$CONDA_DEFAULT_ENV" nodejs="$NODE_VERSION"
     fi
 fi
 
@@ -243,15 +243,15 @@ fi
 # Build client if necessary.
 if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     # Ensure dependencies are installed
-    if [ -n "$VIRTUAL_ENV" ]; then
+    if [ -n "$CONDA_DEFAULT_ENV" ] && [ -n "$CONDA_EXE" ]; then
+        if ! in_conda_env "$(command -v yarn)"; then
+            echo "Installing yarn into '$CONDA_DEFAULT_ENV' Conda environment with conda."
+            $CONDA_EXE install --yes --override-channels --channel conda-forge --name "$CONDA_DEFAULT_ENV" 'yarn<2'
+        fi
+    elif [ -n "$VIRTUAL_ENV" ]; then
         if ! in_venv "$(command -v yarn)"; then
             echo "Installing yarn into $VIRTUAL_ENV with npm."
             npm install --global yarn
-        fi
-    elif [ -n "$CONDA_DEFAULT_ENV" ] && [ -n "$CONDA_EXE" ]; then
-        if ! in_conda_env "$(command -v yarn)"; then
-            echo "Installing yarn into '$CONDA_DEFAULT_ENV' Conda environment with conda."
-            $CONDA_EXE install --yes --override-channels --channel conda-forge --name "$CONDA_DEFAULT_ENV" yarn
         fi
     else
         echo "WARNING: Galaxy client build needed but there is no virtualenv enabled. Build may fail."
