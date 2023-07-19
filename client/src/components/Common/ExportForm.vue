@@ -38,15 +38,6 @@ const doExport = () => {
         name.value = "";
     }
 };
-
-// This is required to make the component testable with script setup,
-// otherwise we cannot access the component's data.
-// We probably can remove this once we switch to Vue 3 or other testing framework.
-defineExpose({
-    directory,
-    name,
-    canExport,
-});
 </script>
 
 <template>

@@ -1,7 +1,8 @@
 import { getLocalVue } from "@tests/jest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
 
 import ExportForm from "./ExportForm.vue";
+import FilesInput from "@/components/FilesDialog/FilesInput.vue";
 
 const localVue = getLocalVue(true);
 
@@ -9,40 +10,33 @@ describe("ExportForm.vue", () => {
     let wrapper: any;
 
     beforeEach(async () => {
-        wrapper = shallowMount(ExportForm, {
+        wrapper = mount(ExportForm, {
             propsData: {},
             localVue,
         });
     });
 
     it("should render a form with export button disabled because inputs are empty", async () => {
-        expect(wrapper.vm.directory).toEqual("");
-        expect(wrapper.vm.name).toEqual("");
-
         expectExportButtonDisabled();
     });
 
     it("should render a form with export button disabled because directory is empty", async () => {
-        await wrapper.setData({
-            name: "export.tar.gz",
-        });
+        const newValue = "export.tar.gz";
+        await setNameInput(newValue);
 
         expectExportButtonDisabled();
     });
 
     it("should render a form with export button disabled because name is empty", async () => {
-        await wrapper.setData({
-            directory: "gxfiles://",
-        });
+        const newValue = "gxfiles://";
+        await setDirectoryInput(newValue);
 
         expectExportButtonDisabled();
     });
 
     it("should allow export when all inputs are defined", async () => {
-        await wrapper.setData({
-            name: "export.tar.gz",
-            directory: "gxfiles://",
-        });
+        await setNameInput("export.tar.gz");
+        await setDirectoryInput("gxfiles://");
 
         expectExportButtonEnabled();
     });
@@ -53,10 +47,8 @@ describe("ExportForm.vue", () => {
     });
 
     it("should emit 'export' event with correct inputs on export button click", async () => {
-        await wrapper.setData({
-            name: "export.tar.gz",
-            directory: "gxfiles://",
-        });
+        await setNameInput("export.tar.gz");
+        await setDirectoryInput("gxfiles://");
         expect(wrapper.emitted()).not.toHaveProperty("export");
 
         await wrapper.find(".export-button").trigger("click");
@@ -66,21 +58,16 @@ describe("ExportForm.vue", () => {
         expect(wrapper.emitted()["export"][0][1]).toBe("export.tar.gz");
     });
 
-    it("should clear the inputs after export when clearInputAfterExport is enabled", async () => {
+    it("should clear the inputs (hence disabling export) after export when clearInputAfterExport is enabled", async () => {
         await wrapper.setProps({
             clearInputAfterExport: true,
         });
-        await wrapper.setData({
-            name: "export.tar.gz",
-            directory: "gxfiles://",
-        });
-        expect(wrapper.vm.directory).toEqual("gxfiles://");
-        expect(wrapper.vm.name).toEqual("export.tar.gz");
+        await setNameInput("export.tar.gz");
+        await setDirectoryInput("gxfiles://");
 
         await wrapper.find(".export-button").trigger("click");
 
-        expect(wrapper.vm.directory).toBe("");
-        expect(wrapper.vm.name).toBe("");
+        expectExportButtonDisabled();
     });
 
     function expectExportButtonDisabled() {
@@ -91,5 +78,14 @@ describe("ExportForm.vue", () => {
     function expectExportButtonEnabled() {
         expect(wrapper.find(".export-button").exists()).toBeTruthy();
         expect(wrapper.find(".export-button").attributes("disabled")).toBeFalsy();
+    }
+
+    async function setNameInput(newValue: string) {
+        const nameInput = wrapper.find("#name");
+        await nameInput.setValue(newValue);
+    }
+
+    async function setDirectoryInput(newValue: string) {
+        await wrapper.findComponent(FilesInput).vm.$emit("input", newValue);
     }
 });
