@@ -6,7 +6,7 @@ import { filesDialog } from "@/utils/data";
 
 interface Props {
     value: string;
-    mode?: string;
+    mode?: "file" | "directory";
     requireWritable?: boolean;
 }
 
