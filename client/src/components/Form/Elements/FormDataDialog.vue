@@ -47,7 +47,7 @@ function onData(result: Array<string> | string) {
     <div class="d-flex">
         <b-input-group>
             <button @click="dataDialogOpen = true">
-                <font-awesome-icon icon="folder-open" :title="title" />
+                <FontAwesomeIcon icon="folder-open" :title="title" />
             </button>
             <input :value="props.value" readonly class="float-left" />
         </b-input-group>
