@@ -21,9 +21,19 @@ import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 library.add(faCaretLeft);
 
 interface FilesDialogProps {
+    /** Whether to allow multiple selections */
     multiple?: boolean;
-    mode?: "file" | "directory";
+    /** The browsing mode:
+     * - `file` - allows to select files or directories contained in a source (default)
+     * - `directory` - allows to select directories (paths) only
+     * - `source` - allows to select a source plugin root and doesn't list its contents
+     */
+    mode?: "file" | "directory" | "source";
+    /** Whether to show only writable sources */
     requireWritable?: boolean;
+    /** Whether to show only RDM sources */
+    rdmOnly?: boolean;
+    /** Callback function to be called passing the results when selection is complete */
     callback?: (files: any) => void;
 }
 
@@ -31,6 +41,7 @@ const props = withDefaults(defineProps<FilesDialogProps>(), {
     multiple: false,
     mode: "file",
     requireWritable: false,
+    rdmOnly: false,
     callback: () => {},
 });
 
@@ -204,7 +215,7 @@ function load(record?: DirectoryRecord) {
     undoShow.value = !urlTracker.value.atRoot();
     if (urlTracker.value.atRoot() || errorMessage.value) {
         errorMessage.value = undefined;
-        getFileSources()
+        getFileSources(props.rdmOnly)
             .then((results) => {
                 const convertedItems = results
                     .filter((item) => !props.requireWritable || item.writable)
@@ -222,7 +233,15 @@ function load(record?: DirectoryRecord) {
         if (!currentDirectory.value) {
             return;
         }
-        browseRemoteFiles(currentDirectory.value?.url)
+        if (props.mode === "source") {
+            // In source mode, only show sources, not contents
+            items.value = [];
+            optionsShow.value = true;
+            showTime.value = false;
+            showDetails.value = false;
+            return;
+        }
+        browseRemoteFiles(currentDirectory.value?.url, false, props.requireWritable)
             .then((results) => {
                 items.value = filterByMode(results).map(entryToRecord);
                 formatRows();
