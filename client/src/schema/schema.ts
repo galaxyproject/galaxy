@@ -1232,6 +1232,11 @@ export interface paths {
          * @description Lists all remote files available to the user from different sources.
          */
         get: operations["index_api_remote_files_get"];
+        /**
+         * Creates a new entry (directory/record) on the remote files source.
+         * @description Creates a new entry on the remote files source.
+         */
+        post: operations["create_entry_api_remote_files_post"];
     };
     "/api/remote_files/plugins": {
         /**
@@ -2598,6 +2603,23 @@ export interface components {
             [key: string]: string | undefined;
         };
         /**
+         * CreateEntryPayload
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        CreateEntryPayload: {
+            /**
+             * Name
+             * @description The name of the entry to create.
+             * @example my_new_entry
+             */
+            name: string;
+            /**
+             * Target
+             * @description The target file source to create the entry in.
+             */
+            target: string;
+        };
+        /**
          * CreateHistoryContentFromStore
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -2967,6 +2989,29 @@ export interface components {
              * @description The relative URL to get this particular Quota details from the rest API.
              */
             url: string;
+        };
+        /**
+         * CreatedEntryResponse
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        CreatedEntryResponse: {
+            /**
+             * External link
+             * @description An optional external link to the created entry if available.
+             */
+            external_link?: string;
+            /**
+             * Name
+             * @description The name of the created entry.
+             * @example my_new_entry
+             */
+            name: string;
+            /**
+             * URI
+             * @description The URI of the created entry.
+             * @example gxfiles://my_new_entry
+             */
+            uri: string;
         };
         /**
          * CreatedUserModel
@@ -11122,11 +11167,13 @@ export interface operations {
             /** @description The requested format of returned data. Either `flat` to simply list all the files, `jstree` to get a tree representation of the files, or the default `uri` to list files and directories by their URI. */
             /** @description Wether to recursively lists all sub-directories. This will be `True` by default depending on the `target`. */
             /** @description (This only applies when `format` is `jstree`) The value can be either `folders` or `files` and it will disable the corresponding nodes of the tree. */
+            /** @description Whether the query is made with the intention of writing to the source. If set to True, only entries that can be written to will be accessible. */
             query?: {
                 target?: string;
                 format?: components["schemas"]["RemoteFilesFormat"];
                 recursive?: boolean;
                 disable?: components["schemas"]["RemoteFilesDisableMode"];
+                write_intent?: boolean;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -16081,11 +16128,13 @@ export interface operations {
             /** @description The requested format of returned data. Either `flat` to simply list all the files, `jstree` to get a tree representation of the files, or the default `uri` to list files and directories by their URI. */
             /** @description Wether to recursively lists all sub-directories. This will be `True` by default depending on the `target`. */
             /** @description (This only applies when `format` is `jstree`) The value can be either `folders` or `files` and it will disable the corresponding nodes of the tree. */
+            /** @description Whether the query is made with the intention of writing to the source. If set to True, only entries that can be written to will be accessible. */
             query?: {
                 target?: string;
                 format?: components["schemas"]["RemoteFilesFormat"];
                 recursive?: boolean;
                 disable?: components["schemas"]["RemoteFilesDisableMode"];
+                write_intent?: boolean;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -16109,6 +16158,37 @@ export interface operations {
             };
         };
     };
+    create_entry_api_remote_files_post: {
+        /**
+         * Creates a new entry (directory/record) on the remote files source.
+         * @description Creates a new entry on the remote files source.
+         */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateEntryPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["CreatedEntryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     plugins_api_remote_files_plugins_get: {
         /**
          * Display plugin information for each of the gxfiles:// URI targets available.
@@ -16116,8 +16196,10 @@ export interface operations {
          */
         parameters?: {
             /** @description Whether to return browsable filesources only. The default is `True`, which will omit filesourceslike `http` and `base64` that do not implement a list method. */
+            /** @description Whether to return only RDM compatible plugins. The default is `False`, which will return all plugins. */
             query?: {
                 browsable_only?: boolean;
+                rdm_only?: boolean;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
