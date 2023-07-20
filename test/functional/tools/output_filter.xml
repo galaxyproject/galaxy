@@ -1,15 +1,15 @@
 <tool id="output_filter" name="output_filter" version="1.0.0">
     <description>test for output filtering and expect_num_outputs</description>
     <command><![CDATA[
-echo 'test' > 1 &&
-echo 'test' > 2 &&
-echo 'test' > 3 &&
-echo 'test' > 4 &&
-echo 'test' > 5 &&
-echo 'test' > p1.forward &&
-echo 'test' > p1.reverse &&
-echo 'test' > p2.forward &&
-echo 'test' > p2.reverse 
+echo '1' > 1 &&
+echo '2' > 2 &&
+echo '3' > 3 &&
+echo '4' > 4 &&
+echo '5' > 5 &&
+echo 'p1.forward' > p1.forward &&
+echo 'p1.reverse' > p1.reverse &&
+echo 'p2.forward' > p2.forward &&
+echo 'p2.reverse' > p2.reverse 
     ]]></command>
     <inputs>
         <param name="produce_out_1" type="boolean" truevalue="true" falsevalue="false" checked="False" label="Do Filter 1" />
@@ -41,12 +41,12 @@ echo 'test' > p2.reverse
             <param name="filter_text_1" value="foo" />
             <output name="out_1">
                 <assert_contents>
-                    <has_line line="test" />
+                    <has_line line="1" />
                 </assert_contents>
             </output>
             <output name="out_2">
                 <assert_contents>
-                    <has_line line="test" />
+                    <has_line line="2" />
                 </assert_contents>
             </output>
         </test>
@@ -55,7 +55,7 @@ echo 'test' > p2.reverse
             <param name="filter_text_1" value="bar" /> <!-- fails second filter in out2 -->
             <output name="out_1">
                 <assert_contents>
-                    <has_line line="test" />
+                    <has_line line="1" />
                 </assert_contents>
             </output>
         </test>
@@ -73,23 +73,23 @@ echo 'test' > p2.reverse
             <param name="produce_collection" value="true" />
             <output name="out_1">
                 <assert_contents>
-                    <has_line line="test" />
+                    <has_line line="1" />
                 </assert_contents>
             </output>
             <output name="out_2">
                 <assert_contents>
-                    <has_line line="test" />
+                    <has_line line="2" />
                 </assert_contents>
             </output>
             <output_collection name="list_output" type="list" count="2">
                 <element name="4">
                     <assert_contents>
-                        <has_line line="test" />
+                        <has_line line="4" />
                     </assert_contents>
                 </element>
                 <element name="5">
                     <assert_contents>
-                        <has_line line="test" />
+                        <has_line line="5" />
                     </assert_contents>
                 </element>
             </output_collection>
@@ -101,23 +101,23 @@ echo 'test' > p2.reverse
             <param name="produce_paired_collection" value="true" />
             <output name="out_1">
                 <assert_contents>
-                    <has_line line="test" />
+                    <has_line line="1" />
                 </assert_contents>
             </output>
             <output name="out_2">
                 <assert_contents>
-                    <has_line line="test" />
+                    <has_line line="2" />
                 </assert_contents>
             </output>
             <output_collection name="list_output" type="list" count="2">
                 <element name="4">
                     <assert_contents>
-                        <has_line line="test" />
+                        <has_line line="4" />
                     </assert_contents>
                 </element>
                 <element name="5">
                     <assert_contents>
-                        <has_line line="test" />
+                        <has_line line="5" />
                     </assert_contents>
                 </element>
             </output_collection>
@@ -125,24 +125,24 @@ echo 'test' > p2.reverse
                 <element name="p1">
                     <element name="forward">
                         <assert_contents>
-                            <has_line line="test" />
+                            <has_line line="p1.forward" />
                         </assert_contents>
                     </element>
                     <element name="reverse">
                         <assert_contents>
-                            <has_line line="test" />
+                            <has_line line="p1.reverse" />
                         </assert_contents>
                     </element>
                 </element>
                 <element name="p2">
                     <element name="forward">
                         <assert_contents>
-                            <has_line line="test" />
+                            <has_line line="p2.forward" />
                         </assert_contents>
                     </element>
                     <element name="reverse">
                         <assert_contents>
-                            <has_line line="test" />
+                            <has_line line="p2.reverse" />
                         </assert_contents>
                     </element>
                 </element>
