@@ -276,7 +276,7 @@ class GitLabPlugin(BaseGitPlugin):
                 "api",
                 "v4",
                 "projects",
-                kwargs.get("gitlab_projecturl"),
+                urllib.parse.quote(kwargs.get("gitlab_projecturl"), safe=""),
                 "issues",
                 str(self.issue_cache[issue_cache_key][error_title]),
                 "notes",
@@ -288,7 +288,7 @@ class GitLabPlugin(BaseGitPlugin):
         self.issue_cache[issue_cache_key] = {}
         # Loop over all open issues and add the issue iid to the cache
         for issue in git_project.issues.list():
-            if issue.state != "closed":
+            if issue.state != "closed" or not self.gitlab_new_issue_on_closed:
                 log.info("GitLab error reporting - Repo issue: %s", str(issue.iid))
                 self.issue_cache[issue_cache_key][issue.title] = issue.iid
 
