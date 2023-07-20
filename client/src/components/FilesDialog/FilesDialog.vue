@@ -8,9 +8,9 @@ import Vue, { computed, onMounted, ref } from "vue";
 import { UrlTracker } from "@/components/DataDialog/utilities";
 import { isSubPath } from "@/components/FilesDialog/utilities";
 import { selectionStates } from "@/components/SelectionDialog/selectionStates";
+import { useConfig } from "@/composables/config";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import { getGalaxyInstance } from "../../app";
 import { DirectoryRecord, FileRecord, Model, RecordItem } from "./model";
 import { browseRemoteFiles, FilesSourcePlugin, getFileSources, RemoteEntry } from "./services";
 
@@ -34,6 +34,10 @@ const props = withDefaults(defineProps<FilesDialogProps>(), {
     callback: () => {},
 });
 
+// TODO: this is not working currently because this component
+// has it's own Vue instance and therefore doesn't inject the store.
+const { config, isLoaded: configIsLoaded } = useConfig();
+
 const model = ref<Model>(new Model({ multiple: props.multiple }));
 
 const allSelected = ref(false);
@@ -51,9 +55,6 @@ const isBusy = ref(false);
 const currentDirectory = ref<DirectoryRecord>();
 const showFTPHelper = ref(false);
 const selectAllIcon = ref(selectionStates.unselected);
-const ftpUploadSite = ref(getGalaxyInstance()?.config?.ftp_upload_site);
-const oidcEnabled = ref(getGalaxyInstance()?.config?.enable_oidc);
-
 const urlTracker = ref(new UrlTracker(""));
 
 const fileMode = computed(() => props.mode == "file");
@@ -328,11 +329,11 @@ onMounted(() => {
             <DataDialogSearch v-model="filter" />
         </template>
         <template v-slot:helper>
-            <BAlert v-if="showFTPHelper" id="helper" variant="info" show>
+            <BAlert v-if="showFTPHelper && configIsLoaded" id="helper" variant="info" show>
                 This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at
-                <strong>{{ ftpUploadSite }}</strong> using your Galaxy credentials. For help visit the
+                <strong>{{ config.ftp_upload_site }}</strong> using your Galaxy credentials. For help visit the
                 <a href="https://galaxyproject.org/ftp-upload/" target="_blank">tutorial</a>.
-                <span v-if="oidcEnabled"
+                <span v-if="config.enable_oidc"
                     ><br />If you are signed-in to Galaxy using a third-party identity and you
                     <strong>do not have a Galaxy password</strong> please use the reset password option in the login
                     form with your email to create a password for your account.</span
