@@ -99,12 +99,11 @@ class GithubPlugin(BaseGitPlugin):
             else:
                 self._append_issue(issue_cache_key, error_title, error_message)
             return (
-                'Submitted error report to Github. Your issue number is <a href="%s/%s/issues/%s" '
-                'target="_blank">#%s</a>.'
+                "Submitted error report to Github. Your issue number is [#%s](%s/%s/issues/%s)"
                 % (
+                    self.issue_cache[issue_cache_key][error_title].number,
                     self.github_base_url,
                     github_projecturl,
-                    self.issue_cache[issue_cache_key][error_title].number,
                     self.issue_cache[issue_cache_key][error_title].number,
                 ),
                 "success",
