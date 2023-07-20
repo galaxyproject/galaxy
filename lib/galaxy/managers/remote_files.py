@@ -8,6 +8,7 @@ from galaxy.files import (
     ConfiguredFileSources,
     ProvidesUserFileSourcesUserContext,
 )
+from galaxy.files.sources import FilesSourceOptions
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.remote_files import (
     AnyRemoteFilesListResponse,
@@ -41,6 +42,7 @@ class RemoteFilesManager:
         format: Optional[RemoteFilesFormat],
         recursive: Optional[bool],
         disable: Optional[RemoteFilesDisableMode],
+        write_intent: Optional[bool] = False,
     ) -> AnyRemoteFilesListResponse:
         """Returns a list of remote files available to the user."""
 
@@ -75,8 +77,16 @@ class RemoteFilesManager:
 
         file_source_path = self._file_sources.get_file_source_path(uri)
         file_source = file_source_path.file_source
+
+        opts = FilesSourceOptions()
+        opts.write_intent = write_intent or False
         try:
-            index = file_source.list(file_source_path.path, recursive=recursive, user_context=user_file_source_context)
+            index = file_source.list(
+                file_source_path.path,
+                recursive=recursive,
+                user_context=user_file_source_context,
+                opts=opts,
+            )
         except exceptions.MessageException:
             log.warning(f"Problem listing file source path {file_source_path}", exc_info=True)
             raise
