@@ -4,18 +4,11 @@ set -e
 # The caller may do this as well, but since common_startup.sh can be called independently, we need to do it here
 . ./scripts/common_startup_functions.sh
 
-SET_VENV=1
-for arg in "$@"; do
-    if [ "$arg" = "--skip-venv" ]; then
-        SET_VENV=0
-        skip_venv=1  # for common startup functions
-    fi
-done
-
 DEV_WHEELS=0
 FETCH_WHEELS=1
 CREATE_VENV=1
 COPY_SAMPLE_FILES=1
+SET_VENV=1
 SKIP_CLIENT_BUILD=${GALAXY_SKIP_CLIENT_BUILD:-0}
 INSTALL_PREBUILT_CLIENT=${GALAXY_INSTALL_PREBUILT_CLIENT:-0}
 NODE_VERSION=${GALAXY_NODE_VERSION:-"$(cat client/.node_version)"}
@@ -23,6 +16,10 @@ NODE_VERSION=${GALAXY_NODE_VERSION:-"$(cat client/.node_version)"}
 : "${GALAXY_CONDA_PYTHON_VERSION:=3.7}"
 
 for arg in "$@"; do
+    if [ "$arg" = "--skip-venv" ]; then
+        SET_VENV=0
+        skip_venv=1  # for common startup functions
+    fi
     [ "$arg" = "--skip-eggs" ] && FETCH_WHEELS=0
     [ "$arg" = "--skip-wheels" ] && FETCH_WHEELS=0
     [ "$arg" = "--dev-wheels" ] && DEV_WHEELS=1
