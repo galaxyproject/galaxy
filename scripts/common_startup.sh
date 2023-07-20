@@ -199,13 +199,11 @@ if [ $FETCH_WHEELS -eq 1 ]; then
 fi
 
 # Install node if not installed
-if [ -n "$CONDA_DEFAULT_ENV" ] && [ -n "$CONDA_EXE" ]; then
-    if ! in_conda_env "$(command -v node)"; then
+if ! command -v node >/dev/null || [ "$(node --version)" != "v${NODE_VERSION}" ]; then
+    if [ -n "$CONDA_DEFAULT_ENV" ] && [ -n "$CONDA_EXE" ]; then
         echo "Installing node into '$CONDA_DEFAULT_ENV' Conda environment with conda."
         $CONDA_EXE install --yes --override-channels --channel conda-forge --name "$CONDA_DEFAULT_ENV" nodejs="$NODE_VERSION"
-    fi
-elif [ -n "$VIRTUAL_ENV" ]; then
-    if ! command -v node >/dev/null || [ "$(node --version)" != "v${NODE_VERSION}" ]; then
+    elif [ -n "$VIRTUAL_ENV" ]; then
         echo "Installing node into $VIRTUAL_ENV with nodeenv."
         if [ -d "${VIRTUAL_ENV}/lib/node_modules" ]; then
             echo "Removing old ${VIRTUAL_ENV}/lib/node_modules directory."
@@ -242,20 +240,30 @@ fi
 # Build client if necessary.
 if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     # Ensure dependencies are installed
-    if [ -n "$CONDA_DEFAULT_ENV" ] && [ -n "$CONDA_EXE" ]; then
-        if ! in_conda_env "$(command -v yarn)"; then
+    INSTALL_YARN=0
+    if ! command -v yarn >/dev/null; then
+        INSTALL_YARN=1
+    else
+        # Check that yarn is the "classic" version
+        YARN_VERSION=$(yarn --version)
+        # If the substring of YARN_VERSION obtained by removing the "1." prefix
+        # is equal to YARN_VERSION, then this is not yarn version 1 and we need
+        # to reinstall it.
+        [ "${YARN_VERSION#1.}" = "$YARN_VERSION" ] && INSTALL_YARN=1
+    fi
+    if [ $INSTALL_YARN -eq 1 ]; then
+        if [ -n "$CONDA_DEFAULT_ENV" ] && [ -n "$CONDA_EXE" ]; then
             echo "Installing yarn into '$CONDA_DEFAULT_ENV' Conda environment with conda."
             $CONDA_EXE install --yes --override-channels --channel conda-forge --name "$CONDA_DEFAULT_ENV" 'yarn<2'
-        fi
-    elif [ -n "$VIRTUAL_ENV" ]; then
-        if ! in_venv "$(command -v yarn)"; then
+        elif [ -n "$VIRTUAL_ENV" ] && in_venv "$(command -v npm)"; then
             echo "Installing yarn into $VIRTUAL_ENV with npm."
             npm install --global yarn
+        else
+            echo "Installing yarn locally with npm."
+            npm install yarn
         fi
-    else
-        echo "WARNING: Galaxy client build needed but there is no virtualenv enabled. Build may fail."
     fi
-    # We need galaxy config here, ensure it's set.
+    # We need GALAXY_CONFIG_FILE here, ensure it's set.
     set_galaxy_config_file_var
     # Set plugin path
     GALAXY_PLUGIN_PATH=$(python scripts/config_parse.py --setting=plugin_path --config-file="$GALAXY_CONFIG_FILE")
