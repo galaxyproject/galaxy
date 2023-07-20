@@ -1485,7 +1485,6 @@ def _handle_def_errors(testdef):
 
 
 def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, galaxy_interactor, quiet=False):
-    assert data_list or data_collection_list, "Tool produced no output data"
     assert len(jobs) == 1, "Test framework logic error, somehow tool test resulted in more than one job."
     job = jobs[0]
 
@@ -1498,6 +1497,10 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
                 if stream in job_stdio:
                     print(_format_stream(job_stdio[stream], stream=stream, format=True), file=sys.stderr)
         found_exceptions.append(e)
+
+    if not (data_list or data_collection_list):
+        error = AssertionError("Tool produced no output datasets or collections")
+        register_exception(error)
 
     if testdef.expect_failure:
         if testdef.outputs:
