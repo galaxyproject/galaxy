@@ -128,12 +128,16 @@ class RemoteFilesManager:
         return index
 
     def get_files_source_plugins(
-        self, user_context: ProvidesUserContext, browsable_only: Optional[bool] = True
+        self, user_context: ProvidesUserContext, browsable_only: Optional[bool] = True, rdm_only: Optional[bool] = False
     ) -> FilesSourcePluginList:
         """Display plugin information for each of the gxfiles:// URI targets available."""
         user_file_source_context = ProvidesUserFileSourcesUserContext(user_context)
+        browsable_only = True if browsable_only is None else browsable_only
+        rdm_only = rdm_only or False
         plugins_dict = self._file_sources.plugins_to_dict(
-            user_context=user_file_source_context, browsable_only=True if browsable_only is None else browsable_only
+            user_context=user_file_source_context,
+            browsable_only=browsable_only,
+            rdm_only=rdm_only,
         )
         plugins = [FilesSourcePlugin(**plugin_dict) for plugin_dict in plugins_dict]
         return FilesSourcePluginList.construct(__root__=plugins)

@@ -165,10 +165,13 @@ class ConfiguredFileSources:
         for_serialization: bool = False,
         user_context: Optional["FileSourceDictifiable"] = None,
         browsable_only: Optional[bool] = False,
+        rdm_only: Optional[bool] = False,
     ) -> List[Dict[str, Any]]:
         rval = []
         for file_source in self._file_sources:
             if not file_source.user_has_access(user_context):
+                continue
+            if rdm_only and not getattr(file_source, "supports_rdm", False):
                 continue
             if browsable_only and not file_source.get_browsable():
                 continue
