@@ -8,6 +8,7 @@ interface Props {
     value: string;
     mode?: "file" | "directory";
     requireWritable?: boolean;
+    rdmOnly?: boolean;
 }
 
 interface SelectableFile {
@@ -36,6 +37,7 @@ const selectFile = () => {
     const dialogProps = {
         mode: props.mode,
         requireWritable: props.requireWritable,
+        rdmOnly: props.rdmOnly,
     };
     filesDialog((selected: SelectableFile) => {
         currentValue.value = selected?.url;
