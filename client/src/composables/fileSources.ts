@@ -4,14 +4,16 @@ import { FilesSourcePlugin, getFileSources } from "@/components/FilesDialog/serv
 
 /**
  * Composable for accessing and working with file sources.
+ *
+ * @param rdmOnly Whether to only include Research Data Management (RDM) specific file sources.
  */
-export function useFileSources() {
+export function useFileSources(rdmOnly = false) {
     const isLoading = ref(true);
     const hasWritable = ref(false);
     const fileSources = ref<FilesSourcePlugin[]>([]);
 
     onMounted(async () => {
-        fileSources.value = await getFileSources();
+        fileSources.value = await getFileSources(rdmOnly);
         hasWritable.value = fileSources.value.some((fs) => fs.writable);
         isLoading.value = false;
     });
