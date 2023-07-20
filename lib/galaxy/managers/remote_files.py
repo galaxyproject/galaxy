@@ -12,6 +12,8 @@ from galaxy.files.sources import FilesSourceOptions
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.remote_files import (
     AnyRemoteFilesListResponse,
+    CreatedEntryResponse,
+    CreateEntryPayload,
     FilesSourcePlugin,
     FilesSourcePluginList,
     RemoteFilesDisableMode,
@@ -139,3 +141,22 @@ class RemoteFilesManager:
     @property
     def _file_sources(self) -> ConfiguredFileSources:
         return self._app.file_sources
+
+    def create_entry(self, user_ctx: ProvidesUserContext, entry_data: CreateEntryPayload) -> CreatedEntryResponse:
+        """Create an entry (directory or record) in a remote files location."""
+        target = entry_data.target
+        user_file_source_context = ProvidesUserFileSourcesUserContext(user_ctx)
+        self._file_sources.validate_uri_root(target, user_context=user_file_source_context)
+        file_source_path = self._file_sources.get_file_source_path(target)
+        file_source = file_source_path.file_source
+        try:
+            result = file_source.create_entry(entry_data.dict(), user_context=user_file_source_context)
+        except Exception:
+            message = f"Problem creating entry {entry_data.name} in file source {entry_data.target}"
+            log.warning(message, exc_info=True)
+            raise exceptions.InternalServerError(message)
+        return CreatedEntryResponse(
+            name=result["name"],
+            uri=result["uri"],
+            external_link=result.get("external_link", None),
+        )

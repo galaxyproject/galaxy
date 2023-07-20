@@ -67,6 +67,18 @@ class FilesSourceOptions:
     extra_props: Optional[FilesSourceProperties]
 
 
+class EntryData(TypedDict):
+    name: str
+    # May contain additional properties depending on the file source
+
+
+class Entry(TypedDict):
+    name: str
+    uri: str
+    # May contain additional properties depending on the file source
+    external_link: NotRequired[str]
+
+
 class SingleFileSource(metaclass=abc.ABCMeta):
     """
     Represents a protocol handler for a single remote file that can be read by or written to by Galaxy.
@@ -298,9 +310,20 @@ class BaseFilesSource(FilesSource):
     def _list(self, path="/", recursive=False, user_context=None, opts: Optional[FilesSourceOptions] = None):
         pass
 
+    def create_entry(
+        self, entry_data: EntryData, user_context=None, opts: Optional[FilesSourceOptions] = None
+    ) -> Entry:
+        self._ensure_writeable()
+        self._check_user_access(user_context)
+        return self._create_entry(entry_data, user_context, opts)
+
+    def _create_entry(
+        self, entry_data: EntryData, user_context=None, opts: Optional[FilesSourceOptions] = None
+    ) -> Entry:
+        raise NotImplementedError()
+
     def write_from(self, target_path, native_path, user_context=None, opts: Optional[FilesSourceOptions] = None):
-        if not self.get_writable():
-            raise Exception("Cannot write to a non-writable file source.")
+        self._ensure_writeable()
         self._check_user_access(user_context)
         self._write_from(target_path, native_path, user_context=user_context, opts=opts)
 
@@ -315,6 +338,10 @@ class BaseFilesSource(FilesSource):
     @abc.abstractmethod
     def _realize_to(self, source_path, native_path, user_context=None, opts: Optional[FilesSourceOptions] = None):
         pass
+
+    def _ensure_writeable(self):
+        if not self.get_writable():
+            raise Exception("Cannot write to a non-writable file source.")
 
     def _check_user_access(self, user_context):
         """Raises an exception if the given user doesn't have the rights to access this file source.

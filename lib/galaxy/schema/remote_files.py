@@ -149,3 +149,37 @@ class ListUriResponse(Model):
 
 
 AnyRemoteFilesListResponse = Union[ListUriResponse, ListJstreeResponse]
+
+
+class CreateEntryPayload(Model):
+    target: str = Field(
+        Required,
+        title="Target",
+        description="The target file source to create the entry in.",
+    )
+    name: str = Field(
+        Required,
+        title="Name",
+        description="The name of the entry to create.",
+        example="my_new_entry",
+    )
+
+
+class CreatedEntryResponse(Model):
+    name: str = Field(
+        Required,
+        title="Name",
+        description="The name of the created entry.",
+        example="my_new_entry",
+    )
+    uri: str = Field(
+        Required,
+        title="URI",
+        description="The URI of the created entry.",
+        example="gxfiles://my_new_entry",
+    )
+    external_link: Optional[str] = Field(
+        default=None,
+        title="External link",
+        description="An optional external link to the created entry if available.",
+    )

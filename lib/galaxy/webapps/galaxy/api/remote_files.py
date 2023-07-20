@@ -4,12 +4,15 @@ API operations on remote files.
 import logging
 from typing import Optional
 
+from fastapi import Body
 from fastapi.param_functions import Query
 
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.remote_files import RemoteFilesManager
 from galaxy.schema.remote_files import (
     AnyRemoteFilesListResponse,
+    CreatedEntryResponse,
+    CreateEntryPayload,
     FilesSourcePluginList,
     RemoteFilesDisableMode,
     RemoteFilesFormat,
@@ -115,4 +118,19 @@ class FastAPIRemoteFiles:
         browsable_only: Optional[bool] = BrowsableQueryParam,
     ) -> FilesSourcePluginList:
         """Display plugin information for each of the gxfiles:// URI targets available."""
-        return self.manager.get_files_source_plugins(user_ctx, browsable_only)
+
+    @router.post(
+        "/api/remote_files",
+        summary="Creates a new entry (directory/record) on the remote files source.",
+    )
+    async def create_entry(
+        self,
+        user_ctx: ProvidesUserContext = DependsOnTrans,
+        payload: CreateEntryPayload = Body(
+            ...,
+            title="Entry Data",
+            description="Information about the entry to create. Depends on the target file source.",
+        ),
+    ) -> CreatedEntryResponse:
+        """Creates a new entry on the remote files source."""
+        return self.manager.create_entry(user_ctx, payload)
