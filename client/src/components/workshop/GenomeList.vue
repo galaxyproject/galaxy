@@ -9,6 +9,7 @@ import Heading from "@/components/Common/Heading.vue";
 
 const fetchGenomes = fetcher.path("/api/genomes").method('get').create();
 const data = ref<Array<GenomeFields>>([]);
+const loading = ref(true);
 
 const fields = [
     { label: "Name", key: "name", sortable: true },
@@ -30,6 +31,7 @@ onMounted(async () => {
         name: d[0] ?? "",
         id: d[1] ?? "",
     }));
+    loading.value = false;
 });
 </script>
 
@@ -45,5 +47,6 @@ onMounted(async () => {
                 {{ row.item.id }}
             </template>
         </b-table>
+        <p v-if="loading">Loading available genomes...</p>
     </div>
 </template>
