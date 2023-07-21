@@ -68,6 +68,7 @@ import AboutGalaxy from "@/components/AboutGalaxy.vue";
 import HistoryArchive from "@/components/History/Archiving/HistoryArchive.vue";
 import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
 import NotificationsList from "@/components/Notifications/NotificationsList.vue";
+import GenomeList from "@/components/workshop/GenomeList.vue"
 
 Vue.use(VueRouter);
 
@@ -537,6 +538,13 @@ export function getRouter(Galaxy) {
                         path: "workflows/:storedWorkflowId/invocations",
                         component: StoredWorkflowInvocations,
                         props: true,
+                    },
+                    {
+                        path: "/genome-list",
+                        component: GenomeList,
+                        props: (route) => ({
+                            count: route.query.count,
+                        }),
                     },
                 ],
             },
