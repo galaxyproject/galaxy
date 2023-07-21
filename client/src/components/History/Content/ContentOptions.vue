@@ -11,7 +11,6 @@
             @click.prevent.stop="$emit('showCollectionInfo')">
             <icon icon="info-circle" />
         </b-button>
-
         <!-- Common for all content items -->
         <b-button
             v-if="isDataset"
@@ -22,7 +21,7 @@
             size="sm"
             variant="link"
             :href="displayUrl"
-            @click.prevent.stop="$emit('display')">
+            @click.prevent.stop="onDisplay($event)">
             <icon icon="eye" />
         </b-button>
         <b-button
@@ -119,6 +118,17 @@ export default {
         },
         tabindex() {
             return this.keyboardSelectable ? "0" : "-1";
+        },
+    },
+    methods: {
+        onDisplay($event) {
+            // Wrap display handler to allow ctrl/meta click to open in new tab
+            // instead of triggering display.
+            if ($event.ctrlKey || $event.metaKey) {
+                window.open(this.displayUrl, "_blank");
+            } else {
+                this.$emit("display");
+            }
         },
     },
 };
