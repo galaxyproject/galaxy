@@ -4,6 +4,7 @@ from collections import OrderedDict
 from typing import cast
 
 import webob.exc
+from sqlalchemy import select
 
 import galaxy.model
 from galaxy.app_unittest_utils import tools_support
@@ -198,7 +199,7 @@ class MockTrans:
         self.user = None
         self.history._active_datasets_and_roles = [
             hda
-            for hda in self.app.model.context.query(galaxy.model.HistoryDatasetAssociation).all()
+            for hda in self.app.model.session.scalars(select(galaxy.model.HistoryDatasetAssociation)).all()
             if hda.active and hda.history == history
         ]
         self.workflow_building_mode = False

@@ -1,6 +1,8 @@
 import os
 from tempfile import mkdtemp
 
+from sqlalchemy import select
+
 from galaxy import model
 from galaxy.model import store
 from galaxy.model.base import transaction
@@ -211,7 +213,7 @@ def test_persist_target_hdca():
 
 
 def _assert_one_library_created(sa_session):
-    all_libraries = sa_session.query(model.Library).all()
+    all_libraries = sa_session.scalars(select(model.Library)).all()
     assert len(all_libraries) == 1, len(all_libraries)
     new_library = all_libraries[0]
     return new_library

@@ -3,6 +3,7 @@
 from unittest import mock
 
 import sqlalchemy
+from sqlalchemy import select
 
 from galaxy import (
     exceptions,
@@ -32,14 +33,14 @@ class TestDatasetManager(BaseTestCase):
         self.log("should be able to create a new Dataset")
         dataset1 = self.dataset_manager.create()
         assert isinstance(dataset1, model.Dataset)
-        assert dataset1 == self.trans.sa_session.query(model.Dataset).get(dataset1.id)
+        assert dataset1 == self.trans.sa_session.get(model.Dataset, dataset1.id)
 
     def test_base(self):
         dataset1 = self.dataset_manager.create()
         dataset2 = self.dataset_manager.create()
 
         self.log("should be able to query")
-        datasets = self.trans.sa_session.query(model.Dataset).all()
+        datasets = self.trans.sa_session.scalars(select(model.Dataset)).all()
         assert self.dataset_manager.list() == datasets
         assert self.dataset_manager.one(filters=(model.Dataset.id == dataset1.id)) == dataset1
         assert self.dataset_manager.by_id(dataset1.id) == dataset1
