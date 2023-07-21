@@ -2967,19 +2967,32 @@ export interface components {
             url: string;
         };
         /**
+         * CreatedCustomBuild
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        CreatedCustomBuild: {
+            /** Count */
+            count?: string;
+            /** Fasta */
+            fasta?: number;
+            /** Length */
+            len: number;
+            /** Line count */
+            linecount?: number;
+            /**
+             * Name
+             * @description The name of the custom build.
+             */
+            name: string;
+        };
+        /**
          * CustomBuildCreationPayload
          * @description Base model definition with common configuration used by all derived models.
          */
         CustomBuildCreationPayload: {
-            /**
-             * ?
-             * @description ?
-             */
+            /** Length type */
             "len|type": string;
-            /**
-             * ?
-             * @description ?
-             */
+            /** Length value */
             "len|value": string;
             /**
              * Name
@@ -2987,6 +3000,35 @@ export interface components {
              */
             name: string;
         };
+        /**
+         * CustomBuildModel
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        CustomBuildModel: {
+            /** Count */
+            count?: string;
+            /** Fasta */
+            fasta?: number;
+            /**
+             * ID
+             * @description The ID of the custom build.
+             */
+            id: string;
+            /** Length */
+            len: number;
+            /** Line count */
+            linecount?: number;
+            /**
+             * Name
+             * @description The name of the custom build.
+             */
+            name: string;
+        };
+        /**
+         * CustomBuildsCollection
+         * @description The custom builds associated with the user.
+         */
+        CustomBuildsCollection: components["schemas"]["CustomBuildModel"][];
         /**
          * CustomBuildsMetadataResponse
          * @description Base model definition with common configuration used by all derived models.
@@ -17181,7 +17223,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["CustomBuildsCollection"];
                 };
             };
             /** @description Validation Error */
@@ -17215,7 +17257,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["CreatedCustomBuild"];
                 };
             };
             /** @description Validation Error */
