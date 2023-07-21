@@ -9,6 +9,7 @@ from requests import (
     get,
     put,
 )
+from sqlalchemy import select
 
 from galaxy_test.driver import integration_util
 
@@ -28,7 +29,7 @@ class TestExtraUserPreferences(integration_util.IntegrationTestCase, integration
         user = self._setup_user(TEST_USER_EMAIL)
         url = self.__url("information/inputs", user)
         app = cast(Any, self._test_driver.app if self._test_driver else None)
-        db_user = app.model.context.query(app.model.User).filter(app.model.User.email == user["email"]).first()
+        db_user = self._get_dbuser(app, user)
 
         # create some initial data
         put(
@@ -84,7 +85,7 @@ class TestExtraUserPreferences(integration_util.IntegrationTestCase, integration
         user = self._setup_user(TEST_USER_EMAIL)
         url = self.__url("information/inputs", user)
         app = cast(Any, self._test_driver.app if self._test_driver else None)
-        db_user = app.model.context.query(app.model.User).filter(app.model.User.email == user["email"]).first()
+        db_user = self._get_dbuser(app, user)
 
         # write the initial secret value
         put(
@@ -130,3 +131,7 @@ class TestExtraUserPreferences(integration_util.IntegrationTestCase, integration
 
     def __url(self, action, user):
         return self._api_url(f"users/{user['id']}/{action}", params=dict(key=self.master_api_key))
+
+    def _get_dbuser(self, app, user):
+        stmt = select(app.model.User).filter(app.model.User.email == user["email"]).limit(1)
+        return app.model.session.scalars(stmt).first()

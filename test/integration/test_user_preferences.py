@@ -7,6 +7,7 @@ from requests import (
     get,
     put,
 )
+from sqlalchemy import select
 
 from galaxy_test.driver import integration_util
 
@@ -18,7 +19,8 @@ class TestUserPreferences(integration_util.IntegrationTestCase):
         user = self._setup_user(TEST_USER_EMAIL)
         url = self._api_url(f"users/{user['id']}/theme/test_theme", params=dict(key=self.master_api_key))
         app = cast(Any, self._test_driver.app if self._test_driver else None)
-        db_user = app.model.context.query(app.model.User).filter(app.model.User.email == user["email"]).first()
+        stmt = select(app.model.User).filter(app.model.User.email == user["email"]).limit(1)
+        db_user = app.model.session.scalars(stmt).first()
 
         # create some initial data
         put(url)

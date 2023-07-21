@@ -54,10 +54,6 @@ class BaseModelTestCase(TestCase):
         assert cls.model.engine is not None
 
     @classmethod
-    def query(cls, type):
-        return cls.model.session.query(type)
-
-    @classmethod
     def persist(cls, *args, **kwargs):
         session = cls.session()
         flush = kwargs.get("flush", True)
@@ -90,7 +86,7 @@ class TestMappings(BaseModelTestCase):
             rating_association = rating_class(u, item, rating)
             self.persist(rating_association)
             self.expunge()
-            stored_rating = self.query(rating_class).all()[0]
+            stored_rating = self.model.session.scalars(select(rating_class)).all()[0]
             assert stored_rating.rating == rating
             assert stored_rating.user.email == user_email
 
@@ -329,12 +325,12 @@ class TestMappings(BaseModelTestCase):
 
         self.persist(u, h1, d1, d2, c1, hc1, dce1, dce2)
 
-        loaded_dataset_collection = (
-            self.query(model.HistoryDatasetCollectionAssociation)
+        stmt = (
+            select(model.HistoryDatasetCollectionAssociation)
             .filter(model.HistoryDatasetCollectionAssociation.name == "HistoryCollectionTest1")
-            .first()
-            .collection
+            .limit(1)
         )
+        loaded_dataset_collection = self.model.session.scalars(stmt).first().collection
         assert len(loaded_dataset_collection.elements) == 2
         assert loaded_dataset_collection.collection_type == "pair"
         assert loaded_dataset_collection["left"] == dce1
@@ -502,11 +498,11 @@ class TestMappings(BaseModelTestCase):
         u.adjust_total_disk_usage(1, None)
         u_id = u.id
         self.expunge()
-        user_reload = self.model.session.query(model.User).get(u_id)
+        user_reload = self.model.session.get(model.User, u_id)
         assert user_reload.disk_usage == 1
 
     def test_basic(self):
-        original_user_count = len(self.model.session.query(model.User).all())
+        original_user_count = len(self.model.session.scalars(select(model.User)).all())
 
         # Make some changes and commit them
         u = model.User(email="james@foo.bar.baz", password="password")
@@ -520,14 +516,14 @@ class TestMappings(BaseModelTestCase):
         self.persist(d1)
 
         # Check
-        users = self.model.session.query(model.User).all()
+        users = self.model.session.scalars(select(model.User)).all()
         assert len(users) == original_user_count + 1
         user = [user for user in users if user.email == "james@foo.bar.baz"][0]
         assert user.email == "james@foo.bar.baz"
         assert user.password == "password"
         assert len(user.histories) == 1
         assert user.histories[0].name == "History 1"
-        hists = self.model.session.query(model.History).all()
+        hists = self.model.session.scalars(select(model.History)).all()
         hist0 = [history for history in hists if history.id == h1.id][0]
         hist1 = [history for history in hists if history.id == h2.id][0]
         assert hist0.name == "History 1"
@@ -541,7 +537,7 @@ class TestMappings(BaseModelTestCase):
         # Do an update and check
         hist1.name = "History 2b"
         self.expunge()
-        hists = self.model.session.query(model.History).all()
+        hists = self.model.session.scalars(select(model.History)).all()
         hist0 = [history for history in hists if history.name == "History 1"][0]
         hist1 = [history for history in hists if history.name == "History 2b"][0]
         assert hist0.name == "History 1"
@@ -560,7 +556,9 @@ class TestMappings(BaseModelTestCase):
         job = model.Job()
         dataset.job = job
         self.persist(job, dataset)
-        loaded_dataset = self.model.session.query(model.Dataset).filter(model.Dataset.id == dataset.id).one()
+        loaded_dataset = self.model.session.execute(
+            select(model.Dataset).filter(model.Dataset.id == dataset.id)
+        ).scalar_one()
         assert loaded_dataset.job_id == job.id
 
     def test_jobs(self):
@@ -571,7 +569,7 @@ class TestMappings(BaseModelTestCase):
 
         self.persist(u, job)
 
-        loaded_job = self.model.session.query(model.Job).filter(model.Job.user == u).first()
+        loaded_job = self.model.session.scalars(select(model.Job).filter(model.Job.user == u).limit(1)).first()
         assert loaded_job.tool_id == "cat1"
 
     def test_job_metrics(self):
@@ -602,7 +600,7 @@ class TestMappings(BaseModelTestCase):
         job.user = u
         self.persist(u, job, task)
 
-        loaded_task = self.model.session.query(model.Task).filter(model.Task.job == job).first()
+        loaded_task = self.model.session.scalars(select(model.Task).filter(model.Task.job == job).limit(1)).first()
         assert loaded_task.prepare_input_files_cmd == "split.sh"
 
     def test_history_contents(self):
@@ -620,9 +618,9 @@ class TestMappings(BaseModelTestCase):
         self.session().flush()
 
         def contents_iter_names(**kwds):
-            history = (
-                self.model.context.query(model.History).filter(model.History.name == "HistoryContentsHistory1").first()
-            )
+            history = self.model.session.scalars(
+                select(model.History).filter(model.History.name == "HistoryContentsHistory1").limit(1)
+            ).first()
             return list(map(lambda hda: hda.name, history.contents_iter(**kwds)))
 
         assert contents_iter_names() == ["1", "2", "3", "4"]
@@ -645,12 +643,8 @@ class TestMappings(BaseModelTestCase):
         h2 = model.History(name="HistoryAuditHistory", user=u)
 
         def get_audit_table_entries(history):
-            return (
-                self.session()
-                .query(model.HistoryAudit.table)
-                .filter(model.HistoryAudit.table.c.history_id == history.id)
-                .all()
-            )
+            stmt = select(model.HistoryAudit.table).filter(model.HistoryAudit.table.c.history_id == history.id)
+            return self.session().execute(stmt).all()
 
         def get_latest_entry(entries):
             # key ensures result is correct if new columns are added
@@ -713,7 +707,7 @@ class TestMappings(BaseModelTestCase):
 
         self.expunge()
         session = self.session()
-        galaxy_model_object = self.query(model.GalaxySession).get(galaxy_session_id)
+        galaxy_model_object = self.model.session.get(model.GalaxySession, galaxy_session_id)
         expected_id = galaxy_model_object.id
 
         # id loaded as part of the object query, could be any non-deferred attribute.
@@ -841,7 +835,7 @@ class TestMappings(BaseModelTestCase):
         history_id = h1.id
         self.expunge()
 
-        loaded_invocation = self.query(model.WorkflowInvocation).get(workflow_invocation.id)
+        loaded_invocation = self.model.session.get(model.WorkflowInvocation, workflow_invocation.id)
         assert loaded_invocation.uuid == invocation_uuid, f"{loaded_invocation.uuid} != {invocation_uuid}"
         assert loaded_invocation
         assert loaded_invocation.history.id == history_id
@@ -859,7 +853,7 @@ class TestMappings(BaseModelTestCase):
 
         assert subworkflow_invocation_assoc.subworkflow_invocation.history.id == history_id
 
-        loaded_workflow = self.query(model.Workflow).get(workflow_id)
+        loaded_workflow = self.model.session.get(model.Workflow, workflow_id)
         assert len(loaded_workflow.steps[0].annotations) == 1
         copied_workflow = loaded_workflow.copy(user=user)
         annotations = copied_workflow.steps[0].annotations

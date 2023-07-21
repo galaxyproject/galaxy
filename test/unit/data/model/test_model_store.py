@@ -16,6 +16,7 @@ from typing import (
 
 import pytest
 from rocrate.rocrate import ROCrate
+from sqlalchemy import select
 from sqlalchemy.orm.scoping import scoped_session
 
 from galaxy import model
@@ -195,9 +196,9 @@ def test_import_library_from_dict():
     perform_import_from_store_dict(fixture_context, import_dict, import_options=import_options)
 
     sa_session = fixture_context.sa_session
-    all_libraries = sa_session.query(model.Library).all()
+    all_libraries = sa_session.scalars(select(model.Library)).all()
     assert len(all_libraries) == 1, len(all_libraries)
-    all_lddas = sa_session.query(model.LibraryDatasetDatasetAssociation).all()
+    all_lddas = sa_session.scalars(select(model.LibraryDatasetDatasetAssociation)).all()
     assert len(all_lddas) == 1, len(all_lddas)
 
 
@@ -308,9 +309,9 @@ def test_import_export_library():
     )
     import_model_store.perform_import()
 
-    all_libraries = sa_session.query(model.Library).all()
+    all_libraries = sa_session.scalars(select(model.Library)).all()
     assert len(all_libraries) == 2, len(all_libraries)
-    all_lddas = sa_session.query(model.LibraryDatasetDatasetAssociation).all()
+    all_lddas = sa_session.scalars(select(model.LibraryDatasetDatasetAssociation)).all()
     assert len(all_lddas) == 2, len(all_lddas)
 
     new_library = [lib for lib in all_libraries if lib.id != library.id][0]

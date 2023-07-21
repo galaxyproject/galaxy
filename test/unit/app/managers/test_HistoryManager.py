@@ -4,6 +4,7 @@ import pytest
 import sqlalchemy
 from sqlalchemy import (
     false,
+    select,
     true,
 )
 
@@ -51,14 +52,22 @@ class TestHistoryManager(BaseTestCase):
         assert isinstance(history1, model.History)
         assert history1.name == "history1"
         assert history1.user == user2
-        assert history1 == self.trans.sa_session.query(model.History).get(history1.id)
-        assert history1 == self.trans.sa_session.query(model.History).filter(model.History.name == "history1").one()
-        assert history1 == self.trans.sa_session.query(model.History).filter(model.History.user == user2).one()
+        assert history1 == self.trans.sa_session.get(model.History, history1.id)
+        assert (
+            history1
+            == self.trans.sa_session.execute(
+                select(model.History).filter(model.History.name == "history1")
+            ).scalar_one()
+        )
+        assert (
+            history1
+            == self.trans.sa_session.execute(select(model.History).filter(model.History.user == user2)).scalar_one()
+        )
 
         history2 = self.history_manager.copy(history1, user=user3)
 
         self.log("should be able to query")
-        histories = self.trans.sa_session.query(model.History).all()
+        histories = self.trans.sa_session.scalars(select(model.History)).all()
         assert self.history_manager.one(filters=(model.History.id == history1.id)) == history1
         assert self.history_manager.list() == histories
         assert self.history_manager.by_id(history1.id) == history1
@@ -97,7 +106,7 @@ class TestHistoryManager(BaseTestCase):
         history2 = self.history_manager.copy(history1, user=user3)
         assert isinstance(history2, model.History)
         assert history2.user == user3
-        assert history2 == self.trans.sa_session.query(model.History).get(history2.id)
+        assert history2 == self.trans.sa_session.get(model.History, history2.id)
         assert history2.name == history1.name
         assert history2 != history1
 

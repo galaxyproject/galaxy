@@ -1,6 +1,7 @@
 from unittest import mock
 
 import sqlalchemy
+from sqlalchemy import select
 
 from galaxy import (
     exceptions,
@@ -44,7 +45,7 @@ class TestHDAManager(HDATestCase):
         hda3 = self.hda_manager.create(history=history1, hid=3)
 
         self.log("should be able to query")
-        hdas = self.trans.sa_session.query(hda_model).all()
+        hdas = self.trans.sa_session.scalars(select(hda_model)).all()
         assert self.hda_manager.list() == hdas
         assert self.hda_manager.one(filters=(hda_model.id == hda1.id)) == hda1
         assert self.hda_manager.by_id(hda1.id) == hda1
@@ -70,7 +71,7 @@ class TestHDAManager(HDATestCase):
         self.log("should be able to create a new HDA with a specified history and dataset")
         hda1 = self.hda_manager.create(history=history1, dataset=dataset1)
         assert isinstance(hda1, model.HistoryDatasetAssociation)
-        assert hda1 == self.trans.sa_session.query(model.HistoryDatasetAssociation).get(hda1.id)
+        assert hda1 == self.trans.sa_session.get(model.HistoryDatasetAssociation, hda1.id)
         assert hda1.history == history1
         assert hda1.dataset == dataset1
         assert hda1.hid == 1
@@ -121,7 +122,7 @@ class TestHDAManager(HDATestCase):
         self.log("should be able to copy an HDA")
         hda2 = self.hda_manager.copy(hda1, history=history1)
         assert isinstance(hda2, model.HistoryDatasetAssociation)
-        assert hda2 == self.trans.sa_session.query(model.HistoryDatasetAssociation).get(hda2.id)
+        assert hda2 == self.trans.sa_session.get(model.HistoryDatasetAssociation, hda2.id)
         assert hda2.name == hda1.name
         assert hda2.history == hda1.history
         assert hda2.dataset == hda1.dataset
