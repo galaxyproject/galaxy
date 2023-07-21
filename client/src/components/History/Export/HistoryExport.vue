@@ -10,6 +10,7 @@ import { DEFAULT_EXPORT_PARAMS, useShortTermStorage } from "composables/shortTer
 import { useTaskMonitor } from "composables/taskMonitor";
 import { copy as sendToClipboard } from "utils/clipboard";
 import { computed, onMounted, reactive, ref, watch } from "vue";
+import { RouterLink } from "vue-router";
 
 import { useHistoryStore } from "@/stores/historyStore";
 import { absPath } from "@/utils/redirect";
@@ -17,6 +18,7 @@ import { absPath } from "@/utils/redirect";
 import { exportToFileSource, getExportRecords, reimportHistoryFromRecord } from "./services";
 
 import ExportOptions from "./ExportOptions.vue";
+import ExportDOIForm from "components/Common/ExportDOIForm.vue";
 import ExportForm from "components/Common/ExportForm.vue";
 import ExportRecordDetails from "components/Common/ExportRecordDetails.vue";
 import ExportRecordTable from "components/Common/ExportRecordTable.vue";
@@ -29,6 +31,7 @@ const {
 } = useTaskMonitor();
 
 const { hasWritable: hasWritableFileSources } = useFileSources();
+const { hasWritable: hasWritableRDMFileSources } = useFileSources(true);
 
 const {
     isPreparing: isPreparingDownload,
@@ -227,6 +230,31 @@ function updateExportParams(newParams) {
                         it remains available on the remote server.
                     </p>
                     <ExportForm what="history" :clear-input-after-export="true" @export="doExportToFileSource" />
+                </BTab>
+                <BTab
+                    v-if="hasWritableRDMFileSources"
+                    id="rdm-file-source-tab"
+                    title="to DOI repository"
+                    title-link-class="tab-export-to-doi-repo">
+                    <p>You can <b>publish your history</b> to one of the available DOI repositories here.</p>
+                    <p>
+                        Your history export archive needs to be uploaded to an existing record. You will need to create
+                        a <b>new record</b> on the repository or select an existing <b>draft record</b> and then export
+                        your history to it.
+                    </p>
+                    <BAlert show variant="info">
+                        You may need to setup your credentials for the selected repository in your
+                        <RouterLink to="/user/information" target="_blank">settings page</RouterLink> to be able to
+                        export. You can also define some default options for the export in those settings, like the
+                        public name you want to associate with your records or whether you want to publish them
+                        immediately or keep them as drafts after export.
+                    </BAlert>
+                    <ExportDOIForm
+                        what="history"
+                        :default-filename="historyName + ' (Galaxy History)'"
+                        :default-record-name="historyName"
+                        :clear-input-after-export="true"
+                        @export="doExportToFileSource" />
                 </BTab>
             </BTabs>
         </BCard>
