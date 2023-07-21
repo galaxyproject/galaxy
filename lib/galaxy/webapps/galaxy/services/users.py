@@ -32,6 +32,7 @@ from galaxy.schema.schema import (
     AnonUserModel,
     DetailedUserModel,
     FlexibleUserIdType,
+    LimitedUserModel,
     UserModel,
 )
 from galaxy.security.idencoding import IdEncodingHelper
@@ -198,7 +199,7 @@ class UsersService(ServiceBase):
         f_email: Optional[str],
         f_name: Optional[str],
         f_any: Optional[str],
-    ) -> List[UserModel]:
+    ) -> List[Union[UserModel, LimitedUserModel]]:
         rval = []
         query = trans.sa_session.query(User)
 

@@ -43,8 +43,8 @@ from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     AnonUserModel,
     AsyncTaskResultSummary,
-    CustomBuildCreationPayload,
     CreatedCustomBuild,
+    CustomBuildCreationPayload,
     CustomBuildsCollection,
     DeletedCustomBuild,
     DetailedUserModel,
@@ -52,6 +52,7 @@ from galaxy.schema.schema import (
     FavoriteObjectsSummary,
     FavoriteObjectType,
     FlexibleUserIdType,
+    LimitedUserModel,
     UserBeaconSetting,
     UserDeletionPayload,
     UserModel,
@@ -135,7 +136,7 @@ UserUpdateBody = Body(default=Required, title="Update user", description="The us
 FavoriteObjectBody = Body(
     default=Required, title="Set favorite", description="The id of an object the user wants to favorite."
 )
-# TODO Does name fit to add_custom_build operation?
+
 CustomBuildCreationBody = Body(
     default=Required, title="Add custom build", description="The values to add a new custom build."
 )
@@ -180,7 +181,7 @@ class FastAPIUsers:
         f_email: Optional[str] = FilterEmailQueryParam,
         f_name: Optional[str] = FilterNameQueryParam,
         f_any: Optional[str] = FilterAnyQueryParam,
-    ) -> List[UserModel]:
+    ) -> List[Union[UserModel, LimitedUserModel]]:
         return self.service.get_index(trans=trans, deleted=True, f_email=f_email, f_name=f_name, f_any=f_any)
 
     @router.post(
@@ -431,7 +432,6 @@ class FastAPIUsers:
         user = self.service.get_user(trans, user_id)
         dbkeys = json.loads(user.preferences["dbkeys"]) if "dbkeys" in user.preferences else {}
         name = payload.name
-        # TODO Refactor unfitting parameter names?
         len_type = payload.len_type
         len_value = payload.len_value
         if len_type not in ["file", "fasta", "text"] or not len_value:
@@ -563,6 +563,7 @@ class FastAPIUsers:
         "/api/users",
         name="get_users",
         description="Return a collection of users. Filters will only work if enabled in config or user is admin.",
+        response_model_exclude_unset=True,
     )
     def index(
         self,
@@ -571,7 +572,7 @@ class FastAPIUsers:
         f_email: Optional[str] = FilterEmailQueryParam,
         f_name: Optional[str] = FilterNameQueryParam,
         f_any: Optional[str] = FilterAnyQueryParam,
-    ) -> List[UserModel]:
+    ) -> List[Union[UserModel, LimitedUserModel]]:
         return self.service.get_index(trans=trans, deleted=deleted, f_email=f_email, f_name=f_name, f_any=f_any)
 
     @router.get(

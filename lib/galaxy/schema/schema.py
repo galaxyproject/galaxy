@@ -309,6 +309,14 @@ class UserModel(BaseUserModel):
     last_password_change: Optional[datetime] = Field(title="Last password change", description="")
 
 
+class LimitedUserModel(Model):
+    """This is used when config options (expose_user_name and expose_user_email) are in place."""
+
+    id: EncodedDatabaseIdField = UserIdField
+    username: Optional[str]
+    email: Optional[str]
+
+
 class DiskUsageUserModel(Model):
     total_disk_usage: float = TotalDiskUsageField
     nice_total_disk_usage: str = NiceTotalDiskUsageField
@@ -366,22 +374,22 @@ class CustomBuildCreationPayload(CustomBuildBaseModel):
         default=Required,
         alias="len|type",
         title="Length type",
-        description="",
+        description="TODO",
     )
     len_value: str = Field(
         default=Required,
         alias="len|value",
         title="Length value",
-        description="",
+        description="TODO",
     )
 
 
 # TODO Add descriptions
 class CreatedCustomBuild(CustomBuildBaseModel):
-    len: int = Field(default=Required, title="Length", description="")
-    count: Optional[str] = Field(default=None, title="Count", description="")
-    fasta: Optional[int] = Field(default=None, title="Fasta", description="")
-    linecount: Optional[int] = Field(default=None, title="Line count", description="")
+    len: int = Field(default=Required, title="Length", description="TODO")
+    count: Optional[str] = Field(default=None, title="Count", description="TODO")
+    fasta: Optional[int] = Field(default=None, title="Fasta", description="TODO")
+    linecount: Optional[int] = Field(default=None, title="Line count", description="TODO")
 
 
 class CustomBuildModel(CreatedCustomBuild):
