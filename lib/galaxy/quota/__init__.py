@@ -2,6 +2,7 @@
 import logging
 from typing import Optional
 
+from sqlalchemy import select
 from sqlalchemy.sql import text
 
 import galaxy.util
@@ -209,11 +210,10 @@ WHERE default_quota_association.type = :default_type
             self.sa_session.delete(gqa)
         # Find the old default, assign the new quota if it exists
         label = quota.quota_source_label
-        dqas = (
-            self.sa_session.query(self.model.DefaultQuotaAssociation)
-            .filter(self.model.DefaultQuotaAssociation.table.c.type == default_type)
-            .all()
+        stmt = select(self.model.DefaultQuotaAssociation).filter(
+            self.model.DefaultQuotaAssociation.type == default_type
         )
+        dqas = self.sa_session.scalars(stmt).all()
         target_default = None
         for dqa in dqas:
             if dqa.quota.quota_source_label == label and not dqa.quota.deleted:
