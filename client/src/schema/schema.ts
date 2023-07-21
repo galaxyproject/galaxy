@@ -2971,13 +2971,25 @@ export interface components {
          * @description Base model definition with common configuration used by all derived models.
          */
         CreatedCustomBuild: {
-            /** Count */
+            /**
+             * Count
+             * @description TODO
+             */
             count?: string;
-            /** Fasta */
+            /**
+             * Fasta
+             * @description TODO
+             */
             fasta?: number;
-            /** Length */
+            /**
+             * Length
+             * @description TODO
+             */
             len: number;
-            /** Line count */
+            /**
+             * Line count
+             * @description TODO
+             */
             linecount?: number;
             /**
              * Name
@@ -2990,9 +3002,15 @@ export interface components {
          * @description Base model definition with common configuration used by all derived models.
          */
         CustomBuildCreationPayload: {
-            /** Length type */
+            /**
+             * Length type
+             * @description TODO
+             */
             "len|type": string;
-            /** Length value */
+            /**
+             * Length value
+             * @description TODO
+             */
             "len|value": string;
             /**
              * Name
@@ -3005,18 +3023,30 @@ export interface components {
          * @description Base model definition with common configuration used by all derived models.
          */
         CustomBuildModel: {
-            /** Count */
+            /**
+             * Count
+             * @description TODO
+             */
             count?: string;
-            /** Fasta */
+            /**
+             * Fasta
+             * @description TODO
+             */
             fasta?: number;
             /**
              * ID
              * @description The ID of the custom build.
              */
             id: string;
-            /** Length */
+            /**
+             * Length
+             * @description TODO
+             */
             len: number;
-            /** Line count */
+            /**
+             * Line count
+             * @description TODO
+             */
             linecount?: number;
             /**
              * Name
@@ -6681,6 +6711,22 @@ export interface components {
              * @example http://www.apache.org/licenses/LICENSE-2.0
              */
             url: string;
+        };
+        /**
+         * LimitedUserModel
+         * @description This is used when config options (expose_user_name and expose_user_email) are in place.
+         */
+        LimitedUserModel: {
+            /** Email */
+            email?: string;
+            /**
+             * ID
+             * @description Encoded ID of the user
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /** Username */
+            username?: string;
         };
         /** Link */
         Link: {
@@ -16773,7 +16819,10 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["UserModel"][];
+                    "application/json": (
+                        | components["schemas"]["UserModel"]
+                        | components["schemas"]["LimitedUserModel"]
+                    )[];
                 };
             };
             /** @description Validation Error */
@@ -16837,7 +16886,10 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["UserModel"][];
+                    "application/json": (
+                        | components["schemas"]["UserModel"]
+                        | components["schemas"]["LimitedUserModel"]
+                    )[];
                 };
             };
             /** @description Validation Error */
