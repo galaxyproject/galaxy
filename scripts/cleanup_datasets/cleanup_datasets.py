@@ -376,35 +376,39 @@ def delete_datasets(app, cutoff_time, remove_from_disk, info_only=False, force_r
     # Marks datasets as deleted if associated items are all deleted.
     start = time.time()
     if force_retry:
-        history_dataset_ids_query = sa.select(
-            (app.model.Dataset.__table__.c.id, app.model.Dataset.__table__.c.state),
-            whereclause=app.model.HistoryDatasetAssociation.__table__.c.update_time < cutoff_time,
-            from_obj=[sa.outerjoin(app.model.Dataset.__table__, app.model.HistoryDatasetAssociation.__table__)],
+        history_dataset_ids_query = (
+            sa.select(app.model.Dataset.__table__.c.id, app.model.Dataset.__table__.c.state)
+            .where(app.model.HistoryDatasetAssociation.__table__.c.update_time < cutoff_time)
+            .select_from(sa.outerjoin(app.model.Dataset.__table__, app.model.HistoryDatasetAssociation.__table__))
         )
-        library_dataset_ids_query = sa.select(
-            (app.model.LibraryDataset.__table__.c.id, app.model.LibraryDataset.__table__.c.deleted),
-            whereclause=app.model.LibraryDataset.__table__.c.update_time < cutoff_time,
-            from_obj=[app.model.LibraryDataset.__table__],
+        library_dataset_ids_query = (
+            sa.select(app.model.LibraryDataset.__table__.c.id, app.model.LibraryDataset.__table__.c.deleted)
+            .where(app.model.LibraryDataset.__table__.c.update_time < cutoff_time)
+            .select_from(app.model.LibraryDataset.__table__)
         )
     else:
         # We really only need the id column here, but sqlalchemy barfs when trying to select only 1 column
-        history_dataset_ids_query = sa.select(
-            (app.model.Dataset.__table__.c.id, app.model.Dataset.__table__.c.state),
-            whereclause=and_(
-                app.model.Dataset.__table__.c.deleted == false(),
-                app.model.HistoryDatasetAssociation.__table__.c.update_time < cutoff_time,
-                app.model.HistoryDatasetAssociation.__table__.c.deleted == true(),
-            ),
-            from_obj=[sa.outerjoin(app.model.Dataset.__table__, app.model.HistoryDatasetAssociation.__table__)],
+        history_dataset_ids_query = (
+            sa.select(app.model.Dataset.__table__.c.id, app.model.Dataset.__table__.c.state)
+            .where(
+                and_(
+                    app.model.Dataset.__table__.c.deleted == false(),
+                    app.model.HistoryDatasetAssociation.__table__.c.update_time < cutoff_time,
+                    app.model.HistoryDatasetAssociation.__table__.c.deleted == true(),
+                )
+            )
+            .select_from(sa.outerjoin(app.model.Dataset.__table__, app.model.HistoryDatasetAssociation.__table__))
         )
-        library_dataset_ids_query = sa.select(
-            (app.model.LibraryDataset.__table__.c.id, app.model.LibraryDataset.__table__.c.deleted),
-            whereclause=and_(
-                app.model.LibraryDataset.__table__.c.deleted == true(),
-                app.model.LibraryDataset.__table__.c.purged == false(),
-                app.model.LibraryDataset.__table__.c.update_time < cutoff_time,
-            ),
-            from_obj=[app.model.LibraryDataset.__table__],
+        library_dataset_ids_query = (
+            sa.select(app.model.LibraryDataset.__table__.c.id, app.model.LibraryDataset.__table__.c.deleted)
+            .where(
+                and_(
+                    app.model.LibraryDataset.__table__.c.deleted == true(),
+                    app.model.LibraryDataset.__table__.c.purged == false(),
+                    app.model.LibraryDataset.__table__.c.update_time < cutoff_time,
+                )
+            )
+            .select_from(app.model.LibraryDataset.__table__)
         )
     deleted_dataset_count = 0
     deleted_instance_count = 0

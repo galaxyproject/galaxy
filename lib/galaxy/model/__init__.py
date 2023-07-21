@@ -3296,12 +3296,10 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         )
         distinct_datasets = (
             select(
-                [
-                    # use labels here to better access from the query above
-                    HistoryDatasetAssociation.table.c.history_id.label("history_id"),
-                    Dataset.total_size.label("dataset_size"),
-                    Dataset.id.label("dataset_id"),
-                ]
+                # use labels here to better access from the query above
+                HistoryDatasetAssociation.table.c.history_id.label("history_id"),
+                Dataset.total_size.label("dataset_size"),
+                Dataset.id.label("dataset_id"),
             )
             .where(HistoryDatasetAssociation.table.c.purged != true())
             .where(Dataset.table.c.purged != true())
@@ -3313,7 +3311,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         distinct_datasets_alias = aliased(distinct_datasets.subquery(), name="datasets")
         # then, bind as property of history using the cls.id
         size_query = (
-            select([func.coalesce(func.sum(distinct_datasets_alias.c.dataset_size), 0)])
+            select(func.coalesce(func.sum(distinct_datasets_alias.c.dataset_size), 0))
             .select_from(distinct_datasets_alias)
             .where(distinct_datasets_alias.c.history_id == cls.id)
         )
@@ -8595,7 +8593,7 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
         viewonly=True,
     )
     order_index = column_property(
-        select([WorkflowStep.order_index]).where(WorkflowStep.id == workflow_step_id).scalar_subquery()
+        select(WorkflowStep.order_index).where(WorkflowStep.id == workflow_step_id).scalar_subquery()
     )
 
     subworkflow_invocation_id: column_property

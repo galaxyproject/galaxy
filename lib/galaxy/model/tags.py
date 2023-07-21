@@ -95,19 +95,17 @@ class TagHandler:
         if not item_tag_assoc_class:
             return []
         # Build select statement.
-        cols_to_select = [item_tag_assoc_class.table.c.tag_id, func.count("*")]
         from_obj = item_tag_assoc_class.table.join(item_class.table).join(galaxy.model.Tag.table)
         where_clause = self.get_id_col_in_item_tag_assoc_table(item_class) == item.id
-        order_by = [func.count("*").desc()]
         group_by = item_tag_assoc_class.table.c.tag_id
         # Do query and get result set.
-        query = select(
-            columns=cols_to_select,
-            from_obj=from_obj,
-            whereclause=where_clause,
-            group_by=group_by,
-            order_by=order_by,
-            limit=limit,
+        query = (
+            select(item_tag_assoc_class.table.c.tag_id, func.count())
+            .select_from(from_obj)
+            .where(where_clause)
+            .group_by(group_by)
+            .order_by(func.count().desc())
+            .limit(limit)
         )
         result_set = self.sa_session.execute(query)
         # Return community tags.
@@ -118,9 +116,7 @@ class TagHandler:
         return community_tags
 
     def get_tool_tags(self):
-        query = select(
-            columns=[galaxy.model.ToolTagAssociation.table.c.tag_id], from_obj=galaxy.model.ToolTagAssociation.table
-        ).distinct()
+        query = select(galaxy.model.ToolTagAssociation.table.c.tag_id).distinct()
         result_set = self.sa_session.execute(query)
 
         tags = []

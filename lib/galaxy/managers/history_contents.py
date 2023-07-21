@@ -180,7 +180,7 @@ class HistoryContentsManager(base.SortableManager):
         ]
         contents_subquery = self._union_of_contents_query(history, filters=filters).subquery()
         statement = (
-            sql.select([sql.column("state"), func.count("*")])
+            sql.select(sql.column("state"), func.count("*"))
             .select_from(contents_subquery)
             .group_by(sql.column("state"))
         )

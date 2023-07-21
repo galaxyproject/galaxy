@@ -184,7 +184,7 @@ class NotificationManager:
         Only published and not expired notifications are accounted.
         """
         stmt = (
-            select([func.count(UserNotificationAssociation.id)])
+            select(func.count(UserNotificationAssociation.id))
             .select_from(UserNotificationAssociation)
             .join(
                 Notification,
