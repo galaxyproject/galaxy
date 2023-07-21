@@ -44,6 +44,8 @@ from galaxy.schema.schema import (
     AnonUserModel,
     AsyncTaskResultSummary,
     CustomBuildCreationPayload,
+    CreatedCustomBuild,
+    CustomBuildsCollection,
     DeletedCustomBuild,
     DetailedUserModel,
     FavoriteObject,
@@ -414,7 +416,6 @@ class FastAPIUsers:
             trans.sa_session.commit()
         return theme
 
-    # TODO Add pydantic model for return
     @router.put(
         "/api/users/{user_id}/custom_builds/{key}",
         name="add_custom_builds",
@@ -426,10 +427,11 @@ class FastAPIUsers:
         trans: ProvidesUserContext = DependsOnTrans,
         user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
         payload: CustomBuildCreationPayload = CustomBuildCreationBody,
-    ):
+    ) -> CreatedCustomBuild:
         user = self.service.get_user(trans, user_id)
         dbkeys = json.loads(user.preferences["dbkeys"]) if "dbkeys" in user.preferences else {}
         name = payload.name
+        # TODO Refactor unfitting parameter names?
         len_type = payload.len_type
         len_value = payload.len_value
         if len_type not in ["file", "fasta", "text"] or not len_value:
@@ -499,9 +501,8 @@ class FastAPIUsers:
             user.preferences["dbkeys"] = json.dumps(dbkeys)
             with transaction(trans.sa_session):
                 trans.sa_session.commit()
-            return build_dict
+            return CreatedCustomBuild(**build_dict)
 
-    # TODO Add pydantic model for return
     @router.get(
         "/api/users/{user_id}/custom_builds", name="get_custom_builds", summary=" Returns collection of custom builds."
     )
@@ -509,7 +510,7 @@ class FastAPIUsers:
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
         user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
-    ):
+    ) -> CustomBuildsCollection:
         user = self.service.get_user(trans, user_id)
         dbkeys = json.loads(user.preferences["dbkeys"]) if "dbkeys" in user.preferences else {}
         valid_dbkeys = {}
@@ -536,7 +537,7 @@ class FastAPIUsers:
         for key, attributes in valid_dbkeys.items():
             attributes["id"] = key
             dbkey_collection.append(attributes)
-        return dbkey_collection
+        return CustomBuildsCollection.construct(__root__=dbkey_collection)
 
     @router.delete(
         "/api/users/{user_id}/custom_builds/{key}", name="delete_custom_build", summary="Delete a custom build"

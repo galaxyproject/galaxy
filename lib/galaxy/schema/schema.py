@@ -356,11 +356,42 @@ class DeletedCustomBuild(Model):
     )
 
 
-# TODO Does name fit to add_custom_build operation?
-class CustomBuildCreationPayload(Model):
+class CustomBuildBaseModel(Model):
     name: str = Field(default=Required, title="Name", description="The name of the custom build.")
-    len_type: str = Field(default=Required, alias="len|type", title="?", description="?")
-    len_value: str = Field(default=Required, alias="len|value", title="?", description="?")
+
+
+# TODO Add descriptions
+class CustomBuildCreationPayload(CustomBuildBaseModel):
+    len_type: str = Field(
+        default=Required,
+        alias="len|type",
+        title="Length type",
+        description="",
+    )
+    len_value: str = Field(
+        default=Required,
+        alias="len|value",
+        title="Length value",
+        description="",
+    )
+
+
+# TODO Add descriptions
+class CreatedCustomBuild(CustomBuildBaseModel):
+    len: int = Field(default=Required, title="Length", description="")
+    count: Optional[str] = Field(default=None, title="Count", description="")
+    fasta: Optional[int] = Field(default=None, title="Fasta", description="")
+    linecount: Optional[int] = Field(default=None, title="Line count", description="")
+
+
+class CustomBuildModel(CreatedCustomBuild):
+    id: str = Field(default=Required, title="ID", description="The ID of the custom build.")
+
+
+class CustomBuildsCollection(Model):
+    __root__: List[CustomBuildModel] = Field(
+        default=Required, title="Custom builds collection", description="The custom builds associated with the user."
+    )
 
 
 class GroupModel(Model):
