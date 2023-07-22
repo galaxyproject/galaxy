@@ -1,6 +1,10 @@
 /*
  * Utilities for working with upload data structures.
  */
+import { fetcher } from "@/schema/fetcher";
+
+const getGenomes = fetcher.path("/api/genomes").method("get").create();
+
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 import { rethrowSimple } from "utils/simple-error";
@@ -37,26 +41,19 @@ function dbKeySort(defaultDbKey) {
 
 async function loadDbKeys() {
     if (_cachedDbKeys) {
-        return Promise.resolve(_cachedDbKeys);
+        return _cachedDbKeys;
     }
-    const url = `${getAppRoot()}api/genomes`;
-    return axios
-        .get(url)
-        .then((response) => {
-            const dbKeys = response.data;
-            const dbKeyList = [];
-            for (var key in dbKeys) {
-                dbKeyList.push({
-                    id: dbKeys[key][1],
-                    text: dbKeys[key][0],
-                });
-            }
-            return dbKeyList;
-        })
-        .then((result) => {
-            _cachedDbKeys = result;
-            return result;
+    const { data } = await getGenomes();
+    const dbKeys = data;
+    const dbKeyList = [];
+    for (var key in dbKeys) {
+        dbKeyList.push({
+            id: dbKeys[key][1],
+            text: dbKeys[key][0],
         });
+    }
+    _cachedDbKeys = dbKeyList;
+    return dbKeyList;
 }
 
 async function loadUploadDatatypes() {
