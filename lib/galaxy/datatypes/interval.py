@@ -11,7 +11,8 @@ from typing import (
     Tuple,
     Union,
 )
-from urllib.parse import quote_plus
+from urllib.parse import quote_plus, urlparse
+from urllib.request import urlopen
 
 import pysam
 from bx.intervals.io import (
@@ -1637,89 +1638,99 @@ class GTrack(Interval):
     file_ext = "gtrack"
 
     """Add metadata elements"""
-    MetadataElement(name="comment_lines", default=0, desc="Number of comment lines",
-                     readonly=False, optional=True, no_value=0)
-    MetadataElement(name="data_lines", default=0, desc="Number of data lines", readonly=True,
-                    visible=False, optional=True, no_value=0)
-    MetadataElement(name="header_lines", default=0, desc="Number of header lines",
-                    readonly=False, optional=True, no_value=0)
-    MetadataElement(name="bounding_regions", default=0, desc="Number of bounding regions",
-                    readonly=False, optional=True, no_value=0)
-    MetadataElement(name="columns", default=0, desc="Number of columns", readonly=True,
-                    visible=False, no_value=0)
-    MetadataElement(name="column_types", default=[], desc="Column types",
-                    param=metadata.ColumnTypesParameter, readonly=True, visible=False, no_value=[])
-    MetadataElement(name="column_names", default=[], desc="Column names", readonly=True,
-                    visible=False, optional=True, no_value=[])
-    MetadataElement(name="delimiter", default='\t', desc="Data delimiter", readonly=True,
-                    visible=False, optional=True, no_value=[])
-    MetadataElement(name="chromCol", default=1, desc="Sequence id (chrom) column",
-                    param=metadata.ColumnParameter)
-    MetadataElement(name="startCol", default=2, desc="Start column",
-                    param=metadata.ColumnParameter)
-    MetadataElement(name="endCol", default=3, desc="End column",
-                    param=metadata.ColumnParameter)
-    MetadataElement(name="strandCol", desc="Strand column",
-                    param=metadata.ColumnParameter, optional=True, no_value=0)
-    MetadataElement(name="nameCol", desc="Name column",
-                    param=metadata.ColumnParameter, optional=True, no_value=0)
+    MetadataElement(
+        name="comment_lines", default=0, desc="Number of comment lines", readonly=False, optional=True, no_value=0
+    )
+    MetadataElement(
+        name="data_lines",
+        default=0,
+        desc="Number of data lines",
+        readonly=True,
+        visible=False,
+        optional=True,
+        no_value=0,
+    )
+    MetadataElement(
+        name="header_lines", default=0, desc="Number of header lines", readonly=False, optional=True, no_value=0
+    )
+    MetadataElement(
+        name="bounding_regions", default=0, desc="Number of bounding regions", readonly=False, optional=True, no_value=0
+    )
+    MetadataElement(name="columns", default=0, desc="Number of columns", readonly=True, visible=False, no_value=0)
+    MetadataElement(
+        name="column_types",
+        default=[],
+        desc="Column types",
+        param=metadata.ColumnTypesParameter,
+        readonly=True,
+        visible=False,
+        no_value=[],
+    )
+    MetadataElement(
+        name="column_names", default=[], desc="Column names", readonly=True, visible=False, optional=True, no_value=[]
+    )
+    MetadataElement(
+        name="delimiter", default="\t", desc="Data delimiter", readonly=True, visible=False, optional=True, no_value=[]
+    )
+    MetadataElement(name="chromCol", default=1, desc="Sequence id (chrom) column", param=metadata.ColumnParameter)
+    MetadataElement(name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter)
+    MetadataElement(name="endCol", default=3, desc="End column", param=metadata.ColumnParameter)
+    MetadataElement(name="strandCol", desc="Strand column", param=metadata.ColumnParameter, optional=True, no_value=0)
+    MetadataElement(name="nameCol", desc="Name column", param=metadata.ColumnParameter, optional=True, no_value=0)
 
-    SEQID = 'seqid'
-    START = 'start'
-    END = 'end'
-    STRAND = 'strand'
-    VALUE = 'value'
-    EDGES = 'edges'
-    GENOME = 'genome'
-    ID = 'id'
-    NAME = 'name'
+    SEQID = "seqid"
+    START = "start"
+    END = "end"
+    STRAND = "strand"
+    VALUE = "value"
+    EDGES = "edges"
+    GENOME = "genome"
+    ID = "id"
+    NAME = "name"
 
-    SUBTYPE_URL = 'subtype url'
-    GTRACK_VERSION = 'gtrack version'
-    GTRACK_SUBTYPE = 'gtrack subtype'
-    VALUE_COLUMN_DEF = 'value column'
-    VALUE_TYPE_DEF = 'value type'
-    VALUE_DIMENSION = 'value dimension'
-    EDGES_COLUMN_DEF = 'edges column'
+    SUBTYPE_URL = "subtype url"
+    GTRACK_VERSION = "gtrack version"
+    GTRACK_SUBTYPE = "gtrack subtype"
+    VALUE_COLUMN_DEF = "value column"
+    VALUE_TYPE_DEF = "value type"
+    VALUE_DIMENSION = "value dimension"
+    EDGES_COLUMN_DEF = "edges column"
 
     GTRACK_STD_COLUMN_TYPES = {
-        GENOME: 'str',
-        SEQID: 'str',
-        START: 'int',
-        END: 'int',
-        STRAND: 'str',
-        ID: 'str',
-        EDGES: 'list'
+        GENOME: "str",
+        SEQID: "str",
+        START: "int",
+        END: "int",
+        STRAND: "str",
+        ID: "str",
+        EDGES: "list",
     }
 
-    GTRACK_COLUMN_NAMES_MAPPING = {
-        VALUE_COLUMN_DEF : VALUE,
-        EDGES_COLUMN_DEF : EDGES
-    }
+    GTRACK_COLUMN_NAMES_MAPPING = {VALUE_COLUMN_DEF: VALUE, EDGES_COLUMN_DEF: EDGES}
 
-    SCALAR = 'scalar'
+    SCALAR = "scalar"
     GTRACK_VALUE_TYPE = {
-        'number' : 'float',
-        'character': 'str',
-        'binary' : 'int',
-        'category' : 'str',
-        'list' : 'list',
-        'vector' : 'list',
-        'pair' : 'list'
+        "number": "float",
+        "character": "str",
+        "binary": "int",
+        "category": "str",
+        "list": "list",
+        "vector": "list",
+        "pair": "list",
     }
 
     METADATA_COLUMNS_MAPPING = {
-        SEQID : 'chromCol',
-        START: 'startCol',
-        END: 'endCol',
-        STRAND: 'strandCol',
-        NAME: 'nameCol'
+        SEQID: "chromCol",
+        START: "startCol",
+        END: "endCol",
+        STRAND: "strandCol",
+        NAME: "nameCol",
     }
 
     STD_COLUMNS = [START, END, VALUE, EDGES]
     DEFAULT_COLUMNS = [SEQID, START, END]
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         hash_count_to_lines, num_data_lines, data_lines = self._parse_file(file_prefix.string_io(), True)
         cols, headers = self._parse_column_and_header_lines(hash_count_to_lines)
 
@@ -1741,7 +1752,7 @@ class GTrack(Interval):
 
         if any(std_column in cols for std_column in self.STD_COLUMNS):
             for line in data_lines[:-1]:
-                if len(line.split('\t')) != len(cols):
+                if len(line.split("\t")) != len(cols):
                     return False
             return True
 
@@ -1751,14 +1762,13 @@ class GTrack(Interval):
     def _parse_column_and_header_lines(hash_count_to_lines):
         headers = {}
         for line in hash_count_to_lines[2]:
-            header, val = line.split(':', 1)
-            print header + ' : ' + val
+            header, val = line.split(":", 1)
             headers[header.lower().strip()] = val.lower().strip()
 
         column_lines = hash_count_to_lines[3]
         column_line = column_lines[0] if column_lines else None
         if column_line is not None:
-            cols = column_line.lower().split('\t')
+            cols = column_line.lower().split("\t")
         else:
             cols = None
         return cols, headers
@@ -1770,20 +1780,16 @@ class GTrack(Interval):
 
         cols, headers = self._parse_column_and_header_lines(hash_count_to_lines)
         if self.SUBTYPE_URL in headers:
-            cols, headers = self._update_cols_and_headers_from_subtype(
-                cols, headers
-            )
+            cols, headers = self._update_cols_and_headers_from_subtype(cols, headers)
 
         if not cols:
             cols = self.DEFAULT_COLUMNS
         self._set_meta_for_cols(dataset, cols, headers)
 
     def _update_cols_and_headers_from_subtype(self, cols, headers):
-        import urllib2
-        subtype_file = urllib2.urlopen(headers[self.SUBTYPE_URL])
+        subtype_file = urlopen(headers[self.SUBTYPE_URL])
         subtype_hash_count_to_lines = self._parse_file(subtype_file)[0]
-        subtype_cols, subtype_headers = \
-            self._parse_column_and_header_lines(subtype_hash_count_to_lines)
+        subtype_cols, subtype_headers = self._parse_column_and_header_lines(subtype_hash_count_to_lines)
         subtype_headers.update(headers)
         return subtype_cols if not cols else cols, subtype_headers
 
@@ -1809,13 +1815,12 @@ class GTrack(Interval):
         col_types = self._get_column_types(cols, value_type, value_column_name)
         dataset.metadata.column_types = col_types
 
-        for col_name, metadata_col in self.METADATA_COLUMNS_MAPPING.iteritems():
+        for col_name, metadata_col in self.METADATA_COLUMNS_MAPPING.items():
             if col_name in cols:
                 setattr(dataset.metadata, metadata_col, cols.index(col_name))
 
     def _check_url(self, url):
         try:
-            from urlparse import urlparse
             parsed_url = urlparse(url)
             if parsed_url.netloc:
                 return True
@@ -1832,38 +1837,39 @@ class GTrack(Interval):
                     if value_type:
                         col_type = value_type
                     else:
-                        col_type = 'float'
+                        col_type = "float"
                 else:
-                    col_type = 'str'
+                    col_type = "str"
             col_types.append(col_type)
 
         return col_types
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset, **kwd):
         if not dataset.dataset.purged:
-            dataset.blurb = 'GTrack file contains: {} comment lines, ' \
-                            '{} header lines (incl. colspec), ' \
-                            '{} bounding regions, and {} data lines ' \
-                            'of {} columns'.format(
-                dataset.metadata.comment_lines,
-                dataset.metadata.header_lines,
-                dataset.metadata.bounding_regions,
-                dataset.metadata.data_lines,
-                dataset.metadata.columns
+            dataset.blurb = (
+                "GTrack file contains: {} comment lines, "
+                "{} header lines (incl. colspec), "
+                "{} bounding regions, and {} data lines "
+                "of {} columns".format(
+                    dataset.metadata.comment_lines,
+                    dataset.metadata.header_lines,
+                    dataset.metadata.bounding_regions,
+                    dataset.metadata.data_lines,
+                    dataset.metadata.columns,
+                )
             )
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte,
-                                              skipchars=['#'])
+            dataset.peek = data.get_file_peek(dataset.file_name, skipchars=["#"], **kwd)
         else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
 
-    def _parse_file(self, input_file, include_data = False):
+    def _parse_file(self, input_file, include_data=False):
         from galaxy.datatypes.tabular import GSuite
 
         return GSuite._parse_file(input_file, include_data)
 
     def get_mime(self):
-        return 'text/plain'
+        return "text/plain"
 
 
 class ENCODEPeak(Interval):
