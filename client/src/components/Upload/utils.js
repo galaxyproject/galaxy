@@ -1,8 +1,9 @@
 /*
  * Utilities for working with upload data structures.
  */
-import { fetcher } from "@/schema/fetcher";
 import { errorMessageAsString, rethrowSimple } from "utils/simple-error";
+
+import { fetcher } from "@/schema/fetcher";
 
 const getDatatypes = fetcher.path("/api/datatypes").method("get").create();
 const getGenomes = fetcher.path("/api/genomes").method("get").create();
