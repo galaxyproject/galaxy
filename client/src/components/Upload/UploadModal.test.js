@@ -7,11 +7,30 @@ import { useHistoryStore } from "stores/historyStore";
 import { useUserStore } from "stores/userStore";
 import { getLocalVue, mockModule } from "tests/jest/helpers";
 import Vuex from "vuex";
+import { getDatatypes, getGenomes } from "./services";
 
 import UploadModal from "./UploadModal";
 import UploadModalContent from "./UploadModalContent";
 
 jest.mock("app");
+jest.mock("./services");
+
+const fastaResponse = {
+    description_url: "https://wiki.galaxyproject.org/Learn/Datatypes#Fasta",
+    display_in_upload: true,
+    extension: "fasta",
+    description:
+        "A sequence in FASTA format consists of a single-line description, followed by lines of sequence data. The first character of the description line is a greater-than ('>') symbol in the first column. All lines should be shorter than 80 characters.",
+};
+
+const genomesResponse = [
+    ["Scarlet macaw Jun 2013 (SMACv1.1/araMac1) (araMac1)", "araMac1"],
+    ["Cat Dec. 2008 (NHGRI/GTB V17e/felCat4) (felCat4)", "felCat4"],
+    ["Cat Sep. 2011 (ICGSC Felis_catus 6.2/felCat5) (felCat5)", "felCat5"],
+];
+
+getDatatypes.mockReturnValue({ data: [fastaResponse] });
+getGenomes.mockReturnValue({ data: genomesResponse });
 
 const propsData = {
     chunkUploadSize: 1024,
@@ -35,34 +54,13 @@ describe("UploadModal.vue", () => {
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
-
-        const fastaResponse = {
-            description_url: "https://wiki.galaxyproject.org/Learn/Datatypes#Fasta",
-            display_in_upload: true,
-            extension: "fasta",
-            description:
-                "A sequence in FASTA format consists of a single-line description, followed by lines of sequence data. The first character of the description line is a greater-than ('>') symbol in the first column. All lines should be shorter than 80 characters.",
-        };
-        const datatypesResponse = [fastaResponse];
-
-        axiosMock.onGet(`/api/datatypes?extension_only=False`).reply(200, datatypesResponse);
-
-        const genomesResponse = [
-            ["Scarlet macaw Jun 2013 (SMACv1.1/araMac1) (araMac1)", "araMac1"],
-            ["Cat Dec. 2008 (NHGRI/GTB V17e/felCat4) (felCat4)", "felCat4"],
-            ["Cat Sep. 2011 (ICGSC Felis_catus 6.2/felCat5) (felCat5)", "felCat5"],
-        ];
-        axiosMock.onGet(`/api/genomes`).reply(200, genomesResponse);
-
-        // mock current user & history
-
-        axiosMock.onGet(`/api/datatypes?extension_only=False`).reply(200, datatypesResponse);
+        axiosMock.onGet(`/api/histories/count`).reply(200, 0);
 
         const localVue = getLocalVue();
         const pinia = createPinia();
         const store = createStore();
 
-        wrapper = await mount(UploadModal, {
+        wrapper = mount(UploadModal, {
             store,
             provide: { store },
             propsData,
