@@ -46,7 +46,7 @@ export default Backbone.View.extend({
         this.$content.hide();
         this.$warning.hide();
         this.$help.hide();
-        UploadUtils.getRemoteFiles(
+        UploadUtils.getRemoteEntries(
             function (ftp_files) {
                 self.model.set("ftp_files", ftp_files);
                 self._index();

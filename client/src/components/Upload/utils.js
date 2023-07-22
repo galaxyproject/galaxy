@@ -2,12 +2,11 @@
  * Utilities for working with upload data structures.
  */
 import { fetcher } from "@/schema/fetcher";
-import axios from "axios";
-import { getAppRoot } from "onload/loadConfig";
-import { rethrowSimple } from "utils/simple-error";
+import { errorMessageAsString, rethrowSimple } from "utils/simple-error";
 
-const getDatatypes = fetcher.path("/api/datatypes?extension_only=False").method("get").create();
+const getDatatypes = fetcher.path("/api/datatypes").method("get").create();
 const getGenomes = fetcher.path("/api/genomes").method("get").create();
+const getRemoteFiles = fetcher.path("/api/remote_files").method("get").create();
 
 const AUTO_EXTENSION = {
     id: "auto",
@@ -59,7 +58,7 @@ async function loadUploadDatatypes() {
     if (_cachedDatatypes) {
         return _cachedDatatypes;
     }
-    const { data: datatypes } = await getDatatypes();
+    const { data: datatypes } = await getDatatypes({ extension_only: false });
     const listExtensions = [];
     for (var key in datatypes) {
         listExtensions.push({
@@ -104,21 +103,18 @@ export async function getUploadDbKeys(defaultDbKey) {
     });
 }
 
-export async function getRemoteFiles(success, error) {
-    const url = `${getAppRoot()}api/remote_files`;
+export async function getRemoteEntries(success, error) {
     try {
-        const { data } = await axios.get(url);
+        const { data } = await getRemoteFiles();
         success(data);
     } catch (e) {
-        error(rethrowSimple(e));
+        error(errorMessageAsString(e));
     }
 }
 
-export async function getRemoteFilesAt(target) {
-    const url = `${getAppRoot()}api/remote_files?target=${target}`;
+export async function getRemoteEntriesAt(target) {
     try {
-        const response = await axios.get(url);
-        const files = response.data;
+        const { data: files } = await getRemoteFiles({ target });
         return files;
     } catch (e) {
         rethrowSimple(e);
@@ -130,8 +126,8 @@ export default {
     DEFAULT_DBKEY,
     DEFAULT_EXTENSION,
     findExtension,
-    getRemoteFiles,
-    getRemoteFilesAt,
+    getRemoteEntries,
+    getRemoteEntriesAt,
     getUploadDatatypes,
     getUploadDbKeys,
 };
