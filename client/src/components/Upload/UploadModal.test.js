@@ -7,8 +7,8 @@ import { useHistoryStore } from "stores/historyStore";
 import { useUserStore } from "stores/userStore";
 import { getLocalVue, mockModule } from "tests/jest/helpers";
 import Vuex from "vuex";
-import { getDatatypes, getGenomes } from "./services";
 
+import { getDatatypes, getGenomes } from "./services";
 import UploadModal from "./UploadModal";
 import UploadModalContent from "./UploadModalContent";
 

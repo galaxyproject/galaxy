@@ -2,6 +2,7 @@
  * Utilities for working with upload data structures.
  */
 import { errorMessageAsString, rethrowSimple } from "utils/simple-error";
+
 import { getDatatypes, getGenomes, getRemoteFiles } from "./services";
 
 export const AUTO_EXTENSION = {
