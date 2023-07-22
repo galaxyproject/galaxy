@@ -2,12 +2,12 @@
  * Utilities for working with upload data structures.
  */
 import { fetcher } from "@/schema/fetcher";
-
-const getGenomes = fetcher.path("/api/genomes").method("get").create();
-
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 import { rethrowSimple } from "utils/simple-error";
+
+const getDatatypes = fetcher.path("/api/datatypes?extension_only=False").method("get").create();
+const getGenomes = fetcher.path("/api/genomes").method("get").create();
 
 const AUTO_EXTENSION = {
     id: "auto",
@@ -43,8 +43,7 @@ async function loadDbKeys() {
     if (_cachedDbKeys) {
         return _cachedDbKeys;
     }
-    const { data } = await getGenomes();
-    const dbKeys = data;
+    const { data: dbKeys } = await getGenomes();
     const dbKeyList = [];
     for (var key in dbKeys) {
         dbKeyList.push({
@@ -58,34 +57,26 @@ async function loadDbKeys() {
 
 async function loadUploadDatatypes() {
     if (_cachedDatatypes) {
-        return Promise.resolve(_cachedDatatypes);
+        return _cachedDatatypes;
     }
-    const url = `${getAppRoot()}api/datatypes?extension_only=False`;
-    return axios
-        .get(url)
-        .then((response) => {
-            const datatypes = response.data;
-            const listExtensions = [];
-            for (var key in datatypes) {
-                listExtensions.push({
-                    id: datatypes[key].extension,
-                    text: datatypes[key].extension,
-                    description: datatypes[key].description,
-                    description_url: datatypes[key].description_url,
-                    composite_files: datatypes[key].composite_files,
-                });
-            }
-            listExtensions.sort((a, b) => {
-                var a_text = a.text && a.text.toLowerCase();
-                var b_text = b.text && b.text.toLowerCase();
-                return a_text > b_text ? 1 : a_text < b_text ? -1 : 0;
-            });
-            return listExtensions;
-        })
-        .then((result) => {
-            _cachedDatatypes = result;
-            return result;
+    const { data: datatypes } = await getDatatypes();
+    const listExtensions = [];
+    for (var key in datatypes) {
+        listExtensions.push({
+            id: datatypes[key].extension,
+            text: datatypes[key].extension,
+            description: datatypes[key].description,
+            description_url: datatypes[key].description_url,
+            composite_files: datatypes[key].composite_files,
         });
+    }
+    listExtensions.sort((a, b) => {
+        var a_text = a.text && a.text.toLowerCase();
+        var b_text = b.text && b.text.toLowerCase();
+        return a_text > b_text ? 1 : a_text < b_text ? -1 : 0;
+    });
+    _cachedDatatypes = listExtensions;
+    return listExtensions;
 }
 
 /*
