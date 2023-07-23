@@ -1,0 +1,8 @@
+#
+# GTrack example file 4
+#
+##track type: valued segments
+##value column: score2
+###seqid	start	end	score1	score2
+chr1	0	50	1.0	0.9
+chr1	100	125	1.1	0.8

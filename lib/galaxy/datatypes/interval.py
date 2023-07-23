@@ -1911,6 +1911,9 @@ class GTrack(Interval):
         dataset.metadata.column_types = col_types
 
         for col_name, metadata_col in self.METADATA_COLUMNS_MAPPING.items():
+            if metadata_col == "viz_filter_cols":
+                col_name = value_column_name
+
             if col_name in cols:
                 value = cols.index(col_name) + 1
                 if metadata_col == "viz_filter_cols":

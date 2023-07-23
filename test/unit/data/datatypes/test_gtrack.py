@@ -26,6 +26,11 @@ def gtrack_example_3() -> Generator[InputFileInfo, None, None]:
 
 
 @pytest.fixture
+def gtrack_example_4() -> Generator[InputFileInfo, None, None]:
+    return get_input_file_info("Example_4.gtrack", 3, read_contents=True)
+
+
+@pytest.fixture
 def gtrack_example_bed_direct() -> Generator[InputFileInfo, None, None]:
     return get_input_file_info("Example_bed_direct.gtrack", 3, read_contents=True)
 
@@ -41,6 +46,7 @@ def gtrack_example_mean_sd_weights() -> Generator[InputFileInfo, None, None]:
         ("gtrack_example_1", False),
         ("gtrack_example_2", True),
         ("gtrack_example_3", True),
+        ("gtrack_example_4", True),
         ("gtrack_example_bed_direct", True),
         ("gtrack_example_mean_sd_weights", True),
     ],
@@ -133,6 +139,23 @@ class GTrackMetadata(TypedDict):
                 bounding_regions=2,
                 column_names=("end", "id", "directed", "edges"),
                 column_types=("int", "str", "str", "str"),
+                # delimiter="\t",
+            ),
+        ),
+        (
+            "gtrack_example_4",
+            GTrackMetadata(
+                chromCol=1,
+                startCol=2,
+                endCol=3,
+                viz_filter_cols=[5],
+                columns=5,
+                comment_lines=3,
+                data_lines=2,
+                header_lines=3,
+                bounding_regions=0,
+                column_names=("seqid", "start", "end", "score1", "score2"),
+                column_types=("str", "int", "int", "str", "float"),
                 # delimiter="\t",
             ),
         ),
