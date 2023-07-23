@@ -1847,16 +1847,11 @@ class GTrack(Interval):
     def set_peek(self, dataset, **kwd):
         if not dataset.dataset.purged:
             dataset.blurb = (
-                "GTrack file contains: {} comment lines, "
-                "{} header lines (incl. colspec), "
-                "{} bounding regions, and {} data lines "
-                "of {} columns".format(
-                    dataset.metadata.comment_lines,
-                    dataset.metadata.header_lines,
-                    dataset.metadata.bounding_regions,
-                    dataset.metadata.data_lines,
-                    dataset.metadata.columns,
-                )
+                f"{dataset.metadata.header_lines} header lines, "
+                f"{dataset.metadata.bounding_regions} bounding regions, "
+                f"{dataset.metadata.comment_lines} comment lines, "
+                f"and {dataset.metadata.data_lines} data lines "
+                f"of {dataset.metadata.columns} columns"
             )
             dataset.peek = data.get_file_peek(dataset.file_name, skipchars=["#"], **kwd)
         else:
