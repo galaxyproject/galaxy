@@ -51,7 +51,8 @@ const columnStyle = computed(() => {
     const columnStyle = Array(props.options.dataset_config.metadata_columns);
     if (props.options.dataset_config.metadata_column_types?.length > 0) {
         props.options.dataset_config.metadata_column_types.forEach((column_type, index) => {
-            columnStyle[index] = column_type === "str" || column_type === "list" ? "string-align" : "number-align";
+            columnStyle[index] =
+                column_type === "str" || column_type === "list" ? "string-align no-wrap" : "number-align";
         });
     }
     return columnStyle;
@@ -184,7 +185,9 @@ onMounted(() => {
         <b-table-simple hover small striped>
             <b-thead head-variant="dark">
                 <b-tr>
-                    <b-th v-for="(column, index) in columns" :key="column">{{ column || `Column ${index + 1}` }}</b-th>
+                    <b-th v-for="(column, index) in columns" :key="column" class="no-wrap">{{
+                        column || `Column ${index + 1}`
+                    }}</b-th>
                 </b-tr>
             </b-thead>
             <b-tbody>
@@ -210,5 +213,8 @@ onMounted(() => {
 }
 .number-align {
     text-align: right;
+}
+.no-wrap {
+    white-space: nowrap;
 }
 </style>
