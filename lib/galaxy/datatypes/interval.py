@@ -1901,7 +1901,7 @@ class GTrack(Interval):
 
         header_val_dim = headers.get(self.VALUE_DIMENSION)
 
-        if header_val_dim == self.SCALAR:
+        if not header_val_dim or header_val_dim == self.SCALAR:
             header_val_type = headers.get(self.VALUE_TYPE_DEF)
             value_type = self.GTRACK_VALUE_TYPE.get(header_val_type)
         else:
