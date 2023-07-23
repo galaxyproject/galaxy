@@ -1897,6 +1897,7 @@ class GTrack(Interval):
     def _set_meta_for_cols(self, dataset, cols, headers):
         dataset.metadata.columns = len(cols)
         dataset.metadata.column_names = tuple(cols)
+        dataset.metadata.delimiter = "\t"
 
         header_val_dim = headers.get(self.VALUE_DIMENSION)
 

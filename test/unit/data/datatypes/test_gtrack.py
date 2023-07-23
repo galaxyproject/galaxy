@@ -94,7 +94,7 @@ class GTrackMetadata(TypedDict):
                 bounding_regions=0,
                 column_names=("seqid", "start", "end"),
                 column_types=("str", "int", "int"),
-                # delimiter="\t",
+                delimiter="\t",
             ),
         ),
         (
@@ -124,7 +124,7 @@ class GTrackMetadata(TypedDict):
                     "edges",
                 ),
                 column_types=("str", "int", "int", "str", "float", "str", "str", "str", "str", "str"),
-                # delimiter="\t",
+                delimiter="\t",
             ),
         ),
         (
@@ -139,7 +139,7 @@ class GTrackMetadata(TypedDict):
                 bounding_regions=2,
                 column_names=("end", "id", "directed", "edges"),
                 column_types=("int", "str", "str", "str"),
-                # delimiter="\t",
+                delimiter="\t",
             ),
         ),
         (
@@ -156,7 +156,7 @@ class GTrackMetadata(TypedDict):
                 bounding_regions=0,
                 column_names=("seqid", "start", "end", "score1", "score2"),
                 column_types=("str", "int", "int", "str", "float"),
-                # delimiter="\t",
+                delimiter="\t",
             ),
         ),
         (
@@ -203,7 +203,7 @@ class GTrackMetadata(TypedDict):
                     "str",
                     "str",
                 ),
-                # delimiter="\t",
+                delimiter="\t",
             ),
         ),
         (
@@ -220,7 +220,7 @@ class GTrackMetadata(TypedDict):
                 bounding_regions=0,
                 column_names=("seqid", "start", "end", "id", "edges"),
                 column_types=("str", "int", "int", "str", "str"),
-                # delimiter="\t",
+                delimiter="\t",
             ),
         ),
     ],
