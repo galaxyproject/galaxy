@@ -2,7 +2,9 @@ import os
 import shutil
 import tempfile
 from contextlib import contextmanager
-from typing import Optional, NamedTuple, Generator
+from io import StringIO
+from typing import Optional, NamedTuple, Generator, io
+from urllib.parse import urlparse
 
 from galaxy.datatypes import sniff
 from galaxy.datatypes.protocols import DatasetProtocol
@@ -96,3 +98,11 @@ def get_input_file_info(file_name: str, dataset_id: int, read_contents: bool) ->
             contents = None
 
         yield InputFileInfo(dataset=dataset, file_prefix=file_prefix, contents=contents)  # type:ignore
+
+
+def mock_urlopen(url: str) -> str:
+    url_filename = urlparse(url).path.split("/")[-1]
+    input_file = get_input_file_info(url_filename, 10, read_contents=True)
+    with input_file as input_file_info:
+        assert isinstance(input_file_info, InputFileInfo)
+        return StringIO(input_file_info.contents.decode("utf8"))

@@ -1,10 +1,13 @@
+import pytest
 from typing import Generator, Tuple
 from typing_extensions import TypedDict
 
-import pytest
+import galaxy.datatypes.interval
 
+from .util import InputFileInfo, get_input_file_info, mock_urlopen
+
+galaxy.datatypes.interval.urlopen = mock_urlopen
 from galaxy.datatypes.interval import GTrack
-from .util import InputFileInfo, get_input_file_info
 
 
 @pytest.fixture
@@ -164,7 +167,7 @@ class GTrackMetadata(TypedDict):
                     "int",
                     "str",
                     "float",
-                    "bool",
+                    "str",
                     "str",
                     "str",
                     "str",
@@ -199,6 +202,7 @@ def test_gtrack_set_meta(input_file_fixture_name, expected, request):
     input_file = request.getfixturevalue(input_file_fixture_name)
     with input_file as input_file_info:
         assert isinstance(input_file_info, InputFileInfo)
+
         GTrack().set_meta(input_file_info.dataset)
         for key in expected.keys():
             assert getattr(input_file_info.dataset.metadata, key) == expected[key], (
