@@ -118,8 +118,8 @@ function processRow(row: string[]) {
         // SAM file or like format with optional metadata included.
         return row.slice(0, num_columns - 1).concat([row.slice(num_columns - 1).join("\t")]);
     } else if (row.length === 1) {
-        if (isComment(row[0])) {  // Comment, pass through
-          return row;
+        if (isComment(row[0])) {
+            return row;
         }
         // Try to split by comma first
         let rowDataSplit = row[0]!.split(",");
@@ -166,8 +166,8 @@ function nextChunk() {
         });
 }
 
-function isComment(row_el: string | undefined){
-  return row_el!.startsWith("#")
+function isComment(row_el: string | undefined) {
+    return row_el!.startsWith("#");
 }
 
 onMounted(() => {
@@ -195,10 +195,12 @@ onMounted(() => {
                     <b-td
                         v-for="(element, elementIndex) in row.slice(0, -1)"
                         :key="elementIndex"
-                        :class="isComment(row[0]) ? null:columnStyle[elementIndex]">
+                        :class="isComment(row[0]) ? null : columnStyle[elementIndex]">
                         {{ element }}
                     </b-td>
-                    <b-td :class="isComment(row[0]) ? null:columnStyle[row.length - 1]" :colspan="1 + columns.length - row.length">
+                    <b-td
+                        :class="isComment(row[0]) ? null : columnStyle[row.length - 1]"
+                        :colspan="1 + columns.length - row.length">
                         {{ row.slice(-1)[0] }}
                     </b-td>
                 </b-tr>
