@@ -501,7 +501,7 @@ class Bed(Interval):
     MetadataElement(name="columns", default=3, desc="Number of columns", readonly=True, visible=False)
     MetadataElement(
         name="viz_filter_cols",
-        desc="Score column for visualization",
+        desc="Score columns for visualization",
         default=[4],
         param=metadata.ColumnParameter,
         optional=True,
@@ -1760,7 +1760,7 @@ class GTrack(Interval):
     )
     MetadataElement(
         name="viz_filter_cols",
-        desc="Score column for visualization",
+        desc="Score columns for visualization",
         param=metadata.ColumnParameter,
         default=[],
         no_value=[],

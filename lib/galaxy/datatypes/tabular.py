@@ -1024,7 +1024,7 @@ class BaseVcf(Tabular):
     )
     MetadataElement(
         name="viz_filter_cols",
-        desc="Score column for visualization",
+        desc="Score columns for visualization",
         default=[5],
         param=metadata.ColumnParameter,
         optional=True,
