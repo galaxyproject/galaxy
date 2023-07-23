@@ -59,6 +59,7 @@ class GTrackMetadata(TypedDict):
     endCol: int
     strandCol: int
     nameCol: int
+    viz_filter_cols: list
     columns: int
 
     # GTrack specific
@@ -96,6 +97,9 @@ class GTrackMetadata(TypedDict):
                 chromCol=1,
                 startCol=2,
                 endCol=3,
+                nameCol=4,
+                viz_filter_cols=[5],
+                strandCol=6,
                 columns=10,
                 comment_lines=0,
                 data_lines=6,
@@ -113,8 +117,7 @@ class GTrackMetadata(TypedDict):
                     "itemRgb",
                     "edges",
                 ),
-                column_types=("str", "int", "int", "str", "float", "str", "str", "str", "str", "list"),
-                # column_types=("str", "int", "int", "str", "int", "str", "str", "str", "str", "str"),
+                column_types=("str", "int", "int", "str", "float", "str", "str", "str", "str", "str"),
                 # delimiter="\t",
             ),
         ),
@@ -122,14 +125,14 @@ class GTrackMetadata(TypedDict):
             "gtrack_example_3",
             GTrackMetadata(
                 endCol=1,
+                nameCol=2,
                 columns=4,
                 comment_lines=2,
                 data_lines=6,
                 header_lines=4,
                 bounding_regions=2,
                 column_names=("end", "id", "directed", "edges"),
-                column_types=("int", "str", "str", "list"),
-                # column_types=("int", "str", "str", "str"),
+                column_types=("int", "str", "str", "str"),
                 # delimiter="\t",
             ),
         ),
@@ -140,6 +143,7 @@ class GTrackMetadata(TypedDict):
                 startCol=2,
                 endCol=3,
                 nameCol=4,
+                viz_filter_cols=[5],
                 strandCol=6,
                 columns=13,
                 comment_lines=1,
@@ -185,14 +189,14 @@ class GTrackMetadata(TypedDict):
                 chromCol=1,
                 startCol=2,
                 endCol=3,
+                nameCol=4,
                 columns=5,
                 comment_lines=0,
                 data_lines=5,
                 header_lines=2,
                 bounding_regions=0,
                 column_names=("seqid", "start", "end", "id", "edges"),
-                column_types=("str", "int", "int", "str", "list"),
-                # column_types=("str", "int", "int", "str", "styr"),
+                column_types=("str", "int", "int", "str", "str"),
                 # delimiter="\t",
             ),
         ),

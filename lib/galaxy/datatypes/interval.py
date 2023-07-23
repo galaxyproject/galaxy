@@ -1637,46 +1637,138 @@ class GTrack(Interval):
     edam_format = "format_3164"
     file_ext = "gtrack"
 
-    """Add metadata elements"""
+    # Add metadata elements
     MetadataElement(
-        name="comment_lines", default=0, desc="Number of comment lines", readonly=False, optional=True, no_value=0
+        name="header_lines",
+        desc="Number of header lines",
+        default=0,
+        no_value=0,
+        visible=False,
+        optional=True,
+        readonly=True,
+    )
+    MetadataElement(
+        name="bounding_regions",
+        desc="Number of bounding regions",
+        default=0,
+        no_value=0,
+        visible=False,
+        optional=True,
+        readonly=True,
+    )
+    MetadataElement(
+        name="comment_lines",
+        desc="Number of comment lines",
+        default=0,
+        no_value=0,
+        visible=False,
+        optional=True,
+        readonly=True,
     )
     MetadataElement(
         name="data_lines",
-        default=0,
         desc="Number of data lines",
-        readonly=True,
+        default=0,
+        no_value=0,
         visible=False,
         optional=True,
+        readonly=True,
+    )
+    MetadataElement(
+        name="columns",
+        desc="Number of columns",
+        default=0,
         no_value=0,
+        visible=False,
+        readonly=True,
     )
     MetadataElement(
-        name="header_lines", default=0, desc="Number of header lines", readonly=False, optional=True, no_value=0
+        name="column_names",
+        desc="Column names",
+        default=(),
+        no_value=(),
+        visible=False,
+        readonly=True,
     )
-    MetadataElement(
-        name="bounding_regions", default=0, desc="Number of bounding regions", readonly=False, optional=True, no_value=0
-    )
-    MetadataElement(name="columns", default=0, desc="Number of columns", readonly=True, visible=False, no_value=0)
     MetadataElement(
         name="column_types",
-        default=[],
         desc="Column types",
         param=metadata.ColumnTypesParameter,
-        readonly=True,
+        default=(),
+        no_value=(),
         visible=False,
+        readonly=True,
+    )
+    MetadataElement(
+        name="delimiter",
+        desc="Data delimiter",
+        default="\t",
         no_value=[],
+        visible=False,
+        optional=True,
+        readonly=True,
     )
     MetadataElement(
-        name="column_names", default=[], desc="Column names", readonly=True, visible=False, optional=True, no_value=[]
+        name="chromCol",
+        desc="Sequence id (chrom) column",
+        param=metadata.ColumnParameter,
+        default=0,
+        no_value=0,
+        visible=True,
+        optional=True,
+        readonly=True,
     )
     MetadataElement(
-        name="delimiter", default="\t", desc="Data delimiter", readonly=True, visible=False, optional=True, no_value=[]
+        name="startCol",
+        desc="Start column",
+        param=metadata.ColumnParameter,
+        default=0,
+        no_value=0,
+        visible=True,
+        optional=True,
+        readonly=True,
     )
-    MetadataElement(name="chromCol", default=1, desc="Sequence id (chrom) column", param=metadata.ColumnParameter)
-    MetadataElement(name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter)
-    MetadataElement(name="endCol", default=3, desc="End column", param=metadata.ColumnParameter)
-    MetadataElement(name="strandCol", desc="Strand column", param=metadata.ColumnParameter, optional=True, no_value=0)
-    MetadataElement(name="nameCol", desc="Name column", param=metadata.ColumnParameter, optional=True, no_value=0)
+    MetadataElement(
+        name="endCol",
+        desc="End column",
+        param=metadata.ColumnParameter,
+        default=0,
+        no_value=0,
+        visible=True,
+        optional=True,
+        readonly=True,
+    )
+    MetadataElement(
+        name="strandCol",
+        desc="Strand column",
+        param=metadata.ColumnParameter,
+        default=0,
+        no_value=0,
+        visible=True,
+        optional=True,
+        readonly=True,
+    )
+    MetadataElement(
+        name="nameCol",
+        desc="Name/Identifier column",
+        param=metadata.ColumnParameter,
+        default=0,
+        no_value=0,
+        visible=True,
+        optional=True,
+        readonly=True,
+    )
+    MetadataElement(
+        name="viz_filter_cols",
+        desc="Score column for visualization",
+        param=metadata.ColumnParameter,
+        default=[],
+        no_value=[],
+        visible=True,
+        optional=True,
+        readonly=True,
+        multiple=True,
+    )
 
     SEQID = "seqid"
     START = "start"
@@ -1701,9 +1793,10 @@ class GTrack(Interval):
         SEQID: "str",
         START: "int",
         END: "int",
+        NAME: "str",
         STRAND: "str",
         ID: "str",
-        EDGES: "list",
+        EDGES: "str",
     }
 
     GTRACK_COLUMN_NAMES_MAPPING = {VALUE_COLUMN_DEF: VALUE, EDGES_COLUMN_DEF: EDGES}
@@ -1723,8 +1816,10 @@ class GTrack(Interval):
         SEQID: "chromCol",
         START: "startCol",
         END: "endCol",
-        STRAND: "strandCol",
         NAME: "nameCol",
+        VALUE: "viz_filter_cols",
+        STRAND: "strandCol",
+        ID: "nameCol",
     }
 
     STD_COLUMNS = [START, END, VALUE, EDGES]
@@ -1817,7 +1912,10 @@ class GTrack(Interval):
 
         for col_name, metadata_col in self.METADATA_COLUMNS_MAPPING.items():
             if col_name in cols:
-                setattr(dataset.metadata, metadata_col, cols.index(col_name) + 1)
+                value = cols.index(col_name) + 1
+                if metadata_col == "viz_filter_cols":
+                    value = [value]
+                setattr(dataset.metadata, metadata_col, value)
 
     def _check_url(self, url):
         try:
