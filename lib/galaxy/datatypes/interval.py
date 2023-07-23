@@ -1768,7 +1768,7 @@ class GTrack(Interval):
         column_lines = hash_count_to_lines[3]
         column_line = column_lines[0] if column_lines else None
         if column_line is not None:
-            cols = column_line.lower().split("\t")
+            cols = column_line.split("\t")
         else:
             cols = None
         return cols, headers
@@ -1801,7 +1801,7 @@ class GTrack(Interval):
 
     def _set_meta_for_cols(self, dataset, cols, headers):
         dataset.metadata.columns = len(cols)
-        dataset.metadata.column_names = cols
+        dataset.metadata.column_names = tuple(cols)
 
         header_val_dim = headers.get(self.VALUE_DIMENSION)
 
@@ -1817,7 +1817,7 @@ class GTrack(Interval):
 
         for col_name, metadata_col in self.METADATA_COLUMNS_MAPPING.items():
             if col_name in cols:
-                setattr(dataset.metadata, metadata_col, cols.index(col_name))
+                setattr(dataset.metadata, metadata_col, cols.index(col_name) + 1)
 
     def _check_url(self, url):
         try:
@@ -1842,7 +1842,7 @@ class GTrack(Interval):
                     col_type = "str"
             col_types.append(col_type)
 
-        return col_types
+        return tuple(col_types)
 
     def set_peek(self, dataset, **kwd):
         if not dataset.dataset.purged:

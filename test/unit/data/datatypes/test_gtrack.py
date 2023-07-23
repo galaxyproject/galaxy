@@ -1,4 +1,5 @@
-from typing import Generator, NamedTuple
+from typing import Generator, Tuple
+from typing_extensions import TypedDict
 
 import pytest
 
@@ -46,3 +47,161 @@ def test_gtrack_sniff_prefix(input_file_fixture_name, expected, request):
     with input_file as input_file_info:
         assert isinstance(input_file_info, InputFileInfo)
         assert GTrack().sniff_prefix(input_file_info.file_prefix) is expected
+
+
+class GTrackMetadata(TypedDict):
+    # Inherited from Interval
+    chromCol: int
+    startCol: int
+    endCol: int
+    strandCol: int
+    nameCol: int
+    columns: int
+
+    # GTrack specific
+    comment_lines: int
+    data_lines: int
+    header_lines: int
+    bounding_regions: int
+    column_names: Tuple[str, ...]
+    column_types: Tuple[str, ...]
+    delimiter: str
+
+
+@pytest.mark.parametrize(
+    "input_file_fixture_name, expected",
+    [
+        (
+            "gtrack_example_1",
+            GTrackMetadata(
+                chromCol=1,
+                startCol=2,
+                endCol=3,
+                columns=3,
+                comment_lines=5,
+                data_lines=2,
+                header_lines=0,
+                bounding_regions=0,
+                column_names=("seqid", "start", "end"),
+                column_types=("str", "int", "int"),
+                # delimiter="\t",
+            ),
+        ),
+        (
+            "gtrack_example_2",
+            GTrackMetadata(
+                chromCol=1,
+                startCol=2,
+                endCol=3,
+                columns=10,
+                comment_lines=0,
+                data_lines=6,
+                header_lines=4,
+                bounding_regions=0,
+                column_names=(
+                    "seqid",
+                    "start",
+                    "end",
+                    "id",
+                    "value",
+                    "strand",
+                    "thickStart",
+                    "thickEnd",
+                    "itemRgb",
+                    "edges",
+                ),
+                column_types=("str", "int", "int", "str", "float", "str", "str", "str", "str", "list"),
+                # column_types=("str", "int", "int", "str", "int", "str", "str", "str", "str", "str"),
+                # delimiter="\t",
+            ),
+        ),
+        (
+            "gtrack_example_3",
+            GTrackMetadata(
+                endCol=1,
+                columns=4,
+                comment_lines=2,
+                data_lines=6,
+                header_lines=4,
+                bounding_regions=2,
+                column_names=("end", "id", "directed", "edges"),
+                column_types=("int", "str", "str", "list"),
+                # column_types=("int", "str", "str", "str"),
+                # delimiter="\t",
+            ),
+        ),
+        (
+            "gtrack_example_bed_direct",
+            GTrackMetadata(
+                chromCol=1,
+                startCol=2,
+                endCol=3,
+                nameCol=4,
+                strandCol=6,
+                columns=13,
+                comment_lines=1,
+                data_lines=2,
+                header_lines=2,
+                bounding_regions=0,
+                column_names=(
+                    "seqid",
+                    "start",
+                    "end",
+                    "name",
+                    "value",
+                    "strand",
+                    "thickStart",
+                    "thickEnd",
+                    "itemRgb",
+                    "blockCount",
+                    "blockSizes",
+                    "blockStarts",
+                    "description",
+                ),
+                column_types=(
+                    "str",
+                    "int",
+                    "int",
+                    "str",
+                    "float",
+                    "bool",
+                    "str",
+                    "str",
+                    "str",
+                    "str",
+                    "str",
+                    "str",
+                    "str",
+                ),
+                # delimiter="\t",
+            ),
+        ),
+        (
+            "gtrack_example_mean_sd_weights",
+            GTrackMetadata(
+                chromCol=1,
+                startCol=2,
+                endCol=3,
+                columns=5,
+                comment_lines=0,
+                data_lines=5,
+                header_lines=2,
+                bounding_regions=0,
+                column_names=("seqid", "start", "end", "id", "edges"),
+                column_types=("str", "int", "int", "str", "list"),
+                # column_types=("str", "int", "int", "str", "styr"),
+                # delimiter="\t",
+            ),
+        ),
+    ],
+)
+def test_gtrack_set_meta(input_file_fixture_name, expected, request):
+    input_file = request.getfixturevalue(input_file_fixture_name)
+    with input_file as input_file_info:
+        assert isinstance(input_file_info, InputFileInfo)
+        GTrack().set_meta(input_file_info.dataset)
+        for key in expected.keys():
+            assert getattr(input_file_info.dataset.metadata, key) == expected[key], (
+                f"Unexpected value for {key}: input_file_info.metadata.{key} == "
+                f"{getattr(input_file_info.dataset.metadata, key)}, expected: {expected[key]}"
+            )
