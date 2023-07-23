@@ -457,7 +457,7 @@ class DefaultToolAction(ToolAction):
         # wrapped params are used by change_format action and by output.label; only perform this wrapping once, as needed
         wrapped_params = self._wrapped_params(trans, tool, incoming, inp_data)
 
-        out_data: Dict[str, "DatasetInstance"] = {}
+        out_data: Dict[str, DatasetInstance] = {}
         input_collections = LegacyUnprefixedDict({k: v[0][0] for k, v in inp_dataset_collections.items()})
         input_collections._legacy_mapping = inp_dataset_collections._legacy_mapping
         output_collections = OutputCollections(

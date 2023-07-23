@@ -723,7 +723,7 @@ class Conditional(Group):
 
     def __init__(self):
         Group.__init__(self)
-        self.test_param: Optional["ToolParameter"] = None
+        self.test_param: Optional[ToolParameter] = None
         self.cases = []
         self.value_ref = None
         self.value_ref_in_group = True  # When our test_param is not part of the conditional Group, this is False

@@ -66,7 +66,7 @@ class ContainerFinder:
         self.app_info = app_info
         self.mulled_resolution_cache = mulled_resolution_cache
         self.default_container_registry = ContainerRegistry(app_info, mulled_resolution_cache=mulled_resolution_cache)
-        self.destination_container_registeries: Dict[str, "ContainerRegistry"] = {}
+        self.destination_container_registeries: Dict[str, ContainerRegistry] = {}
 
     def _enabled_container_types(self, destination_info: Dict[str, Any]) -> List[str]:
         return [t for t in ALL_CONTAINER_TYPES if self.__container_type_enabled(t, destination_info)]
@@ -317,7 +317,7 @@ class ContainerRegistry:
         return plugin_config.load_plugins(self.resolver_classes, plugin_source, extra_kwds)
 
     def __default_container_resolvers(self) -> List["ContainerResolver"]:
-        default_resolvers: List["ContainerResolver"] = [
+        default_resolvers: List[ContainerResolver] = [
             ExplicitContainerResolver(self.app_info),
             ExplicitSingularityContainerResolver(self.app_info),
         ]
