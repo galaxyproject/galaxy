@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BCard, BCol, BFormGroup, BFormInput, BRow } from "bootstrap-vue";
-import { format } from "date-fns";
+import { BAlert, BCard, BCol, BFormGroup, BRow } from "bootstrap-vue";
 import { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -16,10 +15,9 @@ import { type components } from "@/schema";
 import AsyncButton from "@/components/Common/AsyncButton.vue";
 import Heading from "@/components/Common/Heading.vue";
 import FormElement from "@/components/Form/FormElement.vue";
+import GDateTime from "@/components/GDateTime.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import MessageNotification from "@/components/Notifications/Categories/MessageNotification.vue";
-
-const dateTimeFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS";
 
 type SelectOption = [string, string];
 type NotificationCreateData = components["schemas"]["NotificationCreateData"];
@@ -70,6 +68,24 @@ const requiredFieldsFilled = computed(() => {
     );
 });
 
+const publicationDate = computed({
+    get: () => {
+        return new Date(`${notificationData.value.notification.publication_time}Z`);
+    },
+    set: (value: Date) => {
+        notificationData.value.notification.publication_time = value.toISOString().slice(0, 16);
+    },
+});
+
+const expirationDate = computed({
+    get: () => {
+        return new Date(`${notificationData.value.notification.expiration_time}Z`);
+    },
+    set: (value: Date) => {
+        notificationData.value.notification.expiration_time = value.toISOString().slice(0, 16);
+    },
+});
+
 async function loadData<T>(
     getData: () => Promise<T[]>,
     target: Ref<SelectOption[]>,
@@ -97,17 +113,7 @@ loadData(getGroups, groups, (group) => {
 
 async function sendNewNotification() {
     try {
-        const tmp = notificationData.value;
-
-        if (tmp.notification.publication_time) {
-            tmp.notification.publication_time = format(new Date(tmp.notification.publication_time), dateTimeFormat);
-        }
-
-        if (tmp.notification.expiration_time) {
-            tmp.notification.expiration_time = format(new Date(tmp.notification.expiration_time), dateTimeFormat);
-        }
-
-        await sendNotification(tmp);
+        await sendNotification(notificationData.value);
         Toast.success("Notification sent");
         router.push("/admin/notifications");
     } catch (error: any) {
@@ -189,29 +195,19 @@ async function sendNewNotification() {
                 <BCol>
                     <BFormGroup
                         id="notification-publication-time-group"
-                        label="Publication Time"
+                        label="Publication Time (local time)"
                         label-for="notification-publication-time"
                         description="The notification will be displayed after this time. Default is the current time.">
-                        <BFormInput
-                            id="notification-publication-time"
-                            v-model="notificationData.notification.publication_time"
-                            type="datetime-local"
-                            placeholder="Enter publication time"
-                            required />
+                        <GDateTime id="notification-publication-time" v-model="publicationDate" />
                     </BFormGroup>
                 </BCol>
                 <BCol>
                     <BFormGroup
                         id="notification-expiration-time-group"
-                        label="Expiration Time"
+                        label="Expiration Time (local time)"
                         label-for="notification-expiration-time"
                         description="The notification will be deleted from the database after this time. Default is 6 months from the creation time.">
-                        <BFormInput
-                            id="notification-expiration-time"
-                            v-model="notificationData.notification.expiration_time"
-                            type="datetime-local"
-                            placeholder="Enter expiration time"
-                            required />
+                        <GDateTime id="notification-expiration-time" v-model="expirationDate" />
                     </BFormGroup>
                 </BCol>
             </BRow>
