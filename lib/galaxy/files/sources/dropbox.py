@@ -1,11 +1,7 @@
 try:
     from fs.dropboxfs import DropboxFS
 except ImportError:
-    # fs.dropboxfs < 0.3
-    try:
-        from dropboxfs.dropboxfs import DropboxFS
-    except ImportError:
-        DropboxFS = None
+    DropboxFS = None
 
 from typing import (
     Optional,
