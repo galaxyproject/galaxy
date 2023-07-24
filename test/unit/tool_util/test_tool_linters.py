@@ -98,6 +98,14 @@ GENERAL_WHITESPACE_IN_VERSIONS_AND_NAMES = """
 </tool>
 """
 
+GENERAL_UPPERCASE_REQUIREMENT_NAMES = """
+<tool name="BWA Mapper" id="bwa_tool" version="1.0.1">
+    <requirements>
+        <requirement type="package" version="1.2.5 ">BwA</requirement>
+    </requirements>
+</tool>
+"""
+
 GENERAL_REQUIREMENT_WO_VERSION = """
 <tool name="BWA Mapper" id="bwa_tool" version="1.0.1blah" is_multi_byte="true" display_interface="true" require_login="true" hidden="true" profile="20.09">
     <requirements>
@@ -1003,6 +1011,12 @@ def test_general_whitespace_in_versions_and_names(lint_ctx):
     assert "Requirement version contains whitespace, this may cause errors: [ 1.2.5 ]." in lint_ctx.warn_messages
     assert "Tool ID contains whitespace - this is discouraged: [bwa tool]." in lint_ctx.warn_messages
     assert "Tool targets 16.01 Galaxy profile." in lint_ctx.valid_messages
+
+
+def test_general_uppercase_requirement_names(lint_ctx):
+    tool_source = get_xml_tool_source(GENERAL_UPPERCASE_REQUIREMENT_NAMES)
+    run_lint(lint_ctx, general.lint_general, tool_source)
+    assert "Requirement names should be lower case" in lint_ctx.warn_messages
 
 
 def test_general_requirement_without_version(lint_ctx):

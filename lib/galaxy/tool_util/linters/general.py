@@ -77,6 +77,8 @@ def lint_general(tool_source, lint_ctx):
         if r.type == "package":
             if not r.name:
                 lint_ctx.error("Requirement without name found")
+            elif r.name != r.name.lower():
+                lint_ctx.warn("Requirement names should be lower case")
             if not r.version:
                 lint_ctx.warn(f"Requirement {r.name} defines no version")
             # Warn requirement attributes with leading/trailing whitespace:
