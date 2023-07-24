@@ -22,6 +22,11 @@ const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
 const currentBroadcast = computed(() => getNextActiveBroadcast());
 
+const remainingBroadcastsCountText = computed(() => {
+    const count = activeBroadcasts.value.length - 1;
+    return count > 0 ? `${count} more` : "";
+});
+
 function getNextActiveBroadcast(): BroadcastNotification | undefined {
     return activeBroadcasts.value.sort(sortByPublicationTime).at(0);
 }
@@ -94,6 +99,9 @@ function onDismiss(item: BroadcastNotification) {
                     <FontAwesomeIcon class="mx-1" icon="times" />
                     Dismiss
                 </BButton>
+                <div v-if="remainingBroadcastsCountText" class="text-center mt-2">
+                    {{ remainingBroadcastsCountText }}...
+                </div>
             </BCol>
         </BRow>
     </div>
