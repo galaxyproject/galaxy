@@ -27,6 +27,7 @@ from galaxy.managers.users import (
 )
 from galaxy.model import User
 from galaxy.queue_worker import send_local_control_task
+from galaxy.quota import QuotaAgent
 from galaxy.schema import APIKeyModel
 from galaxy.schema.schema import (
     AnonUserModel,
@@ -56,12 +57,14 @@ class UsersService(ServiceBase):
         api_key_manager: api_keys.ApiKeyManager,
         user_serializer: UserSerializer,
         user_deserializer: UserDeserializer,
+        quota_agent: QuotaAgent,
     ):
         super().__init__(security)
         self.user_manager = user_manager
         self.api_key_manager = api_key_manager
         self.user_serializer = user_serializer
         self.user_deserializer = user_deserializer
+        self.quota_agent = quota_agent
 
     def recalculate_disk_usage(
         self,
@@ -120,8 +123,8 @@ class UsersService(ServiceBase):
             # Can't return info about this user, may not have a history yet.
             # return {}
             raise glx_exceptions.MessageException(err_msg="The user has no history, which should always be the case.")
-        usage = trans.app.quota_agent.get_usage(trans, history=trans.history)
-        percent = trans.app.quota_agent.get_percent(trans=trans, usage=usage)
+        usage = self.quota_agent.get_usage(trans, history=trans.history)
+        percent = self.quota_agent.get_percent(trans=trans, usage=usage)
         usage = usage or 0
         return {
             "total_disk_usage": int(usage),
