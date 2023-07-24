@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BCol, BFormGroup, BFormInput, BRow } from "bootstrap-vue";
-import { format } from "date-fns";
 import Vue, { computed, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -12,10 +11,9 @@ import { type components } from "@/schema";
 import AsyncButton from "@/components/Common/AsyncButton.vue";
 import Heading from "@/components/Common/Heading.vue";
 import FormElement from "@/components/Form/FormElement.vue";
+import GDateTime from "@/components/GDateTime.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import BroadcastContainer from "@/components/Notifications/Broadcasts/BroadcastContainer.vue";
-
-const dateTimeFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS";
 
 type BroadcastNotificationCreateRequest = components["schemas"]["BroadcastNotificationCreateRequest"];
 
@@ -54,6 +52,24 @@ const requiredFieldsFilled = computed(() => {
     return broadcastData.value.content.subject !== "" && broadcastData.value.content.message !== "";
 });
 
+const publicationDate = computed({
+    get: () => {
+        return new Date(`${broadcastData.value.publication_time}Z`);
+    },
+    set: (value: Date) => {
+        broadcastData.value.publication_time = value.toISOString().slice(0, 16);
+    },
+});
+
+const expirationDate = computed({
+    get: () => {
+        return new Date(`${broadcastData.value.expiration_time}Z`);
+    },
+    set: (value: Date) => {
+        broadcastData.value.expiration_time = value.toISOString().slice(0, 16);
+    },
+});
+
 function convertUTCtoLocal(utcTimeString: string) {
     const date = new Date(utcTimeString);
     return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
@@ -72,23 +88,11 @@ function addActionLink() {
 
 async function createOrUpdateBroadcast() {
     try {
-        const tmp = { ...broadcastData.value };
-
-        if (tmp.publication_time) {
-            const publicationTimeUTC = new Date(tmp.publication_time).toISOString();
-            tmp.publication_time = format(new Date(publicationTimeUTC), dateTimeFormat);
-        }
-
-        if (tmp.expiration_time) {
-            const expirationTimeUTC = new Date(tmp.expiration_time).toISOString();
-            tmp.expiration_time = format(new Date(expirationTimeUTC), dateTimeFormat);
-        }
-
         if (props.id) {
-            await updateBroadcast(props.id, tmp);
+            await updateBroadcast(props.id, broadcastData.value);
             Toast.success("Broadcast updated");
         } else {
-            await createBroadcast(tmp);
+            await createBroadcast(broadcastData.value);
             Toast.success("Broadcast created");
         }
         router.push("/admin/notifications/");
@@ -172,10 +176,7 @@ if (props.id) {
                 required />
 
             <BFormGroup id="broadcast-action-link-group" label="Action Links" label-for="broadcast-action-link">
-                <BRow
-                    v-for="(actionLink, index) in broadcastData.content.action_links"
-                    :key="actionLink.action_name"
-                    class="my-2">
+                <BRow v-for="(actionLink, index) in broadcastData.content.action_links" :key="index" class="my-2">
                     <BCol cols="auto">
                         <BFormInput
                             :id="`broadcast-action-link-name-${{ index }}`"
@@ -200,7 +201,7 @@ if (props.id) {
                             variant="error-outline"
                             role="button"
                             @click="
-                                broadcastData.content.action_links.splice(
+                                broadcastData.content.action_links?.splice(
                                     broadcastData.content.action_links.indexOf(actionLink),
                                     1
                                 )
@@ -221,33 +222,23 @@ if (props.id) {
                 </BButton>
             </BFormGroup>
 
-            <BRow align-v="center">
+            <BRow>
                 <BCol>
                     <BFormGroup
                         id="broadcast-publication-time-group"
-                        label="Publication Time"
+                        label="Publication Time (local time)"
                         label-for="broadcast-publication-time"
                         description="The broadcast will be displayed from this time onwards. Default is the time of creation.">
-                        <BFormInput
-                            id="broadcast-publication-time"
-                            v-model="broadcastData.publication_time"
-                            type="datetime-local"
-                            placeholder="Enter publication time"
-                            required />
+                        <GDateTime id="broadcast-publication-time" v-model="publicationDate" />
                     </BFormGroup>
                 </BCol>
                 <BCol>
                     <BFormGroup
                         id="broadcast-expiration-time-group"
-                        label="Expiration Time"
+                        label="Expiration Time (local time)"
                         label-for="broadcast-expiration-time"
                         description="The broadcast will not be displayed and will be deleted from the database after this time. Default is 6 months from the creation time.">
-                        <BFormInput
-                            id="broadcast-expiration-time"
-                            v-model="broadcastData.expiration_time"
-                            type="datetime-local"
-                            placeholder="Enter expiration time"
-                            required />
+                        <GDateTime id="broadcast-expiration-time" v-model="expirationDate" />
                     </BFormGroup>
                 </BCol>
             </BRow>
