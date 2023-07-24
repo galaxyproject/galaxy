@@ -95,7 +95,11 @@ function onDismiss(item: BroadcastNotification) {
                 </BRow>
             </BCol>
             <BCol cols="auto" align-self="center" class="p-0">
-                <BButton variant="light" class="align-items-center d-flex" @click="onDismiss(currentBroadcast)">
+                <BButton
+                    id="dismiss-button"
+                    variant="light"
+                    class="align-items-center d-flex"
+                    @click="onDismiss(currentBroadcast)">
                     <FontAwesomeIcon class="mx-1" icon="times" />
                     Dismiss
                 </BButton>
