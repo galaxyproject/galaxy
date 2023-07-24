@@ -4,10 +4,10 @@
         <b-table v-else striped no-sort-reset :items="categories" :fields="fields">
             <template v-slot:cell(name)="data">
                 <b-link
-                    href="javascript:void(0)"
+                    href=""
                     role="button"
                     class="font-weight-bold"
-                    @click="onCategory(data.value)">
+                    @click.prevent="onCategory(data.value)">
                     {{ data.value }}
                 </b-link>
             </template>

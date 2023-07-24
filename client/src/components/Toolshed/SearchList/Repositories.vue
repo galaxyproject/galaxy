@@ -2,7 +2,7 @@
     <div>
         <b-table id="shed-search-results" striped :items="repositories" :fields="fields">
             <template v-slot:cell(name)="row">
-                <b-link href="javascript:void(0)" role="button" class="font-weight-bold" @click="row.toggleDetails">
+                <b-link href="" role="button" class="font-weight-bold" @click.prevent="row.toggleDetails">
                     {{ row.item.name }}
                 </b-link>
                 <div>{{ row.item.description }}</div>

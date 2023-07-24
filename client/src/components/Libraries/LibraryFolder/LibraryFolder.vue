@@ -130,7 +130,7 @@
                             </span>
                             <!-- eslint-enable vue/no-v-html -->
                             <span :title="getMessage(row.item)"> ...</span>
-                            <a class="more-text-btn" href="javascript:void(0)" @click="expandMessage(row.item)">
+                            <a class="more-text-btn" href="" @click.prevent="expandMessage(row.item)">
                                 (more)
                             </a>
                         </div>

@@ -10,7 +10,7 @@
                 <b-alert show variant="warning" dismissible>
                     {{ noElementsHeader }}
                     {{ allInvalidElementsPartOne }}
-                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
+                    <a class="cancel-text" href="" role="button" @click.prevent="oncancel">
                         {{ cancelText }}
                     </a>
                     {{ allInvalidElementsPartTwo }}
@@ -30,7 +30,7 @@
                         </li>
                     </ul>
                     {{ allInvalidElementsPartOne }}
-                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
+                    <a class="cancel-text" href="" role="button" @click.prevent="oncancel">
                         {{ cancelText }}
                     </a>
                     {{ allInvalidElementsPartTwo }}
@@ -54,7 +54,7 @@
                 </div>
                 <b-alert show variant="warning" dismissible>
                     {{ allInvalidElementsPartOne }}
-                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
+                    <a class="cancel-text" href="" role="button" @click.prevent="oncancel">
                         {{ cancelText }}
                     </a>
                     {{ allInvalidElementsPartTwo }}
@@ -83,7 +83,7 @@
                                 "Could not automatically create any pairs from the given dataset names. You may want to choose or enter different filters and try auto-pairing again."
                             )
                         }}
-                        <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
+                        <a class="cancel-text" href="" role="button" @click.prevent="oncancel">
                             {{ cancelText }}
                         </a>
                         {{ allInvalidElementsPartTwo }}
@@ -274,17 +274,17 @@
                                 <div class="column-header">
                                     <a
                                         class="clear-filters-link"
-                                        href="javascript:void(0);"
+                                        href=""
                                         role="button"
-                                        @click="clickClearFilters">
+                                        @click.prevent="clickClearFilters">
                                         {{ l("Clear Filters") }}
                                     </a>
                                     <br />
                                     <a
                                         class="autopair-link"
-                                        href="javascript:void(0);"
+                                        href=""
                                         role="button"
-                                        @click="clickAutopair">
+                                        @click.prevent="clickAutopair">
                                         {{ l("Auto-pair") }}
                                     </a>
                                 </div>
@@ -380,9 +380,9 @@
                                     </div>
                                     <a
                                         class="unpair-all-link"
-                                        href="javascript:void(0);"
+                                        href=""
                                         role="button"
-                                        @click="unpairAll">
+                                        @click.prevent="unpairAll">
                                         {{ l("Unpair all") }}
                                     </a>
                                 </div>

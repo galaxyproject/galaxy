@@ -93,7 +93,7 @@
                             <HistoryEmpty v-if="queryDefault" :writable="writable" class="m-2" />
                             <b-alert v-else-if="formattedSearchError" class="m-2" variant="danger" show>
                                 Error in filter:
-                                <a href="javascript:void(0)" @click="showAdvanced = true">
+                                <a href="" @click.prevent="showAdvanced = true">
                                     {{ formattedSearchError.filter }}'{{ formattedSearchError.value }}'
                                 </a>
                             </b-alert>

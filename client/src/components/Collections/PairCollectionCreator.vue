@@ -10,7 +10,7 @@
                 <b-alert show variant="warning" dismissible>
                     {{ noElementsHeader }}
                     {{ allInvalidElementsPartOne }}
-                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
+                    <a class="cancel-text" href="" role="button" @click.prevent="oncancel">
                         {{ cancelText }}
                     </a>
                     {{ allInvalidElementsPartTwo }}
@@ -30,7 +30,7 @@
                         </li>
                     </ul>
                     {{ allInvalidElementsPartOne }}
-                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
+                    <a class="cancel-text" href="" role="button" @click.prevent="oncancel">
                         {{ cancelText }}
                     </a>
                     {{ allInvalidElementsPartTwo }}
@@ -54,7 +54,7 @@
                 </div>
                 <b-alert show variant="warning" dismissible>
                     {{ exactlyTwoValidElementsPartOne }}
-                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
+                    <a class="cancel-text" href="" role="button" @click.prevent="oncancel">
                         {{ cancelText }}
                     </a>
                     {{ exactlyTwoValidElementsPartTwo }}
@@ -127,9 +127,9 @@
                         <div class="collection-elements-controls">
                             <a
                                 class="swap"
-                                href="javascript:void(0);"
+                                href=""
                                 title="l('Swap forward and reverse datasets')"
-                                @click="swapButton">
+                                @click.prevent="swapButton">
                                 {{ l("Swap") }}
                             </a>
                         </div>

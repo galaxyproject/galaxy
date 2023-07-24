@@ -4,10 +4,10 @@
             <div class="main-help well clear" :class="{ expanded: isExpanded }">
                 <a
                     class="more-help"
-                    href="javascript:void(0);"
+                    href=""
                     role="button"
                     :title="titleForHelp"
-                    @click="_clickForHelp">
+                    @click.prevent="_clickForHelp">
                     <div v-if="!isExpanded">
                         <i class="fas fa-chevron-down"></i>
                     </div>
@@ -20,10 +20,10 @@
                     <slot name="help-content"></slot>
                     <a
                         class="more-help"
-                        href="javascript:void(0);"
+                        href=""
                         role="button"
                         :title="titleForHelp"
-                        @click="_clickForHelp">
+                        @click.prevent="_clickForHelp">
                     </a>
                 </div>
             </div>

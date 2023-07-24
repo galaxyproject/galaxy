@@ -43,7 +43,7 @@
                         </b-card-body>
                         <b-card-footer>
                             Already have an account?
-                            <a id="login-toggle" href="javascript:void(0)" role="button" @click.prevent="login">
+                            <a id="login-toggle" href="" role="button" @click.prevent="login">
                                 Log in here.
                             </a>
                         </b-card-footer>

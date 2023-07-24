@@ -4,7 +4,7 @@
             v-b-tooltip.topright.hover
             :class="['toolSectionTitle', `tool-menu-section-${sectionName}`]"
             :title="title">
-            <a class="title-link" href="javascript:void(0)" @click="toggleMenu()">
+            <a class="title-link" href="" @click.prevent="toggleMenu()">
                 <span class="name">
                     {{ name }}
                 </span>

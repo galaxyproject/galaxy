@@ -5,7 +5,7 @@
             <template v-for="row in rows">
                 <tr :key="row.id">
                     <td>
-                        <a href="javascript:void(0)" @click="handleTableNameClick">{{ row.name }}</a>
+                        <a href="" @click.prevent="handleTableNameClick">{{ row.name }}</a>
                     </td>
                     <td>{{ row.filename }}</td>
                     <td>{{ row.tool_data_path }}</td>

@@ -1,9 +1,9 @@
 <template>
     <a
         class="rule-link dropdown-item"
-        href="javascript:void(0)"
+        href=""
         :class="linkClassName"
-        @click="$emit('addNewRule', ruleType)"
+        @click.prevent="$emit('addNewRule', ruleType)"
         >{{ title }}</a
     >
 </template>

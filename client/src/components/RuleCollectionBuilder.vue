@@ -311,9 +311,9 @@
                                         :key="target"
                                         :index="target"
                                         class="dropdown-item"
-                                        href="javascript:void(0)"
+                                        href=""
                                         :class="'rule-add-mapping-' + target.replace(/_/g, '-')"
-                                        @click="addIdentifier(target)"
+                                        @click.prevent="addIdentifier(target)"
                                         >{{ mappingTargets()[target].label }}</a
                                     >
                                 </div>
@@ -366,7 +366,7 @@
                                 <div v-if="mapping.length == 0">
                                     One or more column definitions must be specified. These are required to specify how
                                     to build collections and datasets from rows and columns of the table.
-                                    <a href="javascript:void(0)" @click="displayRuleType = 'mapping'">Click here</a> to
+                                    <a href="" @click.prevent="displayRuleType = 'mapping'">Click here</a> to
                                     manage column definitions.
                                 </div>
                             </ol>
@@ -388,9 +388,9 @@
                                         <RuleTargetComponent rule-type="split_columns" @addNewRule="addNewRule" />
                                         <RuleTargetComponent rule-type="swap_columns" @addNewRule="addNewRule" />
                                         <a
-                                            href="javascript:void(0)"
+                                            href=""
                                             class="dropdown-item rule-link rule-link-mapping"
-                                            @click="displayRuleType = 'mapping'"
+                                            @click.prevent="displayRuleType = 'mapping'"
                                             >Add / Modify Column Definitions</a
                                         >
                                     </div>

@@ -84,7 +84,7 @@
                             <a
                                 id="login-toggle"
                                 v-localize
-                                href="javascript:void(0)"
+                                href=""
                                 role="button"
                                 @click.prevent="toggleLogin">
                                 Log in here.

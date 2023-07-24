@@ -6,9 +6,9 @@
                     Data Manager: {{ dataManagerTableName }}
                     <a
                         class="icon-btn"
-                        href="javascript:void(0)"
+                        href=""
                         :title="`Reload ${dataManagerTableName} tool data table`"
-                        @click="handleReloadButtonClick"
+                        @click.prevent="handleReloadButtonClick"
                         ><span class="fa fa-sync"></span
                     ></a>
                 </th>

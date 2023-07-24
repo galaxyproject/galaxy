@@ -15,7 +15,7 @@
                 </span>
                 <!-- eslint-enable vue/no-v-html -->
                 <span :title="text">...</span>
-                <a class="more-text-btn" href="javascript:void(0)" @click="toggleDescriptionExpand">(more) </a>
+                <a class="more-text-btn" href="" @click.prevent="toggleDescriptionExpand">(more) </a>
             </div>
             <!-- Regular -->
             <div v-else>
@@ -25,8 +25,8 @@
                 <a
                     v-if="text.length > maxDescriptionLength"
                     class="more-text-btn"
-                    href="javascript:void(0)"
-                    @click="toggleDescriptionExpand"
+                    href=""
+                    @click.prevent="toggleDescriptionExpand"
                     >(less)
                 </a>
             </div>

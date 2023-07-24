@@ -6,7 +6,7 @@ upstream component or environment that is accessed through props and events -->
     <div class="tags-display" :class="tagContainerClasses">
         <a
             v-if="linkVisible"
-            href="javascript:void(0)"
+            href=""
             role="button"
             class="toggle-link"
             @click.prevent="toggleTagDisplay">
