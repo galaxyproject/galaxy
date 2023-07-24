@@ -1337,7 +1337,7 @@ class ObjectImportTracker:
         self.hdca_copied_from_sinks = {}
         self.jobs_by_key = {}
         self.invocations_by_key: Dict[str, model.WorkflowInvocation] = {}
-        self.implicit_collection_jobs_by_key: Dict[str, "ImplicitCollectionJobs"] = {}
+        self.implicit_collection_jobs_by_key: Dict[str, ImplicitCollectionJobs] = {}
         self.workflows_by_key: Dict[str, model.Workflow] = {}
         self.requires_hid = []
 

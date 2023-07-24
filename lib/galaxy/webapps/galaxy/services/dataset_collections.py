@@ -190,7 +190,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         """
         Returns information about a particular dataset collection.
         """
-        dataset_collection_instance: Union["HistoryDatasetCollectionAssociation", "LibraryDatasetCollectionAssociation"]
+        dataset_collection_instance: Union[HistoryDatasetCollectionAssociation, LibraryDatasetCollectionAssociation]
         if instance_type == "history":
             dataset_collection_instance = self.collection_manager.get_dataset_collection_instance(trans, "history", id)
             parent = dataset_collection_instance.history
@@ -249,7 +249,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
             raise exceptions.RequestParameterInvalidException(
                 "Parameter instance_type not being 'history' is not yet implemented."
             )
-        hdca: "HistoryDatasetCollectionAssociation" = self.collection_manager.get_dataset_collection_instance(
+        hdca: HistoryDatasetCollectionAssociation = self.collection_manager.get_dataset_collection_instance(
             trans, "history", hdca_id, check_ownership=True
         )
 

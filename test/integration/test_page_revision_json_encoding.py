@@ -76,10 +76,8 @@ history_dataset_display(history_dataset_id=1)
             not in content
         ), content
         assert (
-            """```galaxy
-history_dataset_display(history_dataset_id={})
-```""".format(
-                dataset_id
-            )
+            f"""```galaxy
+history_dataset_display(history_dataset_id={dataset_id})
+```"""
             in content
         ), content

@@ -42,13 +42,11 @@ def selectwrapper(tool, value, multiple=False, optional=False):
     optional = 'optional="true"' if optional else ""
     multiple = 'multiple="true"' if multiple else ""
     xml = XML(
-        """<param name="blah" type="select" {} {}>
+        f"""<param name="blah" type="select" {multiple} {optional}>
         <option value="x">I am X</option>
         <option value="y" selected="true">I am Y</option>
         <option value="z">I am Z</option>
-    </param>""".format(
-            multiple, optional
-        )
+    </param>"""
     )
     parameter = SelectToolParameter(tool, xml)
     return SelectToolParameterWrapper(parameter, value)

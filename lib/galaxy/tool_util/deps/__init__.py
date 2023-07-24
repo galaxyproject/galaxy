@@ -145,7 +145,7 @@ class DependencyManager:
             plugin_source = self.__build_dependency_resolvers_plugin_source(conf_file)
         self.dependency_resolvers = self.__parse_resolver_conf_plugins(plugin_source)
         self._enabled_container_types: List[str] = []
-        self._destination_for_container_type: Dict[str, Dict[str, "JobDestination"]] = {}
+        self._destination_for_container_type: Dict[str, Dict[str, JobDestination]] = {}
 
     def set_enabled_container_types(self, container_types_to_destinations):
         """Set the union of all enabled container types."""

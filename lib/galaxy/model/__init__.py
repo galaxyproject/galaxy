@@ -616,15 +616,13 @@ FROM new
                 label_usage=label_usage
             )
         else:
-            statement = """
+            statement = f"""
 INSERT INTO user_quota_source_usage(user_id, quota_source_label, disk_usage)
 VALUES(:id, :label, ({label_usage}))
 ON CONFLICT
 ON constraint uqsu_unique_label_per_user
 DO UPDATE SET disk_usage = excluded.disk_usage
-""".format(
-                label_usage=label_usage
-            )
+"""
         statements.append(
             (statement, {"id": user_id, "label": quota_source_label, "include_object_store_ids": object_store_ids})
         )
@@ -1399,12 +1397,12 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         ]
 
     def io_dicts(self, exclude_implicit_outputs=False) -> IoDicts:
-        inp_data: Dict[str, Optional["DatasetInstance"]] = {da.name: da.dataset for da in self.input_datasets}
-        out_data: Dict[str, "DatasetInstance"] = {da.name: da.dataset for da in self.output_datasets}
+        inp_data: Dict[str, Optional[DatasetInstance]] = {da.name: da.dataset for da in self.input_datasets}
+        out_data: Dict[str, DatasetInstance] = {da.name: da.dataset for da in self.output_datasets}
         inp_data.update([(da.name, da.dataset) for da in self.input_library_datasets])
         out_data.update([(da.name, da.dataset) for da in self.output_library_datasets])
 
-        out_collections: Dict[str, Union["DatasetCollectionInstance", "DatasetCollection"]]
+        out_collections: Dict[str, Union[DatasetCollectionInstance, DatasetCollection]]
         if not exclude_implicit_outputs:
             out_collections = {
                 obj.name: obj.dataset_collection_instance for obj in self.output_dataset_collection_instances
@@ -8660,7 +8658,7 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
         preferred_object_store_id = None
         preferred_outputs_object_store_id = None
         preferred_intermediate_object_store_id = None
-        step_effective_outputs: Optional[List["EffectiveOutput"]] = None
+        step_effective_outputs: Optional[List[EffectiveOutput]] = None
 
         workflow_invocation = self.workflow_invocation
         for input_parameter in workflow_invocation.input_parameters:
