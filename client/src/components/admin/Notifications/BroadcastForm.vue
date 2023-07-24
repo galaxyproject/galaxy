@@ -54,6 +54,11 @@ const requiredFieldsFilled = computed(() => {
     return broadcastData.value.content.subject !== "" && broadcastData.value.content.message !== "";
 });
 
+function convertUTCtoLocal(utcTimeString: string) {
+    const date = new Date(utcTimeString);
+    return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+}
+
 function addActionLink() {
     if (!broadcastData.value.content.action_links) {
         Vue.set(broadcastData.value.content, "action_links", []);
@@ -67,14 +72,16 @@ function addActionLink() {
 
 async function createOrUpdateBroadcast() {
     try {
-        const tmp = broadcastData.value;
+        const tmp = { ...broadcastData.value };
 
         if (tmp.publication_time) {
-            tmp.publication_time = format(new Date(tmp.publication_time), dateTimeFormat);
+            const publicationTimeUTC = new Date(tmp.publication_time).toISOString();
+            tmp.publication_time = format(new Date(publicationTimeUTC), dateTimeFormat);
         }
 
         if (tmp.expiration_time) {
-            tmp.expiration_time = format(new Date(tmp.expiration_time), dateTimeFormat);
+            const expirationTimeUTC = new Date(tmp.expiration_time).toISOString();
+            tmp.expiration_time = format(new Date(expirationTimeUTC), dateTimeFormat);
         }
 
         if (props.id) {
@@ -95,10 +102,10 @@ async function loadBroadcastData() {
     try {
         const loadedBroadcast = await loadBroadcast(props.id);
 
-        broadcastData.value.publication_time = new Date(loadedBroadcast.publication_time).toISOString().slice(0, 16);
+        broadcastData.value.publication_time = convertUTCtoLocal(loadedBroadcast.publication_time);
 
         if (loadedBroadcast.expiration_time) {
-            broadcastData.value.expiration_time = new Date(loadedBroadcast.expiration_time).toISOString().slice(0, 16);
+            broadcastData.value.expiration_time = convertUTCtoLocal(loadedBroadcast.expiration_time);
         }
 
         broadcastData.value = loadedBroadcast;
