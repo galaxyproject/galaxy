@@ -60,9 +60,9 @@
                 </span>
                 <a
                     v-if="!row.item.published && !row.item.shared && !row.item.importable"
-                    href="javascript:void(0)"
+                    :href="`sharing?id=${row.item.id}`"
                     class="share-this-page"
-                    @click="shareLink(row.item)">
+                    @click.prevent="shareLink(row.item)">
                     <span>Share this</span>
                 </a>
             </template>
