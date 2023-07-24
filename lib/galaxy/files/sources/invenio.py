@@ -7,7 +7,10 @@ from typing import (
     List,
     Optional,
 )
-from urllib.parse import urljoin
+from urllib.parse import (
+    quote,
+    urljoin,
+)
 
 import requests
 from typing_extensions import (
@@ -112,7 +115,13 @@ class InvenioRecord(TypedDict):
 class InvenioRDMFilesSource(RDMFilesSource):
     """A files source for Invenio turn-key research data management repository."""
 
+    # TODO: refactor the whole thing
+
     plugin_type = "inveniordm"
+
+    @property
+    def records_api_url(self) -> str:
+        return f"{self._repository_url}/api/records"
 
     def _list(
         self,
@@ -147,17 +156,29 @@ class InvenioRDMFilesSource(RDMFilesSource):
         user_context: Optional[ProvidesUserFileSourcesUserContext] = None,
         opts: Optional[FilesSourceOptions] = None,
     ):
-        # source_path = '/api/records/pxpnk-7c133/Tester.rocrate.zip'
-        remote_path = urljoin(self.repository_url, source_path)
+        download_file_content_url = self._to_download_file_content_url(source_path)
+
         # TODO: user_context is always None here when called from a data fetch.
         # This prevents downloading files that require authentication even if the user provided a token.
         headers = self._get_request_headers(user_context)
-        req = urllib.request.Request(remote_path, headers=headers)
+        req = urllib.request.Request(download_file_content_url, headers=headers)
         with urllib.request.urlopen(req, timeout=DEFAULT_SOCKET_TIMEOUT, context=SSL_CONTEXT) as page:
             f = open(native_path, "wb")
             return stream_to_open_named_file(
                 page, f.fileno(), native_path, source_encoding=get_charset_from_http_headers(page.headers)
             )
+
+    def _to_download_file_content_url(self, source_path: str) -> str:
+        # source_path can be:
+        # - '/{record_id}/{file_name}' when reimporting
+        # - '/{record_id}/files/{file_name}/content' when downloading a existing file
+        # We need to return a fully qualified url like
+        # 'https://<repository_url>/api/records/{record_id}/files/{file_name}/content' in both cases.
+        if source_path.endswith("/content"):
+            return f"{self.records_api_url}{source_path}"
+        record_id = source_path.split("/")[1]
+        file_name = source_path.split("/")[-1]
+        return urljoin(self.repository_url, f"/api/records/{record_id}/files/{quote(file_name)}/content")
 
     def _write_from(
         self,
@@ -167,25 +188,11 @@ class InvenioRDMFilesSource(RDMFilesSource):
         opts: Optional[FilesSourceOptions] = None,
     ):
         filename = os.path.basename(target_path)
-        dirname = os.path.dirname(target_path)
-        record_id = dirname.replace("/api/records/", "")
-        use_existing_record = len(record_id) > 5
+        record_id = os.path.dirname(target_path)
 
-        # TODO: if we create the record here, then the target_path of the export will not have the record id and it will not be possible to import it back.
-        # We need to create the record before the export and then use the record id in the target_path.
-
-        if use_existing_record:
-            draft_record = self._get_draft_record(record_id, user_context=user_context)
-        else:
-            record_title = f"{filename} (exported by Galaxy)"
-            draft_record = self._create_draft_record(title=record_title, user_context=user_context)
-        try:
-            self._upload_file_to_draft_record(draft_record, filename, native_path, user_context=user_context)
-            self._publish_draft_record(draft_record, user_context=user_context)
-        except Exception:
-            if not use_existing_record:
-                self._delete_draft_record(draft_record, user_context)
-            raise
+        draft_record = self._get_draft_record(record_id, user_context=user_context)
+        self._upload_file_to_draft_record(draft_record, filename, native_path, user_context=user_context)
+        self._publish_draft_record(draft_record, user_context=user_context)
 
     def _list_records(self, write_intent: bool, user_context: Optional[ProvidesUserFileSourcesUserContext] = None):
         if write_intent:
@@ -194,7 +201,7 @@ class InvenioRDMFilesSource(RDMFilesSource):
 
     def _list_all_records(self, user_context: Optional[ProvidesUserFileSourcesUserContext] = None):
         # TODO: This is limited to 25 records by default. Add pagination support?
-        request_url = urljoin(self.repository_url, "api/records")
+        request_url = self.records_api_url
         response_data = self._get_response(user_context, request_url)
         return self._get_records_from_response(response_data)
 
@@ -208,7 +215,7 @@ class InvenioRDMFilesSource(RDMFilesSource):
     def _list_record_files(
         self, path: str, write_intent: bool, user_context: Optional[ProvidesUserFileSourcesUserContext] = None
     ):
-        request_url = urljoin(self.repository_url, f"{path}{'/draft' if write_intent else '' }/files")
+        request_url = f"{self.records_api_url}{path}{'/draft' if write_intent else '' }/files"
         response_data = self._get_response(user_context, request_url)
         return self._get_record_files_from_response(path, response_data)
 
@@ -268,10 +275,10 @@ class InvenioRDMFilesSource(RDMFilesSource):
         return rval
 
     def _to_plugin_uri(self, uri: str) -> str:
-        return uri.replace(self.repository_url, self.get_uri_root())
+        return uri.replace(self.records_api_url, self.get_uri_root())
 
     def _get_draft_record(self, record_id: str, user_context: Optional[ProvidesUserFileSourcesUserContext] = None):
-        request_url = urljoin(self.repository_url, f"api/records/{record_id}/draft")
+        request_url = f"{self.records_api_url}{record_id}/draft"
         draft_record = self._get_response(user_context, request_url)
         return draft_record
 
@@ -301,7 +308,7 @@ class InvenioRDMFilesSource(RDMFilesSource):
                 "Cannot create record without authentication token. Please set your personal access token in your Galaxy preferences."
             )
 
-        create_record_url = urljoin(self.repository_url, "api/records")
+        create_record_url = self.records_api_url
         response = requests.post(create_record_url, json=create_record_request, headers=headers, verify=VERIFY)
         self._ensure_response_has_expected_status_code(response, 201)
         record = response.json()
@@ -345,7 +352,7 @@ class InvenioRDMFilesSource(RDMFilesSource):
     def _publish_draft_record(
         self, record: InvenioRecord, user_context: Optional[ProvidesUserFileSourcesUserContext] = None
     ):
-        publish_record_url = urljoin(self.repository_url, f"api/records/{record['id']}/draft/actions/publish")
+        publish_record_url = f"{self.records_api_url}/{record['id']}/draft/actions/publish"
         headers = self._get_request_headers(user_context)
         response = requests.post(publish_record_url, headers=headers, verify=VERIFY)
         self._ensure_response_has_expected_status_code(response, 202)
