@@ -2,12 +2,7 @@
     <div class="collection-creator">
         <div class="header flex-row no-flex">
             <div class="main-help well clear" :class="{ expanded: isExpanded }">
-                <a
-                    class="more-help"
-                    href=""
-                    role="button"
-                    :title="titleForHelp"
-                    @click.prevent="_clickForHelp">
+                <a class="more-help" href="" role="button" :title="titleForHelp" @click.prevent="_clickForHelp">
                     <div v-if="!isExpanded">
                         <i class="fas fa-chevron-down"></i>
                     </div>
@@ -18,12 +13,7 @@
                 <div class="help-content">
                     <!-- each collection that extends this will add their own help content -->
                     <slot name="help-content"></slot>
-                    <a
-                        class="more-help"
-                        href=""
-                        role="button"
-                        :title="titleForHelp"
-                        @click.prevent="_clickForHelp">
+                    <a class="more-help" href="" role="button" :title="titleForHelp" @click.prevent="_clickForHelp">
                     </a>
                 </div>
             </div>

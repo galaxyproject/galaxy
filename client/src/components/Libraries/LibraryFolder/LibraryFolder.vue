@@ -130,9 +130,7 @@
                             </span>
                             <!-- eslint-enable vue/no-v-html -->
                             <span :title="getMessage(row.item)"> ...</span>
-                            <a class="more-text-btn" href="" @click.prevent="expandMessage(row.item)">
-                                (more)
-                            </a>
+                            <a class="more-text-btn" href="" @click.prevent="expandMessage(row.item)"> (more) </a>
                         </div>
                         <!-- eslint-disable-next-line vue/no-v-html -->
                         <div v-else v-html="linkify(sanitize(getMessage(row.item)))"></div>

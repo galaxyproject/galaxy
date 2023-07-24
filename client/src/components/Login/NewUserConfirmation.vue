@@ -43,9 +43,7 @@
                         </b-card-body>
                         <b-card-footer>
                             Already have an account?
-                            <a id="login-toggle" href="" role="button" @click.prevent="login">
-                                Log in here.
-                            </a>
+                            <a id="login-toggle" href="" role="button" @click.prevent="login"> Log in here. </a>
                         </b-card-footer>
                     </b-card>
                 </b-form>

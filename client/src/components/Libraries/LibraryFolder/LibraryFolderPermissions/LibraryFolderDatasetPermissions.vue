@@ -34,12 +34,16 @@
             </div>
             <p v-if="is_unrestricted" class="text-center">
                 You can
-                    <a id="make-private" href="" class="make-private" @click.prevent="toggleDatasetPrivacy(true)">make this dataset private</a>
+                <a id="make-private" href="" class="make-private" @click.prevent="toggleDatasetPrivacy(true)"
+                    >make this dataset private</a
+                >
                 to you.
             </p>
             <p v-else class="text-center">
                 You can
-                    <a href="" class="remove-restrictions" @click.prevent="toggleDatasetPrivacy(false)">remove all access restrictions</a>
+                <a href="" class="remove-restrictions" @click.prevent="toggleDatasetPrivacy(false)"
+                    >remove all access restrictions</a
+                >
                 on this dataset.
             </p>
 

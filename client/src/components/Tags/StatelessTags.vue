@@ -4,12 +4,7 @@ upstream component or environment that is accessed through props and events -->
 
 <template>
     <div class="tags-display" :class="tagContainerClasses">
-        <a
-            v-if="linkVisible"
-            href=""
-            role="button"
-            class="toggle-link"
-            @click.prevent="toggleTagDisplay">
+        <a v-if="linkVisible" href="" role="button" class="toggle-link" @click.prevent="toggleTagDisplay">
             {{ linkText }}
         </a>
         <VueTagsInput

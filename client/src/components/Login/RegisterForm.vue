@@ -81,12 +81,7 @@
                         </b-collapse>
                         <b-card-footer v-if="showLoginLink">
                             <span v-localize>Already have an account?</span>
-                            <a
-                                id="login-toggle"
-                                v-localize
-                                href=""
-                                role="button"
-                                @click.prevent="toggleLogin">
+                            <a id="login-toggle" v-localize href="" role="button" @click.prevent="toggleLogin">
                                 Log in here.
                             </a>
                         </b-card-footer>

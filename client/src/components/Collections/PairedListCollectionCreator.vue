@@ -280,11 +280,7 @@
                                         {{ l("Clear Filters") }}
                                     </a>
                                     <br />
-                                    <a
-                                        class="autopair-link"
-                                        href=""
-                                        role="button"
-                                        @click.prevent="clickAutopair">
+                                    <a class="autopair-link" href="" role="button" @click.prevent="clickAutopair">
                                         {{ l("Auto-pair") }}
                                     </a>
                                 </div>
@@ -378,11 +374,7 @@
                                     <div class="column-title paired-column-title">
                                         <span class="title"> {{ numOfPairs }} {{ l(" pairs") }}</span>
                                     </div>
-                                    <a
-                                        class="unpair-all-link"
-                                        href=""
-                                        role="button"
-                                        @click.prevent="unpairAll">
+                                    <a class="unpair-all-link" href="" role="button" @click.prevent="unpairAll">
                                         {{ l("Unpair all") }}
                                     </a>
                                 </div>

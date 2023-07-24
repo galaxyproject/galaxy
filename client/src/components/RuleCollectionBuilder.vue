@@ -366,8 +366,8 @@
                                 <div v-if="mapping.length == 0">
                                     One or more column definitions must be specified. These are required to specify how
                                     to build collections and datasets from rows and columns of the table.
-                                    <a href="" @click.prevent="displayRuleType = 'mapping'">Click here</a> to
-                                    manage column definitions.
+                                    <a href="" @click.prevent="displayRuleType = 'mapping'">Click here</a> to manage
+                                    column definitions.
                                 </div>
                             </ol>
                             <div class="rules-buttons btn-group">

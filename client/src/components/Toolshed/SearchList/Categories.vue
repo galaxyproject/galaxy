@@ -3,11 +3,7 @@
         <LoadingSpan v-if="loading" message="Loading categories" />
         <b-table v-else striped no-sort-reset :items="categories" :fields="fields">
             <template v-slot:cell(name)="data">
-                <b-link
-                    href=""
-                    role="button"
-                    class="font-weight-bold"
-                    @click.prevent="onCategory(data.value)">
+                <b-link href="" role="button" class="font-weight-bold" @click.prevent="onCategory(data.value)">
                     {{ data.value }}
                 </b-link>
             </template>

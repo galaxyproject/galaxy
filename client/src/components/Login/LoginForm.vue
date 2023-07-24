@@ -42,11 +42,7 @@
                                             type="password" />
                                         <b-form-text>
                                             <span v-localize>Forgot password?</span>
-                                            <a
-                                                v-localize
-                                                href=""
-                                                role="button"
-                                                @click.prevent="resetLogin">
+                                            <a v-localize href="" role="button" @click.prevent="resetLogin">
                                                 Click here to reset your password.
                                             </a>
                                         </b-form-text>
@@ -78,9 +74,7 @@
                                 </span>
                                 <span v-else>
                                     Do not wish to connect to an external provider?
-                                    <a href="" role="button" @click.prevent="returnToLogin">
-                                        Return to login here.
-                                    </a>
+                                    <a href="" role="button" @click.prevent="returnToLogin"> Return to login here. </a>
                                 </span>
                             </b-card-footer>
                         </b-card>
