@@ -30,9 +30,8 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
     const unreadNotifications = computed(() => notifications.value.filter((n) => !n.seen_time));
 
     async function loadNotifications() {
-        await loadNotificationsFromServer().then((data) => {
-            notifications.value = mergeObjectListsById(data, [], "create_time", "desc");
-        });
+        const data = (await loadNotificationsFromServer()) as UserNotification[];
+        notifications.value = mergeObjectListsById(data, [], "create_time", "desc");
     }
 
     async function getNotificationStatus() {
@@ -43,16 +42,15 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
                 await broadcastsStore.loadBroadcasts();
                 await loadNotifications();
             } else {
-                await loadNotificationsStatus(lastNotificationUpdate.value).then((data) => {
-                    totalUnreadCount.value = data.total_unread_count;
-                    notifications.value = mergeObjectListsById(
-                        notifications.value,
-                        data.notifications,
-                        "create_time",
-                        "desc"
-                    );
-                    broadcastsStore.updateBroadcasts(data.broadcasts);
-                });
+                const data = await loadNotificationsStatus(lastNotificationUpdate.value);
+                totalUnreadCount.value = data.total_unread_count;
+                notifications.value = mergeObjectListsById(
+                    notifications.value,
+                    data.notifications as UserNotification[],
+                    "create_time",
+                    "desc"
+                );
+                broadcastsStore.updateBroadcasts(data.broadcasts);
             }
             lastNotificationUpdate.value = new Date();
         } catch (e) {
