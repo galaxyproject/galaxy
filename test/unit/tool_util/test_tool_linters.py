@@ -566,6 +566,12 @@ OUTPUTS_DUPLICATED_NAME_LABEL = """
     <outputs>
         <data name="valid_name" format="fasta"/>
         <data name="valid_name" format="fasta"/>
+        <data name="another_valid_name" format="fasta" label="same label may be OK if there is a filter">
+            <filter>a condition</filter>
+        </data>
+        <data name="yet_another_valid_name" format="fasta" label="same label may be OK if there is a filter">
+            <filter>another condition</filter>
+        </data>
     </outputs>
 </tool>
 """
@@ -1492,13 +1498,17 @@ def test_outputs_discover_tool_provided_metadata(lint_ctx):
 def test_outputs_duplicated_name_label(lint_ctx):
     tool_source = get_xml_tool_source(OUTPUTS_DUPLICATED_NAME_LABEL)
     run_lint(lint_ctx, outputs.lint_output, tool_source)
-    assert "2 outputs found." in lint_ctx.info_messages
+    assert "4 outputs found." in lint_ctx.info_messages
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
-    assert not lint_ctx.warn_messages
+    assert len(lint_ctx.warn_messages) == 2
+    assert "Tool output [valid_name] uses duplicated label '${tool.name} on ${on_string}'" in lint_ctx.warn_messages
+    assert (
+        "Tool output [yet_another_valid_name] uses duplicated label 'same label may be OK if there is a filter', double check if filters imply disjoint cases"
+        in lint_ctx.warn_messages
+    )
     assert "Tool output [valid_name] has duplicated name" in lint_ctx.error_messages
-    assert "Tool output [valid_name] uses duplicated label '${tool.name} on ${on_string}'" in lint_ctx.error_messages
-    assert len(lint_ctx.error_messages) == 2
+    assert len(lint_ctx.error_messages) == 1
 
 
 def test_stdio_default_for_default_profile(lint_ctx):

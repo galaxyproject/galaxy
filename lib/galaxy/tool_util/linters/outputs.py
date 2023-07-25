@@ -45,7 +45,14 @@ def lint_output(tool_xml, lint_ctx):
 
         label = output.attrib.get("label", "${tool.name} on ${on_string}")
         if label in labels:
-            lint_ctx.error(f"Tool output [{name}] uses duplicated label '{label}'", node=output)
+            filter_node = output.find(".//filter")
+            if filter_node is not None:
+                lint_ctx.warn(
+                    f"Tool output [{name}] uses duplicated label '{label}', double check if filters imply disjoint cases",
+                    node=output,
+                )
+            else:
+                lint_ctx.warn(f"Tool output [{name}] uses duplicated label '{label}'", node=output)
         labels.add(label)
 
         format_set = False
