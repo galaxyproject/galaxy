@@ -1,8 +1,8 @@
 /** This renders the content of the ftp popup **/
 import { getGalaxyInstance } from "app";
 import Backbone from "backbone";
+import UploadUtils from "components/Upload/utils";
 import $ from "jquery";
-import UploadUtils from "mvc/upload/upload-utils";
 import _ from "underscore";
 import Utils from "utils/utils";
 
@@ -46,7 +46,7 @@ export default Backbone.View.extend({
         this.$content.hide();
         this.$warning.hide();
         this.$help.hide();
-        UploadUtils.getRemoteFiles(
+        UploadUtils.getRemoteEntries(
             function (ftp_files) {
                 self.model.set("ftp_files", ftp_files);
                 self._index();

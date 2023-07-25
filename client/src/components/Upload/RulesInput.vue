@@ -79,7 +79,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
 import { BButton, BLink } from "bootstrap-vue";
-import UploadUtils from "mvc/upload/upload-utils";
+import UploadUtils from "components/Upload/utils";
 import { getAppRoot } from "onload/loadConfig";
 import { filesDialog } from "utils/data";
 
@@ -116,7 +116,7 @@ export default {
             if (selectionType == "dataset" && !this.datasetsSet) {
                 this.onSelectDataset();
             } else if (selectionType == "ftp") {
-                UploadUtils.getRemoteFiles((ftp_files) => {
+                UploadUtils.getRemoteEntries((ftp_files) => {
                     this.sourceContent = ftp_files.map((file) => file["path"]).join("\n");
                     this.ftpFiles = ftp_files;
                 });
@@ -158,7 +158,7 @@ export default {
 
         _handleRemoteFilesUri: function (record) {
             // fetch files at URI
-            UploadUtils.getRemoteFilesAt(record.url).then((files) => {
+            UploadUtils.getRemoteEntriesAt(record.url).then((files) => {
                 files = files.filter((file) => file["class"] == "File");
                 this.sourceContent = files.map((file) => file["uri"]).join("\n");
                 this.uris = files;
