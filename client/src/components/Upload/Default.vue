@@ -1,21 +1,26 @@
 <template>
-    <upload-wrapper ref="wrapper" :top-info="topInfo" :highlight-box="highlightBox">
-        <div v-show="showHelper" class="upload-helper"><i class="fa fa-files-o" />Drop files here</div>
-        <table v-show="!showHelper" ref="uploadTable" class="upload-table ui-table-striped">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Size</th>
-                    <th>Type</th>
-                    <th>Genome</th>
-                    <th>Settings</th>
-                    <th>Status</th>
-                    <th />
-                </tr>
-            </thead>
-            <tbody />
-        </table>
-        <template v-slot:footer>
+    <div ref="wrapper" class="upload-view-default">
+        <div class="upload-top">
+            <div class="upload-top-info" v-html="topInfo"></div>
+        </div>
+        <div ref="uploadBox" class="upload-box" :style="boxStyle" :class="{ highlight: highlightBox }">
+            <div v-show="showHelper" class="upload-helper"><i class="fa fa-files-o" />Drop files here</div>
+            <table v-show="!showHelper" ref="uploadTable" class="upload-table ui-table-striped">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Size</th>
+                        <th>Type</th>
+                        <th>Genome</th>
+                        <th>Settings</th>
+                        <th>Status</th>
+                        <th />
+                    </tr>
+                </thead>
+                <tbody />
+            </table>
+        </div>
+        <div v-if="hasFooter" class="upload-footer">
             <span class="upload-footer-title">Type (set all):</span>
             <select2
                 ref="footerExtension"
@@ -31,8 +36,9 @@
                     {{ listGenome.text }}
                 </option>
             </select2>
-        </template>
-        <template v-slot:buttons>
+        </div>
+        <div v-else class="clear" />
+        <div class="upload-buttons">
             <BButton
                 id="btn-close"
                 ref="btnClose"
@@ -96,8 +102,8 @@
                 @click="uploadSelect">
                 <span class="fa fa-laptop"></span>{{ btnLocalTitle }}
             </BButton>
-        </template>
-    </upload-wrapper>
+        </div>
+    </div>
 </template>
 
 <script>
@@ -115,14 +121,13 @@ import { UploadQueue } from "utils/uploadbox";
 
 import { defaultNewFileName, uploadModelsToPayload } from "./helpers";
 import LazyLimited from "./lazy-limited";
-import UploadWrapper from "./UploadWrapper";
 import { findExtension } from "./utils";
 
 import { BButton } from "bootstrap-vue";
 import UploadRow from "mvc/upload/default/default-row";
 
 export default {
-    components: { BButton, UploadWrapper, Select2 },
+    components: { BButton, Select2 },
     props: {
         multiple: {
             type: Boolean,
@@ -195,6 +200,16 @@ export default {
         history_id() {
             return this.details.history_id;
         },
+        hasFooter() {
+            // https://stackoverflow.com/questions/44077277/only-show-slot-if-it-has-content/50096300#50096300
+            const name = "footer";
+            return !!this.$slots[name] || !!this.$scopedSlots[name];
+        },
+        boxStyle: function () {
+            return {
+                height: this.hasFooter ? "300px" : "335px",
+            };
+        },
     },
     watch: {
         extension: function (value) {
@@ -253,7 +268,7 @@ export default {
             }
         },
         $uploadBox() {
-            return $(this.$refs.wrapper.$refs.uploadBox);
+            return $(this.$refs.uploadBox);
         },
         initUploadbox() {
             const $uploadBox = this.$uploadBox();
