@@ -223,7 +223,7 @@ export class UploadQueue {
         this._initFlags();
 
         // Element
-        this.uploadinput = options.$uploadBox.uploadinput({
+        this.uploadinput = $(options.$uploadBox).uploadinput({
             multiple: this.opts.multiple,
             onchange: (files) => {
                 _.each(files, (file) => {

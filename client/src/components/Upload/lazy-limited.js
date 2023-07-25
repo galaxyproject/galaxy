@@ -5,7 +5,7 @@ import _ from "underscore";
 
 export default Backbone.View.extend({
     initialize: function (options) {
-        this.$container = options.$container;
+        this.$container = $(options.$container);
         this.collection = options.collection;
         this.new_content = options.new_content;
         this.max = options.max || 50;

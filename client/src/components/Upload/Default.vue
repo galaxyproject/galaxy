@@ -267,13 +267,9 @@ export default {
                 this._updateStateForCounters();
             }
         },
-        $uploadBox() {
-            return $(this.$refs.uploadBox);
-        },
         initUploadbox() {
-            const $uploadBox = this.$uploadBox();
             this.uploadbox = new UploadQueue({
-                $uploadBox: $uploadBox,
+                $uploadBox: this.$refs.uploadBox,
                 initUrl: (index) => {
                     if (!this.uploadUrl) {
                         this.uploadUrl = this.getRequestUrl([this.collection.get(index)], this.history_id);
@@ -311,9 +307,8 @@ export default {
                 chunkSize: this.details.chunkUploadSize,
             });
             if (this.lazyLoadMax !== null) {
-                const $uploadBox = this.$uploadBox();
                 this.loader = new LazyLimited({
-                    $container: $uploadBox,
+                    $container: this.$refs.uploadBox,
                     collection: this.collection,
                     max: this.lazyLoadMax,
                     new_content: (model) => {
@@ -581,7 +576,7 @@ export default {
             this.ftp = new Popover({
                 title: _l("FTP files"),
                 class: "ftp-upload",
-                container: $(this.$refs.btnFtp),
+                container: this.$refs.btnFtp,
             });
         },
         /* walk collection and update un-modified default values when globals
