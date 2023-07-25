@@ -186,6 +186,7 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
                 :xrefs="props.options.xrefs"
                 :license="props.options.license"
                 :creators="props.options.creators"
+                :funding="props.options.funding"
                 :requirements="props.options.requirements" />
         </div>
     </div>

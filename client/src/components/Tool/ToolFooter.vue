@@ -68,6 +68,10 @@
             <span class="font-weight-bold">Creators:</span>
             <Creators :creators="creators" />
         </div>
+        <div v-if="hasFunding" class="mb-1">
+            <span class="font-weight-bold">Funding:</span>
+            <Funding :funding="funding" />
+        </div>
     </b-card>
 </template>
 
@@ -79,6 +83,7 @@ import Citation from "components/Citation/Citation";
 import { getCitations } from "components/Citation/services";
 import License from "components/License/License";
 import Creators from "components/SchemaOrg/Creators";
+import Funding from "components/SchemaOrg/Funding";
 import { copy } from "utils/clipboard";
 
 library.add(faQuestion, faCopy, faAngleDoubleDown, faAngleDoubleUp);
@@ -88,6 +93,7 @@ export default {
         Citation,
         License,
         Creators,
+        Funding,
         FontAwesomeIcon,
     },
     props: {
@@ -105,6 +111,9 @@ export default {
             type: String,
         },
         creators: {
+            type: Array,
+        },
+        funding: {
             type: Array,
         },
         requirements: {
@@ -126,12 +135,15 @@ export default {
         hasCreators() {
             return this.creators && this.creators.length > 0;
         },
+        hasFunding() {
+            return this.funding && this.funding.length > 0;
+        },
         hasLicense() {
             return !!this.license;
         },
         hasContent() {
             return (
-                this.hasRequirements || this.hasReferences || this.hasCreators || this.hasCitations || this.hasLicense
+                this.hasRequirements || this.hasReferences || this.hasCreators || this.hasFunding || this.hasCitations || this.hasLicense
             );
         },
     },

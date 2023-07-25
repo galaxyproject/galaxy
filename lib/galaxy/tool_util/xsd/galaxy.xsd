@@ -471,6 +471,11 @@ This tag set is contained within the ``<entry_point>`` tag set. It contains the 
         <xs:documentation xml:lang="en">[schema.org/alternateName](https://schema.org/alternateName)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="description" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">[schema.org/description](https://schema.org/description)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:attributeGroup>
 
   <xs:complexType name="Person">
@@ -531,6 +536,37 @@ Describes an organization. Tries to stay close to [schema.org/Organization](http
       <xs:group ref="PersonOrOrganization" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
+
+  <xs:complexType name="Grant">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">
+        A grant, typically financial or otherwise quantifiable, of resources. See [schema.org/Grant](https://schema.org/Grant).
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="funder" type="xs:PersonOrOrganization" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">[schema.org/funder](https://schema.org/funder)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="sponsor" type="xs:PersonOrOrganization" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">[schema.org/funder](https://schema.org/funder)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attributeGroup name="Thing">    
+  </xs:complexType>
+
+  <xs:complexType name="Funding">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">
+        A Grant that directly or indirectly provide funding or sponsorship for this item. See [schema.org/funding](https://schema.org/funding).
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:group ref="Grant" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
 
   <xs:complexType name="RequiredFiles">
     <xs:annotation>
