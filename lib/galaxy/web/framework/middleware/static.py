@@ -39,7 +39,7 @@ class CacheableStaticURLParser(StaticURLParser):
         host = environ.get("HTTP_HOST")
         if self.directory_per_host and host:
             for host_key, host_val in self.directory_per_host.items():
-                if host_key in host:
+                if host_key == host:
                     directory = host_val
                     break
 
