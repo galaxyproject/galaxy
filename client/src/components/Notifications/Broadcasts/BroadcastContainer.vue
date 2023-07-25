@@ -6,24 +6,34 @@ import { BButton, BCol, BRow } from "bootstrap-vue";
 import { useRouter } from "vue-router/composables";
 
 import { useMarkdown } from "@/composables/markdown";
+import { type components } from "@/schema";
 import { type BroadcastNotification, useBroadcastsStore } from "@/stores/broadcastsStore";
 
 import Heading from "@/components/Common/Heading.vue";
 
 library.add(faInfoCircle, faTimes);
 
-interface Props {
-    previewMode?: boolean;
-    broadcast: BroadcastNotification;
-}
+type BroadcastNotificationCreateRequest = components["schemas"]["BroadcastNotificationCreateRequest"];
 
-const props = defineProps<Props>();
+type Options =
+    | {
+          previewMode?: false;
+          broadcast: BroadcastNotification;
+      }
+    | {
+          previewMode: true;
+          broadcast: BroadcastNotificationCreateRequest;
+      };
+
+const props = defineProps<{
+    options: Options;
+}>();
 
 const router = useRouter();
 const broadcastsStore = useBroadcastsStore();
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
-function getBroadcastVariant(item: BroadcastNotification) {
+function getBroadcastVariant(item: { variant: string }) {
     switch (item.variant) {
         case "urgent":
             return "danger";
@@ -32,13 +42,12 @@ function getBroadcastVariant(item: BroadcastNotification) {
     }
 }
 
-function onActionClick(item: BroadcastNotification, link: string) {
+function onActionClick(link: string) {
     if (link.startsWith("/")) {
         router.push(link);
     } else {
         window.open(link, "_blank");
     }
-    props.previewMode && broadcastsStore.dismissBroadcast(item);
 }
 </script>
 
@@ -46,41 +55,44 @@ function onActionClick(item: BroadcastNotification, link: string) {
     <BRow
         align-v="center"
         class="broadcast-banner m-0"
-        :class="{ 'non-urgent': broadcast.variant !== 'urgent', 'fixed-position': !previewMode }">
+        :class="{
+            'non-urgent': props.options.broadcast.variant !== 'urgent',
+            'fixed-position': !props.options.previewMode,
+        }">
         <BCol cols="auto">
             <FontAwesomeIcon
                 class="mx-2"
                 fade
                 size="2xl"
-                :class="`text-${getBroadcastVariant(broadcast)}`"
+                :class="`text-${getBroadcastVariant(props.options.broadcast)}`"
                 :icon="faInfoCircle" />
         </BCol>
         <BCol>
             <BRow align-v="center">
                 <Heading size="md" bold>
-                    {{ broadcast.content.subject }}
+                    {{ props.options.broadcast.content.subject }}
                 </Heading>
             </BRow>
             <BRow align-v="center">
-                <span class="broadcast-message" v-html="renderMarkdown(broadcast.content.message)" />
+                <span class="broadcast-message" v-html="renderMarkdown(props.options.broadcast.content.message)" />
             </BRow>
             <BRow>
                 <BButton
-                    v-for="actionLink in broadcast.content.action_links"
+                    v-for="actionLink in props.options.broadcast.content.action_links"
                     :key="actionLink.action_name"
                     class="mx-1"
                     :title="actionLink.action_name"
                     variant="primary"
-                    @click="onActionClick(broadcast, actionLink.link)">
+                    @click="onActionClick(actionLink.link)">
                     {{ actionLink.action_name }}
                 </BButton>
             </BRow>
         </BCol>
-        <BCol v-if="!previewMode" cols="auto" align-self="center" class="p-0">
+        <BCol v-if="!props.options.previewMode" cols="auto" align-self="center" class="p-0">
             <BButton
                 variant="light"
                 class="align-items-center d-flex"
-                @click="broadcastsStore.dismissBroadcast(broadcast)">
+                @click="broadcastsStore.dismissBroadcast(props.options.broadcast)">
                 <FontAwesomeIcon class="mx-1" icon="times" />
                 Dismiss
             </BButton>

@@ -217,7 +217,7 @@ async function sendNewNotification() {
             </BRow>
 
             <BCard class="my-2">
-                <MessageNotification :notification="notificationData.notification" preview-mode />
+                <MessageNotification :options="{ notification: notificationData.notification, previewMode: true }" />
             </BCard>
 
             <BRow class="m-2" align-h="center">

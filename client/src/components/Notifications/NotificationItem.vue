@@ -1,26 +1,18 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { type UserNotification } from ".";
 
-import type { UserNotification } from ".";
-
-import MessageNotificationComponent from "./Categories/MessageNotification.vue";
-import SharedItemNotificationComponent from "./Categories/SharedItemNotification.vue";
-
-/**
- * A map of notification categories to their corresponding Vue components.
- */
-const notificationComponentMap = {
-    message: MessageNotificationComponent,
-    new_shared_item: SharedItemNotificationComponent,
-};
+import MessageNotification from "./Categories/MessageNotification.vue";
+import SharedItemNotification from "./Categories/SharedItemNotification.vue";
 
 const props = defineProps<{
     notification: UserNotification;
 }>();
-
-const notificationComponent = computed(() => notificationComponentMap[props.notification.category]);
 </script>
 
 <template>
-    <component :is="notificationComponent" :notification="props.notification" />
+    <SharedItemNotification
+        v-if="props.notification.category === 'new_shared_item'"
+        :notification="props.notification" />
+
+    <MessageNotification v-else :options="{ notification: props.notification }" />
 </template>

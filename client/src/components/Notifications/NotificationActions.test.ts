@@ -16,9 +16,11 @@ async function mouthNotificationActions() {
     const pinia = createTestingPinia();
     setActivePinia(pinia);
 
-    const wrapper = mount(NotificationActions, {
+    const wrapper = mount(NotificationActions as object, {
         propsData: {
-            notification: Math.random() > 0.5 ? generateMessageNotification() : generateNewSharedItemNotification(),
+            options: {
+                notification: Math.random() > 0.5 ? generateMessageNotification() : generateNewSharedItemNotification(),
+            },
         },
         localVue,
         pinia,
@@ -50,7 +52,7 @@ async function mouthNotificationActions() {
 }
 
 function updateSeenTime(
-    wrapper: Wrapper<NotificationActions>,
+    wrapper: Wrapper<any>,
     notification: UserNotification,
     newSeenTime: string | undefined = undefined
 ) {

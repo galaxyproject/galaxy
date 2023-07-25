@@ -247,7 +247,7 @@ if (props.id) {
                 <Heading size="md"> Preview </Heading>
             </BRow>
 
-            <BroadcastContainer :broadcast="broadcastData" preview-mode />
+            <BroadcastContainer :options="{ broadcast: broadcastData, previewMode: true }" />
 
             <BRow class="m-2" align-h="center">
                 <AsyncButton

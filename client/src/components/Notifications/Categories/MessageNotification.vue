@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BCol, BRow } from "bootstrap-vue";
 import { computed } from "vue";
 
-import type { MessageNotification } from "@/components/Notifications";
+import { type MessageNotification } from "@/components/Notifications";
 import { useMarkdown } from "@/composables/markdown";
 
 import Heading from "@/components/Common/Heading.vue";
@@ -13,21 +13,30 @@ import NotificationActions from "@/components/Notifications/NotificationActions.
 
 library.add(faInbox);
 
-interface Props {
-    previewMode?: boolean;
-    notification: MessageNotification;
-}
+type PartialNotification = Partial<MessageNotification> & { content: MessageNotification["content"] };
+
+type Options =
+    | {
+          previewMode?: false;
+          notification: MessageNotification;
+      }
+    | {
+          previewMode: true;
+          notification: PartialNotification;
+      };
+
+const props = defineProps<{
+    options: Options;
+}>();
 
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
-const props = defineProps<Props>();
-
 const notificationVariant = computed(() => {
-    switch (props.notification.variant) {
+    switch (props.options.notification.variant) {
         case "urgent":
             return "danger";
         default:
-            return props.notification.variant;
+            return props.options.notification.variant;
     }
 });
 </script>
@@ -35,14 +44,14 @@ const notificationVariant = computed(() => {
 <template>
     <BCol>
         <BRow align-v="center">
-            <Heading size="md" :bold="!notification.seen_time" class="mb-0">
+            <Heading size="md" :bold="!props.options.notification.seen_time" class="mb-0">
                 <FontAwesomeIcon :class="`text-${notificationVariant}`" icon="inbox" />
-                {{ notification.content.subject }}
+                {{ props.options.notification?.content?.subject }}
             </Heading>
-            <NotificationActions v-if="!previewMode" :notification="notification" />
+            <NotificationActions v-if="!props.options.previewMode" :notification="props.options.notification" />
         </BRow>
         <BRow>
-            <span id="notification-message" v-html="renderMarkdown(notification.content.message)" />
+            <span id="notification-message" v-html="renderMarkdown(props.options.notification.content.message)" />
         </BRow>
     </BCol>
 </template>

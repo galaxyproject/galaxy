@@ -11,10 +11,7 @@ import SharedItemNotification from "@/components/Notifications/Categories/Shared
 
 const localVue = getLocalVue(true);
 
-async function mountComponent(
-    component: typeof MessageNotification | typeof SharedItemNotification,
-    propsData: object = {}
-): Promise<Wrapper<Vue>> {
+async function mountComponent(component: object, propsData: object = {}): Promise<Wrapper<Vue>> {
     const pinia = createTestingPinia();
     setActivePinia(pinia);
 
