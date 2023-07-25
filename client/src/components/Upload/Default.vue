@@ -178,9 +178,6 @@ export default {
             const result = this.listExtensions.filter((ext) => !ext.composite_files);
             return result;
         },
-        appModel() {
-            return this.details.model;
-        },
         btnFilesTitle() {
             if (this.fileSourcesConfigured) {
                 return _l("Choose remote files");
@@ -288,7 +285,7 @@ export default {
                 this.uploadbox.reset();
                 this.extension = this.details.defaultExtension;
                 this.genome = this.details.defaultDbKey;
-                this.appModel.set("percentage", 0);
+                this.details.model.set("percentage", 0);
                 this._updateStateForCounters();
             }
         },
@@ -328,7 +325,7 @@ export default {
                     this.uploadSize += model.get("file_size");
                 }
             });
-            this.appModel.set({ percentage: 0, status: "success" });
+            this.details.model.set({ percentage: 0, status: "success" });
             this.counterRunning = this.counterAnnounce;
 
             // package ftp files separately, and remove them from queue
@@ -410,14 +407,14 @@ export default {
         _eventProgress: function (index, percentage) {
             var it = this.collection.get(index);
             it.set("percentage", percentage);
-            this.appModel.set("percentage", this._uploadPercentage(percentage, it.get("file_size")));
+            this.details.model.set("percentage", this._uploadPercentage(percentage, it.get("file_size")));
         },
         /** Calculate percentage of all queued uploads */
         _uploadPercentage: function (percentage, size) {
             return (this.uploadCompleted + percentage * size) / this.uploadSize;
         },
         _updateStateForSuccess: function (model) {
-            this.appModel.set("percentage", this._uploadPercentage(100, model.get("file_size")));
+            this.details.model.set("percentage", this._uploadPercentage(100, model.get("file_size")));
             this.uploadCompleted += model.get("file_size") * 100;
             this.counterAnnounce--;
             this.counterSuccess++;
@@ -441,7 +438,7 @@ export default {
         _eventError: function (index, message) {
             var it = this.collection.get(index);
             it.set({ percentage: 100, status: "error", info: message });
-            this.appModel.set({
+            this.details.model.set({
                 percentage: this._uploadPercentage(100, it.get("file_size")),
                 status: "danger",
             });
@@ -523,7 +520,7 @@ export default {
         /** Pause upload process */
         _eventStop: function () {
             if (this.counterRunning > 0) {
-                this.appModel.set("status", "info");
+                this.details.model.set("status", "info");
                 this.topInfo = "Queue will pause after completing the current file...";
                 this.uploadbox.stop();
             }
