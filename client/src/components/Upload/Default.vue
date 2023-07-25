@@ -3,7 +3,7 @@
         <div class="upload-top">
             <div class="upload-top-info" v-html="topInfo"></div>
         </div>
-        <div ref="uploadBox" class="upload-box" :style="boxStyle" :class="{ highlight: highlightBox }">
+        <div ref="uploadBox" class="upload-box upload-box-with-footer" :class="{ highlight: highlightBox }">
             <div v-show="showHelper" class="upload-helper"><i class="fa fa-files-o" />Drop files here</div>
             <table v-show="!showHelper" ref="uploadTable" class="upload-table ui-table-striped">
                 <thead>
@@ -20,7 +20,7 @@
                 <tbody />
             </table>
         </div>
-        <div v-if="hasFooter" class="upload-footer">
+        <div class="upload-footer">
             <span class="upload-footer-title">Type (set all):</span>
             <select2
                 ref="footerExtension"
@@ -37,7 +37,6 @@
                 </option>
             </select2>
         </div>
-        <div v-else class="clear" />
         <div class="upload-buttons">
             <BButton
                 id="btn-close"
@@ -200,22 +199,12 @@ export default {
         history_id() {
             return this.details.history_id;
         },
-        hasFooter() {
-            // https://stackoverflow.com/questions/44077277/only-show-slot-if-it-has-content/50096300#50096300
-            const name = "footer";
-            return !!this.$slots[name] || !!this.$scopedSlots[name];
-        },
-        boxStyle: function () {
-            return {
-                height: this.hasFooter ? "300px" : "335px",
-            };
-        },
     },
     watch: {
-        extension: function (value) {
+        extension: (value) => {
             this.updateExtension(value);
         },
-        genome: function (value) {
+        genome: (value) => {
             this.updateGenome(value);
         },
     },
@@ -607,3 +596,8 @@ export default {
     },
 };
 </script>
+<style scoped>
+.upload-box-with-footer {
+    height: 300px;
+}
+</style>
