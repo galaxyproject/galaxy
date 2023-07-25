@@ -83,8 +83,9 @@ function clearInputs() {
         <div v-if="exportChoice === 'new'">
             <div v-if="newEntry">
                 <BCard>
-                    <p v-localize>
-                        A new draft record with name <b>{{ newEntry.name }}</b> has been created in the repository.
+                    <p>
+                        <b>{{ newEntry.name }}</b>
+                        <span v-localize> draft record has been created in the repository.</span>
                     </p>
                     <p v-if="newEntry.external_link">
                         You can preview the record in the repository and further edit its metadata at
