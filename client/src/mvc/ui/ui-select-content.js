@@ -225,7 +225,8 @@ const View = Backbone.View.extend({
         const galaxy = getGalaxyInstance();
         if (new_value) {
             this._patchValue(new_value);
-            this.model.set("value", new_value);
+            const result = this._batch(this._pickValue(new_value));
+            this.model.set("value", result);
         }
         const current = this.model.get("current");
         if (this.config[current]) {
@@ -248,7 +249,7 @@ const View = Backbone.View.extend({
                         }
                     }
                     result.values.sort((a, b) => a.hid - b.hid);
-                    return result;
+                    return this._pickValue(result);
                 }
             }
         } else {
@@ -482,6 +483,18 @@ const View = Backbone.View.extend({
     /** Source helper matches history_content_types to source types */
     _getSource: function (v) {
         return v.history_content_type == "dataset_collection" ? "hdca" : "hda";
+    },
+
+    /** Only utilize id, source and map_over_type when specifiying input value **/
+    _pickValue: function (v) {
+        if (v && v.values) {
+            v.values = v.values.map((entry) => ({
+                id: entry.id,
+                src: entry.src,
+                map_over_type: entry.map_over_type,
+            }));
+        }
+        return v;
     },
 
     /** Library datasets are displayed and selected together with history datasets,

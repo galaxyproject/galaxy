@@ -337,7 +337,7 @@ def release_issue(argv):
         freeze_date=freeze_date,
     )
     release_issue_contents = RELEASE_ISSUE_TEMPLATE.safe_substitute(**release_issue_template_params)
-    github = _github_client()
+    github = github_client()
     repo = github.get_repo(f"{PROJECT_OWNER}/{PROJECT_NAME}")
     repo.create_issue(
         title=f"Publication of Galaxy Release v {release_name}",
@@ -423,7 +423,7 @@ def check_blocking_prs(argv):
 def check_blocking_issues(argv):
     release_name = argv[2]
     block = 0
-    github = _github_client()
+    github = github_client()
     repo = github.get_repo(f"{PROJECT_OWNER}/{PROJECT_NAME}")
     issues = repo.get_issues(state="open")
     for issue in issues:
@@ -480,7 +480,7 @@ def _release_dates(version):
 
 
 def _get_prs(release_name, state="closed"):
-    github = _github_client()
+    github = github_client()
     repo = github.get_repo(f"{PROJECT_OWNER}/{PROJECT_NAME}")
     pull_requests = repo.get_pulls(state=state)
     reached_old_prs = False
@@ -640,7 +640,7 @@ def _write_file(path, contents, skip_if_exists=False):
         f.write(contents)
 
 
-def _text_target(pull_request, labels=None):
+def _text_target(pull_request, labels=None, skip_merge=True):
     if isinstance(pull_request, str):
         pr_number = pull_request
     else:
@@ -649,7 +649,7 @@ def _text_target(pull_request, labels=None):
     if labels is None:
         labels = []
         try:
-            github = _github_client()
+            github = github_client()
             labels = github.issues.labels.list_by_issue(int(pr_number), user=PROJECT_OWNER, repo=PROJECT_NAME)
             labels = [label.name.lower() for label in labels]
         except Exception as e:
@@ -683,7 +683,7 @@ def _text_target(pull_request, labels=None):
         print(f"No 'kind/*' or 'minor' or 'merge' or 'procedures' label found for {_pr_to_str(pull_request)}")
         text_target = None
 
-    if is_minor or is_merge:
+    if is_minor or is_merge and skip_merge:
         return
 
     if is_some_kind_of_enhancement and is_major:
@@ -739,11 +739,25 @@ def _releases():
     return sorted(f.rstrip(".rst") for f in release_note_files)
 
 
-def _github_client():
-    github_json_path = os.path.expanduser("~/.github.json")
-    with open(github_json_path) as fh:
-        github_json_dict = json.load(fh)
-    return Github(**github_json_dict)
+def github_client() -> Github:
+    """Search environment for github access token and produce client object.
+
+    Easiest thing to do is just to set an environment variable GITHUB_AUTH to
+    your personal access token (
+    https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token
+    ). Alternatively, this can be placed into a json file in ~/.github.json in a
+    map keyed on login_or_token.
+    """
+    auth = os.environ.get("GITHUB_AUTH")
+    if auth is not None:
+        return Github(auth)
+    else:
+        github_json_path = os.path.expanduser("~/.github.json")
+        if not os.path.exists(github_json_path):
+            return Github(None)
+        with open(github_json_path) as fh:
+            github_json_dict = json.load(fh)
+        return Github(**github_json_dict)
 
 
 def _release_file(release):
@@ -759,9 +773,13 @@ def get_first_sentence(message):
     return first_line
 
 
+def strip_release(message):
+    return re.sub(r"^\s*\[.*\]\s*", r"", message)
+
+
 def process_sentence(message):
     # Strip tags like [15.07].
-    message = re.sub(r"^\s*\[.*\]\s*", r"", message)
+    message = strip_release(message=message)
     # Link issues and pull requests...
     issue_url = f"https://github.com/{PROJECT_OWNER}/{PROJECT_NAME}/issues"
     message = re.sub(r"#(\d+)", rf"`#\1 <{issue_url}/\1>`__", message)

@@ -11,6 +11,7 @@ from glob import glob
 from typing import (
     Any,
     Dict,
+    List,
     Optional,
 )
 
@@ -28,8 +29,9 @@ from galaxy.util import (
     check_github_api_response_rate_limit,
     unicodify,
 )
+from galaxy.util.commands import argv_to_str
 from .util import (
-    get_file_from_conda_package,
+    get_files_from_conda_package,
     MULLED_SOCKET_TIMEOUT,
     split_container_name,
 )
@@ -68,6 +70,7 @@ def get_commands_from_yaml(yaml_content: bytes) -> Optional[Dict[str, Any]]:
         return None
 
     # need to know what scripting languages are needed to run the container
+    package_tests["import_lang"] = "python -c"  # python by default
     try:
         requirements = list(meta_yaml["requirements"]["run"])
     except (KeyError, TypeError):
@@ -79,8 +82,6 @@ def get_commands_from_yaml(yaml_content: bytes) -> Optional[Dict[str, Any]]:
                 break
             # elif ... :
             # other languages if necessary ... hopefully python and perl should suffice though
-        else:  # python by default
-            package_tests["import_lang"] = "python -c"
     return package_tests
 
 
@@ -112,15 +113,16 @@ def get_test_from_anaconda(url: str) -> Optional[Dict[str, Any]]:
     """
     Given the URL of an anaconda tarball, return tests
     """
-    name, content = get_file_from_conda_package(
+    content_dict = get_files_from_conda_package(
         url, ["info/recipe/meta.yaml", "info/recipe/meta.yaml.template", "info/recipe/run_test.sh"]
     )
-    if name and content and name.startswith("info/recipe/meta.yaml"):
+    content = content_dict.get("info/recipe/meta.yaml", content_dict.get("info/recipe/meta.yaml.template"))
+    if content:
         package_tests = get_commands_from_yaml(content)
         if package_tests:
             return package_tests
-    if name and content and name == "info/recipe/run_test.sh":
-        return get_run_test(unicodify(content))
+    if "info/recipe/run_test.sh" in content_dict:
+        return get_run_test(unicodify(content_dict["info/recipe/run_test.sh"]))
     return None
 
 
@@ -131,7 +133,7 @@ def find_anaconda_versions(name, anaconda_channel="bioconda"):
     r = requests.get(f"https://anaconda.org/{anaconda_channel}/{name}/files", timeout=MULLED_SOCKET_TIMEOUT)
     r.raise_for_status()
     urls = []
-    for line in r.text.split("\n"):
+    for line in r.text.splitlines():
         if "download/linux" in line:
             urls.append(line.split('"')[1])
     return urls
@@ -260,23 +262,34 @@ def main_test_search(
     return {"container": container}
 
 
+def import_test_to_command_list(import_lang: str, import_: str) -> List[str]:
+    if import_lang == "python -c":
+        return ["python", "-c", f"import {import_}"]
+    elif import_lang == "perl -e":
+        return ["perl", "-e", f"use {import_}"]
+    else:
+        raise ValueError(f"Unsupported import_lang '{import_lang}'")
+
+
 def hashed_test_search(
-    container, recipes_path=None, deep=False, anaconda_channel="bioconda", github_repo="bioconda/bioconda-recipes"
-):
+    container: str, recipes_path=None, deep=False, anaconda_channel="bioconda", github_repo="bioconda/bioconda-recipes"
+) -> Dict[str, Any]:
     """
     Get test for hashed containers
     """
-    package_tests = {"commands": [], "imports": [], "container": container, "import_lang": "python -c"}
+    package_tests: Dict[str, Any] = {"commands": [], "imports": [], "container": container, "import_lang": "python -c"}
 
-    githubpage = requests.get(
+    response = requests.get(
         f"https://raw.githubusercontent.com/BioContainers/multi-package-containers/master/combinations/{container}.tsv",
         timeout=MULLED_SOCKET_TIMEOUT,
     )
-    if githubpage.status_code == 200:
-        packages = githubpage.text.split(",")  # get names of packages from github
-        packages = [package.split("=") for package in packages]
-    else:
-        packages = []
+    response.raise_for_status()
+    for line in response.text.splitlines():
+        if not line.startswith("#"):
+            break
+    concatenated_targets = line.split("\t")[0]
+    targets = concatenated_targets.split(",")
+    packages = [target.split("=") for target in targets]
 
     containers = []
     for package in packages:
@@ -284,7 +297,8 @@ def hashed_test_search(
         r.raise_for_status()
         p = "-".join(package)
         for line in r.text.split("\n"):
-            if p in line:
+            # include only linux-64 builds since that is hardcoded in get_anaconda_url and the only target for container builds
+            if p in line and "linux-64" in line:
                 build = line.split(p)[1].split(".tar.bz2")[0]
                 if build == "":
                     containers.append(f"{package[0]}:{package[1]}")
@@ -295,7 +309,8 @@ def hashed_test_search(
     for container in containers:
         tests = main_test_search(container, recipes_path, deep, anaconda_channel, github_repo)
         package_tests["commands"] += tests.get("commands", [])  # not a very nice solution but probably the simplest
+        # Given that this could be a mix of Python and Perl packages, translate imports to commands
         for imp in tests.get("imports", []):
-            package_tests["imports"].append(f"{tests['import_lang']} 'import {imp}'")
+            package_tests["commands"].append(argv_to_str(import_test_to_command_list(tests["import_lang"], imp)))
 
     return package_tests

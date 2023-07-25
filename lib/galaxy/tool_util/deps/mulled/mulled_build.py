@@ -44,7 +44,7 @@ from .util import (
     conda_build_target_str,
     create_repository,
     default_mulled_conda_channels_from_env,
-    get_file_from_conda_package,
+    get_files_from_conda_package,
     PrintProgress,
     quay_repository,
     v1_image_name,
@@ -171,14 +171,16 @@ def base_image_for_targets(targets: List["Target"], conda_context: CondaContext)
     hits = get_conda_hits_for_targets(targets, conda_context)
     for hit in hits:
         try:
-            name, content = get_file_from_conda_package(hit["url"], ["info/about.json", "info/recipe/meta.yaml"])
-            strcontent = unicodify(content)
-            if name == "info/about.json" and json.loads(strcontent).get("extra", {}).get("container", {}).get(
-                "extended-base", False
-            ):
+            content_dict = get_files_from_conda_package(hit["url"], ["info/about.json", "info/recipe/meta.yaml"])
+            if "info/about.json" in content_dict and json.loads(unicodify(content_dict["info/about.json"])).get(
+                "extra", {}
+            ).get("container", {}).get("extended-base", False):
                 return DEFAULT_EXTENDED_BASE_IMAGE
-            elif name == "info/recipe/meta.yaml" and (
-                yaml.safe_load(strcontent).get("extra", {}).get("container", {}).get("extended-base", False)
+            elif "info/recipe/meta.yaml" in content_dict and (
+                yaml.safe_load(unicodify(content_dict["info/recipe/meta.yaml"]))
+                .get("extra", {})
+                .get("container", {})
+                .get("extended-base", False)
             ):
                 return DEFAULT_EXTENDED_BASE_IMAGE
         except Exception:

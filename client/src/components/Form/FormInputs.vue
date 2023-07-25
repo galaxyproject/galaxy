@@ -71,6 +71,7 @@
                 :title="input.label || input.name"
                 :type="input.type"
                 :error="input.error"
+                :warning="input.warning"
                 :help="input.help"
                 :refresh-on-change="input.refresh_on_change"
                 :attributes="input.attributes || input"

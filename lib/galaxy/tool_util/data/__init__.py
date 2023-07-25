@@ -210,6 +210,8 @@ class ToolDataTable(Dictifiable):
         allow_duplicates: bool = True,
         persist: bool = False,
         entry_source: EntrySource = None,
+        tool_data_file_path: Optional[str] = None,
+        use_first_file_path: bool = False,
         **kwd,
     ) -> None:
         raise NotImplementedError("Abstract method")
@@ -220,9 +222,19 @@ class ToolDataTable(Dictifiable):
         allow_duplicates: bool = True,
         persist: bool = False,
         entry_source: EntrySource = None,
+        tool_data_file_path: Optional[str] = None,
+        use_first_file_path: bool = False,
         **kwd,
     ) -> int:
-        self._add_entry(entry, allow_duplicates=allow_duplicates, persist=persist, entry_source=entry_source, **kwd)
+        self._add_entry(
+            entry,
+            allow_duplicates=allow_duplicates,
+            persist=persist,
+            entry_source=entry_source,
+            tool_data_file_path=tool_data_file_path,
+            use_first_file_path=use_first_file_path,
+            **kwd,
+        )
         return self._update_version()
 
     def add_entries(
@@ -647,6 +659,8 @@ class TabularToolDataTable(ToolDataTable):
         allow_duplicates: bool = True,
         persist: bool = False,
         entry_source: EntrySource = None,
+        tool_data_file_path: Optional[str] = None,
+        use_first_file_path: bool = False,
         **kwd,
     ) -> None:
         # accepts dict or list of columns
@@ -681,7 +695,16 @@ class TabularToolDataTable(ToolDataTable):
         filename = None
 
         if persist:
-            filename = self.get_filename_for_source(entry_source)
+            if tool_data_file_path is not None:
+                filename = tool_data_file_path
+                if os.path.realpath(filename) not in [os.path.realpath(n) for n in self.filenames]:
+                    raise MessageException(f"Path '{tool_data_file_path}' is not a known data table file path.")
+            elif not use_first_file_path:
+                filename = self.get_filename_for_source(entry_source)
+            else:
+                for name in self.filenames:
+                    filename = name
+                    break
             if filename is None:
                 # If we reach this point, there is no data table with a corresponding .loc file.
                 raise MessageException(
@@ -1177,6 +1200,7 @@ class BundleProcessingOptions:
     what: str
     data_manager_path: str
     target_config_file: str
+    tool_data_file_path: Optional[str] = None
 
 
 def _data_manager_dict(out_data: Dict[str, OutputDataset], ensure_single_output: bool = False) -> Dict[str, Any]:
@@ -1270,7 +1294,13 @@ def _process_bundle(
                     data_table_value[name] = _process_value_translations(
                         data_table_name, name, bundle_description, options, **data_table_value
                     )
-            data_table.add_entry(data_table_value, persist=True, entry_source=bundle.repo_info)
+            data_table.add_entry(
+                data_table_value,
+                persist=True,
+                entry_source=bundle.repo_info,
+                tool_data_file_path=options.tool_data_file_path,
+                use_first_file_path=True,
+            )
         # Removes data table entries
         for data_table_row in data_table_remove_values:
             data_table_value = dict(**data_table_row)  # keep original values here

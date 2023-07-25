@@ -4539,12 +4539,12 @@ export interface components {
              * Latest installed revision
              * @description Most recent version available on the tool shed
              */
-            latest_installable_revision: string;
+            latest_installable_revision?: string;
             /**
              * Repository deprecated
              * @description Repository has been depreciated on the tool shed
              */
-            repository_deprecated: string;
+            repository_deprecated?: string;
             /** Revision Update */
             revision_update: string;
             /** Revision Upgrade */
@@ -4564,7 +4564,7 @@ export interface components {
              * Changeset revision number
              * @description The linearized 0-based index of the changeset on the tool shed (0, 1, 2,...)
              */
-            ctx_rev: string;
+            ctx_rev?: string;
             /** Deleted */
             deleted: boolean;
             /** Dist To Shed */
@@ -13340,6 +13340,9 @@ export interface operations {
     create_api_tool_data_post: {
         /** Import a data manager bundle */
         parameters?: {
+            query?: {
+                tool_data_file_path?: Record<string, never>;
+            };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
                 "run-as"?: string;
