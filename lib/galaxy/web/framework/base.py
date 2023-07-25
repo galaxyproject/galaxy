@@ -539,9 +539,9 @@ def send_file(start_response, trans, body):
         start = None
         end = None
         if trans.request.range:
-            start = trans.request.range.start
-            end = trans.request.range.end
-            file_size = trans.response.headers["content-length"]
+            start = int(trans.request.range.start)
+            file_size = int(trans.response.headers["content-length"])
+            end = int(file_size if end is None else trans.request.range.end)
             trans.response.headers["content-length"] = str(end - start)
             trans.response.headers["content-range"] = f"bytes {start}-{end - 1}/{file_size}"
             trans.response.status = 206
