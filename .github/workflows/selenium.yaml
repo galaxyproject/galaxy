@@ -66,7 +66,7 @@ jobs:
       - uses: mvdbeek/gha-yarn-cache@master
         with:
           yarn-lock-file: 'galaxy root/client/yarn.lock'
-      - uses: nanasess/setup-chromedriver@v1
+      - uses: nanasess/setup-chromedriver@v2
       - name: Run tests
         run: ./run_tests.sh --coverage -selenium lib/galaxy_test/selenium -- --num-shards=3 --shard-id=${{ matrix.chunk }}
         working-directory: 'galaxy root'
