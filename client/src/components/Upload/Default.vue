@@ -211,44 +211,7 @@ export default {
     mounted() {
         this.initExtensionInfo();
         this.initFtpPopover();
-        // file upload
-        this.initUploadbox({
-            initUrl: (index) => {
-                if (!this.uploadUrl) {
-                    this.uploadUrl = this.getRequestUrl([this.collection.get(index)], this.history_id);
-                }
-                return this.uploadUrl;
-            },
-            multiple: this.multiple,
-            announce: (index, file) => {
-                this._eventAnnounce(index, file);
-            },
-            initialize: (index) => {
-                return uploadModelsToPayload([this.collection.get(index)], this.history_id);
-            },
-            progress: (index, percentage) => {
-                this._eventProgress(index, percentage);
-            },
-            success: (index, message) => {
-                this._eventSuccess(index, message);
-            },
-            error: (index, message) => {
-                this._eventError(index, message);
-            },
-            warning: (index, message) => {
-                this._eventWarning(index, message);
-            },
-            complete: () => {
-                this._eventComplete();
-            },
-            ondragover: () => {
-                this.highlightBox = true;
-            },
-            ondragleave: () => {
-                this.highlightBox = false;
-            },
-            chunkSize: this.details.chunkUploadSize,
-        });
+        this.initUploadbox();
         this.collection.on("remove", (model) => {
             this._eventRemove(model);
         });
@@ -292,10 +255,46 @@ export default {
         $uploadBox() {
             return $(this.$refs.wrapper.$refs.uploadBox);
         },
-        initUploadbox(options) {
+        initUploadbox() {
             const $uploadBox = this.$uploadBox();
-            options.$uploadBox = $uploadBox;
-            this.uploadbox = new UploadQueue(options);
+            this.uploadbox = new UploadQueue({
+                $uploadBox: $uploadBox,
+                initUrl: (index) => {
+                    if (!this.uploadUrl) {
+                        this.uploadUrl = this.getRequestUrl([this.collection.get(index)], this.history_id);
+                    }
+                    return this.uploadUrl;
+                },
+                multiple: this.multiple,
+                announce: (index, file) => {
+                    this._eventAnnounce(index, file);
+                },
+                initialize: (index) => {
+                    return uploadModelsToPayload([this.collection.get(index)], this.history_id);
+                },
+                progress: (index, percentage) => {
+                    this._eventProgress(index, percentage);
+                },
+                success: (index, message) => {
+                    this._eventSuccess(index, message);
+                },
+                error: (index, message) => {
+                    this._eventError(index, message);
+                },
+                warning: (index, message) => {
+                    this._eventWarning(index, message);
+                },
+                complete: () => {
+                    this._eventComplete();
+                },
+                ondragover: () => {
+                    this.highlightBox = true;
+                },
+                ondragleave: () => {
+                    this.highlightBox = false;
+                },
+                chunkSize: this.details.chunkUploadSize,
+            });
             if (this.lazyLoadMax !== null) {
                 const $uploadBox = this.$uploadBox();
                 this.loader = new LazyLimited({
