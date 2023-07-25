@@ -23,6 +23,7 @@ CWL_TARGETS := test/functional/tools/cwl_tools/v1.0/conformance_tests.yaml \
 	lib/galaxy_test/api/cwl/test_cwl_conformance_v1_0.py \
 	lib/galaxy_test/api/cwl/test_cwl_conformance_v1_1.py \
 	lib/galaxy_test/api/cwl/test_cwl_conformance_v1_2.py
+NO_YARN_MSG="Could not find yarn, which is required to build the Galaxy client.\nIt should be shipped with Galaxy's virtualenv, but to install yarn manually please visit \033[0;34mhttps://yarnpkg.com/en/docs/install\033[0m for instructions, and package information for all platforms.\n"
 
 all: help
 	@echo "This makefile is used for building Galaxy's JS client, documentation, and drive the release process. A sensible all target is not implemented."
@@ -164,7 +165,7 @@ skip-client: ## Run only the server, skipping the client build.
 
 node-deps: ## Install NodeJS dependencies.
 ifndef YARN
-	@echo "Could not find yarn, which is required to install the Galaxy client.\nTo install yarn, please visit \033[0;34mhttps://yarnpkg.com/en/docs/install\033[0m for instructions, and package information for all platforms.\n"
+	@echo $(NO_YARN_MSG)
 	false;
 else
 	$(IN_VENV) yarn install $(YARN_INSTALL_OPTS)
@@ -172,7 +173,7 @@ endif
 
 client-node-deps: ## Install NodeJS dependencies for the client.
 ifndef YARN
-	@echo "Could not find yarn, which is required to build the Galaxy client.\nTo install yarn, please visit \033[0;34mhttps://yarnpkg.com/en/docs/install\033[0m for instructions, and package information for all platforms.\n"
+	@echo $(NO_YARN_MSG)
 	false;
 else
 	$(IN_VENV) cd client && yarn install $(YARN_INSTALL_OPTS)
