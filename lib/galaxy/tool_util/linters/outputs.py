@@ -49,7 +49,7 @@ def lint_output(tool_xml, lint_ctx):
             if filter_node is not None:
                 lint_ctx.warn(
                     f"Tool output [{name}] uses duplicated label '{label}', double check if filters imply disjoint cases",
-                    node=output
+                    node=output,
                 )
             else:
                 lint_ctx.warn(f"Tool output [{name}] uses duplicated label '{label}'", node=output)
