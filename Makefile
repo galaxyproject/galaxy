@@ -11,7 +11,7 @@ DOC_SOURCE_DIR=$(DOCS_DIR)/source
 SLIDESHOW_DIR=$(DOC_SOURCE_DIR)/slideshow
 OPEN_RESOURCE=bash -c 'open $$0 || xdg-open $$0'
 SLIDESHOW_TO_PDF?=bash -c 'docker run --rm -v `pwd`:/cwd astefanutti/decktape /cwd/$$0 /cwd/`dirname $$0`/`basename -s .html $$0`.pdf'
-YARN := $(shell command -v yarn 2> /dev/null)
+YARN := $(shell $(IN_VENV) command -v yarn 2> /dev/null)
 YARN_INSTALL_OPTS=--network-timeout 300000 --check-files
 # Respect predefined NODE_OPTIONS, otherwise set maximum heap size low for
 # compatibility with smaller machines.
@@ -167,7 +167,7 @@ ifndef YARN
 	@echo "Could not find yarn, which is required to install the Galaxy client.\nTo install yarn, please visit \033[0;34mhttps://yarnpkg.com/en/docs/install\033[0m for instructions, and package information for all platforms.\n"
 	false;
 else
-	yarn install $(YARN_INSTALL_OPTS)
+	$(IN_VENV) yarn install $(YARN_INSTALL_OPTS)
 endif
 
 client-node-deps: ## Install NodeJS dependencies for the client.
