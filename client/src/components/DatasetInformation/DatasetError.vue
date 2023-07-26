@@ -58,9 +58,9 @@
                         v-for="(resultMessage, index) in resultMessages"
                         :key="index"
                         :variant="resultMessage[1]"
-                        show
-                        >{{ resultMessage[0] }}</b-alert
-                    >
+                        show>
+                        <span v-html="renderMarkdown(resultMessage[0])"></span>
+                    </b-alert>
                     <CurrentUser v-slot="{ user }">
                         <div v-if="showForm" id="fieldsAndButton">
                             <span class="mr-2 font-weight-bold">{{ emailTitle }}</span>
@@ -94,6 +94,7 @@ import { JobDetailsProvider, JobProblemProvider } from "components/providers/Job
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBug } from "@fortawesome/free-solid-svg-icons";
+import { useMarkdown } from "@/composables/markdown";
 import { sendErrorReport } from "./services";
 import CurrentUser from "components/providers/CurrentUser";
 
@@ -114,6 +115,10 @@ export default {
             type: String,
             required: true,
         },
+    },
+    setup() {
+        const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
+        return { renderMarkdown };
     },
     data() {
         return {
