@@ -5,30 +5,18 @@
         </div>
         <div ref="uploadBox" class="upload-box upload-box-with-footer" :class="{ highlight: highlightBox }">
             <div v-show="showHelper" class="upload-helper"><i class="fa fa-files-o" />Drop files here</div>
-            <table v-show="!showHelper" ref="uploadTable" class="upload-table ui-table-striped">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Size</th>
-                        <th>Type</th>
-                        <th>Genome</th>
-                        <th>Settings</th>
-                        <th>Status</th>
-                        <th />
-                    </tr>
-                </thead>
-                <tbody>
-                    <DefaultRow
-                        v-for="(uploadItem, uploadIndex) in uploadList"
-                        :key="uploadIndex"
-                        :extension="extension"
-                        :extensions="extensions"
-                        :genome="genome"
-                        :listExtensions="listExtensions"
-                        :listGenomes="listGenomes"
-                        :model="uploadItem" />
-                </tbody>
-            </table>
+            <div v-show="!showHelper" ref="uploadTable" class="upload-table ui-table-striped">
+                <DefaultRow
+                    v-for="(uploadItem, uploadIndex) in uploadList"
+                    :key="uploadIndex"
+                    :extension="extension"
+                    :extensions="extensions"
+                    :genome="genome"
+                    :listExtensions="listExtensions"
+                    :listGenomes="listGenomes"
+                    :model="uploadItem"
+                    :index="uploadIndex" />
+            </div>
         </div>
         <div class="upload-footer">
             <span class="upload-footer-title">Type (set all):</span>

@@ -140,7 +140,7 @@
             .upload-text-column {
                 position: relative;
                 .upload-text {
-                    //position: absolute;
+                    position: absolute;
                     .upload-text-content {
                         width: 100%;
                         height: 80px;
@@ -176,6 +176,18 @@
                 }
             }
         }
+    }
+    .upload-text-content {
+        width: 100%;
+        height: 80px;
+        resize: none;
+        background: inherit;
+        color: $text-color;
+        white-space: pre;
+        overflow: auto;
+    }
+    .upload-text-info {
+        @extend .text-primary;
     }
     .upload-rule-option {
         padding-top: 20px;
