@@ -18,11 +18,15 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="(uploadItem, uploadIndex) in uploadList" :key="uploadIndex">
-                        <td>
-                            {{ uploadItem }}
-                        </td>
-                    </tr>
+                    <DefaultRow
+                        v-for="(uploadItem, uploadIndex) in uploadList"
+                        :key="uploadIndex"
+                        :extension="extension"
+                        :extensions="extensions"
+                        :genome="genome"
+                        :listExtensions="listExtensions"
+                        :listGenomes="listGenomes"
+                        :model="uploadItem" />
                 </tbody>
             </table>
         </div>

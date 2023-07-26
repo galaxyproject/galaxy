@@ -12,7 +12,7 @@ export default UploadBoxRow.extend({
         var self = this;
         this.app = app;
         this.list_extensions = app.listExtensions;
-        this.model = options.model;
+        this.model = new Backbone.Model(options.model);
         this.setElement(this._template(options.model));
         this.$mode = this.$(".upload-mode");
         this.$title = this.$(".upload-title");
