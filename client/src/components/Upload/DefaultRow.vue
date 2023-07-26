@@ -1,48 +1,64 @@
-<template>
-    <div ref="target" />
-</template>
+<script setup>
+import { computed } from "vue";
 
-<script>
-import UploadRow from "mvc/upload/default/default-row";
+const props = defineProps({
+    listGenomes: Array,
+    listExtensions: Array,
+    extensions: Array,
+    extension: String,
+    genome: String,
+    model: Object,
+});
+const id = computed(() => model.id);
 
-export default {
-    props: {
-        listGenomes: {
-            type: Array,
-            required: true,
-        },
-        listExtensions: {
-            type: Array,
-            required: true,
-        },
-        extensions: {
-            type: Array,
-            required: true,
-        },
-        extension: {
-            type: String,
-            required: true,
-        },
-        genome: {
-            type: String,
-            required: true,
-        },
-        model: {
-            type: Object,
-            required: true,
-        },
-    },
-    mounted() {
-        new UploadRow(
-            {
-                extension: this.extension,
-                extensions: this.extensions,
-                genome: this.genome,
-                listExtensions: this.listExtensions,
-                listGenomes: this.listGenomes,
-            },
-            { model: this.model }
-        ).$el.appendTo(this.$refs.target);
-    },
+/** Dictionary of upload states and associated icons */
+const status_classes = {
+    init: "upload-icon-button fa fa-trash-o",
+    queued: "upload-icon fa fa-spinner fa-spin",
+    running: "upload-icon fa fa-spinner fa-spin",
+    success: "upload-icon-button fa fa-check",
+    error: "upload-icon-button fa fa-exclamation-triangle",
 };
 </script>
+
+<template>
+    <tr id="upload-row-${id}" class="upload-row">
+        <td>
+            <div class="upload-text-column">
+                <div class="upload-mode" />
+                <input class="upload-title ml-2 border rounded" />
+                <div class="upload-text">
+                    <div class="upload-text-info">
+                        Download data from the web by entering URLs (one per line) or directly paste content.
+                    </div>
+                    <textarea class="upload-text-content form-control" />
+                </div>
+            </div>
+        </td>
+        <td>
+            <div class="upload-size" />
+        </td>
+        <td>
+            <div class="upload-extension float-left mr-1" />
+            <div class="upload-extension-info upload-icon-button fa fa-search" />
+        </td>
+        <td>
+            <div class="upload-genome" />
+        </td>
+        <td>
+            <div class="upload-settings upload-icon-button fa fa-gear" />
+        </td>
+        <td>
+            <div class="upload-info">
+                <div class="upload-info-text" />
+                <div class="upload-info-progress progress">
+                    <div class="upload-progress-bar progress-bar progress-bar-success" />
+                    <div class="upload-percentage">0%</div>
+                </div>
+            </div>
+        </td>
+        <td>
+            <div class="upload-symbol ${status_classes.init}" />
+        </td>
+    </tr>
+</template>

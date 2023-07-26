@@ -13,7 +13,6 @@ export default UploadBoxRow.extend({
         this.app = app;
         this.list_extensions = app.listExtensions;
         this.model = new Backbone.Model(options.model);
-        this.setElement(this._template(options.model));
         this.$mode = this.$(".upload-mode");
         this.$title = this.$(".upload-title");
         this.$text = this.$(".upload-text");
@@ -194,48 +193,5 @@ export default UploadBoxRow.extend({
             extension: this.select_extension.value(),
             list: this.list_extensions,
         });
-    },
-
-    /** View template */
-    _template: function (options) {
-        return `<tr id="upload-row-${options.id}" class="upload-row">
-                    <td>
-                        <div class="upload-text-column">
-                            <div class="upload-mode"/>
-                            <input class="upload-title ml-2 border rounded"/>
-                            <div class="upload-text">
-                                <div class="upload-text-info">
-                                    Download data from the web by entering URLs (one per line) or directly paste content.
-                                </div>
-                                <textarea class="upload-text-content form-control"/>
-                            </div>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="upload-size"/>
-                    </td>
-                    <td>
-                        <div class="upload-extension float-left mr-1"/>
-                        <div class="upload-extension-info upload-icon-button fa fa-search"/>
-                    </td>
-                    <td>
-                        <div class="upload-genome"/>
-                    </td>
-                    <td>
-                        <div class="upload-settings upload-icon-button fa fa-gear"/>
-                    </td>
-                    <td>
-                        <div class="upload-info">
-                            <div class="upload-info-text"/>
-                            <div class="upload-info-progress progress">
-                                <div class="upload-progress-bar progress-bar progress-bar-success"/>
-                                <div class="upload-percentage">0%</div>
-                            </div>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="upload-symbol ${this.status_classes.init}"/>
-                    </td>
-                </tr>`;
     },
 });
