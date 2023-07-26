@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from "vue";
 import Select2 from "components/Select2";
+import { bytesToString } from "utils/utils";
 
 const props = defineProps({
     listGenomes: Array,
@@ -26,18 +27,22 @@ const status_classes = {
     <tr :id="`upload-row-${id}`" class="upload-row">
         <td>
             <div class="upload-text-column">
-                <div class="upload-mode" />
-                <input class="upload-title ml-2 border rounded" />
-                <div class="upload-text">
-                    <div class="upload-text-info">
-                        Download data from the web by entering URLs (one per line) or directly paste content.
-                    </div>
-                    <textarea class="upload-text-content form-control" />
+                <div v-if="model.file_mode == 'new'" class="upload-mode upload-mode-text fa fa-edit" />
+                <div v-if="model.file_mode == 'local'" class="upload-mode fa fa-laptop" />
+                <div v-if="model.file_mode == 'ftp'" class="upload-mode fa fa-folder-open-o" />
+                <b-input v-model="model.file_name" class="upload-title ml-2 border rounded" />
+            </div>
+            <div v-if="model.file_mode == 'new'" class="upload-text">
+                <div class="upload-text-info">
+                    Download data from the web by entering URLs (one per line) or directly paste content.
                 </div>
+                <textarea class="upload-text-content form-control" />
             </div>
         </td>
         <td>
-            <div class="upload-size" />
+            <div class="upload-size">
+                {{ bytesToString(model.file_size) }}
+            </div>
         </td>
         <td>
             <div class="upload-extension float-left mr-3">
