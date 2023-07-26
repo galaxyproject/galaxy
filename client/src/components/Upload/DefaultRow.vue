@@ -34,6 +34,12 @@ const status_classes = {
 function inputPaste() {
     props.model.file_size = props.model.file_content.length;
 }
+
+function removeUpload() {
+    if (["init", "success", "error"].indexOf(this.model.status) !== -1) {
+        //this.app.collection.remove(this.model);
+    }
+}
 </script>
 
 <template>
@@ -86,7 +92,7 @@ function inputPaste() {
                 </div>
             </div>
             <div>
-                <div class="upload-symbol" :class="status_classes.init" />
+                <div class="upload-symbol" :class="model.status || status_classes.init" @click="removeUpload" />
             </div>
         </div>
         <div v-if="model.file_mode == 'new'" class="upload-text">
