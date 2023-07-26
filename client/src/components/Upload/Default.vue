@@ -1,7 +1,7 @@
 <template>
-    <div ref="wrapper" class="upload-view-default">
+    <div class="upload-view-default">
         <div class="upload-top">
-            <div class="upload-top-info" v-html="topInfo"></div>
+            <div class="upload-top-info" v-html="topInfo" />
         </div>
         <div ref="uploadBox" class="upload-box upload-box-with-footer" :class="{ highlight: highlightBox }">
             <div v-show="showHelper" class="upload-helper"><i class="fa fa-files-o" />Drop files here</div>
@@ -266,27 +266,15 @@ export default {
                     return this.uploadUrl;
                 },
                 multiple: this.multiple,
-                announce: (index, file) => {
-                    this._eventAnnounce(index, file);
-                },
+                announce: this._eventAnnounce,
                 initialize: (index) => {
                     return uploadModelsToPayload([this.collection.get(index)], this.history_id);
                 },
-                progress: (index, percentage) => {
-                    this._eventProgress(index, percentage);
-                },
-                success: (index, message) => {
-                    this._eventSuccess(index, message);
-                },
-                error: (index, message) => {
-                    this._eventError(index, message);
-                },
-                warning: (index, message) => {
-                    this._eventWarning(index, message);
-                },
-                complete: () => {
-                    this._eventComplete();
-                },
+                progress: this._eventProgress,
+                success: this._eventSuccess,
+                error: this._eventError,
+                warning: this._eventWarning,
+                complete: this._eventComplete,
                 ondragover: () => {
                     this.highlightBox = true;
                 },
