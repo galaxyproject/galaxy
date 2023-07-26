@@ -197,6 +197,13 @@ export default {
             this.onToggle();
             this.filterSettings["create_time>"] = this.create_time_gt;
             this.filterSettings["create_time<"] = this.create_time_lt;
+            // set values for deleted and visible => any, if removed previously
+            if (this.filterSettings["deleted:"] === undefined) {
+                this.filterSettings["deleted:"] = "any";
+            }
+            if (this.filterSettings["visible:"] === undefined) {
+                this.filterSettings["visible:"] = "any";
+            }
             this.updateFilter(HistoryFilters.getFilterText(this.filterSettings));
         },
         onToggle() {
