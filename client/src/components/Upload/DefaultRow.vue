@@ -13,6 +13,7 @@ const props = defineProps({
     index: String,
 });
 const id = computed(() => props.model.id);
+const percentage = computed(() => parseInt(props.model.percentage || 0));
 
 /** Dictionary of upload states and associated icons */
 const status_classes = {
@@ -59,8 +60,13 @@ function inputPaste() {
             <div class="upload-info">
                 <div class="upload-info-text" />
                 <div class="upload-info-progress progress">
-                    <div class="upload-progress-bar progress-bar progress-bar-success" />
-                    <div class="upload-percentage">0%</div>
+                    <div
+                        class="upload-progress-bar progress-bar progress-bar-success"
+                        :style="{ width: `${percentage}%` }" />
+                    <div class="upload-percentage">
+                        <div v-if="percentage !== 100">{{ percentage }}%</div>
+                        <div v-else>Adding to history...</div>
+                    </div>
                 </div>
             </div>
             <div class="upload-symbol" :class="status_classes.init" />
