@@ -135,7 +135,7 @@ export default defineComponent({
     background: $white;
     color: $brand-dark;
     border: $border-default;
-    box-shadow: 0 $border-radius-base $border-radius-base $brand-dark;
+    width: 50%;
 }
 
 .popper-arrow,

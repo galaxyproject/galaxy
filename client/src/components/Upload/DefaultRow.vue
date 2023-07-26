@@ -15,7 +15,7 @@ const props = defineProps({
 });
 const id = computed(() => props.model.id);
 const percentage = computed(() => parseInt(props.model.percentage || 0));
-const extensionDetails = computed(() => props.extensions.find((item) => item.id === props.extension));
+const extensionDetails = computed(() => props.extensions.find((item) => item.id === props.model.extension));
 
 /** Dictionary of upload states and associated icons */
 const status_classes = {
@@ -50,7 +50,7 @@ function inputPaste() {
                     </select2>
                 </span>
             </div>
-            <Popper reference-is="span" popper-is="span" placement="bottom">
+            <Popper reference-is="span" popper-is="span" placement="bottom" :dark-mode="false">
                 <template v-slot:reference>
                     <span class="upload-extension-info upload-icon-button fa fa-search" />
                 </template>
