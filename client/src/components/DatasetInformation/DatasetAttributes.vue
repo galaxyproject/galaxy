@@ -38,7 +38,7 @@
                                 <div class="portlet-title">
                                     <font-awesome-icon icon="database" class="portlet-title-icon fa-fw mr-1" />
                                     <span class="portlet-title-text">
-                                        <b itemprop="name">{{ "Datatypes" | l }}</b>
+                                        <b itemprop="name">{{ "Assign Datatype" | l }}</b>
                                     </span>
                                 </div>
                             </div>
@@ -59,7 +59,7 @@
                                 <div class="portlet-title">
                                     <font-awesome-icon icon="cog" class="portlet-title-icon fa-fw mr-1" />
                                     <span class="portlet-title-text">
-                                        <b itemprop="name">{{ "Convert" | l }}</b>
+                                        <b itemprop="name">{{ "Convert to Datatype" | l }}</b>
                                     </span>
                                 </div>
                             </div>
