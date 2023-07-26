@@ -178,7 +178,10 @@ export default {
     computed: {
         ...mapState(useUserStore, ["currentUser"]),
         activePreferences() {
-            const enabledPreferences = Object.entries(getUserPreferencesModel()).filter((f) => !f.disabled);
+            const userPreferencesEntries = Object.entries(getUserPreferencesModel());
+            // Object.entries returns an array of arrays, where the first element
+            // is the key (string) and the second is the value (object)
+            const enabledPreferences = userPreferencesEntries.filter((f) => !f[1].disabled);
             return Object.fromEntries(enabledPreferences);
         },
         hasLogout() {
