@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from "vue";
-import Select2 from "components/Select2";
+import Popper from "@/components/Popper/Popper.vue";
+import Select2 from "@/components/Select2";
 import { bytesToString } from "utils/utils";
 
 const props = defineProps({
@@ -14,6 +15,7 @@ const props = defineProps({
 });
 const id = computed(() => props.model.id);
 const percentage = computed(() => parseInt(props.model.percentage || 0));
+const extensionDetails = computed(() => props.extensions.find((item) => item.id === props.extension));
 
 /** Dictionary of upload states and associated icons */
 const status_classes = {
@@ -47,8 +49,21 @@ function inputPaste() {
                         <option v-for="(ext, index) in extensions" :key="index" :value="ext.id">{{ ext.text }}</option>
                     </select2>
                 </span>
-                <span class="upload-extension-info upload-icon-button fa fa-search" />
             </div>
+            <Popper reference-is="span" popper-is="span" placement="bottom">
+                <template v-slot:reference>
+                    <span class="upload-extension-info upload-icon-button fa fa-search" />
+                </template>
+                <div class="p-3">
+                    <div v-if="extensionDetails.description">
+                        {{ extensionDetails.description }}
+                        <div v-if="extensionDetails.description_url">
+                            &nbsp;(<a :href="extensionDetails.description_url" target="_blank">read more</a>)
+                        </div>
+                    </div>
+                    <div v-else>There is no description available for this file extension.</div>
+                </div>
+            </Popper>
             <div class="upload-genome">
                 <select2 v-model="model.genome">
                     <option v-for="(listGenome, index) in listGenomes" :key="index" :value="listGenome.id">
