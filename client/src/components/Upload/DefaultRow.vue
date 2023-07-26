@@ -3,6 +3,11 @@ import { computed } from "vue";
 import Popper from "@/components/Popper/Popper.vue";
 import Select2 from "@/components/Select2";
 import { bytesToString } from "utils/utils";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faEdit, faLaptop, faFolderOpen, faCog, faSearch } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faEdit, faLaptop, faFolderOpen, faCog, faSearch);
 
 const props = defineProps({
     listGenomes: Array,
@@ -35,9 +40,9 @@ function inputPaste() {
     <div :id="`upload-row-${id}`" class="upload-row p-2" :class="{ 'bg-light': index % 2 === 0 }">
         <div class="d-flex justify-content-around">
             <div>
-                <div v-if="model.file_mode == 'new'" class="fa fa-edit" />
-                <div v-if="model.file_mode == 'local'" class="fa fa-laptop" />
-                <div v-if="model.file_mode == 'ftp'" class="fa fa-folder-open-o" />
+                <FontAwesomeIcon v-if="model.file_mode == 'new'" icon="fa-edit" />
+                <FontAwesomeIcon v-if="model.file_mode == 'local'" icon="fa-laptop" />
+                <FontAwesomeIcon v-if="model.file_mode == 'ftp'" icon="fa-folder-open" />
             </div>
             <b-input v-model="model.file_name" class="upload-title ml-2 border rounded" />
             <div class="upload-size">
@@ -48,14 +53,14 @@ function inputPaste() {
             </select2>
             <Popper reference-is="span" popper-is="span" placement="bottom" :dark-mode="false">
                 <template v-slot:reference>
-                    <span class="upload-extension-info upload-icon-button fa fa-search" />
+                    <FontAwesomeIcon icon="fa-search" />
                 </template>
-                <div class="p-3">
+                <div class="p-2">
                     <div v-if="extensionDetails && extensionDetails.description">
                         {{ extensionDetails.description }}
-                        <div v-if="extensionDetails.description_url">
+                        <span v-if="extensionDetails.description_url">
                             &nbsp;(<a :href="extensionDetails.description_url" target="_blank">read more</a>)
-                        </div>
+                        </span>
                     </div>
                     <div v-else>There is no description available for this file extension.</div>
                 </div>
@@ -66,7 +71,7 @@ function inputPaste() {
                 </option>
             </select2>
             <div>
-                <div class="upload-settings upload-icon-button fa fa-gear" />
+                <FontAwesomeIcon icon="fa-cog" />
             </div>
             <div class="upload-info">
                 <div class="upload-info-text" />
