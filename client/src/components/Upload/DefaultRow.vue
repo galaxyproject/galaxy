@@ -58,7 +58,7 @@ const status_classes = {
             </div>
         </td>
         <td>
-            <div class="upload-symbol ${status_classes.init}" />
+            <div class="upload-symbol" :class="status_classes.init" />
         </td>
     </tr>
 </template>
