@@ -119,7 +119,6 @@ import _l from "utils/localization";
 import { UploadQueue } from "utils/uploadbox";
 
 import { defaultNewFileName, uploadModelsToPayload } from "./helpers";
-import LazyLimited from "./lazy-limited";
 import { findExtension } from "./utils";
 
 import { BButton } from "bootstrap-vue";
@@ -283,16 +282,6 @@ export default {
                 },
                 chunkSize: this.details.chunkUploadSize,
             });
-            if (this.lazyLoadMax !== null) {
-                this.loader = new LazyLimited({
-                    $container: this.$refs.uploadBox,
-                    collection: this.collection,
-                    max: this.lazyLoadMax,
-                    new_content: (model) => {
-                        return this.renderNewModel(model);
-                    },
-                });
-            }
         },
         uploadSelect: function () {
             this.uploadbox.select();
@@ -413,12 +402,7 @@ export default {
             const modelProps = this._newUploadModelProps(index, file);
             var newModel = new UploadModel.Model(modelProps);
             this.collection.add(newModel);
-            // if using lazyLoader, let it handle it - else render directly
-            if (this.loader) {
-                this._updateStateForCounters();
-            } else {
-                this.renderNewModel(newModel);
-            }
+            this.renderNewModel(newModel);
         },
         /** Error */
         _eventError: function (index, message) {
