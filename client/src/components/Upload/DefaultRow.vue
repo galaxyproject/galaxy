@@ -22,7 +22,7 @@ const status_classes = {
 </script>
 
 <template>
-    <tr id="upload-row-${id}" class="upload-row">
+    <tr :id="`upload-row-${id}`" class="upload-row">
         <td>
             <div class="upload-text-column">
                 <div class="upload-mode" />
