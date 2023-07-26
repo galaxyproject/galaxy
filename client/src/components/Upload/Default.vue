@@ -17,7 +17,13 @@
                         <th />
                     </tr>
                 </thead>
-                <tbody />
+                <tbody>
+                    <tr v-for="(uploadItem, uploadIndex) in uploadList" :key="uploadIndex">
+                        <td>
+                            {{ uploadItem }}
+                        </td>
+                    </tr>
+                </tbody>
             </table>
         </div>
         <div class="upload-footer">
@@ -122,10 +128,10 @@ import { defaultNewFileName, uploadModelsToPayload } from "./helpers";
 import { findExtension } from "./utils";
 
 import { BButton } from "bootstrap-vue";
-import UploadRow from "mvc/upload/default/default-row";
+import DefaultRow from "./DefaultRow.vue";
 
 export default {
-    components: { BButton, Select2 },
+    components: { BButton, DefaultRow, Select2 },
     props: {
         multiple: {
             type: Boolean,
@@ -151,15 +157,14 @@ export default {
     data() {
         return {
             uploadUrl: null,
+            uploadList: [],
             topInfo: "",
             highlightBox: false,
-            showHelper: true,
             extension: this.details.defaultExtension,
             genome: this.details.defaultDbKey,
             listExtensions: [],
             listGenomes: [],
             running: false,
-            rowUploadModel: UploadRow,
             counterAnnounce: 0,
             counterSuccess: 0,
             counterError: 0,
@@ -177,6 +182,9 @@ export default {
         };
     },
     computed: {
+        showHelper() {
+            return this.uploadList.length === 0;
+        },
         extensions() {
             const result = this.listExtensions.filter((ext) => !ext.composite_files);
             return result;
@@ -334,18 +342,6 @@ export default {
                     });
             }
         },
-        renderNewModel: function (model) {
-            // Turn backbone upload model into row model and place in table,
-            // render in next tick so table can respond first and dynamic
-            // sizing works.
-            var uploadRow = new this.rowUploadModel(this, { model: model });
-            this.$uploadTable().find("tbody:first").append(uploadRow.$el);
-            this._updateStateForCounters();
-            this.$nextTick(() => {
-                uploadRow.render();
-            });
-            return uploadRow;
-        },
         _updateStateForCounters: function () {
             this.setTopInfoBasedOnCounters();
             const counterNonRunning = this.counterAnnounce + this.counterSuccess + this.counterError;
@@ -358,7 +354,6 @@ export default {
                 this.counterError == 0;
             this.enableSources = this.counterRunning == 0 && (this.multiple || counterNonRunning == 0);
             var show_table = this.counterAnnounce + this.counterSuccess + this.counterError > 0;
-            this.showHelper = !show_table;
         },
         setTopInfoBasedOnCounters: function () {
             var message = "";
@@ -402,7 +397,7 @@ export default {
             const modelProps = this._newUploadModelProps(index, file);
             var newModel = new UploadModel.Model(modelProps);
             this.collection.add(newModel);
-            this.renderNewModel(newModel);
+            this.uploadList.push(modelProps);
         },
         /** Error */
         _eventError: function (index, message) {
