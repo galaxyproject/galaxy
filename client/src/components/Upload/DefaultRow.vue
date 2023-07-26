@@ -81,3 +81,15 @@ const status_classes = {
         </div>
     </div>
 </template>
+
+<style scoped lang="scss">
+@import "theme/blue.scss";
+.upload-text-content {
+    width: 100%;
+    height: 80px;
+    background: inherit;
+    color: $text-color;
+    white-space: pre;
+    overflow: auto;
+}
+</style>

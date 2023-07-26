@@ -141,6 +141,7 @@
                 position: relative;
                 .upload-text {
                     position: absolute;
+                    display: none;
                     .upload-text-content {
                         width: 100%;
                         height: 80px;
@@ -176,18 +177,6 @@
                 }
             }
         }
-    }
-    .upload-text-content {
-        width: 100%;
-        height: 80px;
-        resize: none;
-        background: inherit;
-        color: $text-color;
-        white-space: pre;
-        overflow: auto;
-    }
-    .upload-text-info {
-        @extend .text-primary;
     }
     .upload-rule-option {
         padding-top: 20px;

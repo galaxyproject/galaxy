@@ -9,13 +9,13 @@
                 <DefaultRow
                     v-for="(uploadItem, uploadIndex) in uploadList"
                     :key="uploadIndex"
+                    :index="uploadIndex"
                     :extension="extension"
                     :extensions="extensions"
                     :genome="genome"
                     :listExtensions="listExtensions"
                     :listGenomes="listGenomes"
-                    :model="uploadItem"
-                    :index="uploadIndex" />
+                    :model="uploadItem" />
             </div>
         </div>
         <div class="upload-footer">
