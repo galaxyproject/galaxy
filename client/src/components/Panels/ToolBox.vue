@@ -73,6 +73,12 @@
                 </div>
             </div>
         </div>
+        <span class="border-top"></span>
+        <div v-if="helpModeOn" class="unified-panel-body d-flex justify-content-between">
+            <div class="helpModeContainer">
+                {{ "IN HELP MODE" }}
+            </div>
+        </div>
     </div>
 </template>
 
@@ -115,6 +121,7 @@ export default {
     },
     data() {
         return {
+            helpModeOn: true,
             closestTerm: null,
             query: null,
             results: null,

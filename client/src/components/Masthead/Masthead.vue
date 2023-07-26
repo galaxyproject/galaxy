@@ -10,6 +10,7 @@ import { isConfigLoaded, useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 
 import { loadWebhookMenuItems } from "./_webhooks";
+import HelpModeSwitch from "./HelpModeSwitch";
 import MastheadItem from "./MastheadItem";
 import QuotaMeter from "./QuotaMeter";
 import { getActiveTab } from "./utilities";
@@ -143,6 +144,7 @@ onMounted(() => {
                 id="notifications-bell">
                 <NotificationsBell tooltip-placement="bottom" />
             </BNavItem>
+            <HelpModeSwitch />
         </BNavbarNav>
         <QuotaMeter />
     </BNavbar>
