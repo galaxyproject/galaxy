@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from "vue";
+import Select2 from "components/Select2";
 
 const props = defineProps({
     listGenomes: Array,
@@ -9,7 +10,7 @@ const props = defineProps({
     genome: String,
     model: Object,
 });
-const id = computed(() => model.id);
+const id = computed(() => props.model.id);
 
 /** Dictionary of upload states and associated icons */
 const status_classes = {
@@ -39,11 +40,21 @@ const status_classes = {
             <div class="upload-size" />
         </td>
         <td>
-            <div class="upload-extension float-left mr-1" />
+            <div class="upload-extension float-left mr-3">
+                <select2 v-model="model.extension">
+                    <option v-for="(ext, index) in extensions" :key="index" :value="ext.id">{{ ext.text }}</option>
+                </select2>
+            </div>
             <div class="upload-extension-info upload-icon-button fa fa-search" />
         </td>
         <td>
-            <div class="upload-genome" />
+            <div class="upload-genome">
+                <select2 v-model="model.genome">
+                    <option v-for="(listGenome, index) in listGenomes" :key="index" :value="listGenome.id">
+                        {{ listGenome.text }}
+                    </option>
+                </select2>
+            </div>
         </td>
         <td>
             <div class="upload-settings upload-icon-button fa fa-gear" />

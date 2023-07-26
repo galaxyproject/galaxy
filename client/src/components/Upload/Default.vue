@@ -32,16 +32,12 @@
         </div>
         <div class="upload-footer">
             <span class="upload-footer-title">Type (set all):</span>
-            <select2
-                ref="footerExtension"
-                v-model="extension"
-                container-class="upload-footer-extension"
-                :enabled="!running">
+            <select2 v-model="extension" container-class="upload-footer-extension" :enabled="!running">
                 <option v-for="(ext, index) in extensions" :key="index" :value="ext.id">{{ ext.text }}</option>
             </select2>
             <span class="upload-footer-extension-info upload-icon-button fa fa-search" />
             <span class="upload-footer-title">Genome (set all):</span>
-            <select2 ref="footerGenome" v-model="genome" container-class="upload-footer-genome" :enabled="!running">
+            <select2 v-model="genome" container-class="upload-footer-genome" :enabled="!running">
                 <option v-for="(listGenome, index) in listGenomes" :key="index" :value="listGenome.id">
                     {{ listGenome.text }}
                 </option>
