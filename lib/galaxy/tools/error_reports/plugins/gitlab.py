@@ -185,8 +185,7 @@ class GitLabPlugin(BaseGitPlugin):
                         )
 
                 return (
-                    "Submitted error report to GitLab. Your Issue number is [#%s](%s/%s/issues/%s)"
-                    % (
+                    "Submitted error report to GitLab. Your Issue number is [#{}]({}/{}/issues/{})".format(
                         self.issue_cache[issue_cache_key][error_title],
                         self.gitlab_base_url,
                         gitlab_projecturl,
