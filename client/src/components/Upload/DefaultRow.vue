@@ -24,11 +24,11 @@ const extensionDetails = computed(() => props.extensions.find((item) => item.id 
 
 /** Dictionary of upload states and associated icons */
 const status_classes = {
-    init: "upload-icon-button fa fa-trash-o",
-    queued: "upload-icon fa fa-spinner fa-spin",
-    running: "upload-icon fa fa-spinner fa-spin",
-    success: "upload-icon-button fa fa-check",
-    error: "upload-icon-button fa fa-exclamation-triangle",
+    init: "cursor-pointer fa fa-trash-o",
+    queued: "fa fa-spinner fa-spin",
+    running: "fa fa-spinner fa-spin",
+    success: "cursor-pointer fa fa-check",
+    error: "cursor-pointer fa fa-exclamation-triangle",
 };
 
 function inputPaste() {
@@ -71,7 +71,7 @@ function inputPaste() {
                 </option>
             </select2>
             <div>
-                <FontAwesomeIcon icon="fa-cog" />
+                <FontAwesomeIcon class="cursor-pointer" icon="fa-cog" />
             </div>
             <div class="upload-info">
                 <div class="upload-info-text" />
