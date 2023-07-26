@@ -31,51 +31,39 @@ function inputPaste() {
 <template>
     <div :id="`upload-row-${id}`" class="upload-row p-2" :class="{ 'bg-light': index % 2 === 0 }">
         <div class="d-flex justify-content-around">
-            <div>
-                <div class="upload-text-column">
-                    <div v-if="model.file_mode == 'new'" class="upload-mode upload-mode-text fa fa-edit" />
-                    <div v-if="model.file_mode == 'local'" class="upload-mode fa fa-laptop" />
-                    <div v-if="model.file_mode == 'ftp'" class="upload-mode fa fa-folder-open-o" />
-                    <b-input v-model="model.file_name" class="upload-title ml-2 border rounded" />
-                </div>
+            <div class="upload-text-column">
+                <div v-if="model.file_mode == 'new'" class="upload-mode upload-mode-text fa fa-edit" />
+                <div v-if="model.file_mode == 'local'" class="upload-mode fa fa-laptop" />
+                <div v-if="model.file_mode == 'ftp'" class="upload-mode fa fa-folder-open-o" />
+                <b-input v-model="model.file_name" class="upload-title ml-2 border rounded" />
+            </div>
+            <div class="upload-size">
+                {{ bytesToString(model.file_size) }}
             </div>
             <div>
-                <div class="upload-size">
-                    {{ bytesToString(model.file_size) }}
-                </div>
-            </div>
-            <div>
-                <div class="upload-extension float-left mr-3">
+                <span class="upload-extension float-left mr-3">
                     <select2 v-model="model.extension">
                         <option v-for="(ext, index) in extensions" :key="index" :value="ext.id">{{ ext.text }}</option>
                     </select2>
-                </div>
-                <div class="upload-extension-info upload-icon-button fa fa-search" />
+                </span>
+                <span class="upload-extension-info upload-icon-button fa fa-search" />
             </div>
-            <div>
-                <div class="upload-genome">
-                    <select2 v-model="model.genome">
-                        <option v-for="(listGenome, index) in listGenomes" :key="index" :value="listGenome.id">
-                            {{ listGenome.text }}
-                        </option>
-                    </select2>
-                </div>
+            <div class="upload-genome">
+                <select2 v-model="model.genome">
+                    <option v-for="(listGenome, index) in listGenomes" :key="index" :value="listGenome.id">
+                        {{ listGenome.text }}
+                    </option>
+                </select2>
             </div>
-            <div>
-                <div class="upload-settings upload-icon-button fa fa-gear" />
-            </div>
-            <div>
-                <div class="upload-info">
-                    <div class="upload-info-text" />
-                    <div class="upload-info-progress progress">
-                        <div class="upload-progress-bar progress-bar progress-bar-success" />
-                        <div class="upload-percentage">0%</div>
-                    </div>
+            <div class="upload-settings upload-icon-button fa fa-gear" />
+            <div class="upload-info">
+                <div class="upload-info-text" />
+                <div class="upload-info-progress progress">
+                    <div class="upload-progress-bar progress-bar progress-bar-success" />
+                    <div class="upload-percentage">0%</div>
                 </div>
             </div>
-            <div>
-                <div class="upload-symbol" :class="status_classes.init" />
-            </div>
+            <div class="upload-symbol" :class="status_classes.init" />
         </div>
         <div v-if="model.file_mode == 'new'" class="upload-text">
             <div class="upload-text-info">
