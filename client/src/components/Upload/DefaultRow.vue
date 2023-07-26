@@ -22,6 +22,10 @@ const status_classes = {
     success: "upload-icon-button fa fa-check",
     error: "upload-icon-button fa fa-exclamation-triangle",
 };
+
+function inputPaste() {
+    props.model.file_size = props.model.file_content.length;
+}
 </script>
 
 <template>
@@ -77,7 +81,7 @@ const status_classes = {
             <div class="upload-text-info">
                 Download data from the web by entering URLs (one per line) or directly paste content.
             </div>
-            <textarea class="upload-text-content form-control" />
+            <textarea v-model="model.file_content" class="upload-text-content form-control" @input="inputPaste" />
         </div>
     </div>
 </template>
