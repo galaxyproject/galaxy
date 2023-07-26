@@ -23,18 +23,21 @@ type item = {
 };
 
 const name = computed<string>(() => props.grant.name);
-const items: any = [];
-for (const key in props.grant) {
-    if (key == "class") {
-        continue;
+const items = computed(() => {
+    const items: item[] = [];
+    for (const key in props.grant) {
+        if (key == "class") {
+            continue;
+        }
+        items.push({ attribute: key, value: props.grant[key] });
     }
-    items.push({ attribute: key, value: props.grant[key] });
-};
+    return items;
+});
 
 const implicitMicrodataProperties = ["name", "description", "url", "identifier"];
 
 const explicitMetaAttributes = computed(() => {
-    return items.filter((i: item) => implicitMicrodataProperties.includes(i.attribute));
+    return items.value.filter((i: item) => implicitMicrodataProperties.includes(i.attribute));
 });
 </script>
 
