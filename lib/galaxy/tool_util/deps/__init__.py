@@ -325,7 +325,7 @@ class DependencyManager:
     def uses_tool_shed_dependencies(self):
         return any(map(lambda r: isinstance(r, ToolShedPackageDependencyResolver), self.dependency_resolvers))
 
-    def find_dep(self, name, version=None, type="package", **kwds):
+    def find_dep(self, name: str, version: Optional[str] = None, type: str = "package", **kwds):
         log.debug(f"Find dependency {name} version {version}")
         requirements = ToolRequirements([ToolRequirement(name=name, version=version, type=type)])
         dep_dict = self._requirements_to_dependencies_dict(requirements, **kwds)

@@ -6,9 +6,16 @@ incompatible changes coming.
 import logging
 import os
 import re
+from typing import (
+    List,
+    Optional,
+)
 
 import galaxy.tool_util.deps.installable
-import galaxy.tool_util.deps.requirements
+from galaxy.tool_util.deps.requirements import (
+    ToolRequirement,
+    ToolRequirements,
+)
 from . import (
     Dependency,
     DependencyException,
@@ -196,7 +203,7 @@ class CondaDependencyResolver(
 
         return is_installed
 
-    def resolve_all(self, requirements, **kwds):
+    def resolve_all(self, requirements: ToolRequirements, **kwds) -> List[Dependency]:
         """
         Some combinations of tool requirements need to be resolved all at once, so that Conda can select a compatible
         combination of dependencies. This method returns a list of MergedCondaDependency instances (one for each requirement)
@@ -222,7 +229,6 @@ class CondaDependencyResolver(
             if requirement.type != "package":
                 return []
 
-        ToolRequirements = galaxy.tool_util.deps.requirements.ToolRequirements
         expanded_requirements = ToolRequirements([self._expand_requirement(r) for r in requirements])
         if self.versionless:
             conda_targets = [CondaTarget(r.name, version=None) for r in expanded_requirements]
@@ -232,7 +238,6 @@ class CondaDependencyResolver(
         preserve_python_environment = kwds.get("preserve_python_environment", False)
 
         env = self.merged_environment_name(conda_targets)
-        dependencies = []
 
         is_installed = self.conda_context.has_env(env)
         install = kwds.get("install", None)
@@ -245,6 +250,7 @@ class CondaDependencyResolver(
         if install:
             is_installed = self.install_all(conda_targets)
 
+        dependencies: List[Dependency] = []
         if is_installed:
             for requirement in requirements:
                 dependency = MergedCondaDependency(
@@ -268,7 +274,7 @@ class CondaDependencyResolver(
             assert len(conda_targets) == 1
             return conda_targets[0].install_environment
 
-    def resolve(self, requirement, **kwds):
+    def resolve(self, requirement: ToolRequirement, **kwds) -> Dependency:
         requirement = self._expand_requirement(requirement)
         name, version, type = requirement.name, requirement.version, requirement.type
 
@@ -320,6 +326,7 @@ class CondaDependencyResolver(
             name,
             version,
             preserve_python_environment=preserve_python_environment,
+            dependency_resolver=self,
         )
 
     def _expand_requirement(self, requirement):
@@ -397,14 +404,14 @@ class MergedCondaDependency(Dependency):
 
     def __init__(
         self,
-        conda_context,
-        environment_path,
-        exact,
-        name=None,
-        version=None,
-        preserve_python_environment=False,
-        dependency_resolver=None,
-    ):
+        conda_context: CondaContext,
+        environment_path: str,
+        exact: bool,
+        name: str,
+        version: Optional[str] = None,
+        preserve_python_environment: bool = False,
+        dependency_resolver: Optional[DependencyResolver] = None,
+    ) -> None:
         self.activate = conda_context.activate
         self.conda_context = conda_context
         self.environment_path = environment_path
@@ -449,14 +456,14 @@ class CondaDependency(Dependency):
 
     def __init__(
         self,
-        conda_context,
-        environment_path,
-        exact,
-        name=None,
-        version=None,
-        preserve_python_environment=False,
-        dependency_resolver=None,
-    ):
+        conda_context: CondaContext,
+        environment_path: str,
+        exact: bool,
+        name: str,
+        version: Optional[str] = None,
+        preserve_python_environment: bool = False,
+        dependency_resolver: Optional[DependencyResolver] = None,
+    ) -> None:
         self.activate = conda_context.activate
         self.conda_context = conda_context
         self.environment_path = environment_path
