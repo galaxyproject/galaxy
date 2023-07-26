@@ -34,28 +34,24 @@ function inputPaste() {
 <template>
     <div :id="`upload-row-${id}`" class="upload-row p-2" :class="{ 'bg-light': index % 2 === 0 }">
         <div class="d-flex justify-content-around">
-            <div class="upload-text-column">
-                <div v-if="model.file_mode == 'new'" class="upload-mode upload-mode-text fa fa-edit" />
-                <div v-if="model.file_mode == 'local'" class="upload-mode fa fa-laptop" />
-                <div v-if="model.file_mode == 'ftp'" class="upload-mode fa fa-folder-open-o" />
-                <b-input v-model="model.file_name" class="upload-title ml-2 border rounded" />
+            <div>
+                <div v-if="model.file_mode == 'new'" class="fa fa-edit" />
+                <div v-if="model.file_mode == 'local'" class="fa fa-laptop" />
+                <div v-if="model.file_mode == 'ftp'" class="fa fa-folder-open-o" />
             </div>
+            <b-input v-model="model.file_name" class="upload-title ml-2 border rounded" />
             <div class="upload-size">
                 {{ bytesToString(model.file_size) }}
             </div>
-            <div>
-                <span class="upload-extension float-left mr-3">
-                    <select2 v-model="model.extension">
-                        <option v-for="(ext, index) in extensions" :key="index" :value="ext.id">{{ ext.text }}</option>
-                    </select2>
-                </span>
-            </div>
+            <select2 class="upload-extension" v-model="model.extension">
+                <option v-for="(ext, index) in extensions" :key="index" :value="ext.id">{{ ext.text }}</option>
+            </select2>
             <Popper reference-is="span" popper-is="span" placement="bottom" :dark-mode="false">
                 <template v-slot:reference>
                     <span class="upload-extension-info upload-icon-button fa fa-search" />
                 </template>
                 <div class="p-3">
-                    <div v-if="extensionDetails.description">
+                    <div v-if="extensionDetails && extensionDetails.description">
                         {{ extensionDetails.description }}
                         <div v-if="extensionDetails.description_url">
                             &nbsp;(<a :href="extensionDetails.description_url" target="_blank">read more</a>)
@@ -64,14 +60,14 @@ function inputPaste() {
                     <div v-else>There is no description available for this file extension.</div>
                 </div>
             </Popper>
-            <div class="upload-genome">
-                <select2 v-model="model.genome">
-                    <option v-for="(listGenome, index) in listGenomes" :key="index" :value="listGenome.id">
-                        {{ listGenome.text }}
-                    </option>
-                </select2>
+            <select2 v-model="model.genome" class="upload-genome">
+                <option v-for="(listGenome, index) in listGenomes" :key="index" :value="listGenome.id">
+                    {{ listGenome.text }}
+                </option>
+            </select2>
+            <div>
+                <div class="upload-settings upload-icon-button fa fa-gear" />
             </div>
-            <div class="upload-settings upload-icon-button fa fa-gear" />
             <div class="upload-info">
                 <div class="upload-info-text" />
                 <div class="upload-info-progress progress">
@@ -84,7 +80,9 @@ function inputPaste() {
                     </div>
                 </div>
             </div>
-            <div class="upload-symbol" :class="status_classes.init" />
+            <div>
+                <div class="upload-symbol" :class="status_classes.init" />
+            </div>
         </div>
         <div v-if="model.file_mode == 'new'" class="upload-text">
             <div class="upload-text-info">
