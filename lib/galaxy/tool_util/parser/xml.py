@@ -603,6 +603,20 @@ class XmlToolSource(ToolSource):
             creators.append(creator_as_dict)
         return creators
 
+    def parse_funding(self):
+        funding_el = self.root.find("funding")
+        if funding_el is None:
+            return None
+
+        funding = []
+        for grant_el in funding_el:
+            grant_as_dict = {}
+            if grant_el.tag == "grant":
+                grant_as_dict["class"] = "Grant"
+                grant_as_dict.update(grant_el.attrib)
+                funding.append(grant_as_dict)        
+        return funding
+
 
 def _test_elem_to_dict(test_elem, i, profile=None) -> ToolSourceTest:
     rval: ToolSourceTest = dict(
