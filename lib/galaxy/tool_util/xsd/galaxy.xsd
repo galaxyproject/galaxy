@@ -97,6 +97,7 @@ A ``data_source`` tool contains a few more relevant attributes.
         <xs:element name="edam_operations" type="EdamOperations" minOccurs="0"/>
         <xs:element name="xrefs" type="xrefs" minOccurs="0" />
         <xs:element name="creator" type="Creator" minOccurs="0" />
+        <xs:element name="funding" type="Funding" minOccurs="0" />
         <xs:element name="requirements" type="Requirements" minOccurs="0"/>
         <xs:element name="required_files" type="RequiredFiles" minOccurs="0"/>
         <xs:element name="entry_points" type="EntryPoints" minOccurs="0" maxOccurs="1" />
@@ -543,17 +544,17 @@ Describes an organization. Tries to stay close to [schema.org/Organization](http
         A grant, typically financial or otherwise quantifiable, of resources. See [schema.org/Grant](https://schema.org/Grant).
       </xs:documentation>
     </xs:annotation>
-    <xs:attribute name="funder" type="xs:PersonOrOrganization" use="optional">
+    <xs:attribute name="funder" type="PersonOrOrganization" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">[schema.org/funder](https://schema.org/funder)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="sponsor" type="xs:PersonOrOrganization" use="optional">
+    <xs:attribute name="sponsor" type="PersonOrOrganization" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">[schema.org/funder](https://schema.org/funder)</xs:documentation>
+        <xs:documentation xml:lang="en">[schema.org/sponsor](https://schema.org/sponsor)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attributeGroup name="Thing">    
+    <xs:attributeGroup ref="Thing">    
   </xs:complexType>
 
   <xs:complexType name="Funding">
