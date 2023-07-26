@@ -144,7 +144,7 @@ onMounted(() => {
                 id="notifications-bell">
                 <NotificationsBell tooltip-placement="bottom" />
             </BNavItem>
-            <HelpModeSwitch />
+            <BNavItem><HelpModeSwitch /></BNavItem>
         </BNavbarNav>
         <QuotaMeter />
     </BNavbar>
