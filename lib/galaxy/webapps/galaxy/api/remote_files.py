@@ -67,7 +67,7 @@ WriteIntentQueryParam: Optional[bool] = Query(
     title="Write Intent",
     description=(
         "Whether the query is made with the intention of writing to the source."
-        " If set to True, only entries that can be written to will be accessible."
+        " If set to True, only entries that can be written to will be returned."
     ),
 )
 
