@@ -6,11 +6,11 @@
         }
     }
 
-    function newsSeen() {
+    function newsSeen(currentGalaxyVersion) {
         // When it's seen, remove fa, add far.
         const newsIconSpan = document.querySelector("#news .fa-bullhorn");
         newsIconSpan.classList.remove("fa-fade");
-        window.localStorage.setItem("galaxy-news-seen-release", Galaxy.config.version_major);
+        window.localStorage.setItem("galaxy-news-seen-release", currentGalaxyVersion);
     }
 
     function newsUnseen() {
@@ -50,23 +50,26 @@
         el.parentNode.replaceChild(clean, el);
 
         let currentGalaxyVersion = Galaxy.config.version_major;
+        const lastSeenVersion = window.localStorage.getItem("galaxy-news-seen-release");
 
-        // If we're at the 23.1 release candidate, we want to show the 23.0 release notes still.
-        // This should be the last release using this hack -- new notification
-        // system will provide notes moving forward
-
-        if (currentGalaxyVersion == "23.1" && Galaxy.config.version_minor.startsWith("rc")) {
-            currentGalaxyVersion = "23.0";
+        // If we're at a deployed release candidate, just mark it seen and show
+        // the previous notes if someone clicks the link.  RC notes won't exist.
+        if (Galaxy.config.version_minor.startsWith("rc")) {
+            // If we, for whatever reason, need to do this again just add
+            // another case here.  It's not worth parsing and doing version
+            // math, and we should be able to drop preferring notifications
+            // framework moving forward in 23.2
+            if (currentGalaxyVersion == "23.1") {
+                currentGalaxyVersion = "23.0";
+            }
+            newsSeen(currentGalaxyVersion);
+        } else if (lastSeenVersion != currentGalaxyVersion) {
+            newsUnseen();
+        } else {
+            newsSeen(currentGalaxyVersion);
         }
 
         const releaseNotes = `https://docs.galaxyproject.org/en/latest/releases/${currentGalaxyVersion}_announce_user.html`;
-        const lastSeenVersion = window.localStorage.getItem("galaxy-news-seen-release");
-        // Check that they've seen the current version's release notes.
-        if (lastSeenVersion != currentGalaxyVersion) {
-            newsUnseen();
-        } else {
-            newsSeen();
-        }
 
         clean.addEventListener("click", (e) => {
             e.preventDefault();
@@ -92,7 +95,7 @@
                 });
             }
             document.getElementById("news-container").style.visibility = "visible";
-            newsSeen();
+            newsSeen(currentGalaxyVersion);
         });
     });
 
