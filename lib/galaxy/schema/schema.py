@@ -2103,9 +2103,9 @@ class Thing(Model):
         title="URL",
     )
 
+
 class Creator(Model):
     class_: str = Field(..., alias="class", title="Class", description="The class representing this creator.")
-
 
 
 class Organization(Creator):
