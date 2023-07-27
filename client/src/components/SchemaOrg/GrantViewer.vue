@@ -43,11 +43,15 @@ const explicitMetaAttributes = computed(() => {
 
 <template>
     <span itemprop="funding" itemscope itemtype="https://schema.org/Grant">
-        <FontAwesomeIcon ref="button" icon="money-bill" />
-        <b-popover triggers="click blur" :placement="hoverPlacement" :target="$refs['button'] || 'works-lazily'"
-            title="Grant">
+        <b-button ref="button"
+            v-b-modal.details
+            size="sm"
+            variant="link">
+            <FontAwesomeIcon icon="money-bill" />
+        </b-button>
+        <b-modal id="details" title="Grant" hide-footer>
             <b-table striped :items="items"> </b-table>
-        </b-popover>
+        </b-modal>
         <span v-if="props.grant.name">
             {{ props.grant.name }}
         </span>
