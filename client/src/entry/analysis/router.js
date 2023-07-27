@@ -67,8 +67,8 @@ import { patchRouterPush } from "./router-push";
 import AboutGalaxy from "@/components/AboutGalaxy.vue";
 import HistoryArchive from "@/components/History/Archiving/HistoryArchive.vue";
 import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
+import DbKeysList from "@/components/DbKeysList.vue";
 import NotificationsList from "@/components/Notifications/NotificationsList.vue";
-import GenomeList from "@/components/workshop/GenomeList.vue"
 
 Vue.use(VueRouter);
 
@@ -540,8 +540,8 @@ export function getRouter(Galaxy) {
                         props: true,
                     },
                     {
-                        path: "/genome-list",
-                        component: GenomeList,
+                        path: "/dbkeys",
+                        component: DbKeysList,
                         props: (route) => ({
                             count: route.query.count,
                         }),
