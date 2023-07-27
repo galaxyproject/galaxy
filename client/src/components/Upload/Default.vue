@@ -220,20 +220,26 @@ export default {
     methods: {
         /** Success */
         _eventSuccess: function (index) {
-            var it = this.collection.get(index);
-            it.set({ percentage: 100, status: "success" });
-            this._updateStateForSuccess(it);
+            var it = this.uploadList[index];
+            it.percentage = 100;
+            it.status = "success";
+            this.details.model.set("percentage", this._uploadPercentage(100, it.file_size));
+            this.uploadCompleted += it.file_size * 100;
+            this.counterAnnounce--;
+            this.counterSuccess++;
+            this._updateStateForCounters();
+            refreshContentsWrapper();
         },
 
         /** Remove all */
         _eventReset: function () {
             if (this.counterRunning === 0) {
-                this.collection.reset();
                 this.counterAnnounce = 0;
                 this.counterSuccess = 0;
                 this.counterError = 0;
                 this.counterRunning = 0;
                 this.uploadbox.reset();
+                this.uploadList = [];
                 this.extension = this.details.defaultExtension;
                 this.genome = this.details.defaultDbKey;
                 this.details.model.set("percentage", 0);
@@ -245,14 +251,14 @@ export default {
                 $uploadBox: this.$refs.uploadBox,
                 initUrl: (index) => {
                     if (!this.uploadUrl) {
-                        this.uploadUrl = this.getRequestUrl([this.collection.get(index)], this.history_id);
+                        this.uploadUrl = this.getRequestUrl([this.uploadList[index]], this.history_id);
                     }
                     return this.uploadUrl;
                 },
                 multiple: this.multiple,
                 announce: this._eventAnnounce,
                 initialize: (index) => {
-                    return uploadModelsToPayload([this.collection.get(index)], this.history_id);
+                    return uploadModelsToPayload([this.uploadList[index]], this.history_id);
                 },
                 progress: this._eventProgress,
                 success: this._eventSuccess,
@@ -279,10 +285,10 @@ export default {
             }
             this.uploadSize = 0;
             this.uploadCompleted = 0;
-            this.collection.each((model) => {
-                if (model.get("status") == "init") {
-                    model.set("status", "queued");
-                    this.uploadSize += model.get("file_size");
+            this.uploadList.forEach((model) => {
+                if (model.status === "init") {
+                    model.status = "queued";
+                    this.uploadSize += model.file_size;
                 }
             });
             this.details.model.set({ percentage: 0, status: "success" });
@@ -297,8 +303,8 @@ export default {
         /** Package and upload ftp files in a single request */
         _uploadFtp: function () {
             const list = [];
-            this.collection.each((model) => {
-                if (model.get("status") == "queued" && model.get("file_mode") == "ftp") {
+            this.uploadList.forEach((model) => {
+                if (model.status === "queued" && model.file_mode === "ftp") {
                     this.uploadbox.remove(model.id);
                     list.push(model);
                 }
@@ -352,21 +358,13 @@ export default {
         },
         /** Progress */
         _eventProgress: function (index, percentage) {
-            var it = this.collection.get(index);
-            it.set("percentage", percentage);
-            this.details.model.set("percentage", this._uploadPercentage(percentage, it.get("file_size")));
+            const it = this.uploadList[index];
+            it.percentage = percentage;
+            this.details.model.set("percentage", this._uploadPercentage(percentage, it.file_size));
         },
         /** Calculate percentage of all queued uploads */
         _uploadPercentage: function (percentage, size) {
             return (this.uploadCompleted + percentage * size) / this.uploadSize;
-        },
-        _updateStateForSuccess: function (model) {
-            this.details.model.set("percentage", this._uploadPercentage(100, model.get("file_size")));
-            this.uploadCompleted += model.get("file_size") * 100;
-            this.counterAnnounce--;
-            this.counterSuccess++;
-            this._updateStateForCounters();
-            refreshContentsWrapper();
         },
         /** A new file has been dropped/selected through the uploadbox plugin */
         _eventAnnounce: function (index, file) {
@@ -482,8 +480,9 @@ export default {
             }
         },
         _eventWarning: function (index, message) {
-            var it = this.collection.get(index);
-            it.set({ status: "warning", info: message });
+            const it = this.uploadList[index];
+            it.status = "warning";
+            it.info = message;
         },
         $uploadTable() {
             return $(this.$refs.uploadTable);
@@ -529,22 +528,16 @@ export default {
         /* walk collection and update un-modified default values when globals
            change */
         updateExtension(extension, defaults_only) {
-            this.collection.each((model) => {
-                if (
-                    model.get("status") == "init" &&
-                    (model.get("extension") == this.details.defaultExtension || !defaults_only)
-                ) {
-                    model.set("extension", extension);
+            this.uploadList.forEach((model) => {
+                if (model.status === "init" && (model.extension === this.details.defaultExtension || !defaults_only)) {
+                    model.extension = extension;
                 }
             });
         },
         updateGenome: function (genome, defaults_only) {
-            this.collection.each((model) => {
-                if (
-                    model.get("status") == "init" &&
-                    (model.get("genome") == this.details.defaultDbKey || !defaults_only)
-                ) {
-                    model.set("genome", genome);
+            this.uploadList.forEach((model) => {
+                if (model.status === "init" && (model.genome === this.details.defaultDbKey || !defaults_only)) {
+                    model.genome = genome;
                 }
             });
         },

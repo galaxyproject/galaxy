@@ -12,31 +12,31 @@ const URI_PREFIXES = [
     "drs://",
 ];
 function itemIsUrl(item) {
-    return URI_PREFIXES.some((prefix) => item.get("url_paste").startsWith(prefix));
+    return URI_PREFIXES.some((prefix) => item.url_paste.startsWith(prefix));
 }
 
 export function uploadModelsToPayload(items, history_id, composite = false) {
     const files = [];
     const elements = items
         .map((item) => {
-            if (item.get("optional")) {
+            if (item.optional) {
                 return null;
             }
             let src;
             let pasteContent = null;
-            let fileName = item.get("file_name");
+            let fileName = item.file_name;
             if (fileName === defaultNewFileName) {
                 fileName = null;
             }
-            const url = (item.get("file_uri") || item.get("file_path") || item.get("url_paste")).trim();
+            const url = (item.file_uri || item.file_path || item.url_paste).trim();
             const elem = {
-                dbkey: item.get("genome", "?"),
-                ext: item.get("extension", "auto"),
-                space_to_tab: item.get("space_to_tab"),
-                to_posix_lines: item.get("to_posix_lines"),
-                deferred: item.get("deferred"),
+                dbkey: item.genome ?? "?",
+                ext: item.extension ?? "auto",
+                space_to_tab: item.space_to_tab,
+                to_posix_lines: item.to_posix_lines,
+                deferred: item.deferred,
             };
-            switch (item.get("file_mode")) {
+            switch (item.file_mode) {
                 case "new":
                     if (itemIsUrl(item)) {
                         src = "url";
@@ -54,7 +54,7 @@ export function uploadModelsToPayload(items, history_id, composite = false) {
                             };
                         });
                     } else {
-                        pasteContent = item.get("url_paste");
+                        pasteContent = item.url_paste;
                         src = "pasted";
                     }
                     break;
@@ -65,7 +65,7 @@ export function uploadModelsToPayload(items, history_id, composite = false) {
                     break;
                 case "local":
                     src = "files";
-                    files.push(item.get("file_data"));
+                    files.push(item.file_data);
                     break;
                 default:
                     console.error("Unknown file_mode", item);
