@@ -65,9 +65,9 @@ import AvailableDatatypes from "@/components/AvailableDatatypes/AvailableDatatyp
 import { patchRouterPush } from "./router-push";
 
 import AboutGalaxy from "@/components/AboutGalaxy.vue";
+import DbKeysList from "@/components/DbKeysList.vue";
 import HistoryArchive from "@/components/History/Archiving/HistoryArchive.vue";
 import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
-import DbKeysList from "@/components/DbKeysList.vue";
 import NotificationsList from "@/components/Notifications/NotificationsList.vue";
 
 Vue.use(VueRouter);

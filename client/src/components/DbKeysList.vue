@@ -39,9 +39,11 @@ onMounted(async () => {
     <div>
         <Heading h1 separator>Database keys</Heading>
         <p>
-            The database keys listed here link to built-in, tool-specific, reference datasets that are available on this server.
-            Typically this data is related to genomes (e.g. HG19) but may also include other data types.
-            If your research subject is listed here, then we have pre-built datasets/indices that can be selected as reference data inputs for certain tools. Please note that tool-specific reference libraries may be available without being listed here.
+            The database keys listed here link to built-in, tool-specific, reference datasets that are available on this
+            server. Typically this data is related to genomes (e.g. HG19) but may also include other data types. If your
+            research subject is listed here, then we have pre-built datasets/indices that can be selected as reference
+            data inputs for certain tools. Please note that tool-specific reference libraries may be available without
+            being listed here.
         </p>
         <DelayedInput placeholder="Filter records" class="mb-3" :delay="200" @change="(val) => (filter = val)" />
         <b-table striped small sort-icon-left sort-by="name" :items="filteredDbKeys" :fields="fields">
