@@ -38,10 +38,12 @@ const availableSettings = [
                 <tbody>
                     <tr v-for="setting in availableSettings" :key="setting.id">
                         <td>
-                            <FontAwesomeIcon v-if="model['setting.id']" icon="fas fa-check-square" fa-fw />
-                            <FontAwesomeIcon v-else icon="far fa-square" fa-fw />
+                            <FontAwesomeIcon class="px-2" v-if="model['setting.id']" icon="fas fa-check-square" fa-fw />
+                            <FontAwesomeIcon class="px-2" v-else icon="far fa-square" fa-fw />
                         </td>
-                        <td>{{ setting.title }}</td>
+                        <td class="text-left">
+                            <span class="pr-2">{{ setting.title }}</span>
+                        </td>
                     </tr>
                 </tbody>
             </table>
