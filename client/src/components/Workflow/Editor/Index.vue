@@ -1,5 +1,5 @@
 <template>
-    <div v-if="isCanvas" id="columns" class="workflow-client d-flex">
+    <div v-if="isCanvas" id="columns" class="d-flex">
         <StateUpgradeModal :state-messages="stateMessages" />
         <StateUpgradeModal
             :state-messages="insertedStateMessages"
@@ -36,7 +36,7 @@
                 @onInsertWorkflow="onInsertWorkflow"
                 @onInsertWorkflowSteps="onInsertWorkflowSteps" />
         </FlexPanel>
-        <div id="center" class="workflow-center overflow-auto w-100">
+        <div id="center" class="workflow-center">
             <div class="unified-panel-header" unselectable="on">
                 <div class="unified-panel-header-inner">
                     <span class="sr-only">Workflow Editor</span>
@@ -63,7 +63,7 @@
             </WorkflowGraph>
         </div>
         <FlexPanel side="right">
-            <div class="unified-panel workflow-panel">
+            <div class="unified-panel bg-white">
                 <div class="unified-panel-header" unselectable="on">
                     <div class="unified-panel-header-inner">
                         <WorkflowOptions
@@ -732,5 +732,14 @@ export default {
     bottom: 1rem;
     cursor: pointer;
     z-index: 1002;
+}
+
+.workflow-center {
+    z-index: 0;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    overflow: auto;
+    width: 100%;
 }
 </style>

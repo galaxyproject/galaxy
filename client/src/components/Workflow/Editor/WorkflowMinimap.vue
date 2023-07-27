@@ -305,11 +305,53 @@ useDraggable(canvas, {
 @import "~bootstrap/scss/_functions.scss";
 @import "theme/blue.scss";
 
-.workflow-overview-body {
-    --node-color: #{$brand-primary};
-    --error-color: #{$state-danger-bg};
-    --selected-outline-color: #{$brand-primary};
-    --view-color: #{fade-out($brand-dark, 0.8)};
-    --view-outline-color: #{$brand-info};
+.workflow-overview {
+    --workflow-overview-size: 150px;
+    --workflow-overview-min-size: 50px;
+    --workflow-overview-max-size: 300px;
+    --workflow-overview-padding: 7px;
+    --workflow-overview-border: 1px;
+
+    border-top-left-radius: 0.3rem;
+    cursor: nwse-resize;
+    position: absolute;
+    width: var(--workflow-overview-size);
+    height: var(--workflow-overview-size);
+    right: 0px;
+    bottom: 0px;
+    border-top: solid $border-color var(--workflow-overview-border);
+    border-left: solid $border-color var(--workflow-overview-border);
+    background: $workflow-overview-bg no-repeat url("assets/images/resizable.png");
+    z-index: 20000;
+    overflow: hidden;
+    padding: var(--workflow-overview-padding) 0 0 var(--workflow-overview-padding);
+
+    // account for padding and border
+    max-width: calc(
+        var(--workflow-overview-max-size) + var(--workflow-overview-padding) + var(--workflow-overview-border)
+    );
+    max-height: calc(
+        var(--workflow-overview-max-size) + var(--workflow-overview-padding) + var(--workflow-overview-border)
+    );
+    min-width: calc(
+        var(--workflow-overview-min-size) + var(--workflow-overview-padding) + var(--workflow-overview-border)
+    );
+    min-height: calc(
+        var(--workflow-overview-min-size) + var(--workflow-overview-padding) + var(--workflow-overview-border)
+    );
+
+    .workflow-overview-body {
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        width: 100%;
+        height: 100%;
+
+        --node-color: #{$brand-primary};
+        --error-color: #{$state-danger-bg};
+        --selected-outline-color: #{$brand-primary};
+        --view-color: #{fade-out($brand-dark, 0.8)};
+        --view-outline-color: #{$brand-info};
+    }
 }
 </style>

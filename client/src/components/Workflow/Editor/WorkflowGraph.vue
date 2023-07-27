@@ -1,12 +1,7 @@
 <template>
     <div id="workflow-canvas" class="unified-panel-body workflow-canvas">
         <ZoomControl :zoom-level="scale" :pan="transform" @onZoom="onZoom" @update:pan="panBy" />
-        <div
-            id="canvas-container"
-            ref="canvas"
-            class="canvas-content position-relative"
-            @drop.prevent
-            @dragover.prevent>
+        <div id="canvas-container" ref="canvas" class="canvas-content" @drop.prevent @dragover.prevent>
             <AdaptiveGrid
                 :viewport-bounds="elementBounding"
                 :viewport-bounding-box="viewportBoundingBox"
@@ -158,3 +153,27 @@ const canvasStyle = computed(() => {
     return { transform: `translate(${transform.value.x}px, ${transform.value.y}px) scale(${transform.value.k})` };
 });
 </script>
+
+<style scoped land="scss">
+.workflow-canvas {
+    position: relative;
+
+    .canvas-content {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        left: 0px;
+        top: 0px;
+        overflow: hidden;
+    }
+
+    .node-area {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        transform-origin: 0 0;
+    }
+}
+</style>

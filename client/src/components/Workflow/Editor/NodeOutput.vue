@@ -295,7 +295,7 @@ const removeTagsAction = computed(() => {
 </script>
 
 <template>
-    <div class="d-flex" :class="rowClass" :data-output-name="output.name">
+    <div class="d-flex workflow-editor-node-terminal" :class="rowClass" :data-output-name="output.name">
         <div class="d-flex flex-column w-100">
             <div class="d-flex flex-row">
                 <div
@@ -371,3 +371,7 @@ const removeTagsAction = computed(() => {
         </DraggableWrapper>
     </div>
 </template>
+
+<style lang="scss">
+@import "nodeStyle";
+</style>

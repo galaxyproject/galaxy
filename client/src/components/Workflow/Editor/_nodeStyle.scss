@@ -1,0 +1,108 @@
+@import "~bootstrap/scss/_functions.scss";
+@import "theme/blue.scss";
+@import "~bootstrap/scss/bootstrap.scss";
+
+$fa-font-path: "../../../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
+@import "~@fortawesome/fontawesome-free/scss/fontawesome";
+@import "~@fortawesome/fontawesome-free/scss/brands";
+@import "~@fortawesome/fontawesome-free/scss/regular";
+@import "~@fortawesome/fontawesome-free/scss/solid";
+@import "~@fortawesome/fontawesome-free/scss/v4-shims";
+@import "~@fortawesome/fontawesome-free/scss/_variables";
+
+.workflow-editor-node-terminal {
+    .base-terminal {
+        @extend .fa;
+        @extend .fa-circle;
+        @extend .mt-1;
+        color: $brand-light;
+        position: absolute;
+        .icon {
+            @extend .fa;
+            @extend .fa-chevron-circle-right;
+            color: $brand-primary;
+            position: absolute;
+            left: 0px;
+            top: 0px;
+        }
+    }
+
+    .input-terminal {
+        @extend .base-terminal;
+        left: -0.65rem;
+    }
+
+    .output-terminal {
+        @extend .base-terminal;
+        right: -0.65rem;
+        &:hover > .icon {
+            color: $brand-success;
+        }
+    }
+
+    .input-terminal.multiple {
+        font-size: 1.2rem;
+        left: -0.8rem;
+        top: 3px;
+    }
+
+    .output-terminal.multiple {
+        font-size: 1.2rem;
+        right: -0.8rem;
+        bottom: 6px;
+    }
+
+    .input-terminal-active.can-accept > .icon {
+        color: $brand-success;
+    }
+
+    .input-terminal-active.cannot-accept > .icon {
+        color: $brand-warning;
+    }
+
+    .drag-terminal {
+        @extend .fa;
+        @extend .fa-circle;
+        color: $brand-success;
+        position: absolute;
+    }
+
+    .mark-terminal {
+        @extend .far;
+        @extend .fa-square;
+        color: $brand-primary;
+        cursor: pointer;
+        &.mark-terminal-active {
+            @extend .fa;
+            @extend .fa-check-square;
+        }
+        &.mark-terminal-visible {
+            @extend .fa;
+            @extend .fa-eye;
+        }
+        &.mark-terminal-hidden {
+            @extend .fa;
+            @extend .fa-eye-slash;
+        }
+    }
+
+    .delete-terminal {
+        @extend .btn;
+        @extend .btn-sm;
+        @extend .btn-danger;
+        @extend .fa;
+        @extend .fa-minus-circle;
+        @extend .p-1;
+        @extend .mt-1;
+        cursor: pointer;
+        position: absolute;
+        z-index: 2500;
+        top: 2px;
+        left: -0.8rem;
+    }
+
+    .callout-terminal {
+        @extend .float-left;
+        @extend .mr-1;
+    }
+}

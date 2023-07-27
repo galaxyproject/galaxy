@@ -1,5 +1,11 @@
 <template>
-    <div :class="rowClass" @mouseleave="leave" @mouseenter="enter" @focusin="enter" @focusout="leave">
+    <div
+        class="workflow-editor-node-terminal"
+        :class="rowClass"
+        @mouseleave="leave"
+        @mouseenter="enter"
+        @focusin="enter"
+        @focusout="leave">
         <div
             :id="id"
             :input-name="input.name"
@@ -228,11 +234,11 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 @import "theme/blue.scss";
-@import "~@fortawesome/fontawesome-free/scss/_variables";
+@import "nodeStyle";
 
-.input-required {
+.workflow-editor-node-terminal .input-required {
     margin-top: $margin-v * 0.25;
     margin-bottom: $margin-v * 0.25;
     color: $brand-danger;
