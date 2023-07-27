@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faBuilding, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
+import { faMoneyBill, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
@@ -15,7 +15,7 @@ const props = defineProps({
     },
 });
 
-library.add(faExternalLinkAlt, faBuilding);
+library.add(faExternalLinkAlt, faMoneyBill);
 
 type item = {
     attribute: string;
@@ -43,18 +43,19 @@ const explicitMetaAttributes = computed(() => {
 
 <template>
     <span itemprop="funding" itemscope itemtype="https://schema.org/Grant">
-        <b-button ref="button">
-            <FontAwesomeIcon icon="money-bill" />
-        </b-button>
+        <FontAwesomeIcon ref="button" icon="money-bill" />
         <b-popover triggers="click blur" :placement="hoverPlacement" :target="$refs['button'] || 'works-lazily'"
             title="Grant">
             <b-table striped :items="items"> </b-table>
         </b-popover>
-        <span v-if="name">
-            <span itemprop="name">{{ name }}</span>
+        <span v-if="props.grant.name">
+            {{ props.grant.name }}
         </span>
-        <span v-else-if="props.grant.description" itemprop="description">
-            {{ props.grant.description }}
+        <span v-if="props.grant.description">
+            - {{ props.grant.description }}
+        </span>
+        <span v-if="props.grant.identifier">
+            ({{ props.grant.identifier }})
         </span>
         <a v-if="props.grant.url" v-b-tooltip.hover title="Grant URL" :href="props.grant.url" target="_blank">
             <link itemprop="url" :href="props.grant.url" />
