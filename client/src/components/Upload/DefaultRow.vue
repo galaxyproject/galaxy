@@ -58,7 +58,7 @@ function removeUpload() {
             <select2 class="upload-extension" v-model="model.extension">
                 <option v-for="(ext, index) in extensions" :key="index" :value="ext.id">{{ ext.text }}</option>
             </select2>
-            <Popper reference-is="span" popper-is="span" placement="bottom" mode="light">
+            <Popper placement="bottom" mode="light">
                 <template v-slot:reference>
                     <FontAwesomeIcon icon="fa-search" />
                 </template>
