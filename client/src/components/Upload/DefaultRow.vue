@@ -16,7 +16,7 @@ const props = defineProps({
     extension: String,
     genome: String,
     model: Object,
-    index: String,
+    index: Number,
 });
 const id = computed(() => props.model.id);
 const percentage = computed(() => parseInt(props.model.percentage || 0));
@@ -57,7 +57,7 @@ function removeUpload() {
             <select2 class="upload-extension" v-model="model.extension">
                 <option v-for="(ext, index) in extensions" :key="index" :value="ext.id">{{ ext.text }}</option>
             </select2>
-            <Popper reference-is="span" popper-is="span" placement="bottom" :dark-mode="false">
+            <Popper reference-is="span" popper-is="span" placement="bottom" mode="light">
                 <template v-slot:reference>
                     <FontAwesomeIcon icon="fa-search" />
                 </template>

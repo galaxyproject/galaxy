@@ -386,6 +386,7 @@ export default {
             var newModel = new UploadModel.Model(modelProps);
             this.collection.add(newModel);
             this.uploadList.push(modelProps);
+            this._updateStateForCounters();
         },
         /** Error */
         _eventError: function (index, message) {
