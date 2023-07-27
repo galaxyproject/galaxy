@@ -7,7 +7,14 @@ import { faSearch } from "@fortawesome/free-solid-svg-icons";
 library.add(faSearch);
 
 const props = defineProps({
-    extensionDetails: Object,
+    description: {
+        type: String,
+        default: null,
+    },
+    descriptionUrl: {
+        type: String,
+        default: null,
+    },
 });
 </script>
 
@@ -17,11 +24,9 @@ const props = defineProps({
             <FontAwesomeIcon icon="fa-search" />
         </template>
         <div class="p-2">
-            <div v-if="extensionDetails">
-                {{ extensionDetails.description }}
-                <span v-if="extensionDetails.description_url">
-                    &nbsp;(<a :href="extensionDetails.description_url" target="_blank">read more</a>)
-                </span>
+            <div v-if="!!description">
+                {{ description }}
+                <div v-if="!!descriptionUrl">&nbsp;(<a :href="descriptionUrl" target="_blank">read more</a>)</div>
             </div>
             <div v-else>There is no description available for this file extension.</div>
         </div>

@@ -22,7 +22,9 @@ const props = defineProps({
 });
 const id = computed(() => props.model.id);
 const percentage = computed(() => parseInt(props.model.percentage || 0));
-const extensionDetails = computed(() => props.extensions.find((item) => item.id === props.model.extension));
+const extensionDetails = computed(() => props.extensions.find((item) => item.id === props.model.extension) || {});
+const extensionDescription = computed(() => extensionDetails.value.description);
+const extensionDescriptionUrl = computed(() => extensionDetails.value.description_url);
 
 /** Dictionary of upload states and associated icons */
 const status_classes = {
@@ -60,7 +62,9 @@ function removeUpload() {
                 <option v-for="(ext, index) in extensions" :key="index" :value="ext.id">{{ ext.text }}</option>
             </select2>
             <div>
-                <UploadExtensionDetails :extensionDetails="extensionDetails" />
+                <UploadExtensionDetails
+                    :description="extensionDescription"
+                    :description-url="extensionDescriptionUrl" />
             </div>
             <select2 v-model="model.genome" class="upload-genome">
                 <option v-for="(listGenome, index) in listGenomes" :key="index" :value="listGenome.id">
