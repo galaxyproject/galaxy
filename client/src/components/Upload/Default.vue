@@ -117,6 +117,7 @@ import { findExtension } from "./utils";
 
 import { BButton } from "bootstrap-vue";
 import DefaultRow from "./DefaultRow.vue";
+import { defaultModel } from "./model.js";
 
 export default {
     components: { BButton, DefaultRow, Select2 },
@@ -217,18 +218,6 @@ export default {
         this._updateStateForCounters();
     },
     methods: {
-        _newUploadModelProps: function (index, file) {
-            return {
-                id: index,
-                file_name: file.name,
-                file_size: file.size,
-                file_mode: file.mode || "local",
-                file_path: file.path,
-                file_uri: file.uri,
-                file_data: file,
-            };
-        },
-
         /** Success */
         _eventSuccess: function (index) {
             var it = this.collection.get(index);
@@ -382,10 +371,19 @@ export default {
         /** A new file has been dropped/selected through the uploadbox plugin */
         _eventAnnounce: function (index, file) {
             this.counterAnnounce++;
-            const modelProps = this._newUploadModelProps(index, file);
-            var newModel = new UploadModel.Model(modelProps);
+            const uploadModel = {
+                ...defaultModel,
+                id: index,
+                file_name: file.name,
+                file_size: file.size,
+                file_mode: file.mode || "local",
+                file_path: file.path,
+                file_uri: file.uri,
+                file_data: file,
+            };
+            this.uploadList.push(uploadModel);
+            var newModel = new UploadModel.Model(uploadModel);
             this.collection.add(newModel);
-            this.uploadList.push(modelProps);
             this._updateStateForCounters();
         },
         /** Error */
