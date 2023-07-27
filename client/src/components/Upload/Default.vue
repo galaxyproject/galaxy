@@ -403,8 +403,10 @@ export default {
         },
         /** Queue is done */
         _eventComplete: function () {
-            this.collection.each((model) => {
-                model.get("status") == "queued" && model.set("status", "init");
+            this.uploadList.forEach((model) => {
+                if (model.status === "queued") {
+                    model.status = "init";
+                }
             });
             this.counterRunning = 0;
             this._updateStateForCounters();
