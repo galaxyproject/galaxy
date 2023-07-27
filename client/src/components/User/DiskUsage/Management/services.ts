@@ -71,7 +71,7 @@ export async function fetchDiscardedHistories(options?: PaginationOptions): Prom
 }
 
 const _cleanupDiscardedHistories = fetcher.path("/api/storage/histories").method("delete").create();
-
+// TODO rename, this removes histories in general, not just discarded ones
 export async function cleanupDiscardedHistories(items: CleanableItem[]) {
     try {
         const item_ids = items.map((item) => item.id);
@@ -82,4 +82,26 @@ export async function cleanupDiscardedHistories(items: CleanableItem[]) {
     } catch (error) {
         return new CleanupResult(undefined, items, error as string);
     }
+}
+
+const fetchArchivedHistoriesSummaryData = fetcher
+    .path("/api/storage/histories/archived/summary")
+    .method("get")
+    .create();
+
+export async function fetchArchivedHistoriesSummary(): Promise<CleanableSummary> {
+    const { data } = await fetchArchivedHistoriesSummaryData({});
+    return new CleanableSummary(data);
+}
+
+const fetchArchivedHistoriesData = fetcher.path("/api/storage/histories/archived").method("get").create();
+
+export async function fetchArchivedHistories(options?: PaginationOptions): Promise<CleanableItem[]> {
+    options = options ?? new PaginationOptions();
+    const { data } = await fetchArchivedHistoriesData({
+        offset: options.offset,
+        limit: options.limit,
+        order: options.order,
+    });
+    return data;
 }
