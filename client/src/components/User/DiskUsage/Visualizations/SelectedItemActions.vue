@@ -4,7 +4,7 @@ import { bytesToString } from "@/utils/utils";
 import localize from "@/utils/localization";
 import type { DataValuePoint } from "./Charts";
 import { computed } from "vue";
-import { faChartBar, faUndo, faTrash, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import { faChartBar, faUndo, faTrash, faInfoCircle, faArchive } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 
@@ -14,12 +14,14 @@ interface SelectedItemActionsProps {
     data: DataValuePoint;
     isRecoverable: boolean;
     itemType: ItemTypes;
+    isArchived?: boolean;
 }
 
-const props = defineProps<SelectedItemActionsProps>();
+const props = withDefaults(defineProps<SelectedItemActionsProps>(), {
+    isArchived: false,
+});
 
-//@ts-ignore bad library types
-library.add(faChartBar, faUndo, faTrash, faInfoCircle);
+library.add(faChartBar, faUndo, faTrash, faInfoCircle, faArchive);
 
 const label = computed(() => props.data?.label ?? "No data");
 const prettySize = computed(() => bytesToString(props.data?.value ?? 0));
@@ -49,6 +51,7 @@ function onPermanentlyDeleteItem() {
             <b>{{ label }}</b>
         </div>
         <div class="text-muted mx-2">
+            <span v-if="isArchived"><FontAwesomeIcon icon="archive" /> This {{ itemType }} is archived.</span><br />
             Total storage space taken: <b>{{ prettySize }}</b
             >.
             <span v-if="isRecoverable">
