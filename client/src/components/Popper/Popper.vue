@@ -11,6 +11,7 @@
             class="popper-element mt-1"
             :class="`popper-element-${mode}`">
             <div v-if="arrow" class="popper-arrow" data-popper-arrow />
+            <div v-if="title" class="popper-title px-2 py-1 rounded-top">{{ title }}</div>
             <slot />
         </component>
     </div>
@@ -64,6 +65,10 @@ export default defineComponent({
         mode: {
             type: String,
             default: "dark",
+        },
+        title: {
+            type: String,
+            default: null,
         },
     },
 
@@ -129,7 +134,7 @@ export default defineComponent({
 
 .popper-element {
     z-index: 9999;
-    border-radius: $border-radius-base;
+    border-radius: $border-radius-large;
 }
 
 /** Available variants */
@@ -151,6 +156,20 @@ export default defineComponent({
     color: $brand-dark;
     .popper-arrow:before {
         background: $white;
+        border: popper-border($border-color);
+    }
+}
+
+.popper-element-primary {
+    background: $white;
+    border: popper-border($border-color);
+    color: $brand-dark;
+    .popper-title {
+        background: $brand-primary;
+        color: $white;
+    }
+    .popper-arrow:before {
+        background: $brand-primary;
         border: popper-border($border-color);
     }
 }

@@ -29,11 +29,10 @@ const availableSettings = [
 </script>
 
 <template>
-    <Popper placement="bottom" mode="light">
+    <Popper placement="bottom" title="Settings" mode="primary">
         <template v-slot:reference>
             <FontAwesomeIcon class="cursor-pointer" icon="fa-cog" />
         </template>
-        <div class="px-2 py-1 bg-primary text-white">Settings</div>
         <div class="upload-settings px-2 py-2">
             <table class="upload-settings-table grid">
                 <tbody>
