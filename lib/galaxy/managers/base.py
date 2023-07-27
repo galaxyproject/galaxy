@@ -1347,6 +1347,8 @@ class StorageCleanerManager(Protocol):
     Interface for monitoring storage usage and managing deletion/purging of objects that consume user's storage space.
     """
 
+    # TODO: refactor this interface to be more generic and allow for more types of cleanable items
+
     sort_map: Dict[StoredItemOrderBy, Any]
 
     def get_discarded_summary(self, user: model.User) -> CleanableItemsSummary:
@@ -1364,6 +1366,24 @@ class StorageCleanerManager(Protocol):
         order: Optional[StoredItemOrderBy],
     ) -> List[StoredItem]:
         """Returns a paginated list of items deleted by the given user that are not yet purged."""
+        raise NotImplementedError
+
+    def get_archived_summary(self, user: model.User) -> CleanableItemsSummary:
+        """Returns information with the total storage space taken by archived items for the given user.
+
+        Archived items are those that are not currently active. Some archived items may be purged already, but
+        this method does not return information about those.
+        """
+        raise NotImplementedError
+
+    def get_archived(
+        self,
+        user: model.User,
+        offset: Optional[int],
+        limit: Optional[int],
+        order: Optional[StoredItemOrderBy],
+    ) -> List[StoredItem]:
+        """Returns a paginated list of items archived by the given user that are not yet purged."""
         raise NotImplementedError
 
     def cleanup_items(self, user: model.User, item_ids: Set[int]) -> StorageItemsCleanupResult:

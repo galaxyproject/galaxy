@@ -39,6 +39,41 @@ class TestStorageCleaner(integration_util.IntegrationTestCase):
             "datasets", test_datasets, dataset_ids, delete_resource_uri=f"histories/{history_id}/contents"
         )
 
+    @requires_new_history
+    def test_archived_histories_monitoring_and_cleanup(self):
+        test_histories = self._build_test_items(resource_name="History")
+        history_ids = self._create_histories_with(test_histories)
+        expected_total_items = len(test_histories)
+        expected_total_size = sum([item.size for item in test_histories])
+
+        # Archive the histories
+        for history_id in history_ids:
+            self.dataset_populator.archive_history(history_id)
+
+        # All the `test_histories` should be in the summary
+        summary_response = self._get("storage/histories/archived/summary")
+        self._assert_status_code_is_ok(summary_response)
+        summary = summary_response.json()
+        assert summary["total_items"] == expected_total_items
+        assert summary["total_size"] == expected_total_size
+
+        # Check listing all the archived items
+        paginated_items_response = self._get("storage/histories/archived")
+        self._assert_status_code_is_ok(paginated_items_response)
+        paginated_items = paginated_items_response.json()
+        assert len(paginated_items) == expected_total_items
+        assert sum([item["size"] for item in paginated_items]) == expected_total_size
+
+        # Cleanup the archived histories
+        payload = {"item_ids": history_ids}
+        cleanup_response = self._delete("storage/histories", data=payload, json=True)
+        self._assert_status_code_is_ok(cleanup_response)
+        cleanup_result = cleanup_response.json()
+        assert cleanup_result["total_item_count"] == expected_total_items
+        assert cleanup_result["success_item_count"] == expected_total_items
+        assert cleanup_result["total_free_bytes"] == expected_total_size
+        assert not cleanup_result["errors"]
+
     def _build_test_items(self, resource_name: str):
         return [
             StoredItemDataForTests(name=f"Test{resource_name}01_{uuid4()}", size=10),
