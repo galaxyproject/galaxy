@@ -20,11 +20,14 @@ const props = defineProps({
     model: Object,
     index: Number,
 });
-const id = computed(() => props.model.id);
+
+const emit = defineEmits();
+
 const percentage = computed(() => parseInt(props.model.percentage || 0));
-const extensionDetails = computed(() => props.extensions.find((item) => item.id === props.model.extension) || {});
+const extensionDetails = computed(() => props.extensions.find((ext) => ext.id === props.model.extension) || {});
 const extensionDescription = computed(() => extensionDetails.value.description);
 const extensionDescriptionUrl = computed(() => extensionDetails.value.description_url);
+const removeIcon = computed(() => status_classes[props.model.status] || status_classes.init);
 
 /** Dictionary of upload states and associated icons */
 const status_classes = {
@@ -41,13 +44,13 @@ function inputPaste() {
 
 function removeUpload() {
     if (["init", "success", "error"].indexOf(props.model.status) !== -1) {
-        //this.app.collection.remove(this.model);
+        emit("remove", props.index);
     }
 }
 </script>
 
 <template>
-    <div :id="`upload-row-${id}`" class="upload-row p-2" :class="{ 'bg-light': index % 2 === 0 }">
+    <div :id="`upload-row-${index}`" class="upload-row p-2" :class="{ 'bg-light': index % 2 === 0 }">
         <div class="d-flex justify-content-around">
             <div>
                 <FontAwesomeIcon v-if="model.file_mode == 'new'" icon="fa-edit" />
@@ -87,7 +90,7 @@ function removeUpload() {
                 </div>
             </div>
             <div>
-                <div class="upload-symbol" :class="model.status || status_classes.init" @click="removeUpload" />
+                <div class="upload-symbol" :class="removeIcon" @click="removeUpload" />
             </div>
         </div>
         <div v-if="model.file_mode == 'new'" class="upload-text">

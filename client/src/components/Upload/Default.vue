@@ -15,7 +15,8 @@
                     :genome="genome"
                     :listExtensions="listExtensions"
                     :listGenomes="listGenomes"
-                    :model="uploadItem" />
+                    :model="uploadItem"
+                    @remove="_eventRemove" />
             </div>
         </div>
         <div class="upload-footer">
@@ -212,9 +213,6 @@ export default {
         this.initExtensionInfo();
         this.initFtpPopover();
         this.initUploadbox();
-        this.collection.on("remove", (model) => {
-            this._eventRemove(model);
-        });
         this._updateStateForCounters();
     },
     methods: {
@@ -410,8 +408,9 @@ export default {
             this._updateStateForCounters();
         },
         /** Remove model from upload list */
-        _eventRemove: function (model) {
-            var status = model.get("status");
+        _eventRemove: function (id) {
+            const it = this.uploadList[id];
+            var status = it.status;
             if (status == "success") {
                 this.counterSuccess--;
             } else if (status == "error") {
@@ -419,7 +418,8 @@ export default {
             } else {
                 this.counterAnnounce--;
             }
-            this.uploadbox.remove(model.id);
+            this.uploadList.splice(id, 1);
+            this.uploadbox.remove(id);
             this._updateStateForCounters();
         },
         /** Show remote files dialog or FTP files */
