@@ -388,13 +388,15 @@ export default {
         },
         /** Error */
         _eventError: function (index, message) {
-            var it = this.collection.get(index);
-            it.set({ percentage: 100, status: "error", info: message });
+            var it = this.uploadList[index];
+            it.percentage = 100;
+            it.status = "error";
+            it.info = message;
             this.details.model.set({
-                percentage: this._uploadPercentage(100, it.get("file_size")),
+                percentage: this._uploadPercentage(100, it.file_size),
                 status: "danger",
             });
-            this.uploadCompleted += it.get("file_size") * 100;
+            this.uploadCompleted += it.file_size * 100;
             this.counterAnnounce--;
             this.counterError++;
             this._updateStateForCounters();
