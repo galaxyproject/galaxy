@@ -11,7 +11,12 @@
             class="popper-element mt-1"
             :class="`popper-element-${mode}`">
             <div v-if="arrow" class="popper-arrow" data-popper-arrow />
-            <div v-if="title" class="popper-title px-2 py-1 rounded-top">{{ title }}</div>
+            <div v-if="title" class="popper-header px-2 py-1 rounded-top d-flex justify-content-between">
+                <span class="px-1">{{ title }}</span>
+                <span class="align-items-center cursor-pointer">
+                    <FontAwesomeIcon icon="fa-times-circle" @click="visible = false" />
+                </span>
+            </div>
             <slot />
         </component>
     </div>
@@ -20,11 +25,16 @@
 <script lang="ts">
 import type { PropType, UnwrapRef } from "vue";
 import { defineComponent, ref, toRef, watch } from "vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faTimesCircle } from "@fortawesome/free-solid-svg-icons";
 
 import { usePopperjs } from "./usePopper";
 
+library.add(faTimesCircle);
+
 export default defineComponent({
-    components: {},
+    components: { FontAwesomeIcon },
 
     props: {
         // hook options
@@ -160,11 +170,11 @@ export default defineComponent({
     }
 }
 
-.popper-element-primary {
+.popper-element-primary-title {
     background: $white;
     border: popper-border($border-color);
     color: $brand-dark;
-    .popper-title {
+    .popper-header {
         background: $brand-primary;
         color: $white;
     }

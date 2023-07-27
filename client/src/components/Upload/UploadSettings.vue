@@ -29,7 +29,7 @@ const availableSettings = [
 </script>
 
 <template>
-    <Popper placement="bottom" title="Settings" mode="primary">
+    <Popper placement="bottom" title="Upload Configuration" mode="primary-title" trigger="click-to-open">
         <template v-slot:reference>
             <FontAwesomeIcon class="cursor-pointer" icon="fa-cog" />
         </template>
