@@ -185,11 +185,10 @@ class CondaDependencyResolver(
                 final_return_code = return_code
         return final_return_code
 
-    def install_all(self, conda_targets):
+    def install_all(self, conda_targets: List[CondaTarget], env: str) -> bool:
         if self.read_only:
             return False
 
-        env = self.merged_environment_name(conda_targets)
         return_code = install_conda_targets(conda_targets, conda_context=self.conda_context, env_name=env)
         if return_code != 0:
             is_installed = False
@@ -237,9 +236,12 @@ class CondaDependencyResolver(
 
         preserve_python_environment = kwds.get("preserve_python_environment", False)
 
-        env = self.merged_environment_name(conda_targets)
+        for capitalized_package_names in (True, False):
+            env = self.merged_environment_name(conda_targets, capitalized_package_names)
+            is_installed = self.conda_context.has_env(env)
+            if is_installed:
+                break
 
-        is_installed = self.conda_context.has_env(env)
         install = kwds.get("install", None)
         if install is None:
             # Default behavior, install dependencies if conda_auto_install is active.
@@ -248,7 +250,7 @@ class CondaDependencyResolver(
             # Install has been set to True, install if not yet installed.
             install = not is_installed
         if install:
-            is_installed = self.install_all(conda_targets)
+            is_installed = self.install_all(conda_targets, env)
 
         dependencies: List[Dependency] = []
         if is_installed:
@@ -266,10 +268,10 @@ class CondaDependencyResolver(
 
         return dependencies
 
-    def merged_environment_name(self, conda_targets):
+    def merged_environment_name(self, conda_targets: List[CondaTarget], capitalized_package_names: bool = False) -> str:
         if len(conda_targets) > 1:
             # For continuity with mulled containers this is kind of nice.
-            return f"mulled-v1-{hash_conda_packages(conda_targets)}"
+            return f"mulled-v1-{hash_conda_packages(conda_targets, capitalized_package_names)}"
         else:
             assert len(conda_targets) == 1
             return conda_targets[0].install_environment
@@ -317,7 +319,7 @@ class CondaDependencyResolver(
         if job_directory:
             conda_environment = os.path.join(job_directory, conda_env)
         else:
-            conda_environment = self.conda_context.env_path(conda_target.install_environment)
+            conda_environment = self.conda_context.get_conda_target_installed_path(conda_target)
 
         return CondaDependency(
             self.conda_context,
