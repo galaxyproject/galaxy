@@ -2,12 +2,13 @@
 import { computed } from "vue";
 import Popper from "@/components/Popper/Popper.vue";
 import Select2 from "@/components/Select2";
+import UploadSettings from "./UploadSettings";
 import { bytesToString } from "utils/utils";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faEdit, faLaptop, faFolderOpen, faCog, faSearch } from "@fortawesome/free-solid-svg-icons";
+import { faEdit, faLaptop, faFolderOpen, faSearch } from "@fortawesome/free-solid-svg-icons";
 
-library.add(faEdit, faLaptop, faFolderOpen, faCog, faSearch);
+library.add(faEdit, faLaptop, faFolderOpen, faSearch);
 
 const props = defineProps({
     listGenomes: Array,
@@ -77,7 +78,7 @@ function removeUpload() {
                 </option>
             </select2>
             <div>
-                <FontAwesomeIcon class="cursor-pointer" icon="fa-cog" />
+                <UploadSettings :model="model" />
             </div>
             <div class="upload-info">
                 <div class="upload-info-text" />
