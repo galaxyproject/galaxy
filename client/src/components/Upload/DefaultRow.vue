@@ -2,13 +2,14 @@
 import { computed } from "vue";
 import Popper from "@/components/Popper/Popper.vue";
 import Select2 from "@/components/Select2";
+import UploadExtensionDetails from "./UploadExtensionDetails";
 import UploadSettings from "./UploadSettings";
 import { bytesToString } from "utils/utils";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faEdit, faLaptop, faFolderOpen, faSearch } from "@fortawesome/free-solid-svg-icons";
+import { faEdit, faLaptop, faFolderOpen } from "@fortawesome/free-solid-svg-icons";
 
-library.add(faEdit, faLaptop, faFolderOpen, faSearch);
+library.add(faEdit, faLaptop, faFolderOpen);
 
 const props = defineProps({
     listGenomes: Array,
@@ -37,7 +38,7 @@ function inputPaste() {
 }
 
 function removeUpload() {
-    if (["init", "success", "error"].indexOf(this.model.status) !== -1) {
+    if (["init", "success", "error"].indexOf(props.model.status) !== -1) {
         //this.app.collection.remove(this.model);
     }
 }
@@ -58,20 +59,9 @@ function removeUpload() {
             <select2 class="upload-extension" v-model="model.extension">
                 <option v-for="(ext, index) in extensions" :key="index" :value="ext.id">{{ ext.text }}</option>
             </select2>
-            <Popper placement="bottom" mode="light">
-                <template v-slot:reference>
-                    <FontAwesomeIcon icon="fa-search" />
-                </template>
-                <div class="p-2">
-                    <div v-if="extensionDetails && extensionDetails.description">
-                        {{ extensionDetails.description }}
-                        <span v-if="extensionDetails.description_url">
-                            &nbsp;(<a :href="extensionDetails.description_url" target="_blank">read more</a>)
-                        </span>
-                    </div>
-                    <div v-else>There is no description available for this file extension.</div>
-                </div>
-            </Popper>
+            <div>
+                <UploadExtensionDetails :extensionDetails="extensionDetails" />
+            </div>
             <select2 v-model="model.genome" class="upload-genome">
                 <option v-for="(listGenome, index) in listGenomes" :key="index" :value="listGenome.id">
                     {{ listGenome.text }}
