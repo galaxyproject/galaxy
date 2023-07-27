@@ -9,13 +9,17 @@ from abc import (
 from typing import (
     Any,
     Dict,
+    List,
 )
 
 import yaml
 
 from galaxy.util import listify
 from galaxy.util.dictifiable import Dictifiable
-from ..requirements import ToolRequirement
+from ..requirements import (
+    ToolRequirement,
+    ToolRequirements,
+)
 
 
 class DependencyResolver(Dictifiable, metaclass=ABCMeta):
@@ -39,7 +43,7 @@ class DependencyResolver(Dictifiable, metaclass=ABCMeta):
     read_only = True
 
     @abstractmethod
-    def resolve(self, requirement, **kwds):
+    def resolve(self, requirement: ToolRequirement, **kwds) -> "Dependency":
         """Given inputs describing dependency in the abstract yield a Dependency object.
 
         The Dependency object describes various attributes (script, bin,
@@ -72,7 +76,7 @@ class MultipleDependencyResolver:
     """Variant of DependencyResolver that can optionally resolve multiple dependencies together."""
 
     @abstractmethod
-    def resolve_all(self, requirements, **kwds):
+    def resolve_all(self, requirements: ToolRequirements, **kwds) -> List["Dependency"]:
         """
         Given multiple requirements yields a list of Dependency objects if and only if they may all be resolved together.
 

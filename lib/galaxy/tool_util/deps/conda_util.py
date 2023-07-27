@@ -388,6 +388,12 @@ class CondaContext(installable.InstallableContext):
         env_path = self.env_path(env_name)
         return os.path.isdir(env_path)
 
+    def get_conda_target_installed_path(self, conda_target: "CondaTarget") -> Optional[str]:
+        for env_name in (conda_target.install_environment, conda_target.capitalized_install_environment):
+            if self.has_env(env_name):
+                return self.env_path(env_name)
+        return None
+
     @property
     def deactivate(self) -> str:
         return self._bin("deactivate")
@@ -429,6 +435,7 @@ class CondaTarget:
     ) -> None:
         if SHELL_UNSAFE_PATTERN.search(package) is not None:
             raise ValueError(f"Invalid package [{package}] encountered.")
+        self.capitalized_package = package
         self.package = package.lower()
         if version and SHELL_UNSAFE_PATTERN.search(version) is not None:
             raise ValueError(f"Invalid version [{version}] encountered.")
@@ -470,11 +477,24 @@ class CondaTarget:
         """The dependency resolution and installation frameworks will
         expect each target to be installed it its own environment with
         a fixed and predictable name given package and version.
+        Since Galaxy 23.1 the package name is lowercased as all Conda package
+        names must be lowercase.
         """
         if self.version:
             return f"__{self.package}@{self.version}"
         else:
             return f"__{self.package}@_uv_"
+
+    @property
+    def capitalized_install_environment(self) -> str:
+        """Same as install_environment() but using the original capitalized
+        package name for backward compatibility with environments created before
+        Galaxy 23.1 .
+        """
+        if self.version:
+            return f"__{self.capitalized_package}@{self.version}"
+        else:
+            return f"__{self.capitalized_package}@_uv_"
 
     def __hash__(self) -> int:
         return hash((self.package, self.version, self.build, self.channel))
@@ -490,13 +510,19 @@ class CondaTarget:
         return False
 
 
-def hash_conda_packages(conda_packages: Iterable[CondaTarget]) -> str:
+def hash_conda_packages(conda_packages: Iterable[CondaTarget], capitalized_package_names: bool = False) -> str:
     """Produce a unique hash on supplied packages.
     TODO: Ideally we would do this in such a way that preserved environments.
     """
     h = hashlib.new("sha256")
     for conda_package in conda_packages:
-        h.update(smart_str(conda_package.install_environment))
+        h.update(
+            smart_str(
+                conda_package.capitalized_install_environment
+                if capitalized_package_names
+                else conda_package.install_environment
+            )
+        )
     return h.hexdigest()
 
 
@@ -621,7 +647,7 @@ def is_search_hit_exact(conda_target: CondaTarget, search_hit: Dict[str, Any]) -
 
 
 def is_conda_target_installed(conda_target: CondaTarget, conda_context: CondaContext) -> bool:
-    return conda_context.has_env(conda_target.install_environment)
+    return conda_context.get_conda_target_installed_path(conda_target) is not None
 
 
 def filter_installed_targets(conda_targets: Iterable[CondaTarget], conda_context: CondaContext) -> List[CondaTarget]:
