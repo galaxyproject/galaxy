@@ -87,6 +87,14 @@ function isRecoverableDataPoint(dataPoint?: DataValuePoint): boolean {
     return false;
 }
 
+function isArchivedDataPoint(dataPoint: DataValuePoint): boolean {
+    if (dataPoint) {
+        const historiesSizeSummary = historiesSizeSummaryMap.get(dataPoint.id);
+        return historiesSizeSummary?.archived || false;
+    }
+    return false;
+}
+
 function onViewHistory(historyId: string) {
     router.push({ name: "HistoryOverview", params: { historyId } });
 }
@@ -175,13 +183,17 @@ async function onPermanentlyDeleteHistory(historyId: string) {
                     </b-form-select>
                 </template>
                 <template v-slot:tooltip="{ data }">
-                    <RecoverableItemSizeTooltip :data="data" :is-recoverable="isRecoverableDataPoint(data)" />
+                    <RecoverableItemSizeTooltip
+                        :data="data"
+                        :is-recoverable="isRecoverableDataPoint(data)"
+                        :is-archived="isArchivedDataPoint(data)" />
                 </template>
                 <template v-slot:selection="{ data }">
                     <SelectedItemActions
                         :data="data"
                         item-type="history"
                         :is-recoverable="isRecoverableDataPoint(data)"
+                        :is-archived="isArchivedDataPoint(data)"
                         @view-item="onViewHistory"
                         @undelete-item="onUndeleteHistory"
                         @permanently-delete-item="onPermanentlyDeleteHistory" />
