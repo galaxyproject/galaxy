@@ -16,7 +16,10 @@
                     :listExtensions="listExtensions"
                     :listGenomes="listGenomes"
                     :model="uploadItem"
-                    @remove="_eventRemove" />
+                    :file-content="uploadItem.file_content"
+                    :percentage="uploadItem.percentage"
+                    @remove="_eventRemove"
+                    @input="_eventInput" />
             </div>
         </div>
         <div class="upload-footer">
@@ -216,6 +219,12 @@ export default {
         this._updateStateForCounters();
     },
     methods: {
+        /** Update model */
+        _eventInput: function (index, newData) {
+            const it = this.uploadList[index];
+            this.uploadList[index] = { ...it, ...newData };
+        },
+
         /** Success */
         _eventSuccess: function (index) {
             var it = this.uploadList[index];

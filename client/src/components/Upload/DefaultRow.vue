@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import Popper from "@/components/Popper/Popper.vue";
 import Select2 from "@/components/Select2";
 import UploadExtensionDetails from "./UploadExtensionDetails";
@@ -19,11 +19,14 @@ const props = defineProps({
     genome: String,
     model: Object,
     index: Number,
+    percentage: Number,
 });
 
 const emit = defineEmits();
 
-const percentage = computed(() => parseInt(props.model.percentage || 0));
+const fileContent = ref("");
+
+const percentageInt = computed(() => parseInt(props.percentage || 0));
 const extensionDetails = computed(() => props.extensions.find((ext) => ext.id === props.model.extension) || {});
 const extensionDescription = computed(() => extensionDetails.value.description);
 const extensionDescriptionUrl = computed(() => extensionDetails.value.description_url);
@@ -38,8 +41,8 @@ const status_classes = {
     error: "cursor-pointer fa fa-exclamation-triangle",
 };
 
-function inputPaste() {
-    props.model.file_size = props.model.file_content.length;
+function inputFileContent() {
+    emit("input", props.index, { file_content: fileContent.value, file_size: fileContent.value.length });
 }
 
 function removeUpload() {
@@ -82,9 +85,9 @@ function removeUpload() {
                 <div class="upload-info-progress progress">
                     <div
                         class="upload-progress-bar progress-bar progress-bar-success"
-                        :style="{ width: `${percentage}%` }" />
+                        :style="{ width: `${percentageInt}%` }" />
                     <div class="upload-percentage">
-                        <div v-if="percentage !== 100">{{ percentage }}%</div>
+                        <div v-if="percentageInt !== 100">{{ percentageInt }}%</div>
                         <div v-else>Adding to history...</div>
                     </div>
                 </div>
@@ -97,7 +100,7 @@ function removeUpload() {
             <div class="upload-text-info">
                 Download data from the web by entering URLs (one per line) or directly paste content.
             </div>
-            <textarea v-model="model.file_content" class="upload-text-content form-control" @input="inputPaste" />
+            <textarea v-model="fileContent" class="upload-text-content form-control" @input="inputFileContent" />
         </div>
     </div>
 </template>
