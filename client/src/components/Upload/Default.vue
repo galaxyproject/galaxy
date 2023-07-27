@@ -16,7 +16,8 @@
                     :listExtensions="listExtensions"
                     :listGenomes="listGenomes"
                     :model="uploadItem"
-                    :file-content="uploadItem.file_content"
+                    :status="uploadItem.status"
+                    :file-mode="uploadItem.file_mode"
                     :percentage="uploadItem.percentage"
                     @remove="_eventRemove"
                     @input="_eventInput" />

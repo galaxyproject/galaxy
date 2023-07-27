@@ -20,6 +20,8 @@ const props = defineProps({
     model: Object,
     index: Number,
     percentage: Number,
+    fileMode: String,
+    status: String,
 });
 
 const emit = defineEmits();
@@ -30,7 +32,7 @@ const percentageInt = computed(() => parseInt(props.percentage || 0));
 const extensionDetails = computed(() => props.extensions.find((ext) => ext.id === props.model.extension) || {});
 const extensionDescription = computed(() => extensionDetails.value.description);
 const extensionDescriptionUrl = computed(() => extensionDetails.value.description_url);
-const removeIcon = computed(() => status_classes[props.model.status] || status_classes.init);
+const removeIcon = computed(() => status_classes[props.status] || status_classes.init);
 
 /** Dictionary of upload states and associated icons */
 const status_classes = {
@@ -46,7 +48,7 @@ function inputFileContent() {
 }
 
 function removeUpload() {
-    if (["init", "success", "error"].indexOf(props.model.status) !== -1) {
+    if (["init", "success", "error"].indexOf(props.status) !== -1) {
         emit("remove", props.index);
     }
 }
@@ -56,9 +58,9 @@ function removeUpload() {
     <div :id="`upload-row-${index}`" class="upload-row p-2" :class="{ 'bg-light': index % 2 === 0 }">
         <div class="d-flex justify-content-around">
             <div>
-                <FontAwesomeIcon v-if="model.file_mode == 'new'" icon="fa-edit" />
-                <FontAwesomeIcon v-if="model.file_mode == 'local'" icon="fa-laptop" />
-                <FontAwesomeIcon v-if="model.file_mode == 'ftp'" icon="fa-folder-open" />
+                <FontAwesomeIcon v-if="fileMode == 'new'" icon="fa-edit" />
+                <FontAwesomeIcon v-if="fileMode == 'local'" icon="fa-laptop" />
+                <FontAwesomeIcon v-if="fileMode == 'ftp'" icon="fa-folder-open" />
             </div>
             <b-input v-model="model.file_name" class="upload-title ml-2 border rounded" />
             <div class="upload-size">
@@ -86,17 +88,14 @@ function removeUpload() {
                     <div
                         class="upload-progress-bar progress-bar progress-bar-success"
                         :style="{ width: `${percentageInt}%` }" />
-                    <div class="upload-percentage">
-                        <div v-if="percentageInt !== 100">{{ percentageInt }}%</div>
-                        <div v-else>Adding to history...</div>
-                    </div>
+                    <div class="upload-percentage">{{ percentageInt }}%</div>
                 </div>
             </div>
             <div>
                 <div class="upload-symbol" :class="removeIcon" @click="removeUpload" />
             </div>
         </div>
-        <div v-if="model.file_mode == 'new'" class="upload-text">
+        <div v-if="fileMode == 'new'" class="upload-text">
             <div class="upload-text-info">
                 Download data from the web by entering URLs (one per line) or directly paste content.
             </div>
