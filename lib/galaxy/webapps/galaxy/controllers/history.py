@@ -171,7 +171,7 @@ class HistoryListGrid(grids.Grid):
         return trans.get_history()
 
     def apply_query_filter(self, trans, query, **kwargs):
-        return query.filter_by(user=trans.user, importing=False, archived=False)
+        return query.filter_by(user=trans.user, importing=False)
 
 
 class SharedHistoryListGrid(grids.Grid):
