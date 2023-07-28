@@ -17,19 +17,22 @@ const props = defineProps({
     extensions: Array,
     extension: String,
     genome: String,
-    model: Object,
     index: Number,
     percentage: Number,
+    fileContent: String,
     fileMode: String,
+    fileName: String,
+    fileSize: Number,
     status: String,
+    deferred: Boolean,
+    to_posix_lines: Boolean,
+    space_to_tab: Boolean,
 });
 
 const emit = defineEmits();
 
-const fileContent = ref("");
-
 const percentageInt = computed(() => parseInt(props.percentage || 0));
-const extensionDetails = computed(() => props.extensions.find((ext) => ext.id === props.model.extension) || {});
+const extensionDetails = computed(() => props.extensions.find((ext) => ext.id === props.extension) || {});
 const extensionDescription = computed(() => extensionDetails.value.description);
 const extensionDescriptionUrl = computed(() => extensionDetails.value.description_url);
 const removeIcon = computed(() => status_classes[props.status] || status_classes.init);
@@ -43,8 +46,18 @@ const status_classes = {
     error: "cursor-pointer fa fa-exclamation-triangle",
 };
 
-function inputFileContent() {
-    emit("input", props.index, { file_content: fileContent.value, file_size: fileContent.value.length });
+function inputFileContent(newFileContent) {
+    emit("input", props.index, { file_content: newFileContent, file_size: newFileContent.length });
+}
+
+function inputFileName(newFileName) {
+    emit("input", props.index, { file_name: newFileName });
+}
+
+function inputSettings(settingId, settingValue) {
+    const newSettings = {};
+    newSettings[settingId] = settingValue;
+    emit("input", props.index, newSettings);
 }
 
 function removeUpload() {
@@ -62,11 +75,11 @@ function removeUpload() {
                 <FontAwesomeIcon v-if="fileMode == 'local'" icon="fa-laptop" />
                 <FontAwesomeIcon v-if="fileMode == 'ftp'" icon="fa-folder-open" />
             </div>
-            <b-input v-model="model.file_name" class="upload-title ml-2 border rounded" />
+            <b-input :value="fileName" class="upload-title ml-2 border rounded" @input="inputFileName" />
             <div class="upload-size">
-                {{ bytesToString(model.file_size) }}
+                {{ bytesToString(fileSize) }}
             </div>
-            <select2 class="upload-extension" v-model="model.extension">
+            <select2 class="upload-extension" v-model="extension">
                 <option v-for="(ext, index) in extensions" :key="index" :value="ext.id">{{ ext.text }}</option>
             </select2>
             <div>
@@ -74,13 +87,17 @@ function removeUpload() {
                     :description="extensionDescription"
                     :description-url="extensionDescriptionUrl" />
             </div>
-            <select2 v-model="model.genome" class="upload-genome">
+            <select2 v-model="genome" class="upload-genome">
                 <option v-for="(listGenome, index) in listGenomes" :key="index" :value="listGenome.id">
                     {{ listGenome.text }}
                 </option>
             </select2>
             <div>
-                <UploadSettings :model="model" />
+                <UploadSettings
+                    :deferred="deferred"
+                    :to_posix_lines="to_posix_lines"
+                    :space_to_tab="space_to_tab"
+                    @input="inputSettings" />
             </div>
             <div class="upload-info">
                 <div class="upload-info-text" />
@@ -99,7 +116,7 @@ function removeUpload() {
             <div class="upload-text-info">
                 Download data from the web by entering URLs (one per line) or directly paste content.
             </div>
-            <textarea v-model="fileContent" class="upload-text-content form-control" @input="inputFileContent" />
+            <b-textarea :value="fileContent" class="upload-text-content form-control" @input="inputFileContent" />
         </div>
     </div>
 </template>

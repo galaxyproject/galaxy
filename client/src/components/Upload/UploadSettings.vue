@@ -9,8 +9,12 @@ import { faSquare } from "@fortawesome/free-regular-svg-icons";
 library.add(faCheckSquare, faCog, faSquare);
 
 const props = defineProps({
-    model: Object,
+    deferred: Boolean,
+    space_to_tab: Boolean,
+    to_posix_lines: Boolean,
 });
+
+const emit = defineEmits();
 
 const availableSettings = [
     {
@@ -26,6 +30,11 @@ const availableSettings = [
         title: "Defer dataset resolution",
     },
 ];
+
+function onToggle(settingId) {
+    const settingValue = !props[settingId];
+    emit("input", settingId, settingValue);
+}
 </script>
 
 <template>
@@ -36,9 +45,9 @@ const availableSettings = [
         <div class="upload-settings px-2 py-2">
             <table class="upload-settings-table grid">
                 <tbody>
-                    <tr v-for="setting in availableSettings" :key="setting.id">
+                    <tr v-for="setting in availableSettings" :key="setting.id" @click="onToggle(setting.id)">
                         <td>
-                            <FontAwesomeIcon class="px-2" v-if="model['setting.id']" icon="fas fa-check-square" fa-fw />
+                            <FontAwesomeIcon class="px-2" v-if="props[setting.id]" icon="fas fa-check-square" fa-fw />
                             <FontAwesomeIcon class="px-2" v-else icon="far fa-square" fa-fw />
                         </td>
                         <td class="text-left">

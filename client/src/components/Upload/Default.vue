@@ -10,15 +10,20 @@
                     v-for="(uploadItem, uploadIndex) in uploadList"
                     :key="uploadIndex"
                     :index="uploadIndex"
-                    :extension="extension"
+                    :deferred="uploadItem.deferred"
+                    :extension="uploadItem.extension"
                     :extensions="extensions"
-                    :genome="genome"
+                    :file-content="uploadItem.file_content"
+                    :file-mode="uploadItem.file_mode"
+                    :file-name="uploadItem.file_name"
+                    :file-size="uploadItem.file_size"
+                    :genome="uploadItem.genome"
                     :listExtensions="listExtensions"
                     :listGenomes="listGenomes"
-                    :model="uploadItem"
-                    :status="uploadItem.status"
-                    :file-mode="uploadItem.file_mode"
                     :percentage="uploadItem.percentage"
+                    :space_to_tab="uploadItem.space_to_tab"
+                    :status="uploadItem.status"
+                    :to_posix_lines="uploadItem.to_posix_lines"
                     @remove="_eventRemove"
                     @input="_eventInput" />
             </div>
@@ -223,7 +228,9 @@ export default {
         /** Update model */
         _eventInput: function (index, newData) {
             const it = this.uploadList[index];
-            this.uploadList[index] = { ...it, ...newData };
+            Object.entries(newData).forEach(([key, value]) => {
+                it[key] = value;
+            });
         },
 
         /** Success */

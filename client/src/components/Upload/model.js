@@ -15,5 +15,6 @@ export const defaultModel = {
     percentage: 0,
     space_to_tab: false,
     to_posix_lines: true,
+    deferred: false,
     enabled: true,
 };
