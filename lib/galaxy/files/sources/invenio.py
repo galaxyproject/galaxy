@@ -1,16 +1,12 @@
 import datetime
 import json
-import os
 import ssl
 import urllib.request
 from typing import (
     List,
     Optional,
 )
-from urllib.parse import (
-    quote,
-    urljoin,
-)
+from urllib.parse import quote
 
 import requests
 from typing_extensions import (
@@ -18,13 +14,18 @@ from typing_extensions import (
     TypedDict,
 )
 
-from galaxy.files import ProvidesUserFileSourcesUserContext
 from galaxy.files.sources import (
     Entry,
     EntryData,
     FilesSourceOptions,
+    RemoteDirectory,
+    RemoteFile,
 )
-from galaxy.files.sources._rdm import RDMFilesSource
+from galaxy.files.sources._rdm import (
+    OptionalUserContext,
+    RDMFilesSource,
+    RDMRepositoryInteractor,
+)
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     get_charset_from_http_headers,
@@ -115,36 +116,34 @@ class InvenioRecord(TypedDict):
 class InvenioRDMFilesSource(RDMFilesSource):
     """A files source for Invenio turn-key research data management repository."""
 
-    # TODO: refactor the whole thing
-
     plugin_type = "inveniordm"
 
-    @property
-    def records_api_url(self) -> str:
-        return f"{self._repository_url}/api/records"
+    def get_repository_interactor(self, repository_url: str) -> RDMRepositoryInteractor:
+        return InvenioRepositoryInteractor(repository_url, self)
 
     def _list(
         self,
         path="/",
         recursive=True,
-        user_context: Optional[ProvidesUserFileSourcesUserContext] = None,
+        user_context: OptionalUserContext = None,
         opts: Optional[FilesSourceOptions] = None,
     ):
         write_intent = opts and opts.write_intent or False
         is_root_path = path == "/"
         if is_root_path:
-            return self._list_records(write_intent, user_context)
-        return self._list_record_files(path, write_intent, user_context)
+            return self.repository.get_records(write_intent, user_context)
+        record_id, _ = self.parse_path(path)
+        return self.repository.get_files_in_record(record_id, write_intent, user_context)
 
     def _create_entry(
         self,
         entry_data: EntryData,
-        user_context: Optional[ProvidesUserFileSourcesUserContext] = None,
+        user_context: OptionalUserContext = None,
         opts: Optional[FilesSourceOptions] = None,
     ) -> Entry:
-        record = self._create_draft_record(entry_data["name"], user_context=user_context)
+        record = self.repository.create_draft_record(entry_data["name"], user_context=user_context)
         return {
-            "uri": self._to_plugin_uri(record["links"]["record"]),
+            "uri": self.repository.to_plugin_uri(record["id"]),
             "name": record["metadata"]["title"],
             "external_link": record["links"]["self_html"],
         }
@@ -153,141 +152,53 @@ class InvenioRDMFilesSource(RDMFilesSource):
         self,
         source_path: str,
         native_path: str,
-        user_context: Optional[ProvidesUserFileSourcesUserContext] = None,
+        user_context: OptionalUserContext = None,
         opts: Optional[FilesSourceOptions] = None,
     ):
-        download_file_content_url = self._to_download_file_content_url(source_path)
-
         # TODO: user_context is always None here when called from a data fetch.
         # This prevents downloading files that require authentication even if the user provided a token.
-        headers = self._get_request_headers(user_context)
-        req = urllib.request.Request(download_file_content_url, headers=headers)
-        with urllib.request.urlopen(req, timeout=DEFAULT_SOCKET_TIMEOUT, context=SSL_CONTEXT) as page:
-            f = open(native_path, "wb")
-            return stream_to_open_named_file(
-                page, f.fileno(), native_path, source_encoding=get_charset_from_http_headers(page.headers)
-            )
 
-    def _to_download_file_content_url(self, source_path: str) -> str:
-        # source_path can be:
-        # - '/{record_id}/{file_name}' when reimporting
-        # - '/{record_id}/files/{file_name}/content' when downloading a existing file
-        # We need to return a fully qualified url like
-        # 'https://<repository_url>/api/records/{record_id}/files/{file_name}/content' in both cases.
-        if source_path.endswith("/content"):
-            return f"{self.records_api_url}{source_path}"
-        record_id = source_path.split("/")[1]
-        file_name = source_path.split("/")[-1]
-        return urljoin(self.repository_url, f"/api/records/{record_id}/files/{quote(file_name)}/content")
+        record_id, filename = self.parse_path(source_path)
+        self.repository.download_file_from_record(record_id, filename, native_path, user_context=user_context)
 
     def _write_from(
         self,
         target_path: str,
         native_path: str,
-        user_context: Optional[ProvidesUserFileSourcesUserContext] = None,
+        user_context: OptionalUserContext = None,
         opts: Optional[FilesSourceOptions] = None,
     ):
-        filename = os.path.basename(target_path)
-        record_id = os.path.dirname(target_path)
+        record_id, filename = self.parse_path(target_path)
+        self.repository.upload_file_to_draft_record(record_id, filename, native_path, user_context=user_context)
+        self.repository.publish_draft_record(record_id, user_context=user_context)
 
-        draft_record = self._get_draft_record(record_id, user_context=user_context)
-        self._upload_file_to_draft_record(draft_record, filename, native_path, user_context=user_context)
-        self._publish_draft_record(draft_record, user_context=user_context)
 
-    def _list_records(self, write_intent: bool, user_context: Optional[ProvidesUserFileSourcesUserContext] = None):
-        if write_intent:
-            return self._list_writeable_records(user_context)
-        return self._list_all_records(user_context)
+class InvenioRepositoryInteractor(RDMRepositoryInteractor):
+    @property
+    def records_url(self) -> str:
+        return f"{self.repository_url}/api/records"
 
-    def _list_all_records(self, user_context: Optional[ProvidesUserFileSourcesUserContext] = None):
+    def to_plugin_uri(self, record_id: str, filename: Optional[str] = None) -> str:
+        return f"{self.plugin.get_uri_root()}/{record_id}{f'/{filename}' if filename else ''}"
+
+    def get_records(self, write_intent: bool, user_context: OptionalUserContext = None) -> List[RemoteDirectory]:
+        # Only draft records owned by the user can be written to.
+        request_url = f"{self.repository_url}/api/user/records?is_published=false" if write_intent else self.records_url
         # TODO: This is limited to 25 records by default. Add pagination support?
-        request_url = self.records_api_url
         response_data = self._get_response(user_context, request_url)
         return self._get_records_from_response(response_data)
 
-    def _list_writeable_records(self, user_context: Optional[ProvidesUserFileSourcesUserContext] = None):
-        # TODO: This is limited to 25 records by default. Add pagination support?
-        # Only draft records can be written to.
-        request_url = urljoin(self.repository_url, "api/user/records?is_published=false")
+    def get_files_in_record(
+        self, record_id: str, write_intent: bool, user_context: OptionalUserContext = None
+    ) -> List[RemoteFile]:
+        request_url = f"{self.records_url}/{record_id}{'/draft' if write_intent else ''}/files"
         response_data = self._get_response(user_context, request_url)
-        return self._get_records_from_response(response_data)
+        return self._get_record_files_from_response(record_id, response_data)
 
-    def _list_record_files(
-        self, path: str, write_intent: bool, user_context: Optional[ProvidesUserFileSourcesUserContext] = None
-    ):
-        request_url = f"{self.records_api_url}{path}{'/draft' if write_intent else '' }/files"
-        response_data = self._get_response(user_context, request_url)
-        return self._get_record_files_from_response(path, response_data)
-
-    def _get_response(self, user_context: Optional[ProvidesUserFileSourcesUserContext], request_url: str) -> dict:
-        headers = self._get_request_headers(user_context)
-        response = requests.get(request_url, headers=headers, verify=VERIFY)
-        self._ensure_response_has_expected_status_code(response, 200)
-        return response.json()
-
-    def _get_request_headers(self, user_context: Optional[ProvidesUserFileSourcesUserContext]):
-        vault = user_context.user_vault if user_context else None
-        token = vault.read_secret(f"preferences/{self.id}/token") if vault else None
-        headers = {"Authorization": f"Bearer {token}"} if token else {}
-        return headers
-
-    def _get_records_from_response(self, response: dict):
-        records = response["hits"]["hits"]
-        return self._get_records_as_directories(records)
-
-    def _get_records_as_directories(self, records):
-        rval = []
-        for record in records:
-            uri = self._to_plugin_uri(record["links"]["self"])
-            # TODO: define model for Directory and File
-            rval.append(
-                {
-                    "class": "Directory",
-                    "name": record["metadata"]["title"],
-                    "ctime": record["created"],
-                    "uri": uri,
-                    "path": f"/{record['id']}",
-                }
-            )
-
-        return rval
-
-    def _get_record_files_from_response(self, path: str, response: dict):
-        files_enabled = response.get("enabled", False)
-        if not files_enabled:
-            return []
-        entries = response["entries"]
-        rval = []
-        for entry in entries:
-            if entry.get("status") == "completed":
-                uri = self._to_plugin_uri(entry["links"]["content"])
-                path = self._to_plugin_uri(entry["links"]["self"])
-                rval.append(
-                    {
-                        "class": "File",
-                        "name": entry["key"],
-                        "size": entry["size"],
-                        "ctime": entry["created"],
-                        "uri": uri,
-                        "path": path,
-                    }
-                )
-        return rval
-
-    def _to_plugin_uri(self, uri: str) -> str:
-        return uri.replace(self.records_api_url, self.get_uri_root())
-
-    def _get_draft_record(self, record_id: str, user_context: Optional[ProvidesUserFileSourcesUserContext] = None):
-        request_url = f"{self.records_api_url}{record_id}/draft"
-        draft_record = self._get_response(user_context, request_url)
-        return draft_record
-
-    def _create_draft_record(
-        self, title: str, user_context: Optional[ProvidesUserFileSourcesUserContext] = None
-    ) -> InvenioRecord:
+    def create_draft_record(self, title: str, user_context: OptionalUserContext = None) -> RemoteDirectory:
         today = datetime.date.today().isoformat()
         creator = self._get_creator_from_user_context(user_context)
-        should_publish = self._get_public_records_user_setting_enabled_status(user_context)
+        should_publish = bool(self.get_user_preference_by_key("public_records", user_context))
         access = "public" if should_publish else "restricted"
         create_record_request = {
             "access": {"record": access, "files": access},
@@ -308,27 +219,19 @@ class InvenioRDMFilesSource(RDMFilesSource):
                 "Cannot create record without authentication token. Please set your personal access token in your Galaxy preferences."
             )
 
-        create_record_url = self.records_api_url
-        response = requests.post(create_record_url, json=create_record_request, headers=headers, verify=VERIFY)
+        response = requests.post(self.records_url, json=create_record_request, headers=headers, verify=VERIFY)
         self._ensure_response_has_expected_status_code(response, 201)
         record = response.json()
         return record
 
-    def _delete_draft_record(
-        self, record: InvenioRecord, user_context: Optional[ProvidesUserFileSourcesUserContext] = None
-    ):
-        delete_record_url = record["links"]["self"]
-        headers = self._get_request_headers(user_context)
-        response = requests.delete(delete_record_url, headers=headers, verify=VERIFY)
-        self._ensure_response_has_expected_status_code(response, 204)
-
-    def _upload_file_to_draft_record(
+    def upload_file_to_draft_record(
         self,
-        record: InvenioRecord,
+        record_id: str,
         filename: str,
-        native_path: str,
-        user_context: Optional[ProvidesUserFileSourcesUserContext] = None,
+        file_path: str,
+        user_context: OptionalUserContext = None,
     ):
+        record = self._get_draft_record(record_id, user_context=user_context)
         upload_file_url = record["links"]["files"]
         headers = self._get_request_headers(user_context)
 
@@ -341,7 +244,7 @@ class InvenioRDMFilesSource(RDMFilesSource):
         file_entry = next(entry for entry in entries if entry["key"] == filename)
         upload_file_content_url = file_entry["links"]["content"]
         commit_file_upload_url = file_entry["links"]["commit"]
-        with open(native_path, "rb") as file:
+        with open(file_path, "rb") as file:
             response = requests.put(upload_file_content_url, data=file, headers=headers, verify=VERIFY)
             self._ensure_response_has_expected_status_code(response, 200)
 
@@ -349,17 +252,74 @@ class InvenioRDMFilesSource(RDMFilesSource):
         response = requests.post(commit_file_upload_url, headers=headers, verify=VERIFY)
         self._ensure_response_has_expected_status_code(response, 200)
 
-    def _publish_draft_record(
-        self, record: InvenioRecord, user_context: Optional[ProvidesUserFileSourcesUserContext] = None
+    def download_file_from_record(
+        self,
+        record_id: str,
+        filename: str,
+        file_path: str,
+        user_context: OptionalUserContext = None,
     ):
-        publish_record_url = f"{self.records_api_url}/{record['id']}/draft/actions/publish"
+        download_file_content_url = f"{self.records_url}/{record_id}/files/{quote(filename)}/content"
+
+        headers = self._get_request_headers(user_context)
+        req = urllib.request.Request(download_file_content_url, headers=headers)
+        with urllib.request.urlopen(req, timeout=DEFAULT_SOCKET_TIMEOUT, context=SSL_CONTEXT) as page:
+            f = open(file_path, "wb")
+            return stream_to_open_named_file(
+                page, f.fileno(), file_path, source_encoding=get_charset_from_http_headers(page.headers)
+            )
+
+    def publish_draft_record(self, record_id: str, user_context: OptionalUserContext = None):
+        publish_record_url = f"{self.records_url}/{record_id}/draft/actions/publish"
         headers = self._get_request_headers(user_context)
         response = requests.post(publish_record_url, headers=headers, verify=VERIFY)
         self._ensure_response_has_expected_status_code(response, 202)
 
-    def _get_creator_from_user_context(self, user_context: Optional[ProvidesUserFileSourcesUserContext]):
-        preferences = user_context.preferences if user_context else None
-        public_name = preferences.get(f"{self.id}|public_name", None) if preferences else None
+    def _get_draft_record(self, record_id: str, user_context: OptionalUserContext = None):
+        request_url = f"{self.records_url}/{record_id}/draft"
+        draft_record = self._get_response(user_context, request_url)
+        return draft_record
+
+    def _get_records_from_response(self, response: dict) -> List[RemoteDirectory]:
+        records = response["hits"]["hits"]
+        rval: List[RemoteDirectory] = []
+        for record in records:
+            uri = self.to_plugin_uri(record_id=record["id"])
+            path = self.plugin.to_relative_path(uri)
+            rval.append(
+                {
+                    "class": "Directory",
+                    "name": record["metadata"]["title"],
+                    "uri": uri,
+                    "path": path,
+                }
+            )
+        return rval
+
+    def _get_record_files_from_response(self, record_id: str, response: dict) -> List[RemoteFile]:
+        files_enabled = response.get("enabled", False)
+        if not files_enabled:
+            return []
+        entries = response["entries"]
+        rval: List[RemoteFile] = []
+        for entry in entries:
+            if entry.get("status") == "completed":
+                uri = self.to_plugin_uri(record_id=record_id, filename=entry["key"])
+                path = self.plugin.to_relative_path(uri)
+                rval.append(
+                    {
+                        "class": "File",
+                        "name": entry["key"],
+                        "size": entry["size"],
+                        "ctime": entry["created"],
+                        "uri": uri,
+                        "path": path,
+                    }
+                )
+        return rval
+
+    def _get_creator_from_user_context(self, user_context: OptionalUserContext):
+        public_name = self.get_user_preference_by_key("public_name", user_context)
         family_name = "Galaxy User"
         given_name = "Anonymous"
         if public_name:
@@ -371,14 +331,26 @@ class InvenioRDMFilesSource(RDMFilesSource):
                 given_name = public_name
         return {"person_or_org": {"family_name": family_name, "given_name": given_name, "type": "personal"}}
 
-    def _get_public_records_user_setting_enabled_status(
-        self, user_context: Optional[ProvidesUserFileSourcesUserContext]
-    ) -> bool:
+    def get_user_preference_by_key(self, key: str, user_context: OptionalUserContext):
         preferences = user_context.preferences if user_context else None
-        public_records = preferences.get(f"{self.id}|public_records", None) if preferences else None
-        if public_records:
-            return True
-        return False
+        value = preferences.get(f"{self.plugin.id}|{key}", None) if preferences else None
+        return value
+
+    def _get_response(self, user_context: OptionalUserContext, request_url: str) -> dict:
+        headers = self._get_request_headers(user_context)
+        response = requests.get(request_url, headers=headers, verify=VERIFY)
+        self._ensure_response_has_expected_status_code(response, 200)
+        return response.json()
+
+    def _get_request_headers(self, user_context: OptionalUserContext):
+        token = self.get_authorization_token(user_context)
+        headers = {"Authorization": f"Bearer {token}"} if token else {}
+        return headers
+
+    def get_authorization_token(self, user_context) -> str:
+        vault = user_context.user_vault if user_context else None
+        token = vault.read_secret(f"preferences/{self.plugin.id}/token") if vault else None
+        return token
 
     def _ensure_response_has_expected_status_code(self, response, expected_status_code: int):
         if response.status_code != expected_status_code:
