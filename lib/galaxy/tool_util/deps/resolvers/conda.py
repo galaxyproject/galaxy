@@ -340,6 +340,8 @@ class CondaDependencyResolver(
         dir_contents = set(
             os.listdir(self.conda_context.envs_path) if os.path.exists(self.conda_context.envs_path) else []
         )
+        # never delete Galaxy's conda env
+        used_paths.add("_galaxy_")
         unused_paths = dir_contents.difference(used_paths)  # New set with paths in dir_contents but not in used_paths
         unused_paths = [os.path.join(self.conda_context.envs_path, p) for p in unused_paths]
         return unused_paths

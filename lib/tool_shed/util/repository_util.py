@@ -338,7 +338,7 @@ def get_repositories_by_category(
         .filter(app.model.RepositoryCategoryAssociation.category_id == category_id)
     )
     if installable:
-        subquery = select([app.model.RepositoryMetadata.table.c.repository_id])
+        subquery = select(app.model.RepositoryMetadata.table.c.repository_id)
         query = query.filter(app.model.Repository.id.in_(subquery))
     if sort_key == "owner":
         query = (

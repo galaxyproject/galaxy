@@ -202,14 +202,18 @@ def administrative_delete_datasets(
     # Get HDAs older than cutoff time (ignore tool_id at this point)
     # We really only need the id column here, but sqlalchemy barfs when
     # trying to select only 1 column
-    hda_ids_query = sa.select(
-        (app.model.HistoryDatasetAssociation.__table__.c.id, app.model.HistoryDatasetAssociation.__table__.c.deleted),
-        whereclause=and_(
-            app.model.Dataset.__table__.c.deleted == false(),
-            app.model.HistoryDatasetAssociation.__table__.c.update_time < cutoff_time,
-            app.model.HistoryDatasetAssociation.__table__.c.deleted == false(),
-        ),
-        from_obj=[sa.outerjoin(app.model.Dataset.__table__, app.model.HistoryDatasetAssociation.__table__)],
+    hda_ids_query = (
+        sa.select(
+            app.model.HistoryDatasetAssociation.__table__.c.id, app.model.HistoryDatasetAssociation.__table__.c.deleted
+        )
+        .where(
+            and_(
+                app.model.Dataset.__table__.c.deleted == false(),
+                app.model.HistoryDatasetAssociation.__table__.c.update_time < cutoff_time,
+                app.model.HistoryDatasetAssociation.__table__.c.deleted == false(),
+            )
+        )
+        .select_from(sa.outerjoin(app.model.Dataset.__table__, app.model.HistoryDatasetAssociation.__table__))
     )
 
     # Add all datasets associated with Histories to our list
@@ -230,16 +234,19 @@ def administrative_delete_datasets(
 
     # Process each of the Dataset objects
     for hda_id in hda_ids:
-        user_query = sa.select(
-            [app.model.HistoryDatasetAssociation.__table__, app.model.History.__table__, app.model.User.__table__],
-            whereclause=and_(app.model.HistoryDatasetAssociation.__table__.c.id == hda_id),
-            from_obj=[
+        user_query = (
+            sa.select(
+                app.model.HistoryDatasetAssociation.__table__, app.model.History.__table__, app.model.User.__table__
+            )
+            .where(and_(app.model.HistoryDatasetAssociation.__table__.c.id == hda_id))
+            .select_from(
                 sa.join(app.model.User.__table__, app.model.History.__table__).join(
                     app.model.HistoryDatasetAssociation.__table__
                 )
-            ],
-            use_labels=True,
+            )
+            .set_label_style()
         )
+
         for result in app.sa_session.execute(user_query):
             user_notifications[result[app.model.User.__table__.c.email]].append(
                 (

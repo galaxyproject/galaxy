@@ -31,6 +31,7 @@ describe("ToolForm", () => {
             version: "version",
             inputs: [],
             help: "help_text",
+            creator: [{ class: "Person", givenName: "FakeName", familyName: "FakeSurname", email: "fakeEmail" }],
         };
         axiosMock.onGet(`/api/tools/tool_id/build?tool_version=version`).reply(200, toolData);
         axiosMock.onGet(`/api/webhooks`).reply(200, []);
@@ -79,5 +80,7 @@ describe("ToolForm", () => {
         expect(dropdown.length).toBe(2);
         const help = wrapper.find(".form-help");
         expect(help.text()).toBe("help_text");
+        const creator = wrapper.find(".creative-work-creator");
+        expect(creator.text()).toContain("FakeName FakeSurname");
     });
 });

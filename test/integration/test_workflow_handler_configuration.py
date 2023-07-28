@@ -127,8 +127,7 @@ class BaseWorkflowHandlerConfigurationTestCase(integration_util.IntegrationTestC
         # into Galaxy's internal state.
         app = self._app
         history_id = app.security.decode_id(history_id)
-        sa_session = app.model.context.current
-        history = sa_session.query(app.model.History).get(history_id)
+        history = app.model.session.get(app.model.History, history_id)
         workflow_invocations = history.workflow_invocations
         return workflow_invocations
 

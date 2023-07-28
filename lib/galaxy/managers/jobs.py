@@ -35,6 +35,10 @@ from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
+from galaxy.model import (
+    Job,
+    JobParameter,
+)
 from galaxy.model.base import transaction
 from galaxy.model.index_filter_util import (
     raw_text_column_filter,
@@ -325,37 +329,37 @@ class JobSearch:
                 return key, value
             return key, value
 
-        job_conditions = [
+        # build one subquery that selects a job with correct job parameters
+
+        subq = select(model.Job.id).where(
             and_(
                 model.Job.tool_id == tool_id,
-                model.Job.user == user,
+                model.Job.user_id == user.id,
                 model.Job.copied_from_job_id.is_(None),  # Always pick original job
             )
-        ]
-
+        )
         if tool_version:
-            job_conditions.append(model.Job.tool_version == str(tool_version))
+            subq = subq.where(Job.tool_version == str(tool_version))
 
         if job_state is None:
-            job_conditions.append(
-                model.Job.state.in_(
-                    [
-                        model.Job.states.NEW,
-                        model.Job.states.QUEUED,
-                        model.Job.states.WAITING,
-                        model.Job.states.RUNNING,
-                        model.Job.states.OK,
-                    ]
+            subq = subq.where(
+                Job.state.in_(
+                    [Job.states.NEW, Job.states.QUEUED, Job.states.WAITING, Job.states.RUNNING, Job.states.OK]
                 )
             )
         else:
             if isinstance(job_state, str):
-                job_conditions.append(model.Job.state == job_state)
+                subq = subq.where(Job.state == job_state)
             elif isinstance(job_state, list):
-                o = []
-                for s in job_state:
-                    o.append(model.Job.state == s)
-                job_conditions.append(or_(*o))
+                subq = subq.where(or_(*[Job.state == s for s in job_state]))
+
+        # exclude jobs with deleted outputs
+        subq = subq.where(
+            and_(
+                model.Job.any_output_dataset_collection_instances_deleted == false(),
+                model.Job.any_output_dataset_deleted == false(),
+            )
+        )
 
         for k, v in wildcard_param_dump.items():
             wildcard_value = None
@@ -371,26 +375,26 @@ class JobSearch:
             if not wildcard_value:
                 value_dump = json.dumps(v, sort_keys=True)
                 wildcard_value = value_dump.replace('"id": "__id_wildcard__"', '"id": %')
-            a = aliased(model.JobParameter)
+            a = aliased(JobParameter)
             if value_dump == wildcard_value:
-                job_conditions.append(
+                subq = subq.join(a).where(
                     and_(
-                        model.Job.id == a.job_id,
+                        Job.id == a.job_id,
                         a.name == k,
                         a.value == value_dump,
                     )
                 )
             else:
-                job_conditions.append(and_(model.Job.id == a.job_id, a.name == k, a.value.like(wildcard_value)))
+                subq = subq.join(a).where(
+                    and_(
+                        Job.id == a.job_id,
+                        a.name == k,
+                        a.value.like(wildcard_value),
+                    )
+                )
 
-        job_conditions.append(
-            and_(
-                model.Job.any_output_dataset_collection_instances_deleted == false(),
-                model.Job.any_output_dataset_deleted == false(),
-            )
-        )
+        query = select(Job.id).select_from(Job.table.join(subq, subq.c.id == Job.id))
 
-        subq = self.sa_session.query(model.Job.id).filter(*job_conditions).subquery()
         data_conditions = []
 
         # We now build the query filters that relate to the input datasets
@@ -416,14 +420,19 @@ class JobSearch:
                     c = aliased(model.HistoryDatasetAssociation)
                     d = aliased(model.JobParameter)
                     e = aliased(model.HistoryDatasetAssociationHistory)
-                    stmt = select([model.HistoryDatasetAssociation.id]).where(
+                    query.add_columns(a.dataset_id)
+                    used_ids.append(a.dataset_id)
+                    query = query.join(a, a.job_id == model.Job.id)
+                    stmt = select(model.HistoryDatasetAssociation.id).where(
                         model.HistoryDatasetAssociation.id == e.history_dataset_association_id
                     )
+                    # b is the HDA used for the job
+                    query = query.join(b, a.dataset_id == b.id).join(c, c.dataset_id == b.dataset_id)
                     name_condition = []
                     if identifier:
+                        query = query.join(d)
                         data_conditions.append(
                             and_(
-                                model.Job.id == d.job_id,
                                 d.name.in_({f"{_}|__identifier__" for _ in k}),
                                 d.value == json.dumps(identifier),
                             )
@@ -444,10 +453,7 @@ class JobSearch:
                     )
                     data_conditions.append(
                         and_(
-                            a.job_id == model.Job.id,
                             a.name.in_(k),
-                            a.dataset_id == b.id,  # b is the HDA used for the job
-                            c.dataset_id == b.dataset_id,
                             c.id == v,  # c is the requested job input HDA
                             # We need to make sure that the job we are looking for has been run with identical inputs.
                             # Here we deal with 3 requirements:
@@ -466,23 +472,26 @@ class JobSearch:
                             or_(b.deleted == false(), c.deleted == false()),
                         )
                     )
-
-                    used_ids.append(a.dataset_id)
                 elif t == "ldda":
                     a = aliased(model.JobToInputLibraryDatasetAssociation)
-                    data_conditions.append(and_(model.Job.id == a.job_id, a.name.in_(k), a.ldda_id == v))
+                    query = query.add_columns(a.ldda_id)
+                    query = query.join(a, a.job_id == model.Job.id)
+                    data_conditions.append(and_(a.name.in_(k), a.ldda_id == v))
                     used_ids.append(a.ldda_id)
                 elif t == "hdca":
                     a = aliased(model.JobToInputDatasetCollectionAssociation)
                     b = aliased(model.HistoryDatasetCollectionAssociation)
                     c = aliased(model.HistoryDatasetCollectionAssociation)
+                    query = query.add_columns(a.dataset_collection_id)
+                    query = (
+                        query.join(a, a.job_id == model.Job.id)
+                        .join(b, b.id == a.dataset_collection_id)
+                        .join(c, b.name == c.name)
+                    )
                     data_conditions.append(
                         and_(
-                            model.Job.id == a.job_id,
                             a.name.in_(k),
-                            b.id == a.dataset_collection_id,
                             c.id == v,
-                            b.name == c.name,
                             or_(
                                 and_(b.deleted == false(), b.id == v),
                                 and_(
@@ -500,13 +509,33 @@ class JobSearch:
                     a = aliased(model.JobToInputDatasetCollectionElementAssociation)
                     b = aliased(model.DatasetCollectionElement)
                     c = aliased(model.DatasetCollectionElement)
+                    d = aliased(model.HistoryDatasetAssociation)
+                    e = aliased(model.HistoryDatasetAssociation)
+                    query = query.add_columns(a.dataset_collection_element_id)
+                    query = (
+                        query.join(a)
+                        .join(b, b.id == a.dataset_collection_element_id)
+                        .join(
+                            c,
+                            and_(
+                                c.element_identifier == b.element_identifier,
+                                or_(c.hda_id == b.hda_id, c.child_collection_id == b.child_collection_id),
+                            ),
+                        )
+                        .outerjoin(d, d.id == c.hda_id)
+                        .outerjoin(e, e.dataset_id == d.dataset_id)
+                    )
                     data_conditions.append(
                         and_(
-                            model.Job.id == a.job_id,
                             a.name.in_(k),
-                            a.dataset_collection_element_id == b.id,
-                            b.element_identifier == c.element_identifier,
-                            c.child_collection_id == b.child_collection_id,
+                            or_(
+                                c.child_collection_id == b.child_collection_id,
+                                and_(
+                                    c.hda_id == b.hda_id,
+                                    d.id == c.hda_id,
+                                    e.dataset_id == d.dataset_id,
+                                ),
+                            ),
                             c.id == v,
                         )
                     )
@@ -514,14 +543,9 @@ class JobSearch:
                 else:
                     return []
 
-        query = (
-            self.sa_session.query(model.Job.id, *used_ids)
-            .join(subq, model.Job.id == subq.c.id)
-            .filter(*data_conditions)
-            .group_by(model.Job.id, *used_ids)
-            .order_by(model.Job.id.desc())
-        )
-        for job in query:
+            query = query.where(*data_conditions).group_by(model.Job.id, *used_ids).order_by(model.Job.id.desc())
+
+        for job in self.sa_session.execute(query):
             # We found a job that is equal in terms of tool_id, user, state and input datasets,
             # but to be able to verify that the parameters match we need to modify all instances of
             # dataset_ids (HDA, LDDA, HDCA) in the incoming param_dump to point to those used by the
@@ -556,7 +580,7 @@ class JobSearch:
                         and_(model.Job.id == a.job_id, a.name == k, a.value == json.dumps(v, sort_keys=True))
                     )
             else:
-                job_parameter_conditions = [model.Job.id == job]
+                job_parameter_conditions = [model.Job.id == job[0]]
             query = self.sa_session.query(model.Job).filter(*job_parameter_conditions)
             job = query.first()
             if job is None:
@@ -614,11 +638,9 @@ def invocation_job_source_iter(sa_session, invocation_id):
     join = model.WorkflowInvocationStep.table.join(model.WorkflowInvocation)
     statement = (
         select(
-            [
-                model.WorkflowInvocationStep.job_id,
-                model.WorkflowInvocationStep.implicit_collection_jobs_id,
-                model.WorkflowInvocationStep.state,
-            ]
+            model.WorkflowInvocationStep.job_id,
+            model.WorkflowInvocationStep.implicit_collection_jobs_id,
+            model.WorkflowInvocationStep.state,
         )
         .select_from(join)
         .where(model.WorkflowInvocation.id == invocation_id)
@@ -789,7 +811,7 @@ def summarize_jobs_to_dict(sa_session, jobs_source):
                 model.ImplicitCollectionJobsJobAssociation.table.join(model.Job)
             )
             statement = (
-                select([model.Job.state, func.count("*")])
+                select(model.Job.state, func.count("*"))
                 .select_from(join)
                 .where(model.ImplicitCollectionJobs.id == jobs_source.id)
                 .group_by(model.Job.state)

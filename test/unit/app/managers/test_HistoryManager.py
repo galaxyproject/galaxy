@@ -2,7 +2,11 @@ from unittest import mock
 
 import pytest
 import sqlalchemy
-from sqlalchemy import true
+from sqlalchemy import (
+    false,
+    select,
+    true,
+)
 
 from galaxy import (
     exceptions,
@@ -48,14 +52,22 @@ class TestHistoryManager(BaseTestCase):
         assert isinstance(history1, model.History)
         assert history1.name == "history1"
         assert history1.user == user2
-        assert history1 == self.trans.sa_session.query(model.History).get(history1.id)
-        assert history1 == self.trans.sa_session.query(model.History).filter(model.History.name == "history1").one()
-        assert history1 == self.trans.sa_session.query(model.History).filter(model.History.user == user2).one()
+        assert history1 == self.trans.sa_session.get(model.History, history1.id)
+        assert (
+            history1
+            == self.trans.sa_session.execute(
+                select(model.History).filter(model.History.name == "history1")
+            ).scalar_one()
+        )
+        assert (
+            history1
+            == self.trans.sa_session.execute(select(model.History).filter(model.History.user == user2)).scalar_one()
+        )
 
         history2 = self.history_manager.copy(history1, user=user3)
 
         self.log("should be able to query")
-        histories = self.trans.sa_session.query(model.History).all()
+        histories = self.trans.sa_session.scalars(select(model.History)).all()
         assert self.history_manager.one(filters=(model.History.id == history1.id)) == history1
         assert self.history_manager.list() == histories
         assert self.history_manager.by_id(history1.id) == history1
@@ -94,7 +106,7 @@ class TestHistoryManager(BaseTestCase):
         history2 = self.history_manager.copy(history1, user=user3)
         assert isinstance(history2, model.History)
         assert history2.user == user3
-        assert history2 == self.trans.sa_session.query(model.History).get(history2.id)
+        assert history2 == self.trans.sa_session.get(model.History, history2.id)
         assert history2.name == history1.name
         assert history2 != history1
 
@@ -956,10 +968,12 @@ class TestHistoryFilters(BaseTestCase):
         history2 = self.history_manager.create(name="history2", user=user2)
         history3 = self.history_manager.create(name="history3", user=user2)
         history4 = self.history_manager.create(name="history4", user=user2)
+        history5 = self.history_manager.create(name="history5", user=user2)
 
         self.history_manager.delete(history1)
         self.history_manager.delete(history2)
-        self.history_manager.delete(history3)
+        self.history_manager.archive_history(history3, None)
+        self.history_manager.archive_history(history4, None)
 
         test_annotation = "testing"
         history2.add_item_annotation(self.trans.sa_session, user2, history2, test_annotation)
@@ -969,12 +983,17 @@ class TestHistoryFilters(BaseTestCase):
         history3.add_item_annotation(self.trans.sa_session, user2, history4, test_annotation)
         self.trans.sa_session.flush()
 
-        all_histories = [history1, history2, history3, history4]
-        deleted = [history1, history2, history3]
+        all_histories = [history1, history2, history3, history4, history5]
+        deleted = [history1, history2]
+        archived = [history3, history4]
 
         assert self.history_manager.count() == len(all_histories), "having no filters should count all histories"
         filters = [model.History.deleted == true()]
-        assert self.history_manager.count(filters=filters) == len(deleted), "counting with orm filters should work"
+        assert self.history_manager.count(filters=filters) == len(deleted)
+        filters = [model.History.archived == true()]
+        assert self.history_manager.count(filters=filters) == len(archived)
+        filters = [model.History.deleted == false(), model.History.archived == false()]
+        assert self.history_manager.count(filters=filters) == len(all_histories) - len(deleted) - len(archived)
 
         raw_annotation_fn_filter = ("annotation", "has", test_annotation)
         # functional filtering is not supported

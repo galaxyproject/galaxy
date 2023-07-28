@@ -360,7 +360,7 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
 
     def get_discarded_summary(self, user: model.User) -> CleanableItemsSummary:
         stmt = (
-            select([func.sum(model.Dataset.total_size), func.count(model.HistoryDatasetAssociation.id)])
+            select(func.sum(model.Dataset.total_size), func.count(model.HistoryDatasetAssociation.id))
             .select_from(model.HistoryDatasetAssociation)
             .join(model.Dataset, model.HistoryDatasetAssociation.table.c.dataset_id == model.Dataset.id)
             .join(model.History, model.HistoryDatasetAssociation.table.c.history_id == model.History.id)
@@ -385,12 +385,10 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
     ) -> List[StoredItem]:
         stmt = (
             select(
-                [
-                    model.HistoryDatasetAssociation.id,
-                    model.HistoryDatasetAssociation.name,
-                    model.HistoryDatasetAssociation.update_time,
-                    model.Dataset.total_size,
-                ]
+                model.HistoryDatasetAssociation.id,
+                model.HistoryDatasetAssociation.name,
+                model.HistoryDatasetAssociation.update_time,
+                model.Dataset.total_size,
             )
             .select_from(model.HistoryDatasetAssociation)
             .join(model.Dataset, model.HistoryDatasetAssociation.table.c.dataset_id == model.Dataset.id)

@@ -71,6 +71,7 @@ class TestHistoryImportExportFtpSeleniumIntegration(TestHistoryImportExportFtpSe
         gx_selenium_context.components.histories.import_button.wait_for_and_click()
         history_import = gx_selenium_context.components.history_import
         history_import.radio_button_remote_files.wait_for_and_click()
+        history_import.open_files_dialog.wait_for_and_click()
         files_dialog.ftp_label.wait_for_and_click()
         files_dialog.row(uri="gxftp://my_export.tar.gz").wait_for_and_click()
 

@@ -30,7 +30,13 @@ import Backbone from "backbone";
 import { BTab, BTabs } from "bootstrap-vue";
 import { getDatatypesMapper } from "components/Datatypes";
 import LoadingSpan from "components/LoadingSpan";
-import UploadUtils from "mvc/upload/upload-utils";
+import {
+    AUTO_EXTENSION,
+    DEFAULT_DBKEY,
+    DEFAULT_EXTENSION,
+    getUploadDatatypes,
+    getUploadDbKeys,
+} from "components/Upload/utils";
 
 import Collection from "./Collection";
 import Composite from "./Composite";
@@ -55,8 +61,8 @@ export default {
         chunkUploadSize: { type: Number, default: 1024 },
         fileSourcesConfigured: { type: Boolean, default: false },
         ftpUploadSite: { type: String, default: "" },
-        defaultDbKey: { type: String, default: UploadUtils.DEFAULT_DBKEY },
-        defaultExtension: { type: String, default: UploadUtils.DEFAULT_EXTENSION },
+        defaultDbKey: { type: String, default: DEFAULT_DBKEY },
+        defaultExtension: { type: String, default: DEFAULT_EXTENSION },
         datatypesDisableAuto: { type: Boolean, default: false },
         formats: { type: Array, default: null },
         multiple: {
@@ -72,7 +78,7 @@ export default {
         selectable: { type: Boolean, default: false },
         auto: {
             type: Object,
-            default: () => UploadUtils.AUTO_EXTENSION,
+            default: () => AUTO_EXTENSION,
         },
     },
     data: function () {
@@ -170,27 +176,8 @@ export default {
             }
         });
 
-        // load extensions
-        // TODO: provider...
-        UploadUtils.getUploadDatatypes(this.datatypesDisableAuto, this.auto)
-            .then((listExtensions) => {
-                this.extensionsSet = true;
-                this.listExtensions = listExtensions;
-            })
-            .catch((err) => {
-                console.log("Error in UploadModalContent, unable to load datatypes", err);
-            });
-
-        // load genomes
-        // TODO: provider...
-        UploadUtils.getUploadDbKeys(this.defaultDbKey)
-            .then((listDbKeys) => {
-                this.genomesSet = true;
-                this.listGenomes = listDbKeys;
-            })
-            .catch((err) => {
-                console.log("Error in uploadModalContent, unable to load genomes", err);
-            });
+        this.loadExtensions();
+        this.loadGenomes();
 
         if (this.formats !== null) {
             this.datatypesMapperReady = false;
@@ -219,6 +206,14 @@ export default {
         },
         immediateUpload: function (files) {
             this.$refs.regular?.addFiles(files);
+        },
+        loadExtensions: async function () {
+            this.listExtensions = await getUploadDatatypes(this.datatypesDisableAuto, this.auto);
+            this.extensionsSet = true;
+        },
+        loadGenomes: async function () {
+            this.listGenomes = await getUploadDbKeys(this.defaultDbKey);
+            this.genomesSet = true;
         },
     },
 };

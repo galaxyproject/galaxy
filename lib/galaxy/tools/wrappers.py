@@ -301,7 +301,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
             compute_environment: Optional["ComputeEnvironment"] = None,
         ) -> None:
             self.dataset = dataset
-            self.metadata: "MetadataCollection" = dataset.metadata
+            self.metadata: MetadataCollection = dataset.metadata
             self.compute_environment = compute_environment
 
         def __getattr__(self, name: str) -> Any:

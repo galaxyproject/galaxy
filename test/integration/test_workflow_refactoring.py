@@ -6,6 +6,8 @@ from typing import (
     List,
 )
 
+from sqlalchemy import select
+
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.workflows import RefactorRequest
 from galaxy.model import (
@@ -767,7 +769,8 @@ steps:
             yield workflow_object
 
     def _refactor(self, actions: List[Dict[str, Any]], stored_workflow=None, dry_run=False, style="ga"):
-        user = self._app.model.session.query(User).order_by(User.id.desc()).limit(1).one()
+        stmt = select(User).order_by(User.id.desc()).limit(1)
+        user = self._app.model.session.execute(stmt).scalar_one()
         mock_trans = MockTrans(self._app, user)
 
         app = self._app
@@ -818,11 +821,13 @@ steps:
         return response
 
     def _model_last_time(self, clazz):
-        obj = self._app.model.session.query(clazz).order_by(clazz.update_time.desc()).limit(1).one()
+        stmt = select(clazz).order_by(clazz.update_time.desc()).limit(1)
+        obj = self._app.model.session.execute(stmt).unique().scalar_one()
         return obj.update_time
 
     def _model_last_id(self, clazz):
-        obj = self._app.model.session.query(clazz).order_by(clazz.id.desc()).limit(1).one_or_none()
+        stmt = select(clazz).order_by(clazz.id.desc()).limit(1)
+        obj = self._app.model.session.execute(stmt).scalar_one_or_none()
         return obj.id if obj else None
 
     @property
@@ -835,7 +840,8 @@ steps:
 
     def _recent_stored_workflow(self, n=1):
         app = self._app
-        return app.model.session.query(StoredWorkflow).order_by(StoredWorkflow.id.desc()).limit(n).all()[-1]
+        stmt = select(StoredWorkflow).order_by(StoredWorkflow.id.desc()).limit(n)
+        return app.model.session.scalars(stmt).unique().all()[-1]
 
     @property
     def _latest_workflow(self):

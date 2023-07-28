@@ -84,21 +84,18 @@ class TagsController(BaseUIController, UsesTagsMixin):
             item_class = item.__class__
         item_tag_assoc_class = self.get_tag_handler(trans).get_tag_assoc_class(item_class)
         # Build select statement.
-        cols_to_select = [item_tag_assoc_class.table.c.tag_id, func.count("*")]
         from_obj = item_tag_assoc_class.table.join(item_class.table).join(trans.app.model.Tag.table)
         where_clause = and_(
             trans.app.model.Tag.table.c.name.like(f"{q}%"), item_tag_assoc_class.table.c.user_id == user.id
         )
-        order_by = [func.count("*").desc()]
-        group_by = item_tag_assoc_class.table.c.tag_id
         # Do query and get result set.
-        query = select(
-            columns=cols_to_select,
-            from_obj=from_obj,
-            whereclause=where_clause,
-            group_by=group_by,
-            order_by=order_by,
-            limit=limit,
+        query = (
+            select(item_tag_assoc_class.table.c.tag_id, func.count())
+            .select_from(from_obj)
+            .where(where_clause)
+            .group_by(item_tag_assoc_class.table.c.tag_id)
+            .order_by(func.count().desc())
+            .limit(limit)
         )
         result_set = trans.sa_session.execute(query)
         # Create and return autocomplete data.
@@ -133,23 +130,20 @@ class TagsController(BaseUIController, UsesTagsMixin):
             item_class = item.__class__
         item_tag_assoc_class = self.get_tag_handler(trans).get_tag_assoc_class(item_class)
         # Build select statement.
-        cols_to_select = [item_tag_assoc_class.table.c.value, func.count("*")]
         from_obj = item_tag_assoc_class.table.join(item_class.table).join(trans.app.model.Tag.table)
         where_clause = and_(
             item_tag_assoc_class.table.c.user_id == user.id,
             trans.app.model.Tag.table.c.id == tag.id,
             item_tag_assoc_class.table.c.value.like(f"{tag_value}%"),
         )
-        order_by = [func.count("*").desc(), item_tag_assoc_class.table.c.value]
-        group_by = item_tag_assoc_class.table.c.value
         # Do query and get result set.
-        query = select(
-            columns=cols_to_select,
-            from_obj=from_obj,
-            whereclause=where_clause,
-            group_by=group_by,
-            order_by=order_by,
-            limit=limit,
+        query = (
+            select(item_tag_assoc_class.table.c.value, func.count())
+            .select_from_obj(from_obj)
+            .where(where_clause)
+            .group_by(item_tag_assoc_class.table.c.value)
+            .order_by(func.count().desc(), item_tag_assoc_class.table.c.value)
+            .limit(limit)
         )
         result_set = trans.sa_session.execute(query)
         # Create and return autocomplete data.
@@ -165,14 +159,16 @@ class TagsController(BaseUIController, UsesTagsMixin):
         most popular to least popular name.
         """
         # Build select stmt.
-        cols_to_select = [item_tag_assoc_class.table.c.user_tname, func.count("*")]
         where_clause = and_(
             item_tag_assoc_class.table.c.user_id == user.id, item_tag_assoc_class.table.c.tag_id == tag.id
         )
-        group_by = item_tag_assoc_class.table.c.user_tname
-        order_by = [func.count("*").desc()]
         # Do query and get result set.
-        query = select(columns=cols_to_select, whereclause=where_clause, group_by=group_by, order_by=order_by)
+        query = (
+            select(item_tag_assoc_class.table.c.user_tname, func.count())
+            .where(where_clause)
+            .group_by(item_tag_assoc_class.table.c.user_tname)
+            .order_by(func.count().desc())
+        )
         result_set = trans.sa_session.execute(query)
         user_tag_names = list()
         for row in result_set:

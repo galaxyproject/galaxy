@@ -37,16 +37,14 @@ class Users(BaseUIController, ReportQueryBuilder):
         sort_id = specs.sort_id
         order = specs.order
         arrow = specs.arrow
-        _order = specs.exc_order
 
-        q = sa.select(
-            (
+        q = (
+            sa.select(
                 self.select_month(galaxy.model.User.table.c.create_time).label("date"),
                 sa.func.count(galaxy.model.User.table.c.id).label("num_users"),
-            ),
-            from_obj=[galaxy.model.User.table],
-            group_by=self.group_by_month(galaxy.model.User.table.c.create_time),
-            order_by=[_order],
+            )
+            .group_by(self.group_by_month(galaxy.model.User.table.c.create_time))
+            .order_by(specs.exc_order)
         )
         users = []
         for row in trans.sa_session.execute(q):
@@ -71,17 +69,20 @@ class Users(BaseUIController, ReportQueryBuilder):
         end_date = start_date + timedelta(days=calendar.monthrange(year, month)[1])
         month_label = start_date.strftime("%B")
         year_label = start_date.strftime("%Y")
-        q = sa.select(
-            (
+        q = (
+            sa.select(
                 self.select_day(galaxy.model.User.table.c.create_time).label("date"),
                 sa.func.count(galaxy.model.User.table.c.id).label("num_users"),
-            ),
-            whereclause=sa.and_(
-                galaxy.model.User.table.c.create_time >= start_date, galaxy.model.User.table.c.create_time < end_date
-            ),
-            from_obj=[galaxy.model.User.table],
-            group_by=self.group_by_day(galaxy.model.User.table.c.create_time),
-            order_by=[sa.desc("date")],
+            )
+            .where(
+                sa.and_(
+                    galaxy.model.User.table.c.create_time >= start_date,
+                    galaxy.model.User.table.c.create_time < end_date,
+                )
+            )
+            .select_from(galaxy.model.User.table)
+            .group_by(self.group_by_day(galaxy.model.User.table.c.create_time))
+            .order_by(sa.desc("date"))
         )
         users = []
         for row in trans.sa_session.execute(q):
@@ -109,13 +110,18 @@ class Users(BaseUIController, ReportQueryBuilder):
         day_label = start_date.strftime("%A")
         month_label = start_date.strftime("%B")
         year_label = start_date.strftime("%Y")
-        q = sa.select(
-            (self.select_day(galaxy.model.User.table.c.create_time).label("date"), galaxy.model.User.table.c.email),
-            whereclause=sa.and_(
-                galaxy.model.User.table.c.create_time >= start_date, galaxy.model.User.table.c.create_time < end_date
-            ),
-            from_obj=[galaxy.model.User.table],
-            order_by=[galaxy.model.User.table.c.email],
+        q = (
+            sa.select(
+                self.select_day(galaxy.model.User.table.c.create_time).label("date"), galaxy.model.User.table.c.email
+            )
+            .where(
+                sa.and_(
+                    galaxy.model.User.table.c.create_time >= start_date,
+                    galaxy.model.User.table.c.create_time < end_date,
+                )
+            )
+            .select_from(galaxy.model.User.table)
+            .order_by(galaxy.model.User.table.c.email)
         )
         users = []
         for row in trans.sa_session.execute(q):
@@ -221,15 +227,15 @@ class Users(BaseUIController, ReportQueryBuilder):
         reverse = descending == 1
         sort_keys = (lambda v: v[0].lower(), lambda v: v[1])
 
-        req = sa.select(
-            (
+        req = (
+            sa.select(
                 sa.func.count(galaxy.model.History.table.c.id).label("history"),
                 galaxy.model.User.table.c.username.label("username"),
-            ),
-            from_obj=[sa.outerjoin(galaxy.model.History.table, galaxy.model.User.table)],
-            whereclause=galaxy.model.History.table.c.user_id == galaxy.model.User.table.c.id,
-            group_by=["username"],
-            order_by=[sa.desc("username"), "history"],
+            )
+            .select_from(sa.outerjoin(galaxy.model.History.table, galaxy.model.User.table))
+            .where(galaxy.model.History.table.c.user_id == galaxy.model.User.table.c.id)
+            .group_by("username")
+            .order_by(sa.desc("username"), "history")
         )
 
         histories = [
