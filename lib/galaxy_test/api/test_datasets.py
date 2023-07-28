@@ -1,4 +1,5 @@
 import textwrap
+import urllib
 import zipfile
 from io import BytesIO
 from typing import (
@@ -529,6 +530,39 @@ class TestDatasetsApi(ApiTestCase):
         assert "tag_c" in updated_hda["tags"]
         assert "name:tag_d" in updated_hda["tags"]
         assert "name:tag_e" in updated_hda["tags"]
+
+    def test_anon_tag_permissions(self):
+        with self._different_user(anon=True):
+            history_id = self._get(urllib.parse.urljoin(self.url, "history/current_history_json")).json()["id"]
+            hda_id = self.dataset_populator.new_dataset(history_id, content="abc", wait=True)["id"]
+            payload = {
+                "item_id": hda_id,
+                "item_class": "HistoryDatasetAssociation",
+                "item_tags": ["cool:tag_a", "cool:tag_b", "tag_c", "name:tag_d", "#tag_e"],
+            }
+            put_response = self._put("tags", data=payload, json=True)
+            updated_hda = self._get(f"histories/{history_id}/contents/{hda_id}").json()
+            assert len(updated_hda["tags"]) == 5
+            # ensure we can remove these tags again
+            payload = {
+                "item_id": hda_id,
+                "item_class": "HistoryDatasetAssociation",
+                "item_tags": [],
+            }
+            put_response = self._put("tags", data=payload, json=True)
+            put_response.raise_for_status()
+            updated_hda = self._get(f"histories/{history_id}/contents/{hda_id}").json()
+            assert len(updated_hda["tags"]) == 0
+        with self._different_user(anon=True):
+            # another anon user can't modify tags
+            payload = {
+                "item_id": hda_id,
+                "item_class": "HistoryDatasetAssociation",
+                "item_tags": ["cool:tag_a", "cool:tag_b", "tag_c", "name:tag_d", "#tag_e"],
+            }
+            put_response = self._put("tags", data=payload, json=True)
+            updated_hda = self._get(f"histories/{history_id}/contents/{hda_id}").json()
+            assert len(updated_hda["tags"]) == 0
 
     @skip_without_tool("cat_data_and_sleep")
     def test_update_datatype(self, history_id):
