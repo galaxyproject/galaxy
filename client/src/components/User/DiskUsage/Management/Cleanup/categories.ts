@@ -5,6 +5,8 @@ import localize from "@/utils/localization";
 import {
     cleanupDiscardedDatasets,
     cleanupDiscardedHistories,
+    fetchArchivedHistories,
+    fetchArchivedHistoriesSummary,
     fetchDiscardedDatasets,
     fetchDiscardedDatasetsSummary,
     fetchDiscardedHistories,
@@ -40,6 +42,24 @@ export function useCleanupCategories() {
                     ),
                     fetchSummary: fetchDiscardedHistoriesSummary,
                     fetchItems: fetchDiscardedHistories,
+                    cleanupItems: cleanupDiscardedHistories,
+                },
+            ],
+        },
+        {
+            id: "archived_items",
+            name: localize("Archived Items"),
+            operations: [
+                {
+                    id: "archived_histories",
+                    name: localize("Archived histories"),
+                    description: localize(
+                        "Archived histories are a good way to keep some of your important but not frequently used histories out of the way." +
+                            " But they can still take up space on the disk." +
+                            " Here you can quickly find and permanently remove those histories to free up some space"
+                    ),
+                    fetchSummary: fetchArchivedHistoriesSummary,
+                    fetchItems: fetchArchivedHistories,
                     cleanupItems: cleanupDiscardedHistories,
                 },
             ],

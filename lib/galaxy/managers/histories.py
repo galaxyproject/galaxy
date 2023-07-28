@@ -457,6 +457,40 @@ class HistoryStorageCleanerManager(StorageCleanerManager):
         discarded = [self._history_to_stored_item(item) for item in result]
         return discarded
 
+    # TODO reduce duplication
+
+    def get_archived_summary(self, user: model.User) -> CleanableItemsSummary:
+        stmt = select(func.sum(model.History.disk_size), func.count(model.History.id)).where(
+            model.History.user_id == user.id,
+            model.History.archived == true(),
+            model.History.purged == false(),
+        )
+        result = self.history_manager.session().execute(stmt).fetchone()
+        total_size = 0 if result[0] is None else result[0]
+        return CleanableItemsSummary(total_size=total_size, total_items=result[1])
+
+    def get_archived(
+        self,
+        user: model.User,
+        offset: Optional[int],
+        limit: Optional[int],
+        order: Optional[StoredItemOrderBy],
+    ) -> List[StoredItem]:
+        stmt = select(model.History).where(
+            model.History.user_id == user.id,
+            model.History.archived == true(),
+            model.History.purged == false(),
+        )
+        if offset:
+            stmt = stmt.offset(offset)
+        if limit:
+            stmt = stmt.limit(limit)
+        if order:
+            stmt = stmt.order_by(self.sort_map[order])
+        result = self.history_manager.session().execute(stmt).scalars()
+        archived = [self._history_to_stored_item(item) for item in result]
+        return archived
+
     def cleanup_items(self, user: model.User, item_ids: Set[int]) -> StorageItemsCleanupResult:
         success_item_count = 0
         total_free_bytes = 0
@@ -465,6 +499,7 @@ class HistoryStorageCleanerManager(StorageCleanerManager):
         for history_id in item_ids:
             try:
                 history = self.history_manager.get_owned(history_id, user)
+                self._unarchive_if_needed(history)
                 self.history_manager.purge(history, flush=False, user=user)
                 success_item_count += 1
                 total_free_bytes += int(history.disk_size)
@@ -482,6 +517,10 @@ class HistoryStorageCleanerManager(StorageCleanerManager):
             total_free_bytes=total_free_bytes,
             errors=errors,
         )
+
+    def _unarchive_if_needed(self, history: model.History):
+        if history.archived:
+            self.history_manager.restore_archived_history(history, force=True)
 
     def _history_to_stored_item(self, history: model.History) -> StoredItem:
         return StoredItem(

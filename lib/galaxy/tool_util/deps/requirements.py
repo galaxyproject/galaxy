@@ -37,7 +37,7 @@ class ToolRequirement:
 
     def __init__(
         self,
-        name: Optional[str] = None,
+        name: str,
         type: Optional[str] = None,
         version: Optional[str] = None,
         specs: Optional[Iterable["RequirementSpecification"]] = None,
@@ -56,13 +56,13 @@ class ToolRequirement:
     def copy(self) -> "ToolRequirement":
         return copy.deepcopy(self)
 
-    @staticmethod
-    def from_dict(d: Dict[str, Any]) -> "ToolRequirement":
+    @classmethod
+    def from_dict(cls, d: Dict[str, Any]) -> "ToolRequirement":
         version = d.get("version")
-        name = d.get("name")
+        name = d["name"]
         type = d.get("type")
         specs = [RequirementSpecification.from_dict(s) for s in d.get("specs", [])]
-        return ToolRequirement(name=name, type=type, version=version, specs=specs)
+        return cls(name=name, type=type, version=version, specs=specs)
 
     def __eq__(self, other: Any) -> bool:
         return (
@@ -99,11 +99,11 @@ class RequirementSpecification:
     def to_dict(self) -> Dict[str, Any]:
         return dict(uri=self.uri, version=self.version)
 
-    @staticmethod
-    def from_dict(dict) -> "RequirementSpecification":
-        uri = dict.get("uri")
+    @classmethod
+    def from_dict(cls, dict: Dict) -> "RequirementSpecification":
+        uri = dict["uri"]
         version = dict.get("version", None)
-        return RequirementSpecification(uri=uri, version=version)
+        return cls(uri=uri, version=version)
 
     def __eq__(self, other: Any) -> bool:
         return self.uri == other.uri and self.version == other.version
@@ -127,9 +127,9 @@ class ToolRequirements:
         else:
             self.tool_requirements = OrderedSet()
 
-    @staticmethod
-    def from_list(requirements: List[Union[ToolRequirement, Dict[str, Any]]]) -> "ToolRequirements":
-        return ToolRequirements(requirements)
+    @classmethod
+    def from_list(cls, requirements: List[Union[ToolRequirement, Dict[str, Any]]]) -> "ToolRequirements":
+        return cls(requirements)
 
     @property
     def resolvable(self) -> "ToolRequirements":
@@ -208,13 +208,13 @@ class ContainerDescription:
             shell=self.shell,
         )
 
-    @staticmethod
-    def from_dict(dict: Dict[str, Any]) -> "ContainerDescription":
+    @classmethod
+    def from_dict(cls, dict: Dict[str, Any]) -> "ContainerDescription":
         identifier = dict["identifier"]
         type = dict.get("type", DEFAULT_CONTAINER_TYPE)
         resolve_dependencies = dict.get("resolve_dependencies", DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES)
         shell = dict.get("shell", DEFAULT_CONTAINER_SHELL)
-        return ContainerDescription(
+        return cls(
             identifier=identifier,
             type=type,
             resolve_dependencies=resolve_dependencies,

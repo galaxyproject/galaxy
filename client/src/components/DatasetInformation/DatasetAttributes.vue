@@ -31,35 +31,14 @@
                             !result['metadata_disable']
                         ">
                         <template v-slot:title>
-                            <span v-if="!result['conversion_disable']">
-                                <FontAwesomeIcon icon="cog" class="mr-1" />{{ "Convert" | l }}
-                            </span>
-                            <span v-else> <FontAwesomeIcon icon="database" class="mr-1" />{{ "Datatypes" | l }} </span>
+                            <FontAwesomeIcon icon="database" class="mr-1" />{{ "Datatypes" | l }}
                         </template>
-                        <div v-if="!result['conversion_disable']" class="ui-portlet-section">
-                            <div class="portlet-header">
-                                <div class="portlet-title">
-                                    <FontAwesomeIcon icon="cog" class="portlet-title-icon fa-fw mr-1" />
-                                    <span class="portlet-title-text">
-                                        <b itemprop="name">{{ "Convert" | l }}</b>
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="portlet-content">
-                                <FormDisplay :inputs="result['conversion_inputs']" @onChange="onConversion" />
-                                <div class="mt-2">
-                                    <b-button variant="primary" @click="submit('conversion', 'conversion')">
-                                        <FontAwesomeIcon icon="exchange-alt" class="mr-1" />{{ "Create Dataset" | l }}
-                                    </b-button>
-                                </div>
-                            </div>
-                        </div>
                         <div v-if="!result['datatype_disable']" class="ui-portlet-section">
                             <div class="portlet-header">
                                 <div class="portlet-title">
                                     <FontAwesomeIcon icon="database" class="portlet-title-icon fa-fw mr-1" />
                                     <span class="portlet-title-text">
-                                        <b itemprop="name">{{ "Datatypes" | l }}</b>
+                                        <b itemprop="name">{{ "Assign Datatype" | l }}</b>
                                     </span>
                                 </div>
                             </div>
@@ -71,6 +50,24 @@
                                     </b-button>
                                     <b-button @click="submit('datatype', 'datatype_detect')">
                                         <FontAwesomeIcon icon="redo" class="mr-1" />{{ "Auto-detect" | l }}
+                                    </b-button>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-if="!result['conversion_disable']" class="ui-portlet-section">
+                            <div class="portlet-header">
+                                <div class="portlet-title">
+                                    <FontAwesomeIcon icon="cog" class="portlet-title-icon fa-fw mr-1" />
+                                    <span class="portlet-title-text">
+                                        <b itemprop="name">{{ "Convert to Datatype" | l }}</b>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="portlet-content">
+                                <FormDisplay :inputs="result['conversion_inputs']" @onChange="onConversion" />
+                                <div class="mt-2">
+                                    <b-button variant="primary" @click="submit('conversion', 'conversion')">
+                                        <FontAwesomeIcon icon="exchange-alt" class="mr-1" />{{ "Create Dataset" | l }}
                                     </b-button>
                                 </div>
                             </div>

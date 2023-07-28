@@ -1,6 +1,7 @@
 import { fetcher } from "@/schema/fetcher";
 
 const getHistories = fetcher.path("/api/histories").method("get").create();
+const getArchivedHistories = fetcher.path("/api/histories/archived").method("get").create();
 const getDatasets = fetcher.path("/api/datasets").method("get").create();
 const undeleteHistory = fetcher.path("/api/histories/deleted/{history_id}/undelete").method("post").create();
 const purgeHistory = fetcher.path("/api/histories/{history_id}").method("delete").create();
@@ -12,21 +13,31 @@ export interface ItemSizeSummary {
     name: string;
     size: number;
     deleted: boolean;
+    archived: boolean;
 }
 
 interface PurgeableItemSizeSummary extends ItemSizeSummary {
     purged: boolean;
 }
 
-const itemSizeSummaryFields = "id,name,size,deleted";
+const itemSizeSummaryFields = "id,name,size,deleted,archived";
 
-export async function fetchAllHistoriesSizeSummary() {
-    const allHistoriesTakingStorageResponse = await getHistories({
+export async function fetchAllHistoriesSizeSummary(): Promise<ItemSizeSummary[]> {
+    const nonPurgedHistoriesResponse = await getHistories({
         keys: itemSizeSummaryFields,
         q: ["deleted", "purged"],
         qv: ["None", "false"],
     });
-    return allHistoriesTakingStorageResponse.data as ItemSizeSummary[];
+    const nonPurgedArchivedHistories = await getArchivedHistories({
+        keys: itemSizeSummaryFields,
+        q: ["purged"],
+        qv: ["false"],
+    });
+    const allHistoriesTakingStorageResponse = [
+        ...(nonPurgedHistoriesResponse.data as ItemSizeSummary[]),
+        ...(nonPurgedArchivedHistories.data as ItemSizeSummary[]),
+    ];
+    return allHistoriesTakingStorageResponse;
 }
 
 export async function fetchHistoryContentsSizeSummary(historyId: string, limit = 5000) {
