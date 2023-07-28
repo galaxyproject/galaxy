@@ -6,7 +6,7 @@
             size="sm"
             variant="link"
             title="Organization details">
-            <FontAwesomeIcon icon="building" />
+            <FontAwesomeIcon icon="building" fixed-width/>
         </b-button>
         <b-modal id="organization-details" title="Organization" hide-footer>
             <b-table striped :items="items"> </b-table>

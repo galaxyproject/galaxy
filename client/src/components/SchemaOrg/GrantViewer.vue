@@ -48,7 +48,7 @@ const explicitMetaAttributes = computed(() => {
             size="sm"
             variant="link"
             title="Grant details">
-            <FontAwesomeIcon icon="coins" />
+            <FontAwesomeIcon icon="coins" fixed-width/>
         </b-button>
         <b-modal id="funding-details" title="Grant" hide-footer>
             <b-table striped :items="items"> </b-table>

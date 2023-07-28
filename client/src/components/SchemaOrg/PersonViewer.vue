@@ -6,7 +6,7 @@
             size="sm"
             variant="link"
             title="Person details">
-            <FontAwesomeIcon icon="user" />
+            <FontAwesomeIcon icon="user" fixed-width/>
         </b-button>
         <b-modal id="person-details" title="Person" hide-footer>
             <b-table striped :items="items"> </b-table>
