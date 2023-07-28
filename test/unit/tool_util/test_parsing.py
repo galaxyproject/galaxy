@@ -1,5 +1,6 @@
 import os
 import os.path
+import re
 import shutil
 import tempfile
 from math import isinf
@@ -464,12 +465,16 @@ class TestXmlLoader(BaseLoaderTestCase):
         assert grant["identifier"] == "101057388"
         assert grant["url"] == "https://cordis.europa.eu/project/id/101057388"
         
-        expected_description = """
-        EuroScienceGateway will leverage a distributed computing network across 
-        13 European countries, accessible via 6 national, user-friendly web portals, 
-        facilitating access to compute and storage infrastructures across Europe as well as to data, 
-        tools, workflows and services that can be customized to suit researchers' needs.
-        """
+        expected_description = """EuroScienceGateway will leverage a distributed computing network across 
+             13 European countries, accessible via 6 national, user-friendly web portals, 
+             facilitating access to compute and storage infrastructures across Europe as well as to data, 
+             tools, workflows and services that can be customized to suit researchers' needs."""
+
+        print(grant["description"])
+        expected_description = re.sub(r"[\n\t]*", "", expected_description)
+        print(expected_description)
+        
+
         assert grant["description"] == expected_description
 
 
