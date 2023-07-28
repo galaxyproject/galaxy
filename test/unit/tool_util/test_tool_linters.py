@@ -109,6 +109,11 @@ GENERAL_VALID = """
 </tool>
 """
 
+GENERAL_VALID_NEW_PROFILE_FMT = """
+<tool name="valid name" id="valid_id" version="1.0+galaxy1" profile="23.0">
+</tool>
+"""
+
 # test tool xml for help linter
 HELP_MULTIPLE = """
 <tool>
@@ -1008,6 +1013,19 @@ def test_general_valid(lint_ctx):
     run_lint(lint_ctx, general.lint_general, XmlToolSource(tool_source))
     assert "Tool defines a version [1.0+galaxy1]." in lint_ctx.valid_messages
     assert "Tool specifies profile version [21.09]." in lint_ctx.valid_messages
+    assert "Tool defines an id [valid_id]." in lint_ctx.valid_messages
+    assert "Tool defines a name [valid name]." in lint_ctx.valid_messages
+    assert not lint_ctx.info_messages
+    assert len(lint_ctx.valid_messages) == 4
+    assert not lint_ctx.warn_messages
+    assert not lint_ctx.error_messages
+
+
+def test_general_valid_new_profile_fmt(lint_ctx):
+    tool_source = get_xml_tool_source(GENERAL_VALID_NEW_PROFILE_FMT)
+    run_lint(lint_ctx, general.lint_general, XmlToolSource(tool_source))
+    assert "Tool defines a version [1.0+galaxy1]." in lint_ctx.valid_messages
+    assert "Tool specifies profile version [23.0]." in lint_ctx.valid_messages
     assert "Tool defines an id [valid_id]." in lint_ctx.valid_messages
     assert "Tool defines a name [valid name]." in lint_ctx.valid_messages
     assert not lint_ctx.info_messages
