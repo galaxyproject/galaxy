@@ -8,8 +8,10 @@
 
     function newsSeen(currentGalaxyVersion) {
         // When it's seen, remove the red indicator if it exists and store the current version.
-        const newsIndicator = document.querySelector("#news-indicator");
-        newsIndicator?.remove();
+        const newsIndicator = document.getElementById("news-indicator");
+        if (newsIndicator) {
+            newsIndicator.remove();
+        }
         window.localStorage.setItem("galaxy-news-seen-release", currentGalaxyVersion);
     }
 
