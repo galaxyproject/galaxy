@@ -54,9 +54,9 @@ function inputFileName(newFileName) {
     emit("input", props.index, { file_name: newFileName });
 }
 
-function inputSettings(settingId, settingValue) {
+function inputSettings(settingId) {
     const newSettings = {};
-    newSettings[settingId] = settingValue;
+    newSettings[settingId] = !props[settingId];
     emit("input", props.index, newSettings);
 }
 

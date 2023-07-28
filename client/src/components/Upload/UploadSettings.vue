@@ -3,10 +3,9 @@ import Popper from "@/components/Popper/Popper.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCog } from "@fortawesome/free-solid-svg-icons";
-import { faCheckSquare } from "@fortawesome/free-solid-svg-icons";
-import { faSquare } from "@fortawesome/free-regular-svg-icons";
+import UploadSettingsOption from "./UploadSettingsOption.vue";
 
-library.add(faCheckSquare, faCog, faSquare);
+library.add(faCog);
 
 const props = defineProps({
     deferred: Boolean,
@@ -15,26 +14,6 @@ const props = defineProps({
 });
 
 const emit = defineEmits();
-
-const availableSettings = [
-    {
-        id: "space_to_tab",
-        title: "Convert spaces to tabs",
-    },
-    {
-        id: "to_posix_lines",
-        title: "Use POSIX standard",
-    },
-    {
-        id: "deferred",
-        title: "Defer dataset resolution",
-    },
-];
-
-function onToggle(settingId) {
-    const settingValue = !props[settingId];
-    emit("input", settingId, settingValue);
-}
 </script>
 
 <template>
@@ -45,15 +24,18 @@ function onToggle(settingId) {
         <div class="upload-settings px-2 py-2">
             <table class="upload-settings-table grid">
                 <tbody>
-                    <tr v-for="setting in availableSettings" :key="setting.id" @click="onToggle(setting.id)">
-                        <td>
-                            <FontAwesomeIcon class="px-2" v-if="props[setting.id]" icon="fas fa-check-square" fa-fw />
-                            <FontAwesomeIcon class="px-2" v-else icon="far fa-square" fa-fw />
-                        </td>
-                        <td class="text-left">
-                            <span class="pr-2">{{ setting.title }}</span>
-                        </td>
-                    </tr>
+                    <UploadSettingsOption
+                        title="Convert spaces to tabs"
+                        :value="space_to_tab"
+                        @click="emit('input', 'space_to_tab')" />
+                    <UploadSettingsOption
+                        title="Use POSIX standard"
+                        :value="to_posix_lines"
+                        @click="emit('input', 'to_posix_lines')" />
+                    <UploadSettingsOption
+                        title="Defer dataset resolution"
+                        :value="deferred"
+                        @click="emit('input', 'deferred')" />
                 </tbody>
             </table>
         </div>
