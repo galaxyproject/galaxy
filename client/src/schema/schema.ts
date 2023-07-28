@@ -11167,13 +11167,13 @@ export interface operations {
             /** @description The requested format of returned data. Either `flat` to simply list all the files, `jstree` to get a tree representation of the files, or the default `uri` to list files and directories by their URI. */
             /** @description Wether to recursively lists all sub-directories. This will be `True` by default depending on the `target`. */
             /** @description (This only applies when `format` is `jstree`) The value can be either `folders` or `files` and it will disable the corresponding nodes of the tree. */
-            /** @description Whether the query is made with the intention of writing to the source. If set to True, only entries that can be written to will be accessible. */
+            /** @description Whether the query is made with the intention of writing to the source. If set to True, only entries that can be written to will be returned. */
             query?: {
                 target?: string;
                 format?: components["schemas"]["RemoteFilesFormat"];
                 recursive?: boolean;
                 disable?: components["schemas"]["RemoteFilesDisableMode"];
-                write_intent?: boolean;
+                writeable?: boolean;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -16128,13 +16128,13 @@ export interface operations {
             /** @description The requested format of returned data. Either `flat` to simply list all the files, `jstree` to get a tree representation of the files, or the default `uri` to list files and directories by their URI. */
             /** @description Wether to recursively lists all sub-directories. This will be `True` by default depending on the `target`. */
             /** @description (This only applies when `format` is `jstree`) The value can be either `folders` or `files` and it will disable the corresponding nodes of the tree. */
-            /** @description Whether the query is made with the intention of writing to the source. If set to True, only entries that can be written to will be accessible. */
+            /** @description Whether the query is made with the intention of writing to the source. If set to True, only entries that can be written to will be returned. */
             query?: {
                 target?: string;
                 format?: components["schemas"]["RemoteFilesFormat"];
                 recursive?: boolean;
                 disable?: components["schemas"]["RemoteFilesDisableMode"];
-                write_intent?: boolean;
+                writeable?: boolean;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {

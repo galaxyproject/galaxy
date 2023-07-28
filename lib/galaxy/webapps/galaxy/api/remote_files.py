@@ -62,9 +62,9 @@ DisableModeQueryParam: Optional[RemoteFilesDisableMode] = Query(
     ),
 )
 
-WriteIntentQueryParam: Optional[bool] = Query(
+WriteableQueryParam: Optional[bool] = Query(
     default=None,
-    title="Write Intent",
+    title="Writeable",
     description=(
         "Whether the query is made with the intention of writing to the source."
         " If set to True, only entries that can be written to will be returned."
@@ -110,10 +110,10 @@ class FastAPIRemoteFiles:
         format: Optional[RemoteFilesFormat] = FormatQueryParam,
         recursive: Optional[bool] = RecursiveQueryParam,
         disable: Optional[RemoteFilesDisableMode] = DisableModeQueryParam,
-        write_intent: Optional[bool] = WriteIntentQueryParam,
+        writeable: Optional[bool] = WriteableQueryParam,
     ) -> AnyRemoteFilesListResponse:
         """Lists all remote files available to the user from different sources."""
-        return self.manager.index(user_ctx, target, format, recursive, disable, write_intent=write_intent)
+        return self.manager.index(user_ctx, target, format, recursive, disable, writeable)
 
     @router.get(
         "/api/remote_files/plugins",

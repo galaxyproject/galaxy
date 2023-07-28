@@ -44,7 +44,7 @@ class RemoteFilesManager:
         format: Optional[RemoteFilesFormat],
         recursive: Optional[bool],
         disable: Optional[RemoteFilesDisableMode],
-        write_intent: Optional[bool] = False,
+        writeable: Optional[bool] = False,
     ) -> AnyRemoteFilesListResponse:
         """Returns a list of remote files available to the user."""
 
@@ -81,7 +81,7 @@ class RemoteFilesManager:
         file_source = file_source_path.file_source
 
         opts = FilesSourceOptions()
-        opts.write_intent = write_intent or False
+        opts.writeable = writeable or False
         try:
             index = file_source.list(
                 file_source_path.path,

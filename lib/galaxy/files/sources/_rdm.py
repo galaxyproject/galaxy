@@ -60,14 +60,21 @@ class RDMRepositoryInteractor:
         If a filename is provided, the URI will reference the specific file in the record."""
         raise NotImplementedError()
 
-    def get_records(self, write_intent: bool, user_context: OptionalUserContext = None) -> List[RemoteDirectory]:
-        """Returns the list of records in the repository."""
+    def get_records(self, writeable: bool, user_context: OptionalUserContext = None) -> List[RemoteDirectory]:
+        """Returns the list of records in the repository.
+
+        If writeable is True, only records that the user can write to will be returned.
+        The user_context might be required to authenticate the user in the repository.
+        """
         raise NotImplementedError()
 
     def get_files_in_record(
-        self, record_id: str, write_intent: bool, user_context: OptionalUserContext = None
+        self, record_id: str, writeable: bool, user_context: OptionalUserContext = None
     ) -> List[RemoteFile]:
-        """Returns the list of files contained in the given record."""
+        """Returns the list of files contained in the given record.
+
+        If writeable is True, we are signaling that the user intends to write to the record.
+        """
         raise NotImplementedError()
 
     def create_draft_record(self, title: str, user_context: OptionalUserContext = None):

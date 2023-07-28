@@ -128,12 +128,12 @@ class InvenioRDMFilesSource(RDMFilesSource):
         user_context: OptionalUserContext = None,
         opts: Optional[FilesSourceOptions] = None,
     ):
-        write_intent = opts and opts.write_intent or False
+        writeable = opts and opts.writeable or False
         is_root_path = path == "/"
         if is_root_path:
-            return self.repository.get_records(write_intent, user_context)
+            return self.repository.get_records(writeable, user_context)
         record_id, _ = self.parse_path(path)
-        return self.repository.get_files_in_record(record_id, write_intent, user_context)
+        return self.repository.get_files_in_record(record_id, writeable, user_context)
 
     def _create_entry(
         self,
@@ -181,17 +181,18 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
     def to_plugin_uri(self, record_id: str, filename: Optional[str] = None) -> str:
         return f"{self.plugin.get_uri_root()}/{record_id}{f'/{filename}' if filename else ''}"
 
-    def get_records(self, write_intent: bool, user_context: OptionalUserContext = None) -> List[RemoteDirectory]:
+    def get_records(self, writeable: bool, user_context: OptionalUserContext = None) -> List[RemoteDirectory]:
         # Only draft records owned by the user can be written to.
-        request_url = f"{self.repository_url}/api/user/records?is_published=false" if write_intent else self.records_url
+        request_url = f"{self.repository_url}/api/user/records?is_published=false" if writeable else self.records_url
         # TODO: This is limited to 25 records by default. Add pagination support?
         response_data = self._get_response(user_context, request_url)
         return self._get_records_from_response(response_data)
 
     def get_files_in_record(
-        self, record_id: str, write_intent: bool, user_context: OptionalUserContext = None
+        self, record_id: str, writeable: bool, user_context: OptionalUserContext = None
     ) -> List[RemoteFile]:
-        request_url = f"{self.records_url}/{record_id}{'/draft' if write_intent else ''}/files"
+        conditionally_draft = "/draft" if writeable else ""
+        request_url = f"{self.records_url}/{record_id}{conditionally_draft}/files"
         response_data = self._get_response(user_context, request_url)
         return self._get_record_files_from_response(record_id, response_data)
 

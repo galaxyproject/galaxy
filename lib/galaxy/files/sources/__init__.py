@@ -57,9 +57,9 @@ class FilesSourceOptions:
     """Options to control behavior of file source operations, such as realize_to, write_from and list."""
 
     # Indicates access to the FS operation with intent to write.
-    # A file source can be "writeable" but, for example, some directories (or elements) may be restricted or read-only
-    # so those should be skipped while browsing with write_intent=True.
-    write_intent: Optional[bool]
+    # Even if a file source is "writeable" some directories (or elements) may be restricted or read-only
+    # so those should be skipped while browsing with writeable=True.
+    writeable: Optional[bool]
 
     # Property overrides for values initially configured through the constructor. For example
     # the HTTPFilesSource passes in additional http_headers through these properties, which
