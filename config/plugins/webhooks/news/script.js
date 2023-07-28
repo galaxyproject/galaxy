@@ -7,16 +7,18 @@
     }
 
     function newsSeen(currentGalaxyVersion) {
-        // When it's seen, remove fa, add far.
-        const newsIconSpan = document.querySelector("#news .fa-bullhorn");
-        newsIconSpan.classList.remove("fa-fade");
+        // When it's seen, remove the red indicator if it exists and store the current version.
+        const newsIndicator = document.getElementById("news-indicator");
+        if (newsIndicator) {
+            newsIndicator.remove();
+        }
         window.localStorage.setItem("galaxy-news-seen-release", currentGalaxyVersion);
     }
 
     function newsUnseen() {
-        // When there is news, remove far, add fa for (default -- same as fas) solid style.
-        const newsIconSpan = document.querySelector("#news .fa-bullhorn");
-        newsIconSpan.classList.add("fa-fade");
+        // When there is news, add an red indicator to the icon.
+        const newsIconSpan = document.querySelector("#news .nav-link");
+        newsIconSpan.insertAdjacentHTML("beforeend", '<span id="news-indicator"></span>');
     }
 
     /* The masthead icon may not exist yet when this webhook executes; we need this to wait for that to happen.
