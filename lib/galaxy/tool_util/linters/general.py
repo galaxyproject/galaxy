@@ -13,7 +13,7 @@ VALID_NAME_MSG = "Tool defines a name [%s]."
 ERROR_ID_MSG = "Tool does not define an id attribute."
 VALID_ID_MSG = "Tool defines an id [%s]."
 
-PROFILE_PATTERN = re.compile(r"^[1,2]\d\.[0,1]\d$")
+PROFILE_PATTERN = re.compile(r"^[12]\d\.\d{1,2}$")
 PROFILE_INFO_DEFAULT_MSG = "Tool targets 16.01 Galaxy profile."
 PROFILE_INFO_SPECIFIED_MSG = "Tool specifies profile version [%s]."
 PROFILE_INVALID_MSG = "Tool specifies an invalid profile version [%s]."
