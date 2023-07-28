@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, type PropType } from "vue";
 import { useRoute } from "vue-router/composables";
 
 import { useUserStore } from "@/stores/userStore";
@@ -10,9 +10,19 @@ import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
+interface Item {
+    name: string;
+    model_class?: string;
+    owner?: string;
+    username?: string;
+    email_hash?: string;
+    tags?: string[];
+    title?: string;
+}
+
 const props = defineProps({
     item: {
-        type: Object,
+        type: Object as PropType<Item>,
         required: true,
     },
 });
@@ -66,9 +76,9 @@ const showActivityBar = computed(() => {
         <FlexPanel side="right">
             <div v-if="modelTitle" class="m-3">
                 <h1 class="h-sm">About this {{ modelTitle }}</h1>
-                <h2 class="h-md text-break">{{ item.title || item.name }}</h2>
+                <h2 class="h-md text-break">{{ props.item.title ?? props.item.name }}</h2>
                 <img :src="gravatarSource" alt="user avatar" />
-                <StatelessTags v-if="item.tags" class="tags mt-2" :value="item.tags" disabled />
+                <StatelessTags v-if="props.item.tags" class="tags mt-2" :value="props.item.tags" disabled />
                 <br />
                 <h2 class="h-sm">Author</h2>
                 <div>{{ owner }}</div>
