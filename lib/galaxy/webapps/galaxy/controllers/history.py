@@ -2,7 +2,10 @@ import logging
 
 from dateutil.parser import isoparse
 from markupsafe import escape
-from sqlalchemy import false
+from sqlalchemy import (
+    false,
+    true,
+)
 from sqlalchemy.orm import undefer
 
 from galaxy import (
@@ -64,7 +67,32 @@ class HistoryListGrid(grids.Grid):
                 link = dict(operation="Switch", id=history.id, use_panels=grid.use_panels, async_compatible=True)
             return link
 
-    class DeletedColumn(grids.DeletedColumn):
+    class StatusColumn(grids.GridColumn):
+        def get_accepted_filters(self):
+            """Returns a list of accepted filters for this column."""
+            accepted_filter_labels_and_vals = {
+                "active": "active",
+                "deleted": "deleted",
+                "archived": "archived",
+                "all": "all",
+            }
+            accepted_filters = []
+            for label, val in accepted_filter_labels_and_vals.items():
+                args = {self.key: val}
+                accepted_filters.append(grids.GridColumnFilter(label, args))
+            return accepted_filters
+
+        def filter(self, trans, user, query, column_filter):
+            """Modify query to filter self.model_class by state."""
+            if column_filter == "all":
+                return query
+            elif column_filter == "active":
+                return query.filter(self.model_class.deleted == false(), self.model_class.archived == false())
+            elif column_filter == "deleted":
+                return query.filter(self.model_class.deleted == true())
+            elif column_filter == "archived":
+                return query.filter(self.model_class.archived == true())
+
         def get_value(self, trans, grid, history):
             if history == trans.history:
                 return "<strong>current history</strong>"
@@ -72,6 +100,8 @@ class HistoryListGrid(grids.Grid):
                 return "deleted permanently"
             elif history.deleted:
                 return "deleted"
+            elif history.archived:
+                return "archived"
             return ""
 
         def sort(self, trans, query, ascending, column_name=None):
@@ -108,7 +138,7 @@ class HistoryListGrid(grids.Grid):
         grids.GridColumn("Size on Disk", key="disk_size", sortable=False, delayed=True),
         grids.GridColumn("Created", key="create_time", format=time_ago),
         grids.GridColumn("Last Updated", key="update_time", format=time_ago),
-        DeletedColumn("Status", key="deleted", filterable="advanced"),
+        StatusColumn("Status", key="status", filterable="advanced"),
     ]
     columns.append(
         grids.MulticolFilterColumn(
@@ -162,7 +192,7 @@ class HistoryListGrid(grids.Grid):
         grids.GridColumnFilter("Deleted", args=dict(deleted=True)),
         grids.GridColumnFilter("All", args=dict(deleted="All")),
     ]
-    default_filter = dict(name="All", deleted="False", tags="All", sharing="All")
+    default_filter = dict(name="All", status="active", tags="All", sharing="All")
     num_rows_per_page = 15
     use_paging = True
     info_text = "Histories that have been deleted for more than a time period specified by the Galaxy administrator(s) may be permanently deleted."
@@ -171,7 +201,7 @@ class HistoryListGrid(grids.Grid):
         return trans.get_history()
 
     def apply_query_filter(self, trans, query, **kwargs):
-        return query.filter_by(user=trans.user, importing=False, archived=False)
+        return query.filter_by(user=trans.user, importing=False)
 
 
 class SharedHistoryListGrid(grids.Grid):
