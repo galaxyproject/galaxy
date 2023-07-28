@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from "vue";
-import Select2 from "@/components/Select2.vue";
+import Multiselect from "vue-multiselect";
 
 const props = defineProps({
     disabled: Boolean,
@@ -11,21 +11,15 @@ const props = defineProps({
 const emit = defineEmits();
 
 const currentValue = computed({
-    get() {
-        return props.value;
-    },
+    get: () => props.options.find((option) => option.id === props.value),
     set(newValue) {
-        emit("input", newValue);
+        emit("input", newValue.id);
     },
 });
 </script>
 
 <template>
-    <select2 v-model="currentValue" class="upload-settings-select" :enabled="!disabled">
-        <option v-for="(option, index) in options" :key="index" :value="option.id">
-            {{ option.text }}
-        </option>
-    </select2>
+    <Multiselect v-model="currentValue" :options="options" track-by="id" label="text" />
 </template>
 
 <style>
