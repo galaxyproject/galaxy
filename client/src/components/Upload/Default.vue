@@ -43,46 +43,48 @@
                 id="btn-close"
                 ref="btnClose"
                 class="ui-button-default upload-close"
-                :title="btnCloseTitle"
+                title="Close"
                 @click="$emit('dismiss')">
-                {{ btnCloseTitle }}
+                <span v-if="hasCallback" v-localize>Cancel</span>
+                <span v-else v-localize>Close</span>
             </BButton>
             <BButton
                 id="btn-reset"
                 ref="btnReset"
                 class="ui-button-default"
-                :title="btnResetTitle"
+                title="Reset"
                 :disabled="!enableReset"
                 @click="_eventReset">
-                {{ btnResetTitle }}
+                <span v-localize>Reset</span>
             </BButton>
             <BButton
                 id="btn-stop"
                 ref="btnStop"
                 class="ui-button-default"
-                :title="btnStopTitle"
+                title="Pause"
                 :disabled="counterRunning == 0"
                 @click="_eventStop">
-                {{ btnStopTitle }}
+                <span v-localize>Pause</span>
             </BButton>
             <BButton
                 id="btn-start"
                 ref="btnStart"
                 class="ui-button-default upload-start"
                 :disabled="!enableStart"
-                :title="btnStartTitle"
+                title="Start"
                 :variant="enableStart ? 'primary' : ''"
                 @click="_eventStart">
-                {{ btnStartTitle }}
+                <span v-localize>Start</span>
             </BButton>
             <BButton
                 id="btn-new"
                 ref="btnCreate"
                 class="ui-button-default upload-paste"
-                :title="btnCreateTitle"
+                title="Paste/Fetch data"
                 :disabled="!enableSources"
                 @click="_eventCreate()">
-                <span class="fa fa-edit"></span>{{ btnCreateTitle }}
+                <span class="fa fa-edit"></span>
+                <span v-localize>Paste/Fetch data</span>
             </BButton>
             <BButton
                 v-if="remoteFiles"
@@ -91,16 +93,19 @@
                 class="ui-button-default"
                 :disabled="!enableSources"
                 @click="_eventRemoteFiles">
-                <span class="fa fa-folder-open-o"></span>{{ btnFilesTitle }}
+                <span class="fa fa-folder-open-o"></span>
+                <span v-if="fileSourcesConfigured" v-localize>Choose remote files</span>
+                <span v-else v-localize>Choose FTP files</span>
             </BButton>
             <BButton
                 id="btn-local"
                 ref="btnLocal"
                 class="ui-button-default"
-                :title="btnLocalTitle"
+                title="Choose local files"
                 :disabled="!enableSources"
                 @click="uploadSelect">
-                <span class="fa fa-laptop"></span>{{ btnLocalTitle }}
+                <span class="fa fa-laptop"></span>
+                <span v-localize>Choose local files</span>
             </BButton>
         </div>
     </div>
@@ -116,7 +121,6 @@ import UploadFtp from "mvc/upload/upload-ftp";
 import UploadModel from "mvc/upload/upload-model";
 import { getAppRoot } from "onload";
 import { filesDialog, refreshContentsWrapper } from "utils/data";
-import _l from "utils/localization";
 import { UploadQueue } from "utils/uploadbox";
 
 import { defaultNewFileName, uploadModelsToPayload } from "./helpers";
@@ -153,11 +157,6 @@ export default {
     data() {
         return {
             allExtensions: [],
-            btnCreateTitle: _l("Paste/Fetch data"),
-            btnLocalTitle: _l("Choose local files"),
-            btnResetTitle: _l("Reset"),
-            btnStartTitle: _l("Start"),
-            btnStopTitle: _l("Pause"),
             counterAnnounce: 0,
             counterError: 0,
             counterRunning: 0,
@@ -184,19 +183,9 @@ export default {
         listExtensions() {
             return this.allExtensions.filter((ext) => !ext.composite_files);
         },
-        btnFilesTitle() {
-            if (this.fileSourcesConfigured) {
-                return _l("Choose remote files");
-            } else {
-                return _l("Choose FTP files");
-            }
-        },
         remoteFiles() {
             // this needs to be true for the tests to pass
             return !!this.fileSourcesConfigured || !!this.ftpUploadSite;
-        },
-        btnCloseTitle() {
-            return this.hasCallback ? "Cancel" : "Close";
         },
         history_id() {
             return this.details.history_id;
@@ -533,7 +522,7 @@ export default {
         initFtpPopover() {
             // add ftp file viewer
             this.ftp = new Popover({
-                title: _l("FTP files"),
+                title: "FTP files",
                 class: "ftp-upload",
                 container: this.$refs.btnFtp,
             });
