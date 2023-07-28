@@ -88,19 +88,13 @@ function removeUpload() {
                 {{ bytesToString(fileSize) }}
             </div>
             <UploadSettingsSelect :value="extension" :options="listExtensions" @input="inputExtension" />
-            <div>
-                <UploadExtensionDetails
-                    :description="extensionDescription"
-                    :description-url="extensionDescriptionUrl" />
-            </div>
+            <UploadExtensionDetails :description="extensionDescription" :description-url="extensionDescriptionUrl" />
             <UploadSettingsSelect :value="genome" :options="listGenomes" @input="inputGenome" />
-            <div>
-                <UploadSettings
-                    :deferred="deferred"
-                    :to_posix_lines="to_posix_lines"
-                    :space_to_tab="space_to_tab"
-                    @input="inputSettings" />
-            </div>
+            <UploadSettings
+                :deferred="deferred"
+                :to_posix_lines="to_posix_lines"
+                :space_to_tab="space_to_tab"
+                @input="inputSettings" />
             <div class="upload-info">
                 <div class="upload-info-text" />
                 <div class="upload-info-progress progress">
