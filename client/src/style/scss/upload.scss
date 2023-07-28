@@ -160,10 +160,12 @@
                 width: 130px;
                 line-height: $font-size-base;
                 .progress {
-                    @extend .upload-input;
+                    height: 22px;
+                    font-size: $font-size-base;
+                    background-color: $gray-400;
                     width: 100%;
                     position: relative;
-                    line-height: 1.6em;
+                    line-height: 22px;
                     .progress-bar {
                         border-radius: inherit;
                         -moz-border-radius: inherit;

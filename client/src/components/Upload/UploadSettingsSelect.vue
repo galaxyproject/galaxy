@@ -35,25 +35,27 @@ const currentValue = computed({
 .upload-settings-select.multiselect {
     display: inline-block;
     width: 150px;
-    height: 20px;
     .multiselect__select {
         height: 15px;
         width: 22px;
         padding: 0px;
-        top: 6px;
+        top: 5px;
     }
     .multiselect__single {
         background: transparent;
         margin: 0px;
-        height: 20px;
+        height: 18px;
         overflow: hidden;
     }
     .multiselect__tags {
         background: transparent;
+        border-radius: 0.25rem;
+        height: 22px;
         min-height: unset;
         padding: 0px;
-        .multiselect__input {
-            margin: 0px;
+        margin: 0px;
+        .multiselect__single {
+            width: 135px;
         }
     }
     .multiselect__content-wrapper {

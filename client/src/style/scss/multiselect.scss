@@ -5,7 +5,7 @@
         font-size: $font-size-base;
     }
     .multiselect__option--highlight {
-        background: $brand-light;
+        background-color: $gray-400;
         color: $brand-dark;
     }
     .multiselect__option--selected {

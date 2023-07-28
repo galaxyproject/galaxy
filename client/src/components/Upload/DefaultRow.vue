@@ -81,7 +81,7 @@ function removeUpload() {
                 <FontAwesomeIcon v-if="fileMode == 'local'" icon="fa-laptop" />
                 <FontAwesomeIcon v-if="fileMode == 'ftp'" icon="fa-folder-open" />
             </div>
-            <b-input :value="fileName" class="upload-title ml-2 border rounded" @input="inputFileName" />
+            <b-input :value="fileName" class="upload-title p-1 border rounded" @input="inputFileName" />
             <div class="upload-size">
                 {{ bytesToString(fileSize) }}
             </div>
