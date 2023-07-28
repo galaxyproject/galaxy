@@ -37,7 +37,7 @@ async function mountDiskUsageSummaryWrapper(enableQuotas: boolean) {
         pinia,
     });
     const userStore = useUserStore();
-    userStore.currentUser = { id: "fakeUser", email: "fakeUserEmail", tags_used: [] };
+    userStore.currentUser = { id: "fakeUser", email: "fakeUserEmail", tags_used: [], isAnonymous: false };
     await flushPromises();
     return wrapper;
 }
