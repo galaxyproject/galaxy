@@ -1818,9 +1818,9 @@ class GTrack(Interval):
         "character": "str",
         "binary": "int",
         "category": "str",
-        "list": "list",
-        "vector": "list",
-        "pair": "list",
+        "list": "str",
+        "vector": "str",
+        "pair": "str",
     }
 
     METADATA_COLUMNS_MAPPING = {
