@@ -1,5 +1,65 @@
+<script setup lang="ts">
+import { computed } from "vue";
+import { useRoute } from "vue-router/composables";
+
+import { useUserStore } from "@/stores/userStore";
+
+import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import FlexPanel from "@/components/Panels/FlexPanel.vue";
+import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
+
+const props = defineProps({
+    item: {
+        type: Object,
+        required: true,
+    },
+});
+
+const modelTitle = computed(() => {
+    const modelClass = props.item.model_class ?? "Item";
+    if (modelClass == "StoredWorkflow") {
+        return "Workflow";
+    }
+    return modelClass;
+});
+
+const plural = computed(() => {
+    if (modelTitle.value === "History") {
+        return "Histories";
+    }
+    return `${modelTitle.value}s`;
+});
+
+const gravatarSource = computed(() => `https://secure.gravatar.com/avatar/${props.item.email_hash}?d=identicon`);
+const owner = computed(() => props.item.owner ?? props.item.username ?? "Unavailable");
+const pluralPath = computed(() => plural.value.toLowerCase());
+const publishedByUser = computed(() => `/${pluralPath.value}/list_published?f-username=${owner.value}`);
+const urlAll = computed(() => `/${pluralPath.value}/list_published`);
+
+const userStore = useUserStore();
+const route = useRoute();
+
+const showPanels = computed(() => {
+    const panels = route.query.hide_panels;
+    if (panels !== undefined && panels !== null && typeof panels === "string") {
+        return panels.toLowerCase() != "true";
+    }
+    return true;
+});
+
+const showActivityBar = computed(() => {
+    return userStore.showActivityBar && !userStore.isAnonymous;
+});
+</script>
+
 <template>
     <div id="columns" class="d-flex">
+        <ActivityBar v-if="showPanels && showActivityBar" />
+        <FlexPanel v-if="showPanels && !showActivityBar" side="left">
+            <ToolBox />
+        </FlexPanel>
         <div id="center" class="m-3 w-100 overflow-auto">
             <slot />
         </div>
@@ -8,7 +68,7 @@
                 <h1 class="h-sm">About this {{ modelTitle }}</h1>
                 <h2 class="h-md text-break">{{ item.title || item.name }}</h2>
                 <img :src="gravatarSource" alt="user avatar" />
-                <StatelessTags v-if="item.tags" class="tags mt-2" :value="item.tags" :disabled="true" />
+                <StatelessTags v-if="item.tags" class="tags mt-2" :value="item.tags" disabled />
                 <br />
                 <h2 class="h-sm">Author</h2>
                 <div>{{ owner }}</div>
@@ -26,54 +86,3 @@
         </FlexPanel>
     </div>
 </template>
-
-<script>
-import LoadingSpan from "components/LoadingSpan";
-import { StatelessTags } from "components/Tags";
-
-import FlexPanel from "@/components/Panels/FlexPanel.vue";
-
-export default {
-    components: {
-        FlexPanel,
-        LoadingSpan,
-        StatelessTags,
-    },
-    props: {
-        item: {
-            type: Object,
-            required: true,
-        },
-    },
-    computed: {
-        gravatarSource() {
-            return `https://secure.gravatar.com/avatar/${this.item.email_hash}?d=identicon`;
-        },
-        modelTitle() {
-            const modelClass = this.item ? this.item.model_class : "Item";
-            if (modelClass == "StoredWorkflow") {
-                return "Workflow";
-            }
-            return modelClass;
-        },
-        owner() {
-            return this.item.owner || this.item.username || "Unavailable";
-        },
-        plural() {
-            if (this.modelTitle == "History") {
-                return "Histories";
-            }
-            return `${this.modelTitle}s`;
-        },
-        pluralPath() {
-            return this.plural.toLowerCase();
-        },
-        publishedByUser() {
-            return `/${this.pluralPath}/list_published?f-username=${this.owner}`;
-        },
-        urlAll() {
-            return `/${this.pluralPath}/list_published`;
-        },
-    },
-};
-</script>
