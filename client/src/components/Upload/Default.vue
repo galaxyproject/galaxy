@@ -197,14 +197,6 @@ export default {
             return this.details.history_id;
         },
     },
-    watch: {
-        extension: (value) => {
-            this.updateExtension(value);
-        },
-        genome: (value) => {
-            this.updateGenome(value);
-        },
-    },
     created() {
         this.initCollection();
         this.initAppProperties();
