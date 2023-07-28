@@ -29,16 +29,14 @@
         </div>
         <div class="upload-footer">
             <span class="upload-footer-title">Type (set all):</span>
-            <select2 v-model="extension" container-class="upload-footer-extension" :enabled="!running">
-                <option v-for="(ext, index) in listExtensions" :key="index" :value="ext.id">{{ ext.text }}</option>
-            </select2>
+            <UploadSettingsSelect
+                :value="extension"
+                :options="listExtensions"
+                :disabled="running"
+                @input="updateExtension" />
             <span class="upload-footer-extension-info upload-icon-button fa fa-search" />
             <span class="upload-footer-title">Genome (set all):</span>
-            <select2 v-model="genome" container-class="upload-footer-genome" :enabled="!running">
-                <option v-for="(listGenome, index) in listGenomes" :key="index" :value="listGenome.id">
-                    {{ listGenome.text }}
-                </option>
-            </select2>
+            <UploadSettingsSelect :value="genome" :options="listGenomes" :disabled="running" @input="updateGenome" />
         </div>
         <div class="upload-buttons">
             <BButton
@@ -110,7 +108,7 @@
 
 <script>
 import axios from "axios";
-import Select2 from "components/Select2";
+import UploadSettingsSelect from "./UploadSettingsSelect.vue";
 import $ from "jquery";
 import Popover from "mvc/ui/ui-popover";
 import UploadExtension from "mvc/upload/upload-extension";
@@ -129,7 +127,7 @@ import DefaultRow from "./DefaultRow.vue";
 import { defaultModel } from "./model.js";
 
 export default {
-    components: { BButton, DefaultRow, Select2 },
+    components: { BButton, DefaultRow, UploadSettingsSelect },
     props: {
         multiple: {
             type: Boolean,
@@ -542,17 +540,17 @@ export default {
         },
         /* walk collection and update un-modified default values when globals
            change */
-        updateExtension(extension, defaults_only) {
+        updateExtension(newExtension) {
             this.uploadList.forEach((model) => {
-                if (model.status === "init" && (model.extension === this.details.defaultExtension || !defaults_only)) {
-                    model.extension = extension;
+                if (model.status === "init" && model.extension === this.details.defaultExtension) {
+                    model.extension = newExtension;
                 }
             });
         },
-        updateGenome: function (genome, defaults_only) {
+        updateGenome: function (newGenome) {
             this.uploadList.forEach((model) => {
-                if (model.status === "init" && (model.genome === this.details.defaultDbKey || !defaults_only)) {
-                    model.genome = genome;
+                if (model.status === "init" && model.genome === this.details.defaultDbKey) {
+                    model.genome = newGenome;
                 }
             });
         },

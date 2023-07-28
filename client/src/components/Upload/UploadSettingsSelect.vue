@@ -3,6 +3,7 @@ import { computed } from "vue";
 import Select2 from "@/components/Select2.vue";
 
 const props = defineProps({
+    disabled: Boolean,
     options: Array,
     value: String,
 });
@@ -20,7 +21,7 @@ const currentValue = computed({
 </script>
 
 <template>
-    <select2 v-model="currentValue" class="upload-settings-select">
+    <select2 v-model="currentValue" class="upload-settings-select" :enabled="!disabled">
         <option v-for="(option, index) in options" :key="index" :value="option.id">
             {{ option.text }}
         </option>
