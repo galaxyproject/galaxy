@@ -259,6 +259,10 @@ class MockTrans:
         self._user_is_active = True
         self.user_is_admin = False
 
+    @property
+    def tag_handler(self):
+        return self.app.tag_handler
+
     def get_user_is_active(self):
         # NOTE: the real user_is_active also checks whether activation is enabled in the config
         return self._user_is_active

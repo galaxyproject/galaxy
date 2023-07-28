@@ -296,6 +296,10 @@ class MockTrans:
         self.request: Any = Bunch(headers={}, body=None)
         self.response: Any = Bunch(headers={}, set_content_type=lambda i: None)
 
+    @property
+    def tag_handler(self):
+        return self.app.tag_handler
+
     def check_csrf_token(self, payload):
         pass
 

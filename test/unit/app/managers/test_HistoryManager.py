@@ -92,7 +92,7 @@ class TestHistoryManager(BaseTestCase):
         hda = self.add_hda_to_history(history1, name="wat")
         hda_tags = ["tag-one", "tag-two"]
         hda_annotation = "annotation"
-        self.hda_manager.tag_handler.set_tags_from_list(user=user2, item=hda, new_tags_list=hda_tags)
+        self.app.tag_handler.set_tags_from_list(user=user2, item=hda, new_tags_list=hda_tags)
         self.hda_manager.annotate(hda, hda_annotation, user=user2)
 
         history2 = self.history_manager.copy(history1, user=user3)

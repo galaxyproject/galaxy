@@ -250,7 +250,11 @@ def _import_directory_to_history(app, target, work_directory):
 
     import_options = store.ImportOptions(allow_dataset_object_edit=True)
     import_model_store = store.get_import_model_store_for_directory(
-        target, app=app, user=u, import_options=import_options, tag_handler=app.tag_handler.create_tag_handler_session()
+        target,
+        app=app,
+        user=u,
+        import_options=import_options,
+        tag_handler=app.tag_handler.create_tag_handler_session(None),
     )
     with import_model_store.target_history(default_history=import_history):
         import_model_store.perform_import(import_history)

@@ -118,7 +118,7 @@ class TestHDAManager(HDATestCase):
         self.log("tags should be copied between HDAs")
         tagged = self.hda_manager.create(history=history1, dataset=self.dataset_manager.create())
         tags_to_set = ["tag-one", "tag-two"]
-        self.hda_manager.tag_handler.add_tags_from_list(owner, tagged, tags_to_set)
+        self.app.tag_handler.add_tags_from_list(owner, tagged, tags_to_set)
         hda2 = self.hda_manager.copy(tagged, history=history1)
         assert tagged.make_tag_string_list() == hda2.make_tag_string_list()
 
