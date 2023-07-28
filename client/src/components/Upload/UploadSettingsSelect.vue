@@ -20,15 +20,15 @@ const currentValue = computed({
 </script>
 
 <template>
-    <select2 v-model="currentValue" class="upload-select">
+    <select2 v-model="currentValue" class="upload-settings-select">
         <option v-for="(option, index) in options" :key="index" :value="option.id">
             {{ option.text }}
         </option>
     </select2>
 </template>
 
-<style scoped>
-.upload-select {
+<style>
+.upload-settings-select {
     width: 150px;
 }
 </style>

@@ -79,7 +79,7 @@ async function loadUploadDatatypes() {
  * Exported utilities.
  */
 export function findExtension(extensions, id) {
-    return extensions.find((extension) => extension.id == id);
+    return extensions.find((extension) => extension.id == id) || {};
 }
 
 export async function getUploadDatatypes(datatypesDisableAuto, auto) {

@@ -5,6 +5,7 @@ import UploadExtensionDetails from "./UploadExtensionDetails.vue";
 import UploadSettings from "./UploadSettings.vue";
 import UploadSettingsSelect from "./UploadSettingsSelect.vue";
 import { bytesToString } from "utils/utils";
+import { findExtension } from "./utils";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit, faLaptop, faFolderOpen } from "@fortawesome/free-solid-svg-icons";
@@ -12,29 +13,26 @@ import { faEdit, faLaptop, faFolderOpen } from "@fortawesome/free-solid-svg-icon
 library.add(faEdit, faLaptop, faFolderOpen);
 
 const props = defineProps({
-    listGenomes: Array,
-    listExtensions: Array,
-    extensions: Array,
+    deferred: Boolean,
     extension: String,
-    genome: String,
-    index: Number,
-    percentage: Number,
     fileContent: String,
     fileMode: String,
     fileName: String,
     fileSize: Number,
-    status: String,
-    deferred: Boolean,
-    to_posix_lines: Boolean,
+    genome: String,
+    index: Number,
+    listGenomes: Array,
+    listExtensions: Array,
+    percentage: Number,
     space_to_tab: Boolean,
+    status: String,
+    to_posix_lines: Boolean,
 });
 
 const emit = defineEmits();
 
 const percentageInt = computed(() => parseInt(props.percentage || 0));
-const extensionDetails = computed(() => props.extensions.find((ext) => ext.id === props.extension) || {});
-const extensionDescription = computed(() => extensionDetails.value.description);
-const extensionDescriptionUrl = computed(() => extensionDetails.value.description_url);
+const extensionDetails = computed(() => findExtension(props.listExtensions, props.extension));
 const removeIcon = computed(() => status_classes[props.status] || status_classes.init);
 
 /** Dictionary of upload states and associated icons */
@@ -88,7 +86,9 @@ function removeUpload() {
                 {{ bytesToString(fileSize) }}
             </div>
             <UploadSettingsSelect :value="extension" :options="listExtensions" @input="inputExtension" />
-            <UploadExtensionDetails :description="extensionDescription" :description-url="extensionDescriptionUrl" />
+            <UploadExtensionDetails
+                :description="extensionDetails.description"
+                :description-url="extensionDetails.description_url" />
             <UploadSettingsSelect :value="genome" :options="listGenomes" @input="inputGenome" />
             <UploadSettings
                 :deferred="deferred"

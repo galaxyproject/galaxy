@@ -12,7 +12,6 @@
                     :index="uploadIndex"
                     :deferred="uploadItem.deferred"
                     :extension="uploadItem.extension"
-                    :extensions="extensions"
                     :file-content="uploadItem.file_content"
                     :file-mode="uploadItem.file_mode"
                     :file-name="uploadItem.file_name"
@@ -31,7 +30,7 @@
         <div class="upload-footer">
             <span class="upload-footer-title">Type (set all):</span>
             <select2 v-model="extension" container-class="upload-footer-extension" :enabled="!running">
-                <option v-for="(ext, index) in extensions" :key="index" :value="ext.id">{{ ext.text }}</option>
+                <option v-for="(ext, index) in listExtensions" :key="index" :value="ext.id">{{ ext.text }}</option>
             </select2>
             <span class="upload-footer-extension-info upload-icon-button fa fa-search" />
             <span class="upload-footer-title">Genome (set all):</span>
@@ -155,38 +154,37 @@ export default {
     },
     data() {
         return {
-            uploadUrl: null,
-            uploadList: [],
-            topInfo: "",
-            highlightBox: false,
-            extension: this.details.defaultExtension,
-            genome: this.details.defaultDbKey,
-            listExtensions: [],
-            listGenomes: [],
-            running: false,
+            allExtensions: [],
+            btnCreateTitle: _l("Paste/Fetch data"),
+            btnLocalTitle: _l("Choose local files"),
+            btnResetTitle: _l("Reset"),
+            btnStartTitle: _l("Start"),
+            btnStopTitle: _l("Pause"),
             counterAnnounce: 0,
-            counterSuccess: 0,
             counterError: 0,
             counterRunning: 0,
-            uploadSize: 0,
-            uploadCompleted: 0,
+            counterSuccess: 0,
             enableReset: false,
             enableStart: false,
             enableSources: false,
-            btnLocalTitle: _l("Choose local files"),
-            btnCreateTitle: _l("Paste/Fetch data"),
-            btnStartTitle: _l("Start"),
-            btnStopTitle: _l("Pause"),
-            btnResetTitle: _l("Reset"),
+            extension: this.details.defaultExtension,
+            genome: this.details.defaultDbKey,
+            highlightBox: false,
+            listGenomes: [],
+            running: false,
+            topInfo: "",
+            uploadCompleted: 0,
+            uploadList: [],
+            uploadSize: 0,
+            uploadUrl: null,
         };
     },
     computed: {
         showHelper() {
             return this.uploadList.length === 0;
         },
-        extensions() {
-            const result = this.listExtensions.filter((ext) => !ext.composite_files);
-            return result;
+        listExtensions() {
+            return this.allExtensions.filter((ext) => !ext.composite_files);
         },
         btnFilesTitle() {
             if (this.fileSourcesConfigured) {
@@ -516,7 +514,7 @@ export default {
                             $el: $(e.target),
                             title: details && details.text,
                             extension: details && details.id,
-                            list: this.listExtensions,
+                            list: this.allExtensions,
                             placement: "top",
                         });
                     }
@@ -529,7 +527,7 @@ export default {
             this.collection = new UploadModel.Collection();
         },
         initAppProperties() {
-            this.listExtensions = this.details.effectiveExtensions;
+            this.allExtensions = this.details.effectiveExtensions;
             this.listGenomes = this.details.listGenomes;
             this.ftpUploadSite = this.details.currentFtp;
             this.fileSourcesConfigured = this.details.fileSourcesConfigured;
