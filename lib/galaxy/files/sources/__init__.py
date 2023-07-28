@@ -10,6 +10,7 @@ from typing import (
 )
 
 from typing_extensions import (
+    Literal,
     NotRequired,
     TypedDict,
 )
@@ -68,15 +69,38 @@ class FilesSourceOptions:
 
 
 class EntryData(TypedDict):
+    """Provides data to create a new entry in a file source."""
+
     name: str
     # May contain additional properties depending on the file source
 
 
 class Entry(TypedDict):
+    """Represents the result of creating a new entry in a file source."""
+
     name: str
     uri: str
     # May contain additional properties depending on the file source
     external_link: NotRequired[str]
+
+
+class RemoteEntry(TypedDict):
+    name: str
+    uri: str
+    path: str
+
+
+TDirectoryClass = TypedDict("TDirectoryClass", {"class": Literal["Directory"]})
+TFileClass = TypedDict("TFileClass", {"class": Literal["File"]})
+
+
+class RemoteDirectory(RemoteEntry, TDirectoryClass):
+    pass
+
+
+class RemoteFile(RemoteEntry, TFileClass):
+    size: int
+    ctime: str
 
 
 class SingleFileSource(metaclass=abc.ABCMeta):
@@ -320,6 +344,11 @@ class BaseFilesSource(FilesSource):
     def _create_entry(
         self, entry_data: EntryData, user_context=None, opts: Optional[FilesSourceOptions] = None
     ) -> Entry:
+        """Create a new entry (directory) in the file source.
+
+        The file source must be writeable.
+        This function can be overridden by subclasses to provide a way of creating entries in the file source.
+        """
         raise NotImplementedError()
 
     def write_from(self, target_path, native_path, user_context=None, opts: Optional[FilesSourceOptions] = None):
