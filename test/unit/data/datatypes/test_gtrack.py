@@ -45,6 +45,16 @@ def gtrack_example_mean_sd_weights() -> Generator[InputFileInfo, None, None]:
     return get_input_file_info("Example_mean_sd_weights.gtrack", 4, read_contents=True)
 
 
+@pytest.fixture
+def gtrack_example_wig_segments() -> Generator[InputFileInfo, None, None]:
+    return get_input_file_info("Example_wig_segments.gtrack", 5, read_contents=True)
+
+
+@pytest.fixture
+def gtrack_example_wig_step_function() -> Generator[InputFileInfo, None, None]:
+    return get_input_file_info("Example_wig_step_function.gtrack", 6, read_contents=True)
+
+
 @pytest.mark.parametrize(
     "input_file_fixture_name, expected",
     [
@@ -55,6 +65,8 @@ def gtrack_example_mean_sd_weights() -> Generator[InputFileInfo, None, None]:
         ("gtrack_example_7B", True),
         ("gtrack_example_bed_direct", True),
         ("gtrack_example_mean_sd_weights", True),
+        ("gtrack_example_wig_segments", True),
+        ("gtrack_example_wig_step_function", True),
     ],
 )
 def test_gtrack_sniff_prefix(input_file_fixture_name, expected, request):
@@ -101,6 +113,7 @@ class GTrackMetadata(TypedDict):
                 column_names=("seqid", "start", "end"),
                 column_types=("str", "int", "int"),
                 delimiter="\t",
+                track_type="segments",
             ),
         ),
         (
@@ -131,6 +144,7 @@ class GTrackMetadata(TypedDict):
                 ),
                 column_types=("str", "int", "int", "str", "float", "str", "str", "str", "str", "str"),
                 delimiter="\t",
+                track_type="linked valued segments",
             ),
         ),
         (
@@ -146,6 +160,7 @@ class GTrackMetadata(TypedDict):
                 column_names=("end", "id", "directed", "edges"),
                 column_types=("int", "str", "str", "str"),
                 delimiter="\t",
+                track_type="linked genome partition",
             ),
         ),
         (
@@ -163,6 +178,7 @@ class GTrackMetadata(TypedDict):
                 column_names=("seqid", "start", "end", "score1", "score2"),
                 column_types=("str", "int", "int", "str", "float"),
                 delimiter="\t",
+                track_type="valued segments",
             ),
         ),
         (
@@ -177,6 +193,7 @@ class GTrackMetadata(TypedDict):
                 column_names=("value",),
                 column_types=("str",),
                 delimiter="\t",
+                track_type="function",
             ),
         ),
         (
@@ -224,6 +241,7 @@ class GTrackMetadata(TypedDict):
                     "str",
                 ),
                 delimiter="\t",
+                track_type="valued segments",
             ),
         ),
         (
@@ -241,6 +259,38 @@ class GTrackMetadata(TypedDict):
                 column_names=("seqid", "start", "end", "id", "edges"),
                 column_types=("str", "int", "int", "str", "str"),
                 delimiter="\t",
+                track_type="linked segments",
+            ),
+        ),
+        (
+            "gtrack_example_wig_segments",
+            GTrackMetadata(
+                startCol=1,
+                viz_filter_cols=[2],
+                columns=2,
+                comment_lines=3,
+                data_lines=8,
+                header_lines=3,
+                bounding_regions=2,
+                column_names=("start", "value"),
+                column_types=("int", "float"),
+                delimiter="\t",
+                track_type="valued segments",
+            ),
+        ),
+        (
+            "gtrack_example_wig_step_function",
+            GTrackMetadata(
+                viz_filter_cols=[1],
+                columns=1,
+                comment_lines=3,
+                data_lines=8,
+                header_lines=4,
+                bounding_regions=2,
+                column_names=("value",),
+                column_types=("float",),
+                delimiter="\t",
+                track_type="step function",
             ),
         ),
     ],

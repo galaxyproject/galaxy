@@ -1,0 +1,20 @@
+##subtype url: http://gtrack.no/wig_fixedstep.gtrack
+
+# Note: the old WIG declaration lines are commented out
+
+#fixedStep chrom=chr1 start=201 step=100 span=100
+##track type: step function
+##fixed length: 100
+##fixed gap size: 0
+####seqid=chr1; start=201; end=600
+25.0
+26.0
+25.0
+23.0
+
+#fixedStep chrom=chr2 start=151 step=100 span=100
+####seqid=chr2; start=151; end=550
+10.0
+11.0
+13.0
+14.0

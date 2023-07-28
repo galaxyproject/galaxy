@@ -1675,6 +1675,15 @@ class GTrack(Interval):
         readonly=True,
     )
     MetadataElement(
+        name="track_type",
+        desc="GTrack track type",
+        default="",
+        no_value="",
+        visible=False,
+        optional=False,
+        readonly=True,
+    )
+    MetadataElement(
         name="columns",
         desc="Number of columns",
         default=0,
@@ -1787,6 +1796,8 @@ class GTrack(Interval):
     VALUE_TYPE_DEF = "value type"
     VALUE_DIMENSION = "value dimension"
     EDGES_COLUMN_DEF = "edges column"
+    FIXED_GAP_SIZE = "fixed gap size"
+    FIXED_LENGTH = "fixed length"
 
     GTRACK_STD_COLUMN_TYPES = {
         GENOME: "str",
@@ -1820,6 +1831,24 @@ class GTrack(Interval):
         VALUE: "viz_filter_cols",
         STRAND: "strandCol",
         ID: "nameCol",
+    }
+
+    TRACK_TYPE_FROM_COLS = {
+        (END,): "genome partition",
+        (END, ID, EDGES): "linked genome partition",
+        (END, VALUE): "step function",
+        (END, VALUE, ID, EDGES): "linked step function",
+        (ID, EDGES): "linked base pairs",
+        (START,): "points",
+        (START, END): "segments",
+        (START, END, ID, EDGES): "linked segments",
+        (START, END, VALUE): "valued segments",
+        (START, END, VALUE, ID, EDGES): "linked valued segments",
+        (START, ID, EDGES): "linked points",
+        (START, VALUE): "valued points",
+        (START, VALUE, ID, EDGES): "linked valued points",
+        (VALUE,): "function",
+        (VALUE, ID, EDGES): "linked function",
     }
 
     STD_COLUMNS = [START, END, VALUE, EDGES]
@@ -1911,6 +1940,8 @@ class GTrack(Interval):
         col_types = self._get_column_types(cols, value_type, value_column_name)
         dataset.metadata.column_types = col_types
 
+        edges_column_name = headers.get(self.EDGES_COLUMN_DEF, self.EDGES)
+
         for col_name, metadata_col in self.METADATA_COLUMNS_MAPPING.items():
             if metadata_col == "viz_filter_cols":
                 col_name = value_column_name
@@ -1920,6 +1951,25 @@ class GTrack(Interval):
                 if metadata_col == "viz_filter_cols":
                     value = [value]
                 setattr(dataset.metadata, metadata_col, value)
+
+        track_type_cols_present = []
+        for col in (self.START, self.END, self.VALUE, self.ID, self.EDGES):
+            col_to_find = col
+
+            if col == self.VALUE and value_column_name != self.VALUE:
+                col_to_find = value_column_name
+
+            if col == self.EDGES and edges_column_name != self.EDGES:
+                col_to_find = edges_column_name
+
+            if col_to_find in cols:
+                track_type_cols_present.append(col)
+            elif col_to_find == self.START and int(headers.get(self.FIXED_GAP_SIZE, 0)) != 0:
+                track_type_cols_present.append(self.START)
+            elif col_to_find == self.END and int(headers.get(self.FIXED_LENGTH, 1)) > 1:
+                track_type_cols_present.append(self.END)
+
+        dataset.metadata.track_type = self.TRACK_TYPE_FROM_COLS[tuple(track_type_cols_present)]
 
     def _check_url(self, url):
         try:
