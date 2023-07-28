@@ -48,6 +48,9 @@ def sqlite_app(sqlite_connection):
 def postgres_app(postgresql_proc):
     connection = "postgresql://{p.user}@{p.host}:{p.port}/".format(p=postgresql_proc)
 
+    if not psycopg2:
+        pytest.skip("psycopg2 must be installed for postgresql fixture")
+
     def create_app():
         return create_base_test(connection, amqp_type="postgres")
 
@@ -59,9 +62,10 @@ def database_app(request):
     if request.param == "postgres_app":
         if not which("initdb"):
             pytest.skip("initdb must be on PATH for postgresql fixture")
-        if not psycopg2:
-            pytest.skip("psycopg2 must be installed for postgresql fixture")
     if request.param == "sqlite_rabbitmq_app":
         if not os.environ.get("GALAXY_TEST_AMQP_INTERNAL_CONNECTION"):
             pytest.skip("rabbitmq tests will be skipped if GALAXY_TEST_AMQP_INTERNAL_CONNECTION env var is unset")
-    return request.getfixturevalue(request.param)
+    try:
+        return request.getfixturevalue(request.param)
+    except ImportError:
+        pytest.skip("psycopg2 must be installed for postgresql fixture")
