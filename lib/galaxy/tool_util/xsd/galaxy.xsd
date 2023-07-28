@@ -554,7 +554,7 @@ Describes an organization. Tries to stay close to [schema.org/Organization](http
         <xs:documentation xml:lang="en">[schema.org/sponsor](https://schema.org/sponsor)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attributeGroup ref="Thing">    
+    <xs:attributeGroup ref="Thing"/>    
   </xs:complexType>
 
   <xs:complexType name="Funding">
