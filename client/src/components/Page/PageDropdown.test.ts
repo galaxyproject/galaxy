@@ -52,7 +52,7 @@ describe("PageDropdown.vue", () => {
                 pinia: pinia,
             });
             const userStore = useUserStore();
-            userStore.currentUser = { email: "my@email", id: "1", tags_used: [] };
+            userStore.currentUser = { email: "my@email", id: "1", tags_used: [], isAnonymous: false };
         });
 
         it("should show page title", async () => {
@@ -113,7 +113,7 @@ describe("PageDropdown.vue", () => {
                 },
             });
             const userStore = useUserStore();
-            userStore.currentUser = { email: "my@email", id: "1", tags_used: [] };
+            userStore.currentUser = { email: "my@email", id: "1", tags_used: [], isAnonymous: false };
             wrapper.find(".page-dropdown").trigger("click");
             await wrapper.vm.$nextTick();
             wrapper.find(".dropdown-item-delete").trigger("click");

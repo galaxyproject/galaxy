@@ -12,6 +12,11 @@ interface User {
     id: string;
     email: string;
     tags_used: string[];
+    isAnonymous: false;
+}
+
+interface AnonymousUser {
+    isAnonymous: true;
 }
 
 interface Preferences {
@@ -24,13 +29,13 @@ export const useUserStore = defineStore(
     () => {
         const toggledSideBar = ref("tools");
         const showActivityBar = ref(false);
-        const currentUser = ref<User | null>(null);
+        const currentUser = ref<User | AnonymousUser | null>(null);
         const currentPreferences = ref<Preferences | null>(null);
 
         let loadPromise: Promise<void> | null = null;
 
         const isAnonymous = computed(() => {
-            return !currentUser.value?.email;
+            return !("email" in (currentUser.value || []));
         });
 
         const currentTheme = computed(() => {
@@ -76,7 +81,7 @@ export const useUserStore = defineStore(
         }
 
         async function setCurrentTheme(theme: string) {
-            if (!currentUser.value) {
+            if (!currentUser.value || currentUser.value.isAnonymous) {
                 return;
             }
             const currentTheme = await setCurrentThemeQuery(currentUser.value.id, theme);
@@ -85,7 +90,7 @@ export const useUserStore = defineStore(
             }
         }
         async function addFavoriteTool(toolId: string) {
-            if (!currentUser.value) {
+            if (!currentUser.value || currentUser.value.isAnonymous) {
                 return;
             }
             const tools = await addFavoriteToolQuery(currentUser.value.id, toolId);
@@ -93,7 +98,7 @@ export const useUserStore = defineStore(
         }
 
         async function removeFavoriteTool(toolId: string) {
-            if (!currentUser.value) {
+            if (!currentUser.value || currentUser.value.isAnonymous) {
                 return;
             }
             const tools = await removeFavoriteToolQuery(currentUser.value.id, toolId);
