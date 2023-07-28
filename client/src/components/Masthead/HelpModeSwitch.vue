@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref } from "vue";
 
-const tooltip = "Enable/Disable Help Mode"
+const tooltip = "Enable/Disable Help Mode";
 
-//currentValue must me reactive
-const currentValue = ref(false)
+export interface HelpModeSwitchProps {
+    value: boolean;
+}
 
-</script>    
+const enabled = ref(false);
+
+</script>
 
 <template>
     <div>
-        <b-form-checkbox v-model="currentValue" class="no-highlight" switch :title="tooltip">
-        </b-form-checkbox>
+        <b-form-checkbox v-model="enabled" class="no-highlight" switch :title="tooltip"> </b-form-checkbox>
     </div>
 </template>
-
-

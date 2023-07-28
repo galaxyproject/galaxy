@@ -1,5 +1,5 @@
 <script setup>
-import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
+import { BNavbar, BNavbarBrand, BNavbarNav, BNavForm } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { useEntryPointStore } from "stores/entryPointStore";
 import { withPrefix } from "utils/redirect";
@@ -144,7 +144,9 @@ onMounted(() => {
                 id="notifications-bell">
                 <NotificationsBell tooltip-placement="bottom" />
             </BNavItem>
-            <BNavItem><HelpModeSwitch /></BNavItem>
+            <BNavForm>
+                <HelpModeSwitch />
+            </BNavForm>
         </BNavbarNav>
         <QuotaMeter />
     </BNavbar>
