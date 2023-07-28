@@ -27,16 +27,22 @@
                     @input="_eventInput" />
             </div>
         </div>
-        <div class="upload-footer">
+        <div class="upload-footer text-center">
             <span class="upload-footer-title">Type (set all):</span>
             <UploadSettingsSelect
                 :value="extension"
                 :options="listExtensions"
+                placeholder="Select Type"
                 :disabled="running"
                 @input="updateExtension" />
             <span class="upload-footer-extension-info upload-icon-button fa fa-search" />
-            <span class="upload-footer-title">Genome (set all):</span>
-            <UploadSettingsSelect :value="genome" :options="listGenomes" :disabled="running" @input="updateGenome" />
+            <span class="upload-footer-title">Reference (set all):</span>
+            <UploadSettingsSelect
+                :value="genome"
+                :options="listGenomes"
+                :disabled="running"
+                placeholder="Select Reference"
+                @input="updateGenome" />
         </div>
         <div class="upload-buttons">
             <BButton
