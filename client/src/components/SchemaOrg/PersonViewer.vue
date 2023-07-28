@@ -1,13 +1,16 @@
 <template>
     <span itemprop="creator" itemscope itemtype="https://schema.org/Person">
-        <FontAwesomeIcon ref="button" icon="user" />
-        <b-popover
-            triggers="click blur"
-            :placement="hoverPlacement"
-            :target="$refs['button'] || 'works-lazily'"
-            title="Person">
+        <b-button ref="button"
+            v-b-modal.person-details
+            class="py-0 px-1"
+            size="sm"
+            variant="link"
+            title="Person details">
+            <FontAwesomeIcon icon="user" />
+        </b-button>
+        <b-modal id="person-details" title="Person" hide-footer>
             <b-table striped :items="items"> </b-table>
-        </b-popover>
+        </b-modal>
         <span v-if="name">
             <meta v-if="person.name" itemprop="name" :content="person.name" />
             <meta v-if="person.givenName" itemprop="givenName" :content="person.givenName" />

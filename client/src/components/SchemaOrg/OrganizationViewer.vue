@@ -1,13 +1,16 @@
 <template>
     <span itemprop="creator" itemscope itemtype="https://schema.org/Organization">
-        <FontAwesomeIcon ref="button" icon="building" />
-        <b-popover
-            triggers="click blur"
-            :placement="hoverPlacement"
-            :target="$refs['button'] || 'works-lazily'"
-            title="Organization">
+        <b-button ref="button"
+            v-b-modal.organization-details
+            class="py-0 px-1"
+            size="sm"
+            variant="link"
+            title="Organization details">
+            <FontAwesomeIcon icon="building" />
+        </b-button>
+        <b-modal id="organization-details" title="Organization" hide-footer>
             <b-table striped :items="items"> </b-table>
-        </b-popover>
+        </b-modal>
         <span v-if="name">
             <span itemprop="name">{{ name }}</span>
             <span v-if="email">

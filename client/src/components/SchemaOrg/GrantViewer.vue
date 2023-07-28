@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faMoneyBill, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
+import { faCoins, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
@@ -15,14 +15,13 @@ const props = defineProps({
     },
 });
 
-library.add(faExternalLinkAlt, faMoneyBill);
+library.add(faExternalLinkAlt, faCoins);
 
 type item = {
     attribute: string;
     value: string;
 };
 
-const name = computed<string>(() => props.grant.name);
 const items = computed(() => {
     const items: item[] = [];
     for (const key in props.grant) {
@@ -44,12 +43,14 @@ const explicitMetaAttributes = computed(() => {
 <template>
     <span itemprop="funding" itemscope itemtype="https://schema.org/Grant">
         <b-button ref="button"
-            v-b-modal.details
+            v-b-modal.funding-details
+            class="py-0 px-1"
             size="sm"
-            variant="link">
-            <FontAwesomeIcon icon="money-bill" />
+            variant="link"
+            title="Grant details">
+            <FontAwesomeIcon icon="coins" />
         </b-button>
-        <b-modal id="details" title="Grant" hide-footer>
+        <b-modal id="funding-details" title="Grant" hide-footer>
             <b-table striped :items="items"> </b-table>
         </b-modal>
         <span v-if="props.grant.name">
