@@ -1,4 +1,5 @@
 from pkg_resources import resource_string
+from sqlalchemy import select
 
 from galaxy.files.unittest_utils import TestPosixConfiguredFileSources
 from galaxy.model import (
@@ -154,7 +155,7 @@ def test_deferred_ldda_basic_attached():
     fixture_context = setup_fixture_context_with_history()
     store_dict = one_ld_library_deferred_model_store_dict()
     perform_import_from_store_dict(fixture_context, store_dict, import_options=import_options)
-    deferred_ldda = fixture_context.sa_session.query(LibraryDatasetDatasetAssociation).all()[0]
+    deferred_ldda = fixture_context.sa_session.scalars(select(LibraryDatasetDatasetAssociation)).all()[0]
     assert deferred_ldda
     assert deferred_ldda.dataset.state == "deferred"
 

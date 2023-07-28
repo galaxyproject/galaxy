@@ -63,6 +63,8 @@ class ConditionalDependencies:
                 job_conf_path = join(dirname(self.config_file), "job_conf.yml")
                 if not exists(job_conf_path):
                     job_conf_path = join(dirname(self.config_file), "job_conf.xml")
+            else:
+                job_conf_path = join(dirname(self.config_file), job_conf_path)
             if ".xml" in job_conf_path:
                 try:
                     try:

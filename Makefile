@@ -11,7 +11,7 @@ DOC_SOURCE_DIR=$(DOCS_DIR)/source
 SLIDESHOW_DIR=$(DOC_SOURCE_DIR)/slideshow
 OPEN_RESOURCE=bash -c 'open $$0 || xdg-open $$0'
 SLIDESHOW_TO_PDF?=bash -c 'docker run --rm -v `pwd`:/cwd astefanutti/decktape /cwd/$$0 /cwd/`dirname $$0`/`basename -s .html $$0`.pdf'
-YARN := $(shell command -v yarn 2> /dev/null)
+YARN := $(shell $(IN_VENV) command -v yarn 2> /dev/null)
 YARN_INSTALL_OPTS=--network-timeout 300000 --check-files
 # Respect predefined NODE_OPTIONS, otherwise set maximum heap size low for
 # compatibility with smaller machines.
@@ -23,6 +23,7 @@ CWL_TARGETS := test/functional/tools/cwl_tools/v1.0/conformance_tests.yaml \
 	lib/galaxy_test/api/cwl/test_cwl_conformance_v1_0.py \
 	lib/galaxy_test/api/cwl/test_cwl_conformance_v1_1.py \
 	lib/galaxy_test/api/cwl/test_cwl_conformance_v1_2.py
+NO_YARN_MSG="Could not find yarn, which is required to build the Galaxy client.\nIt should be shipped with Galaxy's virtualenv, but to install yarn manually please visit \033[0;34mhttps://yarnpkg.com/en/docs/install\033[0m for instructions, and package information for all platforms.\n"
 
 all: help
 	@echo "This makefile is used for building Galaxy's JS client, documentation, and drive the release process. A sensible all target is not implemented."
@@ -164,18 +165,18 @@ skip-client: ## Run only the server, skipping the client build.
 
 node-deps: ## Install NodeJS dependencies.
 ifndef YARN
-	@echo "Could not find yarn, which is required to install the Galaxy client.\nTo install yarn, please visit \033[0;34mhttps://yarnpkg.com/en/docs/install\033[0m for instructions, and package information for all platforms.\n"
+	@echo $(NO_YARN_MSG)
 	false;
 else
-	yarn install $(YARN_INSTALL_OPTS)
+	$(IN_VENV) yarn install $(YARN_INSTALL_OPTS)
 endif
 
 client-node-deps: ## Install NodeJS dependencies for the client.
 ifndef YARN
-	@echo "Could not find yarn, which is required to build the Galaxy client.\nTo install yarn, please visit \033[0;34mhttps://yarnpkg.com/en/docs/install\033[0m for instructions, and package information for all platforms.\n"
+	@echo $(NO_YARN_MSG)
 	false;
 else
-	cd client && yarn install $(YARN_INSTALL_OPTS)
+	$(IN_VENV) cd client && yarn install $(YARN_INSTALL_OPTS)
 endif
 
 
@@ -198,39 +199,39 @@ update-navigation-schema: client-node-deps
 	$(IN_VENV) cd client && node navigation_to_schema.mjs
 
 install-client: node-deps ## Install prebuilt client as defined in root package.json
-	yarn install && yarn run stage
+	$(IN_VENV) yarn install && yarn run stage
 
 client: client-node-deps ## Rebuild client-side artifacts for local development.
-	cd client && $(NODE_ENV) yarn run build
+	$(IN_VENV) cd client && $(NODE_ENV) yarn run build
 
 client-production: client-node-deps ## Rebuild client-side artifacts for a production deployment without sourcemaps.
-	cd client && $(NODE_ENV) yarn run build-production
+	$(IN_VENV) cd client && $(NODE_ENV) yarn run build-production
 
 client-production-maps: client-node-deps ## Rebuild client-side artifacts for a production deployment with sourcemaps.
-	cd client && $(NODE_ENV) yarn run build-production-maps
+	$(IN_VENV) cd client && $(NODE_ENV) yarn run build-production-maps
 
 client-format: client-node-deps ## Reformat client code
-	cd client && yarn run format
+	$(IN_VENV) cd client && yarn run format
 
 client-dev-server: client-node-deps ## Starts a webpack dev server for client development (HMR enabled)
-	cd client && $(NODE_ENV) yarn run develop
+	$(IN_VENV) cd client && $(NODE_ENV) yarn run develop
 
 client-test: client-node-deps  ## Run JS unit tests
-	cd client && yarn run test
+	$(IN_VENV) cd client && yarn run test
 
 client-eslint-precommit: client-node-deps # Client linting for pre-commit hook; skips glob input and takes specific paths
-	cd client && yarn run eslint-precommit
+	$(IN_VENV) cd client && yarn run eslint-precommit
 
 client-eslint: client-node-deps # Run client linting
-	cd client && yarn run eslint
+	$(IN_VENV) cd client && yarn run eslint
 
 client-format-check: client-node-deps # Run client formatting check
-	cd client && yarn run format-check
+	$(IN_VENV) cd client && yarn run format-check
 
 client-lint: client-eslint client-format-check ## ES lint and check format of client
 
 client-test-watch: client ## Watch and run all client unit tests on changes
-	cd client && yarn run jest-watch
+	$(IN_VENV) cd client && yarn run jest-watch
 
 serve-selenium-notebooks: ## Serve testing notebooks for Jupyter
 	cd lib && export PYTHONPATH=`pwd`; jupyter notebook --notebook-dir=galaxy_test/selenium/jupyter

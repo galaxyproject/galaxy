@@ -5,6 +5,8 @@ import tempfile
 from shutil import rmtree
 from unittest.mock import Mock
 
+from sqlalchemy import select
+
 from galaxy import model
 from galaxy.app_unittest_utils.galaxy_mock import MockApp
 from galaxy.exceptions import MalformedContents
@@ -704,7 +706,8 @@ def test_import_1901_default():
     # There was a deleted dataset so skip to 3
     assert dataset1.hid == 3, dataset1.hid
 
-    jobs = app.model.context.query(model.Job).filter_by(history_id=new_history.id).order_by(model.Job.table.c.id).all()
+    stmt = select(model.Job).filter_by(history_id=new_history.id).order_by(model.Job.id)
+    jobs = app.model.session.scalars(stmt).all()
     assert len(jobs) == 2
     assert jobs[0].tool_id == "upload1"
     assert jobs[1].tool_id == "cat"

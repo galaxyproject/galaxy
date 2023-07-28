@@ -17,7 +17,7 @@ total-perspective-vortex>=2.2.4,<3
 
 # For file sources plugins
 fs.webdavfs>=0.4.2  # type: webdav
-fs.dropboxfs  # type: dropbox
+fs.dropboxfs>=1.0  # type: dropbox
 fs.sshfs  # type: ssh
 fs.anvilfs # type: anvil
 fs.googledrivefs # type: googledrive

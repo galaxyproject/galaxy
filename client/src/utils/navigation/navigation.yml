@@ -493,6 +493,7 @@ last_export_record:
 history_import:
   selectors:
     radio_button_remote_files: '.history-import-component .fa-folder-open'
+    open_files_dialog: '.history-import-component .directory-form-input'
     import_button: '.import-button'
     running: '.history-import-component .loading-icon'
     success_message: '.history-import-component .alert-success'

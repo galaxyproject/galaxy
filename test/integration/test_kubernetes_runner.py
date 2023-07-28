@@ -269,8 +269,8 @@ class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJob
             job_dict = running_response["jobs"][0]
 
             app = self._app
-            sa_session = app.model.context.current
-            job = sa_session.query(app.model.Job).get(app.security.decode_id(job_dict["id"]))
+            sa_session = app.model.session
+            job = sa_session.get(app.model.Job, app.security.decode_id(job_dict["id"]))
 
             self._wait_for_external_state(sa_session, job, app.model.Job.states.RUNNING)
             assert not job.finished
@@ -306,8 +306,8 @@ class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJob
             job_dict = running_response.json()["jobs"][0]
 
             app = self._app
-            sa_session = app.model.context.current
-            job = sa_session.query(app.model.Job).get(app.security.decode_id(job_dict["id"]))
+            sa_session = app.model.session
+            job = sa_session.get(app.model.Job, app.security.decode_id(job_dict["id"]))
 
             self._wait_for_external_state(sa_session, job, app.model.Job.states.RUNNING)
 
@@ -340,8 +340,8 @@ class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJob
         # check that logs are also available in job logs
         app = self._app
         job_id = app.security.decode_id(running_response.json()["jobs"][0]["id"])
-        sa_session = app.model.context
-        job = sa_session.query(app.model.Job).get(job_id)
+        sa_session = app.model.session
+        job = sa_session.get(app.model.Job, job_id)
         self._wait_for_external_state(sa_session=sa_session, job=job, expected=app.model.Job.states.RUNNING)
 
         external_id = job.job_runner_external_id

@@ -46,11 +46,6 @@ jobs:
         with:
           path: .tox
           key: tox-cache-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-osx
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '18.12.1'
-          cache: 'yarn'
-          cache-dependency-path: 'galaxy root/client/yarn.lock'
       - name: Install miniconda  # use this job to test using Python from a conda environment
         uses: conda-incubator/setup-miniconda@v2
         with:

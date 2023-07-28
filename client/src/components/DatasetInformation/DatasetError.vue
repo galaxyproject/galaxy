@@ -58,9 +58,9 @@
                         v-for="(resultMessage, index) in resultMessages"
                         :key="index"
                         :variant="resultMessage[1]"
-                        show
-                        >{{ resultMessage[0] }}</b-alert
-                    >
+                        show>
+                        <span v-html="renderMarkdown(resultMessage[0])"></span>
+                    </b-alert>
                     <div v-if="showForm" id="fieldsAndButton">
                         <span class="mr-2 font-weight-bold">{{ emailTitle }}</span>
                         <span v-if="!!currentUser?.email">{{ currentUser?.email }}</span>
@@ -93,6 +93,7 @@ import { DatasetProvider } from "components/providers";
 import { JobDetailsProvider, JobProblemProvider } from "components/providers/JobProvider";
 import { mapState } from "pinia";
 
+import { useMarkdown } from "@/composables/markdown";
 import { useUserStore } from "@/stores/userStore";
 
 import DatasetErrorDetails from "./DatasetErrorDetails";
@@ -114,6 +115,10 @@ export default {
             type: String,
             required: true,
         },
+    },
+    setup() {
+        const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
+        return { renderMarkdown };
     },
     data() {
         return {
