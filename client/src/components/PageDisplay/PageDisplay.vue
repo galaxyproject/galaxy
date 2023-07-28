@@ -1,5 +1,5 @@
 <template>
-    <Published :item="page">
+    <PublishedItem :item="page">
         <template v-slot>
             <div v-if="isConfigLoaded">
                 <Markdown
@@ -13,24 +13,23 @@
             </div>
             <b-alert v-else variant="info" show>Unsupported page format.</b-alert>
         </template>
-    </Published>
+    </PublishedItem>
 </template>
 
 <script>
-import Published from "components/Common/Published";
-import Markdown from "components/Markdown/Markdown";
-import { withPrefix } from "utils/redirect";
-import { urlData } from "utils/url";
-
 import { useConfig } from "@/composables/config";
+import { withPrefix } from "@/utils/redirect";
+import { urlData } from "@/utils/url";
 
-import PageHtml from "./PageHtml";
+import PageHtml from "./PageHtml.vue";
+import PublishedItem from "@/components/Common/PublishedItem.vue";
+import Markdown from "@/components/Markdown/Markdown.vue";
 
 export default {
     components: {
         Markdown,
         PageHtml,
-        Published,
+        PublishedItem,
     },
     props: {
         pageId: {

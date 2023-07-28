@@ -1,19 +1,20 @@
 <template>
-    <Published :item="workflow">
+    <PublishedItem :item="workflow">
         <template v-slot>
             <WorkflowDisplay :workflow-id="id" :expanded="true" />
         </template>
-    </Published>
+    </PublishedItem>
 </template>
 
 <script>
-import Published from "components/Common/Published";
-import WorkflowDisplay from "components/Markdown/Elements/Workflow/WorkflowDisplay";
-import { urlData } from "utils/url";
+import { urlData } from "@/utils/url";
+
+import PublishedItem from "@/components/Common/PublishedItem.vue";
+import WorkflowDisplay from "@/components/Markdown/Elements/Workflow/WorkflowDisplay.vue";
 
 export default {
     components: {
-        Published,
+        PublishedItem,
         WorkflowDisplay,
     },
     props: {
