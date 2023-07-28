@@ -109,12 +109,10 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
             changed = True
         new_tags = new_data.get("tags", None)
         if new_tags is not None and new_tags != ldda.tags:
-            trans.tag_handler.delete_item_tags(item=ldda, user=trans.user, galaxy_session=trans.galaxy_session)
+            trans.tag_handler.delete_item_tags(item=ldda, user=trans.user)
             tag_list = trans.tag_handler.parse_tags_list(new_tags)
             for tag in tag_list:
-                trans.tag_handler.apply_item_tag(
-                    item=ldda, user=trans.user, name=tag[0], value=tag[1], galaxy_session=trans.galaxy_session
-                )
+                trans.tag_handler.apply_item_tag(item=ldda, user=trans.user, name=tag[0], value=tag[1])
             changed = True
         if changed:
             ldda.update_parent_folder_update_times()

@@ -46,7 +46,7 @@ class TagsController(BaseUIController, UsesTagsMixin):
         # Remove tag.
         item = self._get_item(trans, item_class, trans.security.decode_id(item_id))
         user = trans.user
-        trans.tag_handler.remove_item_tag(user, item, tag_name, galaxy_session=trans.galaxy_session)
+        trans.tag_handler.remove_item_tag(user, item, tag_name)
         with transaction(trans.sa_session):
             trans.sa_session.commit()
         # Log.

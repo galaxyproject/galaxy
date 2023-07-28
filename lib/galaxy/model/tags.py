@@ -85,13 +85,17 @@ class TagHandler:
         return self.set_tags_from_list(user, item, tags_set, flush=flush, galaxy_session=galaxy_session)
 
     def set_tags_from_list(
-        self, user, item, new_tags_list, flush=True, galaxy_session: Optional["GalaxySession"] = None
+        self,
+        user,
+        item,
+        new_tags_list,
+        flush=True,
     ):
         # precondition: item is already security checked against user
         # precondition: incoming tags is a list of sanitized/formatted strings
-        self.delete_item_tags(user, item, galaxy_session=galaxy_session)
+        self.delete_item_tags(user, item)
         new_tags_str = ",".join(new_tags_list)
-        self.apply_item_tags(user, item, unicodify(new_tags_str, "utf-8"), flush=flush, galaxy_session=galaxy_session)
+        self.apply_item_tags(user, item, unicodify(new_tags_str, "utf-8"), flush=flush)
         if flush:
             with transaction(self.sa_session):
                 self.sa_session.commit()
@@ -147,9 +151,9 @@ class TagHandler:
             tags.append(self.get_tag_by_id(tag_id))
         return tags
 
-    def remove_item_tag(self, user: "User", item, tag_name: str, galaxy_session: Optional["GalaxySession"] = None):
+    def remove_item_tag(self, user: "User", item, tag_name: str):
         """Remove a tag from an item."""
-        self._ensure_user_owns_item(user, item, galaxy_session)
+        self._ensure_user_owns_item(user, item)
         # Get item tag association.
         item_tag_assoc = self._get_item_tag_assoc(user, item, tag_name)
         # Remove association.
@@ -160,9 +164,9 @@ class TagHandler:
             return True
         return False
 
-    def delete_item_tags(self, user: Optional["User"], item, galaxy_session: Optional["GalaxySession"] = None):
+    def delete_item_tags(self, user: Optional["User"], item):
         """Delete tags from an item."""
-        self._ensure_user_owns_item(user, item, galaxy_session)
+        self._ensure_user_owns_item(user, item)
         # Delete item-tag associations.
         for tag in item.tags:
             if tag.id:
@@ -171,7 +175,7 @@ class TagHandler:
         # Delete tags from item.
         del item.tags[:]
 
-    def _ensure_user_owns_item(self, user: Optional["User"], item, galaxy_session: Optional["GalaxySession"] = None):
+    def _ensure_user_owns_item(self, user: Optional["User"], item):
         """Raises exception if user does not own item.
         Notice that even admin users cannot directly modify tags on items they do not own.
         To modify tags on items they don't own, admin users must impersonate the item's owner.
@@ -218,9 +222,8 @@ class TagHandler:
         name,
         value=None,
         flush=True,
-        galaxy_session: Optional["GalaxySession"] = None,
     ):
-        self._ensure_user_owns_item(user, item, galaxy_session=galaxy_session)
+        self._ensure_user_owns_item(user, item)
         # Use lowercase name for searching/creating tag.
         if name is None:
             return
@@ -261,10 +264,9 @@ class TagHandler:
         item,
         tags_str: Optional[str],
         flush=True,
-        galaxy_session: Optional["GalaxySession"] = None,
     ):
         """Apply tags to an item."""
-        self._ensure_user_owns_item(user, item, galaxy_session=galaxy_session)
+        self._ensure_user_owns_item(user, item)
         # Parse tags.
         parsed_tags = self.parse_tags(tags_str)
         # Apply each tag.
@@ -509,7 +511,7 @@ class GalaxyTagHandlerSession(GalaxyTagHandler):
 
 
 class GalaxySessionlessTagHandler(GalaxyTagHandlerSession):
-    def _ensure_user_owns_item(self, user: Optional["User"], item, galaxy_session: Optional["GalaxySession"] = None):
+    def _ensure_user_owns_item(self, user: Optional["User"], item):
         # In sessionless mode we don't need to check ownership, we're only exporting
         pass
 

@@ -271,9 +271,7 @@ class DatasetCollectionManager:
         # values.
         if isinstance(tags, list):
             assert implicit_inputs is None, implicit_inputs
-            tags = trans.tag_handler.add_tags_from_list(
-                trans.user, dataset_collection_instance, tags, flush=False, galaxy_session=trans.galaxy_session
-            )
+            tags = trans.tag_handler.add_tags_from_list(trans.user, dataset_collection_instance, tags, flush=False)
         else:
             tags = self._append_tags(dataset_collection_instance, implicit_inputs, tags)
         return self.__persist(dataset_collection_instance, flush=flush)
@@ -500,7 +498,6 @@ class DatasetCollectionManager:
                 trans.user,
                 dataset_collection_instance,
                 new_data["tags"],
-                galaxy_session=trans.galaxy_session,
             )
 
         if changed.keys():
@@ -650,18 +647,14 @@ class DatasetCollectionManager:
                 hda.id, user=trans.user, current_history=history or trans.history
             ):
                 hda.visible = False
-            trans.tag_handler.apply_item_tags(
-                user=trans.user, item=element, tags_str=tag_str, flush=False, galaxy_session=trans.galaxy_session
-            )
+            trans.tag_handler.apply_item_tags(user=trans.user, item=element, tags_str=tag_str, flush=False)
             return element
         elif src_type == "ldda":
             element2 = self.ldda_manager.get(trans, element_id, check_accessible=True)
             element3 = element2.to_history_dataset_association(
                 history or trans.history, add_to_history=True, visible=not hide_source_items
             )
-            trans.tag_handler.apply_item_tags(
-                user=trans.user, item=element3, tags_str=tag_str, flush=False, galaxy_session=trans.galaxy_session
-            )
+            trans.tag_handler.apply_item_tags(user=trans.user, item=element3, tags_str=tag_str, flush=False)
             return element3
         elif src_type == "hdca":
             # TODO: Option to copy? Force copy? Copy or allow if not owned?

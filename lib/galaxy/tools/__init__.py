@@ -3725,7 +3725,10 @@ class ApplyRulesTool(DatabaseOperationTool):
             copied_dataset = dataset.copy(copy_tags=dataset.tags, flush=False)
             if tags is not None:
                 tag_handler.set_tags_from_list(
-                    trans.get_user(), copied_dataset, tags, flush=False, galaxy_session=trans.galaxy_session
+                    trans.get_user(),
+                    copied_dataset,
+                    tags,
+                    flush=False,
                 )
             copied_dataset.history_id = history.id
             copied_datasets.append(copied_dataset)
@@ -3778,7 +3781,6 @@ class TagFromFileTool(DatabaseOperationTool):
                         item=copied_value,
                         new_tags_list=new_tags,
                         flush=False,
-                        galaxy_session=history.galaxy_sessions,
                     )
             else:
                 # We have a collection, and we copy the elements so that we don't manipulate the original tags

@@ -1404,9 +1404,7 @@ class UsesTagsMixin(SharableItemSecurityMixin):
         """Remove a tag from an item."""
         user = trans.user
         tagged_item = self._get_tagged_item(trans, item_class_name, id)
-        deleted = tagged_item and trans.tag_handler.remove_item_tag(
-            user, tagged_item, tag_name, galaxy_session=trans.galaxy_session
-        )
+        deleted = tagged_item and trans.tag_handler.remove_item_tag(user, tagged_item, tag_name)
         with transaction(trans.sa_session):
             trans.sa_session.commit()
         return deleted
