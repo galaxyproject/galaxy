@@ -1,9 +1,9 @@
 <script setup>
 import { computed, ref } from "vue";
 import Popper from "@/components/Popper/Popper.vue";
-import Select2 from "@/components/Select2";
-import UploadExtensionDetails from "./UploadExtensionDetails";
-import UploadSettings from "./UploadSettings";
+import UploadExtensionDetails from "./UploadExtensionDetails.vue";
+import UploadSettings from "./UploadSettings.vue";
+import UploadSettingsSelect from "./UploadSettingsSelect.vue";
 import { bytesToString } from "utils/utils";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -46,12 +46,20 @@ const status_classes = {
     error: "cursor-pointer fa fa-exclamation-triangle",
 };
 
+function inputExtension(newExtension) {
+    emit("input", props.index, { extension: newExtension });
+}
+
 function inputFileContent(newFileContent) {
     emit("input", props.index, { file_content: newFileContent, file_size: newFileContent.length });
 }
 
 function inputFileName(newFileName) {
     emit("input", props.index, { file_name: newFileName });
+}
+
+function inputGenome(newGenome) {
+    emit("input", props.index, { genome: newGenome });
 }
 
 function inputSettings(settingId) {
@@ -79,19 +87,13 @@ function removeUpload() {
             <div class="upload-size">
                 {{ bytesToString(fileSize) }}
             </div>
-            <select2 class="upload-extension" v-model="extension">
-                <option v-for="(ext, index) in extensions" :key="index" :value="ext.id">{{ ext.text }}</option>
-            </select2>
+            <UploadSettingsSelect :value="extension" :options="listExtensions" @input="inputExtension" />
             <div>
                 <UploadExtensionDetails
                     :description="extensionDescription"
                     :description-url="extensionDescriptionUrl" />
             </div>
-            <select2 v-model="genome" class="upload-genome">
-                <option v-for="(listGenome, index) in listGenomes" :key="index" :value="listGenome.id">
-                    {{ listGenome.text }}
-                </option>
-            </select2>
+            <UploadSettingsSelect :value="genome" :options="listGenomes" @input="inputGenome" />
             <div>
                 <UploadSettings
                     :deferred="deferred"

@@ -22,7 +22,7 @@ const emit = defineEmits();
             <FontAwesomeIcon class="px-2" v-else icon="far fa-square" fa-fw />
         </td>
         <td class="text-left">
-            <span class="pr-2">{{ title }}</span>
+            <span v-localize class="pr-2">{{ title }}</span>
         </td>
     </tr>
 </template>
