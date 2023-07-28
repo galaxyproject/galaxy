@@ -5,6 +5,7 @@ from typing import (
     List,
     Optional,
     Tuple,
+    TYPE_CHECKING,
 )
 
 from sqlalchemy.exc import IntegrityError
@@ -20,6 +21,13 @@ from galaxy.util import (
     strip_control_characters,
     unicodify,
 )
+
+if TYPE_CHECKING:
+    from galaxy.model import (
+        GalaxySession,
+        Tag,
+        User,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -37,7 +45,7 @@ class TagHandler:
     Manages CRUD operations related to tagging objects.
     """
 
-    def __init__(self, sa_session: galaxy_scoped_session) -> None:
+    def __init__(self, sa_session: galaxy_scoped_session, galaxy_session=None) -> None:
         self.sa_session = sa_session
         # Minimum tag length.
         self.min_tag_len = 1
@@ -51,30 +59,39 @@ class TagHandler:
         self.key_value_separators = "=:"
         # Initialize with known classes - add to this in subclasses.
         self.item_tag_assoc_info: Dict[str, ItemTagAssocInfo] = {}
+        # Can't include type annotation in signature, because lagom will attempt to look up
+        # GalaxySession, but can't find it due to the circular import
+        self.galaxy_session: Optional["GalaxySession"] = galaxy_session
 
-    def create_tag_handler_session(self):
+    def create_tag_handler_session(self, galaxy_session: Optional["GalaxySession"]):
         # Creates a transient tag handler that avoids repeated flushes
-        return GalaxyTagHandlerSession(self.sa_session)
+        return GalaxyTagHandlerSession(self.sa_session, galaxy_session=galaxy_session)
 
-    def add_tags_from_list(self, user, item, new_tags_list, flush=True):
+    def add_tags_from_list(
+        self, user, item, new_tags_list, flush=True, galaxy_session: Optional["GalaxySession"] = None
+    ):
         new_tags_set = set(new_tags_list)
         if item.tags:
             new_tags_set.update(self.get_tags_str(item.tags).split(","))
-        return self.set_tags_from_list(user, item, new_tags_set, flush=flush)
+        return self.set_tags_from_list(user, item, new_tags_set, flush=flush, galaxy_session=galaxy_session)
 
-    def remove_tags_from_list(self, user, item, tag_to_remove_list, flush=True):
+    def remove_tags_from_list(
+        self, user, item, tag_to_remove_list, flush=True, galaxy_session: Optional["GalaxySession"] = None
+    ):
         tag_to_remove_set = set(tag_to_remove_list)
         tags_set = {_.strip() for _ in self.get_tags_str(item.tags).split(",")}
         if item.tags:
             tags_set -= tag_to_remove_set
-        return self.set_tags_from_list(user, item, tags_set, flush=flush)
+        return self.set_tags_from_list(user, item, tags_set, flush=flush, galaxy_session=galaxy_session)
 
-    def set_tags_from_list(self, user, item, new_tags_list, flush=True):
+    def set_tags_from_list(
+        self, user, item, new_tags_list, flush=True, galaxy_session: Optional["GalaxySession"] = None
+    ):
         # precondition: item is already security checked against user
         # precondition: incoming tags is a list of sanitized/formatted strings
-        self.delete_item_tags(user, item)
+        self.delete_item_tags(user, item, galaxy_session=galaxy_session)
         new_tags_str = ",".join(new_tags_list)
-        self.apply_item_tags(user, item, unicodify(new_tags_str, "utf-8"), flush=flush)
+        self.apply_item_tags(user, item, unicodify(new_tags_str, "utf-8"), flush=flush, galaxy_session=galaxy_session)
         if flush:
             with transaction(self.sa_session):
                 self.sa_session.commit()
@@ -130,9 +147,9 @@ class TagHandler:
             tags.append(self.get_tag_by_id(tag_id))
         return tags
 
-    def remove_item_tag(self, user, item, tag_name):
+    def remove_item_tag(self, user: "User", item, tag_name: str, galaxy_session: Optional["GalaxySession"] = None):
         """Remove a tag from an item."""
-        self._ensure_user_owns_item(user, item)
+        self._ensure_user_owns_item(user, item, galaxy_session)
         # Get item tag association.
         item_tag_assoc = self._get_item_tag_assoc(user, item, tag_name)
         # Remove association.
@@ -143,9 +160,9 @@ class TagHandler:
             return True
         return False
 
-    def delete_item_tags(self, user, item):
+    def delete_item_tags(self, user: Optional["User"], item, galaxy_session: Optional["GalaxySession"] = None):
         """Delete tags from an item."""
-        self._ensure_user_owns_item(user, item)
+        self._ensure_user_owns_item(user, item, galaxy_session)
         # Delete item-tag associations.
         for tag in item.tags:
             if tag.id:
@@ -154,7 +171,7 @@ class TagHandler:
         # Delete tags from item.
         del item.tags[:]
 
-    def _ensure_user_owns_item(self, user, item):
+    def _ensure_user_owns_item(self, user: Optional["User"], item, galaxy_session: Optional["GalaxySession"] = None):
         """Raises exception if user does not own item.
         Notice that even admin users cannot directly modify tags on items they do not own.
         To modify tags on items they don't own, admin users must impersonate the item's owner.
@@ -163,8 +180,19 @@ class TagHandler:
             # Item is not persisted, likely it is being copied from an existing, so no need
             # to check ownership at this point.
             return
-        history = getattr(item, "history", None)
-        is_owner = getattr(item, "user", None) == user or getattr(history, "user", None) == user
+        # Prefer checking ownership via history (or associated history).
+        # When checking multiple items in batch this should save a few lazy-loads
+        is_owner = False
+        history = item if isinstance(item, galaxy.model.History) else getattr(item, "history", None)
+        if not user:
+            if self.galaxy_session and history:
+                # anon users can only tag histories and history items,
+                # and should only have a single history
+                if history == self.galaxy_session.current_history:
+                    return
+            raise ItemOwnershipException("User does not own item.")
+        user_id = history.user_id if history else getattr(item, "user_id", None)
+        is_owner = user_id == user.id
         if not is_owner:
             raise ItemOwnershipException("User does not own item.")
 
@@ -183,8 +211,16 @@ class TagHandler:
             return True
         return False
 
-    def apply_item_tag(self, user, item, name, value=None, flush=True):
-        self._ensure_user_owns_item(user, item)
+    def apply_item_tag(
+        self,
+        user: Optional["User"],
+        item,
+        name,
+        value=None,
+        flush=True,
+        galaxy_session: Optional["GalaxySession"] = None,
+    ):
+        self._ensure_user_owns_item(user, item, galaxy_session=galaxy_session)
         # Use lowercase name for searching/creating tag.
         if name is None:
             return
@@ -219,9 +255,16 @@ class TagHandler:
                 self.sa_session.commit()
         return item_tag_assoc
 
-    def apply_item_tags(self, user, item, tags_str, flush=True):
+    def apply_item_tags(
+        self,
+        user: Optional["User"],
+        item,
+        tags_str: Optional[str],
+        flush=True,
+        galaxy_session: Optional["GalaxySession"] = None,
+    ):
         """Apply tags to an item."""
-        self._ensure_user_owns_item(user, item)
+        self._ensure_user_owns_item(user, item, galaxy_session=galaxy_session)
         # Parse tags.
         parsed_tags = self.parse_tags(tags_str)
         # Apply each tag.
@@ -402,8 +445,8 @@ class TagHandler:
 class GalaxyTagHandler(TagHandler):
     _item_tag_assoc_info: Dict[str, ItemTagAssocInfo] = {}
 
-    def __init__(self, sa_session: galaxy_scoped_session):
-        TagHandler.__init__(self, sa_session)
+    def __init__(self, sa_session: galaxy_scoped_session, galaxy_session=None):
+        TagHandler.__init__(self, sa_session, galaxy_session=galaxy_session)
         if not GalaxyTagHandler._item_tag_assoc_info:
             GalaxyTagHandler.init_tag_associations()
         self.item_tag_assoc_info = GalaxyTagHandler._item_tag_assoc_info
@@ -449,9 +492,9 @@ class GalaxyTagHandler(TagHandler):
 class GalaxyTagHandlerSession(GalaxyTagHandler):
     """Like GalaxyTagHandler, but avoids one flush per created tag."""
 
-    def __init__(self, sa_session):
-        super().__init__(sa_session)
-        self.created_tags = {}
+    def __init__(self, sa_session, galaxy_session: Optional["GalaxySession"]):
+        super().__init__(sa_session, galaxy_session)
+        self.created_tags: Dict[str, "Tag"] = {}
 
     def _get_tag(self, tag_name):
         """Get tag from cache or database."""
@@ -466,6 +509,10 @@ class GalaxyTagHandlerSession(GalaxyTagHandler):
 
 
 class GalaxySessionlessTagHandler(GalaxyTagHandlerSession):
+    def _ensure_user_owns_item(self, user: Optional["User"], item, galaxy_session: Optional["GalaxySession"] = None):
+        # In sessionless mode we don't need to check ownership, we're only exporting
+        pass
+
     def _get_tag(self, tag_name):
         """Get tag from cache or database."""
         # Short-circuit session access

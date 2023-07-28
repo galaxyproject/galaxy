@@ -48,13 +48,13 @@ class TagsManager:
         """Apply a new set of tags to an item; previous tags are deleted."""
         sa_session = trans.sa_session
         user = trans.user
-        tag_handler = GalaxyTagHandlerSession(sa_session)
+        tag_handler = GalaxyTagHandlerSession(sa_session, trans.galaxy_session)
         new_tags: Optional[str] = None
         if payload.item_tags and len(payload.item_tags.__root__) > 0:
             new_tags = ",".join(payload.item_tags.__root__)
         item = self._get_item(tag_handler, payload)
-        tag_handler.delete_item_tags(user, item)
-        tag_handler.apply_item_tags(user, item, new_tags)
+        tag_handler.delete_item_tags(user, item, galaxy_session=trans.galaxy_session)
+        tag_handler.apply_item_tags(user, item, new_tags, galaxy_session=trans.galaxy_session)
         with transaction(sa_session):
             sa_session.commit()
 

@@ -12,6 +12,7 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
 )
 from galaxy.managers import datasets
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import tags
 from galaxy.model.base import transaction
 from galaxy.structured_app import MinimalManagerApp
@@ -27,7 +28,6 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
 
     def __init__(self, app: MinimalManagerApp):
         self.app = app
-        self.tag_handler = tags.GalaxyTagHandler(app.model.context)
 
     def get(self, trans, decoded_library_dataset_id, check_accessible=True):
         """
@@ -82,7 +82,7 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
         self._set_from_dict(trans, ldda, payload)
         return ld
 
-    def _set_from_dict(self, trans, ldda, new_data):
+    def _set_from_dict(self, trans: ProvidesUserContext, ldda, new_data):
         changed = False
         new_name = new_data.get("name", None)
         if new_name is not None and new_name != ldda.name:
@@ -109,10 +109,12 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
             changed = True
         new_tags = new_data.get("tags", None)
         if new_tags is not None and new_tags != ldda.tags:
-            self.tag_handler.delete_item_tags(item=ldda, user=trans.user)
-            tag_list = self.tag_handler.parse_tags_list(new_tags)
+            trans.tag_handler.delete_item_tags(item=ldda, user=trans.user, galaxy_session=trans.galaxy_session)
+            tag_list = trans.tag_handler.parse_tags_list(new_tags)
             for tag in tag_list:
-                self.tag_handler.apply_item_tag(item=ldda, user=trans.user, name=tag[0], value=tag[1])
+                trans.tag_handler.apply_item_tag(
+                    item=ldda, user=trans.user, name=tag[0], value=tag[1], galaxy_session=trans.galaxy_session
+                )
             changed = True
         if changed:
             ldda.update_parent_folder_update_times()
@@ -251,7 +253,7 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
             current_user_roles, ld
         )
         rval["is_unrestricted"] = trans.app.security_agent.dataset_is_public(ldda.dataset)
-        rval["tags"] = self.tag_handler.get_tags_str(ldda.tags)
+        rval["tags"] = trans.tag_handler.get_tags_str(ldda.tags)
 
         #  Manage dataset permission is always attached to the dataset itself, not the the ld or ldda to maintain consistency
         rval["can_user_manage"] = trans.user_is_admin or trans.app.security_agent.can_manage_dataset(

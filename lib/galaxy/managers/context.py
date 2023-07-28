@@ -39,6 +39,7 @@ import string
 from json import dumps
 from typing import (
     Callable,
+    cast,
     List,
     Optional,
 )
@@ -49,15 +50,18 @@ from galaxy.exceptions import (
 )
 from galaxy.model import (
     Dataset,
+    GalaxySession,
     History,
     HistoryDatasetAssociation,
     Role,
+    User,
 )
 from galaxy.model.base import (
     ModelMapping,
     transaction,
 )
 from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.model.tags import GalaxyTagHandlerSession
 from galaxy.schema.tasks import RequestUser
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.security.vault import UserVaultWrapper
@@ -206,6 +210,15 @@ class ProvidesUserContext(ProvidesAppContext):
     properties.
     """
 
+    galaxy_session: Optional[GalaxySession] = None
+    _tag_handler: Optional[GalaxyTagHandlerSession] = None
+
+    @property
+    def tag_handler(self):
+        if self._tag_handler is None:
+            self._tag_handler = self.app.tag_handler.create_tag_handler_session(self.galaxy_session)
+        return self._tag_handler
+
     @property
     def async_request_user(self) -> RequestUser:
         if self.user is None:
@@ -220,6 +233,10 @@ class ProvidesUserContext(ProvidesAppContext):
     def user_vault(self):
         """Provide access to a user's personal vault."""
         return UserVaultWrapper(self.app.vault, self.user)
+
+    def get_user(self) -> Optional[User]:
+        user = cast(Optional[User], self.user or self.galaxy_session and self.galaxy_session.user)
+        return user
 
     @property
     def anonymous(self) -> bool:

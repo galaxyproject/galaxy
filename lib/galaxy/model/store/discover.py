@@ -60,6 +60,9 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
     max_discovered_files = float("inf")
     discovered_file_count: int
 
+    def get_job(self) -> Optional[galaxy.model.Job]:
+        return getattr(self, "job", None)
+
     def create_dataset(
         self,
         ext,
@@ -161,8 +164,10 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             primary_data.created_from_basename = created_from_basename
 
         if tag_list:
-            job = getattr(self, "job", None)
-            self.tag_handler.add_tags_from_list(job and job.user, primary_data, tag_list, flush=False)
+            job = self.get_job()
+            self.tag_handler.add_tags_from_list(
+                job and job.user, primary_data, tag_list, flush=False, galaxy_session=job and job.galaxy_session
+            )
 
         # If match specified a name use otherwise generate one from
         # designation.
@@ -392,9 +397,12 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         self.set_datasets_metadata(datasets=element_datasets["datasets"])
 
     def add_tags_to_datasets(self, datasets, tag_lists):
+        job = self.get_job()
         if any(tag_lists):
             for dataset, tags in zip(datasets, tag_lists):
-                self.tag_handler.add_tags_from_list(self.user, dataset, tags, flush=False)
+                self.tag_handler.add_tags_from_list(
+                    self.user, dataset, tags, flush=False, galaxy_session=job and job.galaxy_session
+                )
 
     def update_object_store_with_datasets(self, datasets, paths, extra_files, output_name):
         for dataset, path, extra_file in zip(datasets, paths, extra_files):
@@ -573,7 +581,7 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
 
     @property
     def tag_handler(self):
-        return GalaxySessionlessTagHandler(self.sa_session)
+        return GalaxySessionlessTagHandler(self.sa_session, galaxy_session=None)
 
     @property
     def sa_session(self):

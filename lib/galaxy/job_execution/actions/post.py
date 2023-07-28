@@ -448,13 +448,13 @@ class TagDatasetAction(DefaultJobAction):
     def execute_on_mapped_over(
         cls, trans, sa_session, action, step_inputs, step_outputs, replacement_dict, final_job_state=None
     ):
-        tag_handler = trans.app.tag_handler.create_tag_handler_session()
         if action.action_arguments:
             tags = [
                 t.replace("#", "name:") if t.startswith("#") else t
                 for t in [t.strip() for t in action.action_arguments.get("tags", "").split(",") if t.strip()]
             ]
-            if tags:
+            if tags and step_outputs:
+                tag_handler = trans.tag_handler
                 for name, step_output in step_outputs.items():
                     if action.output_name == "" or name == action.output_name:
                         cls._execute(tag_handler, trans.user, step_output, tags)
@@ -462,12 +462,12 @@ class TagDatasetAction(DefaultJobAction):
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict, final_job_state=None):
         if action.action_arguments:
-            tag_handler = app.tag_handler.create_tag_handler_session()
             tags = [
                 t.replace("#", "name:") if t.startswith("#") else t
                 for t in [t.strip() for t in action.action_arguments.get("tags", "").split(",") if t.strip()]
             ]
             if tags:
+                tag_handler = app.tag_handler.create_tag_handler_session(job.galaxy_session)
                 for dataset_assoc in job.output_datasets:
                     if action.output_name == "" or dataset_assoc.name == action.output_name:
                         cls._execute(tag_handler, job.user, dataset_assoc.dataset, tags)

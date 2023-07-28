@@ -6,7 +6,10 @@ Mixins for Taggable model managers and serializers.
 
 import logging
 import re
-from typing import Type
+from typing import (
+    Optional,
+    Type,
+)
 
 from sqlalchemy import (
     func,
@@ -14,6 +17,7 @@ from sqlalchemy import (
 )
 
 from galaxy import model
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.util import unicodify
 from .base import (
@@ -42,15 +46,6 @@ def _tags_to_strings(item):
     return sorted(tag_list, key=lambda str: re.sub("^name:", "#", str))
 
 
-def _tags_from_strings(item, tag_handler, new_tags_list, user: Optional[User], galaxy_session: Optional[GalaxySession] = None):
-    # TODO: duped from tags manager - de-dupe when moved to taggable mixin
-    tag_handler.delete_item_tags(user, item, galaxy_session=galaxy_session)
-    new_tags_str = ",".join(new_tags_list)
-    tag_handler.apply_item_tags(user, item, unicodify(new_tags_str, "utf-8"), galaxy_session=galaxy_session)
-    # TODO:!! does the creation of new_tags_list mean there are now more and more unused tag rows in the db?
-
-
-
 class TaggableSerializerMixin:
     def add_serializers(self):
         self.serializers["tags"] = self.serialize_tags
@@ -69,14 +64,16 @@ class TaggableDeserializerMixin:
     def add_deserializers(self):
         self.deserializers["tags"] = self.deserialize_tags
 
-    def deserialize_tags(self, item, key, val, user=None, **context):
+    def deserialize_tags(
+        self, item, key, val, *, user: Optional[model.User] = None, trans: ProvidesUserContext, **context
+    ):
         """
         Make sure `val` is a valid list of tag strings and assign them.
 
         Note: this will erase any previous tags.
         """
         new_tags_list = self.validate.basestring_list(key, val)
-        _tags_from_strings(item, self.tag_handler, new_tags_list, user=user)
+        trans.tag_handler.set_tags_from_list(user=user, item=item, new_tags_list=new_tags_list)
         return item.tags
 
 

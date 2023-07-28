@@ -244,14 +244,14 @@ class JobContext(BaseJobContext):
     @property
     def tag_handler(self):
         if self._tag_handler is None:
-            self._tag_handler = self.app.tag_handler.create_tag_handler_session()
+            self._tag_handler = self.app.tag_handler.create_tag_handler_session(self.job.galaxy_session)
         return self._tag_handler
 
     @property
     def work_context(self):
         from galaxy.work.context import WorkRequestContext
 
-        return WorkRequestContext(self.app, user=self.user)
+        return WorkRequestContext(self.app, user=self.user, galaxy_session=self.job.galaxy_session)
 
     @property
     def sa_session(self) -> ScopedSession:

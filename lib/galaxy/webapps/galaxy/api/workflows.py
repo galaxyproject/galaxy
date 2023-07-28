@@ -525,7 +525,10 @@ class WorkflowsAPIController(
             # set tags
             if "tags" in workflow_dict:
                 trans.app.tag_handler.set_tags_from_list(
-                    user=trans.user, item=stored_workflow, new_tags_list=workflow_dict["tags"]
+                    user=trans.user,
+                    item=stored_workflow,
+                    new_tags_list=workflow_dict["tags"],
+                    galaxy_session=trans.galaxy_session,
                 )
 
             if require_flush:

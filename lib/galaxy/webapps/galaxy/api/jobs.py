@@ -487,7 +487,9 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         for k, v in payload.items():
             if k.startswith("files_") or k.startswith("__files_"):
                 inputs[k] = v
-        request_context = WorkRequestContext(app=trans.app, user=trans.user, history=trans.history)
+        request_context = WorkRequestContext(
+            app=trans.app, user=trans.user, history=trans.history, galaxy_session=trans.galaxy_session
+        )
         all_params, all_errors, _, _ = tool.expand_incoming(
             trans=trans, incoming=inputs, request_context=request_context
         )
