@@ -453,9 +453,7 @@ class GalaxyInteractorApi:
 
         if self.supports_test_data_download:
             version_fragment = f"&tool_version={tool_version}" if tool_version else ""
-            response = self._get(
-                f"tools/{tool_id}/test_data_download?filename={filename}{version_fragment}", admin=True
-            )
+            response = self._get(f"tools/{tool_id}/test_data_download?filename={filename}{version_fragment}")
             if response.status_code == 200:
                 if mode == "file":
                     result = response.content
