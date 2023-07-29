@@ -821,14 +821,6 @@ def populate_api_routes(webapp, app):
         conditions=dict(method=["PUT"]),
     )
 
-    webapp.mapper.connect(
-        "create_user",
-        "/api/users",
-        controller="users",
-        action="create",
-        conditions=dict(method=["POST"]),
-    )
-
     # ========================
     # ===== WEBHOOKS API =====
     # ========================
