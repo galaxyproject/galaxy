@@ -1046,7 +1046,7 @@ def test_general_valid(lint_ctx):
 
 def test_general_valid_new_profile_fmt(lint_ctx):
     tool_source = get_xml_tool_source(GENERAL_VALID_NEW_PROFILE_FMT)
-    run_lint(lint_ctx, general.lint_general, XmlToolSource(tool_source))
+    run_lint(lint_ctx, general.lint_general, tool_source)
     assert "Tool defines a version [1.0+galaxy1]." in lint_ctx.valid_messages
     assert "Tool specifies profile version [23.0]." in lint_ctx.valid_messages
     assert "Tool defines an id [valid_id]." in lint_ctx.valid_messages
