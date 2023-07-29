@@ -44,6 +44,7 @@ from galaxy.schema.schema import (
     AnonUserModel,
     AsyncTaskResultSummary,
     CreatedCustomBuild,
+    CreatedUserModel,
     CustomBuildCreationPayload,
     CustomBuildsCollection,
     DeletedCustomBuild,
@@ -54,6 +55,7 @@ from galaxy.schema.schema import (
     FlexibleUserIdType,
     LimitedUserModel,
     UserBeaconSetting,
+    UserCreationPayload,
     UserDeletionPayload,
     UserModel,
 )
@@ -75,7 +77,6 @@ from galaxy.webapps.base.controller import (
     UsesFormDefinitionsMixin,
     UsesTagsMixin,
 )
-from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from galaxy.webapps.galaxy.api import (
     BaseGalaxyAPIController,
     depends,
@@ -140,6 +141,7 @@ FavoriteObjectBody = Body(
 CustomBuildCreationBody = Body(
     default=Required, title="Add custom build", description="The values to add a new custom build."
 )
+UserCreationBody = Body(default=Required, title="Create User", description="The values to add create a user.")
 AnyUserModel = Union[DetailedUserModel, AnonUserModel]
 
 
@@ -559,6 +561,40 @@ class FastAPIUsers:
         else:
             raise exceptions.ObjectNotFound(f"Could not find and delete build ({key}).")
 
+    @router.post(
+        "/api/users",
+        name="create_user",
+        summary="Create a new Galaxy user. Only admins can create users for now.",
+    )
+    def create(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        payload: UserCreationPayload = UserCreationBody,
+    ) -> CreatedUserModel:
+        if not trans.app.config.allow_user_creation and not trans.user_is_admin:
+            raise exceptions.ConfigDoesNotAllowException("User creation is not allowed in this Galaxy instance")
+        if trans.app.config.use_remote_user and trans.user_is_admin:
+            user = self.service.user_manager.get_or_create_remote_user(remote_user_email=payload.remote_user_email)
+        elif trans.user_is_admin:
+            username = payload.username
+            email = payload.email
+            password = payload.password
+            message = "\n".join(
+                (
+                    validate_email(trans, email),
+                    validate_password(trans, password, password),
+                    validate_publicname(trans, username),
+                )
+            ).rstrip()
+            if message:
+                raise exceptions.RequestParameterInvalidException(message)
+            else:
+                user = self.service.user_manager.create(email=email, username=username, password=password)
+        else:
+            raise exceptions.NotImplemented()
+        item = user.to_dict(view="element", value_mapper={"id": trans.security.encode_id, "total_disk_usage": float})
+        return item
+
     @router.get(
         "/api/users",
         name="get_users",
@@ -695,36 +731,6 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                     }
                 )
         return extra_pref_inputs
-
-    @expose_api
-    def create(self, trans: GalaxyWebTransaction, payload: dict, **kwd):
-        """
-        POST /api/users
-        Creates a new Galaxy user.
-        """
-        if not trans.app.config.allow_user_creation and not trans.user_is_admin:
-            raise exceptions.ConfigDoesNotAllowException("User creation is not allowed in this Galaxy instance")
-        if trans.app.config.use_remote_user and trans.user_is_admin:
-            user = trans.get_or_create_remote_user(remote_user_email=payload["remote_user_email"])
-        elif trans.user_is_admin:
-            username = payload["username"]
-            email = payload["email"]
-            password = payload["password"]
-            message = "\n".join(
-                (
-                    validate_email(trans, email),
-                    validate_password(trans, password, password),
-                    validate_publicname(trans, username),
-                )
-            ).rstrip()
-            if message:
-                raise exceptions.RequestParameterInvalidException(message)
-            else:
-                user = self.user_manager.create(email=email, username=username, password=password)
-        else:
-            raise exceptions.NotImplemented()
-        item = user.to_dict(view="element", value_mapper={"id": trans.security.encode_id, "total_disk_usage": float})
-        return item
 
     @expose_api
     def get_information(self, trans, id, **kwd):

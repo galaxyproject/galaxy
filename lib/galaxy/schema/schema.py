@@ -322,6 +322,10 @@ class DiskUsageUserModel(Model):
     nice_total_disk_usage: str = NiceTotalDiskUsageField
 
 
+class CreatedUserModel(UserModel, DiskUsageUserModel):
+    preferred_object_store_id: Optional[str] = PreferredObjectStoreIdField
+
+
 class AnonUserModel(DiskUsageUserModel):
     quota_percent: Any = QuotaPercentField
 
@@ -336,6 +340,15 @@ class DetailedUserModel(BaseUserModel, AnonUserModel):
         default=Required, title="Quota in bytes", description="Quota applicable to the user in bytes."
     )
     tags_used: List[str] = Field(default=Required, title="Tags used", description="Tags used by the user")
+
+
+class UserCreationPayload(Model):
+    password: str = Field(default=Required, title="user_password", description="The password of the user.")
+    remote_user_email: Optional[str] = Field(
+        default=None, title="user_email", description="The email of the remote user."
+    )
+    email: str = UserEmailField
+    username: str = UserNameField
 
 
 class UserDeletionPayload(Model):
