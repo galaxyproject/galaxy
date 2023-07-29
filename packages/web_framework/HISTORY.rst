@@ -3,11 +3,17 @@ History
 
 .. to_doc
 
------------
-23.0.5.dev0
------------
+-------------------
+23.0.5 (2023-07-29)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Media player fix issue 16415 by `@bdwheele <https://github.com/bdwheele>`_ in `#16443 <https://github.com/galaxyproject/galaxy/pull/16443>`_
+* Fix static file serving for ``robots.txt`` and ``favicon.ico`` when using per_host settings by `@mira-miracoli <https://github.com/mira-miracoli>`_ in `#16459 <https://github.com/galaxyproject/galaxy/pull/16459>`_
 
 -------------------
 23.0.4 (2023-06-30)

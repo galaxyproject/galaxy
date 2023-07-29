@@ -3,11 +3,16 @@ History
 
 .. to_doc
 
------------
-23.0.5.dev0
------------
+-------------------
+23.0.5 (2023-07-29)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Copy when_expression when copying workflow step by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16377 <https://github.com/galaxyproject/galaxy/pull/16377>`_
 
 -------------------
 23.0.4 (2023-06-30)

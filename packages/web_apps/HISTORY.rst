@@ -3,11 +3,16 @@ History
 
 .. to_doc
 
------------
-23.0.5.dev0
------------
+-------------------
+23.0.5 (2023-07-29)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fix active step display in workflow editor side panel by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16364 <https://github.com/galaxyproject/galaxy/pull/16364>`_
 
 -------------------
 23.0.4 (2023-06-30)
@@ -29,6 +34,7 @@ Bug fixes
 Bug fixes
 =========
 
+* 
 * Fix converting Enum value to str for Python 3.11 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#16284 <https://github.com/galaxyproject/galaxy/pull/16284>`_
 
 ============
@@ -52,6 +58,7 @@ No recorded changes since last release
 Bug fixes
 =========
 
+* 
 * 
 * Display DCE in job parameter component, allow rerunning with DCE input by `@mvdbeek <https://github.com/mvdbeek>`_ in `#15744 <https://github.com/galaxyproject/galaxy/pull/15744>`_
 * Various fixes to path prefix handling by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16033 <https://github.com/galaxyproject/galaxy/pull/16033>`_

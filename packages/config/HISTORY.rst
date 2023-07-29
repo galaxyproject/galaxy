@@ -3,11 +3,16 @@ History
 
 .. to_doc
 
------------
-23.0.5.dev0
------------
+-------------------
+23.0.5 (2023-07-29)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Minor bug fix for default mail templates by `@neoformit <https://github.com/neoformit>`_ in `#16362 <https://github.com/galaxyproject/galaxy/pull/16362>`_
 
 -------------------
 23.0.4 (2023-06-30)
