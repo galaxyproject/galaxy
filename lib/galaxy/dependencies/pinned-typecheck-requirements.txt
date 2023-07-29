@@ -3,7 +3,7 @@ cryptography==41.0.2
 mypy==1.4.1
 mypy-extensions==1.0.0
 pycparser==2.21
-pydantic==1.10.11
+pydantic==1.10.12
 tomli==2.0.1
 typed-ast==1.5.5
 types-bleach==6.0.0.4
