@@ -1393,6 +1393,8 @@ export interface paths {
          * @description Return a collection of users. Filters will only work if enabled in config or user is admin.
          */
         get: operations["get_users_api_users_get"];
+        /** Create a new Galaxy user. Only admins can create users for now. */
+        post: operations["create_user_api_users_post"];
     };
     "/api/users/current/recalculate_disk_usage": {
         /**
@@ -2996,6 +2998,65 @@ export interface components {
              * @description The name of the custom build.
              */
             name: string;
+        };
+        /**
+         * CreatedUserModel
+         * @description User in a transaction context.
+         */
+        CreatedUserModel: {
+            /**
+             * Active
+             * @description User is active
+             */
+            active: boolean;
+            /**
+             * Deleted
+             * @description  User is deleted
+             */
+            deleted: boolean;
+            /**
+             * Email
+             * @description Email of the user
+             */
+            email: string;
+            /**
+             * ID
+             * @description Encoded ID of the user
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Last password change
+             * Format: date-time
+             */
+            last_password_change?: string;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @default User
+             * @enum {string}
+             */
+            model_class: "User";
+            /**
+             * Nice total disc usage
+             * @description Size of all non-purged, unique datasets of the user in a nice format.
+             */
+            nice_total_disk_usage: string;
+            /**
+             * Preferred Object Store ID
+             * @description The ID of the object store that should be used to store new datasets in this history.
+             */
+            preferred_object_store_id?: string;
+            /**
+             * Total disk usage
+             * @description Size of all non-purged, unique datasets of the user in bytes.
+             */
+            total_disk_usage: number;
+            /**
+             * user_name
+             * @description The name of the user.
+             */
+            username: string;
         };
         /**
          * CustomBuildCreationPayload
@@ -8920,6 +8981,32 @@ export interface components {
              * @description True if beacon sharing is enabled
              */
             enabled: boolean;
+        };
+        /**
+         * UserCreationPayload
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        UserCreationPayload: {
+            /**
+             * Email
+             * @description Email of the user
+             */
+            email: string;
+            /**
+             * user_password
+             * @description The password of the user.
+             */
+            password: string;
+            /**
+             * user_email
+             * @description The email of the remote user.
+             */
+            remote_user_email?: string;
+            /**
+             * user_name
+             * @description The name of the user.
+             */
+            username: string;
         };
         /**
          * UserDeletionPayload
@@ -16823,6 +16910,34 @@ export interface operations {
                         | components["schemas"]["UserModel"]
                         | components["schemas"]["LimitedUserModel"]
                     )[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_user_api_users_post: {
+        /** Create a new Galaxy user. Only admins can create users for now. */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserCreationPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["CreatedUserModel"];
                 };
             };
             /** @description Validation Error */
