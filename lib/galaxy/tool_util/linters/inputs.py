@@ -558,8 +558,11 @@ def lint_inputs(tool_source: "ToolSource", lint_ctx: "LintContext"):
                 )
 
 
-def lint_repeats(tool_xml, lint_ctx):
+def lint_repeats(tool_source: "ToolSource", lint_ctx):
     """Lint repeat blocks in tool inputs."""
+    tool_xml = getattr(tool_source, "xml_tree", None)
+    if tool_xml is None:
+        return
     repeats = tool_xml.findall("./inputs//repeat")
     for repeat in repeats:
         if "name" not in repeat.attrib:
