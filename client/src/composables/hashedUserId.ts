@@ -39,7 +39,7 @@ export function useHashedUserId() {
     watch(
         () => currentUser.value,
         () => {
-            if (currentUser.value && currentUser.value.id !== "") {
+            if (currentUser.value && !currentUser.value.isAnonymous) {
                 hashUserId(currentUser.value.id + localStorageSalt.value);
             }
         },

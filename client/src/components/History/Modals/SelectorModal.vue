@@ -118,7 +118,9 @@ const historiesProxy: Ref<HistorySummary[]> = ref([]);
 watch(
     () => props.histories as HistoryDetailed[],
     (h) => {
-        historiesProxy.value = h.filter((h) => !h.user_id || h.user_id === currentUser.value?.id);
+        historiesProxy.value = h.filter(
+            (h) => !h.user_id || (!currentUser.value?.isAnonymous && h.user_id === currentUser.value?.id)
+        );
     },
     {
         immediate: true,

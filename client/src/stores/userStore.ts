@@ -14,6 +14,11 @@ interface User {
     id: string;
     email: string;
     tags_used: string[];
+    isAnonymous: false;
+}
+
+interface AnonymousUser {
+    isAnonymous: true;
 }
 
 interface Preferences {
@@ -24,13 +29,13 @@ interface Preferences {
 export const useUserStore = defineStore("userStore", () => {
     const toggledSideBar = useUserLocalStorage("user-store-toggled-side-bar", "tools");
     const showActivityBar = useUserLocalStorage("user-store-show-activity-bar", false);
-    const currentUser = ref<User | null>(null);
+    const currentUser = ref<User | AnonymousUser | null>(null);
     const currentPreferences = ref<Preferences | null>(null);
 
     let loadPromise: Promise<void> | null = null;
 
     const isAnonymous = computed(() => {
-        return !currentUser.value?.email;
+        return !("email" in (currentUser.value || []));
     });
 
     const currentTheme = computed(() => {

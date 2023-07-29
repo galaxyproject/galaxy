@@ -51,7 +51,7 @@ export function useUserTags() {
     const { currentUser } = useCurrentUser(true);
     const userTags = computed(() => {
         let tags: string[];
-        if (currentUser.value) {
+        if (currentUser.value && !currentUser.value.isAnonymous) {
             tags = [...currentUser.value.tags_used, ...localTags.value];
         } else {
             tags = localTags.value;

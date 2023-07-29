@@ -67,7 +67,6 @@ function onDismiss(item: BroadcastNotification) {
             <BCol cols="auto">
                 <FontAwesomeIcon
                     class="mx-2"
-                    fade
                     size="2xl"
                     :class="`text-${getBroadcastVariant(currentBroadcast)}`"
                     :icon="faInfoCircle" />

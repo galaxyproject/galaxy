@@ -1,3 +1,4 @@
+import time
 from unittest import mock
 
 import pytest
@@ -346,6 +347,9 @@ class TestHistoryManager(BaseTestCase):
 
         history1 = self.history_manager.create(name="history1", user=user2)
         self.trans.set_history(history1)
+
+        # sleep a tiny bit so update time for history2 is different from history1
+        time.sleep(0.1)
         history2 = self.history_manager.create(name="history2", user=user2)
 
         self.log("should be able to get the most recently used (updated) history for a given user")
