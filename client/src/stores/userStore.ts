@@ -79,7 +79,7 @@ export const useUserStore = defineStore("userStore", () => {
     }
 
     async function setCurrentTheme(theme: string) {
-        if (!currentUser.value) {
+        if (!currentUser.value || currentUser.value.isAnonymous) {
             return;
         }
         const currentTheme = await setCurrentThemeQuery(currentUser.value.id, theme);
@@ -88,7 +88,7 @@ export const useUserStore = defineStore("userStore", () => {
         }
     }
     async function addFavoriteTool(toolId: string) {
-        if (!currentUser.value) {
+        if (!currentUser.value || currentUser.value.isAnonymous) {
             return;
         }
         const tools = await addFavoriteToolQuery(currentUser.value.id, toolId);
@@ -96,7 +96,7 @@ export const useUserStore = defineStore("userStore", () => {
     }
 
     async function removeFavoriteTool(toolId: string) {
-        if (!currentUser.value) {
+        if (!currentUser.value || currentUser.value.isAnonymous) {
             return;
         }
         const tools = await removeFavoriteToolQuery(currentUser.value.id, toolId);
