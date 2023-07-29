@@ -5,6 +5,7 @@ import hashlib
 import logging
 import random
 import re
+import string
 import time
 from datetime import datetime
 from typing import (
@@ -76,8 +77,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
 
     # TODO: incorp BaseAPIController.validate_in_users_and_groups
     # TODO: incorporate UsesFormDefinitionsMixin?
-    def __init__(self, app: BasicSharedApp):
+    def __init__(self, app: BasicSharedApp, app_type="galaxy"):
         self.model_class = app.model.User
+        self.app_type = app_type
         super().__init__(app)
 
     def register(self, trans, email=None, username=None, password=None, confirm=None, subscribe=False):
@@ -606,6 +608,56 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         session = self.session()
         with transaction(session):
             session.commit()
+
+    def get_or_create_remote_user(self, remote_user_email):
+        """
+        Create a remote user with the email remote_user_email and return it
+        """
+        if not self.app.config.use_remote_user:
+            return None
+        if getattr(self.app.config, "normalize_remote_user_email", False):
+            remote_user_email = remote_user_email.lower()
+        user = (
+            self.session()
+            .query(self.app.model.User)
+            .filter(self.app.model.User.table.c.email == remote_user_email)
+            .first()
+        )
+        if user:
+            # GVK: June 29, 2009 - This is to correct the behavior of a previous bug where a private
+            # role and default user / history permissions were not set for remote users.  When a
+            # remote user authenticates, we'll look for this information, and if missing, create it.
+            if not self.app.security_agent.get_private_user_role(user):
+                self.app.security_agent.create_private_user_role(user)
+            if self.app_type == "galaxy":
+                if not user.default_permissions:
+                    self.app.security_agent.user_set_default_permissions(user)
+                    self.app.security_agent.user_set_default_permissions(user, history=True, dataset=True)
+        elif user is None:
+            username = remote_user_email.split("@", 1)[0].lower()
+            random.seed()
+            user = self.app.model.User(email=remote_user_email)
+            user.set_random_password(length=12)
+            user.external = True
+            # Replace invalid characters in the username
+            for char in [x for x in username if x not in f"{string.ascii_lowercase + string.digits}-."]:
+                username = username.replace(char, "-")
+            # Find a unique username - user can change it later
+            if self.session().query(self.app.model.User).filter_by(username=username).first():
+                i = 1
+                while self.session().query(self.app.model.User).filter_by(username=f"{username}-{str(i)}").first():
+                    i += 1
+                username += f"-{str(i)}"
+            user.username = username
+            self.session().add(user)
+            with transaction(self.session()):
+                self.session().commit()
+            self.app.security_agent.create_private_user_role(user)
+            # We set default user permissions, before we log in and set the default history permissions
+            if self.app_type == "galaxy":
+                self.app.security_agent.user_set_default_permissions(user)
+            # self.log_event( "Automatically created account '%s'", user.email )
+        return user
 
 
 class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
