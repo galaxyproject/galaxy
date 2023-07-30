@@ -560,7 +560,7 @@ class MetadataValidator(Validator):
             super().validate(isinstance(value, model.DatasetInstance) and not missing, value_to_show=missing)
 
 
-class MetadataEqualsValidator(Validator):
+class MetadataEqualValidator(Validator):
     """
     Validator that checks for a metadata value for equality
 
@@ -986,7 +986,7 @@ validator_types = dict(
     in_range=InRangeValidator,
     length=LengthValidator,
     metadata=MetadataValidator,
-    dataset_metadata_equal=MetadataEqualsValidator,
+    dataset_metadata_equal=MetadataEqualValidator,
     unspecified_build=UnspecifiedBuildValidator,
     no_options=NoOptionsValidator,
     empty_field=EmptyTextfieldValidator,
