@@ -276,19 +276,25 @@ class TagHandler:
         for name, value in parsed_tags:
             self.apply_item_tag(user, item, name, value, flush=flush)
 
-    def get_tags_str(self, tags):
-        """Build a string from an item's tags."""
-        # Return empty string if there are no tags.
+    def get_tags_list(self, tags) -> List[str]:
+        """Build a list of tags from an item's tags."""
+        # Return empty list if there are no tags.
         if not tags:
-            return ""
-        # Create string of tags.
-        tags_str_list = list()
+            return []
+        # Create list of tags.
+        tags_list: List[str] = []
         for tag in tags:
             tag_str = tag.user_tname
             if tag.value is not None:
                 tag_str += f":{tag.user_value}"
-            tags_str_list.append(tag_str)
-        return ", ".join(tags_str_list)
+            tags_list.append(tag_str)
+        return tags_list
+
+    def get_tags_str(self, tags):
+        """Build a string from an item's tags."""
+        tags_list = self.get_tags_list(tags)
+        # Return empty string if there are no tags.
+        return ", ".join(tags_list)
 
     def get_tag_by_id(self, tag_id):
         """Get a Tag object from a tag id."""
