@@ -5,7 +5,6 @@ import UploadExtensionDetails from "./UploadExtensionDetails.vue";
 import UploadSettings from "./UploadSettings.vue";
 import UploadSettingsSelect from "./UploadSettingsSelect.vue";
 import { bytesToString } from "utils/utils";
-import { findExtension } from "./utils";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit, faLaptop, faFolderOpen } from "@fortawesome/free-solid-svg-icons";
@@ -32,7 +31,6 @@ const props = defineProps({
 const emit = defineEmits();
 
 const percentageInt = computed(() => parseInt(props.percentage || 0));
-const extensionDetails = computed(() => findExtension(props.listExtensions, props.extension));
 const removeIcon = computed(() => status_classes[props.status] || status_classes.init);
 
 /** Dictionary of upload states and associated icons */
@@ -90,9 +88,7 @@ function removeUpload() {
                 :options="listExtensions"
                 placeholder="Select Type"
                 @input="inputExtension" />
-            <UploadExtensionDetails
-                :description="extensionDetails.description"
-                :description-url="extensionDetails.description_url" />
+            <UploadExtensionDetails :extension="extension" :list-extensions="listExtensions" />
             <UploadSettingsSelect
                 :value="genome"
                 :options="listGenomes"

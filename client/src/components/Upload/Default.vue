@@ -35,7 +35,7 @@
                 placeholder="Select Type"
                 :disabled="running"
                 @input="updateExtension" />
-            <span class="upload-footer-extension-info upload-icon-button fa fa-search" />
+            <UploadExtensionDetails :extension="extension" :list-extensions="listExtensions" />
             <span class="upload-footer-title">Reference (set all):</span>
             <UploadSettingsSelect
                 :value="genome"
@@ -121,6 +121,7 @@
 import Vue from "vue";
 import axios from "axios";
 import UploadSettingsSelect from "./UploadSettingsSelect.vue";
+import UploadExtensionDetails from "./UploadExtensionDetails.vue";
 import $ from "jquery";
 import Popover from "mvc/ui/ui-popover";
 import UploadExtension from "mvc/upload/upload-extension";
@@ -138,7 +139,7 @@ import DefaultRow from "./DefaultRow.vue";
 import { defaultModel } from "./model.js";
 
 export default {
-    components: { BButton, DefaultRow, UploadSettingsSelect },
+    components: { BButton, DefaultRow, UploadExtensionDetails, UploadSettingsSelect },
     props: {
         multiple: {
             type: Boolean,
@@ -529,6 +530,7 @@ export default {
         /* walk collection and update un-modified default values when globals
            change */
         updateExtension(newExtension) {
+            this.extension = newExtension;
             Object.values(this.uploadList).forEach((model) => {
                 if (model.status === "init" && model.extension === this.details.defaultExtension) {
                     model.extension = newExtension;

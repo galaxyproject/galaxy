@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <span>
         <component :is="referenceIs" v-bind="referenceProps" ref="reference">
             <slot name="reference" />
         </component>
@@ -19,7 +19,7 @@
             </div>
             <slot />
         </component>
-    </div>
+    </span>
 </template>
 
 <script lang="ts">
@@ -58,7 +58,7 @@ export default defineComponent({
             type: Object,
         },
         referenceIs: {
-            default: "div",
+            default: "span",
             type: String,
         },
         referenceProps: {

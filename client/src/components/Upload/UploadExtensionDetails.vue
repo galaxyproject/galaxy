@@ -1,21 +1,25 @@
 <script setup>
+import { computed } from "vue";
 import Popper from "@/components/Popper/Popper.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faSearch } from "@fortawesome/free-solid-svg-icons";
+import { findExtension } from "./utils";
 
 library.add(faSearch);
 
 const props = defineProps({
-    description: {
+    extension: {
         type: String,
         default: null,
     },
-    descriptionUrl: {
-        type: String,
+    listExtensions: {
+        type: Array,
         default: null,
     },
 });
+
+const details = computed(() => findExtension(props.listExtensions, props.extension));
 </script>
 
 <template>
@@ -24,9 +28,11 @@ const props = defineProps({
             <FontAwesomeIcon icon="fa-search" />
         </template>
         <div class="p-2">
-            <div v-if="!!description">
-                {{ description }}
-                <div v-if="!!descriptionUrl">&nbsp;(<a :href="descriptionUrl" target="_blank">read more</a>)</div>
+            <div v-if="details && details.description">
+                {{ details.description }}
+                <div v-if="details.descriptionUrl">
+                    &nbsp;(<a :href="details.descriptionUrl" target="_blank">read more</a>)
+                </div>
             </div>
             <div v-else>There is no description available for this file extension.</div>
         </div>
