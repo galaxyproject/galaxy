@@ -7930,6 +7930,17 @@ export interface components {
          */
         RemoteFilesFormat: "flat" | "jstree" | "uri";
         /**
+         * RemoteUserCreationPayload
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        RemoteUserCreationPayload: {
+            /**
+             * Email
+             * @description Email of the user
+             */
+            remote_user_email: string;
+        };
+        /**
          * RequestDataType
          * @description Particular pieces of information that can be requested for a dataset.
          * @enum {string}
@@ -8997,11 +9008,6 @@ export interface components {
              * @description The password of the user.
              */
             password: string;
-            /**
-             * user_email
-             * @description The email of the remote user.
-             */
-            remote_user_email?: string;
             /**
              * user_name
              * @description The name of the user.
@@ -16930,7 +16936,9 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["UserCreationPayload"];
+                "application/json":
+                    | components["schemas"]["UserCreationPayload"]
+                    | components["schemas"]["RemoteUserCreationPayload"];
             };
         };
         responses: {
