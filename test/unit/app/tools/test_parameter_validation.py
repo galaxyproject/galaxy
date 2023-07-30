@@ -125,14 +125,14 @@ class TestParameterValidation(BaseParameterTestCase):
         p.validate("Foo")
         p.validate("foo")
         with self.assertRaisesRegex(
-            ValueError, "Parameter blah: Value 'Fop' does not match regular expression '\[Ff\]oo'"
+            ValueError, r"Parameter blah: Value 'Fop' does not match regular expression '\[Ff\]oo'"
         ):
             p.validate("Fop")
 
         # test also valitation of lists (for select parameters)
         p.validate(["Foo", "foo"])
         with self.assertRaisesRegex(
-            ValueError, "Parameter blah: Value 'Fop' does not match regular expression '\[Ff\]oo'"
+            ValueError, r"Parameter blah: Value 'Fop' does not match regular expression '\[Ff\]oo'"
         ):
             p.validate(["Foo", "Fop"])
 
@@ -216,7 +216,6 @@ class TestParameterValidation(BaseParameterTestCase):
         p.validate(21)
 
     def test_DatasetOkValidator(self):
-
         sa_session = self.app.model.context
         hist = History()
         with sa_session.begin():
@@ -243,7 +242,7 @@ class TestParameterValidation(BaseParameterTestCase):
         ):
             p.validate(notok_hda)
         p = self._parameter_for(
-            xml=""" 
+            xml="""
 <param name="blah" type="data" no_validation="true">
     <validator type="dataset_ok_validator" negate="true"/>
 </param>"""
@@ -375,7 +374,7 @@ class TestParameterValidation(BaseParameterTestCase):
         ):
             p.validate(hda)
 
-        param_xml_negate = """ 
+        param_xml_negate = """
 <param name="blah" type="data">
     <validator type="metadata" check="{check}" skip="{skip}" negate="true"/>
 </param>"""

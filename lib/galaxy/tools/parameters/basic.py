@@ -293,7 +293,7 @@ class ToolParameter(Dictifiable):
             try:
                 validator.validate(value, trans)
             except ValueError as e:
-                raise ValueError(f"Parameter {self.name}: {e}") from None 
+                raise ValueError(f"Parameter {self.name}: {e}") from None
 
     def to_dict(self, trans, other_values=None):
         """to_dict tool parameter. This can be overridden by subclasses."""
@@ -1997,7 +1997,6 @@ class BaseDataToolParameter(ToolParameter):
                         validator.validate(v, trans)
                     except ValueError as e:
                         raise ValueError(f"Parameter {self.name}: {e}") from None
-
 
         dataset_count = 0
         if value:

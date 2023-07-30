@@ -15,7 +15,6 @@ from galaxy import (
 log = logging.getLogger(__name__)
 
 
-
 class Validator(abc.ABC):
     """
     A validator checks that a value meets some conditions OR raises ValueError
