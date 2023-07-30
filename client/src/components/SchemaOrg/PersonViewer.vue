@@ -1,12 +1,7 @@
 <template>
     <span itemprop="creator" itemscope itemtype="https://schema.org/Person">
-        <b-button ref="button"
-            v-b-modal.person-details
-            class="py-0 px-1"
-            size="sm"
-            variant="link"
-            title="Person details">
-            <FontAwesomeIcon icon="user" fixed-width/>
+        <b-button ref="button" v-b-modal.person-details class="py-0 px-1" size="sm" variant="link" title="Person details">
+            <FontAwesomeIcon icon="user" fixed-width />
         </b-button>
         <b-modal id="person-details" title="Person" hide-footer>
             <b-table striped :items="items"> </b-table>
@@ -17,8 +12,7 @@
             <meta v-if="person.familyName" itemprop="familyName" :content="person.familyName" />
             {{ name }}
             <span v-if="email">
-                (<span itemprop="email" :content="person.email">{{ email }}</span
-                >)
+                (<span itemprop="email" :content="person.email">{{ email }}</span>)
             </span>
         </span>
         <span v-else itemprop="email" :content="person.email">
@@ -32,10 +26,7 @@
             <link itemprop="url" :href="url" />
             <FontAwesomeIcon icon="external-link-alt" />
         </a>
-        <meta
-            v-for="attribute in explicitMetaAttributes"
-            :key="attribute.attribute"
-            :itemprop="attribute.attribute"
+        <meta v-for="attribute in explicitMetaAttributes" :key="attribute.attribute" :itemprop="attribute.attribute"
             :content="attribute.value" />
         <slot name="buttons"></slot>
     </span>

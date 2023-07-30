@@ -42,13 +42,8 @@ const explicitMetaAttributes = computed(() => {
 
 <template>
     <span itemprop="funding" itemscope itemtype="https://schema.org/Grant">
-        <b-button ref="button"
-            v-b-modal.funding-details
-            class="py-0 px-1"
-            size="sm"
-            variant="link"
-            title="Grant details">
-            <FontAwesomeIcon icon="coins" fixed-width/>
+        <b-button ref="button" v-b-modal.funding-details class="py-0 px-1" size="sm" variant="link" title="Grant details">
+            <FontAwesomeIcon icon="coins" fixed-width />
         </b-button>
         <b-modal id="funding-details" title="Grant" hide-footer>
             <b-table striped :items="items"> </b-table>
