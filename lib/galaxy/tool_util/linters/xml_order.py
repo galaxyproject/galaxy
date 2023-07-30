@@ -27,7 +27,7 @@ TAG_ORDER = [
     "help",
     "citations",
     "creator",
-    "funding"
+    "funding",
 ]
 
 DATASOURCE_TAG_ORDER = [
@@ -43,7 +43,7 @@ DATASOURCE_TAG_ORDER = [
     "help",
     "citations",
     "creator",
-    "funding"
+    "funding",
 ]
 
 
