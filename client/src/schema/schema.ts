@@ -8,6 +8,27 @@ export interface paths {
         /** Returns returns an API key for authenticated user based on BaseAuth headers. */
         get: operations["get_api_key_api_authenticate_baseauth_get"];
     };
+    "/api/cloud/storage": {
+        /**
+         * Lists cloud-based buckets (e.g., S3 bucket, Azure blob) user has defined. Is not yet implemented
+         * @deprecated
+         */
+        get: operations["index_api_cloud_storage_get"];
+    };
+    "/api/cloud/storage/get": {
+        /**
+         * Gets given objects from a given cloud-based bucket to a Galaxy history.
+         * @deprecated
+         */
+        post: operations["get_api_cloud_storage_get_post"];
+    };
+    "/api/cloud/storage/send": {
+        /**
+         * Sends given dataset(s) in a given history to a given cloud-based bucket.
+         * @deprecated
+         */
+        post: operations["send_api_cloud_storage_send_post"];
+    };
     "/api/configuration": {
         /**
          * Return an object containing exposable configuration settings
@@ -2204,6 +2225,94 @@ export interface components {
             item_ids: string[];
         };
         /**
+         * CloudDatasets
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        CloudDatasets: {
+            /**
+             * Authentication ID
+             * @description The ID of CloudAuthz to be used for authorizing access to the resource provider. You may get a list of the defined authorizations via `/api/cloud/authz`. Also, you can use `/api/cloud/authz/create` to define a new authorization.
+             * @example 0123456789ABCDEF
+             */
+            authz_id: string;
+            /**
+             * Bucket
+             * @description The name of a bucket to which data should be sent (e.g., a bucket name on AWS S3).
+             */
+            bucket: string;
+            /**
+             * Objects
+             * @description A list of dataset IDs belonging to the specified history that should be sent to the given bucket. If not provided, Galaxy sends all the datasets belonging the specified history.
+             */
+            dataset_ids?: string[];
+            /**
+             * History ID
+             * @description The ID of history from which the object should be downloaded
+             * @example 0123456789ABCDEF
+             */
+            history_id: string;
+            /**
+             * Spaces to tabs
+             * @description A boolean value. If set to 'True', and an object with same name of the dataset to be sent already exist in the bucket, Galaxy replaces the existing object with the dataset to be sent. If set to 'False', Galaxy appends datetime to the dataset name to prevent overwriting an existing object.
+             * @default false
+             */
+            overwrite_existing?: boolean;
+        };
+        /**
+         * CloudDatasetsResponse
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        CloudDatasetsResponse: {
+            /**
+             * Bucket
+             * @description The name of bucket to which the listed datasets are queued to be sent
+             */
+            bucket_name: string;
+            /**
+             * Failed datasets
+             * @description The datasets for which Galaxy failed to create (and queue) send job
+             */
+            failed_dataset_labels: string[];
+            /**
+             * Send datasets
+             * @description The datasets for which Galaxy succeeded to create (and queue) send job
+             */
+            sent_dataset_labels: string[];
+        };
+        /**
+         * CloudObjects
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        CloudObjects: {
+            /**
+             * Authentication ID
+             * @description The ID of CloudAuthz to be used for authorizing access to the resource provider. You may get a list of the defined authorizations via `/api/cloud/authz`. Also, you can use `/api/cloud/authz/create` to define a new authorization.
+             * @example 0123456789ABCDEF
+             */
+            authz_id: string;
+            /**
+             * Bucket
+             * @description The name of a bucket from which data should be fetched from (e.g., a bucket name on AWS S3).
+             */
+            bucket: string;
+            /**
+             * History ID
+             * @description The ID of history to which the object should be received to.
+             * @example 0123456789ABCDEF
+             */
+            history_id: string;
+            /**
+             * Input arguments
+             * @description A summary of the input arguments, which is optional and will default to {}.
+             */
+            input_args?: components["schemas"]["InputArguments"];
+            /**
+             * Objects
+             * @description A list of the names of objects to be fetched.
+             */
+            objects: string[];
+        };
+        /**
          * CollectionElementIdentifier
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -3183,6 +3292,56 @@ export interface components {
              */
             sources: Record<string, never>[];
         };
+        /**
+         * DatasetSummary
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        DatasetSummary: {
+            /**
+             * Create Time
+             * Format: date-time
+             * @description The time and date this item was created.
+             */
+            create_time?: string;
+            /** Deleted */
+            deleted: boolean;
+            /** File Size */
+            file_size: number;
+            /**
+             * ID
+             * @description The encoded ID of this entity.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /** Purgable */
+            purgable: boolean;
+            /** Purged */
+            purged: boolean;
+            /**
+             * State
+             * @description The current state of this dataset.
+             */
+            state: components["schemas"]["DatasetState"];
+            /** Total Size */
+            total_size: number;
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time and date this item was updated.
+             */
+            update_time?: string;
+            /**
+             * UUID
+             * Format: uuid4
+             * @description Universal unique identifier for this dataset.
+             */
+            uuid: string;
+        };
+        /**
+         * DatasetSummaryList
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        DatasetSummaryList: components["schemas"]["DatasetSummary"][];
         /**
          * DatasetTextContentDetails
          * @description Base model definition with common configuration used by all derived models.
@@ -5367,6 +5526,36 @@ export interface components {
              * @description URI to fetch tool data bundle from (file:// URIs are fine because this is an admin-only operation)
              */
             uri: string;
+        };
+        /**
+         * InputArguments
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        InputArguments: {
+            /**
+             * Database Key
+             * @description Sets the database key of the objects being fetched to Galaxy.
+             * @default ?
+             */
+            dbkey?: string;
+            /**
+             * File Type
+             * @description Sets the Galaxy datatype (e.g., `bam`) for the objects being fetched to Galaxy. See the following link for a complete list of Galaxy data types: https://galaxyproject.org/learn/datatypes/.
+             * @default auto
+             */
+            file_type?: string;
+            /**
+             * Spaces to tabs
+             * @description A boolean value ('true' or 'false') that sets if spaces should be converted to tab in the objects being fetched to Galaxy. Applicable only if `to_posix_lines` is True
+             * @default false
+             */
+            space_to_tab?: boolean;
+            /**
+             * POSIX line endings
+             * @description A boolean value ('true' or 'false'); if 'Yes', converts universal line endings to POSIX line endings. Set to 'False' if you upload a gzip, bz2 or zip archive containing a binary file.
+             * @default Yes
+             */
+            to_posix_lines?: "Yes" | boolean;
         };
         /**
          * InstalledRepositoryToolShedStatus
@@ -8856,6 +9045,82 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["APIKeyResponse"];
+                };
+            };
+        };
+    };
+    index_api_cloud_storage_get: {
+        /**
+         * Lists cloud-based buckets (e.g., S3 bucket, Azure blob) user has defined. Is not yet implemented
+         * @deprecated
+         */
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+        };
+    };
+    get_api_cloud_storage_get_post: {
+        /**
+         * Gets given objects from a given cloud-based bucket to a Galaxy history.
+         * @deprecated
+         */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CloudObjects"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["DatasetSummaryList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_api_cloud_storage_send_post: {
+        /**
+         * Sends given dataset(s) in a given history to a given cloud-based bucket.
+         * @deprecated
+         */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CloudDatasets"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["CloudDatasetsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

@@ -3463,3 +3463,16 @@ class PageSummaryList(Model):
         default=[],
         title="List with summary information of Pages.",
     )
+
+
+class DatasetSummary(Model):
+    id: EncodedDatabaseIdField = EntityIdField
+    create_time: Optional[datetime] = CreateTimeField
+    update_time: Optional[datetime] = UpdateTimeField
+    state: DatasetState = DatasetStateField
+    deleted: bool
+    purged: bool
+    purgable: bool
+    file_size: int
+    total_size: int
+    uuid: UUID4 = UuidField
