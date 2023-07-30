@@ -54,6 +54,7 @@ from galaxy.schema.schema import (
     FavoriteObjectType,
     FlexibleUserIdType,
     LimitedUserModel,
+    RemoteUserCreationPayload,
     UserBeaconSetting,
     UserCreationPayload,
     UserDeletionPayload,
@@ -569,16 +570,21 @@ class FastAPIUsers:
     def create(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        payload: UserCreationPayload = UserCreationBody,
+        payload: Union[UserCreationPayload, RemoteUserCreationPayload] = UserCreationBody,
     ) -> CreatedUserModel:
+        if isinstance(payload, UserCreationPayload):
+            email = payload.email
+            username = payload.username
+            password = payload.password
+        if isinstance(payload, RemoteUserCreationPayload):
+            email = payload.remote_user_email
+            username = ""
+            password = ""
         if not trans.app.config.allow_user_creation and not trans.user_is_admin:
             raise exceptions.ConfigDoesNotAllowException("User creation is not allowed in this Galaxy instance")
         if trans.app.config.use_remote_user and trans.user_is_admin:
-            user = self.service.user_manager.get_or_create_remote_user(remote_user_email=payload.remote_user_email)
+            user = self.service.user_manager.get_or_create_remote_user(remote_user_email=email)
         elif trans.user_is_admin:
-            username = payload.username
-            email = payload.email
-            password = payload.password
             message = "\n".join(
                 (
                     validate_email(trans, email),

@@ -344,11 +344,12 @@ class DetailedUserModel(BaseUserModel, AnonUserModel):
 
 class UserCreationPayload(Model):
     password: str = Field(default=Required, title="user_password", description="The password of the user.")
-    remote_user_email: Optional[str] = Field(
-        default=None, title="user_email", description="The email of the remote user."
-    )
     email: str = UserEmailField
     username: str = UserNameField
+
+
+class RemoteUserCreationPayload(Model):
+    remote_user_email: str = UserEmailField
 
 
 class UserDeletionPayload(Model):
