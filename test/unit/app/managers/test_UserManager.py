@@ -195,7 +195,6 @@ class TestUserManager(BaseTestCase):
     def test_activation_email(self):
         self.log("should produce the activation email")
         self.user_manager.create(email="user@nopassword.com", username="nopassword")
-        self.trans.request.host = "request.host"
 
         def validate_send_email(frm, to, subject, body, config, html=None):
             assert frm == "email_from"
@@ -219,7 +218,6 @@ class TestUserManager(BaseTestCase):
     def test_reset_email(self):
         self.log("should produce the password reset email")
         self.user_manager.create(email="user@nopassword.com", username="nopassword")
-        self.trans.request.host = "request.host"
 
         def validate_send_email(frm, to, subject, body, config, html=None):
             assert frm == "email_from"
