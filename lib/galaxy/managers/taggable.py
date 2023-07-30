@@ -6,10 +6,7 @@ Mixins for Taggable model managers and serializers.
 
 import logging
 import re
-from typing import (
-    Optional,
-    Type,
-)
+from typing import Optional
 
 from sqlalchemy import (
     func,
@@ -19,7 +16,6 @@ from sqlalchemy import (
 from galaxy import model
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model.tags import GalaxyTagHandler
-from galaxy.util import unicodify
 from .base import (
     ModelValidator,
     raise_filter_err,

@@ -35,7 +35,6 @@ from galaxy.model import (
     ExtendedMetadataIndex,
     HistoryDatasetAssociation,
     LibraryDatasetDatasetAssociation,
-    tags,
 )
 from galaxy.model.base import transaction
 from galaxy.model.item_attrs import UsesAnnotations

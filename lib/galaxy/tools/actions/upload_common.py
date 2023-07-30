@@ -28,7 +28,6 @@ from galaxy.model import (
     LibraryDataset,
     LibraryFolder,
     Role,
-    tags,
 )
 from galaxy.model.base import transaction
 from galaxy.util import is_url

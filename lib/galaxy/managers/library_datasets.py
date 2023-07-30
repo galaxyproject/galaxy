@@ -13,7 +13,6 @@ from galaxy.exceptions import (
 )
 from galaxy.managers import datasets
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.model import tags
 from galaxy.model.base import transaction
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import validation
