@@ -410,8 +410,8 @@ export default {
             this._updateStateForCounters();
         },
         /** Remove model from upload list */
-        _eventRemove: function (id) {
-            const it = this.uploadList[id];
+        _eventRemove: function (index) {
+            const it = this.uploadList[index];
             var status = it.status;
             if (status == "success") {
                 this.counterSuccess--;
@@ -421,7 +421,7 @@ export default {
                 this.counterAnnounce--;
             }
             Vue.delete(this.uploadList, index);
-            this.uploadbox.remove(id);
+            this.uploadbox.remove(index);
             this._updateStateForCounters();
         },
         /** Show remote files dialog or FTP files */
