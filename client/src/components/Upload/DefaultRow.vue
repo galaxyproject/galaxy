@@ -20,7 +20,7 @@ const props = defineProps({
     fileName: String,
     fileSize: Number,
     genome: String,
-    index: Number,
+    index: String,
     listGenomes: Array,
     listExtensions: Array,
     percentage: Number,
@@ -74,7 +74,7 @@ function removeUpload() {
 </script>
 
 <template>
-    <div :id="`upload-row-${index}`" class="upload-row p-2" :class="{ 'bg-light': index % 2 === 0 }">
+    <div :id="`upload-row-${index}`" class="upload-row p-2">
         <div class="d-flex justify-content-around">
             <div>
                 <FontAwesomeIcon v-if="fileMode == 'new'" icon="fa-edit" />

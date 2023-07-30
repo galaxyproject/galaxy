@@ -118,6 +118,7 @@
 </template>
 
 <script>
+import Vue from "vue";
 import axios from "axios";
 import UploadSettingsSelect from "./UploadSettingsSelect.vue";
 import $ from "jquery";
@@ -177,14 +178,14 @@ export default {
             running: false,
             topInfo: "",
             uploadCompleted: 0,
-            uploadList: [],
+            uploadList: {},
             uploadSize: 0,
             uploadUrl: null,
         };
     },
     computed: {
         showHelper() {
-            return this.uploadList.length === 0;
+            return Object.keys(this.uploadList).length === 0;
         },
         listExtensions() {
             return this.allExtensions.filter((ext) => !ext.composite_files);
@@ -237,7 +238,7 @@ export default {
                 this.counterError = 0;
                 this.counterRunning = 0;
                 this.uploadbox.reset();
-                this.uploadList = [];
+                this.uploadList = {};
                 this.extension = this.details.defaultExtension;
                 this.genome = this.details.defaultDbKey;
                 this.details.model.set("percentage", 0);
@@ -283,7 +284,7 @@ export default {
             }
             this.uploadSize = 0;
             this.uploadCompleted = 0;
-            this.uploadList.forEach((model) => {
+            Object.values(this.uploadList).forEach((model) => {
                 if (model.status === "init") {
                     model.status = "queued";
                     this.uploadSize += model.file_size;
@@ -301,7 +302,7 @@ export default {
         /** Package and upload ftp files in a single request */
         _uploadFtp: function () {
             const list = [];
-            this.uploadList.forEach((model) => {
+            Object.values(this.uploadList).forEach((model) => {
                 if (model.status === "queued" && model.file_mode === "ftp") {
                     this.uploadbox.remove(model.id);
                     list.push(model);
@@ -377,7 +378,7 @@ export default {
                 file_uri: file.uri,
                 file_data: file,
             };
-            this.uploadList.push(uploadModel);
+            Vue.set(this.uploadList, index, uploadModel);
             var newModel = new UploadModel.Model(uploadModel);
             this.collection.add(newModel);
             this._updateStateForCounters();
@@ -399,7 +400,7 @@ export default {
         },
         /** Queue is done */
         _eventComplete: function () {
-            this.uploadList.forEach((model) => {
+            Object.values(this.uploadList).forEach((model) => {
                 if (model.status === "queued") {
                     model.status = "init";
                 }
@@ -418,7 +419,7 @@ export default {
             } else {
                 this.counterAnnounce--;
             }
-            this.uploadList.splice(id, 1);
+            Vue.delete(this.uploadList, index);
             this.uploadbox.remove(id);
             this._updateStateForCounters();
         },
@@ -528,14 +529,14 @@ export default {
         /* walk collection and update un-modified default values when globals
            change */
         updateExtension(newExtension) {
-            this.uploadList.forEach((model) => {
+            Object.values(this.uploadList).forEach((model) => {
                 if (model.status === "init" && model.extension === this.details.defaultExtension) {
                     model.extension = newExtension;
                 }
             });
         },
         updateGenome: function (newGenome) {
-            this.uploadList.forEach((model) => {
+            Object.values(this.uploadList).forEach((model) => {
                 if (model.status === "init" && model.genome === this.details.defaultDbKey) {
                     model.genome = newGenome;
                 }
