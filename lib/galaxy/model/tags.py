@@ -90,7 +90,10 @@ class TagHandler:
         item,
         new_tags_list,
         flush=True,
+        galaxy_session: Optional["GalaxySession"] = None,
     ):
+        # Override galaxy_session if passed in
+        self.galaxy_session = self.galaxy_session or galaxy_session
         # precondition: item is already security checked against user
         # precondition: incoming tags is a list of sanitized/formatted strings
         self.delete_item_tags(user, item)
