@@ -1527,8 +1527,8 @@ def test_outputs_format_input_legacy(lint_ctx):
 
 
 def test_outputs_format_input(lint_ctx):
-    tool_xml_tree = get_xml_tree(OUTPUTS_FORMAT_INPUT)
-    run_lint(lint_ctx, outputs.lint_output, tool_xml_tree)
+    tool_source = get_xml_tool_source(OUTPUTS_FORMAT_INPUT)
+    run_lint(lint_ctx, outputs.lint_output, tool_source)
     assert "1 outputs found." in lint_ctx.info_messages
     assert "Using format='input' on data is deprecated. Use the format_source attribute." in lint_ctx.error_messages
     assert len(lint_ctx.info_messages) == 1
