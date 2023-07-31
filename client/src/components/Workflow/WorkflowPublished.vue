@@ -44,6 +44,8 @@ const connectionsStore = useConnectionStore();
 const stepStore = useWorkflowStepStore();
 const stateStore = useWorkflowStateStore();
 
+stateStore.setScale(0.5);
+
 onUnmounted(() => {
     connectionsStore.$reset();
     stepStore.$reset();
