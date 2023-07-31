@@ -200,8 +200,10 @@ export default {
         },
     },
     created() {
-        this.initCollection();
-        this.initAppProperties();
+        this.allExtensions = this.details.effectiveExtensions;
+        this.listGenomes = this.details.listGenomes;
+        this.ftpUploadSite = this.details.currentFtp;
+        this.fileSourcesConfigured = this.details.fileSourcesConfigured;
     },
     mounted() {
         this.initExtensionInfo();
@@ -380,8 +382,6 @@ export default {
                 file_data: file,
             };
             Vue.set(this.uploadList, index, uploadModel);
-            var newModel = new UploadModel.Model(uploadModel);
-            this.collection.add(newModel);
             this._updateStateForCounters();
         },
         /** Error */
@@ -446,7 +446,7 @@ export default {
             } else {
                 this.ftp.show(
                     new UploadFtp({
-                        collection: this.collection,
+                        //collection: this.collection,
                         ftp_upload_site: this.ftpUploadSite,
                         onadd: (ftp_file) => {
                             return this.uploadbox.add([
@@ -460,7 +460,7 @@ export default {
                             ]);
                         },
                         onremove: function (model_index) {
-                            this.collection.remove(model_index);
+                            //this.collection.remove(model_index);
                         },
                     }).$el
                 );
@@ -509,15 +509,6 @@ export default {
                 .on("mousedown", (e) => {
                     e.preventDefault();
                 });
-        },
-        initCollection() {
-            this.collection = new UploadModel.Collection();
-        },
-        initAppProperties() {
-            this.allExtensions = this.details.effectiveExtensions;
-            this.listGenomes = this.details.listGenomes;
-            this.ftpUploadSite = this.details.currentFtp;
-            this.fileSourcesConfigured = this.details.fileSourcesConfigured;
         },
         initFtpPopover() {
             // add ftp file viewer
