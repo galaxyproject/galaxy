@@ -166,7 +166,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         if tag_list:
             job = self.get_job()
             self.tag_handler.add_tags_from_list(
-                job and job.user, primary_data, tag_list, flush=False, galaxy_session=job and job.galaxy_session
+                job and job.user, primary_data, tag_list, flush=False,
             )
 
         # If match specified a name use otherwise generate one from

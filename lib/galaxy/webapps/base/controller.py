@@ -1423,7 +1423,7 @@ class UsesTagsMixin(SharableItemSecurityMixin):
         return trans.tag_handler._get_item_tag_assoc(user, tagged_item, tag_name)
 
     def set_tags_from_list(self, trans, item, new_tags_list, user=None):
-        return trans.tag_handler.set_tags_from_list(user, item, new_tags_list, galaxy_session=trans.galaxy_session)
+        return trans.tag_handler.set_tags_from_list(user, item, new_tags_list)
 
     def get_user_tags_used(self, trans, user=None):
         """
