@@ -392,9 +392,9 @@ class CustosAuthnz(IdentityProvider):
 
     def _load_config_for_cilogon(self):
         # Set cilogon endpoints
-        self.config["authorization_endpoint"] = "https://cilogon.org/authorize"
-        self.config["token_endpoint"] = "https://cilogon.org/oauth2/token"
-        self.config["userinfo_endpoint"] = "https://cilogon.org/oauth2/userinfo"
+        self.config["well_known_oidc_config_uri"] = self._get_well_known_uri_from_url(self.config["provider"])
+        well_known_oidc_config = self._fetch_well_known_oidc_config(self.config["well_known_oidc_config_uri"])
+        self._load_well_known_oidc_config(well_known_oidc_config)
 
     def _load_config_for_custos(self):
         self.config["well_known_oidc_config_uri"] = self._get_well_known_uri_from_url(self.config["provider"])
@@ -435,6 +435,13 @@ class CustosAuthnz(IdentityProvider):
             base_url = self.config["url"]
             # Remove potential trailing slash to avoid "//realms"
             base_url = base_url if base_url[-1] != "/" else base_url[:-1]
+            return f"{base_url}/.well-known/openid-configuration"
+        if provider == "cilogon":
+            base_url = self.config["url"]
+            # backwards compatibility. CILogon URL is given with /authorize in the examples. not sure if
+            # this applies to the wild, but let's be safe here and remove the /authorize if it exists
+            # which will lead to the correct openid configuration
+            base_url = base_url if base_url.split("/")[-1] != "authorize" else "/".join(base_url.split("/")[:-1])
             return f"{base_url}/.well-known/openid-configuration"
         else:
             raise Exception(f"Unknown Custos provider name: {provider}")
