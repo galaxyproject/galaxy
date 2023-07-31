@@ -504,7 +504,7 @@ class FastAPIUsers:
             user.preferences["dbkeys"] = json.dumps(dbkeys)
             with transaction(trans.sa_session):
                 trans.sa_session.commit()
-            return CreatedCustomBuild(**build_dict)
+            return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.get(
         "/api/users/{user_id}/custom_builds", name="get_custom_builds", summary=" Returns collection of custom builds."

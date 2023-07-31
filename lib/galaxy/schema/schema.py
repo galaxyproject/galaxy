@@ -382,28 +382,37 @@ class CustomBuildBaseModel(Model):
     name: str = Field(default=Required, title="Name", description="The name of the custom build.")
 
 
-# TODO Add descriptions
+class CustomBuildLenType(str, Enum):
+    file = "file"
+    fasta = "fasta"
+    text = "text"
+
+
+# TODO Evaluate if the titles and descriptions are fitting
 class CustomBuildCreationPayload(CustomBuildBaseModel):
-    len_type: str = Field(
+    len_type: CustomBuildLenType = Field(
         default=Required,
         alias="len|type",
         title="Length type",
-        description="TODO",
+        description="The type of the len file.",
     )
     len_value: str = Field(
         default=Required,
         alias="len|value",
         title="Length value",
-        description="TODO",
+        description="The content of the length file.",
     )
 
 
-# TODO Add descriptions
 class CreatedCustomBuild(CustomBuildBaseModel):
-    len: int = Field(default=Required, title="Length", description="TODO")
-    count: Optional[str] = Field(default=None, title="Count", description="TODO")
-    fasta: Optional[int] = Field(default=None, title="Fasta", description="TODO")
-    linecount: Optional[int] = Field(default=None, title="Line count", description="TODO")
+    len: EncodedDatabaseIdField = Field(default=Required, title="Length", description="The primary id of the len file.")
+    count: Optional[str] = Field(default=None, title="Count", description="The number of chromosomes/contigs.")
+    fasta: Optional[EncodedDatabaseIdField] = Field(
+        default=None, title="Fasta", description="The primary id of the fasta file from a history."
+    )
+    linecount: Optional[EncodedDatabaseIdField] = Field(
+        default=None, title="Line count", description="The primary id of a linecount dataset."
+    )
 
 
 class CustomBuildModel(CreatedCustomBuild):
