@@ -283,14 +283,14 @@ export class UploadQueue {
                 const fileSetKey = file.name + file.size; // Concat name and size to create a "file signature".
                 if (file.mode === "new" || !this.fileSet.has(fileSetKey)) {
                     this.fileSet.add(fileSetKey);
-                    const index = this.nextIndex++;
+                    const index = String(this.nextIndex++);
                     this.queue.set(index, file);
                     this.opts.announce(index, file);
                 }
             });
         }
         // Returns last added file index.
-        return this.nextIndex - 1;
+        return String(parseInt(this.nextIndex) - 1);
     }
 
     // Remove file from queue and file set by index
