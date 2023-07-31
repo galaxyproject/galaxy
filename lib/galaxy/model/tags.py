@@ -67,17 +67,13 @@ class TagHandler:
         # Creates a transient tag handler that avoids repeated flushes
         return GalaxyTagHandlerSession(self.sa_session, galaxy_session=galaxy_session)
 
-    def add_tags_from_list(
-        self, user, item, new_tags_list, flush=True,
-    ):
+    def add_tags_from_list(self, user, item, new_tags_list, flush=True):
         new_tags_set = set(new_tags_list)
         if item.tags:
             new_tags_set.update(self.get_tags_str(item.tags).split(","))
         return self.set_tags_from_list(user, item, new_tags_set, flush=flush)
 
-    def remove_tags_from_list(
-        self, user, item, tag_to_remove_list, flush=True,
-    ):
+    def remove_tags_from_list(self, user, item, tag_to_remove_list, flush=True):
         tag_to_remove_set = set(tag_to_remove_list)
         tags_set = {_.strip() for _ in self.get_tags_str(item.tags).split(",")}
         if item.tags:
