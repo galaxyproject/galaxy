@@ -116,16 +116,11 @@ def __check_format(node, lint_ctx, profile: str, allow_ext=False):
     if fmt is None:
         fmt = node.attrib.get("format")
     if fmt == "input":
+        message = f"Using format='input' on {node.tag} is deprecated. Use the format_source attribute."
         if profile <= "16.01":
-            lint_ctx.warn(
-                f"Using format='input' on {node.tag}: format_source attribute is less ambiguous and should be used instead (with a non-legacy tool profile).",
-                node=node,
-            )
+            lint_ctx.warn(message, node=node)
         else:
-            lint_ctx.error(
-                f"Using format='input' on {node.tag} is deprecated. Use the format_source attribute.",
-                node=node,
-            )
+            lint_ctx.error(message, node=node)
 
     return fmt is not None
 
