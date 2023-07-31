@@ -544,16 +544,16 @@ Describes an organization. Tries to stay close to [schema.org/Organization](http
         A grant, typically financial or otherwise quantifiable, of resources. See [schema.org/Grant](https://schema.org/Grant).
       </xs:documentation>
     </xs:annotation>
-    <xs:attribute name="funder" type="PersonOrOrganization" use="optional">
+    <xs:element name="funder" type="PersonOrOrganization" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">[schema.org/funder](https://schema.org/funder)</xs:documentation>
       </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="sponsor" type="PersonOrOrganization" use="optional">
+    </xs:element>
+    <xs:element name="sponsor" type="PersonOrOrganization" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">[schema.org/sponsor](https://schema.org/sponsor)</xs:documentation>
       </xs:annotation>
-    </xs:attribute>
+    </xs:element>
     <xs:attributeGroup ref="Thing"/>    
   </xs:complexType>
 
