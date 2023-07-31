@@ -1,7 +1,10 @@
 from galaxy.datatypes.sniff import get_test_fname
-from galaxy.model import Dataset, History, HistoryDatasetAssociation
+from galaxy.model import (
+    Dataset,
+    History,
+    HistoryDatasetAssociation,
+)
 from .util import BaseParameterTestCase
-
 
 # def get_test_fname(fname):
 #     """Returns test data filename"""
