@@ -43,7 +43,6 @@ from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     AnonUserModel,
     AsyncTaskResultSummary,
-    CreatedCustomBuild,
     CreatedUserModel,
     CustomBuildCreationPayload,
     CustomBuildsCollection,
@@ -431,7 +430,7 @@ class FastAPIUsers:
         trans: ProvidesUserContext = DependsOnTrans,
         user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
         payload: CustomBuildCreationPayload = CustomBuildCreationBody,
-    ) -> CreatedCustomBuild:
+    ) -> Any:
         user = self.service.get_user(trans, user_id)
         dbkeys = json.loads(user.preferences["dbkeys"]) if "dbkeys" in user.preferences else {}
         name = payload.name
