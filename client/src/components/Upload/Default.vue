@@ -251,7 +251,7 @@ export default {
                 $uploadBox: this.$refs.uploadBox,
                 initUrl: (index) => {
                     if (!this.uploadUrl) {
-                        this.uploadUrl = this.getRequestUrl([this.uploadList[index]], this.history_id);
+                        this.uploadUrl = `${getAppRoot()}api/tools/fetch`;
                     }
                     return this.uploadUrl;
                 },
@@ -507,9 +507,6 @@ export default {
                     model.genome = newGenome;
                 }
             });
-        },
-        getRequestUrl: function (items, history_id) {
-            return `${getAppRoot()}api/tools/fetch`;
         },
     },
 };
