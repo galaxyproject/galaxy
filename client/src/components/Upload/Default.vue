@@ -168,15 +168,11 @@ export default {
             counterError: 0,
             counterRunning: 0,
             counterSuccess: 0,
-            enableReset: false,
-            enableStart: false,
-            enableSources: false,
             extension: this.details.defaultExtension,
             genome: this.details.defaultDbKey,
             highlightBox: false,
             listGenomes: [],
             running: false,
-            topInfo: "",
             uploadCompleted: 0,
             uploadList: {},
             uploadSize: 0,
@@ -197,6 +193,36 @@ export default {
         history_id() {
             return this.details.history_id;
         },
+        counterNonRunning() {
+            return this.counterAnnounce + this.counterSuccess + this.counterError;
+        },
+        enableReset() {
+            return this.counterRunning == 0 && this.counterNonRunning > 0;
+        },
+        enableStart() {
+            return this.counterRunning == 0 && this.counterAnnounce > 0;
+        },
+        enableSources() {
+            return this.counterRunning == 0 && (this.multiple || this.counterNonRunning == 0);
+        },
+        topInfo() {
+            var message = "";
+            if (this.counterAnnounce == 0) {
+                //TODO: if (this.uploadbox.compatible()) {
+                message = "&nbsp;";
+                //} else {
+                //    message =
+                //        "Browser does not support Drag & Drop. Try Firefox 4+, Chrome 7+, IE 10+, Opera 12+ or Safari 6+.";
+                //}
+            } else {
+                if (this.counterRunning == 0) {
+                    message = `You added ${this.counterAnnounce} file(s) to the queue. Add more files or click 'Start' to proceed.`;
+                } else {
+                    message = `Please wait...${this.counterAnnounce} out of ${this.counterRunning} remaining.`;
+                }
+            }
+            return message;
+        },
     },
     created() {
         this.allExtensions = this.details.effectiveExtensions;
@@ -207,7 +233,6 @@ export default {
     mounted() {
         this.initFtpPopover();
         this.initUploadbox();
-        this._updateStateForCounters();
     },
     methods: {
         /** Update model */
@@ -227,7 +252,6 @@ export default {
             this.uploadCompleted += it.file_size * 100;
             this.counterAnnounce--;
             this.counterSuccess++;
-            this._updateStateForCounters();
             refreshContentsWrapper();
         },
 
@@ -243,7 +267,6 @@ export default {
                 this.extension = this.details.defaultExtension;
                 this.genome = this.details.defaultDbKey;
                 this.details.model.set("percentage", 0);
-                this._updateStateForCounters();
             }
         },
         initUploadbox() {
@@ -297,7 +320,6 @@ export default {
             // package ftp files separately, and remove them from queue
             this._uploadFtp();
             this.uploadbox.start();
-            this._updateStateForCounters();
         },
 
         /** Package and upload ftp files in a single request */
@@ -325,37 +347,6 @@ export default {
                     });
             }
         },
-        _updateStateForCounters: function () {
-            this.setTopInfoBasedOnCounters();
-            const counterNonRunning = this.counterAnnounce + this.counterSuccess + this.counterError;
-            this.enableReset = this.counterRunning == 0 && counterNonRunning > 0;
-            this.enableStart = this.counterRunning == 0 && this.counterAnnounce > 0;
-            this.enableBuild =
-                this.counterRunning == 0 &&
-                this.counterAnnounce == 0 &&
-                this.counterSuccess > 0 &&
-                this.counterError == 0;
-            this.enableSources = this.counterRunning == 0 && (this.multiple || counterNonRunning == 0);
-            var show_table = this.counterAnnounce + this.counterSuccess + this.counterError > 0;
-        },
-        setTopInfoBasedOnCounters: function () {
-            var message = "";
-            if (this.counterAnnounce == 0) {
-                if (this.uploadbox.compatible()) {
-                    message = "&nbsp;";
-                } else {
-                    message =
-                        "Browser does not support Drag & Drop. Try Firefox 4+, Chrome 7+, IE 10+, Opera 12+ or Safari 6+.";
-                }
-            } else {
-                if (this.counterRunning == 0) {
-                    message = `You added ${this.counterAnnounce} file(s) to the queue. Add more files or click 'Start' to proceed.`;
-                } else {
-                    message = `Please wait...${this.counterAnnounce} out of ${this.counterRunning} remaining.`;
-                }
-            }
-            this.topInfo = message;
-        },
         /** Progress */
         _eventProgress: function (index, percentage) {
             const it = this.uploadList[index];
@@ -380,7 +371,6 @@ export default {
                 file_data: file,
             };
             Vue.set(this.uploadList, index, uploadModel);
-            this._updateStateForCounters();
         },
         /** Error */
         _eventError: function (index, message) {
@@ -395,7 +385,6 @@ export default {
             this.uploadCompleted += it.file_size * 100;
             this.counterAnnounce--;
             this.counterError++;
-            this._updateStateForCounters();
         },
         /** Queue is done */
         _eventComplete: function () {
@@ -405,7 +394,6 @@ export default {
                 }
             });
             this.counterRunning = 0;
-            this._updateStateForCounters();
         },
         /** Remove model from upload list */
         _eventRemove: function (index) {
@@ -420,7 +408,6 @@ export default {
             }
             Vue.delete(this.uploadList, index);
             this.uploadbox.remove(index);
-            this._updateStateForCounters();
         },
         /** Show remote files dialog or FTP files */
         _eventRemoteFiles: function () {
