@@ -124,7 +124,6 @@ import UploadSettingsSelect from "./UploadSettingsSelect.vue";
 import UploadExtensionDetails from "./UploadExtensionDetails.vue";
 import $ from "jquery";
 import Popover from "mvc/ui/ui-popover";
-import UploadExtension from "mvc/upload/upload-extension";
 import UploadFtp from "mvc/upload/upload-ftp";
 import UploadModel from "mvc/upload/upload-model";
 import { getAppRoot } from "onload";
@@ -206,7 +205,6 @@ export default {
         this.fileSourcesConfigured = this.details.fileSourcesConfigured;
     },
     mounted() {
-        this.initExtensionInfo();
         this.initFtpPopover();
         this.initUploadbox();
         this._updateStateForCounters();
@@ -470,9 +468,6 @@ export default {
         _eventCreate: function () {
             this.uploadbox.add([{ name: defaultNewFileName, size: 0, mode: "new" }]);
         },
-        addFiles: function (files) {
-            this.uploadbox.add(files);
-        },
         /** Pause upload process */
         _eventStop: function () {
             if (this.counterRunning > 0) {
@@ -489,27 +484,6 @@ export default {
         $uploadTable() {
             return $(this.$refs.uploadTable);
         },
-        extensionDetails(extension) {
-            return findExtension(this.details.effectiveExtensions, extension);
-        },
-        initExtensionInfo() {
-            $(this.$refs.footerExtensionInfo)
-                .on("click", (e) => {
-                    const details = this.extensionDetails(this.extension);
-                    if (details) {
-                        new UploadExtension({
-                            $el: $(e.target),
-                            title: details && details.text,
-                            extension: details && details.id,
-                            list: this.allExtensions,
-                            placement: "top",
-                        });
-                    }
-                })
-                .on("mousedown", (e) => {
-                    e.preventDefault();
-                });
-        },
         initFtpPopover() {
             // add ftp file viewer
             this.ftp = new Popover({
@@ -518,8 +492,7 @@ export default {
                 container: this.$refs.btnFtp,
             });
         },
-        /* walk collection and update un-modified default values when globals
-           change */
+        /* update un-modified default values when globals change */
         updateExtension(newExtension) {
             this.extension = newExtension;
             Object.values(this.uploadList).forEach((model) => {
