@@ -1,6 +1,8 @@
 """This module contains a linting functions for tool outputs."""
 from typing import TYPE_CHECKING
 
+from packaging.version import Version
+
 from galaxy.util import (
     etree,
     string_as_bool,
@@ -117,7 +119,7 @@ def __check_format(node, lint_ctx, profile: str, allow_ext=False):
         fmt = node.attrib.get("format")
     if fmt == "input":
         message = f"Using format='input' on {node.tag} is deprecated. Use the format_source attribute."
-        if profile <= "16.01":
+        if Version(str(profile)) <= Version("16.01"):
             lint_ctx.warn(message, node=node)
         else:
             lint_ctx.error(message, node=node)
