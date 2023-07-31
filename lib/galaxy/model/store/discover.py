@@ -395,12 +395,9 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         self.set_datasets_metadata(datasets=element_datasets["datasets"])
 
     def add_tags_to_datasets(self, datasets, tag_lists):
-        job = self.get_job()
         if any(tag_lists):
             for dataset, tags in zip(datasets, tag_lists):
-                self.tag_handler.add_tags_from_list(
-                    self.user, dataset, tags, flush=False, galaxy_session=job and job.galaxy_session
-                )
+                self.tag_handler.add_tags_from_list(self.user, dataset, tags, flush=False)
 
     def update_object_store_with_datasets(self, datasets, paths, extra_files, output_name):
         for dataset, path, extra_file in zip(datasets, paths, extra_files):
