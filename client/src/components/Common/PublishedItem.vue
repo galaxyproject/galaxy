@@ -70,7 +70,7 @@ const showActivityBar = computed(() => {
         <FlexPanel v-if="showPanels && !showActivityBar" side="left">
             <ToolBox />
         </FlexPanel>
-        <div id="center" class="m-3 w-100 overflow-auto">
+        <div id="center" class="m-3 w-100 overflow-auto d-flex flex-column">
             <slot />
         </div>
         <FlexPanel side="right">

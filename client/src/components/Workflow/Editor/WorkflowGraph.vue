@@ -67,8 +67,8 @@ const emit = defineEmits(["transform", "graph-offset", "onRemove", "scrollTo"]);
 const props = defineProps({
     steps: { type: Object as PropType<{ [index: string]: Step }>, required: true },
     datatypesMapper: { type: DatatypesMapperModel, required: true },
-    highlightId: { type: null as unknown as PropType<number | null>, default: null },
-    scrollToId: { type: null as unknown as PropType<number | null>, default: null },
+    highlightId: { type: Number as PropType<number | null>, default: null },
+    scrollToId: { type: Number as PropType<number | null>, default: null },
     readonly: { type: Boolean, default: false },
 });
 

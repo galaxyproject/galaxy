@@ -6,6 +6,7 @@ import { getAppRoot } from "@/onload/loadConfig";
 import type { Steps } from "@/stores/workflowStepStore";
 
 export interface Workflow {
+    name: string;
     [index: string]: any;
     steps: Steps;
 }
