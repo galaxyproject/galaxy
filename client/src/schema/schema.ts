@@ -3802,8 +3802,7 @@ export interface components {
              * @description The current state of this dataset.
              */
             state: components["schemas"]["DatasetState"];
-            /** Tags */
-            tags: string;
+            tags: components["schemas"]["TagCollection"];
             /**
              * Type
              * @enum {string}
