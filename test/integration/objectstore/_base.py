@@ -59,8 +59,8 @@ class BaseObjectStoreIntegrationTestCase(integration_util.IntegrationTestCase, i
 
 def get_files(directory):
     for rel_directory, _, files in os.walk(directory):
-        for _file in files:
-            yield os.path.join(rel_directory, _file)
+        for file_ in files:
+            yield os.path.join(rel_directory, file_)
 
 
 def files_count(directory):
