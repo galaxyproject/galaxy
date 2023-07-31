@@ -110,6 +110,12 @@ class ObjectStore(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
+    def construct_path(
+        self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None
+    ):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
     def create(
         self,
         obj,
@@ -416,6 +422,9 @@ class BaseObjectStore(ObjectStore):
 
     def exists(self, obj, **kwargs):
         return self._invoke("exists", obj, **kwargs)
+
+    def construct_path(self, obj, **kwargs):
+        return self._invoke("construct_path", obj, **kwargs)
 
     def create(self, obj, **kwargs):
         return self._invoke("create", obj, **kwargs)
@@ -1152,6 +1161,9 @@ class DistributedObjectStore(NestedObjectStore):
             self.weighted_backend_ids = new_weighted_backend_ids
             sleeper.sleep(120)  # Test free space every 2 minutes
 
+    def _construct_path(self, obj, **kwargs):
+        return self.backends[obj.object_store_id].construct_path(obj, **kwargs)
+
     def _create(self, obj, **kwargs):
         """The only method in which obj.object_store_id may be None."""
         object_store_id = obj.object_store_id
@@ -1318,6 +1330,9 @@ class HierarchicalObjectStore(NestedObjectStore):
             if store.exists(obj, **kwargs):
                 return True
         return False
+
+    def _construct_path(self, obj, **kwargs):
+        return self.backends[0].construct_path(obj, **kwargs)
 
     def _create(self, obj, **kwargs):
         """Call the primary object store."""
