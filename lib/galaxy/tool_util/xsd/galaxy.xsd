@@ -564,7 +564,7 @@ Describes an organization. Tries to stay close to [schema.org/Organization](http
       </xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:sequence ref="Grant" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="grant" type="Grant" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
 
