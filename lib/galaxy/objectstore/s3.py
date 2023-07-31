@@ -525,7 +525,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
     def _create(self, obj, **kwargs):
         if not self._exists(obj, **kwargs):
             # Pull out locally used fields
-            create_datasets_on_disk = kwargs.get("create_datasets_on_disk")
+            create_datasets_on_disk = kwargs.get("create_datasets_on_disk", True)
             extra_dir = kwargs.get("extra_dir", None)
             extra_dir_at_root = kwargs.get("extra_dir_at_root", False)
             dir_only = kwargs.get("dir_only", False)

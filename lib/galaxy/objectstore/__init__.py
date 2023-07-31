@@ -111,7 +111,15 @@ class ObjectStore(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def create(
-        self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False, create_datasets_on_disk=True
+        self,
+        obj,
+        base_dir=None,
+        dir_only=False,
+        extra_dir=None,
+        extra_dir_at_root=False,
+        alt_name=None,
+        obj_dir=False,
+        create_datasets_on_disk=True,
     ):
         """
         Mark the object (`obj`) as existing in the store, but with no content.
@@ -773,7 +781,7 @@ class DiskObjectStore(ConcreteObjectStore):
             dir = path if dir_only else os.path.dirname(path)
             safe_makedirs(dir)
             # Create the file if it does not exist
-            if not dir_only:
+            if not dir_only and kwargs.get("create_datasets_on_disk", True):
                 open(path, "w").close()  # Should be rb?
                 umask_fix_perms(path, self.config.umask, 0o666)
         return self
@@ -1547,7 +1555,9 @@ class ObjectStorePopulator:
         self.user = user
 
     def set_object_store_id(self, data, require_shareable=False, create_datasets_on_disk=True):
-        self.set_dataset_object_store_id(data.dataset, require_shareable=require_shareable, create_datasets_on_disk=create_datasets_on_disk)
+        self.set_dataset_object_store_id(
+            data.dataset, require_shareable=require_shareable, create_datasets_on_disk=create_datasets_on_disk
+        )
 
     def set_dataset_object_store_id(self, dataset, require_shareable=True, create_datasets_on_disk=True):
         # Create an empty file immediately.  The first dataset will be
@@ -1556,7 +1566,9 @@ class ObjectStorePopulator:
         dataset.object_store_id = self.object_store_id
         try:
             ensure_non_private = require_shareable
-            concrete_store = self.object_store.create(dataset, ensure_non_private=ensure_non_private, create_datasets_on_disk=create_datasets_on_disk)
+            concrete_store = self.object_store.create(
+                dataset, ensure_non_private=ensure_non_private, create_datasets_on_disk=create_datasets_on_disk
+            )
             if concrete_store.private and require_shareable:
                 raise Exception("Attempted to create shared output datasets in objectstore with sharing disabled")
         except ObjectInvalid:
