@@ -13,7 +13,7 @@ import DragAndDropModal from "@/components/Upload/DragAndDropModal.vue";
 
 const router = useRouter();
 const showCenter = ref(false);
-const { showActivityBar, showToolbox } = usePanels();
+const { showActivityBar, showToolbox, showPanels } = usePanels();
 
 // methods
 function hideCenter() {
