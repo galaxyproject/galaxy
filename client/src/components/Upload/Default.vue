@@ -125,9 +125,8 @@ import UploadExtensionDetails from "./UploadExtensionDetails.vue";
 import $ from "jquery";
 import Popover from "mvc/ui/ui-popover";
 import UploadFtp from "mvc/upload/upload-ftp";
-import UploadModel from "mvc/upload/upload-model";
 import { getAppRoot } from "onload";
-import { filesDialog, refreshContentsWrapper } from "utils/data";
+import { filesDialog } from "utils/data";
 import { UploadQueue } from "utils/uploadbox";
 
 import { defaultNewFileName, uploadModelsToPayload } from "./helpers";
@@ -252,7 +251,6 @@ export default {
             this.uploadCompleted += it.file_size * 100;
             this.counterAnnounce--;
             this.counterSuccess++;
-            refreshContentsWrapper();
         },
 
         /** Remove all */
