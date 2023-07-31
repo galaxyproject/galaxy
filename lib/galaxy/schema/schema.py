@@ -2150,14 +2150,6 @@ class Person(Creator):
 
 class Grant(Thing):
     class_: str = Field(..., alias="class", title="Class", description="The class representing this Grant.")
-    funder: Optional[Union[Person, Organization]] = Field(
-        None,
-        title="Funder",
-    )
-    sponsor: Optional[Union[Person, Organization]] = Field(
-        None,
-        title="Sponsor",
-    )
 
 
 class StoredWorkflowDetailed(StoredWorkflowSummary):
