@@ -108,14 +108,22 @@ watch(
                 <b-alert v-else show variant="danger"> Unknown Error </b-alert>
             </div>
             <div v-else-if="workflowInfo" class="d-flex flex-column">
-                <Heading h1 separator>{{ workflowInfo.name }}</Heading>
+                <Heading h1 separator>Published Workflow</Heading>
 
-                <WorkflowGraph
-                    v-if="workflow && datatypesMapper"
-                    :steps="workflow.steps"
-                    :datatypes-mapper="datatypesMapper"
-                    readonly />
+                <b-card class="workflow-card">
+                    <WorkflowGraph
+                        v-if="workflow && datatypesMapper"
+                        :steps="workflow.steps"
+                        :datatypes-mapper="datatypesMapper"
+                        readonly />
+                </b-card>
             </div>
         </template>
     </PublishedItem>
 </template>
+
+<style scoped lang="scss">
+.workflow-card {
+    flex-grow: 1;
+}
+</style>
