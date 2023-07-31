@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed, type PropType } from "vue";
-import { useRoute } from "vue-router/composables";
 
-import { useUserStore } from "@/stores/userStore";
+import { usePanels } from "@/composables/usePanels";
 
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -48,26 +47,13 @@ const pluralPath = computed(() => plural.value.toLowerCase());
 const publishedByUser = computed(() => `/${pluralPath.value}/list_published?f-username=${owner.value}`);
 const urlAll = computed(() => `/${pluralPath.value}/list_published`);
 
-const userStore = useUserStore();
-const route = useRoute();
-
-const showPanels = computed(() => {
-    const panels = route.query.hide_panels;
-    if (panels !== undefined && panels !== null && typeof panels === "string") {
-        return panels.toLowerCase() != "true";
-    }
-    return true;
-});
-
-const showActivityBar = computed(() => {
-    return userStore.showActivityBar && !userStore.isAnonymous;
-});
+const { showActivityBar, showToolbox } = usePanels();
 </script>
 
 <template>
     <div id="columns" class="d-flex">
-        <ActivityBar v-if="showPanels && showActivityBar" />
-        <FlexPanel v-if="showPanels && !showActivityBar" side="left">
+        <ActivityBar v-if="showActivityBar" />
+        <FlexPanel v-if="showToolbox" side="left">
             <ToolBox />
         </FlexPanel>
         <div id="center" class="m-3 w-100 overflow-auto d-flex flex-column">

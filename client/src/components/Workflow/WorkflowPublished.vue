@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faBuilding, faEdit, faPlay, faSpinner, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios, { type AxiosError } from "axios";
-import { onUnmounted, ref, watch } from "vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
+import { usePanels } from "@/composables/usePanels";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
@@ -15,10 +16,14 @@ import { assertDefined } from "@/utils/assertions";
 import { fromSimple } from "./Editor/modules/model";
 
 import WorkflowGraph from "./Editor/WorkflowGraph.vue";
+import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import Heading from "@/components/Common/Heading.vue";
-import PublishedItem from "@/components/Common/PublishedItem.vue";
+import License from "@/components/License/License.vue";
+import FlexPanel from "@/components/Panels/FlexPanel.vue";
+import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
-library.add(faSpinner);
+library.add(faSpinner, faUser, faBuilding, faPlay, faEdit);
 
 const props = defineProps<{
     id: string;
@@ -28,6 +33,8 @@ const workflowInfo = ref<
     | {
           name: string;
           [key: string]: unknown;
+          license?: string;
+          tags?: string[];
       }
     | undefined
 >();
@@ -44,7 +51,7 @@ const connectionsStore = useConnectionStore();
 const stepStore = useWorkflowStepStore();
 const stateStore = useWorkflowStateStore();
 
-stateStore.setScale(0.5);
+stateStore.setScale(0.75);
 
 onUnmounted(() => {
     connectionsStore.$reset();
@@ -88,42 +95,151 @@ watch(
         immediate: true,
     }
 );
+
+const { showActivityBar, showToolbox } = usePanels();
+
+const gravatarSource = computed(
+    () => `https://secure.gravatar.com/avatar/${workflowInfo.value?.email_hash}?d=identicon`
+);
+
+const publishedByUser = computed(() => `/workflows/list_published?f-username=${workflowInfo.value?.owner}`);
 </script>
 
 <template>
-    <PublishedItem :item="workflowInfo">
-        <template v-slot>
+    <div id="columns" class="d-flex">
+        <ActivityBar v-if="showActivityBar" />
+        <FlexPanel v-if="showToolbox" side="left">
+            <ToolBox />
+        </FlexPanel>
+
+        <div id="center" class="m-3 w-100 overflow-auto d-flex flex-column">
             <div v-if="loading">
-                <Heading h1 separator>
+                <Heading h1 separator size="xl">
                     <FontAwesomeIcon icon="fa-spinner" spin />
                     Loading Workflow
                 </Heading>
             </div>
             <div v-else-if="errored">
-                <Heading h1 separator> Failed to load published Workflow </Heading>
+                <Heading h1 separator size="xl"> Failed to load published Workflow </Heading>
 
                 <b-alert v-if="errorMessage" show variant="danger">
                     {{ errorMessage }}
                 </b-alert>
                 <b-alert v-else show variant="danger"> Unknown Error </b-alert>
             </div>
-            <div v-else-if="workflowInfo" class="d-flex flex-column">
-                <Heading h1 separator>Published Workflow</Heading>
+            <div v-else-if="workflowInfo" class="published-workflow">
+                <div class="workflow-information">
+                    <div class="workflow-preview d-flex flex-column">
+                        <span class="d-flex w-100 flex-gapx-1 align-items-center mb-2">
+                            <Heading h1 separator inline size="xl" class="flex-grow-1 mb-0">Workflow Preview</Heading>
+                            <b-button variant="secondary" size="md">
+                                <FontAwesomeIcon icon="fa-edit" />
+                                Import and Edit
+                            </b-button>
+                            <b-button variant="primary" size="md">
+                                <FontAwesomeIcon icon="fa-play" />
+                                Run
+                            </b-button>
+                        </span>
 
-                <b-card class="workflow-card">
-                    <WorkflowGraph
-                        v-if="workflow && datatypesMapper"
-                        :steps="workflow.steps"
-                        :datatypes-mapper="datatypesMapper"
-                        readonly />
-                </b-card>
+                        <b-card class="workflow-card">
+                            <WorkflowGraph
+                                v-if="workflow && datatypesMapper"
+                                :steps="workflow.steps"
+                                :datatypes-mapper="datatypesMapper"
+                                readonly />
+                        </b-card>
+                    </div>
+
+                    <aside class="d-flex flex-column align-items-start justify-content-start align-self-start">
+                        <hgroup class="mb-2">
+                            <Heading h2 size="xl" class="mb-0">About This Workflow</Heading>
+                            <span class="ml-2">{{ workflowInfo.name }} - Version {{ workflowInfo.version }}</span>
+                        </hgroup>
+
+                        <div class="mb-2 d-flex flex-column align-items-start">
+                            <hgroup class="mb-2">
+                                <Heading h3 size="md" class="mb-0">Author</Heading>
+                                <span class="ml-2">{{ workflowInfo.owner }}</span>
+                            </hgroup>
+
+                            <img alt="User Avatar" :src="gravatarSource" class="mb-2" />
+                            <router-link :to="publishedByUser">
+                                All published Workflows by {{ workflowInfo.owner }}
+                            </router-link>
+                        </div>
+
+                        <div v-if="workflow?.creator" class="mb-2 d-flex flex-column align-items-start">
+                            <Heading h3 size="md" class="mb-0">Creators</Heading>
+                            <span v-for="(creator, index) in workflow.creator" :key="index">
+                                <FontAwesomeIcon v-if="creator.class === 'Person'" icon="fa-user" />
+                                <FontAwesomeIcon v-if="creator.class === 'Organization'" icon="fa-building" />
+                                {{ creator.name }}
+                            </span>
+                        </div>
+
+                        <div class="mb-2 d-flex flex-column align-items-start">
+                            <Heading h3 size="md" class="mb-0">Description</Heading>
+
+                            <p v-if="workflowInfo.annotation" class="mb-0">
+                                {{ workflowInfo.annotation }}
+                            </p>
+                            <p v-else class="mb-0">This Workflow has no description.</p>
+                        </div>
+
+                        <div v-if="workflowInfo?.tags" class="mb-2 d-flex flex-column align-items-start">
+                            <Heading h3 size="md" class="mb-0">Tags</Heading>
+
+                            <StatelessTags class="tags mt-2" :value="workflowInfo.tags" disabled />
+                        </div>
+
+                        <div class="mb-2 d-flex flex-column align-items-start">
+                            <Heading h3 size="md" class="mb-0">License</Heading>
+
+                            <License v-if="workflowInfo.license" :license-id="workflowInfo.license" />
+                            <span v-else>No License specified</span>
+                        </div>
+                    </aside>
+                </div>
             </div>
-        </template>
-    </PublishedItem>
+        </div>
+    </div>
 </template>
 
 <style scoped lang="scss">
-.workflow-card {
+.published-workflow {
+    display: flex;
     flex-grow: 1;
+}
+
+.workflow-information {
+    display: flex;
+    flex-grow: 1;
+    gap: 1rem;
+
+    .workflow-preview {
+        flex-grow: 1;
+
+        .workflow-card {
+            flex-grow: 1;
+        }
+    }
+
+    aside {
+        flex-grow: 1;
+        max-width: 500px;
+    }
+
+    @media only screen and (max-width: 1100px) {
+        flex-direction: column;
+
+        .workflow-preview {
+            height: 450px;
+        }
+
+        aside {
+            max-width: unset;
+        }
+    }
 }
 </style>
