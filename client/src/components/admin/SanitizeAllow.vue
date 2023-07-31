@@ -108,11 +108,15 @@
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 
+import { GTab, GTabs } from "@/component-library";
+
 import Message from "../Message.vue";
 import BaseGrid from "./BaseGrid.vue";
 
 export default {
     components: {
+        GTab,
+        GTabs,
         message: Message,
         "base-grid": BaseGrid,
     },

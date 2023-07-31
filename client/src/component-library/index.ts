@@ -19,6 +19,7 @@ export { default as GContainer } from "./GContainer.vue";
 export { default as GDropdown } from "./GDropdown.vue";
 export { default as GDropdownDivider } from "./GDropdownDivider.vue";
 export { default as GDropdownForm } from "./GDropdownForm.vue";
+export { default as GDropdownGroup } from "./GDropdownGroup.vue";
 export { default as GDropdownItem } from "./GDropdownItem.vue";
 export { default as GDropdownText } from "./GDropdownText.vue";
 export { default as GEmbed } from "./GEmbed.vue";

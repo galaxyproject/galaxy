@@ -73,17 +73,33 @@
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 
-import { GAlert, GBreadcrumb, GButton, GButtonGroup, GInputGroup, GInputGroupAppend, GRow } from "@/component-library";
+import {
+    GAlert,
+    GBreadcrumb,
+    GButton,
+    GButtonGroup,
+    GCard,
+    GCol,
+    GContainer,
+    GInput,
+    GInputGroup,
+    GInputGroupAppend,
+    GRow,
+} from "@/component-library";
 
 export default {
     components: {
         GAlert,
         GButton,
-        GButtonGroup,
         GBreadcrumb,
-        GRow,
+        GButtonGroup,
+        GContainer,
+        GCard,
+        GCol,
+        GInput,
         GInputGroup,
         GInputGroupAppend,
+        GRow,
     },
     props: {
         id: {

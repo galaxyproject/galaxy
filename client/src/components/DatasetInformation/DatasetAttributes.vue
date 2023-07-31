@@ -98,7 +98,7 @@ import { getGalaxyInstance } from "app";
 import FormDisplay from "components/Form/FormDisplay";
 import { DatasetAttributesProvider } from "components/providers/DatasetProvider";
 
-import { GAlert, GButton } from "@/component-library";
+import { GAlert, GButton, GTab, GTabs } from "@/component-library";
 
 import { setAttributes } from "./services";
 
@@ -111,6 +111,8 @@ export default {
         FormDisplay,
         GAlert,
         GButton,
+        GTab,
+        GTabs,
     },
     props: {
         datasetId: {

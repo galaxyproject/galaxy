@@ -10,7 +10,7 @@ import { useTaskMonitor } from "composables/taskMonitor";
 import { copy as sendToClipboard } from "utils/clipboard";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
-import { GAlert, GButton, GCard } from "@/component-library";
+import { GAlert, GButton, GCard, GTab, GTabs } from "@/component-library";
 import { useHistoryStore } from "@/stores/historyStore";
 import { absPath } from "@/utils/redirect";
 

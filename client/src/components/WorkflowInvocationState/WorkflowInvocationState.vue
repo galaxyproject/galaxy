@@ -36,7 +36,7 @@ import LoadingSpan from "components/LoadingSpan";
 import JOB_STATES_MODEL from "utils/job-states-model";
 import { mapActions, mapGetters } from "vuex";
 
-import { GAlert } from "@/component-library";
+import { GAlert, GTab, GTabs } from "@/component-library";
 
 import { cancelWorkflowScheduling } from "./services";
 
@@ -47,6 +47,8 @@ import WorkflowInvocationSummary from "./WorkflowInvocationSummary.vue";
 export default {
     components: {
         GAlert,
+        GTab,
+        GTabs,
         LoadingSpan,
         WorkflowInvocationSummary,
         WorkflowInvocationDetails,

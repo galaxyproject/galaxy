@@ -47,13 +47,14 @@
 <script>
 import { mapActions, mapState } from "pinia";
 
-import { GAlert, GInput } from "@/component-library";
+import { GAlert, GButton, GInput } from "@/component-library";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
 export default {
     components: {
         GAlert,
+        GButton,
         GInput,
     },
     props: {

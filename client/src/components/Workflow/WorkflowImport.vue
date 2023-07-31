@@ -1,4 +1,6 @@
 <script setup>
+import { GTab, GTabs } from "@/component-library";
+
 import FromFileOrUrl from "./Import/FromFileOrUrl";
 import TrsImport from "./Import/TrsImport";
 import TrsSearch from "./Import/TrsSearch";

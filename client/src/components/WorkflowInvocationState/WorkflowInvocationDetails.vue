@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { GTab, GTabs } from "@/component-library";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 
 import ParameterStep from "./ParameterStep.vue";
