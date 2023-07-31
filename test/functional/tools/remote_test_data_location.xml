@@ -1,9 +1,16 @@
 <tool id="remote_test_data_location" name="Remote test data location" version="1.0.0" profile="22.01">
     <command><![CDATA[
         cat '$input' > '$output'
+        #for $i, $f in enumerate($input_multiple)
+            #if $f
+                && echo -n "$i " 
+                && cat '$f'
+            #end if
+        #end for
     ]]></command>
     <inputs>
         <param name="input" type="data" format="txt" label="Input"/>
+        <param name="input_multiple" type="data" optional="true" multiple="true" format="txt" label="Input"/>
     </inputs>
     <outputs>
         <data name="output" format="txt"/>
@@ -13,6 +20,7 @@
             <!-- When only the `location` is defined, the name of the input file will be infered from the last component of the URL.
                 In this example, it will be equivalent to `value="hello.txt"`. -->
             <param name="input" location="https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt"/>
+            <param name="input_multiple" location="https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt,https://raw.githubusercontent.com/galaxyproject/planemo/b2135cb22a6974b595bc3579a99366972efcb802/tests/data/hello_truncated.txt"/>
             <output name="output">
                 <assert_contents>
                     <has_line line="Hello World!"/>
