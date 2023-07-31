@@ -2975,24 +2975,27 @@ export interface components {
         CreatedCustomBuild: {
             /**
              * Count
-             * @description TODO
+             * @description The number of chromosomes/contigs.
              */
             count?: string;
             /**
              * Fasta
-             * @description TODO
+             * @description The primary id of the fasta file from a history.
+             * @example 0123456789ABCDEF
              */
-            fasta?: number;
+            fasta?: string;
             /**
              * Length
-             * @description TODO
+             * @description The primary id of the len file.
+             * @example 0123456789ABCDEF
              */
-            len: number;
+            len: string;
             /**
              * Line count
-             * @description TODO
+             * @description The primary id of a linecount dataset.
+             * @example 0123456789ABCDEF
              */
-            linecount?: number;
+            linecount?: string;
             /**
              * Name
              * @description The name of the custom build.
@@ -3065,12 +3068,12 @@ export interface components {
         CustomBuildCreationPayload: {
             /**
              * Length type
-             * @description TODO
+             * @description The type of the len file.
              */
-            "len|type": string;
+            "len|type": components["schemas"]["CustomBuildLenType"];
             /**
              * Length value
-             * @description TODO
+             * @description The content of the length file.
              */
             "len|value": string;
             /**
@@ -3080,20 +3083,27 @@ export interface components {
             name: string;
         };
         /**
+         * CustomBuildLenType
+         * @description An enumeration.
+         * @enum {string}
+         */
+        CustomBuildLenType: "file" | "fasta" | "text";
+        /**
          * CustomBuildModel
          * @description Base model definition with common configuration used by all derived models.
          */
         CustomBuildModel: {
             /**
              * Count
-             * @description TODO
+             * @description The number of chromosomes/contigs.
              */
             count?: string;
             /**
              * Fasta
-             * @description TODO
+             * @description The primary id of the fasta file from a history.
+             * @example 0123456789ABCDEF
              */
-            fasta?: number;
+            fasta?: string;
             /**
              * ID
              * @description The ID of the custom build.
@@ -3101,14 +3111,16 @@ export interface components {
             id: string;
             /**
              * Length
-             * @description TODO
+             * @description The primary id of the len file.
+             * @example 0123456789ABCDEF
              */
-            len: number;
+            len: string;
             /**
              * Line count
-             * @description TODO
+             * @description The primary id of a linecount dataset.
+             * @example 0123456789ABCDEF
              */
-            linecount?: number;
+            linecount?: string;
             /**
              * Name
              * @description The name of the custom build.
