@@ -6,6 +6,7 @@ import pytest
 from ._base import (
     BaseSwiftObjectStoreIntegrationTestCase,
     files_count,
+    get_files,
 )
 
 
@@ -71,3 +72,9 @@ class TestCacheOperation(BaseSwiftObjectStoreIntegrationTestCase):
                 hda["history_id"], content_id=hda["id"], wait=False, assert_ok=False
             )
             assert "File Not Found" in str(excinfo.value)
+
+    def test_upload_updates_cache(self):
+        self.upload_dataset()
+        assert files_count(self.object_store_cache_path) == 1
+        only_file = next(iter(get_files(self.object_store_cache_path)))
+        assert os.path.getsize(only_file) == 4

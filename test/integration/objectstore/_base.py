@@ -57,8 +57,14 @@ class BaseObjectStoreIntegrationTestCase(integration_util.IntegrationTestCase, i
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
 
+def get_files(directory):
+    for rel_directory, _, files in os.walk(directory):
+        for _file in files:
+            yield os.path.join(rel_directory, _file)
+
+
 def files_count(directory):
-    return sum(len(files) for _, _, files in os.walk(directory))
+    return sum(1 for _ in get_files(directory))
 
 
 @integration_util.skip_unless_docker()
@@ -85,7 +91,7 @@ class BaseSwiftObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
         config_path = os.path.join(temp_directory, "object_store_conf.xml")
         config["object_store_store_by"] = "uuid"
         config["metadata_strategy"] = "extended"
-        config["outpus_to_working_dir"] = True
+        config["outputs_to_working_directory"] = True
         config["retry_metadata_internally"] = False
         with open(config_path, "w") as f:
             f.write(
