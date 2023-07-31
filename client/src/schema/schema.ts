@@ -2969,40 +2969,6 @@ export interface components {
             url: string;
         };
         /**
-         * CreatedCustomBuild
-         * @description Base model definition with common configuration used by all derived models.
-         */
-        CreatedCustomBuild: {
-            /**
-             * Count
-             * @description The number of chromosomes/contigs.
-             */
-            count?: string;
-            /**
-             * Fasta
-             * @description The primary id of the fasta file from a history.
-             * @example 0123456789ABCDEF
-             */
-            fasta?: string;
-            /**
-             * Length
-             * @description The primary id of the len file.
-             * @example 0123456789ABCDEF
-             */
-            len: string;
-            /**
-             * Line count
-             * @description The primary id of a linecount dataset.
-             * @example 0123456789ABCDEF
-             */
-            linecount?: string;
-            /**
-             * Name
-             * @description The name of the custom build.
-             */
-            name: string;
-        };
-        /**
          * CreatedUserModel
          * @description User in a transaction context.
          */
@@ -17444,7 +17410,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["CreatedCustomBuild"];
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
