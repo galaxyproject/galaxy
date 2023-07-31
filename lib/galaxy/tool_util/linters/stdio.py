@@ -2,6 +2,8 @@
 
 import re
 
+from packaging.version import Version
+
 from galaxy.util import etree
 from .command import get_command
 
@@ -21,7 +23,7 @@ def lint_stdio(tool_source, lint_ctx):
     if not stdios:
         command = get_command(tool_xml) if tool_xml else None
         if command is None or not command.get("detect_errors"):
-            if tool_source.parse_profile() <= "16.01":
+            if Version(tool_source.parse_profile()) <= Version("16.01"):
                 lint_ctx.info(
                     "No stdio definition found, tool indicates error conditions with output written to stderr.",
                     node=tool_node,

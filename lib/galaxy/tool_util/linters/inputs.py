@@ -4,6 +4,8 @@ import ast
 import re
 from typing import TYPE_CHECKING
 
+from packaging.version import Version
+
 from galaxy.util import string_as_bool
 from ._util import (
     is_datasource,
@@ -345,7 +347,7 @@ def lint_inputs(tool_source: "ToolSource", lint_ctx: "LintContext"):
         if param_type == "boolean":
             truevalue = param_attrib.get("truevalue", "true")
             falsevalue = param_attrib.get("falsevalue", "false")
-            problematic_booleans_allowed = profile < "23.1"
+            problematic_booleans_allowed = Version(profile) < Version("23.1")
             lint_level = lint_ctx.warn if problematic_booleans_allowed else lint_ctx.error
             if truevalue == falsevalue:
                 lint_level(

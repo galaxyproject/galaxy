@@ -2,6 +2,8 @@
 
 import re
 
+from packaging.version import Version
+
 from galaxy.tool_util.version import (
     LegacyVersion,
     parse_version,
@@ -68,7 +70,7 @@ def lint_general(tool_source, lint_ctx):
     profile_valid = PROFILE_PATTERN.match(profile) is not None
     if not profile_valid:
         lint_ctx.error(PROFILE_INVALID_MSG % profile, node=tool_node)
-    elif profile == "16.01":
+    elif Version(profile) == Version("16.01"):
         lint_ctx.valid(PROFILE_INFO_DEFAULT_MSG, node=tool_node)
     else:
         lint_ctx.valid(PROFILE_INFO_SPECIFIED_MSG % profile, node=tool_node)
