@@ -9,14 +9,14 @@
             <GContainer fluid class="mb-3">
                 <GRow>
                     <GCol md="6">
-                        <b-form-group description="Search for strings or regular expressions">
+                        <GFormGroup description="Search for strings or regular expressions">
                             <GInputGroup>
                                 <GInput v-model="filter" placeholder="Type to Search" @keyup.esc.native="filter = ''" />
                                 <GInputGroupAppend>
                                     <GButton :disabled="!filter" @click="filter = ''">Clear (esc)</GButton>
                                 </GInputGroupAppend>
                             </GInputGroup>
-                        </b-form-group>
+                        </GFormGroup>
                     </GCol>
                 </GRow>
                 <GRow>
@@ -81,6 +81,7 @@ import {
     GCard,
     GCol,
     GContainer,
+    GFormGroup,
     GInput,
     GInputGroup,
     GInputGroupAppend,
@@ -93,9 +94,10 @@ export default {
         GButton,
         GBreadcrumb,
         GButtonGroup,
-        GContainer,
         GCard,
         GCol,
+        GContainer,
+        GFormGroup,
         GInput,
         GInputGroup,
         GInputGroupAppend,

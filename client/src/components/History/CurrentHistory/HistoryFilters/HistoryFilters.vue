@@ -76,7 +76,7 @@
                 size="sm"
                 placeholder="index equals" />
             <small class="mt-1">Filter by item index:</small>
-            <b-form-group class="m-0">
+            <GFormGroup class="m-0">
                 <GInputGroup>
                     <GInput
                         v-model="filterSettings['hid>']"
@@ -91,9 +91,9 @@
                         size="sm"
                         placeholder="index lower" />
                 </GInputGroup>
-            </b-form-group>
+            </GFormGroup>
             <small class="mt-1">Filter by creation time:</small>
-            <b-form-group class="m-0">
+            <GFormGroup class="m-0">
                 <GInputGroup>
                     <GInput
                         v-model="create_time_gt"
@@ -114,7 +114,7 @@
                         <b-form-datepicker v-model="create_time_lt" reset-button button-only size="sm" />
                     </GInputGroupAppend>
                 </GInputGroup>
-            </b-form-group>
+            </GFormGroup>
             <HistoryFiltersDefault :settings="filterSettings" @change="onOption" />
             <div class="mt-3">
                 <GButton class="mr-1" size="sm" variant="primary" description="apply filters" @click="onSearch">
@@ -136,13 +136,14 @@ import { STATES } from "components/History/Content/model/states";
 import StatesInfo from "components/History/Content/model/StatesInfo";
 import { HistoryFilters } from "components/History/HistoryFilters";
 
-import { GButton, GInput, GInputGroup, GInputGroupAppend } from "@/component-library";
+import { GButton, GFormGroup, GInput, GInputGroup, GInputGroupAppend } from "@/component-library";
 
 import HistoryFiltersDefault from "./HistoryFiltersDefault";
 
 export default {
     components: {
         GButton,
+        GFormGroup,
         GInput,
         GInputGroup,
         GInputGroupAppend,

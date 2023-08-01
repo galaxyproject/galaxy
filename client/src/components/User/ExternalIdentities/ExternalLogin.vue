@@ -9,7 +9,7 @@
             <div v-if="cilogonListShow" class="cilogon">
                 <div v-if="login_page">
                     <!--Only Display if CILogon/Custos is configured-->
-                    <b-form-group label="Use existing institutional login">
+                    <GFormGroup label="Use existing institutional login">
                         <Multiselect
                             v-model="selected"
                             placeholder="Select your institution"
@@ -17,13 +17,13 @@
                             label="DisplayName"
                             track-by="EntityID">
                         </Multiselect>
-                    </b-form-group>
+                    </GFormGroup>
 
-                    <b-form-group v-if="login_page">
+                    <GFormGroup v-if="login_page">
                         <GFormCheckbox id="remember-idp" v-model="rememberIdp">
                             Remember institution selection
                         </GFormCheckbox>
-                    </b-form-group>
+                    </GFormGroup>
 
                     <GButton
                         v-if="cilogon_enabled"
@@ -49,7 +49,7 @@
 
                     <GButton v-if="custos_enabled" @click="toggleCILogon('custos')">Sign in with Custos*</GButton>
 
-                    <b-form-group v-if="toggle_cilogon">
+                    <GFormGroup v-if="toggle_cilogon">
                         <Multiselect
                             v-model="selected"
                             placeholder="Select your institution"
@@ -64,7 +64,7 @@
                             @click="submitCILogon(cilogonOrCustos)">
                             Login*
                         </GButton>
-                    </b-form-group>
+                    </GFormGroup>
                 </div>
 
                 <p class="mt-3">
@@ -104,7 +104,7 @@ import { getAppRoot } from "onload";
 import Vue from "vue";
 import Multiselect from "vue-multiselect";
 
-import { GAlert, GButton, GFormCheckbox } from "@/component-library";
+import { GAlert, GButton, GFormCheckbox, GFormGroup } from "@/component-library";
 
 Vue.use(BootstrapVue);
 
@@ -113,6 +113,7 @@ export default {
         GAlert,
         GButton,
         GFormCheckbox,
+        GFormGroup,
         Multiselect,
         LoadingSpan,
     },

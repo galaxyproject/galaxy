@@ -1,6 +1,6 @@
 <template>
     <div>
-        <b-form-group
+        <GFormGroup
             v-for="(field, fieldName) in fieldDefs"
             :key="fieldName"
             :label="field.label || fieldName"
@@ -16,15 +16,18 @@
                 :maxlength="field.maxlength || Math.Infinity"
                 :state="config.fieldValid(fieldName)"
                 trim />
-        </b-form-group>
+        </GFormGroup>
     </div>
 </template>
 
 <script>
 import MaskedInput from "components/MaskedInput";
 
+import { GFormGroup } from "@/component-library";
+
 export default {
     components: {
+        GFormGroup,
         MaskedInput,
     },
     props: {

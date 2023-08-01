@@ -3,7 +3,7 @@ import { storeToRefs } from "pinia";
 import { computed, type Ref, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { GAlert, GCard, GInput } from "@/component-library";
+import { GAlert, GCard, GFormGroup, GInput } from "@/component-library";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 
@@ -173,9 +173,9 @@ async function importVersionFromUrl(url: string, isRunFormRedirect = false) {
             </GAlert>
             <div v-else>
                 <div class="my-3">
-                    <b-form-group label="TRS ID:" label-for="trs-id-input" label-class="font-weight-bold">
+                    <GFormGroup label="TRS ID:" label-for="trs-id-input" label-class="font-weight-bold">
                         <GInput id="trs-id-input" v-model="toolId" debounce="500" />
-                    </b-form-group>
+                    </GFormGroup>
                 </div>
                 <div>
                     <GAlert v-if="loading" show variant="info">

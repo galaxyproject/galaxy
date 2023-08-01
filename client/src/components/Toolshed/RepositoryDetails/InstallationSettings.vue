@@ -9,7 +9,7 @@
             {{ repo.long_description || repo.description }}
         </div>
         <div class="revision text-muted small mb-3">{{ repo.owner }} rev. {{ changesetRevision }}</div>
-        <b-form-group
+        <GFormGroup
             v-if="requiresPanel"
             label="Target Section:"
             description="Choose an existing tool panel section or create a new section to contain the installed tools (optional).">
@@ -19,20 +19,16 @@
                     {{ section.name }}
                 </option>
             </datalist>
-        </b-form-group>
+        </GFormGroup>
         <GLink variant="primary" @click="onAdvanced"> {{ advancedTitle }} advanced settings. </GLink>
         <GCollapse id="advanced-collapse" v-model="advancedShow" class="mt-2">
             <GCard>
-                <b-form-group v-if="showConfig" label="Tool Configuration:" description="Choose a tool configuration.">
-                    <b-form-radio
-                        v-for="filename in toolConfigs"
-                        :key="filename"
-                        v-model="toolConfig"
-                        :value="filename">
+                <GFormGroup v-if="showConfig" label="Tool Configuration:" description="Choose a tool configuration.">
+                    <GFormRadio v-for="filename in toolConfigs" :key="filename" v-model="toolConfig" :value="filename">
                         {{ filename }}
-                    </b-form-radio>
-                </b-form-group>
-                <b-form-group label="Dependencies:" description="Choose how to handle dependencies.">
+                    </GFormRadio>
+                </GFormGroup>
+                <GFormGroup label="Dependencies:" description="Choose how to handle dependencies.">
                     <GFormCheckbox v-model="installResolverDependencies">
                         Install resolvable dependencies
                     </GFormCheckbox>
@@ -40,19 +36,21 @@
                         Install repository dependencies
                     </GFormCheckbox>
                     <GFormCheckbox v-model="installToolDependencies"> Install tool dependencies </GFormCheckbox>
-                </b-form-group>
+                </GFormGroup>
             </GCard>
         </GCollapse>
     </GModal>
 </template>
 <script>
-import { GCard, GCollapse, GFormCheckbox, GInput, GLink, GModal } from "@/component-library";
+import { GCard, GCollapse, GFormCheckbox, GFormGroup, GFormRadio, GInput, GLink, GModal } from "@/component-library";
 
 export default {
     components: {
         GCard,
         GCollapse,
         GFormCheckbox,
+        GFormGroup,
+        GFormRadio,
         GInput,
         GLink,
         GModal,

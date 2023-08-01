@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { BFormGroup } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { GButton, GCol, GInput, GRow } from "@/component-library";
+import { GButton, GCol, GFormGroup, GInput, GRow } from "@/component-library";
 import localize from "@/utils/localization";
 
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";
@@ -43,12 +42,12 @@ const doExport = () => {
 
 <template>
     <div class="export-to-remote-file">
-        <BFormGroup id="fieldset-directory" label-for="directory" :description="directoryDescription" class="mt-3">
+        <GFormGroup id="fieldset-directory" label-for="directory" :description="directoryDescription" class="mt-3">
             <FilesInput id="directory" v-model="directory" mode="directory" :require-writable="true" />
-        </BFormGroup>
-        <BFormGroup id="fieldset-name" label-for="name" :description="nameDescription" class="mt-3">
+        </GFormGroup>
+        <GFormGroup id="fieldset-name" label-for="name" :description="nameDescription" class="mt-3">
             <GInput id="name" v-model="name" :placeholder="namePlaceholder" required />
-        </BFormGroup>
+        </GFormGroup>
         <GRow align-h="end">
             <GCol>
                 <GButton

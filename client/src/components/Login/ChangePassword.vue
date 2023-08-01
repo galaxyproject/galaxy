@@ -4,11 +4,11 @@
             {{ message }}
         </GAlert>
         <GCard header="Change your password">
-            <b-form-group v-if="expiredUser" label="Current Password">
+            <GFormGroup v-if="expiredUser" label="Current Password">
                 <GInput v-model="current" type="password" />
-            </b-form-group>
-            <b-form-group label="New Password"> <GInput v-model="password" type="password" /> </b-form-group>
-            <b-form-group label="Confirm password"> <GInput v-model="confirm" type="password" /> </b-form-group>
+            </GFormGroup>
+            <GFormGroup label="New Password"> <GInput v-model="password" type="password" /> </GFormGroup>
+            <GFormGroup label="Confirm password"> <GInput v-model="confirm" type="password" /> </GFormGroup>
             <GButton type="submit">Save new password</GButton>
         </GCard>
     </b-form>
@@ -19,15 +19,16 @@ import BootstrapVue from "bootstrap-vue";
 import { withPrefix } from "utils/redirect";
 import Vue from "vue";
 
-import { GAlert, GButton, GCard, GInput } from "@/component-library";
+import { GAlert, GButton, GCard, GFormGroup, GInput } from "@/component-library";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
-        GCard,
         GAlert,
         GButton,
+        GCard,
+        GFormGroup,
         GInput,
     },
     props: {

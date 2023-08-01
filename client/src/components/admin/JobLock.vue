@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
 
-import { GFormCheckbox } from "@/component-library";
+import { GFormCheckbox, GFormGroup } from "@/component-library";
 import { fetcher } from "@/schema";
 
 const jobLock = ref(false);
@@ -26,10 +26,10 @@ onMounted(async () => {
 });
 </script>
 <template>
-    <b-form-group>
+    <GFormGroup>
         <GFormCheckbox id="prevent-job-dispatching" v-model="jobLock" :disabled="jobLockUpdating" switch size="lg">
             Job dispatching is currently
             <strong>{{ jobLock ? "locked" : "unlocked" }}</strong>
         </GFormCheckbox>
-    </b-form-group>
+    </GFormGroup>
 </template>

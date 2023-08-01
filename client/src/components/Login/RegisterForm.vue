@@ -34,24 +34,24 @@
                             role="tabpanel"
                             accordion="registration_acc">
                             <GCardBody>
-                                <b-form-group :label="labelEmailAddress" label-for="register-form-email">
+                                <GFormGroup :label="labelEmailAddress" label-for="register-form-email">
                                     <GInput id="register-form-email" v-model="email" name="email" type="text" />
-                                </b-form-group>
-                                <b-form-group :label="labelPassword" label-for="register-form-password">
+                                </GFormGroup>
+                                <GFormGroup :label="labelPassword" label-for="register-form-password">
                                     <GInput
                                         id="register-form-password"
                                         v-model="password"
                                         name="password"
                                         type="password" />
-                                </b-form-group>
-                                <b-form-group :label="labelConfirmPassword" label-for="register-form-confirm">
+                                </GFormGroup>
+                                <GFormGroup :label="labelConfirmPassword" label-for="register-form-confirm">
                                     <GInput
                                         id="register-form-confirm"
                                         v-model="confirm"
                                         name="confirm"
                                         type="password" />
-                                </b-form-group>
-                                <b-form-group :label="labelPublicName" label-for="register-form-username">
+                                </GFormGroup>
+                                <GFormGroup :label="labelPublicName" label-for="register-form-username">
                                     <GInput
                                         id="register-form-username"
                                         v-model="username"
@@ -63,8 +63,8 @@
                                         in length and contain only lower-case letters, numbers, dots, underscores, and
                                         dashes ('.', '_', '-').
                                     </b-form-text>
-                                </b-form-group>
-                                <b-form-group
+                                </GFormGroup>
+                                <GFormGroup
                                     v-if="mailingJoinAddr && serverMailConfigured"
                                     :label="labelSubscribe"
                                     label-for="register-form-subscribe">
@@ -73,7 +73,7 @@
                                         v-model="subscribe"
                                         name="subscribe"
                                         type="checkbox" />
-                                </b-form-group>
+                                </GFormGroup>
                                 <GButton v-localize name="create" type="submit" :disabled="disableCreate">
                                     Create
                                 </GButton>
@@ -101,11 +101,9 @@
 </template>
 <script>
 import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin";
 import _l from "utils/localization";
 import { withPrefix } from "utils/redirect";
-import Vue from "vue";
 
 import {
     GAlert,
@@ -116,22 +114,22 @@ import {
     GCardHeader,
     GCollapse,
     GEmbed,
+    GFormGroup,
     GInput,
 } from "@/component-library";
 
-Vue.use(BootstrapVue);
-
 export default {
     components: {
-        GEmbed,
-        GCollapse,
-        GCard,
-        GCardHeader,
-        GCardFooter,
-        GCardBody,
-        GAlert,
         ExternalLogin,
+        GAlert,
         GButton,
+        GCard,
+        GCardBody,
+        GCardFooter,
+        GCardHeader,
+        GCollapse,
+        GEmbed,
+        GFormGroup,
         GInput,
     },
     props: {

@@ -19,12 +19,12 @@
             ok-title="Save"
             cancel-title="Cancel"
             @ok="doSaveAs">
-            <b-form-group label="Name">
+            <GFormGroup label="Name">
                 <GInput v-model="saveAsName" />
-            </b-form-group>
-            <b-form-group label="Annotation">
+            </GFormGroup>
+            <GFormGroup label="Annotation">
                 <b-form-textarea v-model="saveAsAnnotation" />
-            </b-form-group>
+            </GFormGroup>
         </GModal>
         <FlexPanel side="left">
             <ProviderAwareToolBoxWorkflow
@@ -163,7 +163,7 @@ import axios from "axios";
 import { storeToRefs } from "pinia";
 import Vue, { computed, onUnmounted, ref } from "vue";
 
-import { GButton, GInput, GModal } from "@/component-library";
+import { GButton, GFormGroup, GInput, GModal } from "@/component-library";
 import { getUntypedWorkflowParameters } from "@/components/Workflow/Editor/modules/parameters";
 import { ConfirmDialog } from "@/composables/confirmDialog";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
@@ -200,6 +200,7 @@ export default {
         FormDefault,
         FormTool,
         GButton,
+        GFormGroup,
         GInput,
         GModal,
         WorkflowOptions,

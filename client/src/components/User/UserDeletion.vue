@@ -23,13 +23,13 @@
                     </b>
                 </p>
                 <b-form ref="form" @submit.prevent="handleSubmit">
-                    <b-form-group
+                    <GFormGroup
                         :state="nameState"
                         label="Enter your user email for this account as confirmation."
                         label-for="Email"
                         invalid-feedback="Incorrect email">
                         <GInput id="name-input" v-model="name" :state="nameState" required />
-                    </b-form-group>
+                    </GFormGroup>
                 </b-form>
             </GModal>
         </div>
@@ -38,18 +38,15 @@
 
 <script>
 import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
 import { userLogoutClient } from "utils/logout";
 import { withPrefix } from "utils/redirect";
-import Vue from "vue";
 
-import { GAlert, GInput, GModal, GRow } from "@/component-library";
-
-Vue.use(BootstrapVue);
+import { GAlert, GFormGroup, GInput, GModal, GRow } from "@/component-library";
 
 export default {
     components: {
         GAlert,
+        GFormGroup,
         GInput,
         GModal,
         GRow,

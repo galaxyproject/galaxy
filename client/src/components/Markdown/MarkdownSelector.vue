@@ -4,7 +4,7 @@
             <div class="ml-2">
                 <h2 class="mb-3 h-text">Select {{ labelTitle }} Label:</h2>
                 <div v-if="hasLabels">
-                    <b-form-radio
+                    <GFormRadio
                         v-for="(label, index) in labels"
                         :key="index"
                         v-model="selectedValue"
@@ -12,7 +12,7 @@
                         name="labels"
                         :value="index">
                         {{ label }}
-                    </b-form-radio>
+                    </GFormRadio>
                 </div>
                 <GAlert v-else show variant="info">
                     No labels found. Please specify labels in the Workflow Editor.
@@ -27,16 +27,12 @@
 </template>
 
 <script>
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
-
-import { GAlert, GModal } from "@/component-library";
-
-Vue.use(BootstrapVue);
+import { GAlert, GFormRadio, GModal } from "@/component-library";
 
 export default {
     components: {
         GAlert,
+        GFormRadio,
         GModal,
     },
     props: {

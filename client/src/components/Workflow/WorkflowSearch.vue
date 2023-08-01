@@ -2,7 +2,7 @@
 import { type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { GButton, GFormRadioGroup, GInput } from "@/component-library";
+import { GButton, GFormGroup, GFormRadioGroup, GInput } from "@/component-library";
 import { createWorkflowQuery } from "@/components/Panels/utilities";
 import _l from "@/utils/localization";
 
@@ -42,32 +42,32 @@ function onSearch() {
             <small class="mt-1">Filter by tag:</small>
             <GInput v-model="filterSettings.tag" size="sm" placeholder="any tag" />
             <small>Search published workflows:</small>
-            <b-form-group class="m-0">
+            <GFormGroup class="m-0">
                 <GFormRadioGroup
                     v-model="filterSettings.published"
                     :options="options"
                     size="sm"
                     buttons
                     description="filter published" />
-            </b-form-group>
+            </GFormGroup>
             <small>Search shared workflows:</small>
-            <b-form-group class="m-0">
+            <GFormGroup class="m-0">
                 <GFormRadioGroup
                     v-model="filterSettings.shared_with_me"
                     :options="options"
                     size="sm"
                     buttons
                     description="filter shared" />
-            </b-form-group>
+            </GFormGroup>
             <small>Search deleted workflows:</small>
-            <b-form-group class="m-0">
+            <GFormGroup class="m-0">
                 <GFormRadioGroup
                     v-model="filterSettings.deleted"
                     :options="options"
                     size="sm"
                     buttons
                     description="filter deleted" />
-            </b-form-group>
+            </GFormGroup>
             <div class="mt-3">
                 <GButton class="mr-1" size="sm" variant="primary" @click="onSearch">
                     <icon icon="search" />

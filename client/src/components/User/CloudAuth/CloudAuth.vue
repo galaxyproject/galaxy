@@ -50,9 +50,9 @@
 
             <transition name="fade">
                 <hgroup v-if="showFilter">
-                    <b-form-group :description="filterDescription">
+                    <GFormGroup :description="filterDescription">
                         <GInput v-model="filter" type="text" placeholder="Filter" />
-                    </b-form-group>
+                    </GFormGroup>
                 </hgroup>
             </transition>
 
@@ -93,7 +93,7 @@
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
-import { GAlert, GButtonGroup, GInput, GModal } from "@/component-library";
+import { GAlert, GButtonGroup, GFormGroup, GInput, GModal } from "@/component-library";
 
 import CloudAuthItem from "./CloudAuthItem";
 import { Credential } from "./model";
@@ -106,6 +106,7 @@ export default {
         CloudAuthItem,
         GAlert,
         GButtonGroup,
+        GFormGroup,
         GInput,
         GModal,
     },

@@ -59,27 +59,27 @@
                     </GAlert>
 
                     <b-form @submit.prevent="save">
-                        <b-form-group label="Name" description="Specify a build name, e.g. Hamster." label-for="name">
+                        <GFormGroup label="Name" description="Specify a build name, e.g. Hamster." label-for="name">
                             <GInput id="name" v-model="form.name" tour_id="name" required />
-                        </b-form-group>
-                        <b-form-group label="Key" description="Specify a build key, e.g. hamster_v1." label-for="id">
+                        </GFormGroup>
+                        <GFormGroup label="Key" description="Specify a build key, e.g. hamster_v1." label-for="id">
                             <GInput id="id" v-model="form.id" tour_id="id" required />
-                        </b-form-group>
-                        <b-form-group label="Definition" description="Provide the data source." label-for="type">
+                        </GFormGroup>
+                        <GFormGroup label="Definition" description="Provide the data source." label-for="type">
                             <b-form-select
                                 id="type"
                                 v-model="selectedDataSource"
                                 tour_id="type"
                                 :options="dataSources"></b-form-select>
-                        </b-form-group>
+                        </GFormGroup>
                         <div>
-                            <b-form-group v-if="selectedDataSource === 'fasta'" label="FASTA-file">
+                            <GFormGroup v-if="selectedDataSource === 'fasta'" label="FASTA-file">
                                 <b-form-select
                                     v-model="selectedFastaFile"
                                     :options="fastaFiles"
                                     :disabled="fastaFilesSelectDisabled"></b-form-select>
-                            </b-form-group>
-                            <b-form-group v-if="selectedDataSource === 'file'" label="Len-file">
+                            </GFormGroup>
+                            <GFormGroup v-if="selectedDataSource === 'file'" label="Len-file">
                                 <b-form-file placeholder="Choose a file..." @change="readFile" />
                                 <GProgress
                                     v-show="fileLoaded !== 0"
@@ -88,10 +88,10 @@
                                     :value="fileLoaded"
                                     :max="maxFileSize" />
                                 <b-form-textarea v-show="form.file" :value="form.file" />
-                            </b-form-group>
-                            <b-form-group v-if="selectedDataSource === 'text'" label="Edit/Paste">
+                            </GFormGroup>
+                            <GFormGroup v-if="selectedDataSource === 'text'" label="Edit/Paste">
                                 <b-form-textarea id="len-file-text-area" v-model="form.text" />
-                            </b-form-group>
+                            </GFormGroup>
                         </div>
 
                         <GButton
@@ -155,7 +155,7 @@ import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 import Multiselect from "vue-multiselect";
 
-import { GAlert, GButton, GCard, GCol, GContainer, GInput, GProgress, GRow } from "@/component-library";
+import { GAlert, GButton, GCard, GCol, GContainer, GFormGroup, GInput, GProgress, GRow } from "@/component-library";
 
 Vue.use(BootstrapVue);
 
@@ -166,6 +166,7 @@ export default {
         GCard,
         GCol,
         GContainer,
+        GFormGroup,
         GInput,
         GProgress,
         GRow,

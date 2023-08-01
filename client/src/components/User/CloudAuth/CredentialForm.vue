@@ -1,17 +1,17 @@
 <template>
     <b-form :validated="credential.isValid">
         <!-- user label -->
-        <b-form-group label="Description" label-for="credentialDescription" label-cols-lg="3">
+        <GFormGroup label="Description" label-for="credentialDescription" label-cols-lg="3">
             <GInput
                 id="credentialDescription"
                 v-model="credential.description"
                 :state="credential.fieldValid('description')"
                 placeholder="Description (optional)"
                 trim />
-        </b-form-group>
+        </GFormGroup>
 
         <!-- google-openidconnect -->
-        <b-form-group
+        <GFormGroup
             v-if="identityProviders.length > 1"
             label="Identity Provider"
             label-for="identityProvider"
@@ -21,16 +21,16 @@
                 v-model="credential.authn_id"
                 :state="credential.fieldValid('authn_id')"
                 :options="identityProviders" />
-        </b-form-group>
+        </GFormGroup>
 
         <!-- aws/azure, etc -->
-        <b-form-group label="Resource Provider" label-for="resourceProvider" label-cols-lg="3">
+        <GFormGroup label="Resource Provider" label-for="resourceProvider" label-cols-lg="3">
             <b-form-select
                 id="resourceProvider"
                 v-model="credential.resourceProvider"
                 :state="credential.fieldValid('provider')"
                 :options="resourceProviderOptions" />
-        </b-form-group>
+        </GFormGroup>
 
         <CredentialConfig v-model="credential.config" />
 
@@ -48,7 +48,7 @@
 </template>
 
 <script>
-import { GButton, GInput } from "@/component-library";
+import { GButton, GFormGroup, GInput } from "@/component-library";
 
 import CredentialConfig from "./CredentialConfig";
 import { Credential, ResourceProviders } from "./model";
@@ -58,6 +58,7 @@ export default {
     components: {
         CredentialConfig,
         GButton,
+        GFormGroup,
         GInput,
     },
     props: {

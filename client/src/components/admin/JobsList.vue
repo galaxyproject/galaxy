@@ -19,13 +19,13 @@
         </p>
         <GRow>
             <GCol class="col-sm-4">
-                <b-form-group description="Select whether or not to use the cutoff below.">
+                <GFormGroup description="Select whether or not to use the cutoff below.">
                     <GFormCheckbox id="show-all-running" v-model="showAllRunning" switch size="lg" @change="update">
                         {{ showAllRunning ? "Showing all unfinished jobs" : "Time cutoff applied to query" }}
                     </GFormCheckbox>
-                </b-form-group>
+                </GFormGroup>
                 <b-form name="jobs" @submit.prevent="onRefresh">
-                    <b-form-group
+                    <GFormGroup
                         v-show="!showAllRunning"
                         id="cutoff"
                         label="Cutoff in minutes"
@@ -33,23 +33,23 @@
                         <GInputGroup>
                             <GInput id="cutoff" v-model="cutoffMin" type="number" />
                         </GInputGroup>
-                    </b-form-group>
+                    </GFormGroup>
                 </b-form>
-                <b-form-group description="Use strings or regular expressions to search jobs.">
+                <GFormGroup description="Use strings or regular expressions to search jobs.">
                     <IndexFilter v-bind="filterAttrs" id="job-search" v-model="filter" />
-                </b-form-group>
+                </GFormGroup>
             </GCol>
         </GRow>
         <transition name="fade">
             <b-form v-if="unfinishedJobs.length && selectedStopJobIds.length" @submit.prevent="onStopJobs">
-                <b-form-group label="Stop Selected Jobs" description="Stop message will be displayed to the user">
+                <GFormGroup label="Stop Selected Jobs" description="Stop message will be displayed to the user">
                     <GInputGroup>
                         <GInput id="stop-message" v-model="stopMessage" placeholder="Stop message" required />
                         <GInputGroupAppend>
                             <GButton type="submit">Submit</GButton>
                         </GInputGroupAppend>
                     </GInputGroup>
-                </b-form-group>
+                </GFormGroup>
             </b-form>
         </transition>
         <h3 class="mb-0 h-sm">Unfinished Jobs</h3>
@@ -106,6 +106,7 @@ import {
     GButton,
     GCol,
     GFormCheckbox,
+    GFormGroup,
     GInput,
     GInputGroup,
     GInputGroupAppend,
@@ -152,6 +153,7 @@ export default {
         GButton,
         GCol,
         GFormCheckbox,
+        GFormGroup,
         GInput,
         GInputGroup,
         GInputGroupAppend,

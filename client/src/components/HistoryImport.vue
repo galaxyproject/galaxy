@@ -25,28 +25,28 @@
         </div>
         <div v-else>
             <b-form @submit.prevent="submit">
-                <b-form-group v-slot="{ ariaDescribedby }" label="How would you like to specify the history archive?">
+                <GFormGroup v-slot="{ ariaDescribedby }" label="How would you like to specify the history archive?">
                     <GFormRadioGroup
                         v-model="importType"
                         :aria-describedby="ariaDescribedby"
                         name="import-type"
                         stacked>
-                        <b-form-radio value="externalUrl">
+                        <GFormRadio value="externalUrl">
                             Export URL from another Galaxy instance
                             <FontAwesomeIcon icon="external-link-alt" />
-                        </b-form-radio>
-                        <b-form-radio value="upload">
+                        </GFormRadio>
+                        <GFormRadio value="upload">
                             Upload local file from your computer
                             <FontAwesomeIcon icon="upload" />
-                        </b-form-radio>
-                        <b-form-radio v-if="hasFileSources" value="remoteFilesUri">
+                        </GFormRadio>
+                        <GFormRadio v-if="hasFileSources" value="remoteFilesUri">
                             Select a remote file (e.g. Galaxy's FTP)
                             <FontAwesomeIcon icon="folder-open" />
-                        </b-form-radio>
+                        </GFormRadio>
                     </GFormRadioGroup>
-                </b-form-group>
+                </GFormGroup>
 
-                <b-form-group v-if="importType === 'externalUrl'" label="Archived History URL">
+                <GFormGroup v-if="importType === 'externalUrl'" label="Archived History URL">
                     <GAlert v-if="showImportUrlWarning" variant="warning" show>
                         It looks like you are trying to import a published history from another galaxy instance. You can
                         only import histories via an archive URL.
@@ -57,14 +57,14 @@
                     </GAlert>
 
                     <GInput v-model="sourceURL" type="url" />
-                </b-form-group>
-                <b-form-group v-else-if="importType === 'upload'" label="Archived History File">
+                </GFormGroup>
+                <GFormGroup v-else-if="importType === 'upload'" label="Archived History File">
                     <b-form-file v-model="sourceFile" />
-                </b-form-group>
-                <b-form-group v-show="importType === 'remoteFilesUri'" label="Remote File">
+                </GFormGroup>
+                <GFormGroup v-show="importType === 'remoteFilesUri'" label="Remote File">
                     <!-- using v-show so we can have a persistent ref and launch dialog on select -->
                     <FilesInput ref="filesInput" v-model="sourceRemoteFilesUri" />
-                </b-form-group>
+                </GFormGroup>
 
                 <GButton class="import-button" variant="primary" type="submit" :disabled="!importReady">
                     Import history
@@ -80,15 +80,14 @@ import { faExternalLinkAlt, faFolderOpen, faUpload } from "@fortawesome/free-sol
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { refDebounced } from "@vueuse/core";
 import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
 import JobError from "components/JobInformation/JobError";
 import { waitOnJob } from "components/JobStates/wait";
 import LoadingSpan from "components/LoadingSpan";
 import { getAppRoot } from "onload/loadConfig";
 import { errorMessageAsString } from "utils/simple-error";
-import Vue, { ref, watch } from "vue";
+import { ref, watch } from "vue";
 
-import { GAlert, GButton, GFormRadioGroup, GInput } from "@/component-library";
+import { GAlert, GButton, GFormGroup, GFormRadio, GFormRadioGroup, GInput } from "@/component-library";
 import { getFileSources } from "@/components/FilesDialog/services";
 
 import ExternalLink from "./ExternalLink";
@@ -98,7 +97,6 @@ import FilesInput from "components/FilesDialog/FilesInput.vue";
 library.add(faFolderOpen);
 library.add(faUpload);
 library.add(faExternalLinkAlt);
-Vue.use(BootstrapVue);
 
 export default {
     components: {
@@ -107,6 +105,8 @@ export default {
         FontAwesomeIcon,
         GAlert,
         GButton,
+        GFormGroup,
+        GFormRadio,
         GFormRadioGroup,
         GInput,
         JobError,

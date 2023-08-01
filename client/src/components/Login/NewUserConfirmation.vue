@@ -31,11 +31,11 @@
                                 subject to termination and data deletion on public Galaxy servers. Connect existing
                                 account now to continue to use your existing data and avoid possible loss of data.
                             </p>
-                            <b-form-group>
+                            <GFormGroup>
                                 <GFormCheckbox v-model="termsRead">
                                     I have read and accept these terms to create a new Galaxy account.
                                 </GFormCheckbox>
-                            </b-form-group>
+                            </GFormGroup>
                             <GButton name="confirm" type="submit" :disabled="!termsRead" @click.prevent="submit">
                                 Yes, create new account
                             </GButton>
@@ -62,7 +62,7 @@ import BootstrapVue from "bootstrap-vue";
 import { withPrefix } from "utils/redirect";
 import Vue from "vue";
 
-import { GAlert, GButton, GCard, GCardBody, GCardFooter, GEmbed, GFormCheckbox } from "@/component-library";
+import { GAlert, GButton, GCard, GCardBody, GCardFooter, GEmbed, GFormCheckbox, GFormGroup } from "@/component-library";
 
 Vue.use(BootstrapVue);
 
@@ -75,6 +75,7 @@ export default {
         GCardBody,
         GEmbed,
         GFormCheckbox,
+        GFormGroup,
     },
     props: {
         registrationWarningMessage: {

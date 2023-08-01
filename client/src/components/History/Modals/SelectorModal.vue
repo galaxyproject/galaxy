@@ -4,13 +4,13 @@ import { faListAlt } from "@fortawesome/free-regular-svg-icons";
 import { faArrowDown, faColumns, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useInfiniteScroll } from "@vueuse/core";
-import { BFormGroup, BListGroup, BListGroupItem } from "bootstrap-vue";
+import { BListGroup, BListGroupItem } from "bootstrap-vue";
 import isEqual from "lodash.isequal";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, onUnmounted, type PropType, type Ref, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { GAlert, GBadge, GButton, GButtonGroup, GInput, GModal } from "@/component-library";
+import { GAlert, GBadge, GButton, GButtonGroup, GFormGroup, GInput, GModal } from "@/component-library";
 import type { components } from "@/schema";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
@@ -212,9 +212,9 @@ async function loadMore(noScroll = false) {
                 <Heading h2 inline size="sm">{{ localize(title) }}</Heading>
             </template>
 
-            <BFormGroup :description="localize('Filter histories')">
+            <GFormGroup :description="localize('Filter histories')">
                 <GInput v-model="filter" type="search" debounce="400" :placeholder="localize('Search Filter')" />
-            </BFormGroup>
+            </GFormGroup>
 
             <GBadge v-if="filter && !validFilter" class="alert-danger w-100">Search string too short!</GBadge>
             <GAlert v-else-if="!busy && hasNoResults" variant="danger" show>No histories found.</GAlert>

@@ -19,7 +19,7 @@
                             <GCardBody>
                                 <div>
                                     <!-- standard internal galaxy login -->
-                                    <b-form-group :label="labelNameAddress" label-for="login-form-name">
+                                    <GFormGroup :label="labelNameAddress" label-for="login-form-name">
                                         <GInput
                                             v-if="!connectExternalProvider"
                                             id="login-form-name"
@@ -33,8 +33,8 @@
                                             :value="connectExternalEmail"
                                             name="login"
                                             type="text" />
-                                    </b-form-group>
-                                    <b-form-group :label="labelPassword" label-for="login-form-password">
+                                    </GFormGroup>
+                                    <GFormGroup :label="labelPassword" label-for="login-form-password">
                                         <GInput
                                             id="login-form-password"
                                             v-model="password"
@@ -50,7 +50,7 @@
                                                 Click here to reset your password.
                                             </a>
                                         </b-form-text>
-                                    </b-form-group>
+                                    </GFormGroup>
                                     <GButton v-localize name="login" type="submit">Login</GButton>
                                 </div>
                                 <div v-if="enableOidc">
@@ -102,29 +102,36 @@
 
 <script>
 import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin";
 import _l from "utils/localization";
 import { withPrefix } from "utils/redirect";
-import Vue from "vue";
 
-import { GAlert, GButton, GCard, GCardBody, GCardFooter, GCardHeader, GEmbed, GInput } from "@/component-library";
+import {
+    GAlert,
+    GButton,
+    GCard,
+    GCardBody,
+    GCardFooter,
+    GCardHeader,
+    GEmbed,
+    GFormGroup,
+    GInput,
+} from "@/component-library";
 
 import NewUserConfirmation from "./NewUserConfirmation";
 
-Vue.use(BootstrapVue);
-
 export default {
     components: {
-        GEmbed,
-        GCard,
-        GCardHeader,
-        GCardFooter,
-        GCardBody,
-        GAlert,
         ExternalLogin,
-        GInput,
+        GAlert,
         GButton,
+        GCard,
+        GCardBody,
+        GCardFooter,
+        GCardHeader,
+        GEmbed,
+        GFormGroup,
+        GInput,
         NewUserConfirmation,
     },
     props: {

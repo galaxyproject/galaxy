@@ -1,9 +1,9 @@
 <script setup>
-import { BFormGroup, BFormSelect } from "bootstrap-vue";
+import { BFormSelect } from "bootstrap-vue";
 import { ExportParamsModel } from "components/Common/models/exportRecordModel";
 import { computed, reactive, ref } from "vue";
 
-import { GCard, GCollapse, GFormCheckbox, GLink } from "@/component-library";
+import { GCard, GCollapse, GFormCheckbox, GFormGroup, GLink } from "@/component-library";
 
 import { AVAILABLE_EXPORT_FORMATS } from "./services";
 
@@ -42,7 +42,7 @@ function onValueChanged() {
         </GLink>
         <GCollapse id="collapse-options" v-model="isExpanded">
             <GCard>
-                <BFormGroup label="Export Format:" label-for="format">
+                <GFormGroup label="Export Format:" label-for="format">
                     <BFormSelect
                         id="format-selector"
                         v-model="localOptions.modelStoreFormat"
@@ -50,9 +50,9 @@ function onValueChanged() {
                         value-field="id"
                         text-field="name"
                         @change="onValueChanged" />
-                </BFormGroup>
+                </GFormGroup>
 
-                <BFormGroup label="Dataset files included in the package:">
+                <GFormGroup label="Dataset files included in the package:">
                     <GFormCheckbox
                         id="include-files-check"
                         v-model="localOptions.includeFiles"
@@ -76,7 +76,7 @@ function onValueChanged() {
                         @change="onValueChanged">
                         Include Hidden
                     </GFormCheckbox>
-                </BFormGroup>
+                </GFormGroup>
             </GCard>
         </GCollapse>
     </div>

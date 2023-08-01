@@ -13,14 +13,14 @@
             <GContainer fluid>
                 <GRow>
                     <GCol md="6">
-                        <b-form-group description="Search for strings or regular expressions">
+                        <GFormGroup description="Search for strings or regular expressions">
                             <GInputGroup>
                                 <GInput v-model="filter" placeholder="Type to Search" @keyup.esc.native="filter = ''" />
                                 <GInputGroupAppend>
                                     <GButton :disabled="!filter" @click="filter = ''">Clear (esc)</GButton>
                                 </GInputGroupAppend>
                             </GInputGroup>
-                        </b-form-group>
+                        </GFormGroup>
                     </GCol>
                 </GRow>
             </GContainer>
@@ -85,6 +85,7 @@ import {
     GCardGroup,
     GCol,
     GContainer,
+    GFormGroup,
     GInput,
     GInputGroup,
     GInputGroupAppend,
@@ -96,15 +97,16 @@ export default {
         GAlert,
         GButton,
         GButtonGroup,
-        GInput,
         GBadge,
-        GContainer,
         GCard,
         GCardGroup,
-        GRow,
         GCol,
+        GContainer,
+        GFormGroup,
+        GInput,
         GInputGroup,
         GInputGroupAppend,
+        GRow,
     },
     beforeRouteEnter(to, from, next) {
         console.log("beforeRouteEnter");
