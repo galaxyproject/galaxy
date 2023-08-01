@@ -10,12 +10,14 @@
             </GAlert>
         </div>
         <b-tabs content-class="mt-3">
-            <b-tab
+            <GTab
                 title-link-class="collection-edit-change-genome-nav"
                 @click="updateInfoMessage(newCollectionMessage + ' ' + noQuotaIncreaseMessage)">
                 <template v-slot:title> <FontAwesomeIcon icon="table" /> &nbsp; {{ l("Database/Build") }}</template>
                 <DbKeyProvider v-slot="{ item, loading }">
-                    <div v-if="loading"><b-spinner label="Loading Database/Builds..."></b-spinner></div>
+                    <div v-if="loading">
+                        <b-spinner label="Loading Database/Builds..."></b-spinner>
+                    </div>
                     <div v-else>
                         <DatabaseEditTab
                             v-if="item && databaseKeyFromElements"
@@ -24,23 +26,25 @@
                             @clicked-save="clickedSave" />
                     </div>
                 </DbKeyProvider>
-            </b-tab>
+            </GTab>
             <SuitableConvertersProvider :id="collectionId" v-slot="{ item }">
-                <b-tab
+                <GTab
                     v-if="item && item.length"
                     title-link-class="collection-edit-convert-datatype-nav"
                     @click="updateInfoMessage(newCollectionMessage)">
-                    <template v-slot:title> <FontAwesomeIcon icon="cog" /> &nbsp; {{ l("Convert") }}</template>
+                    <template v-slot:title> <FontAwesomeIcon icon="cog" /> &nbsp; {{ l("Convert") }} </template>
                     <SuitableConvertersTab :suitable-converters="item" @clicked-convert="clickedConvert" />
-                </b-tab>
+                </GTab>
             </SuitableConvertersProvider>
-            <b-tab
+            <GTab
                 v-if="isConfigLoaded && config.enable_celery_tasks"
                 title-link-class="collection-edit-change-datatype-nav"
                 @click="updateInfoMessage(expectWaitTimeMessage)">
                 <template v-slot:title> <FontAwesomeIcon icon="database" /> &nbsp; {{ l("Datatypes") }} </template>
                 <DatatypesProvider v-slot="{ item, loading }">
-                    <div v-if="loading"><LoadingSpan :message="loadingString" /></div>
+                    <div v-if="loading">
+                        <LoadingSpan :message="loadingString" />
+                    </div>
                     <div v-else>
                         <ChangeDatatypeTab
                             v-if="item && datatypeFromElements"
@@ -49,7 +53,7 @@
                             @clicked-save="clickedDatatypeChange" />
                     </div>
                 </DatatypesProvider>
-            </b-tab>
+            </GTab>
         </b-tabs>
     </div>
 </template>
@@ -65,7 +69,7 @@ import { prependPath } from "utils/redirect";
 import { errorMessageAsString } from "utils/simple-error";
 import Vue from "vue";
 
-import { GAlert } from "@/component-library";
+import { GAlert, GTab } from "@/component-library";
 import { useConfig } from "@/composables/config";
 import { useHistoryStore } from "@/stores/historyStore";
 
@@ -85,6 +89,7 @@ export default {
         SuitableConvertersTab,
         FontAwesomeIcon,
         GAlert,
+        GTab,
         DbKeyProvider,
         SuitableConvertersProvider,
         ChangeDatatypeTab,
