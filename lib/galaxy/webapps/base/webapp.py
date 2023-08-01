@@ -4,10 +4,8 @@ import datetime
 import inspect
 import logging
 import os
-import random
 import re
 import socket
-import string
 import time
 from http.cookies import CookieError
 from typing import (
@@ -604,7 +602,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             if galaxy_session:
                 if remote_user_email and galaxy_session.user is None:
                     # No user, associate
-                    galaxy_session.user = self.get_or_create_remote_user(remote_user_email)
+                    galaxy_session.user = self.user_manager.get_or_create_remote_user(remote_user_email)
                     galaxy_session_requires_flush = True
                 elif (
                     remote_user_email
@@ -618,7 +616,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                     # remote user, and the currently set remote_user is not a
                     # potentially impersonating admin.
                     invalidate_existing_session = True
-                    user_for_new_session = self.get_or_create_remote_user(remote_user_email)
+                    user_for_new_session = self.user_manager.get_or_create_remote_user(remote_user_email)
                     log.warning(
                         "User logged in as '%s' externally, but has a cookie as '%s' invalidating session",
                         remote_user_email,
@@ -626,7 +624,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                     )
             elif remote_user_email:
                 # No session exists, get/create user for new session
-                user_for_new_session = self.get_or_create_remote_user(remote_user_email)
+                user_for_new_session = self.user_manager.get_or_create_remote_user(remote_user_email)
             if (galaxy_session and galaxy_session.user is None) and user_for_new_session is None:
                 raise Exception("Remote Authentication Failure - user is unknown and/or not supplied.")
         else:
@@ -753,55 +751,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             # The new session should be associated with the user
             galaxy_session.user = user_for_new_session
         return galaxy_session
-
-    def get_or_create_remote_user(self, remote_user_email):
-        """
-        Create a remote user with the email remote_user_email and return it
-        """
-        if not self.app.config.use_remote_user:
-            return None
-        if getattr(self.app.config, "normalize_remote_user_email", False):
-            remote_user_email = remote_user_email.lower()
-        user = (
-            self.sa_session.query(self.app.model.User)
-            .filter(self.app.model.User.table.c.email == remote_user_email)
-            .first()
-        )
-        if user:
-            # GVK: June 29, 2009 - This is to correct the behavior of a previous bug where a private
-            # role and default user / history permissions were not set for remote users.  When a
-            # remote user authenticates, we'll look for this information, and if missing, create it.
-            if not self.app.security_agent.get_private_user_role(user):
-                self.app.security_agent.create_private_user_role(user)
-            if "webapp" not in self.environ or self.environ["webapp"] != "tool_shed":
-                if not user.default_permissions:
-                    self.app.security_agent.user_set_default_permissions(user)
-                    self.app.security_agent.user_set_default_permissions(user, history=True, dataset=True)
-        elif user is None:
-            username = remote_user_email.split("@", 1)[0].lower()
-            random.seed()
-            user = self.app.model.User(email=remote_user_email)
-            user.set_random_password(length=12)
-            user.external = True
-            # Replace invalid characters in the username
-            for char in [x for x in username if x not in f"{string.ascii_lowercase + string.digits}-."]:
-                username = username.replace(char, "-")
-            # Find a unique username - user can change it later
-            if self.sa_session.query(self.app.model.User).filter_by(username=username).first():
-                i = 1
-                while self.sa_session.query(self.app.model.User).filter_by(username=f"{username}-{str(i)}").first():
-                    i += 1
-                username += f"-{str(i)}"
-            user.username = username
-            self.sa_session.add(user)
-            with transaction(self.sa_session):
-                self.sa_session.commit()
-            self.app.security_agent.create_private_user_role(user)
-            # We set default user permissions, before we log in and set the default history permissions
-            if "webapp" not in self.environ or self.environ["webapp"] != "tool_shed":
-                self.app.security_agent.user_set_default_permissions(user)
-            # self.log_event( "Automatically created account '%s'", user.email )
-        return user
 
     @property
     def cookie_path(self):

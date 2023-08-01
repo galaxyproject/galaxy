@@ -25,6 +25,7 @@ from pydantic import (
     Extra,
     Field,
     Json,
+    Required,
     UUID4,
 )
 from typing_extensions import (
@@ -135,6 +136,7 @@ AccessibleField: bool = Field(
     description="Whether this item is accessible to the current user due to permissions.",
 )
 
+
 EntityIdField = Field(
     ...,
     title="ID",
@@ -227,6 +229,32 @@ ContentsUrlField = Field(
     description="The relative URL to access the contents of this History.",
 )
 
+UserIdField = Field(title="ID", description="Encoded ID of the user")
+UserEmailField = Field(title="Email", description="Email of the user")
+UserDescriptionField = Field(title="Description", description="Description of the user")
+UserNameField = Field(default=Required, title="user_name", description="The name of the user.")
+QuotaPercentField = Field(
+    default=None, title="Quota percent", description="Percentage of the storage quota applicable to the user."
+)
+UserDeletedField = Field(default=Required, title="Deleted", description=" User is deleted")
+PreferredObjectStoreIdField = Field(
+    default=None,
+    title="Preferred Object Store ID",
+    description="The ID of the object store that should be used to store new datasets in this history.",
+)
+
+TotalDiskUsageField = Field(
+    default=Required,
+    title="Total disk usage",
+    description="Size of all non-purged, unique datasets of the user in bytes.",
+)
+NiceTotalDiskUsageField = Field(
+    default=Required,
+    title="Nice total disc usage",
+    description="Size of all non-purged, unique datasets of the user in a nice format.",
+)
+FlexibleUserIdType = Union[DecodedDatabaseIdField, Literal["current"]]
+
 
 class Model(BaseModel):
     """Base model definition with common configuration used by all derived models."""
@@ -266,16 +294,135 @@ class Model(BaseModel):
                 del properties[prop_key_to_remove]
 
 
-class UserModel(Model):
+class BaseUserModel(Model):
+    id: EncodedDatabaseIdField = UserIdField
+    username: str = UserNameField
+    email: str = UserEmailField
+    deleted: bool = UserDeletedField
+
+
+class UserModel(BaseUserModel):
     """User in a transaction context."""
 
-    id: DecodedDatabaseIdField = Field(title="ID", description="User ID")
-    username: str = Field(title="Username", description="User username")
-    email: str = Field(title="Email", description="User email")
     active: bool = Field(title="Active", description="User is active")
-    deleted: bool = Field(title="Deleted", description="User is deleted")
-    last_password_change: Optional[datetime] = Field(title="Last password change", description="")
     model_class: USER_MODEL_CLASS = ModelClassField(USER_MODEL_CLASS)
+    last_password_change: Optional[datetime] = Field(title="Last password change", description="")
+
+
+class LimitedUserModel(Model):
+    """This is used when config options (expose_user_name and expose_user_email) are in place."""
+
+    id: EncodedDatabaseIdField = UserIdField
+    username: Optional[str]
+    email: Optional[str]
+
+
+class DiskUsageUserModel(Model):
+    total_disk_usage: float = TotalDiskUsageField
+    nice_total_disk_usage: str = NiceTotalDiskUsageField
+
+
+class CreatedUserModel(UserModel, DiskUsageUserModel):
+    preferred_object_store_id: Optional[str] = PreferredObjectStoreIdField
+
+
+class AnonUserModel(DiskUsageUserModel):
+    quota_percent: Any = QuotaPercentField
+
+
+class DetailedUserModel(BaseUserModel, AnonUserModel):
+    is_admin: bool = Field(default=Required, title="Is admin", description="User is admin")
+    purged: bool = Field(default=Required, title="Purged", description="User is purged")
+    preferences: Dict[Any, Any] = Field(default=Required, title="Preferences", description="Preferences of the user")
+    preferred_object_store_id: Optional[str] = PreferredObjectStoreIdField
+    quota: str = Field(default=Required, title="Quota", description="Quota applicable to the user")
+    quota_bytes: Any = Field(
+        default=Required, title="Quota in bytes", description="Quota applicable to the user in bytes."
+    )
+    tags_used: List[str] = Field(default=Required, title="Tags used", description="Tags used by the user")
+
+
+class UserCreationPayload(Model):
+    password: str = Field(default=Required, title="user_password", description="The password of the user.")
+    email: str = UserEmailField
+    username: str = UserNameField
+
+
+class RemoteUserCreationPayload(Model):
+    remote_user_email: str = UserEmailField
+
+
+class UserDeletionPayload(Model):
+    purge: bool = Field(default=Required, title="Purge user", description="Purge the user")
+
+
+class FavoriteObject(Model):
+    object_id: str = Field(
+        default=Required, title="Object ID", description="The id of an object the user wants to favorite."
+    )
+
+
+class FavoriteObjectsSummary(Model):
+    tools: List[str] = Field(
+        default=Required, title="Favorite tools", description="The name of the tools the user favored."
+    )
+
+
+class FavoriteObjectType(str, Enum):
+    tools = "tools"
+
+
+class DeletedCustomBuild(Model):
+    message: str = Field(
+        default=Required, title="Deletion message", description="Confirmation of the custom build deletion."
+    )
+
+
+class CustomBuildBaseModel(Model):
+    name: str = Field(default=Required, title="Name", description="The name of the custom build.")
+
+
+class CustomBuildLenType(str, Enum):
+    file = "file"
+    fasta = "fasta"
+    text = "text"
+
+
+# TODO Evaluate if the titles and descriptions are fitting
+class CustomBuildCreationPayload(CustomBuildBaseModel):
+    len_type: CustomBuildLenType = Field(
+        default=Required,
+        alias="len|type",
+        title="Length type",
+        description="The type of the len file.",
+    )
+    len_value: str = Field(
+        default=Required,
+        alias="len|value",
+        title="Length value",
+        description="The content of the length file.",
+    )
+
+
+class CreatedCustomBuild(CustomBuildBaseModel):
+    len: EncodedDatabaseIdField = Field(default=Required, title="Length", description="The primary id of the len file.")
+    count: Optional[str] = Field(default=None, title="Count", description="The number of chromosomes/contigs.")
+    fasta: Optional[EncodedDatabaseIdField] = Field(
+        default=None, title="Fasta", description="The primary id of the fasta file from a history."
+    )
+    linecount: Optional[EncodedDatabaseIdField] = Field(
+        default=None, title="Line count", description="The primary id of a linecount dataset."
+    )
+
+
+class CustomBuildModel(CreatedCustomBuild):
+    id: str = Field(default=Required, title="ID", description="The ID of the custom build.")
+
+
+class CustomBuildsCollection(Model):
+    __root__: List[CustomBuildModel] = Field(
+        default=Required, title="Custom builds collection", description="The custom builds associated with the user."
+    )
 
 
 class GroupModel(Model):
@@ -1057,11 +1204,7 @@ class HistorySummary(HistoryBase):
     annotation: Optional[str] = AnnotationField
     tags: TagCollection
     update_time: datetime = UpdateTimeField
-    preferred_object_store_id: Optional[str] = Field(
-        None,
-        title="Preferred Object Store ID",
-        description="The ID of the object store that should be used to store new datasets in this history.",
-    )
+    preferred_object_store_id: Optional[str] = PreferredObjectStoreIdField
 
 
 class HistoryActiveContentCounts(Model):
@@ -2413,12 +2556,7 @@ class GroupRoleListResponse(Model):
     __root__: List[GroupRoleResponse]
 
 
-# Users -----------------------------------------------------------------
-
-UserIdField = Field(title="ID", description="Encoded ID of the user")
-UserEmailField = Field(title="Email", description="Email of the user")
-UserDescriptionField = Field(title="Description", description="Description of the user")
-
+# Users -----------------------------------------------------------------------
 # Group_Users -----------------------------------------------------------------
 
 
