@@ -3,7 +3,7 @@ import axios, { type AxiosError } from "axios";
 import { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { GAlert, GButton, GFormGroup, GInput } from "@/component-library";
+import { GAlert, GButton, GFormFile, GFormGroup, GInput } from "@/component-library";
 import { withPrefix } from "@/utils/redirect";
 
 import { getRedirectOnImportPath } from "../redirectPath";
@@ -83,7 +83,7 @@ async function submit(ev: SubmitEvent) {
             If the workflow is accessible via a URL, enter the URL above and click Import.
         </GFormGroup>
         <GFormGroup label="Archived Workflow File">
-            <b-form-file v-model="sourceFile" :accept="acceptedWorkflowFormats" />
+            <GFormFile v-model="sourceFile" :accept="acceptedWorkflowFormats" />
             If the workflow is in a file on your computer, choose it and then click Import.
         </GFormGroup>
         <GAlert :show="hasErrorMessage" variant="danger">{{ errorMessage }}</GAlert>

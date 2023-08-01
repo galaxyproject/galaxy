@@ -59,7 +59,7 @@
                     <GInput v-model="sourceURL" type="url" />
                 </GFormGroup>
                 <GFormGroup v-else-if="importType === 'upload'" label="Archived History File">
-                    <b-form-file v-model="sourceFile" />
+                    <GFormFile v-model="sourceFile" />
                 </GFormGroup>
                 <GFormGroup v-show="importType === 'remoteFilesUri'" label="Remote File">
                     <!-- using v-show so we can have a persistent ref and launch dialog on select -->
@@ -87,7 +87,7 @@ import { getAppRoot } from "onload/loadConfig";
 import { errorMessageAsString } from "utils/simple-error";
 import { ref, watch } from "vue";
 
-import { GAlert, GButton, GFormGroup, GFormRadio, GFormRadioGroup, GInput } from "@/component-library";
+import { GAlert, GButton, GFormFile, GFormGroup, GFormRadio, GFormRadioGroup, GInput } from "@/component-library";
 import { getFileSources } from "@/components/FilesDialog/services";
 
 import ExternalLink from "./ExternalLink";
@@ -105,6 +105,7 @@ export default {
         FontAwesomeIcon,
         GAlert,
         GButton,
+        GFormFile,
         GFormGroup,
         GFormRadio,
         GFormRadioGroup,

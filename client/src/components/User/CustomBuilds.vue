@@ -76,7 +76,7 @@
                                     :disabled="fastaFilesSelectDisabled" />
                             </GFormGroup>
                             <GFormGroup v-if="selectedDataSource === 'file'" label="Len-file">
-                                <b-form-file placeholder="Choose a file..." @change="readFile" />
+                                <GFormFile placeholder="Choose a file..." @change="readFile" />
                                 <GProgress
                                     v-show="fileLoaded !== 0"
                                     animated
@@ -155,6 +155,7 @@ import {
     GCard,
     GCol,
     GContainer,
+    GFormFile,
     GFormGroup,
     GFormSelect,
     GFormTextarea,
@@ -170,6 +171,7 @@ export default {
         GCard,
         GCol,
         GContainer,
+        GFormFile,
         GFormGroup,
         GFormSelect,
         GFormTextarea,
