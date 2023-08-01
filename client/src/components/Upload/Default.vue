@@ -44,48 +44,27 @@
                 placeholder="Select Reference"
                 @input="updateGenome" />
         </div>
-        <div class="upload-buttons">
+        <div class="upload-buttons d-flex justify-content-end">
             <BButton
-                id="btn-close"
-                ref="btnClose"
-                class="ui-button-default upload-close"
-                title="Close"
-                @click="$emit('dismiss')">
-                <span v-if="hasCallback" v-localize>Cancel</span>
-                <span v-else v-localize>Close</span>
+                id="btn-local"
+                ref="btnLocal"
+                title="Choose local files"
+                :disabled="!enableSources"
+                @click="uploadSelect">
+                <span class="fa fa-laptop"></span>
+                <span v-localize>Choose local files</span>
             </BButton>
             <BButton
-                id="btn-reset"
-                ref="btnReset"
-                class="ui-button-default"
-                title="Reset"
-                :disabled="!enableReset"
-                @click="_eventReset">
-                <span v-localize>Reset</span>
-            </BButton>
-            <BButton
-                id="btn-stop"
-                ref="btnStop"
-                class="ui-button-default"
-                title="Pause"
-                :disabled="counterRunning == 0"
-                @click="_eventStop">
-                <span v-localize>Pause</span>
-            </BButton>
-            <BButton
-                id="btn-start"
-                ref="btnStart"
-                class="ui-button-default upload-start"
-                :disabled="!enableStart"
-                title="Start"
-                :variant="enableStart ? 'primary' : ''"
-                @click="_eventStart">
-                <span v-localize>Start</span>
+                v-if="!fileSourcesConfigured || !!ftpUploadSite"
+                id="btn-remote-files"
+                :disabled="!enableSources"
+                @click="_eventRemoteFiles">
+                <span class="fa fa-folder-open"></span>
+                <span v-localize>Choose remote files</span>
             </BButton>
             <BButton
                 id="btn-new"
                 ref="btnCreate"
-                class="ui-button-default upload-paste"
                 title="Paste/Fetch data"
                 :disabled="!enableSources"
                 @click="_eventCreate()">
@@ -93,25 +72,23 @@
                 <span v-localize>Paste/Fetch data</span>
             </BButton>
             <BButton
-                v-if="remoteFiles"
-                id="btn-ftp"
-                ref="btnFtp"
-                class="ui-button-default"
-                :disabled="!enableSources"
-                @click="_eventRemoteFiles">
-                <span class="fa fa-folder-open-o"></span>
-                <span v-if="fileSourcesConfigured" v-localize>Choose remote files</span>
-                <span v-else v-localize>Choose FTP files</span>
+                id="btn-start"
+                ref="btnStart"
+                :disabled="!enableStart"
+                title="Start"
+                :variant="enableStart ? 'primary' : ''"
+                @click="_eventStart">
+                <span v-localize>Start</span>
             </BButton>
-            <BButton
-                id="btn-local"
-                ref="btnLocal"
-                class="ui-button-default"
-                title="Choose local files"
-                :disabled="!enableSources"
-                @click="uploadSelect">
-                <span class="fa fa-laptop"></span>
-                <span v-localize>Choose local files</span>
+            <BButton id="btn-stop" ref="btnStop" title="Pause" :disabled="counterRunning == 0" @click="_eventStop">
+                <span v-localize>Pause</span>
+            </BButton>
+            <BButton id="btn-reset" ref="btnReset" title="Reset" :disabled="!enableReset" @click="_eventReset">
+                <span v-localize>Reset</span>
+            </BButton>
+            <BButton id="btn-close" ref="btnClose" title="Close" @click="$emit('dismiss')">
+                <span v-if="hasCallback" v-localize>Cancel</span>
+                <span v-else v-localize>Close</span>
             </BButton>
         </div>
     </div>
@@ -123,8 +100,6 @@ import axios from "axios";
 import UploadSettingsSelect from "./UploadSettingsSelect.vue";
 import UploadExtensionDetails from "./UploadExtensionDetails.vue";
 import $ from "jquery";
-import Popover from "mvc/ui/ui-popover";
-import UploadFtp from "mvc/upload/upload-ftp";
 import { getAppRoot } from "onload";
 import { filesDialog } from "utils/data";
 import { UploadQueue } from "utils/uploadbox";
@@ -185,10 +160,6 @@ export default {
         listExtensions() {
             return this.allExtensions.filter((ext) => !ext.composite_files);
         },
-        remoteFiles() {
-            // this needs to be true for the tests to pass
-            return !!this.fileSourcesConfigured || !!this.ftpUploadSite;
-        },
         history_id() {
             return this.details.history_id;
         },
@@ -230,7 +201,6 @@ export default {
         this.fileSourcesConfigured = this.details.fileSourcesConfigured;
     },
     mounted() {
-        this.initFtpPopover();
         this.initUploadbox();
     },
     methods: {
@@ -409,45 +379,22 @@ export default {
         },
         /** Show remote files dialog or FTP files */
         _eventRemoteFiles: function () {
-            if (this.fileSourcesConfigured) {
-                filesDialog(
-                    (items) => {
-                        this.uploadbox.add(
-                            items.map((item) => {
-                                const rval = {
-                                    mode: "ftp",
-                                    name: item.label,
-                                    size: item.size,
-                                    path: item.url,
-                                };
-                                return rval;
-                            })
-                        );
-                    },
-                    { multiple: true }
-                );
-            } else {
-                this.ftp.show(
-                    new UploadFtp({
-                        //collection: this.collection,
-                        ftp_upload_site: this.ftpUploadSite,
-                        onadd: (ftp_file) => {
-                            return this.uploadbox.add([
-                                {
-                                    mode: "ftp",
-                                    name: ftp_file.path,
-                                    size: ftp_file.size,
-                                    path: ftp_file.path,
-                                    uri: ftp_file.uri,
-                                },
-                            ]);
-                        },
-                        onremove: function (model_index) {
-                            //this.collection.remove(model_index);
-                        },
-                    }).$el
-                );
-            }
+            filesDialog(
+                (items) => {
+                    this.uploadbox.add(
+                        items.map((item) => {
+                            const rval = {
+                                mode: "ftp",
+                                name: item.label,
+                                size: item.size,
+                                path: item.url,
+                            };
+                            return rval;
+                        })
+                    );
+                },
+                { multiple: true }
+            );
         },
         /** Create a new file */
         _eventCreate: function () {
@@ -468,14 +415,6 @@ export default {
         },
         $uploadTable() {
             return $(this.$refs.uploadTable);
-        },
-        initFtpPopover() {
-            // add ftp file viewer
-            this.ftp = new Popover({
-                title: "FTP files",
-                class: "ftp-upload",
-                container: this.$refs.btnFtp,
-            });
         },
         /* update un-modified default values when globals change */
         updateExtension(newExtension) {
