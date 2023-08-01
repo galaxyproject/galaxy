@@ -1,7 +1,12 @@
 import hashlib
 import logging
 from operator import itemgetter
-from typing import Optional
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+)
 
 from galaxy import exceptions
 from galaxy.files import (
@@ -14,8 +19,6 @@ from galaxy.schema.remote_files import (
     AnyRemoteFilesListResponse,
     CreatedEntryResponse,
     CreateEntryPayload,
-    FilesSourcePlugin,
-    FilesSourcePluginList,
     RemoteFilesDisableMode,
     RemoteFilesFormat,
     RemoteFilesTarget,
@@ -127,9 +130,7 @@ class RemoteFilesManager:
 
         return index
 
-    def get_files_source_plugins(
-        self, user_context: ProvidesUserContext, browsable_only: Optional[bool] = True
-    ) -> FilesSourcePluginList:
+    def get_files_source_plugins(self, user_context: ProvidesUserContext, browsable_only: Optional[bool] = True):
         """Display plugin information for each of the gxfiles:// URI targets available."""
         user_file_source_context = ProvidesUserFileSourcesUserContext(user_context)
         browsable_only = True if browsable_only is None else browsable_only
@@ -137,8 +138,7 @@ class RemoteFilesManager:
             user_context=user_file_source_context,
             browsable_only=browsable_only,
         )
-        plugins = [FilesSourcePlugin(**plugin_dict) for plugin_dict in plugins_dict]
-        return FilesSourcePluginList.construct(__root__=plugins)
+        return plugins_dict
 
     @property
     def _file_sources(self) -> ConfiguredFileSources:

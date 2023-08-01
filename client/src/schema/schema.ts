@@ -2213,6 +2213,63 @@ export interface components {
             variant: components["schemas"]["NotificationVariant"];
         };
         /**
+         * BrowsableFilesSourcePlugin
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        BrowsableFilesSourcePlugin: {
+            /**
+             * Browsable
+             * @enum {boolean}
+             */
+            browsable: true;
+            /**
+             * Documentation
+             * @description Documentation or extended description for this plugin.
+             * @example Galaxy's library import directory
+             */
+            doc: string;
+            /**
+             * ID
+             * @description The `FilesSource` plugin identifier
+             * @example _import
+             */
+            id: string;
+            /**
+             * Label
+             * @description The display label for this plugin.
+             * @example Library Import Directory
+             */
+            label: string;
+            /**
+             * Requires groups
+             * @description Only users belonging to the groups specified here can access this files source.
+             */
+            requires_groups?: string;
+            /**
+             * Requires roles
+             * @description Only users with the roles specified here can access this files source.
+             */
+            requires_roles?: string;
+            /**
+             * Type
+             * @description The type of the plugin.
+             * @example gximport
+             */
+            type: string;
+            /**
+             * URI root
+             * @description The URI root used by this type of plugin.
+             * @example gximport://
+             */
+            uri_root: string;
+            /**
+             * Writeable
+             * @description Whether this files source plugin allows write access.
+             * @example false
+             */
+            writable: boolean;
+        };
+        /**
          * BulkOperationItemError
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -4346,6 +4403,11 @@ export interface components {
          */
         FilesSourcePlugin: {
             /**
+             * Browsable
+             * @description Whether this file source plugin can list items.
+             */
+            browsable: boolean;
+            /**
              * Documentation
              * @description Documentation or extended description for this plugin.
              * @example Galaxy's library import directory
@@ -4380,12 +4442,6 @@ export interface components {
              */
             type: string;
             /**
-             * URI root
-             * @description The URI root used by this type of plugin.
-             * @example gximport://
-             */
-            uri_root: string;
-            /**
              * Writeable
              * @description Whether this files source plugin allows write access.
              * @example false
@@ -4408,7 +4464,10 @@ export interface components {
          *   }
          * ]
          */
-        FilesSourcePluginList: components["schemas"]["FilesSourcePlugin"][];
+        FilesSourcePluginList: (
+            | components["schemas"]["BrowsableFilesSourcePlugin"]
+            | components["schemas"]["FilesSourcePlugin"]
+        )[];
         /**
          * FolderLibraryFolderItem
          * @description Base model definition with common configuration used by all derived models.

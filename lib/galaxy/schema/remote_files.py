@@ -7,7 +7,6 @@ from typing import (
 )
 
 from pydantic import (
-    Extra,
     Field,
     Required,
 )
@@ -49,12 +48,6 @@ class FilesSourcePlugin(Model):
         description="The type of the plugin.",
         example="gximport",
     )
-    uri_root: str = Field(
-        Required,
-        title="URI root",
-        description="The URI root used by this type of plugin.",
-        example="gximport://",
-    )
     label: str = Field(
         Required,
         title="Label",
@@ -66,6 +59,11 @@ class FilesSourcePlugin(Model):
         title="Documentation",
         description="Documentation or extended description for this plugin.",
         example="Galaxy's library import directory",
+    )
+    browsable: bool = Field(
+        Required,
+        title="Browsable",
+        description="Whether this file source plugin can list items.",
     )
     writable: bool = Field(
         Required,
@@ -84,15 +82,19 @@ class FilesSourcePlugin(Model):
         description="Only users belonging to the groups specified here can access this files source.",
     )
 
-    class Config:
-        # This allows additional fields (that are not validated)
-        # to be serialized/deserealized. This allows to have
-        # different fields depending on the plugin type
-        extra = Extra.allow
+
+class BrowsableFilesSourcePlugin(FilesSourcePlugin):
+    browsable: Literal[True]
+    uri_root: str = Field(
+        Required,
+        title="URI root",
+        description="The URI root used by this type of plugin.",
+        example="gximport://",
+    )
 
 
 class FilesSourcePluginList(Model):
-    __root__: List[FilesSourcePlugin] = Field(
+    __root__: List[Union[BrowsableFilesSourcePlugin, FilesSourcePlugin]] = Field(
         default=[],
         title="List of files source plugins",
         example=[
