@@ -45,7 +45,7 @@ function onFilter(value: string) {
         <p>Here are all available item states in Galaxy:</p>
         <p><i>(Note that the colors for each state correspond to content item state colors in the history)</i></p>
         <dl v-for="(state, key, index) in states" :key="index">
-            <b-alert :variant="state.status || 'success'" show>
+            <div :class="['alert', 'content-item', 'alert-' + state.status]" :data-state="key">
                 <dt>
                     <a class="text-decoration-none" href="javascript:void(0)" @click="onFilter(key)"
                         ><code>{{ key }}</code></a
@@ -53,7 +53,7 @@ function onFilter(value: string) {
                     <icon v-if="state.icon" :icon="state.icon" />
                 </dt>
                 <dd>{{ helpText[key] || state.text }}</dd>
-            </b-alert>
+            </div>
         </dl>
     </b-modal>
 </template>
