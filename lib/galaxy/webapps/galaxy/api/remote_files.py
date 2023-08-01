@@ -80,14 +80,6 @@ BrowsableQueryParam: Optional[bool] = Query(
     ),
 )
 
-RDMOnlyQueryParam: Optional[bool] = Query(
-    default=False,
-    title="RDM only",
-    description=(
-        "Whether to return only RDM compatible plugins. The default is `False`, which will return all plugins."
-    ),
-)
-
 
 @router.cbv
 class FastAPIRemoteFiles:
@@ -124,10 +116,9 @@ class FastAPIRemoteFiles:
         self,
         user_ctx: ProvidesUserContext = DependsOnTrans,
         browsable_only: Optional[bool] = BrowsableQueryParam,
-        rdm_only: Optional[bool] = RDMOnlyQueryParam,
     ) -> FilesSourcePluginList:
         """Display plugin information for each of the gxfiles:// URI targets available."""
-        return self.manager.get_files_source_plugins(user_ctx, browsable_only, rdm_only)
+        return self.manager.get_files_source_plugins(user_ctx, browsable_only)
 
     @router.post(
         "/api/remote_files",
