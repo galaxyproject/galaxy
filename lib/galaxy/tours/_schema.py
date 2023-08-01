@@ -7,6 +7,7 @@ from typing import (
 
 from pydantic import (
     BaseModel,
+    ConfigDict,
     Field,
 )
 
@@ -24,9 +25,7 @@ class TourCore(BaseModel):
     description: str = Field(title="Description", description="Tour description")
     tags: List[str] = Field(title="Tags", description="Topic topic tags")
     requirements: List[Requirement] = Field(title="Requirements", description="Requirements to run the tour.")
-
-    class Config:
-        use_enum_values = True  # when using .dict()
+    model_config = ConfigDict(use_enum_values=True)
 
 
 class Tour(TourCore):

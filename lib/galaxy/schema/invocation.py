@@ -13,12 +13,12 @@ from typing import (
 from pydantic import (
     BaseModel,
     Extra,
+    ConfigDict,
     Field,
     Required,
     UUID1,
     UUID4,
 )
-from pydantic.generics import GenericModel
 from pydantic.utils import GetterDict
 from typing_extensions import (
     Annotated,
@@ -103,12 +103,11 @@ class StepOrderIndexGetter(GetterDict):
         return super().get(key, default)
 
 
-class InvocationMessageBase(GenericModel):
+class InvocationMessageBase(BaseModel):
     reason: Union[CancelReason, FailureReason, WarningReason]
-
-    class Config:
-        orm_mode = True
-        getter_dict = StepOrderIndexGetter
+    # TODO[pydantic]: The following keys were removed: `getter_dict`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(from_attributes=True, getter_dict=StepOrderIndexGetter)
 
 
 class GenericInvocationCancellationReviewFailed(InvocationMessageBase, Generic[DatabaseIdT]):
@@ -254,9 +253,7 @@ InvocationMessageResponseUnion = Annotated[
 
 class InvocationMessageResponseModel(BaseModel):
     __root__: InvocationMessageResponseUnion
-
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class InvocationState(str, Enum):

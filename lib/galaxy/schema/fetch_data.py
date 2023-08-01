@@ -7,10 +7,10 @@ from typing import (
 )
 
 from pydantic import (
-    Extra,
+    ConfigDict,
     Field,
+    field_validator,
     Json,
-    validator,
 )
 from typing_extensions import (
     Annotated,
@@ -25,8 +25,7 @@ from galaxy.schema.schema import (
 
 
 class FetchBaseModel(Model):
-    class Config:
-        allow_population_by_field_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class ElementsFromType(str, Enum):
@@ -120,10 +119,7 @@ class BaseDataElement(FetchBaseModel):
     collection_type: Optional[str]
     MD5: Optional[str]
     description: Optional[str]
-
-    class Config:
-        # reject unknown extra attributes
-        extra = Extra.forbid
+    model_config = ConfigDict(extra="forbid")
 
 
 class FileDataElement(BaseDataElement):
@@ -251,12 +247,10 @@ class FilesPayload(Model):
 
 class BaseDataPayload(FetchBaseModel):
     history_id: DecodedDatabaseIdField = HistoryIdField
+    model_config = ConfigDict(extra="allow")
 
-    class Config:
-        # file payloads are just tacked on, so we need to allow everything
-        extra = Extra.allow
-
-    @validator("targets", pre=True, check_fields=False)
+    @field_validator("targets", mode="before", check_fields=False)
+    @classmethod
     def targets_string_to_json(cls, v):
         if isinstance(v, str):
             return json.loads(v)

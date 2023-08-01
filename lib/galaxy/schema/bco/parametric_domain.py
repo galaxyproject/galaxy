@@ -8,14 +8,13 @@ from typing import List
 
 from pydantic import (
     BaseModel,
-    Extra,
+    ConfigDict,
     Field,
 )
 
 
 class ParametricDomainItem(BaseModel):
-    class Config:
-        extra = Extra.forbid
+    model_config = ConfigDict(extra="forbid")
 
     param: str = Field(
         ..., description="Specific variables for the computational workflow", example=["seed"], title="param"
@@ -30,7 +29,7 @@ class ParametricDomainItem(BaseModel):
         ...,
         description="Refers to the specific step of the workflow relevant to the parameters specified in 'param' and 'value'",
         example=["1"],
-        regex="^(.*)$",
+        pattern="^(.*)$",
         title="step",
     )
 

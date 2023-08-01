@@ -115,7 +115,7 @@ class AddStepAction(BaseAction):
 
     action_type: Literal["add_step"]
     type: str = Field(description="Module type of the step to add, see galaxy.workflow.modules for available types.")
-    tool_state: Optional[Dict[str, Any]]
+    tool_state: Optional[Dict[str, Any]] = None
     label: Optional[str] = Field(
         description="A unique label for the step being added, must be distinct from the labels already present in the workflow."
     )
@@ -137,28 +137,28 @@ class DisconnectAction(BaseAction):
 class AddInputAction(BaseAction):
     action_type: Literal["add_input"]
     type: str
-    label: Optional[str]
-    position: Optional[Position]
-    collection_type: Optional[str]
-    restrictions: Optional[List[str]]
-    restrict_on_connections: Optional[bool]
-    suggestions: Optional[List[str]]
+    label: Optional[str] = None
+    position: Optional[Position] = None
+    collection_type: Optional[str] = None
+    restrictions: Optional[List[str]] = None
+    restrict_on_connections: Optional[bool] = None
+    suggestions: Optional[List[str]] = None
     optional: Optional[bool] = False
-    default: Optional[Any]  # this probably needs to be revisited when we have more complex field types
+    default: Optional[Any] = None  # this probably needs to be revisited when we have more complex field types
 
 
 class ExtractInputAction(BaseAction):
     action_type: Literal["extract_input"]
     input: input_reference_union
-    label: Optional[str]
-    position: Optional[Position]
+    label: Optional[str] = None
+    position: Optional[Position] = None
 
 
 class ExtractUntypedParameter(BaseAction):
     action_type: Literal["extract_untyped_parameter"]
     name: str
-    label: Optional[str]  # defaults to name if unset
-    position: Optional[Position]
+    label: Optional[str] = None  # defaults to name if unset
+    position: Optional[Position] = None
 
 
 class RemoveUnlabeledWorkflowOutputs(BaseAction):
@@ -182,7 +182,7 @@ class UpdateLicenseAction(BaseAction):
 
 class UpdateCreatorAction(BaseAction):
     action_type: Literal["update_creator"]
-    creator: Any
+    creator: Any = None
 
 
 class Report(BaseModel):
@@ -214,13 +214,13 @@ class UpgradeSubworkflowAction(BaseAction):
     step: step_reference_union = step_target_field
     # Once we start storing these actions in the database, this needs to be decoded
     # before adding it into the database.
-    content_id: Optional[str]
+    content_id: Optional[str] = None
 
 
 class UpgradeToolAction(BaseAction):
     action_type: Literal["upgrade_tool"]
     step: step_reference_union = step_target_field
-    tool_version: Optional[str]
+    tool_version: Optional[str] = None
 
 
 class UpgradeAllStepsAction(BaseAction):

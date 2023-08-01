@@ -116,12 +116,12 @@ class Model(BaseModel):
     checksums: List[Checksum] = Field(
         ...,
         description="The checksum of the `DrsObject`. At least one checksum must be provided.\nFor blobs, the checksum is computed over the bytes in the blob.\nFor bundles, the checksum is computed over a sorted concatenation of the checksums of its top-level contained objects (not recursive, names not included). The list of checksums is sorted alphabetically (hex-code) before concatenation and a further checksum is performed on the concatenated checksum value.\nFor example, if a bundle contains blobs with the following checksums:\nmd5(blob1) = 72794b6d\nmd5(blob2) = 5e089d29\nThen the checksum of the bundle is:\nmd5( concat( sort( md5(blob1), md5(blob2) ) ) )\n= md5( concat( sort( 72794b6d, 5e089d29 ) ) )\n= md5( concat( 5e089d29, 72794b6d ) )\n= md5( 5e089d2972794b6d )\n= f7a29a04",
-        min_items=1,
+        min_length=1,
     )
     access_methods: Optional[List[AccessMethod]] = Field(
         None,
         description="The list of access methods that can be used to fetch the `DrsObject`.\nRequired for single blobs; optional for bundles.",
-        min_items=1,
+        min_length=1,
     )
     contents: Optional[List[ContentsObject]] = Field(
         None,

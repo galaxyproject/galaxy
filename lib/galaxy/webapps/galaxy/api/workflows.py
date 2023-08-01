@@ -23,7 +23,7 @@ from fastapi import (
 )
 from gxformat2._yaml import ordered_dump
 from markupsafe import escape
-from pydantic import Extra
+from pydantic import ConfigDict
 from starlette.responses import StreamingResponse
 from typing_extensions import Annotated
 
@@ -123,9 +123,7 @@ router = Router(tags=["workflows"])
 
 class CreateInvocationFromStore(StoreContentSource):
     history_id: Optional[str]
-
-    class Config:
-        extra = Extra.allow
+    model_config = ConfigDict(extra="allow")
 
 
 class WorkflowsAPIController(

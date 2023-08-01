@@ -7,6 +7,7 @@ from typing import (
 )
 
 from pydantic import (
+    ConfigDict,
     Field,
     Required,
 )
@@ -91,6 +92,7 @@ class BrowsableFilesSourcePlugin(FilesSourcePlugin):
         description="The URI root used by this type of plugin.",
         example="gximport://",
     )
+    model_config = ConfigDict(extra="allow")
 
 
 class FilesSourcePluginList(Model):

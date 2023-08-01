@@ -8,6 +8,8 @@ from typing import (
 )
 
 from pydantic import (
+    AnyUrl,
+    ConfigDict,
     Field,
     Required,
 )
@@ -188,9 +190,9 @@ class NotificationResponse(Model):
     publication_time: datetime = NotificationPublicationTimeField
     expiration_time: Optional[datetime] = NotificationExpirationTimeField
     content: AnyNotificationContent
-
-    class Config:
-        orm_mode = True
+    # TODO[pydantic]: The following keys were removed: `getter_dict`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(from_attributes=True, getter_dict=NotificationGetter)
 
 
 class UserNotificationResponse(NotificationResponse):
@@ -461,12 +463,13 @@ class UserNotificationPreferences(Model):
         """Create a new instance with default preferences."""
         return cls(preferences=get_default_personal_notification_preferences())
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "preferences": get_default_personal_notification_preferences(),
             }
         }
+    )
 
 
 class UpdateUserNotificationPreferencesRequest(Model):
@@ -477,10 +480,10 @@ class UpdateUserNotificationPreferencesRequest(Model):
         title="Preferences",
         description="The new notification preferences of the user.",
     )
-
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "preferences": get_default_personal_notification_preferences(),
             }
         }
+    )

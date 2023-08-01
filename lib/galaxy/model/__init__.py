@@ -657,14 +657,14 @@ WHERE user_id = :id AND quota_source_label IS NOT NULL
 # move these to galaxy.schema.schema once galaxy-data depends on
 # galaxy-schema.
 class UserQuotaBasicUsage(BaseModel):
-    quota_source_label: Optional[str]
+    quota_source_label: Optional[str] = None
     total_disk_usage: float
 
 
 class UserQuotaUsage(UserQuotaBasicUsage):
-    quota_percent: Optional[float]
-    quota_bytes: Optional[int]
-    quota: Optional[str]
+    quota_percent: Optional[float] = None
+    quota_bytes: Optional[int] = None
+    quota: Optional[str] = None
 
 
 class User(Base, Dictifiable, RepresentById):

@@ -26,7 +26,7 @@ class ToolPanelViewModel(BaseModel):
     id: str
     model_class: str
     name: str
-    description: Optional[str]
+    description: Optional[str] = None
     view_type: ToolPanelViewModelType
     searchable: bool  # Allow for more dynamic views that don't plug into fixed search indicies in the future...
 
