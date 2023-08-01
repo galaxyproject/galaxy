@@ -19,9 +19,9 @@
                 to="/storage"
                 :title="title"
                 data-description="storage dashboard link">
-                <b-progress :max="100">
+                <GProgress :max="100">
                     <GProgressBar aria-label="Quota usage" :value="usage" :variant="variant" />
-                </b-progress>
+                </GProgress>
                 <span>{{ usingString + " " + usage.toFixed(0) }}%</span>
             </GLink>
         </div>
@@ -32,15 +32,16 @@
 import { mapState } from "pinia";
 import { bytesToString } from "utils/utils";
 
-import { GLink, GProgressBar } from "@/component-library";
+import { GLink, GProgress, GProgressBar } from "@/component-library";
 import { useConfigStore } from "@/stores/configurationStore";
 import { useUserStore } from "@/stores/userStore";
 
 export default {
     name: "QuotaMeter",
     components: {
-        GProgressBar,
         GLink,
+        GProgress,
+        GProgressBar,
     },
     data() {
         return {

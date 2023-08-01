@@ -3,7 +3,7 @@ at components/JobStates/CollectionJobStates but it relies on the backbone data
 model, so probably has to go eventually.-->
 <template>
     <div class="collection-progress">
-        <b-progress v-if="!summary.isTerminal" :max="summary.jobCount">
+        <GProgress v-if="!summary.isTerminal" :max="summary.jobCount">
             <GProgressBar
                 v-if="summary.errorCount"
                 v-b-tooltip.hover="summary.errorCountText"
@@ -24,16 +24,17 @@ model, so probably has to go eventually.-->
                 v-b-tooltip.hover="summary.waitingCountText"
                 :value="summary.waitingCount"
                 variant="secondary" />
-        </b-progress>
+        </GProgress>
     </div>
 </template>
 <script>
-import { GProgressBar } from "@/component-library";
+import { GProgress, GProgressBar } from "@/component-library";
 
 import { JobStateSummary } from "./JobStateSummary";
 
 export default {
     components: {
+        GProgress,
         GProgressBar,
     },
     props: {

@@ -3,20 +3,21 @@
         <small v-if="note" class="progressNote">
             {{ note }}<span v-if="loading">.<span class="blinking">..</span></span>
         </small>
-        <b-progress :max="total">
+        <GProgress :max="total">
             <GProgressBar variant="success" :value="okCount" />
             <GProgressBar variant="danger" :value="errorCount" />
             <GProgressBar variant="warning" :value="runningCount" />
             <GProgressBar variant="warning" :value="newCount" />
-        </b-progress>
+        </GProgress>
     </div>
 </template>
 <script>
 // Not really a very generic ProgressBar - consider renaming to StateProgressBar.
-import { GProgressBar } from "@/component-library";
+import { GProgress, GProgressBar } from "@/component-library";
 
 export default {
     components: {
+        GProgress,
         GProgressBar,
     },
     props: {

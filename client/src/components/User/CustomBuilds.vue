@@ -81,7 +81,7 @@
                             </b-form-group>
                             <b-form-group v-if="selectedDataSource === 'file'" label="Len-file">
                                 <b-form-file placeholder="Choose a file..." @change="readFile" />
-                                <b-progress
+                                <GProgress
                                     v-show="fileLoaded !== 0"
                                     animated
                                     show-progress
@@ -155,19 +155,20 @@ import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 import Multiselect from "vue-multiselect";
 
-import { GAlert, GButton, GCard, GCol, GContainer, GInput, GRow } from "@/component-library";
+import { GAlert, GButton, GCard, GCol, GContainer, GInput, GProgress, GRow } from "@/component-library";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
-        GContainer,
-        GCard,
-        GRow,
-        GCol,
         GAlert,
         GButton,
+        GCard,
+        GCol,
+        GContainer,
         GInput,
+        GProgress,
+        GRow,
         Multiselect,
     },
     data() {

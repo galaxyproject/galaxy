@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 
+import { GProgress } from "@/component-library";
 import localize from "@/utils/localization";
 
 import { DEFAULT_QUOTA_SOURCE_LABEL, QuotaUsage } from "./model/QuotaUsage";
@@ -73,7 +74,7 @@ defineExpose({
         <span v-if="quotaHasLimit && !compact" class="quota-percent-text" :data-quota-percent="quotaUsage.quotaPercent">
             {{ quotaUsage.quotaPercent }}{{ percentOfDiskQuotaUsedText }}
         </span>
-        <b-progress
+        <GProgress
             v-if="quotaHasLimit || !(embedded || compact)"
             :value="quotaUsage.quotaPercent"
             :variant="progressVariant"

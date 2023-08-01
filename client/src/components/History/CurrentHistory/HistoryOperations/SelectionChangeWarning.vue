@@ -9,23 +9,22 @@
         @dismiss-count-down="dismissCountDown = $event">
         <b>Please notice your selection has changed.</b> Manually unselecting items or adding new ones will disable the
         `select all` status.
-        <BProgress variant="info" :max="dismissSecs" :value="dismissCountDown" height="4px" />
+        <GProgress variant="info" :max="dismissSecs" :value="dismissCountDown" height="4px" />
         <GLink @click="onDoNotShowAgain">Do not show again</GLink>
     </GAlert>
 </template>
 
 <script>
-import { BProgress } from "bootstrap-vue";
 import { mapActions, mapState } from "pinia";
 
-import { GAlert, GLink } from "@/component-library";
+import { GAlert, GLink, GProgress } from "@/component-library";
 import { useUserFlagsStore } from "@/stores/userFlagsStore";
 
 export default {
     components: {
         GAlert,
         GLink,
-        BProgress,
+        GProgress,
     },
     props: {
         querySelectionBreak: { type: Boolean, required: true },
