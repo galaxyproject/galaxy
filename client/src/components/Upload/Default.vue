@@ -5,7 +5,7 @@
         </div>
         <div ref="uploadBox" class="upload-box upload-box-with-footer" :class="{ highlight: highlightBox }">
             <div v-show="showHelper" class="upload-helper"><i class="fa fa-files-o" />Drop files here</div>
-            <div v-show="!showHelper" ref="uploadTable" class="upload-table ui-table-striped">
+            <div v-show="!showHelper" class="upload-table ui-table-striped">
                 <DefaultRow
                     v-for="(uploadItem, uploadIndex) in uploadList"
                     :key="uploadIndex"
@@ -401,9 +401,6 @@ export default {
             const it = this.uploadList[index];
             it.status = "warning";
             it.info = message;
-        },
-        $uploadTable() {
-            return $(this.$refs.uploadTable);
         },
         /* update un-modified default values when globals change */
         updateExtension(newExtension) {
