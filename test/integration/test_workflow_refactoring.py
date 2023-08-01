@@ -894,6 +894,10 @@ class MockTrans(ProvidesAppContext):
         self.workflow_building_mode = workflow_building_modes.ENABLED
 
     @property
+    def galaxy_session(self):
+        return None
+
+    @property
     def app(self):
         return self._app
 

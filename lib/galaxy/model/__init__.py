@@ -9829,13 +9829,11 @@ class Tag(Base, RepresentById):
 class ItemTagAssociation(Dictifiable):
     dict_collection_visible_keys = ["id", "user_tname", "user_value"]
     dict_element_visible_keys = dict_collection_visible_keys
-    associated_item_names: List[str] = []
     user_tname: Column
     user_value = Column(TrimmedString(255), index=True)
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
-        cls.associated_item_names.append(cls.__name__.replace("TagAssociation", ""))
 
     def copy(self, cls=None):
         if cls:

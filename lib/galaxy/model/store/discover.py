@@ -60,6 +60,9 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
     max_discovered_files = float("inf")
     discovered_file_count: int
 
+    def get_job(self) -> Optional[galaxy.model.Job]:
+        return getattr(self, "job", None)
+
     def create_dataset(
         self,
         ext,
@@ -161,7 +164,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             primary_data.created_from_basename = created_from_basename
 
         if tag_list:
-            job = getattr(self, "job", None)
+            job = self.get_job()
             self.tag_handler.add_tags_from_list(job and job.user, primary_data, tag_list, flush=False)
 
         # If match specified a name use otherwise generate one from
@@ -573,7 +576,7 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
 
     @property
     def tag_handler(self):
-        return GalaxySessionlessTagHandler(self.sa_session)
+        return GalaxySessionlessTagHandler(self.sa_session, galaxy_session=None)
 
     @property
     def sa_session(self):

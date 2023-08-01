@@ -28,6 +28,7 @@ class TestDatasetCollectionManager(BaseTestCase, CreatesCollectionsMixin):
 
     def test_create_simple_list(self):
         owner = self.user_manager.create(**user2_data)
+        self.trans.set_user(owner)
 
         history = self.history_manager.create(name="history1", user=owner)
 
@@ -80,6 +81,7 @@ class TestDatasetCollectionManager(BaseTestCase, CreatesCollectionsMixin):
 
     def test_update_from_dict(self):
         owner = self.user_manager.create(**user2_data)
+        self.trans.set_user(owner)
 
         history = self.history_manager.create(name="history1", user=owner)
 

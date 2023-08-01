@@ -205,6 +205,7 @@ class MockTrans:
         self.webapp = Bunch(name="galaxy")
         self.sa_session = self.app.model.context
         self.url_builder = None
+        self.galaxy_session = None
 
     def get_history(self, **kwargs):
         return self.history

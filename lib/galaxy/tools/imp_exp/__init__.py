@@ -64,7 +64,10 @@ class JobImportHistoryArchiveWrapper:
                     "history import archive directory",
                 )
             model_store = store.get_import_model_store_for_directory(
-                archive_dir, app=self.app, user=user, tag_handler=self.app.tag_handler.create_tag_handler_session()
+                archive_dir,
+                app=self.app,
+                user=user,
+                tag_handler=self.app.tag_handler.create_tag_handler_session(jiha.job.galaxy_session),
             )
             job = jiha.job
             with model_store.target_history(default_history=job.history) as new_history:

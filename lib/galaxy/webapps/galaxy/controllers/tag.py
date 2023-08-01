@@ -30,7 +30,7 @@ class TagsController(BaseUIController, UsesTagsMixin):
         # Apply tag.
         item = self._get_item(trans, item_class, trans.security.decode_id(item_id))
         user = trans.user
-        self.get_tag_handler(trans).apply_item_tags(user, item, new_tag)
+        trans.tag_handler.apply_item_tags(user, item, new_tag)
         with transaction(trans.sa_session):
             trans.sa_session.commit()
         # Log.
@@ -46,7 +46,7 @@ class TagsController(BaseUIController, UsesTagsMixin):
         # Remove tag.
         item = self._get_item(trans, item_class, trans.security.decode_id(item_id))
         user = trans.user
-        self.get_tag_handler(trans).remove_item_tag(user, item, tag_name)
+        trans.tag_handler.remove_item_tag(user, item, tag_name)
         with transaction(trans.sa_session):
             trans.sa_session.commit()
         # Log.
@@ -82,7 +82,7 @@ class TagsController(BaseUIController, UsesTagsMixin):
             raise RuntimeError("Both item and item_class cannot be None")
         elif item is not None:
             item_class = item.__class__
-        item_tag_assoc_class = self.get_tag_handler(trans).get_tag_assoc_class(item_class)
+        item_tag_assoc_class = trans.tag_handler.get_tag_assoc_class(item_class)
         # Build select statement.
         cols_to_select = [item_tag_assoc_class.table.c.tag_id, func.count("*")]
         from_obj = item_tag_assoc_class.table.join(item_class.table).join(trans.app.model.Tag.table)
@@ -104,9 +104,9 @@ class TagsController(BaseUIController, UsesTagsMixin):
         # Create and return autocomplete data.
         ac_data = "#Header|Your Tags\n"
         for row in result_set:
-            tag = self.get_tag_handler(trans).get_tag_by_id(row[0])
+            tag = trans.tag_handler.get_tag_by_id(row[0])
             # Exclude tags that are already applied to the item.
-            if (item is not None) and (self.get_tag_handler(trans).item_has_tag(trans.user, item, tag)):
+            if (item is not None) and (trans.tag_handler.item_has_tag(trans.user, item, tag)):
                 continue
             # Add tag to autocomplete data. Use the most frequent name that user
             # has employed for the tag.
@@ -122,7 +122,7 @@ class TagsController(BaseUIController, UsesTagsMixin):
         tag_name_and_value = q.split(":")
         tag_name = tag_name_and_value[0]
         tag_value = tag_name_and_value[1]
-        tag = self.get_tag_handler(trans).get_tag_by_name(tag_name)
+        tag = trans.tag_handler.get_tag_by_name(tag_name)
         # Don't autocomplete if tag doesn't exist.
         if tag is None:
             return ""
@@ -131,7 +131,7 @@ class TagsController(BaseUIController, UsesTagsMixin):
             raise RuntimeError("Both item and item_class cannot be None")
         elif item is not None:
             item_class = item.__class__
-        item_tag_assoc_class = self.get_tag_handler(trans).get_tag_assoc_class(item_class)
+        item_tag_assoc_class = trans.tag_handler.get_tag_assoc_class(item_class)
         # Build select statement.
         cols_to_select = [item_tag_assoc_class.table.c.value, func.count("*")]
         from_obj = item_tag_assoc_class.table.join(item_class.table).join(trans.app.model.Tag.table)
@@ -183,6 +183,6 @@ class TagsController(BaseUIController, UsesTagsMixin):
         """
         Get an item based on type and id.
         """
-        item_class = self.get_tag_handler(trans).item_tag_assoc_info[item_class_name].item_class
+        item_class = trans.tag_handler.item_tag_assoc_info[item_class_name].item_class
         item = trans.sa_session.query(item_class).filter(item_class.id == id)[0]
         return item

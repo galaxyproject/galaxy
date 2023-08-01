@@ -86,13 +86,13 @@ class TestHistoryManager(BaseTestCase):
         history1 = self.history_manager.create(name="history1", user=user2)
         tags = ["tag-one"]
         annotation = "history annotation"
-        self.history_manager.set_tags(history1, tags, user=user2)
+        self.history_manager.tag_handler.set_tags_from_list(user=user2, item=history1, new_tags_list=tags)
         self.history_manager.annotate(history1, annotation, user=user2)
 
         hda = self.add_hda_to_history(history1, name="wat")
         hda_tags = ["tag-one", "tag-two"]
         hda_annotation = "annotation"
-        self.hda_manager.set_tags(hda, hda_tags, user=user2)
+        self.app.tag_handler.set_tags_from_list(user=user2, item=hda, new_tags_list=hda_tags)
         self.hda_manager.annotate(hda, hda_annotation, user=user2)
 
         history2 = self.history_manager.copy(history1, user=user3)
@@ -103,8 +103,7 @@ class TestHistoryManager(BaseTestCase):
         assert history2 != history1
 
         copied_hda = history2.datasets[0]
-        copied_hda_tags = self.hda_manager.get_tags(copied_hda)
-        assert sorted(hda_tags) == sorted(copied_hda_tags)
+        assert hda.make_tag_string_list() == copied_hda.make_tag_string_list()
         copied_hda_annotation = self.hda_manager.annotation(copied_hda)
         assert hda_annotation == copied_hda_annotation
 

@@ -31,6 +31,7 @@ class HDCATestCase(BaseTestCase, CreatesCollectionsMixin):
     def _create_history(self, user_data=None, **kwargs):
         user_data = user_data or user2_data
         owner = self.user_manager.create(**user_data)
+        self.trans.set_user(owner)
         return self.history_manager.create(user=owner, **kwargs)
 
     def _create_hda(self, history, dataset=None, **kwargs):

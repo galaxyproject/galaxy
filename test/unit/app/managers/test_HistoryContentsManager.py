@@ -56,6 +56,7 @@ class HistoryAsContainerBaseTestCase(BaseTestCase, CreatesCollectionsMixin):
 class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
     def test_contents(self):
         user2 = self.user_manager.create(**user2_data)
+        self.trans.set_user(user2)
         history = self.history_manager.create(name="history", user=user2)
 
         self.log("calling contents on an empty history should return an empty list")
@@ -74,6 +75,7 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
 
     def test_contained(self):
         user2 = self.user_manager.create(**user2_data)
+        self.trans.set_user(user2)
         history = self.history_manager.create(name="history", user=user2)
 
         self.log("calling contained on an empty history should return an empty list")
@@ -86,6 +88,7 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
 
     def test_copy_elements_on_collection_creation(self):
         user2 = self.user_manager.create(**user2_data)
+        self.trans.set_user(user2)
         history = self.history_manager.create(name="history", user=user2)
         hdas = [self.add_hda_to_history(history, name=("hda-" + str(x))) for x in range(3)]
         hdca = self.add_list_collection_to_history(history, hdas)
@@ -96,6 +99,7 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
 
     def test_subcontainers(self):
         user2 = self.user_manager.create(**user2_data)
+        self.trans.set_user(user2)
         history = self.history_manager.create(name="history", user=user2)
 
         self.log("calling subcontainers on an empty history should return an empty list")
@@ -109,6 +113,7 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
 
     def test_limit_and_offset(self):
         user2 = self.user_manager.create(**user2_data)
+        self.trans.set_user(user2)
         history = self.history_manager.create(name="history", user=user2)
         contents = []
         contents.extend([self.add_hda_to_history(history, name=("hda-" + str(x))) for x in range(3)])
@@ -130,6 +135,7 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
     def test_orm_filtering(self):
         parse_filter = self.history_contents_filters.parse_filter
         user2 = self.user_manager.create(**user2_data)
+        self.trans.set_user(user2)
         history = self.history_manager.create(name="history", user=user2)
         contents = []
         contents.extend([self.add_hda_to_history(history, name=("hda-" + str(x))) for x in range(3)])
@@ -228,6 +234,7 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
 
     def test_order_by(self):
         user2 = self.user_manager.create(**user2_data)
+        self.trans.set_user(user2)
         history = self.history_manager.create(name="history", user=user2)
         contents = []
         contents.extend([self.add_hda_to_history(history, name=("hda-" + str(x))) for x in range(3)])
@@ -263,6 +270,7 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
 
     def test_update_time_filter(self):
         user2 = self.user_manager.create(**user2_data)
+        self.trans.set_user(user2)
         history = self.history_manager.create(name="history", user=user2)
         contents = []
         contents.extend([self.add_hda_to_history(history, name=("hda-" + str(x))) for x in range(3)])
@@ -292,6 +300,7 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
     def test_filtered_counting(self):
         parse_filter = self.history_contents_filters.parse_filter
         user2 = self.user_manager.create(**user2_data)
+        self.trans.set_user(user2)
         history = self.history_manager.create(name="history", user=user2)
         contents = []
         contents.extend([self.add_hda_to_history(history, name=("hda-" + str(x))) for x in range(3)])
@@ -324,6 +333,7 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
 
     def test_type_id(self):
         user2 = self.user_manager.create(**user2_data)
+        self.trans.set_user(user2)
         history = self.history_manager.create(name="history", user=user2)
         contents = []
         contents.extend([self.add_hda_to_history(history, name=("hda-" + str(x))) for x in range(3)])

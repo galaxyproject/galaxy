@@ -42,7 +42,6 @@ from galaxy.managers import (
 )
 from galaxy.model.base import transaction
 from galaxy.model.deferred import materializer_factory
-from galaxy.model.tags import GalaxyTagHandler
 from galaxy.schema.schema import DatasetSourceType
 from galaxy.schema.storage_cleaner import (
     CleanableItemsSummary,
@@ -71,7 +70,6 @@ class HistoryDatasetAssociationNoHistoryException(Exception):
 class HDAManager(
     datasets.DatasetAssociationManager,
     secured.OwnableManagerMixin,
-    taggable.TaggableManagerMixin,
     annotatable.AnnotatableManagerMixin,
 ):
     """
@@ -93,14 +91,12 @@ class HDAManager(
         app: MinimalManagerApp,
         user_manager: users.UserManager,
         ldda_manager: lddas.LDDAManager,
-        tag_handler: GalaxyTagHandler,
     ):
         """
         Set up and initialize other managers needed by hdas.
         """
         super().__init__(app)
         self.user_manager = user_manager
-        self.tag_handler = tag_handler
         self.ldda_manager = ldda_manager
 
     def get_owned_ids(self, object_ids, history=None):
@@ -709,7 +705,6 @@ class HDADeserializer(
     def __init__(self, app: MinimalManagerApp):
         super().__init__(app)
         self.hda_manager = self.manager
-        self.tag_handler = app.tag_handler
 
     def add_deserializers(self):
         super().add_deserializers()
