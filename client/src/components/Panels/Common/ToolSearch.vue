@@ -3,7 +3,7 @@ import { computed, onMounted, onUnmounted, type PropType, type Ref, ref } from "
 import { useRouter } from "vue-router/composables";
 
 import { getGalaxyInstance } from "@/app";
-import { GButton, GInput, GModal } from "@/component-library";
+import { GButton, GFormDatalist, GInput, GModal } from "@/component-library";
 import _l from "@/utils/localization";
 
 import { flattenTools } from "../utilities.js";
@@ -165,7 +165,7 @@ function onToggle(toggleAdvanced: boolean) {
                 size="sm"
                 :placeholder="`any ${sectionLabel}`"
                 list="sectionSelect" />
-            <b-form-datalist id="sectionSelect" :options="sectionNames"></b-form-datalist>
+            <GFormDatalist id="sectionSelect" :options="sectionNames" />
             <small class="mt-1">Filter by id:</small>
             <GInput v-model="filterSettings['id']" size="sm" placeholder="any id" />
             <small class="mt-1">Filter by repository owner:</small>

@@ -58,7 +58,7 @@
                     size="sm"
                     placeholder="any state"
                     list="stateSelect" />
-                <b-form-datalist id="stateSelect" :options="states"></b-form-datalist>
+                <GFormDatalist id="stateSelect" :options="states" />
                 <GInputGroupAppend>
                     <GButton title="States Help" size="sm" @click="showHelp = true">
                         <icon icon="question" />
@@ -136,13 +136,22 @@ import { STATES } from "components/History/Content/model/states";
 import StatesInfo from "components/History/Content/model/StatesInfo";
 import { HistoryFilters } from "components/History/HistoryFilters";
 
-import { GButton, GFormDatepicker, GFormGroup, GInput, GInputGroup, GInputGroupAppend } from "@/component-library";
+import {
+    GButton,
+    GFormDatalist,
+    GFormDatepicker,
+    GFormGroup,
+    GInput,
+    GInputGroup,
+    GInputGroupAppend,
+} from "@/component-library";
 
 import HistoryFiltersDefault from "./HistoryFiltersDefault";
 
 export default {
     components: {
         GButton,
+        GFormDatalist,
         GFormDatepicker,
         GFormGroup,
         GInput,
