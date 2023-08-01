@@ -45,12 +45,7 @@
                 @input="updateGenome" />
         </div>
         <div class="upload-buttons d-flex justify-content-end">
-            <BButton
-                id="btn-local"
-                ref="btnLocal"
-                title="Choose local files"
-                :disabled="!enableSources"
-                @click="uploadSelect">
+            <BButton id="btn-local" title="Choose local files" :disabled="!enableSources" @click="uploadSelect">
                 <span class="fa fa-laptop"></span>
                 <span v-localize>Choose local files</span>
             </BButton>
@@ -62,31 +57,25 @@
                 <span class="fa fa-folder-open"></span>
                 <span v-localize>Choose remote files</span>
             </BButton>
-            <BButton
-                id="btn-new"
-                ref="btnCreate"
-                title="Paste/Fetch data"
-                :disabled="!enableSources"
-                @click="_eventCreate()">
+            <BButton id="btn-new" title="Paste/Fetch data" :disabled="!enableSources" @click="_eventCreate">
                 <span class="fa fa-edit"></span>
                 <span v-localize>Paste/Fetch data</span>
             </BButton>
             <BButton
                 id="btn-start"
-                ref="btnStart"
                 :disabled="!enableStart"
                 title="Start"
                 :variant="enableStart ? 'primary' : ''"
                 @click="_eventStart">
                 <span v-localize>Start</span>
             </BButton>
-            <BButton id="btn-stop" ref="btnStop" title="Pause" :disabled="counterRunning == 0" @click="_eventStop">
+            <BButton id="btn-stop" title="Pause" :disabled="counterRunning == 0" @click="_eventStop">
                 <span v-localize>Pause</span>
             </BButton>
-            <BButton id="btn-reset" ref="btnReset" title="Reset" :disabled="!enableReset" @click="_eventReset">
+            <BButton id="btn-reset" title="Reset" :disabled="!enableReset" @click="_eventReset">
                 <span v-localize>Reset</span>
             </BButton>
-            <BButton id="btn-close" ref="btnClose" title="Close" @click="$emit('dismiss')">
+            <BButton id="btn-close" title="Close" @click="$emit('dismiss')">
                 <span v-if="hasCallback" v-localize>Cancel</span>
                 <span v-else v-localize>Close</span>
             </BButton>
