@@ -170,7 +170,6 @@ class InvenioRDMFilesSource(RDMFilesSource):
     ):
         record_id, filename = self.parse_path(target_path)
         self.repository.upload_file_to_draft_record(record_id, filename, native_path, user_context=user_context)
-        self.repository.publish_draft_record(record_id, user_context=user_context)
 
 
 class InvenioRepositoryInteractor(RDMRepositoryInteractor):
@@ -199,8 +198,8 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
     def create_draft_record(self, title: str, user_context: OptionalUserContext = None) -> RemoteDirectory:
         today = datetime.date.today().isoformat()
         creator = self._get_creator_from_user_context(user_context)
-        should_publish = bool(self.get_user_preference_by_key("public_records", user_context))
-        access = "public" if should_publish else "restricted"
+        public = bool(self.get_user_preference_by_key("public_records", user_context))
+        access = "public" if public else "restricted"
         create_record_request = {
             "access": {"record": access, "files": access},
             "files": {"enabled": True},
@@ -269,12 +268,6 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
             return stream_to_open_named_file(
                 page, f.fileno(), file_path, source_encoding=get_charset_from_http_headers(page.headers)
             )
-
-    def publish_draft_record(self, record_id: str, user_context: OptionalUserContext = None):
-        publish_record_url = f"{self.records_url}/{record_id}/draft/actions/publish"
-        headers = self._get_request_headers(user_context)
-        response = requests.post(publish_record_url, headers=headers, verify=VERIFY)
-        self._ensure_response_has_expected_status_code(response, 202)
 
     def _get_draft_record(self, record_id: str, user_context: OptionalUserContext = None):
         request_url = f"{self.records_url}/{record_id}/draft"

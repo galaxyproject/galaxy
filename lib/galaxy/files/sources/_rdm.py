@@ -115,14 +115,6 @@ class RDMRepositoryInteractor:
         """
         raise NotImplementedError()
 
-    def publish_draft_record(self, record_id: str, user_context: OptionalUserContext = None) -> None:
-        """Publishes the draft record with the given record_id.
-
-        The draft record must have been created in advance with the `create_draft_record` method.
-        The user_context might be required to authenticate the user in the repository.
-        """
-        raise NotImplementedError()
-
 
 class RDMFilesSource(BaseFilesSource):
     """Base class for Research Data Management (RDM) file sources.

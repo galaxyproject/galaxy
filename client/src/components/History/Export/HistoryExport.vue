@@ -236,11 +236,11 @@ function updateExportParams(newParams) {
                     id="rdm-file-source-tab"
                     title="to DOI repository"
                     title-link-class="tab-export-to-doi-repo">
-                    <p>You can <b>publish your history</b> to one of the available DOI repositories here.</p>
+                    <p>You can <b>upload your history</b> to one of the available DOI repositories here.</p>
                     <p>
-                        Your history export archive needs to be uploaded to an existing record. You will need to create
-                        a <b>new record</b> on the repository or select an existing <b>draft record</b> and then export
-                        your history to it.
+                        Your history export archive needs to be uploaded to an existing <i>draft</i> record. You will
+                        need to create a <b>new record</b> on the repository or select an existing
+                        <b>draft record</b> and then export your history to it.
                     </p>
                     <BAlert show variant="info">
                         You may need to setup your credentials for the selected repository in your

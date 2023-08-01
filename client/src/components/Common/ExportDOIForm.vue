@@ -90,7 +90,8 @@ function clearInputs() {
                         <span v-localize> draft record has been created in the repository.</span>
                     </p>
                     <p v-if="newEntry.external_link">
-                        You can preview the record in the repository and further edit its metadata at
+                        You can preview the record in the repository, further edit its metadata and decide when to
+                        publish it at
                         <ExternalLink :href="newEntry.external_link">
                             <b>{{ newEntry.external_link }}</b>
                         </ExternalLink>
