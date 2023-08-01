@@ -1,5 +1,5 @@
 <template>
-    <b-modal id="repo-install-settings" v-model="modalShow" :static="modalStatic" @ok="onOk" @hide="onHide">
+    <GModal id="repo-install-settings" v-model="modalShow" :static="modalStatic" @ok="onOk" @hide="onHide">
         <template v-slot:modal-header>
             <h2 class="title m-0 h-sm">
                 {{ modalTitle }}
@@ -43,17 +43,18 @@
                 </b-form-group>
             </GCard>
         </GCollapse>
-    </b-modal>
+    </GModal>
 </template>
 <script>
-import { GCard, GCollapse, GInput, GLink } from "@/component-library";
+import { GCard, GCollapse, GInput, GLink, GModal } from "@/component-library";
 
 export default {
     components: {
-        GCollapse,
         GCard,
+        GCollapse,
         GInput,
         GLink,
+        GModal,
     },
     props: {
         repo: {

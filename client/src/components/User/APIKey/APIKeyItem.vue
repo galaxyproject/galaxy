@@ -11,6 +11,7 @@ import {
     GInputGroupAppend,
     GInputGroupPrepend,
     GInputGroupText,
+    GModal,
 } from "@/component-library";
 
 import svc from "./model/service";
@@ -78,8 +79,8 @@ const deleteKey = () => {
             </div>
         </div>
 
-        <b-modal ref="modal" title="Delete API key" size="md" @ok="deleteKey">
+        <GModal ref="modal" title="Delete API key" size="md" @ok="deleteKey">
             <p v-localize>Are you sure you want to delete this key?</p>
-        </b-modal>
+        </GModal>
     </GCard>
 </template>

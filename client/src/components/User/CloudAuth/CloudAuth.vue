@@ -76,7 +76,7 @@
             </b-list-group>
         </div>
 
-        <b-modal
+        <GModal
             id="deleteCredentialModal"
             ref="deleteModal"
             v-model="hasDoomed"
@@ -85,7 +85,7 @@
             size="sm"
             @ok="deleteKey"
             @cancel="doomedItem = null">
-        </b-modal>
+        </GModal>
     </section>
 </template>
 
@@ -93,7 +93,7 @@
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
-import { GAlert, GButtonGroup, GInput } from "@/component-library";
+import { GAlert, GButtonGroup, GInput, GModal } from "@/component-library";
 
 import CloudAuthItem from "./CloudAuthItem";
 import { Credential } from "./model";
@@ -107,6 +107,7 @@ export default {
         GAlert,
         GButtonGroup,
         GInput,
+        GModal,
     },
     data() {
         return {

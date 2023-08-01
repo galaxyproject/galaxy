@@ -1,5 +1,5 @@
 <template>
-    <b-modal v-if="modalShow" modal-class="selection-dialog-modal" visible :static="modalStatic" @hide="hideModal">
+    <GModal v-if="modalShow" modal-class="selection-dialog-modal" visible :static="modalStatic" @hide="hideModal">
         <template v-slot:modal-header>
             <slot name="search"> </slot>
         </template>
@@ -30,7 +30,7 @@
                 </div>
             </div>
         </template>
-    </b-modal>
+    </GModal>
 </template>
 
 <script>
@@ -38,15 +38,16 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
-import { GAlert, GButton } from "@/component-library";
+import { GAlert, GButton, GModal } from "@/component-library";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        FontAwesomeIcon,
         GAlert,
         GButton,
-        FontAwesomeIcon,
+        GModal,
     },
     props: {
         multiple: {

@@ -3,7 +3,7 @@ import { computed, onMounted, onUnmounted, type PropType, type Ref, ref } from "
 import { useRouter } from "vue-router/composables";
 
 import { getGalaxyInstance } from "@/app";
-import { GButton, GInput } from "@/component-library";
+import { GButton, GInput, GModal } from "@/component-library";
 import _l from "@/utils/localization";
 
 import { flattenTools } from "../utilities.js";
@@ -184,7 +184,7 @@ function onToggle(toggleAdvanced: boolean) {
                 <GButton title="Search Help" size="sm" @click="showHelp = true">
                     <icon icon="question" />
                 </GButton>
-                <b-modal v-model="showHelp" title="Tool Advanced Search Help" ok-only>
+                <GModal v-model="showHelp" title="Tool Advanced Search Help" ok-only>
                     <div>
                         <p>
                             You can use this Advanced Tool Search Panel to find tools by applying search filters, with
@@ -231,7 +231,7 @@ function onToggle(toggleAdvanced: boolean) {
                             </dd>
                         </dl>
                     </div>
-                </b-modal>
+                </GModal>
             </div>
         </div>
     </div>

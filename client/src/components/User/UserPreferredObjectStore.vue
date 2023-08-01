@@ -12,7 +12,7 @@
             <div v-localize class="form-text text-muted">
                 Select a preferred default object store for the outputs of new jobs to be created in.
             </div>
-            <BModal
+            <GModal
                 id="modal-select-preferred-object-store"
                 ref="modal"
                 v-model="showModal"
@@ -31,26 +31,22 @@
                     :default-option-title="galaxySelectionDefaultTitle"
                     :default-option-description="galaxySelectionDefaultDescription"
                     @onSubmit="handleSubmit" />
-            </BModal>
+            </GModal>
         </div>
     </GRow>
 </template>
 
 <script>
 import axios from "axios";
-import { BModal, VBModal } from "bootstrap-vue";
 import SelectObjectStore from "components/ObjectStore/SelectObjectStore";
 import { prependPath } from "utils/redirect";
 import { errorMessageAsString } from "utils/simple-error";
-import Vue from "vue";
 
-import { GRow } from "@/component-library";
-
-Vue.use(VBModal);
+import { GModal, GRow } from "@/component-library";
 
 export default {
     components: {
-        BModal,
+        GModal,
         GRow,
         SelectObjectStore,
     },

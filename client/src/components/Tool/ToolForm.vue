@@ -7,7 +7,7 @@
         <div v-if="showEntryPoints">
             <ToolEntryPoints v-for="job in entryPoints" :key="job.id" :job-id="job.id" />
         </div>
-        <b-modal v-model="showError" size="sm" :title="errorTitle | l" scrollable ok-only>
+        <GModal v-model="showError" size="sm" :title="errorTitle | l" scrollable ok-only>
             <GAlert v-if="errorMessage" show variant="danger">
                 {{ errorMessage }}
             </GAlert>
@@ -18,7 +18,7 @@
             <small class="text-muted">
                 <pre>{{ errorContentPretty }}</pre>
             </small>
-        </b-modal>
+        </GModal>
         <ToolRecommendation v-if="showRecommendation" :tool-id="formConfig.id" />
         <ToolCard
             v-if="showForm"
@@ -110,7 +110,7 @@ import { useHistoryItemsStore } from "stores/history/historyItemsStore";
 import { useJobStore } from "stores/jobStore";
 import { refreshContentsWrapper } from "utils/data";
 
-import { GAlert } from "@/component-library";
+import { GAlert, GModal } from "@/component-library";
 import { useConfig } from "@/composables/config";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
@@ -122,10 +122,11 @@ import { allowCachedJobs } from "./utilities";
 
 export default {
     components: {
-        GAlert,
         ButtonSpinner,
         LoadingSpan,
         FormDisplay,
+        GAlert,
+        GModal,
         ToolCard,
         FormElement,
         ToolEntryPoints,

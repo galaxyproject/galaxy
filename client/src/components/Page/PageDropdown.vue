@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, unref } from "vue";
 
-import { GLink } from "@/component-library";
+import { GLink, GModal } from "@/component-library";
 import { useUserStore } from "@/stores/userStore";
 import _l from "@/utils/localization";
 
@@ -87,14 +87,14 @@ function onDelete(page_id: string) {
                 <span class="fa fa-trash fa-fw mr-1" />
                 <span>Delete</span>
             </a>
-            <b-modal
+            <GModal
                 :id="`delete-page-modal-${props.page.id}`"
                 hide-backdrop
                 title="Confirm page deletion"
                 title-tag="h2"
                 @ok="onDelete(props.page.id)">
                 <p v-localize>Really delete the page titled: "{{ props.page.title }}"?</p>
-            </b-modal>
+            </GModal>
         </div>
     </div>
 </template>

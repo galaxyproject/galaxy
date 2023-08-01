@@ -176,25 +176,25 @@
 
         <CopyModal id="copy-current-history-modal" :history="history" />
 
-        <b-modal id="history-privacy-modal" title="Make History Private" title-tag="h2" @ok="secureHistory(history)">
+        <GModal id="history-privacy-modal" title="Make History Private" title-tag="h2" @ok="secureHistory(history)">
             <p v-localize>
                 This will make all the data in this history private (excluding library datasets), and will set
                 permissions such that all new data is created as private. Any datasets within that are currently shared
                 will need to be re-shared or published. Are you sure you want to do this?
             </p>
-        </b-modal>
+        </GModal>
 
-        <b-modal id="delete-history-modal" title="Delete History?" title-tag="h2" @ok="deleteHistory(history.id)">
+        <GModal id="delete-history-modal" title="Delete History?" title-tag="h2" @ok="deleteHistory(history.id)">
             <p v-localize>Really delete the current history?</p>
-        </b-modal>
+        </GModal>
 
-        <b-modal
+        <GModal
             id="purge-history-modal"
             title="Permanently Delete History?"
             title-tag="h2"
             @ok="deleteHistory(history.id, true)">
             <p v-localize>Really delete the current history permanently? This cannot be undone.</p>
-        </b-modal>
+        </GModal>
     </div>
 </template>
 
@@ -204,19 +204,28 @@ import SelectorModal from "components/History/Modals/SelectorModal";
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import { mapActions, mapState } from "pinia";
 
-import { GButton, GButtonGroup, GDropdown, GDropdownDivider, GDropdownItem, GDropdownText } from "@/component-library";
+import {
+    GButton,
+    GButtonGroup,
+    GDropdown,
+    GDropdownDivider,
+    GDropdownItem,
+    GDropdownText,
+    GModal,
+} from "@/component-library";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
 export default {
     components: {
+        GButton,
+        GButtonGroup,
         GDropdown,
         GDropdownDivider,
         GDropdownItem,
         GDropdownText,
+        GModal,
         CopyModal,
-        GButton,
-        GButtonGroup,
         SelectorModal,
     },
     mixins: [legacyNavigationMixin],

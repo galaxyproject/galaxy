@@ -68,23 +68,23 @@
             </GDropdownItem>
         </GDropdown>
 
-        <b-modal id="hide-selected-content" title="Hide Selected Content?" title-tag="h2" @ok="hideSelected">
+        <GModal id="hide-selected-content" title="Hide Selected Content?" title-tag="h2" @ok="hideSelected">
             <p v-localize>Really hide {{ numSelected }} content items?</p>
-        </b-modal>
-        <b-modal id="show-selected-content" title="Show Selected Content?" title-tag="h2" @ok="unhideSelected">
+        </GModal>
+        <GModal id="show-selected-content" title="Show Selected Content?" title-tag="h2" @ok="unhideSelected">
             <p v-localize>Really show {{ numSelected }} content items?</p>
-        </b-modal>
-        <b-modal id="delete-selected-content" title="Delete Selected Content?" title-tag="h2" @ok="deleteSelected">
+        </GModal>
+        <GModal id="delete-selected-content" title="Delete Selected Content?" title-tag="h2" @ok="deleteSelected">
             <p v-localize>Really delete {{ numSelected }} content items?</p>
-        </b-modal>
-        <b-modal id="restore-selected-content" title="Restore Selected Content?" title-tag="h2" @ok="undeleteSelected">
+        </GModal>
+        <GModal id="restore-selected-content" title="Restore Selected Content?" title-tag="h2" @ok="undeleteSelected">
             <p v-localize>Really restore {{ numSelected }} content items?</p>
-        </b-modal>
-        <b-modal id="purge-selected-content" title="Purge Selected Content?" title-tag="h2" @ok="purgeSelected">
+        </GModal>
+        <GModal id="purge-selected-content" title="Purge Selected Content?" title-tag="h2" @ok="purgeSelected">
             <p v-localize>Permanently delete {{ numSelected }} content items?</p>
             <p><strong v-localize class="text-danger">Warning, this operation cannot be undone.</strong></p>
-        </b-modal>
-        <b-modal
+        </GModal>
+        <GModal
             id="change-dbkey-of-selected-content"
             title="Change Database/Build?"
             title-tag="h2"
@@ -99,8 +99,8 @@
                     class="mb-5 pb-5"
                     @update:selected-item="onSelectedDbKey" />
             </DbKeyProvider>
-        </b-modal>
-        <b-modal
+        </GModal>
+        <GModal
             id="change-datatype-of-selected-content"
             title="Change data type?"
             title-tag="h2"
@@ -116,8 +116,8 @@
                     class="mb-5 pb-5"
                     @update:selected-item="onSelectedDatatype" />
             </DatatypesProvider>
-        </b-modal>
-        <b-modal
+        </GModal>
+        <GModal
             id="add-tags-to-selected-content"
             title="Add tags?"
             title-tag="h2"
@@ -125,8 +125,8 @@
             @ok="addTagsToSelected">
             <p v-localize>Apply the following tags to {{ numSelected }} items:</p>
             <StatelessTags v-model="selectedTags" class="tags" />
-        </b-modal>
-        <b-modal
+        </GModal>
+        <GModal
             id="remove-tags-from-selected-content"
             title="Remove tags?"
             title-tag="h2"
@@ -134,7 +134,7 @@
             @ok="removeTagsFromSelected">
             <p v-localize>Remove the following tags from {{ numSelected }} items:</p>
             <StatelessTags v-model="selectedTags" class="tags" />
-        </b-modal>
+        </GModal>
     </section>
 </template>
 
@@ -157,7 +157,7 @@ import { DatatypesProvider, DbKeyProvider } from "components/providers";
 import SingleItemSelector from "components/SingleItemSelector";
 import { StatelessTags } from "components/Tags";
 
-import { GDropdown, GDropdownDivider, GDropdownItem, GDropdownText } from "@/component-library";
+import { GDropdown, GDropdownDivider, GDropdownItem, GDropdownText, GModal } from "@/component-library";
 import { useConfig } from "@/composables/config";
 
 export default {
@@ -166,6 +166,7 @@ export default {
         GDropdownDivider,
         GDropdownItem,
         GDropdownText,
+        GModal,
         DbKeyProvider,
         DatatypesProvider,
         SingleItemSelector,

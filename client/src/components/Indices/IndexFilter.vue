@@ -33,9 +33,9 @@
                 </GButton>
             </GInputGroupAppend>
         </GInputGroup>
-        <BModal v-model="showHelp" title="Filtering Options Help" ok-only>
+        <GModal v-model="showHelp" title="Filtering Options Help" ok-only>
             <div v-html="helpHtml"></div>
-        </BModal>
+        </GModal>
     </span>
 </template>
 
@@ -43,10 +43,9 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestion, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BModal } from "bootstrap-vue";
 import DebouncedInput from "components/DebouncedInput";
 
-import { GButton, GInput, GInputGroup, GInputGroupAppend } from "@/component-library";
+import { GButton, GInput, GInputGroup, GInputGroupAppend, GModal } from "@/component-library";
 
 library.add(faTimes, faQuestion);
 
@@ -57,11 +56,11 @@ export default {
     components: {
         DebouncedInput,
         GButton,
+        GInput,
         GInputGroup,
         GInputGroupAppend,
-        BModal,
+        GModal,
         FontAwesomeIcon,
-        GInput,
     },
     props: {
         id: {

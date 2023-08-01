@@ -28,16 +28,16 @@
             </GDropdownItem>
         </GDropdown>
 
-        <b-modal id="show-all-hidden-content" title="Show Hidden Datasets" title-tag="h2" @ok="unhideAll">
+        <GModal id="show-all-hidden-content" title="Show Hidden Datasets" title-tag="h2" @ok="unhideAll">
             <p v-localize>Really unhide all hidden datasets?</p>
-        </b-modal>
-        <b-modal id="delete-all-hidden-content" title="Delete Hidden Datasets" title-tag="h2" @ok="deleteAllHidden">
+        </GModal>
+        <GModal id="delete-all-hidden-content" title="Delete Hidden Datasets" title-tag="h2" @ok="deleteAllHidden">
             <p v-localize>Really delete all hidden datasets?</p>
-        </b-modal>
-        <b-modal id="purge-all-deleted-content" title="Purge Deleted Datasets" title-tag="h2" @ok="purgeAllDeleted">
+        </GModal>
+        <GModal id="purge-all-deleted-content" title="Purge Deleted Datasets" title-tag="h2" @ok="purgeAllDeleted">
             <p v-localize>Really permanently delete all deleted datasets?</p>
             <p><strong v-localize class="text-danger">Warning, this operation cannot be undone.</strong></p>
-        </b-modal>
+        </GModal>
     </section>
 </template>
 
@@ -45,7 +45,7 @@
 import { deleteAllHiddenContent, purgeAllDeletedContent, unhideAllHiddenContent } from "components/History/model/crud";
 import { iframeRedirect } from "components/plugins/legacyNavigation";
 
-import { GDropdown, GDropdownItem, GDropdownText } from "@/component-library";
+import { GDropdown, GDropdownItem, GDropdownText, GModal } from "@/component-library";
 
 import { usesDetailedHistoryMixin } from "../usesDetailedHistoryMixin.js";
 
@@ -54,6 +54,7 @@ export default {
         GDropdown,
         GDropdownItem,
         GDropdownText,
+        GModal,
     },
     mixins: [usesDetailedHistoryMixin],
     props: {

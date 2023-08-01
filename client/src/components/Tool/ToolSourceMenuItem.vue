@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useConfig } from "composables/config";
 import { storeToRefs } from "pinia";
 
-import { GDropdownItem } from "@/component-library";
+import { GDropdownItem, GModal } from "@/component-library";
 import { useUserStore } from "@/stores/userStore";
 
 import ToolSource from "./ToolSource.vue";
@@ -28,8 +28,8 @@ const props = defineProps({
         <GDropdownItem v-b-modal.tool-source-viewer>
             <FontAwesomeIcon icon="far fa-eye" /><span v-localize>View Tool source</span>
         </GDropdownItem>
-        <b-modal id="tool-source-viewer" :title="`Tool Source for ${props.toolId}`" size="lg" ok-only ok-title="Close">
+        <GModal id="tool-source-viewer" :title="`Tool Source for ${props.toolId}`" size="lg" ok-only ok-title="Close">
             <ToolSource :tool-id="props.toolId" />
-        </b-modal>
+        </GModal>
     </div>
 </template>

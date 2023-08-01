@@ -6,7 +6,7 @@
                 ><b v-b-modal.modal-prevent-closing v-localize>Delete Account</b></a
             >
             <div v-localize class="form-text text-muted">Delete your account on this Galaxy server.</div>
-            <b-modal
+            <GModal
                 id="modal-prevent-closing"
                 ref="modal"
                 centered
@@ -31,7 +31,7 @@
                         <GInput id="name-input" v-model="name" :state="nameState" required />
                     </b-form-group>
                 </b-form>
-            </b-modal>
+            </GModal>
         </div>
     </GRow>
 </template>
@@ -43,15 +43,16 @@ import { userLogoutClient } from "utils/logout";
 import { withPrefix } from "utils/redirect";
 import Vue from "vue";
 
-import { GAlert, GInput, GRow } from "@/component-library";
+import { GAlert, GInput, GModal, GRow } from "@/component-library";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
-        GRow,
         GAlert,
         GInput,
+        GModal,
+        GRow,
     },
     props: {
         userId: {

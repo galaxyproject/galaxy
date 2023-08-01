@@ -1,5 +1,5 @@
 <template>
-    <b-modal v-bind="$attrs" :title="title" title-tag="h2" v-on="$listeners">
+    <GModal v-bind="$attrs" :title="title" title-tag="h2" v-on="$listeners">
         <transition name="fade">
             <GAlert v-localize :show="isAnonymous" variant="warning">
                 As an anonymous user, unless you login or register, you will lose your current history after copying
@@ -41,13 +41,13 @@
                 </GButton>
             </div>
         </div>
-    </b-modal>
+    </GModal>
 </template>
 
 <script>
 import { mapActions, mapState } from "pinia";
 
-import { GAlert, GButton, GInput } from "@/component-library";
+import { GAlert, GButton, GInput, GModal } from "@/component-library";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
@@ -56,6 +56,7 @@ export default {
         GAlert,
         GButton,
         GInput,
+        GModal,
     },
     props: {
         history: { type: Object, required: true },

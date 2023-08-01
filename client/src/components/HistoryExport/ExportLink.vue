@@ -10,9 +10,9 @@
             title="Information about when the history export was generated is included in the job details. Additionally, if there are issues with export, the job details may help figure out the underlying problem or communicate issues to your Galaxy administrator.">
             (<GLink class="show-job-link" href="#" @click="showDetails">view job details</GLink>)
         </i>
-        <BModal v-model="details" modal-class="job-information-modal" scrollable ok-only hide-header>
+        <GModal v-model="details" modal-class="job-information-modal" scrollable ok-only hide-header>
             <JobInformation :job_id="historyExport.job_id" :include-times="true" />
-        </BModal>
+        </GModal>
     </span>
 </template>
 
@@ -20,10 +20,9 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faLink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BModal } from "bootstrap-vue";
 import { copy } from "utils/clipboard";
 
-import { GLink } from "@/component-library";
+import { GLink, GModal } from "@/component-library";
 
 import JobInformation from "components/JobInformation/JobInformation.vue";
 
@@ -32,7 +31,7 @@ library.add(faLink);
 export default {
     components: {
         GLink,
-        BModal,
+        GModal,
         JobInformation,
         FontAwesomeIcon,
     },

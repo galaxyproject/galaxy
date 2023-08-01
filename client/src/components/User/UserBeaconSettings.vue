@@ -4,7 +4,7 @@
         <div class="pref-content pr-1">
             <a id="beacon-settings" href="javascript:void(0)"><b v-b-modal.modal-beacon v-localize>Manage Beacon</b></a>
             <div v-localize class="form-text text-muted">Contribute variants to Beacon</div>
-            <BModal
+            <GModal
                 id="modal-beacon"
                 ref="modal"
                 size="xl"
@@ -111,25 +111,24 @@
                         </li>
                     </ul>
                 </div>
-            </BModal>
+            </GModal>
         </div>
     </GRow>
 </template>
 
 <script>
 import axios from "axios";
-import { BModal } from "bootstrap-vue";
 import { mapActions } from "pinia";
 import { withPrefix } from "utils/redirect";
 
-import { GAlert, GButton, GRow } from "@/component-library";
+import { GAlert, GButton, GModal, GRow } from "@/component-library";
 import { useHistoryStore } from "@/stores/historyStore";
 
 export default {
     components: {
         GAlert,
         GButton,
-        BModal,
+        GModal,
         GRow,
     },
     props: {

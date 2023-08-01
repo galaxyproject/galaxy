@@ -4,13 +4,13 @@ import { faListAlt } from "@fortawesome/free-regular-svg-icons";
 import { faArrowDown, faColumns, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useInfiniteScroll } from "@vueuse/core";
-import { BFormGroup, BListGroup, BListGroupItem, BModal } from "bootstrap-vue";
+import { BFormGroup, BListGroup, BListGroupItem } from "bootstrap-vue";
 import isEqual from "lodash.isequal";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, onUnmounted, type PropType, type Ref, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { GAlert, GBadge, GButton, GButtonGroup, GInput } from "@/component-library";
+import { GAlert, GBadge, GButton, GButtonGroup, GInput, GModal } from "@/component-library";
 import type { components } from "@/schema";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
@@ -60,7 +60,7 @@ const propShowModal = computed({
 const selectedHistories: Ref<{ id: string }[]> = ref([]);
 const filter = ref("");
 const busy = ref(false);
-const modal: Ref<BModal | null> = ref(null);
+const modal: Ref<any | null> = ref(null);
 const scrollableDiv: Ref<HTMLElement | null> = ref(null);
 
 const historyStore = useHistoryStore();
@@ -201,7 +201,7 @@ async function loadMore(noScroll = false) {
 
 <template>
     <div>
-        <BModal
+        <GModal
             ref="modal"
             v-model="propShowModal"
             class="history-selector-modal"
@@ -323,7 +323,7 @@ async function loadMore(noScroll = false) {
                 </GButton>
                 <span v-else v-localize> Click a history to switch to it </span>
             </template>
-        </BModal>
+        </GModal>
     </div>
 </template>
 

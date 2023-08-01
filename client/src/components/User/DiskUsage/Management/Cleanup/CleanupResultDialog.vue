@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 
-import { GAlert } from "@/component-library";
+import { GAlert, GModal } from "@/component-library";
 import localize from "@/utils/localization";
 
 import type { CleanupResult } from "./model";
@@ -47,7 +47,7 @@ defineExpose({
 </script>
 
 <template>
-    <b-modal id="cleanup-result-modal" v-model="showModal" :title="title" title-tag="h2" hide-footer static>
+    <GModal id="cleanup-result-modal" v-model="showModal" :title="title" title-tag="h2" hide-footer static>
         <div class="text-center">
             <GAlert
                 variant="info"
@@ -79,5 +79,5 @@ defineExpose({
                     data-test-id="errors-table" />
             </div>
         </div>
-    </b-modal>
+    </GModal>
 </template>

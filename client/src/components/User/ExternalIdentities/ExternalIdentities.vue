@@ -44,16 +44,16 @@
                 Disconnect {{ item.provider.charAt(0).toUpperCase() + item.provider.slice(1) }} - {{ item.email }}
             </GButton>
 
-            <b-modal
+            <GModal
                 id="disconnectIDModal"
                 ref="deleteModal"
                 centered
                 title="Disconnect Identity?"
                 size="sm"
                 @ok="disconnectID"
-                @cancel="doomedItem = null"></b-modal>
+                @cancel="doomedItem = null"></GModal>
 
-            <b-modal
+            <GModal
                 id="disconnectAndResetModal"
                 ref="deleteAndResetModal"
                 centered
@@ -66,7 +66,7 @@
                     party identity. If you don't know your Galaxy user password, you can reset it or contact an
                     administrator for help.
                 </p>
-            </b-modal>
+            </GModal>
 
             <GAlert dismissible fade variant="warning" :show="errorMessage !== null" @dismissed="errorMessage = null">
                 {{ errorMessage }}
@@ -88,7 +88,7 @@ import { sanitize } from "dompurify";
 import { userLogout } from "utils/logout";
 import Vue from "vue";
 
-import { GAlert, GButton } from "@/component-library";
+import { GAlert, GButton, GModal } from "@/component-library";
 
 import svc from "./service";
 
@@ -100,6 +100,7 @@ export default {
     components: {
         GAlert,
         GButton,
+        GModal,
         ExternalLogin,
     },
     data() {

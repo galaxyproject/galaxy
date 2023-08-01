@@ -1,5 +1,5 @@
 <template>
-    <BModal v-model="show" :title="title" scrollable ok-only ok-title="Continue">
+    <GModal v-model="show" :title="title" scrollable ok-only ok-title="Continue">
         <div class="state-upgrade-modal">
             {{ message }}
             <ul class="workflow-state-upgrade-step-summaries">
@@ -16,14 +16,16 @@
                 </li>
             </ul>
         </div>
-    </BModal>
+    </GModal>
 </template>
 
 <script>
-import { BModal } from "bootstrap-vue";
+import { GModal } from "@/component-library";
 
 export default {
-    components: { BModal },
+    components: {
+        GModal,
+    },
     props: {
         stateMessages: {
             type: Array,

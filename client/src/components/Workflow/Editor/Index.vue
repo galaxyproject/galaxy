@@ -13,7 +13,7 @@
             @onRefactor="onRefactor"
             @onShow="hideModal" />
         <MessagesModal :title="messageTitle" :message="messageBody" :error="messageIsError" @onHidden="resetMessage" />
-        <b-modal
+        <GModal
             v-model="showSaveAsModal"
             title="Save As a New Workflow"
             ok-title="Save"
@@ -25,7 +25,7 @@
             <b-form-group label="Annotation">
                 <b-form-textarea v-model="saveAsAnnotation" />
             </b-form-group>
-        </b-modal>
+        </GModal>
         <FlexPanel side="left">
             <ProviderAwareToolBoxWorkflow
                 :module-sections="moduleSections"
@@ -163,7 +163,7 @@ import axios from "axios";
 import { storeToRefs } from "pinia";
 import Vue, { computed, onUnmounted, ref } from "vue";
 
-import { GButton, GInput } from "@/component-library";
+import { GButton, GInput, GModal } from "@/component-library";
 import { getUntypedWorkflowParameters } from "@/components/Workflow/Editor/modules/parameters";
 import { ConfirmDialog } from "@/composables/confirmDialog";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
@@ -201,6 +201,7 @@ export default {
         FormTool,
         GButton,
         GInput,
+        GModal,
         WorkflowOptions,
         WorkflowAttributes,
         WorkflowLint,

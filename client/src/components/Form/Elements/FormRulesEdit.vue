@@ -8,7 +8,7 @@ import RulesDisplay from "components/RulesDisplay/RulesDisplay";
 import { getAppRoot } from "onload/loadConfig";
 import { computed, ref } from "vue";
 
-import { GButton } from "@/component-library";
+import { GButton, GModal } from "@/component-library";
 
 library.add(faEdit);
 
@@ -69,7 +69,7 @@ function onCancel() {
             <span>Edit</span>
         </GButton>
 
-        <b-modal ref="modal" modal-class="ui-form-rules-edit-modal" hide-footer>
+        <GModal ref="modal" modal-class="ui-form-rules-edit-modal" hide-footer>
             <template v-slot:modal-title>
                 <h2 class="mb-0">Build Rules for Applying to Existing Collection</h2>
             </template>
@@ -81,7 +81,7 @@ function onCancel() {
                 :save-rules-fn="onSaveRules"
                 :oncancel="onCancel"
                 :oncreate="() => {}" />
-        </b-modal>
+        </GModal>
     </div>
 </template>
 

@@ -8,7 +8,7 @@
             <FontAwesomeIcon icon="info-circle" /> {{ detailsCaption }}
         </GButton>
 
-        <b-modal
+        <GModal
             id="details-modal"
             :static="isStatic"
             :title="titleLocationDetails"
@@ -56,7 +56,7 @@
                     </b-table-lite>
                 </div>
             </div>
-        </b-modal>
+        </GModal>
     </div>
 </template>
 
@@ -70,7 +70,7 @@ import UtcDate from "components/UtcDate";
 import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 
-import { GAlert, GButton } from "@/component-library";
+import { GAlert, GButton, GModal } from "@/component-library";
 
 library.add(faInfoCircle);
 
@@ -79,6 +79,7 @@ export default {
         FontAwesomeIcon,
         GAlert,
         GButton,
+        GModal,
         UtcDate,
     },
     props: {

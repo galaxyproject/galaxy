@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { BFormCheckbox, BModal } from "bootstrap-vue";
+import { BFormCheckbox } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 
-import { GAlert, GButton } from "@/component-library";
+import { GAlert, GButton, GModal } from "@/component-library";
 import type { ExportRecord } from "@/components/Common/models/exportRecordModel";
 import { exportToFileSource, getExportRecords } from "@/components/History/Export/services";
 import { DEFAULT_EXPORT_PARAMS } from "@/composables/shortTermStorage";
@@ -196,8 +196,8 @@ function onArchiveHistoryWithExport() {
             Archive (and purge) history
         </GButton>
 
-        <BModal v-model="isExportDialogOpen" title="Export history to permanent storage" size="lg" hide-footer>
+        <GModal v-model="isExportDialogOpen" title="Export history to permanent storage" size="lg" hide-footer>
             <ExportToFileSourceForm what="history" @export="doExportToFileSource" />
-        </BModal>
+        </GModal>
     </div>
 </template>

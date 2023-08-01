@@ -7,7 +7,7 @@ import { getAppRoot } from "onload/loadConfig";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
-import { GButton, GButtonGroup } from "@/component-library";
+import { GButton, GButtonGroup, GModal } from "@/component-library";
 import { useUserStore } from "@/stores/userStore";
 
 import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore";
@@ -142,7 +142,7 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
                             :tool-preferred-object-store-id="toolPreferredObjectStoreId"
                             :user="currentUser">
                         </ToolTargetPreferredObjectStorePopover>
-                        <b-modal
+                        <GModal
                             v-model="showPreferredObjectStoreModal"
                             title="Tool Execution Preferred Object Store"
                             modal-class="tool-preferred-object-store-modal"
@@ -153,7 +153,7 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
                                 :tool-preferred-object-store-id="toolPreferredObjectStoreId"
                                 :root="root"
                                 @updated="onUpdatePreferredObjectStoreId" />
-                        </b-modal>
+                        </GModal>
                     </GButtonGroup>
                     <slot name="header-buttons" />
                 </div>

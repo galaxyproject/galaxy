@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { BFormCheckbox, BModal, BTable } from "bootstrap-vue";
+import { BFormCheckbox, BTable } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import { GButton, GPagination } from "@/component-library";
+import { GButton, GModal, GPagination } from "@/component-library";
 import localize from "@/utils/localization";
 import { bytesToString } from "@/utils/utils";
 
@@ -199,7 +199,7 @@ defineExpose({
 </script>
 
 <template>
-    <BModal v-model="showDialog" title-tag="h2" :static="modalStatic" centered @show="onShowModal">
+    <GModal v-model="showDialog" title-tag="h2" :static="modalStatic" centered @show="onShowModal">
         <template v-slot:modal-title>
             {{ title }}
             <span class="text-primary h3">{{ totalRows }} items</span>
@@ -253,7 +253,7 @@ defineExpose({
             </GButton>
         </template>
 
-        <BModal
+        <GModal
             id="confirmation-modal"
             :title="confirmationTitle"
             title-tag="h2"
@@ -267,6 +267,6 @@ defineExpose({
             <BFormCheckbox id="confirm-delete-checkbox" v-model="confirmChecked" data-test-id="agreement-checkbox">
                 {{ agreementText }}
             </BFormCheckbox>
-        </BModal>
-    </BModal>
+        </GModal>
+    </GModal>
 </template>

@@ -1,6 +1,6 @@
 <template>
     <span>
-        <b-modal v-model="modalShow" :title="title" ok-title="Continue" @ok="onOk" @cancel="onCancel">
+        <GModal v-model="modalShow" :title="title" ok-title="Continue" @ok="onOk" @cancel="onCancel">
             <div class="ml-2">
                 <h2 class="mb-3 h-text">Select {{ labelTitle }} Label:</h2>
                 <div v-if="hasLabels">
@@ -22,7 +22,7 @@
                     label field in the step form.
                 </p>
             </div>
-        </b-modal>
+        </GModal>
     </span>
 </template>
 
@@ -30,13 +30,14 @@
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
-import { GAlert } from "@/component-library";
+import { GAlert, GModal } from "@/component-library";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
         GAlert,
+        GModal,
     },
     props: {
         labelTitle: {

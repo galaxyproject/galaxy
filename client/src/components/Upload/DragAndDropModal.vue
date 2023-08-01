@@ -3,6 +3,8 @@ import { useFileDrop } from "composables/fileDrop";
 import { useGlobalUploadModal } from "composables/globalUploadModal";
 import { computed, ref } from "vue";
 
+import { GModal } from "@/component-library";
+
 const modalContentElement = ref(null);
 const { isFileOverDocument, isFileOverDropZone } = useFileDrop(modalContentElement, onDrop, true);
 
@@ -29,9 +31,9 @@ function onDrop(event) {
 </script>
 
 <template>
-    <b-modal v-model="isFileOverDocument" :modal-class="modalClass" hide-header hide-footer centered>
+    <GModal v-model="isFileOverDocument" :modal-class="modalClass" hide-header hide-footer centered>
         <div ref="modalContentElement" class="inner-content h-xl">Drop Files here to Upload</div>
-    </b-modal>
+    </GModal>
 </template>
 
 <style lang="scss">

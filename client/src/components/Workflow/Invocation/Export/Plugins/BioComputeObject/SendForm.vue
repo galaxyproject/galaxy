@@ -1,12 +1,12 @@
 <script setup>
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import { BModal } from "bootstrap-vue";
 import ExternalLink from "components/ExternalLink";
 import { Toast } from "composables/toast";
 import { withPrefix } from "utils/redirect";
 import { inject, reactive, ref } from "vue";
 
+import { GModal } from "@/component-library";
 import { wait } from "@/utils/utils";
 
 const sendBCOModal = ref(null);
@@ -109,7 +109,7 @@ defineExpose({ showModal });
 </script>
 
 <template>
-    <BModal ref="sendBCOModal" title="Submit To BCODB" title-tag="h2" centered hide-footer>
+    <GModal ref="sendBCOModal" title="Submit To BCODB" title-tag="h2" centered hide-footer>
         <div>
             <p>
                 To submit to a BCODB you need to already have an authenticated account. Instructions on submitting a BCO
@@ -177,5 +177,5 @@ defineExpose({ showModal });
                 </div>
             </form>
         </div>
-    </BModal>
+    </GModal>
 </template>

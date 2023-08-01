@@ -11,9 +11,9 @@
             </div>
             <!-- TODO: modal for reporting error. -->
         </GCardText>
-        <b-modal v-model="showInfo" modal-class="job-information-modal" scrollable ok-only hide-header>
+        <GModal v-model="showInfo" modal-class="job-information-modal" scrollable ok-only hide-header>
             <JobInformation :job_id="job.id" :include-times="true" />
-        </b-modal>
+        </GModal>
     </GCard>
 </template>
 
@@ -24,7 +24,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
-import { GCard, GCardText } from "@/component-library";
+import { GCard, GCardText, GModal } from "@/component-library";
 
 import JobInformation from "./JobInformation.vue";
 
@@ -35,6 +35,7 @@ export default {
     components: {
         GCard,
         GCardText,
+        GModal,
         JobInformation,
         FontAwesomeIcon,
     },

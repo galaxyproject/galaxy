@@ -5,7 +5,7 @@ import prettyBytes from "pretty-bytes";
 import { computed, onMounted, ref, toRef } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { GButton, GButtonGroup } from "@/component-library";
+import { GButton, GButtonGroup, GModal } from "@/component-library";
 import { HistoryFilters } from "@/components/History/HistoryFilters.js";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
@@ -193,7 +193,7 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
                     <span :class="reloadButtonCls" />
                 </GButton>
             </GButtonGroup>
-            <b-modal
+            <GModal
                 v-model="showPreferredObjectStoreModal"
                 title="History Preferred Object Store"
                 modal-class="history-preferred-object-store-modal"
@@ -204,7 +204,7 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
                     :user-preferred-object-store-id="currentUser.preferred_object_store_id"
                     :history="history"
                     @updated="onUpdatePreferredObjectStoreId" />
-            </b-modal>
+            </GModal>
         </GButtonGroup>
     </div>
 </template>
