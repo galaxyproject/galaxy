@@ -7,7 +7,7 @@ from typing import (
 )
 
 from pydantic import (
-    Extra,
+    ConfigDict,
     Field,
     Required,
 )
@@ -83,12 +83,7 @@ class FilesSourcePlugin(Model):
         title="Requires groups",
         description="Only users belonging to the groups specified here can access this files source.",
     )
-
-    class Config:
-        # This allows additional fields (that are not validated)
-        # to be serialized/deserealized. This allows to have
-        # different fields depending on the plugin type
-        extra = Extra.allow
+    model_config = ConfigDict(extra="allow")
 
 
 class FilesSourcePluginList(Model):

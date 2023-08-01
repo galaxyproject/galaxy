@@ -1330,15 +1330,15 @@ class HierarchicalObjectStore(NestedObjectStore):
 
 
 class QuotaModel(BaseModel):
-    source: Optional[str]
+    source: Optional[str] = None
     enabled: bool
 
 
 class ConcreteObjectStoreModel(BaseModel):
-    object_store_id: Optional[str]
+    object_store_id: Optional[str] = None
     private: bool
-    name: Optional[str]
-    description: Optional[str]
+    name: Optional[str] = None
+    description: Optional[str] = None
     quota: QuotaModel
     badges: List[BadgeDict]
 

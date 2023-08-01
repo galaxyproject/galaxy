@@ -14,15 +14,14 @@ from typing import (
 from pydantic import (
     AnyUrl,
     BaseModel,
+    ConfigDict,
     EmailStr,
-    Extra,
     Field,
 )
 
 
 class Uri(BaseModel):
-    class Config:
-        extra = Extra.forbid
+    model_config = ConfigDict(extra="forbid")
 
     filename: Optional[str] = None
     uri: AnyUrl
@@ -30,7 +29,7 @@ class Uri(BaseModel):
         None, description="Time stamp of when the request for this data was submitted"
     )
     sha1_checksum: Optional[str] = Field(
-        None, description="output of hash function that produces a message digest", regex="[A-Za-z0-9]+"
+        None, description="output of hash function that produces a message digest", pattern="[A-Za-z0-9]+"
     )
 
 
@@ -58,8 +57,7 @@ class ContributionEnum(Enum):
 
 
 class Contributor(BaseModel):
-    class Config:
-        extra = Extra.forbid
+    model_config = ConfigDict(extra="forbid")
 
     name: str = Field(..., description="Name of contributor", example=["Charles Darwin"])
     affiliation: Optional[str] = Field(
@@ -81,8 +79,7 @@ class Contributor(BaseModel):
 
 
 class InputSubdomainItem(BaseModel):
-    class Config:
-        extra = Extra.forbid
+    model_config = ConfigDict(extra="forbid")
 
     uri: Uri
 
@@ -92,7 +89,7 @@ class OutputSubdomainItem(BaseModel):
         ...,
         description="https://www.iana.org/assignments/media-types/",
         example=["text/csv"],
-        regex="^(.*)$",
+        pattern="^(.*)$",
         title="mediatype",
     )
     uri: Uri

@@ -9,6 +9,7 @@ from typing import (
 
 from pydantic import (
     BaseModel,
+    ConfigDict,
     Field,
 )
 from typing_extensions import Literal
@@ -44,18 +45,14 @@ OptionalExclusionList = Optional[List[Exclusions]]
 class Tool(BaseModel):
     content_type: Literal["tool"] = Field("tool", alias="type")
     id: str
-
-    class Config:
-        allow_population_by_field_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class Label(BaseModel):
     content_type: Literal["label"] = Field(alias="type", default="label")
-    id: Optional[str]
+    id: Optional[str] = None
     text: str
-
-    class Config:
-        allow_population_by_field_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class LabelShortcut(BaseModel):
@@ -66,9 +63,7 @@ class LabelShortcut(BaseModel):
 class Workflow(BaseModel):
     content_type: Literal["workflow"] = Field(alias="type", default="workflow")
     id: str
-
-    class Config:
-        allow_population_by_field_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class ItemsFrom(BaseModel):
@@ -120,13 +115,11 @@ class HasItems:
 
 class Section(BaseModel, HasItems):
     content_type: Literal["section"] = Field(alias="type")
-    id: Optional[str]
-    name: Optional[str]
-    items: Optional[List[SectionContent]]
+    id: Optional[str] = None
+    name: Optional[str] = None
+    items: Optional[List[SectionContent]] = None
     excludes: OptionalExclusionList
-
-    class Config:
-        allow_population_by_field_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class SectionAlias(BaseModel):
@@ -165,14 +158,13 @@ ExpandedRootContent = Union[
 class StaticToolBoxView(BaseModel, HasItems):
     id: str
     name: str
-    description: Optional[str]
+    description: Optional[str] = None
     view_type: StaticToolBoxViewTypeEnum = Field(alias="type")
-    items: Optional[List[RootContent]]  # if empty, use integrated tool panel
+    items: Optional[List[RootContent]] = None  # if empty, use integrated tool panel
     excludes: OptionalExclusionList
 
     @staticmethod
     def from_dict(as_dict):
         return StaticToolBoxView(**as_dict)
 
-    class Config:
-        allow_population_by_field_name = True
+    model_config = ConfigDict(populate_by_name=True)

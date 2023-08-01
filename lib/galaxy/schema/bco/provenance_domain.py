@@ -14,8 +14,8 @@ from typing import (
 from pydantic import (
     AnyUrl,
     BaseModel,
+    ConfigDict,
     EmailStr,
-    Extra,
     Field,
 )
 
@@ -29,8 +29,7 @@ class Status(Enum):
 
 
 class Embargo(BaseModel):
-    class Config:
-        extra = Extra.forbid
+    model_config = ConfigDict(extra="forbid")
 
     start_time: Optional[datetime] = Field(None, description="Beginning date of embargo period.")
     end_time: Optional[datetime] = Field(None, description="End date of embargo period.")
@@ -53,8 +52,7 @@ class ContributionEnum(Enum):
 
 
 class Contributor(BaseModel):
-    class Config:
-        extra = Extra.forbid
+    model_config = ConfigDict(extra="forbid")
 
     name: str = Field(..., description="Name of contributor", example=["Charles Darwin"])
     affiliation: Optional[str] = Field(
@@ -83,8 +81,7 @@ class ObjectId(BaseModel):
 
 
 class Uri(BaseModel):
-    class Config:
-        extra = Extra.forbid
+    model_config = ConfigDict(extra="forbid")
 
     filename: Optional[str] = None
     uri: AnyUrl
@@ -92,13 +89,12 @@ class Uri(BaseModel):
         None, description="Time stamp of when the request for this data was submitted"
     )
     sha1_checksum: Optional[str] = Field(
-        None, description="output of hash function that produces a message digest", regex="[A-Za-z0-9]+"
+        None, description="output of hash function that produces a message digest", pattern="[A-Za-z0-9]+"
     )
 
 
 class ReviewItem(BaseModel):
-    class Config:
-        extra = Extra.forbid
+    model_config = ConfigDict(extra="forbid")
 
     date: Optional[datetime] = None
     reviewer: Contributor = Field(..., description="Contributer that assigns IEEE-2791 review status.")
@@ -111,8 +107,7 @@ class ReviewItem(BaseModel):
 
 
 class ProvenanceDomain(BaseModel):
-    class Config:
-        extra = Extra.forbid
+    model_config = ConfigDict(extra="forbid")
 
     name: str = Field(
         ...,

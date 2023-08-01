@@ -10,6 +10,7 @@ from typing import (
 
 from pydantic import (
     BaseModel,
+    ConfigDict,
     Field,
 )
 from typing_extensions import (
@@ -24,8 +25,8 @@ class Repository(BaseModel):
     name: str
     owner: str
     type: str  # TODO: enum
-    remote_repository_url: Optional[str]
-    homepage_url: Optional[str]
+    remote_repository_url: Optional[str] = None
+    homepage_url: Optional[str] = None
     description: str
     user_id: str
     private: bool
@@ -96,9 +97,7 @@ class CreateRepositoryRequest(BaseModel):
         alias="category_ids[]",
         title="Category IDs",
     )
-
-    class Config:
-        allow_population_by_field_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class RepositoryUpdateRequest(BaseModel):
@@ -125,7 +124,7 @@ class RepositoryRevisionMetadata(BaseModel):
     id: str
     repository: Repository
     repository_dependencies: List[RepositoryDependency]
-    tools: Optional[List[RepositoryTool]]
+    tools: Optional[List[RepositoryTool]] = None
     repository_id: str
     numeric_revision: int
     changeset_revision: str
@@ -136,9 +135,9 @@ class RepositoryRevisionMetadata(BaseModel):
     includes_tools: bool
     includes_tools_for_display_in_tool_panel: bool
     # Deprecate these...
-    includes_tool_dependencies: Optional[bool]
-    includes_datatypes: Optional[bool]
-    includes_workflows: Optional[bool]
+    includes_tool_dependencies: Optional[bool] = None
+    includes_datatypes: Optional[bool] = None
+    includes_workflows: Optional[bool] = None
 
 
 class RepositoryMetadata(BaseModel):
@@ -173,8 +172,8 @@ class ResetMetadataOnRepositoryResponse(BaseModel):
 
 class ToolSearchRequest(BaseModel):
     q: str
-    page: Optional[int]
-    page_size: Optional[int]
+    page: Optional[int] = None
+    page_size: Optional[int] = None
 
 
 class ToolSearchHitTool(BaseModel):
@@ -213,8 +212,8 @@ class ToolSearchResults(BaseModel):
 
 
 class RepositoryIndexRequest(BaseModel):
-    owner: Optional[str]
-    name: Optional[str]
+    owner: Optional[str] = None
+    name: Optional[str] = None
     deleted: str = "false"
 
 
@@ -229,8 +228,8 @@ class RepositoryIndexResponse(BaseModel):
 
 class RepositorySearchRequest(BaseModel):
     q: str
-    page: Optional[int]
-    page_size: Optional[int]
+    page: Optional[int] = None
+    page_size: Optional[int] = None
 
 
 class RepositorySearchResult(BaseModel):
@@ -238,10 +237,10 @@ class RepositorySearchResult(BaseModel):
     name: str
     repo_owner_username: str
     description: str
-    long_description: Optional[str]
-    remote_repository_url: Optional[str]
-    homepage_url: Optional[str]
-    last_update: Optional[str]
+    long_description: Optional[str] = None
+    remote_repository_url: Optional[str] = None
+    homepage_url: Optional[str] = None
+    last_update: Optional[str] = None
     full_last_updated: str
     repo_lineage: str
     approved: bool
@@ -331,7 +330,7 @@ class RepositoryExtraInstallInfo(BaseModel):
     changeset_revision: str
     ctx_rev: str
     repository_owner: str
-    repository_dependencies: Optional[Dict]
+    repository_dependencies: Optional[Dict] = None
     # tool dependencies not longer work so don't transmit them in v2?
     # tool_dependencies: Optional[Dict]
 
@@ -362,7 +361,7 @@ class ValidTool(BaseModel):
     tool_config: str
     tool_type: str
     version: str
-    version_string_cmd: Optional[str]
+    version_string_cmd: Optional[str] = None
 
     @staticmethod
     def from_legacy_dict(as_dict: ValidToolDict) -> "ValidTool":
@@ -407,8 +406,8 @@ class RepositoryMetadataInstallInfo(BaseModel):
 
 
 class InstallInfo(BaseModel):
-    metadata_info: Optional[RepositoryMetadataInstallInfo]
-    repo_info: Optional[RepositoryExtraInstallInfo]
+    metadata_info: Optional[RepositoryMetadataInstallInfo] = None
+    repo_info: Optional[RepositoryExtraInstallInfo] = None
 
 
 def from_legacy_install_info(legacy_install_info: LegacyInstallInfoTuple) -> InstallInfo:

@@ -22,7 +22,10 @@ from gxformat2 import (
 from gxformat2.abstract import from_dict
 from gxformat2.cytoscape import to_cytoscape
 from gxformat2.yaml import ordered_dump
-from pydantic import BaseModel
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+)
 from sqlalchemy import (
     and_,
     desc,
@@ -1884,11 +1887,9 @@ class RefactorResponse(BaseModel):
     action_executions: List[RefactorActionExecution]
     workflow: dict
     dry_run: bool
-
-    class Config:
-        # Workflows have dictionaries with integer keys, which pydantic doesn't coerce to strings.
-        # Integer object keys aren't valid JSON, so the client fails.
-        json_dumps = safe_dumps
+    # TODO[pydantic]: The following keys were removed: `json_dumps`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(json_dumps=safe_dumps)
 
 
 class WorkflowStateResolutionOptions(BaseModel):

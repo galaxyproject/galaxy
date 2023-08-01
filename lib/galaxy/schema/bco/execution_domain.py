@@ -15,15 +15,14 @@ from typing import (
 from pydantic import (
     AnyUrl,
     BaseModel,
+    ConfigDict,
     EmailStr,
-    Extra,
     Field,
 )
 
 
 class ExternalDataEndpoint(BaseModel):
-    class Config:
-        extra = Extra.forbid
+    model_config = ConfigDict(extra="forbid")
 
     name: str = Field(
         ..., description="Description of the service that is accessed", example=["HIVE", "access to e-utils"]
@@ -36,8 +35,7 @@ class ExternalDataEndpoint(BaseModel):
 
 
 class Uri(BaseModel):
-    class Config:
-        extra = Extra.forbid
+    model_config = ConfigDict(extra="forbid")
 
     filename: Optional[str] = None
     uri: AnyUrl
@@ -45,7 +43,7 @@ class Uri(BaseModel):
         None, description="Time stamp of when the request for this data was submitted"
     )
     sha1_checksum: Optional[str] = Field(
-        None, description="output of hash function that produces a message digest", regex="[A-Za-z0-9]+"
+        None, description="output of hash function that produces a message digest", pattern="[A-Za-z0-9]+"
     )
 
 
@@ -73,8 +71,7 @@ class ContributionEnum(Enum):
 
 
 class Contributor(BaseModel):
-    class Config:
-        extra = Extra.forbid
+    model_config = ConfigDict(extra="forbid")
 
     name: str = Field(..., description="Name of contributor", example=["Charles Darwin"])
     affiliation: Optional[str] = Field(
@@ -96,15 +93,13 @@ class Contributor(BaseModel):
 
 
 class ScriptItem(BaseModel):
-    class Config:
-        extra = Extra.forbid
+    model_config = ConfigDict(extra="forbid")
 
     uri: Optional[Uri] = None
 
 
 class SoftwarePrerequisite(BaseModel):
-    class Config:
-        extra = Extra.forbid
+    model_config = ConfigDict(extra="forbid")
 
     name: str = Field(..., description="Names of software prerequisites", example=["HIVE-hexagon"])
     version: str = Field(..., description="Versions of the software prerequisites", example=["babajanian.1"])
@@ -112,8 +107,7 @@ class SoftwarePrerequisite(BaseModel):
 
 
 class ExecutionDomain(BaseModel):
-    class Config:
-        extra = Extra.forbid
+    model_config = ConfigDict(extra="forbid")
 
     script: List[ScriptItem] = Field(
         ...,

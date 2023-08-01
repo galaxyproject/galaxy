@@ -21,8 +21,8 @@ from pydantic import (
     AnyHttpUrl,
     AnyUrl,
     BaseModel,
+    ConfigDict,
     ConstrainedStr,
-    Extra,
     Field,
     Json,
     Required,
@@ -259,6 +259,8 @@ FlexibleUserIdType = Union[DecodedDatabaseIdField, Literal["current"]]
 class Model(BaseModel):
     """Base model definition with common configuration used by all derived models."""
 
+    # TODO[pydantic]: We couldn't refactor this class, please create the `model_config` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
     class Config:
         use_enum_values = True  # when using .dict()
         allow_population_by_field_name = True
@@ -567,8 +569,17 @@ class DisplayApp(Model):
 
 
 class Visualization(Model):  # TODO annotate this model
-    class Config:
-        extra = Extra.allow  # Allow any fields temporarily until the model is annotated
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(
+        use_enum_values=True,
+        populate_by_name=True,
+        json_encoders={
+            # This will ensure all IDs are encoded when serialized to JSON
+            DecodedDatabaseIdField: lambda v: DecodedDatabaseIdField.encode(v),
+            LibraryFolderDatabaseIdField: lambda v: LibraryFolderDatabaseIdField.encode(v),
+        },
+    )
 
 
 class HistoryItemBase(Model):
@@ -605,8 +616,7 @@ class HistoryItemBase(Model):
 class HistoryItemCommon(HistoryItemBase):
     """Common information provided by items contained in a History."""
 
-    class Config:
-        extra = Extra.allow
+    model_config = ConfigDict(extra="allow")
 
     type_id: Optional[str] = Field(
         default=None,
@@ -775,7 +785,7 @@ class HDADetailed(HDASummary):
         description="The state of the datatype validation for this dataset.",
     )
     validated_state_message: Optional[str] = Field(
-        ...,
+        None,
         title="Validated State Message",
         description="The message with details about the datatype validation result for this dataset.",
     )
@@ -845,9 +855,7 @@ class HDAObject(Model):
     hda_ldda: DatasetSourceType = HdaLddaField
     history_id: DecodedDatabaseIdField = HistoryIdField
     tags: List[str]
-
-    class Config:
-        extra = Extra.allow  # Can contain more fields like metadata_*
+    model_config = ConfigDict(extra="allow")
 
 
 class DCObject(Model):
@@ -1025,8 +1033,7 @@ class HDCADetailed(HDCASummary):
 class HistoryBase(Model):
     """Provides basic configuration for all the History models."""
 
-    class Config:
-        extra = Extra.allow  # Allow any other extra fields
+    model_config = ConfigDict(extra="allow")
 
 
 class HistoryContentItemBase(Model):
@@ -1050,9 +1057,7 @@ class EncodedHistoryContentItem(HistoryContentItemBase):
 class UpdateContentItem(HistoryContentItem):
     """Used for updating a particular history item. All fields are optional."""
 
-    class Config:
-        use_enum_values = True  # When using .dict()
-        extra = Extra.allow  # Allow any other extra fields
+    model_config = ConfigDict(use_enum_values=True, extra="allow")
 
 
 class UpdateHistoryContentsBatchPayload(HistoryBase):
@@ -1063,14 +1068,14 @@ class UpdateHistoryContentsBatchPayload(HistoryBase):
         title="Items",
         description="A list of content items to update with the changes.",
     )
-
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "items": [{"history_content_type": "dataset", "id": "string"}],
                 "visible": False,
             }
         }
+    )
 
 
 class HistoryContentItemOperation(str, Enum):
@@ -1113,8 +1118,8 @@ AnyBulkOperationParams = Union[
 
 class HistoryContentBulkOperationPayload(Model):
     operation: HistoryContentItemOperation
-    items: Optional[List[HistoryContentItem]]
-    params: Optional[AnyBulkOperationParams]
+    items: Optional[List[HistoryContentItem]] = None
+    params: Optional[AnyBulkOperationParams] = None
 
 
 class BulkOperationItemError(Model):
@@ -1155,14 +1160,14 @@ class UpdateHistoryContentsPayload(HistoryBase):
         title="Tags",
         description="A list of tags to add to this item.",
     )
-
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "visible": False,
                 "annotation": "Test",
             }
         }
+    )
 
 
 class HistorySummary(HistoryBase):
@@ -1550,8 +1555,8 @@ class ModelStoreFormat(str, Enum):
 
 
 class StoreContentSource(Model):
-    store_content_uri: Optional[str]
-    store_dict: Optional[Dict[str, Any]]
+    store_content_uri: Optional[str] = None
+    store_dict: Optional[Dict[str, Any]] = None
     model_store_format: Optional["ModelStoreFormat"] = None
 
 
@@ -1671,18 +1676,18 @@ class ExportObjectType(str, Enum):
 class ExportObjectRequestMetadata(Model):
     object_id: EncodedDatabaseIdField
     object_type: ExportObjectType
-    user_id: Optional[EncodedDatabaseIdField]
+    user_id: Optional[EncodedDatabaseIdField] = None
     payload: Union[WriteStoreToPayload, ShortTermStoreExportPayload]
 
 
 class ExportObjectResultMetadata(Model):
     success: bool
-    error: Optional[str]
+    error: Optional[str] = None
 
 
 class ExportObjectMetadata(Model):
     request_data: ExportObjectRequestMetadata
-    result_data: Optional[ExportObjectResultMetadata]
+    result_data: Optional[ExportObjectResultMetadata] = None
 
     def is_short_term(self):
         """Whether the export is a short term export."""
@@ -1700,7 +1705,7 @@ class ObjectExportTaskResponse(ObjectExportResponseBase):
         description="The identifier of the task processing the export.",
     )
     create_time: datetime = CreateTimeField
-    export_metadata: Optional[ExportObjectMetadata]
+    export_metadata: Optional[ExportObjectMetadata] = None
 
 
 class JobExportHistoryArchiveListResponse(Model):
@@ -1919,7 +1924,7 @@ class JobDetails(JobSummary):
         description="Tool version indicated during job execution.",
     )
     params: Any = Field(
-        ...,
+        None,
         title="Parameters",
         description=(
             "Object containing all the parameters of the tool associated with this job. "
@@ -1964,9 +1969,8 @@ class JobMetric(Model):
         title="Raw Value",
         description="The raw value of the metric as a string.",
     )
-
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "title": "Job Start Time",
                 "value": "2021-02-25 14:55:40",
@@ -1975,6 +1979,7 @@ class JobMetric(Model):
                 "raw_value": "1614261340.0000000",
             }
         }
+    )
 
 
 class JobMetricCollection(Model):
@@ -2117,7 +2122,7 @@ class WorkflowOutput(Model):
         description="The name assigned to the output.",
     )
     uuid: Optional[UUID4] = Field(
-        ...,
+        None,
         title="UUID",
         description="Universal unique identifier of the output.",
     )
@@ -2169,7 +2174,7 @@ class ToolBasedWorkflowStep(WorkflowStepBase):
     tool_version: Optional[str] = Field(
         None, title="Tool Version", description="The version of the tool associated with this step."
     )
-    tool_inputs: Any = Field(..., title="Tool Inputs", description="TODO")
+    tool_inputs: Any = Field(None, title="Tool Inputs", description="TODO")
 
 
 class InputDataStep(ToolBasedWorkflowStep):
@@ -2607,7 +2612,7 @@ class InstalledRepositoryToolShedStatus(Model):
         title="Latest installed revision", description="Most recent version available on the tool shed"
     )
     revision_update: str
-    revision_upgrade: Optional[str]
+    revision_upgrade: Optional[str] = None
     repository_deprecated: Optional[str] = Field(
         title="Repository deprecated", description="Repository has been depreciated on the tool shed"
     )
@@ -2875,7 +2880,7 @@ class LibraryPermissionsPayloadBase(Model):
 
 class LibraryPermissionsPayload(LibraryPermissionsPayloadBase):
     action: Optional[LibraryPermissionAction] = Field(
-        ...,
+        None,
         title="Action",
         description="Indicates what action should be performed on the Library.",
     )
@@ -3051,7 +3056,7 @@ class FileLibraryFolderItem(LibraryFolderItemBase):
     raw_size: int
     ldda_id: EncodedDatabaseIdField
     tags: TagCollection
-    message: Optional[str]
+    message: Optional[str] = None
 
 
 AnyLibraryFolderItem = Annotated[Union[FileLibraryFolderItem, FolderLibraryFolderItem], Field(discriminator="type")]
@@ -3156,8 +3161,7 @@ class CustomHistoryItem(Model):
     parameters without a particular view (predefined set of keys).
     """
 
-    class Config:
-        extra = Extra.allow
+    model_config = ConfigDict(extra="allow")
 
 
 AnyHDA = Union[HDADetailed, HDASummary]
@@ -3286,9 +3290,7 @@ class ShareWithExtra(Model):
         title="Can Share",
         description="Indicates whether the resource can be directly shared or requires further actions.",
     )
-
-    class Config:
-        extra = Extra.allow
+    model_config = ConfigDict(extra="allow")
 
 
 UserIdentifier = Union[DecodedDatabaseIdField, str]
@@ -3463,7 +3465,7 @@ class PageSummaryBase(Model):
         ...,  # Required
         title="Identifier",
         description="The title slug for the page URL, must be unique.",
-        regex=r"^[a-z0-9\-]+$",
+        pattern=r"^[a-z0-9\-]+$",
     )
 
 
@@ -3499,10 +3501,7 @@ class CreatePagePayload(PageSummaryBase):
         title="Workflow invocation ID",
         description="Encoded ID used by workflow generated reports.",
     )
-
-    class Config:
-        use_enum_values = True  # When using .dict()
-        extra = Extra.allow  # Allow any other extra fields
+    model_config = ConfigDict(use_enum_values=True, extra="allow")
 
 
 class AsyncTaskResultSummary(Model):
@@ -3591,9 +3590,7 @@ class PageDetails(PageSummary):
         title="Generate Date",
         description="The date this page was generated.",
     )
-
-    class Config:
-        extra = Extra.allow  # Allow any other extra fields
+    model_config = ConfigDict(extra="allow")
 
 
 class PageSummaryList(Model):

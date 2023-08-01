@@ -8,7 +8,7 @@ from typing import (
 )
 
 from pydantic import (
-    Extra,
+    ConfigDict,
     Field,
     ValidationError,
 )
@@ -57,9 +57,7 @@ class UpdateCollectionAttributePayload(Model):
     """Contains attributes that can be updated for all elements in a dataset collection."""
 
     dbkey: str = Field(..., description="TODO")
-
-    class Config:
-        extra = Extra.forbid  # will cause validation to fail if extra attributes are included,
+    model_config = ConfigDict(extra="forbid")
 
 
 class DatasetCollectionAttributesResult(Model):

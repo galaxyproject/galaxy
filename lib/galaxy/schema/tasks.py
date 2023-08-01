@@ -52,7 +52,7 @@ class RequestUser(BaseModel):
 class GenerateHistoryDownload(ShortTermStoreExportPayload):
     history_id: int
     user: RequestUser
-    export_association_id: Optional[int]
+    export_association_id: Optional[int] = None
 
 
 class GenerateHistoryContentDownload(ShortTermStoreExportPayload):
@@ -84,15 +84,15 @@ class WriteHistoryContentTo(WriteStoreToPayload):
 class WriteHistoryTo(WriteStoreToPayload):
     history_id: int
     user: RequestUser
-    export_association_id: Optional[int]
+    export_association_id: Optional[int] = None
 
 
 class ImportModelStoreTaskRequest(BaseModel):
     user: RequestUser
-    history_id: Optional[int]
+    history_id: Optional[int] = None
     source_uri: str
     for_library: bool
-    model_store_format: Optional[ModelStoreFormat]
+    model_store_format: Optional[ModelStoreFormat] = None
 
 
 class MaterializeDatasetInstanceTaskRequest(BaseModel):
@@ -114,9 +114,9 @@ class MaterializeDatasetInstanceTaskRequest(BaseModel):
 
 class ComputeDatasetHashTaskRequest(BaseModel):
     dataset_id: int
-    extra_files_path: Optional[str]
+    extra_files_path: Optional[str] = None
     hash_function: HashFunctionNameEnum
-    user: Optional[RequestUser]  # access checks should be done pre-celery so this is optional
+    user: Optional[RequestUser] = None  # access checks should be done pre-celery so this is optional
 
 
 class PurgeDatasetsTaskRequest(BaseModel):

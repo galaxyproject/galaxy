@@ -13,7 +13,10 @@ from typing import (
     Union,
 )
 
-from pydantic import Field
+from pydantic import (
+    ConfigDict,
+    Field,
+)
 from starlette.datastructures import URL
 
 from galaxy import (
@@ -193,13 +196,13 @@ class ConvertedDatasetsMap(Model):
     """Map of `file extension` -> `converted dataset encoded id`"""
 
     __root__: Dict[str, DecodedDatabaseIdField]  # extension -> dataset ID
-
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "csv": "dataset_id",
             }
         }
+    )
 
 
 class DataMode(str, Enum):
@@ -237,9 +240,7 @@ class ComputeDatasetHashPayload(Model):
         default=HashFunctionNameEnum.md5, description="Hash function name to use to compute dataset hashes."
     )
     extra_files_path: Optional[str] = Field(default=None, description="If set, extra files path to compute a hash for.")
-
-    class Config:
-        use_enum_values = True  # When using .dict()
+    model_config = ConfigDict(use_enum_values=True)
 
 
 class DatasetErrorMessage(Model):

@@ -14,7 +14,7 @@ from typing import (
 
 from celery import chain
 from pydantic import (
-    Extra,
+    ConfigDict,
     Field,
 )
 from typing_extensions import (
@@ -250,8 +250,7 @@ class CreateHistoryContentPayloadFromCollection(CreateHistoryContentPayloadFromC
 
 
 class CreateHistoryContentPayload(CreateHistoryContentPayloadFromCollection, CreateNewCollectionPayload):
-    class Config:
-        extra = Extra.allow
+    model_config = ConfigDict(extra="allow")
 
 
 class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelStores):
