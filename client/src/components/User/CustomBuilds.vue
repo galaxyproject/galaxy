@@ -66,18 +66,14 @@
                             <GInput id="id" v-model="form.id" tour_id="id" required />
                         </GFormGroup>
                         <GFormGroup label="Definition" description="Provide the data source." label-for="type">
-                            <b-form-select
-                                id="type"
-                                v-model="selectedDataSource"
-                                tour_id="type"
-                                :options="dataSources"></b-form-select>
+                            <GFormSelect id="type" v-model="selectedDataSource" tour_id="type" :options="dataSources" />
                         </GFormGroup>
                         <div>
                             <GFormGroup v-if="selectedDataSource === 'fasta'" label="FASTA-file">
-                                <b-form-select
+                                <GFormSelect
                                     v-model="selectedFastaFile"
                                     :options="fastaFiles"
-                                    :disabled="fastaFilesSelectDisabled"></b-form-select>
+                                    :disabled="fastaFilesSelectDisabled" />
                             </GFormGroup>
                             <GFormGroup v-if="selectedDataSource === 'file'" label="Len-file">
                                 <b-form-file placeholder="Choose a file..." @change="readFile" />
@@ -155,7 +151,18 @@ import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 import Multiselect from "vue-multiselect";
 
-import { GAlert, GButton, GCard, GCol, GContainer, GFormGroup, GInput, GProgress, GRow } from "@/component-library";
+import {
+    GAlert,
+    GButton,
+    GCard,
+    GCol,
+    GContainer,
+    GFormGroup,
+    GFormSelect,
+    GInput,
+    GProgress,
+    GRow,
+} from "@/component-library";
 
 Vue.use(BootstrapVue);
 
@@ -167,6 +174,7 @@ export default {
         GCol,
         GContainer,
         GFormGroup,
+        GFormSelect,
         GInput,
         GProgress,
         GRow,

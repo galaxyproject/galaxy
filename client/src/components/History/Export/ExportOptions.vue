@@ -1,9 +1,8 @@
 <script setup>
-import { BFormSelect } from "bootstrap-vue";
 import { ExportParamsModel } from "components/Common/models/exportRecordModel";
 import { computed, reactive, ref } from "vue";
 
-import { GCard, GCollapse, GFormCheckbox, GFormGroup, GLink } from "@/component-library";
+import { GCard, GCollapse, GFormCheckbox, GFormGroup, GFormSelect, GLink } from "@/component-library";
 
 import { AVAILABLE_EXPORT_FORMATS } from "./services";
 
@@ -43,7 +42,7 @@ function onValueChanged() {
         <GCollapse id="collapse-options" v-model="isExpanded">
             <GCard>
                 <GFormGroup label="Export Format:" label-for="format">
-                    <BFormSelect
+                    <GFormSelect
                         id="format-selector"
                         v-model="localOptions.modelStoreFormat"
                         :options="AVAILABLE_EXPORT_FORMATS"

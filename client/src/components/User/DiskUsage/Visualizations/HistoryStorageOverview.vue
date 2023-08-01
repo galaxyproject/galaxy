@@ -2,6 +2,7 @@
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { GFormSelect } from "@/component-library";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useToast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -185,15 +186,14 @@ async function onPermanentlyDeleteDataset(datasetId: string) {
                 :value-formatter="bytesValueFormatter">
                 <template v-slot:title>
                     <b>{{ localize(`Top ${numberOfDatasetsToDisplay} Datasets by Size`) }}</b>
-                    <b-form-select
+                    <GFormSelect
                         v-model="numberOfDatasetsToDisplay"
                         :options="numberOfDatasetsToDisplayOptions"
                         :disabled="isLoading"
                         title="Number of histories to show"
                         class="float-right w-auto"
                         size="sm"
-                        @change="buildGraphsData()">
-                    </b-form-select>
+                        @change="buildGraphsData()" />
                 </template>
                 <template v-slot:tooltip="{ data }">
                     <RecoverableItemSizeTooltip :data="data" :is-recoverable="isRecoverableDataPoint(data)" />

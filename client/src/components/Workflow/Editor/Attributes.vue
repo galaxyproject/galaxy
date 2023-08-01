@@ -10,17 +10,17 @@
         </div>
         <div id="workflow-version-area" class="mt-2">
             <b>Version</b>
-            <b-form-select v-model="versionCurrent" @change="onVersion">
-                <b-form-select-option v-for="v in versionOptions" :key="v.version" :value="v.version">
+            <GFormSelect v-model="versionCurrent" @change="onVersion">
+                <GFormSelectOption v-for="v in versionOptions" :key="v.version" :value="v.version">
                     {{ v.label }}
-                </b-form-select-option>
-            </b-form-select>
+                </GFormSelectOption>
+            </GFormSelect>
         </div>
         <div v-if="hasParameters" id="workflow-parameters-area" class="mt-2">
             <b>Parameters</b>
             <b-list-group>
-                <b-list-group-item v-for="[key, p] in parameters.parameters.entries()" :key="key"
-                    >{{ key + 1 }}: {{ p.name }}
+                <b-list-group-item v-for="[key, p] in parameters.parameters.entries()" :key="key">
+                    {{ key + 1 }}: {{ p.name }}
                 </b-list-group-item>
             </b-list-group>
         </div>
@@ -52,28 +52,26 @@
 </template>
 
 <script>
-import BootstrapVue from "bootstrap-vue";
 import LicenseSelector from "components/License/LicenseSelector";
 import CreatorEditor from "components/SchemaOrg/CreatorEditor";
 import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import { Services } from "components/Workflow/services";
 import { format, parseISO } from "date-fns";
-import Vue from "vue";
 
-import { GAlert, GInput } from "@/component-library";
+import { GAlert, GFormSelect, GFormSelectOption, GInput } from "@/component-library";
 
 import { UntypedParameters } from "./modules/parameters";
-
-Vue.use(BootstrapVue);
 
 export default {
     name: "Attributes",
     components: {
-        GAlert,
-        StatelessTags,
-        LicenseSelector,
         CreatorEditor,
+        GAlert,
+        GFormSelect,
+        GFormSelectOption,
         GInput,
+        LicenseSelector,
+        StatelessTags,
     },
     props: {
         id: {

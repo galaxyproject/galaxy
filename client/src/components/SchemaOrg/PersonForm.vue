@@ -3,9 +3,9 @@
     <b-form @submit="onSave" @reset="onReset">
         <div v-for="attribute in displayedAttributes" :key="attribute.key" role="group" class="form-group">
             <label :for="attribute.key">{{ attribute.label }}</label>
-            <span v-b-tooltip.hover title="Hide Attribute"
-                ><FontAwesomeIcon icon="eye-slash" @click="onHide(attribute.key)"
-            /></span>
+            <span v-b-tooltip.hover title="Hide Attribute">
+                <FontAwesomeIcon icon="eye-slash" @click="onHide(attribute.key)" />
+            </span>
             <GInput
                 :id="attribute.key"
                 v-model="currentValues[attribute.key]"
@@ -13,7 +13,7 @@
                 :type="attribute.type" />
         </div>
         <div role="group" class="form-group">
-            <b-form-select v-model="addAttribute" :options="addAttributes" size="sm"></b-form-select>
+            <GFormSelect v-model="addAttribute" :options="addAttributes" size="sm"></GFormSelect>
         </div>
         <GButton type="submit" variant="primary">Save</GButton>
         <GButton type="reset" variant="danger">Cancel</GButton>
@@ -25,7 +25,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEyeSlash, faLink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-import { GButton, GInput } from "@/component-library";
+import { GButton, GFormSelect, GInput } from "@/component-library";
 
 import ThingFormMixin from "./ThingFormMixin";
 
@@ -53,6 +53,7 @@ export default {
     components: {
         FontAwesomeIcon,
         GButton,
+        GFormSelect,
         GInput,
     },
     mixins: [ThingFormMixin],

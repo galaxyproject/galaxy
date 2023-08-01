@@ -8,49 +8,46 @@
                 <b-form inline>
                     <b>Resolution:</b>
                     <label class="mr-sm-2" for="manage-container-type">Resolve containers of type</label>
-                    <b-form-select
+                    <GFormSelect
                         id="manage-container-type"
                         v-model="containerType"
                         class="mb-2 mr-sm-2 mb-sm-0"
-                        :options="containerTypeOptions"></b-form-select>
+                        :options="containerTypeOptions" />
                     <label class="mr-sm-2" for="manage-resolver-type">using resolvers of type</label>
-                    <b-form-select
+                    <GFormSelect
                         id="manage-resolver-type"
                         v-model="resolverType"
                         class="mb-2 mr-sm-2 mb-sm-0"
-                        :options="resolverTypeOptions"></b-form-select>
+                        :options="resolverTypeOptions" />
                 </b-form>
             </GRow>
             <GRow class="m-1">
                 <b-form inline>
                     <b>Filter:</b>
                     <label class="mr-sm-2" for="manage-filter-resolution">Resolution</label>
-                    <b-form-select
-                        id="manage-filter-resolution"
-                        v-model="filterResolution"
-                        class="mb-2 mr-sm-2 mb-sm-0">
+                    <GFormSelect id="manage-filter-resolution" v-model="filterResolution" class="mb-2 mr-sm-2 mb-sm-0">
                         <option :value="null">*any*</option>
                         <option value="unresolved">Unresolved</option>
                         <option value="resolved">Resolved</option>
-                    </b-form-select>
-                    <label v-if="filterResolution != 'unresolved'" class="mr-sm-2" for="manage-filter-container-type"
-                        >Containers of type</label
-                    >
-                    <b-form-select
+                    </GFormSelect>
+                    <label v-if="filterResolution != 'unresolved'" class="mr-sm-2" for="manage-filter-container-type">
+                        Containers of type
+                    </label>
+                    <GFormSelect
                         v-if="filterResolution != 'unresolved'"
                         id="manage-filter-container-type"
                         v-model="filterContainerType"
                         class="mb-2 mr-sm-2 mb-sm-0"
-                        :options="containerTypeOptions"></b-form-select>
-                    <label v-if="filterResolution != 'unresolved'" class="mr-sm-2" for="manage-filter-resolver-type"
-                        >Resolvers of type</label
-                    >
-                    <b-form-select
+                        :options="containerTypeOptions"></GFormSelect>
+                    <label v-if="filterResolution != 'unresolved'" class="mr-sm-2" for="manage-filter-resolver-type">
+                        Resolvers of type
+                    </label>
+                    <GFormSelect
                         v-if="filterResolution != 'unresolved'"
                         id="manage-filter-resolver-type"
                         v-model="filterResolverType"
                         class="mb-2 mr-sm-2 mb-sm-0"
-                        :options="resolverTypeOptions"></b-form-select>
+                        :options="resolverTypeOptions"></GFormSelect>
                 </b-form>
             </GRow>
         </template>
@@ -91,18 +88,14 @@
     </dependency-index-wrapper>
 </template>
 <script>
-import BootstrapVue from "bootstrap-vue";
 import _ from "underscore";
-import Vue from "vue";
 
-import { GButton, GFormCheckbox, GRow } from "@/component-library";
+import { GButton, GFormCheckbox, GFormSelect, GRow } from "@/component-library";
 
 import { getContainerResolutionToolbox, resolveContainersWithInstall } from "../AdminServices";
 import ContainerResolutionDetails from "./ContainerResolutionDetails";
 import { DESCRIPTION } from "./ContainerResolver";
 import DependencyIndexMixin from "./DependencyIndexMixin";
-
-Vue.use(BootstrapVue);
 
 const RESOLVER_TYPE_OPTIONS = _.keys(DESCRIPTION).map((resolverType) => ({ value: resolverType, text: resolverType }));
 RESOLVER_TYPE_OPTIONS.splice(0, 0, { value: null, text: "*any*" });
@@ -111,6 +104,7 @@ export default {
     components: {
         GButton,
         GFormCheckbox,
+        GFormSelect,
         GRow,
         ContainerResolutionDetails,
     },

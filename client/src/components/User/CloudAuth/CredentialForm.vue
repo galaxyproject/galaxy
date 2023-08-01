@@ -16,7 +16,7 @@
             label="Identity Provider"
             label-for="identityProvider"
             label-cols-lg="3">
-            <b-form-select
+            <GFormSelect
                 id="identityProvider"
                 v-model="credential.authn_id"
                 :state="credential.fieldValid('authn_id')"
@@ -25,7 +25,7 @@
 
         <!-- aws/azure, etc -->
         <GFormGroup label="Resource Provider" label-for="resourceProvider" label-cols-lg="3">
-            <b-form-select
+            <GFormSelect
                 id="resourceProvider"
                 v-model="credential.resourceProvider"
                 :state="credential.fieldValid('provider')"
@@ -48,7 +48,7 @@
 </template>
 
 <script>
-import { GButton, GFormGroup, GInput } from "@/component-library";
+import { GButton, GFormGroup, GFormSelect, GInput } from "@/component-library";
 
 import CredentialConfig from "./CredentialConfig";
 import { Credential, ResourceProviders } from "./model";
@@ -59,6 +59,7 @@ export default {
         CredentialConfig,
         GButton,
         GFormGroup,
+        GFormSelect,
         GInput,
     },
     props: {

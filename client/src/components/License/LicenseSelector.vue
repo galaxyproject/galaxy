@@ -1,16 +1,12 @@
 <template>
     <div v-if="editLicense">
         <LoadingSpan v-if="licensesLoading" message="Loading licenses..." />
-        <b-form-select
-            v-else
-            v-model="license"
-            data-description="license select"
-            :options="licenseOptions"></b-form-select>
+        <GFormSelect v-else v-model="license" data-description="license select" :options="licenseOptions" />
         <License v-if="currentLicenseInfo" :license-id="license" :input-license-info="currentLicenseInfo">
             <template v-slot:buttons>
-                <span v-b-tooltip.hover title="Save License"
-                    ><FontAwesomeIcon data-description="license save" icon="save" @click="onSave"
-                /></span>
+                <span v-b-tooltip.hover title="Save License">
+                    <FontAwesomeIcon data-description="license save" icon="save" @click="onSave" />
+                </span>
                 <span v-b-tooltip.hover title="Cancel Edit"><FontAwesomeIcon icon="times" @click="disableEdit" /></span>
             </template>
         </License>
@@ -22,18 +18,18 @@
     <div v-else-if="license" data-description="license selector" :data-license="license">
         <License :license-id="license">
             <template v-slot:buttons>
-                <span v-b-tooltip.hover title="Edit License"
-                    ><FontAwesomeIcon icon="edit" data-description="edit license link" @click="editLicense = true"
-                /></span>
+                <span v-b-tooltip.hover title="Edit License">
+                    <FontAwesomeIcon icon="edit" data-description="edit license link" @click="editLicense = true" />
+                </span>
             </template>
         </License>
     </div>
     <div v-else data-description="license selector" data-license="null">
-        <i
-            ><a href="#" data-description="edit license link" @click.prevent="editLicense = true"
-                >Specify a license for this workflow.</a
-            ></i
-        >
+        <i>
+            <a href="#" data-description="edit license link" @click.prevent="editLicense = true">
+                Specify a license for this workflow.
+            </a>
+        </i>
     </div>
 </template>
 
@@ -42,10 +38,10 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit, faSave, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
 import LoadingSpan from "components/LoadingSpan";
 import { getAppRoot } from "onload/loadConfig";
-import Vue from "vue";
+
+import { GFormSelect } from "@/component-library";
 
 import License from "./License";
 
@@ -53,10 +49,13 @@ library.add(faSave);
 library.add(faTimes);
 library.add(faEdit);
 
-Vue.use(BootstrapVue);
-
 export default {
-    components: { License, LoadingSpan, FontAwesomeIcon },
+    components: {
+        FontAwesomeIcon,
+        GFormSelect,
+        License,
+        LoadingSpan,
+    },
     props: {
         inputLicense: {
             type: String,

@@ -2,6 +2,7 @@
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { GFormSelect } from "@/component-library";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useToast } from "@/composables/toast";
 import localize from "@/utils/localization";
@@ -175,15 +176,14 @@ async function onPermanentlyDeleteHistory(historyId: string) {
                 :value-formatter="bytesValueFormatter">
                 <template v-slot:title>
                     <b>{{ localize(`Top ${numberOfHistoriesToDisplay} Histories by Size`) }}</b>
-                    <b-form-select
+                    <GFormSelect
                         v-model="numberOfHistoriesToDisplay"
                         :options="numberOfHistoriesToDisplayOptions"
                         :disabled="isLoading"
                         title="Number of histories to show"
                         class="float-right w-auto"
                         size="sm"
-                        @change="buildGraphsData()">
-                    </b-form-select>
+                        @change="buildGraphsData()" />
                 </template>
                 <template v-slot:tooltip="{ data }">
                     <RecoverableItemSizeTooltip

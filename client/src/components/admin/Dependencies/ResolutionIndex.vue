@@ -8,25 +8,22 @@
                 <b-form inline>
                     <b>Resolution:</b>
                     <label class="mr-sm-2" for="manage-resolver-type">Using resolvers of type</label>
-                    <b-form-select
+                    <GFormSelect
                         id="manage-resolver-type"
                         v-model="resolverType"
                         class="mb-2 mr-sm-2 mb-sm-0"
-                        :options="resolverTypeOptions"></b-form-select>
+                        :options="resolverTypeOptions" />
                 </b-form>
             </GRow>
             <GRow class="m-1">
                 <b-form inline>
                     <b>Filter:</b>
                     <label class="mr-sm-2" for="manage-filter-resolution">Resolution</label>
-                    <b-form-select
-                        id="manage-filter-resolution"
-                        v-model="filterResolution"
-                        class="mb-2 mr-sm-2 mb-sm-0">
+                    <GFormSelect id="manage-filter-resolution" v-model="filterResolution" class="mb-2 mr-sm-2 mb-sm-0">
                         <option :value="null">*any*</option>
                         <option value="unresolved">Unresolved</option>
                         <option value="resolved">Resolved</option>
-                    </b-form-select>
+                    </GFormSelect>
                 </b-form>
             </GRow>
         </template>
@@ -38,7 +35,7 @@
                         @change="changeToggleCheckboxState($event)"></GFormCheckbox>
                 </template>
                 <template v-slot:head(selected)="">
-                    <GFormCheckbox v-model="toggleState" @change="toggleSelectAll"></GFormCheckbox>
+                    <GFormCheckbox v-model="toggleState" @change="toggleSelectAll" />
                 </template>
                 <template v-slot:cell(requirement)="row">
                     <requirements :requirements="row.item.requirements" />
@@ -84,7 +81,7 @@
 <script>
 import _ from "underscore";
 
-import { GButton, GFormCheckbox, GRow } from "@/component-library";
+import { GButton, GFormCheckbox, GFormSelect, GRow } from "@/component-library";
 
 import { getToolboxDependencies, installDependencies, uninstallDependencies } from "../AdminServices";
 import DependencyIndexMixin from "./DependencyIndexMixin";
@@ -107,6 +104,7 @@ export default {
     components: {
         GButton,
         GFormCheckbox,
+        GFormSelect,
         GRow,
         ResolutionDetails,
     },
