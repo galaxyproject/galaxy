@@ -102,7 +102,7 @@
                         size="sm"
                         placeholder="created after" />
                     <GInputGroupAppend>
-                        <b-form-datepicker v-model="create_time_gt" reset-button button-only size="sm" />
+                        <GFormDatepicker v-model="create_time_gt" reset-button button-only size="sm" />
                     </GInputGroupAppend>
                     <GInput
                         v-model="create_time_lt"
@@ -111,7 +111,7 @@
                         size="sm"
                         placeholder="created before" />
                     <GInputGroupAppend>
-                        <b-form-datepicker v-model="create_time_lt" reset-button button-only size="sm" />
+                        <GFormDatepicker v-model="create_time_lt" reset-button button-only size="sm" />
                     </GInputGroupAppend>
                 </GInputGroup>
             </GFormGroup>
@@ -136,13 +136,14 @@ import { STATES } from "components/History/Content/model/states";
 import StatesInfo from "components/History/Content/model/StatesInfo";
 import { HistoryFilters } from "components/History/HistoryFilters";
 
-import { GButton, GFormGroup, GInput, GInputGroup, GInputGroupAppend } from "@/component-library";
+import { GButton, GFormDatepicker, GFormGroup, GInput, GInputGroup, GInputGroupAppend } from "@/component-library";
 
 import HistoryFiltersDefault from "./HistoryFiltersDefault";
 
 export default {
     components: {
         GButton,
+        GFormDatepicker,
         GFormGroup,
         GInput,
         GInputGroup,
