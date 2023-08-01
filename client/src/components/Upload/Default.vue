@@ -3,7 +3,7 @@
         <div class="upload-top">
             <div class="upload-top-info" v-html="topInfo" />
         </div>
-        <div ref="uploadBox" class="upload-box upload-box-with-footer" :class="{ highlight: highlightBox }">
+        <UploadBox>
             <div v-show="showHelper" class="upload-helper"><i class="fa fa-files-o" />Drop files here</div>
             <div v-show="!showHelper" class="upload-table ui-table-striped">
                 <DefaultRow
@@ -26,7 +26,7 @@
                     @remove="_eventRemove"
                     @input="_eventInput" />
             </div>
-        </div>
+        </UploadBox>
         <div class="upload-footer text-center">
             <span class="upload-footer-title">Type (set all):</span>
             <UploadSettingsSelect
@@ -88,7 +88,7 @@ import Vue from "vue";
 import axios from "axios";
 import UploadSettingsSelect from "./UploadSettingsSelect.vue";
 import UploadExtensionDetails from "./UploadExtensionDetails.vue";
-import $ from "jquery";
+import UploadBox from "./UploadBox.vue";
 import { getAppRoot } from "onload";
 import { filesDialog } from "utils/data";
 import { UploadQueue } from "utils/uploadbox";
@@ -101,7 +101,7 @@ import DefaultRow from "./DefaultRow.vue";
 import { defaultModel } from "./model.js";
 
 export default {
-    components: { BButton, DefaultRow, UploadExtensionDetails, UploadSettingsSelect },
+    components: { BButton, DefaultRow, UploadExtensionDetails, UploadSettingsSelect, UploadBox },
     props: {
         multiple: {
             type: Boolean,
@@ -167,7 +167,7 @@ export default {
         topInfo() {
             var message = "";
             if (this.counterAnnounce == 0) {
-                //TODO: if (this.uploadbox.compatible()) {
+                //TODO: if (this.queue.compatible()) {
                 message = "&nbsp;";
                 //} else {
                 //    message =
@@ -190,7 +190,7 @@ export default {
         this.fileSourcesConfigured = this.details.fileSourcesConfigured;
     },
     mounted() {
-        this.initUploadbox();
+        this.initUploadQueue();
     },
     methods: {
         /** Update model */
@@ -219,16 +219,15 @@ export default {
                 this.counterSuccess = 0;
                 this.counterError = 0;
                 this.counterRunning = 0;
-                this.uploadbox.reset();
+                this.queue.reset();
                 this.uploadList = {};
                 this.extension = this.details.defaultExtension;
                 this.genome = this.details.defaultDbKey;
                 this.details.model.set("percentage", 0);
             }
         },
-        initUploadbox() {
-            this.uploadbox = new UploadQueue({
-                $uploadBox: this.$refs.uploadBox,
+        initUploadQueue() {
+            this.queue = new UploadQueue({
                 initUrl: (index) => {
                     if (!this.uploadUrl) {
                         this.uploadUrl = `${getAppRoot()}api/tools/fetch`;
@@ -255,7 +254,7 @@ export default {
             });
         },
         uploadSelect: function () {
-            this.uploadbox.select();
+            //this.queue.select();
         },
 
         /** Start upload process */
@@ -276,7 +275,7 @@ export default {
 
             // package ftp files separately, and remove them from queue
             this._uploadFtp();
-            this.uploadbox.start();
+            this.queue.start();
         },
 
         /** Package and upload ftp files in a single request */
@@ -284,7 +283,7 @@ export default {
             const list = [];
             Object.values(this.uploadList).forEach((model) => {
                 if (model.status === "queued" && model.file_mode === "ftp") {
-                    this.uploadbox.remove(model.id);
+                    this.queue.remove(model.id);
                     list.push(model);
                 }
             });
@@ -364,13 +363,13 @@ export default {
                 this.counterAnnounce--;
             }
             Vue.delete(this.uploadList, index);
-            this.uploadbox.remove(index);
+            this.queue.remove(index);
         },
         /** Show remote files dialog or FTP files */
         _eventRemoteFiles: function () {
             filesDialog(
                 (items) => {
-                    this.uploadbox.add(
+                    this.queue.add(
                         items.map((item) => {
                             const rval = {
                                 mode: "ftp",
@@ -387,14 +386,14 @@ export default {
         },
         /** Create a new file */
         _eventCreate: function () {
-            this.uploadbox.add([{ name: defaultNewFileName, size: 0, mode: "new" }]);
+            this.queue.add([{ name: defaultNewFileName, size: 0, mode: "new" }]);
         },
         /** Pause upload process */
         _eventStop: function () {
             if (this.counterRunning > 0) {
                 this.details.model.set("status", "info");
                 this.topInfo = "Queue will pause after completing the current file...";
-                this.uploadbox.stop();
+                this.queue.stop();
             }
         },
         _eventWarning: function (index, message) {
@@ -421,8 +420,3 @@ export default {
     },
 };
 </script>
-<style scoped>
-.upload-box-with-footer {
-    height: 300px;
-}
-</style>

@@ -3,7 +3,6 @@
 */
 
 import axios from "axios";
-import jQuery from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import * as tus from "tus-js-client";
 import _ from "underscore";
@@ -20,7 +19,7 @@ function submitPayload(payload, cnf) {
 }
 
 function buildFingerprint(cnf) {
-    async function customFingerprint(file, options) {
+    async function customFingerprint(file) {
         return ["tus-br", file.name, file.type, file.size, file.lastModified, cnf.data.history_id].join("-");
     }
 
@@ -143,63 +142,6 @@ function isUrl(pasted_item) {
     return pasted_item.src == "url";
 }
 
-(($) => {
-    // add event properties
-    jQuery.event.props.push("dataTransfer");
-
-    /**
-        Handles the upload events drag/drop etc.
-    */
-    $.fn.uploadinput = function (options) {
-        // initialize
-        var el = this;
-        var opts = $.extend(
-            {},
-            {
-                ondragover: () => {},
-                ondragleave: () => {},
-                onchange: () => {},
-                multiple: false,
-            },
-            options
-        );
-
-        // append hidden upload field
-        var $input = $(`<input type="file" style="display: none" ${(opts.multiple && "multiple") || ""}/>`);
-        el.append(
-            $input.change((e) => {
-                opts.onchange(e.target.files);
-                e.target.value = null;
-            })
-        );
-
-        // drag/drop events
-        const element = el.get(0);
-        element.addEventListener("drop", (e) => {
-            opts.ondragleave(e);
-            if (e.dataTransfer) {
-                opts.onchange(e.dataTransfer.files);
-                e.preventDefault();
-            }
-        });
-        element.addEventListener("dragover", (e) => {
-            e.preventDefault();
-            opts.ondragover(e);
-        });
-        element.addEventListener("dragleave", (e) => {
-            e.stopPropagation();
-            opts.ondragleave(e);
-        });
-
-        // exports
-        return {
-            dialog: () => {
-                $input.trigger("click");
-            },
-        };
-    };
-})(jQuery);
-
 export class UploadQueue {
     constructor(options) {
         this.opts = {
@@ -221,19 +163,6 @@ export class UploadQueue {
         this.nextIndex = 0;
         this.fileSet = new Set(); // Used for fast duplicate checking
         this._initFlags();
-
-        // Element
-        this.uploadinput = $(options.$uploadBox).uploadinput({
-            multiple: this.opts.multiple,
-            onchange: (files) => {
-                _.each(files, (file) => {
-                    file.chunk_mode = true;
-                });
-                this.add(files);
-            },
-            ondragover: options.ondragover,
-            ondragleave: options.ondragleave,
-        });
     }
 
     _initFlags() {
