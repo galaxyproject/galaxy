@@ -2,7 +2,7 @@
     <div>
         <GCard v-if="!simple" class="citation-card" header-tag="nav">
             <template v-slot:header>
-                <b-nav card-header tabs>
+                <GNav card-header tabs>
                     <GNavItem
                         :active="outputFormat === outputFormats.CITATION"
                         @click="outputFormat = outputFormats.CITATION">
@@ -13,7 +13,7 @@
                         @click="outputFormat = outputFormats.BIBTEX">
                         BibTeX
                     </GNavItem>
-                </b-nav>
+                </GNav>
             </template>
             <div v-if="source === 'histories'" class="infomessage">
                 <div v-html="config.citations_export_message_html"></div>
@@ -49,16 +49,11 @@
     </div>
 </template>
 <script>
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
-
-import { GButton, GCard, GCollapse, GNavItem } from "@/component-library";
+import { GButton, GCard, GCollapse, GNav, GNavItem } from "@/component-library";
 import { useConfig } from "@/composables/config";
 
 import Citation from "./Citation";
 import { getCitations } from "./services";
-
-Vue.use(BootstrapVue);
 
 const outputFormats = Object.freeze({
     CITATION: "bibliography",
@@ -68,11 +63,12 @@ const outputFormats = Object.freeze({
 
 export default {
     components: {
-        GNavItem,
-        GCollapse,
-        GCard,
-        Citation,
         GButton,
+        GCard,
+        GCollapse,
+        GNav,
+        GNavItem,
+        Citation,
     },
     props: {
         source: {
