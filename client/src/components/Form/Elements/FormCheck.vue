@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { GAlert } from "@/component-library";
+import { GAlert, GFormCheckbox, GFormCheckboxGroup } from "@/component-library";
 
 export interface FormCheckProps {
     value?: string | string[];
@@ -44,19 +44,19 @@ function onSelectAll(selected: boolean): void {
 
 <template>
     <div v-if="hasOptions">
-        <b-form-checkbox
+        <GFormCheckbox
             v-localize
             class="mb-1"
             :checked="selectAll"
             :indeterminate="indeterminate"
             @change="onSelectAll">
             Select / Deselect all
-        </b-form-checkbox>
-        <b-form-checkbox-group v-model="currentValue" stacked class="pl-3">
-            <b-form-checkbox v-for="(option, index) in options" :key="index" :value="option[1]">
+        </GFormCheckbox>
+        <GFormCheckboxGroup v-model="currentValue" stacked class="pl-3">
+            <GFormCheckbox v-for="(option, index) in options" :key="index" :value="option[1]">
                 {{ option[0] }}
-            </b-form-checkbox>
-        </b-form-checkbox-group>
+            </GFormCheckbox>
+        </GFormCheckboxGroup>
     </div>
     <GAlert v-else v-localize variant="warning" show> No options available. </GAlert>
 </template>

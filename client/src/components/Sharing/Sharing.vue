@@ -17,10 +17,10 @@
             <GButton type="submit" variant="primary" @click="setUsername()">Set Username</GButton>
         </div>
         <div v-else-if="ready">
-            <b-form-checkbox v-model="item.importable" switch class="make-accessible" @change="onImportable">
+            <GFormCheckbox v-model="item.importable" switch class="make-accessible" @change="onImportable">
                 Make {{ modelClass }} accessible
-            </b-form-checkbox>
-            <b-form-checkbox
+            </GFormCheckbox>
+            <GFormCheckbox
                 v-if="item.importable"
                 v-model="item.published"
                 class="make-publishable"
@@ -28,7 +28,7 @@
                 @change="onPublish">
                 Make {{ modelClass }} publicly available in
                 <a :href="published_url" target="_top">Published {{ pluralName }}</a>
-            </b-form-checkbox>
+            </GFormCheckbox>
             <br />
             <div v-if="item.importable">
                 <div>This {{ modelClass }} is currently {{ itemStatus }}.</div>
@@ -261,23 +261,31 @@ import { faCaretDown, faCaretUp, faCopy, faEdit, faUserPlus, faUserSlash } from 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
 import SlugInput from "components/Common/SlugInput";
 import { getAppRoot } from "onload/loadConfig";
 import { mapState } from "pinia";
 import { copy } from "utils/clipboard";
 import { errorMessageAsString } from "utils/simple-error";
-import Vue from "vue";
 import Multiselect from "vue-multiselect";
 
-import { GAlert, GButton, GCard, GCardHeader, GCol, GCollapse, GRow, GTooltip } from "@/component-library";
+import {
+    GAlert,
+    GButton,
+    GCard,
+    GCardHeader,
+    GCol,
+    GCollapse,
+    GFormCheckbox,
+    GRow,
+    GTooltip,
+} from "@/component-library";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 
 import ErrorMessage from "./ErrorMessage";
 
-Vue.use(BootstrapVue);
 library.add(faCopy, faEdit, faUserPlus, faUserSlash, faCaretDown, faCaretUp);
+
 const defaultExtra = () => {
     return {
         cannot_change: [],
@@ -285,16 +293,18 @@ const defaultExtra = () => {
         can_share: true,
     };
 };
+
 export default {
     components: {
-        GTooltip,
-        GCollapse,
-        GCard,
-        GCardHeader,
-        GRow,
-        GCol,
         GAlert,
         GButton,
+        GCard,
+        GCardHeader,
+        GCol,
+        GCollapse,
+        GFormCheckbox,
+        GRow,
+        GTooltip,
         ErrorMessage,
         FontAwesomeIcon,
         SlugInput,

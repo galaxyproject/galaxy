@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { BFormCheckbox, BFormRadio } from "bootstrap-vue";
+import { BFormRadio } from "bootstrap-vue";
 import { computed, type ComputedRef, onMounted, ref } from "vue";
 
-import { GButton } from "@/component-library";
+import { GButton, GFormCheckbox } from "@/component-library";
 
 import { getAllValues, type Option } from "./utilities";
 
@@ -29,7 +29,7 @@ const isChecked: ComputedRef<boolean> = computed(() => {
 
 // determine required input element type
 const isComponent = computed(() => {
-    return props.multiple ? BFormCheckbox : BFormRadio;
+    return props.multiple ? GFormCheckbox : BFormRadio;
 });
 
 function toggleChildren(): void {

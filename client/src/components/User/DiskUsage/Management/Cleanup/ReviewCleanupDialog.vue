@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { BFormCheckbox, BTable } from "bootstrap-vue";
+import { BTable } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import { GButton, GModal, GPagination } from "@/component-library";
+import { GButton, GFormCheckbox, GModal, GPagination } from "@/component-library";
 import localize from "@/utils/localization";
 import { bytesToString } from "@/utils/utils";
 
@@ -223,7 +223,7 @@ defineExpose({
             data-test-id="review-table"
             @sort-changed="onSort">
             <template v-slot:head(selected)>
-                <BFormCheckbox
+                <GFormCheckbox
                     v-model="allSelected"
                     :indeterminate="indeterminate"
                     data-test-id="select-all-checkbox"
@@ -231,7 +231,7 @@ defineExpose({
             </template>
             <template v-slot:cell(selected)="data">
                 <!-- DBTODO -- both vmodel and v-bind value? -->
-                <BFormCheckbox :key="data.index" v-model="selectedItems" :checked="allSelected" :value="data.item" />
+                <GFormCheckbox :key="data.index" v-model="selectedItems" :checked="allSelected" :value="data.item" />
             </template>
             <template v-slot:cell(update_time)="data">
                 <UtcDate :date="data.value" mode="elapsed" />
@@ -264,9 +264,9 @@ defineExpose({
             centered
             @show="resetConfirmationModal"
             @ok="onConfirmCleanupSelectedItems">
-            <BFormCheckbox id="confirm-delete-checkbox" v-model="confirmChecked" data-test-id="agreement-checkbox">
+            <GFormCheckbox id="confirm-delete-checkbox" v-model="confirmChecked" data-test-id="agreement-checkbox">
                 {{ agreementText }}
-            </BFormCheckbox>
+            </GFormCheckbox>
         </GModal>
     </GModal>
 </template>

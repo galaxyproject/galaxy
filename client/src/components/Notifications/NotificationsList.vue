@@ -2,11 +2,10 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCircle, faHourglassHalf, faRetweet } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormCheckbox } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
-import { GAlert, GButton, GButtonGroup, GCard, GCol, GCollapse, GRow } from "@/component-library";
+import { GAlert, GButton, GButtonGroup, GCard, GCol, GCollapse, GFormCheckbox, GRow } from "@/component-library";
 import type { UserNotification } from "@/components/Notifications";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 
@@ -93,7 +92,7 @@ function togglePreferences() {
             <GCard class="mb-2">
                 <GRow class="align-items-center" no-gutters>
                     <GCol cols="1">
-                        <BFormCheckbox
+                        <GFormCheckbox
                             :checked="allSelected"
                             :indeterminate="
                                 selectedNotificationIds.length > 0 &&
@@ -101,7 +100,7 @@ function togglePreferences() {
                             "
                             @change="selectOrDeselectNotification(notifications)">
                             {{ haveSelected ? `${selectedNotificationIds.length} selected` : "Select all" }}
-                        </BFormCheckbox>
+                        </GFormCheckbox>
                     </GCol>
                     <GCol v-if="haveSelected">
                         <GButton size="sm" variant="outline-primary" @click="updateNotifications({ seen: true })">
@@ -160,7 +159,7 @@ function togglePreferences() {
                                     size="sm"
                                     class="unread-status position-absolute align-self-center mr-1"
                                     icon="circle" />
-                                <BFormCheckbox
+                                <GFormCheckbox
                                     :checked="selectedNotificationIds.includes(item.id)"
                                     @change="selectOrDeselectNotification([item])" />
                             </GButtonGroup>

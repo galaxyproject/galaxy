@@ -33,12 +33,12 @@
         <template v-slot:body>
             <b-table id="requirements-table" striped :fields="fields" :items="items" @row-clicked="showRowDetails">
                 <template v-slot:cell(selected)="data">
-                    <b-form-checkbox
+                    <GFormCheckbox
                         v-model="data.item.selected"
-                        @change="changeToggleCheckboxState($event)"></b-form-checkbox>
+                        @change="changeToggleCheckboxState($event)"></GFormCheckbox>
                 </template>
                 <template v-slot:head(selected)="">
-                    <b-form-checkbox v-model="toggleState" @change="toggleSelectAll"></b-form-checkbox>
+                    <GFormCheckbox v-model="toggleState" @change="toggleSelectAll"></GFormCheckbox>
                 </template>
                 <template v-slot:cell(requirement)="row">
                     <requirements :requirements="row.item.requirements" />
@@ -82,17 +82,13 @@
     </dependency-index-wrapper>
 </template>
 <script>
-import BootstrapVue from "bootstrap-vue";
 import _ from "underscore";
-import Vue from "vue";
 
-import { GButton, GRow } from "@/component-library";
+import { GButton, GFormCheckbox, GRow } from "@/component-library";
 
 import { getToolboxDependencies, installDependencies, uninstallDependencies } from "../AdminServices";
 import DependencyIndexMixin from "./DependencyIndexMixin";
 import ResolutionDetails from "./ResolutionDetails";
-
-Vue.use(BootstrapVue);
 
 export const RESOLVER_DESCRIPTIONS = {
     conda: "",
@@ -110,6 +106,7 @@ RESOLVER_TYPE_OPTIONS.splice(0, 0, { value: null, text: "*any*" });
 export default {
     components: {
         GButton,
+        GFormCheckbox,
         GRow,
         ResolutionDetails,
     },

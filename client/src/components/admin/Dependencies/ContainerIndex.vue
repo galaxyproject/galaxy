@@ -66,7 +66,7 @@
         <template v-slot:body>
             <b-table id="containers-table" striped :fields="fields" :items="items" @row-clicked="showRowDetails">
                 <template v-slot:cell(selected)="data">
-                    <b-form-checkbox v-model="data.item.selected"></b-form-checkbox>
+                    <GFormCheckbox v-model="data.item.selected"></GFormCheckbox>
                 </template>
                 <template v-slot:cell(requirement)="row">
                     <requirements :requirements="row.item.requirements" />
@@ -95,7 +95,7 @@ import BootstrapVue from "bootstrap-vue";
 import _ from "underscore";
 import Vue from "vue";
 
-import { GButton, GRow } from "@/component-library";
+import { GButton, GFormCheckbox, GRow } from "@/component-library";
 
 import { getContainerResolutionToolbox, resolveContainersWithInstall } from "../AdminServices";
 import ContainerResolutionDetails from "./ContainerResolutionDetails";
@@ -108,7 +108,12 @@ const RESOLVER_TYPE_OPTIONS = _.keys(DESCRIPTION).map((resolverType) => ({ value
 RESOLVER_TYPE_OPTIONS.splice(0, 0, { value: null, text: "*any*" });
 
 export default {
-    components: { GButton, GRow, ContainerResolutionDetails },
+    components: {
+        GButton,
+        GFormCheckbox,
+        GRow,
+        ContainerResolutionDetails,
+    },
     mixins: [DependencyIndexMixin],
     data() {
         return {

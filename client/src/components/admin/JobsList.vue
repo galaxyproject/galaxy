@@ -20,9 +20,9 @@
         <GRow>
             <GCol class="col-sm-4">
                 <b-form-group description="Select whether or not to use the cutoff below.">
-                    <b-form-checkbox id="show-all-running" v-model="showAllRunning" switch size="lg" @change="update">
+                    <GFormCheckbox id="show-all-running" v-model="showAllRunning" switch size="lg" @change="update">
                         {{ showAllRunning ? "Showing all unfinished jobs" : "Time cutoff applied to query" }}
-                    </b-form-checkbox>
+                    </GFormCheckbox>
                 </b-form-group>
                 <b-form name="jobs" @submit.prevent="onRefresh">
                     <b-form-group
@@ -62,17 +62,14 @@
             :loading="loading"
             :busy="busy">
             <template v-slot:head(selected)>
-                <b-form-checkbox
-                    v-model="allSelected"
-                    :indeterminate="indeterminate"
-                    @change="toggleAll"></b-form-checkbox>
+                <GFormCheckbox v-model="allSelected" :indeterminate="indeterminate" @change="toggleAll" />
             </template>
             <template v-slot:cell(selected)="data">
-                <b-form-checkbox
+                <GFormCheckbox
                     :key="data.index"
                     v-model="selectedStopJobIds"
                     :checked="allSelected"
-                    :value="data.item['id']"></b-form-checkbox>
+                    :value="data.item['id']" />
             </template>
         </JobsTable>
 
@@ -104,7 +101,16 @@ import { getAppRoot } from "onload/loadConfig";
 import JOB_STATES_MODEL from "utils/job-states-model";
 import { errorMessageAsString } from "utils/simple-error";
 
-import { GAlert, GButton, GCol, GInput, GInputGroup, GInputGroupAppend, GRow } from "@/component-library";
+import {
+    GAlert,
+    GButton,
+    GCol,
+    GFormCheckbox,
+    GInput,
+    GInputGroup,
+    GInputGroupAppend,
+    GRow,
+} from "@/component-library";
 
 import { commonJobFields } from "./JobFields";
 import JobLock from "./JobLock";
@@ -142,13 +148,14 @@ returned. So <code>tool:'cat1'</code> would show only jobs from the <code>cat1</
 
 export default {
     components: {
-        GRow,
-        GCol,
-        GInputGroup,
-        GInputGroupAppend,
         GAlert,
         GButton,
+        GCol,
+        GFormCheckbox,
         GInput,
+        GInputGroup,
+        GInputGroupAppend,
+        GRow,
         JobLock,
         JobsTable,
         Heading,

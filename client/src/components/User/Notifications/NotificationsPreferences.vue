@@ -2,10 +2,9 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormCheckbox } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import { GAlert, GButton, GCard, GCol, GRow } from "@/component-library";
+import { GAlert, GButton, GCard, GCol, GFormCheckbox, GRow } from "@/component-library";
 import {
     getNotificationsPreferencesFromServer,
     updateNotificationsPreferencesOnServer,
@@ -129,7 +128,7 @@ watch(
                             </GRow>
                         </GCol>
                         <GCol cols="auto" class="p-0">
-                            <BFormCheckbox
+                            <GFormCheckbox
                                 v-model="notificationsPreferences[category].enabled"
                                 v-b-tooltip.hover
                                 :title="
@@ -145,12 +144,12 @@ watch(
                             v-for="channel in Object.keys(notificationsPreferences[category].channels)"
                             :key="channel"
                             class="d-flex align-items-center">
-                            <BFormCheckbox
+                            <GFormCheckbox
                                 v-model="notificationsPreferences[category].channels[channel]"
                                 v-localize
                                 :disabled="!notificationsPreferences[category].enabled">
                                 {{ capitalizeWords(channel) }}
-                            </BFormCheckbox>
+                            </GFormCheckbox>
                             <FontAwesomeIcon
                                 v-if="channel === 'push'"
                                 v-b-tooltip.hover="'Push notifications need to be enabled'"

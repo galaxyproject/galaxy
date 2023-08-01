@@ -101,9 +101,9 @@
                     </button>
                     <FolderDetails :id="folder_id" class="mr-1" :metadata="metadata" />
                     <div v-if="canDelete" class="form-check logged-dataset-manipulation mr-1">
-                        <b-form-checkbox :checked="includeDeleted" @change="$emit('update:includeDeleted', $event)">
+                        <GFormCheckbox :checked="includeDeleted" @change="$emit('update:includeDeleted', $event)">
                             include deleted
-                        </b-form-checkbox>
+                        </GFormCheckbox>
                     </div>
                 </div>
             </div>
@@ -127,7 +127,7 @@ import { getAppRoot } from "onload/loadConfig";
 import mod_utils from "utils/utils";
 import Vue from "vue";
 
-import { GButton } from "@/component-library";
+import { GButton, GFormCheckbox } from "@/component-library";
 
 import SearchField from "../SearchField";
 import { Services } from "../services";
@@ -144,6 +144,7 @@ Vue.use(BootstrapVue);
 export default {
     name: "FolderTopBar",
     components: {
+        GFormCheckbox,
         SearchField,
         FontAwesomeIcon,
         LibraryBreadcrumb,

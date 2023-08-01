@@ -15,20 +15,20 @@
                     <span class="fa fa-cog" />
                 </template>
                 <GDropdownForm>
-                    <b-form-checkbox v-model="sendToNewHistory" class="workflow-run-settings-target">
+                    <GFormCheckbox v-model="sendToNewHistory" class="workflow-run-settings-target">
                         Send results to a new history
-                    </b-form-checkbox>
-                    <b-form-checkbox
+                    </GFormCheckbox>
+                    <GFormCheckbox
                         v-if="reuseAllowed(currentUser)"
                         v-model="useCachedJobs"
                         title="This may skip executing jobs that you have already run.">
                         Attempt to re-use jobs with identical parameters?
-                    </b-form-checkbox>
-                    <b-form-checkbox
+                    </GFormCheckbox>
+                    <GFormCheckbox
                         v-if="isConfigLoaded && config.object_store_allows_id_selection"
                         v-model="splitObjectStore">
                         Send outputs and intermediate to different object stores?
-                    </b-form-checkbox>
+                    </GFormCheckbox>
                     <WorkflowStorageConfiguration
                         v-if="isConfigLoaded && config.object_store_allows_id_selection"
                         :split-object-store="splitObjectStore"
@@ -53,7 +53,7 @@ import { isWorkflowInput } from "components/Workflow/constants";
 import { mapState } from "pinia";
 import { errorMessageAsString } from "utils/simple-error";
 
-import { GDropdown, GDropdownForm } from "@/component-library";
+import { GDropdown, GDropdownForm, GFormCheckbox } from "@/component-library";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 
@@ -62,10 +62,11 @@ import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration";
 
 export default {
     components: {
-        GDropdown,
-        GDropdownForm,
         ButtonSpinner,
         FormDisplay,
+        GDropdown,
+        GDropdownForm,
+        GFormCheckbox,
         WorkflowStorageConfiguration,
     },
     props: {

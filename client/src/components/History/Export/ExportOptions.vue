@@ -1,9 +1,9 @@
 <script setup>
-import { BFormCheckbox, BFormGroup, BFormSelect } from "bootstrap-vue";
+import { BFormGroup, BFormSelect } from "bootstrap-vue";
 import { ExportParamsModel } from "components/Common/models/exportRecordModel";
 import { computed, reactive, ref } from "vue";
 
-import { GCard, GCollapse, GLink } from "@/component-library";
+import { GCard, GCollapse, GFormCheckbox, GLink } from "@/component-library";
 
 import { AVAILABLE_EXPORT_FORMATS } from "./services";
 
@@ -53,29 +53,29 @@ function onValueChanged() {
                 </BFormGroup>
 
                 <BFormGroup label="Dataset files included in the package:">
-                    <BFormCheckbox
+                    <GFormCheckbox
                         id="include-files-check"
                         v-model="localOptions.includeFiles"
                         switch
                         @change="onValueChanged">
                         Include Active
-                    </BFormCheckbox>
+                    </GFormCheckbox>
 
-                    <BFormCheckbox
+                    <GFormCheckbox
                         id="include-deleted-check"
                         v-model="localOptions.includeDeleted"
                         switch
                         @change="onValueChanged">
                         Include Deleted (not purged)
-                    </BFormCheckbox>
+                    </GFormCheckbox>
 
-                    <BFormCheckbox
+                    <GFormCheckbox
                         id="include-hidden-check"
                         v-model="localOptions.includeHidden"
                         switch
                         @change="onValueChanged">
                         Include Hidden
-                    </BFormCheckbox>
+                    </GFormCheckbox>
                 </BFormGroup>
             </GCard>
         </GCollapse>

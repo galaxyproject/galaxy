@@ -33,25 +33,26 @@
                     </b-form-radio>
                 </b-form-group>
                 <b-form-group label="Dependencies:" description="Choose how to handle dependencies.">
-                    <b-form-checkbox v-model="installResolverDependencies">
+                    <GFormCheckbox v-model="installResolverDependencies">
                         Install resolvable dependencies
-                    </b-form-checkbox>
-                    <b-form-checkbox v-model="installRepositoryDependencies">
+                    </GFormCheckbox>
+                    <GFormCheckbox v-model="installRepositoryDependencies">
                         Install repository dependencies
-                    </b-form-checkbox>
-                    <b-form-checkbox v-model="installToolDependencies"> Install tool dependencies </b-form-checkbox>
+                    </GFormCheckbox>
+                    <GFormCheckbox v-model="installToolDependencies"> Install tool dependencies </GFormCheckbox>
                 </b-form-group>
             </GCard>
         </GCollapse>
     </GModal>
 </template>
 <script>
-import { GCard, GCollapse, GInput, GLink, GModal } from "@/component-library";
+import { GCard, GCollapse, GFormCheckbox, GInput, GLink, GModal } from "@/component-library";
 
 export default {
     components: {
         GCard,
         GCollapse,
+        GFormCheckbox,
         GInput,
         GLink,
         GModal,

@@ -32,9 +32,9 @@
                                 account now to continue to use your existing data and avoid possible loss of data.
                             </p>
                             <b-form-group>
-                                <b-form-checkbox v-model="termsRead">
+                                <GFormCheckbox v-model="termsRead">
                                     I have read and accept these terms to create a new Galaxy account.
-                                </b-form-checkbox>
+                                </GFormCheckbox>
                             </b-form-group>
                             <GButton name="confirm" type="submit" :disabled="!termsRead" @click.prevent="submit">
                                 Yes, create new account
@@ -62,18 +62,19 @@ import BootstrapVue from "bootstrap-vue";
 import { withPrefix } from "utils/redirect";
 import Vue from "vue";
 
-import { GAlert, GButton, GCard, GCardBody, GCardFooter, GEmbed } from "@/component-library";
+import { GAlert, GButton, GCard, GCardBody, GCardFooter, GEmbed, GFormCheckbox } from "@/component-library";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
-        GEmbed,
+        GAlert,
+        GButton,
         GCard,
         GCardFooter,
         GCardBody,
-        GAlert,
-        GButton,
+        GEmbed,
+        GFormCheckbox,
     },
     props: {
         registrationWarningMessage: {

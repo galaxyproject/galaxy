@@ -14,16 +14,16 @@
                 {{ titleLibrary }}
             </GButton>
             <SearchField :typing-delay="0" @updateSearch="searchValue($event)" />
-            <b-form-checkbox
+            <GFormCheckbox
                 v-if="currentUser && currentUser.is_admin"
                 v-localize
                 class="mr-1"
                 @input="toggle_include_deleted($event)">
                 include deleted
-            </b-form-checkbox>
-            <b-form-checkbox v-localize class="mr-1" @input="toggle_exclude_restricted($event)">
+            </GFormCheckbox>
+            <GFormCheckbox v-localize class="mr-1" @input="toggle_exclude_restricted($event)">
                 exclude restricted
-            </b-form-checkbox>
+            </GFormCheckbox>
         </div>
         <GCollapse id="collapse-2" v-model="isNewLibFormVisible">
             <GCard>
@@ -181,7 +181,6 @@
 
 <script>
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import BootstrapVue from "bootstrap-vue";
 import { initLibrariesIcons } from "components/Libraries/icons";
 import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH, onError } from "components/Libraries/library-utils";
 import LibraryEditField from "components/Libraries/LibraryEditField";
@@ -190,7 +189,6 @@ import { Toast } from "composables/toast";
 import { getAppRoot } from "onload/loadConfig";
 import { mapState } from "pinia";
 import _l from "utils/localization";
-import Vue from "vue";
 
 import {
     GButton,
@@ -198,6 +196,7 @@ import {
     GCol,
     GCollapse,
     GContainer,
+    GFormCheckbox,
     GInput,
     GInputGroup,
     GLink,
@@ -211,21 +210,20 @@ import { fields } from "./table-fields";
 
 initLibrariesIcons();
 
-Vue.use(BootstrapVue);
-
 export default {
     components: {
+        FontAwesomeIcon,
         GButton,
-        GContainer,
-        GPagination,
-        GCollapse,
         GCard,
-        GRow,
         GCol,
+        GCollapse,
+        GContainer,
+        GFormCheckbox,
+        GInput,
         GInputGroup,
         GLink,
-        FontAwesomeIcon,
-        GInput,
+        GPagination,
+        GRow,
         LibraryEditField,
         SearchField,
     },

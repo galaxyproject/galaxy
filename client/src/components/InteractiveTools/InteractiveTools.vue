@@ -22,7 +22,7 @@
             :filter="filter"
             @filtered="filtered">
             <template v-slot:cell(checkbox)="row">
-                <b-form-checkbox :id="createId('checkbox', row.item.id)" v-model="row.item.marked" />
+                <GFormCheckbox :id="createId('checkbox', row.item.id)" v-model="row.item.marked" />
             </template>
             <template v-slot:cell(name)="row">
                 <a
@@ -72,7 +72,7 @@ import UtcDate from "components/UtcDate";
 import { getAppRoot } from "onload/loadConfig";
 import { mapActions, mapState } from "pinia";
 
-import { GAlert, GButton, GCol, GRow } from "@/component-library";
+import { GAlert, GButton, GCol, GFormCheckbox, GRow } from "@/component-library";
 
 import { useEntryPointStore } from "../../stores/entryPointStore";
 import { Services } from "./services";
@@ -81,10 +81,11 @@ library.add(faExternalLinkAlt);
 
 export default {
     components: {
-        GRow,
-        GCol,
         GAlert,
         GButton,
+        GCol,
+        GFormCheckbox,
+        GRow,
         UtcDate,
         FontAwesomeIcon,
     },

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, type ComputedRef } from "vue";
 
+import { GFormCheckbox } from "@/component-library";
+
 import { getAllValues, type Option, type Value } from "./utilities";
 
 import FormDrilldownList from "./FormDrilldownList.vue";
@@ -80,7 +82,7 @@ function onSelectAll(selected: boolean): void {
 
 <template>
     <div v-if="hasOptions">
-        <b-form-checkbox
+        <GFormCheckbox
             v-if="multiple"
             v-localize
             :checked="selectAllChecked"
@@ -88,7 +90,7 @@ function onSelectAll(selected: boolean): void {
             class="d-inline select-all-checkbox"
             @change="onSelectAll">
             Select / Deselect All
-        </b-form-checkbox>
+        </GFormCheckbox>
         <FormDrilldownList
             :multiple="multiple"
             :current-value="currentValue"

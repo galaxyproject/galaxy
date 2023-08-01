@@ -6,7 +6,7 @@
         <template v-slot:body>
             <b-table id="unused-paths-table" striped :fields="fields" :items="items">
                 <template v-slot:cell(selected)="data">
-                    <b-form-checkbox v-model="data.item.selected"></b-form-checkbox>
+                    <GFormCheckbox v-model="data.item.selected"></GFormCheckbox>
                 </template>
             </b-table>
         </template>
@@ -18,13 +18,17 @@
     </DependencyIndexWrapper>
 </template>
 <script>
-import { GButton } from "@/component-library";
+import { GButton, GFormCheckbox } from "@/component-library";
 
 import { deletedUnusedPaths, getDependencyUnusedPaths } from "../AdminServices";
 import DependencyIndexWrapper from "./DependencyIndexWrapper";
 
 export default {
-    components: { DependencyIndexWrapper, GButton },
+    components: {
+        DependencyIndexWrapper,
+        GButton,
+        GFormCheckbox,
+    },
     data() {
         return {
             error: null,

@@ -1,8 +1,8 @@
 <template>
     <div>
-        <b-form-checkbox v-model="currentStatus" class="ui-switch" switch>
+        <GFormCheckbox v-model="currentStatus" class="ui-switch" switch>
             Set value for this optional select field?
-        </b-form-checkbox>
+        </GFormCheckbox>
         <FormText
             v-if="currentStatus"
             :id="id"
@@ -18,11 +18,14 @@
 </template>
 
 <script>
+import { GFormCheckbox } from "@/component-library";
+
 import FormText from "./FormText";
 
 export default {
     components: {
         FormText,
+        GFormCheckbox,
     },
     props: {
         value: {

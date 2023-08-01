@@ -20,9 +20,9 @@
                     </b-form-group>
 
                     <b-form-group v-if="login_page">
-                        <b-form-checkbox id="remember-idp" v-model="rememberIdp">
+                        <GFormCheckbox id="remember-idp" v-model="rememberIdp">
                             Remember institution selection
-                        </b-form-checkbox>
+                        </GFormCheckbox>
                     </b-form-group>
 
                     <GButton
@@ -104,7 +104,7 @@ import { getAppRoot } from "onload";
 import Vue from "vue";
 import Multiselect from "vue-multiselect";
 
-import { GAlert, GButton } from "@/component-library";
+import { GAlert, GButton, GFormCheckbox } from "@/component-library";
 
 Vue.use(BootstrapVue);
 
@@ -112,6 +112,7 @@ export default {
     components: {
         GAlert,
         GButton,
+        GFormCheckbox,
         Multiselect,
         LoadingSpan,
     },

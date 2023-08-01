@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+import { GFormCheckbox } from "@/component-library";
+
 export interface FormBooleanProps {
     value: boolean | string;
 }
@@ -23,7 +25,7 @@ const label = computed(() => (currentValue.value ? "Yes" : "No"));
 </script>
 
 <template>
-    <b-form-checkbox v-model="currentValue" class="no-highlight" switch>
+    <GFormCheckbox v-model="currentValue" class="no-highlight" switch>
         {{ label }}
-    </b-form-checkbox>
+    </GFormCheckbox>
 </template>
