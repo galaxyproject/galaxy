@@ -23,7 +23,7 @@
                 <GInput v-model="saveAsName" />
             </GFormGroup>
             <GFormGroup label="Annotation">
-                <b-form-textarea v-model="saveAsAnnotation" />
+                <GFormTextarea v-model="saveAsAnnotation" />
             </GFormGroup>
         </GModal>
         <FlexPanel side="left">
@@ -163,7 +163,7 @@ import axios from "axios";
 import { storeToRefs } from "pinia";
 import Vue, { computed, onUnmounted, ref } from "vue";
 
-import { GButton, GFormGroup, GInput, GModal } from "@/component-library";
+import { GButton, GFormGroup, GFormTextarea, GInput, GModal } from "@/component-library";
 import { getUntypedWorkflowParameters } from "@/components/Workflow/Editor/modules/parameters";
 import { ConfirmDialog } from "@/composables/confirmDialog";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
@@ -201,6 +201,7 @@ export default {
         FormTool,
         GButton,
         GFormGroup,
+        GFormTextarea,
         GInput,
         GModal,
         WorkflowOptions,

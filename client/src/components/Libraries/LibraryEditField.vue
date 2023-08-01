@@ -3,7 +3,7 @@
         <div class="text-field">
             <!-- edit mode -->
             <div v-if="isEditMode">
-                <b-form-textarea class="form-control" :value="text" rows="3" no-resize @change="updateValue" />
+                <GFormTextarea class="form-control" :value="text" rows="3" no-resize @change="updateValue" />
             </div>
             <!-- shrink long text -->
             <div v-else-if="text.length > maxDescriptionLength && !isExpanded">
@@ -26,8 +26,8 @@
                     v-if="text.length > maxDescriptionLength"
                     class="more-text-btn"
                     href="javascript:void(0)"
-                    @click="toggleDescriptionExpand"
-                    >(less)
+                    @click="toggleDescriptionExpand">
+                    (less)
                 </a>
             </div>
         </div>
@@ -35,15 +35,16 @@
 </template>
 
 <script>
-import BootstrapVue from "bootstrap-vue";
 import { MAX_DESCRIPTION_LENGTH } from "components/Libraries/library-utils";
 import { sanitize } from "dompurify";
 import linkifyHtml from "linkify-html";
-import Vue from "vue";
 
-Vue.use(BootstrapVue);
+import { GFormTextarea } from "@/component-library";
 
 export default {
+    components: {
+        GFormTextarea,
+    },
     props: {
         text: {
             type: String,

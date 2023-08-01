@@ -83,10 +83,10 @@
                                     show-progress
                                     :value="fileLoaded"
                                     :max="maxFileSize" />
-                                <b-form-textarea v-show="form.file" :value="form.file" />
+                                <GFormTextarea v-show="form.file" :value="form.file" />
                             </GFormGroup>
                             <GFormGroup v-if="selectedDataSource === 'text'" label="Edit/Paste">
-                                <b-form-textarea id="len-file-text-area" v-model="form.text" />
+                                <GFormTextarea id="len-file-text-area" v-model="form.text" />
                             </GFormGroup>
                         </div>
 
@@ -147,8 +147,6 @@ import "vue-multiselect/dist/vue-multiselect.min.css";
 
 import { getGalaxyInstance } from "app";
 import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
 import Multiselect from "vue-multiselect";
 
 import {
@@ -159,12 +157,11 @@ import {
     GContainer,
     GFormGroup,
     GFormSelect,
+    GFormTextarea,
     GInput,
     GProgress,
     GRow,
 } from "@/component-library";
-
-Vue.use(BootstrapVue);
 
 export default {
     components: {
@@ -175,6 +172,7 @@ export default {
         GContainer,
         GFormGroup,
         GFormSelect,
+        GFormTextarea,
         GInput,
         GProgress,
         GRow,

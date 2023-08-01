@@ -1,7 +1,7 @@
 <template>
     <GRow align-v="center">
         <GCol>
-            <b-form-textarea
+            <GFormTextarea
                 v-if="inputArea"
                 :id="id"
                 v-model="currentValue"
@@ -27,13 +27,14 @@
 </template>
 
 <script>
-import { GCol, GInput, GRow } from "@/component-library";
+import { GCol, GFormTextarea, GInput, GRow } from "@/component-library";
 
 export default {
     components: {
-        GRow,
         GCol,
+        GFormTextarea,
         GInput,
+        GRow,
     },
     props: {
         value: {
