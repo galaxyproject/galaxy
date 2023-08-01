@@ -16,7 +16,7 @@
                     </GButton>
                 </GInputGroupAppend>
             </GInputGroup>
-            <b-form-radio-group v-model="tabValue" class="mb-3" :options="tabOptions" />
+            <GFormRadioGroup v-model="tabValue" class="mb-3" :options="tabOptions" />
             <div v-if="tabValue">
                 <SearchList :query="query" :scrolled="scrolled" @onQuery="setQuery" @onError="setError" />
             </div>
@@ -29,7 +29,7 @@
 <script>
 import _l from "utils/localization";
 
-import { GButton, GInputGroup, GInputGroupAppend } from "@/component-library";
+import { GButton, GFormRadioGroup, GInputGroup, GInputGroupAppend } from "@/component-library";
 
 import InstalledList from "./InstalledList/Index.vue";
 import SearchList from "./SearchList/Index.vue";
@@ -37,6 +37,7 @@ import SearchList from "./SearchList/Index.vue";
 export default {
     components: {
         GButton,
+        GFormRadioGroup,
         GInputGroup,
         GInputGroupAppend,
         SearchList,

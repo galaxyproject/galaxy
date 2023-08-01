@@ -26,7 +26,7 @@
         <div v-else>
             <b-form @submit.prevent="submit">
                 <b-form-group v-slot="{ ariaDescribedby }" label="How would you like to specify the history archive?">
-                    <b-form-radio-group
+                    <GFormRadioGroup
                         v-model="importType"
                         :aria-describedby="ariaDescribedby"
                         name="import-type"
@@ -43,7 +43,7 @@
                             Select a remote file (e.g. Galaxy's FTP)
                             <FontAwesomeIcon icon="folder-open" />
                         </b-form-radio>
-                    </b-form-radio-group>
+                    </GFormRadioGroup>
                 </b-form-group>
 
                 <b-form-group v-if="importType === 'externalUrl'" label="Archived History URL">
@@ -88,7 +88,7 @@ import { getAppRoot } from "onload/loadConfig";
 import { errorMessageAsString } from "utils/simple-error";
 import Vue, { ref, watch } from "vue";
 
-import { GAlert, GButton, GInput } from "@/component-library";
+import { GAlert, GButton, GFormRadioGroup, GInput } from "@/component-library";
 import { getFileSources } from "@/components/FilesDialog/services";
 
 import ExternalLink from "./ExternalLink";
@@ -102,14 +102,15 @@ Vue.use(BootstrapVue);
 
 export default {
     components: {
-        GAlert,
-        GButton,
-        GInput,
+        ExternalLink,
         FilesInput,
         FontAwesomeIcon,
+        GAlert,
+        GButton,
+        GFormRadioGroup,
+        GInput,
         JobError,
         LoadingSpan,
-        ExternalLink,
     },
     setup() {
         const sourceURL = ref("");

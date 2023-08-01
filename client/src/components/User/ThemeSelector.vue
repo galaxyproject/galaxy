@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref, watch } from "vue";
 
-import { GCard } from "@/component-library";
+import { GCard, GFormRadioGroup } from "@/component-library";
 import { useConfig } from "@/composables/config";
 import { useCurrentTheme } from "@/composables/user";
 import { withPrefix } from "@/utils/redirect";
@@ -37,7 +37,7 @@ watch(
 
 <template>
     <GCard :show="show" class="mr-3 overflow-auto">
-        <b-form-radio-group v-model="currentValue">
+        <GFormRadioGroup v-model="currentValue">
             <b-form-radio
                 v-for="(themeDetails, theme, index) in config.themes"
                 :key="theme"
@@ -52,7 +52,7 @@ watch(
                     <span v-localize class="theme-active">Active</span>
                 </div>
             </b-form-radio>
-        </b-form-radio-group>
+        </GFormRadioGroup>
     </GCard>
 </template>
 
