@@ -1,4 +1,4 @@
-import { FilesSourcePlugin } from "./services";
+import { BrowsableFilesSourcePlugin } from "./services";
 
 export const ftpId = "_ftp";
 export const rootId = "pdb-gzip";
@@ -26,7 +26,7 @@ export interface RemoteFile extends RemoteEntry {
 
 export type RemoteFilesList = (RemoteDirectory | RemoteFile)[];
 
-export const rootResponse: FilesSourcePlugin[] = [
+export const rootResponse: BrowsableFilesSourcePlugin[] = [
     {
         id: "_ftp",
         type: "gxftp",
@@ -34,6 +34,7 @@ export const rootResponse: FilesSourcePlugin[] = [
         label: "FTP Directory",
         doc: "Galaxy User's FTP Directory",
         writable: true,
+        browsable: true,
     },
     {
         id: "pdb-gzip",
@@ -42,6 +43,7 @@ export const rootResponse: FilesSourcePlugin[] = [
         label: "PDB",
         doc: "Protein Data Bank (PDB)",
         writable: true,
+        browsable: true,
     },
     {
         id: "empty-dir",
@@ -50,6 +52,7 @@ export const rootResponse: FilesSourcePlugin[] = [
         label: "Empty Directory",
         doc: "Empty Directory",
         writable: true,
+        browsable: true,
     },
 ];
 

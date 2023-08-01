@@ -7820,6 +7820,12 @@ export interface components {
          */
         PersonalNotificationCategory: "message" | "new_shared_item";
         /**
+         * PluginKind
+         * @description Enum to distinguish between different kinds or categories of plugins.
+         * @enum {string}
+         */
+        PluginKind: "rfs" | "drs" | "rdm" | "stock";
+        /**
          * PrepareStoreDownloadPayload
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -16255,8 +16261,12 @@ export interface operations {
          */
         parameters?: {
             /** @description Whether to return browsable filesources only. The default is `True`, which will omit filesourceslike `http` and `base64` that do not implement a list method. */
+            /** @description Whether to return **only** filesources of the specified kind. The default is `None`, which will return all filesources. Multiple values can be specified by repeating the parameter. */
+            /** @description Whether to exclude filesources of the specified kind from the list. The default is `None`, which will return all filesources. Multiple values can be specified by repeating the parameter. */
             query?: {
                 browsable_only?: boolean;
+                include_kind?: components["schemas"]["PluginKind"][];
+                exclude_kind?: components["schemas"]["PluginKind"][];
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {

@@ -2,11 +2,16 @@
 API operations on remote files.
 """
 import logging
-from typing import Optional
+from typing import (
+    List,
+    Optional,
+)
 
 from fastapi import Body
 from fastapi.param_functions import Query
+from typing_extensions import Annotated
 
+from galaxy.files.sources import PluginKind
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.remote_files import RemoteFilesManager
 from galaxy.schema.remote_files import (
@@ -80,6 +85,22 @@ BrowsableQueryParam: Optional[bool] = Query(
     ),
 )
 
+IncludeKindQueryParam = Query(
+    title="Include kind",
+    description=(
+        "Whether to return **only** filesources of the specified kind. The default is `None`, which will return"
+        " all filesources. Multiple values can be specified by repeating the parameter."
+    ),
+)
+
+ExcludeKindQueryParam = Query(
+    title="Exclude kind",
+    description=(
+        "Whether to exclude filesources of the specified kind from the list. The default is `None`, which will return"
+        " all filesources. Multiple values can be specified by repeating the parameter."
+    ),
+)
+
 
 @router.cbv
 class FastAPIRemoteFiles:
@@ -116,9 +137,16 @@ class FastAPIRemoteFiles:
         self,
         user_ctx: ProvidesUserContext = DependsOnTrans,
         browsable_only: Optional[bool] = BrowsableQueryParam,
+        include_kind: Annotated[Optional[List[PluginKind]], IncludeKindQueryParam] = None,
+        exclude_kind: Annotated[Optional[List[PluginKind]], ExcludeKindQueryParam] = None,
     ) -> FilesSourcePluginList:
         """Display plugin information for each of the gxfiles:// URI targets available."""
-        return self.manager.get_files_source_plugins(user_ctx, browsable_only)
+        return self.manager.get_files_source_plugins(
+            user_ctx,
+            browsable_only,
+            set(include_kind) if include_kind else None,
+            set(exclude_kind) if exclude_kind else None,
+        )
 
     @router.post(
         "/api/remote_files",

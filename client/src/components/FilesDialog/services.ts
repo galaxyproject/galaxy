@@ -1,22 +1,46 @@
 import type { components } from "@/schema";
 import { fetcher } from "@/schema/fetcher";
 
-export type FilesSourcePlugin = components["schemas"]["FilesSourcePlugin"];
+/** The browsing mode:
+ * - `file` - allows to select files or directories contained in a source (default)
+ * - `directory` - allows to select directories (paths) only
+ * - `source` - allows to select a source plugin root and doesn't list its contents
+ */
+export type FileSourceBrowsingMode = "file" | "directory" | "source";
+export type BrowsableFilesSourcePlugin = components["schemas"]["BrowsableFilesSourcePlugin"];
 export type RemoteFile = components["schemas"]["RemoteFile"];
 export type RemoteDirectory = components["schemas"]["RemoteDirectory"];
 export type RemoteEntry = RemoteFile | RemoteDirectory;
 export type CreatedEntry = components["schemas"]["CreatedEntryResponse"];
+export type FileSourcePluginKind = components["schemas"]["PluginKind"];
+
+/** The options to filter the list of available file sources. */
+export interface FilterFileSourcesOptions {
+    /** The kinds of file sources to return, multiple kinds can be specified.
+     * If undefined, all file sources are returned.
+     */
+    include?: FileSourcePluginKind[];
+    /** The kind of file sources to exclude, multiple kinds can be specified.
+     * Excluded have precedence over included.
+     * If undefined, all file sources are returned.
+     */
+    exclude?: FileSourcePluginKind[];
+}
 
 const getRemoteFilesPlugins = fetcher.path("/api/remote_files/plugins").method("get").create();
 
 /**
  * Get the list of available file sources from the server that can be browsed.
- * @param rdm_only Whether to only include Research Data Management (RDM) specific file sources.
- * @returns The list of available file sources from the server.
+ * @param options The options to filter the file sources.
+ * @returns The list of available (browsable) file sources from the server.
  */
-export async function getFileSources(rdm_only = false): Promise<FilesSourcePlugin[]> {
-    const { data } = await getRemoteFilesPlugins({ browsable_only: true, rdm_only: rdm_only });
-    return data;
+export async function getFileSources(options: FilterFileSourcesOptions = {}): Promise<BrowsableFilesSourcePlugin[]> {
+    const { data } = await getRemoteFilesPlugins({
+        browsable_only: true,
+        include_kind: options.include,
+        exclude_kind: options.exclude,
+    });
+    return data as BrowsableFilesSourcePlugin[];
 }
 
 const getRemoteFiles = fetcher.path("/api/remote_files").method("get").create();

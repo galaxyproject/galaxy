@@ -2,7 +2,7 @@
 import { BButton, BCard, BFormGroup, BFormInput, BFormRadio, BFormRadioGroup } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { CreatedEntry, createRemoteEntry } from "@/components/FilesDialog/services";
+import { CreatedEntry, createRemoteEntry, FilterFileSourcesOptions } from "@/components/FilesDialog/services";
 import localize from "@/utils/localization";
 
 import ExternalLink from "@/components/ExternalLink.vue";
@@ -27,6 +27,8 @@ const emit = defineEmits<{
 }>();
 
 type ExportChoice = "existing" | "new";
+
+const includeOnlyDOICompatible: FilterFileSourcesOptions = { include: ["rdm"] };
 
 const recordUri = ref<string>("");
 const sourceUri = ref<string>("");
@@ -115,7 +117,7 @@ function clearInputs() {
                         v-model="sourceUri"
                         mode="source"
                         :require-writable="true"
-                        :rdm-only="true" />
+                        :filter-options="includeOnlyDOICompatible" />
                 </BFormGroup>
                 <BFormGroup
                     id="fieldset-record-name"
@@ -148,7 +150,7 @@ function clearInputs() {
                     v-model="recordUri"
                     mode="directory"
                     :require-writable="true"
-                    :rdm-only="true" />
+                    :filter-options="includeOnlyDOICompatible" />
             </BFormGroup>
             <BButton
                 v-localize

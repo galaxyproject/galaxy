@@ -12,6 +12,7 @@ from galaxy.files import ProvidesUserFileSourcesUserContext
 from galaxy.files.sources import (
     BaseFilesSource,
     FilesSourceProperties,
+    PluginKind,
     RemoteDirectory,
     RemoteFile,
 )
@@ -139,9 +140,7 @@ class RDMFilesSource(BaseFilesSource):
 
     """
 
-    # This allows to filter out the RDM file sources from the list of available
-    # file sources.
-    supports_rdm = True
+    plugin_kind = PluginKind.rdm
 
     def __init__(self, **kwd: Unpack[FilesSourceProperties]):
         props = self._parse_common_config_opts(kwd)

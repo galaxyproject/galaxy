@@ -1,19 +1,23 @@
 import { onMounted, readonly, ref } from "vue";
 
-import { FilesSourcePlugin, getFileSources } from "@/components/FilesDialog/services";
+import {
+    BrowsableFilesSourcePlugin,
+    FilterFileSourcesOptions,
+    getFileSources,
+} from "@/components/FilesDialog/services";
 
 /**
  * Composable for accessing and working with file sources.
  *
- * @param rdmOnly Whether to only include Research Data Management (RDM) specific file sources.
+ * @param options - The options to filter the file sources.
  */
-export function useFileSources(rdmOnly = false) {
+export function useFileSources(options: FilterFileSourcesOptions = {}) {
     const isLoading = ref(true);
     const hasWritable = ref(false);
-    const fileSources = ref<FilesSourcePlugin[]>([]);
+    const fileSources = ref<BrowsableFilesSourcePlugin[]>([]);
 
     onMounted(async () => {
-        fileSources.value = await getFileSources(rdmOnly);
+        fileSources.value = await getFileSources(options);
         hasWritable.value = fileSources.value.some((fs) => fs.writable);
         isLoading.value = false;
     });

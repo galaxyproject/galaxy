@@ -30,8 +30,8 @@ const {
     hasFailed: taskHasFailed,
 } = useTaskMonitor();
 
-const { hasWritable: hasWritableFileSources } = useFileSources();
-const { hasWritable: hasWritableRDMFileSources } = useFileSources(true);
+const { hasWritable: hasWritableFileSources } = useFileSources({ exclude: ["rdm"] });
+const { hasWritable: hasWritableRDMFileSources } = useFileSources({ include: ["rdm"] });
 
 const {
     isPreparing: isPreparingDownload,

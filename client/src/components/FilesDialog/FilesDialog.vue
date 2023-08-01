@@ -12,7 +12,14 @@ import { useConfig } from "@/composables/config";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { DirectoryRecord, Model, RecordItem } from "./model";
-import { browseRemoteFiles, FilesSourcePlugin, getFileSources, RemoteEntry } from "./services";
+import {
+    BrowsableFilesSourcePlugin,
+    browseRemoteFiles,
+    FileSourceBrowsingMode,
+    FilterFileSourcesOptions,
+    getFileSources,
+    RemoteEntry,
+} from "./services";
 
 import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue";
 import DataDialogTable from "@/components/SelectionDialog/DataDialogTable.vue";
@@ -23,16 +30,12 @@ library.add(faCaretLeft);
 interface FilesDialogProps {
     /** Whether to allow multiple selections */
     multiple?: boolean;
-    /** The browsing mode:
-     * - `file` - allows to select files or directories contained in a source (default)
-     * - `directory` - allows to select directories (paths) only
-     * - `source` - allows to select a source plugin root and doesn't list its contents
-     */
-    mode?: "file" | "directory" | "source";
+    /** Browsing mode to define the selection behavior */
+    mode?: FileSourceBrowsingMode;
     /** Whether to show only writable sources */
     requireWritable?: boolean;
-    /** Whether to show only RDM sources */
-    rdmOnly?: boolean;
+    /** Options to filter the file sources */
+    filterOptions?: FilterFileSourcesOptions;
     /** Callback function to be called passing the results when selection is complete */
     callback?: (files: any) => void;
 }
@@ -41,7 +44,7 @@ const props = withDefaults(defineProps<FilesDialogProps>(), {
     multiple: false,
     mode: "file",
     requireWritable: false,
-    rdmOnly: false,
+    filterOptions: undefined,
     callback: () => {},
 });
 
@@ -215,7 +218,7 @@ function load(record?: DirectoryRecord) {
     undoShow.value = !urlTracker.value.atRoot();
     if (urlTracker.value.atRoot() || errorMessage.value) {
         errorMessage.value = undefined;
-        getFileSources(props.rdmOnly)
+        getFileSources(props.filterOptions)
             .then((results) => {
                 const convertedItems = results
                     .filter((item) => !props.requireWritable || item.writable)
@@ -277,7 +280,7 @@ function entryToRecord(entry: RemoteEntry): RecordItem {
     return result;
 }
 
-function fileSourcePluginToRecord(plugin: FilesSourcePlugin): RecordItem {
+function fileSourcePluginToRecord(plugin: BrowsableFilesSourcePlugin): RecordItem {
     const result = {
         id: plugin.id,
         label: plugin.label,

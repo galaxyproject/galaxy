@@ -1,6 +1,7 @@
 import abc
 import os
 import time
+from enum import Enum
 from typing import (
     Any,
     ClassVar,
@@ -30,6 +31,40 @@ DEFAULT_WRITABLE = False
 
 if TYPE_CHECKING:
     from galaxy.files import ConfiguredFileSourcesConfig
+
+
+class PluginKind(str, Enum):
+    """Enum to distinguish between different kinds or categories of plugins."""
+
+    rfs = "rfs"
+    """Remote File System
+
+    A remote file system is a file source that is backed by a remote file system
+    that is accessible via a URI. Examples include FTP, SFTP, S3, etc.
+    """
+
+    drs = "drs"
+    """Data Repository Service
+
+    A data repository service is a file source that is backed by a remote data
+    repository service implementing the (DRS) API which provides a generic interface
+    to data repositories so data consumers, including workflow systems,
+    can access data in a single, standard way regardless of where it's stored and how it's managed.
+    """
+
+    rdm = "rdm"
+    """Research Data Management
+
+    A research data management file source is a file source that is backed by a remote
+    research data management system that can provide DOIs. Examples include InvenioRDM, Zenodo, etc.
+    """
+
+    stock = "stock"
+    """Stock Plugin
+
+    A stock plugin is a file source that is shipped with Galaxy and covers common
+    use cases. Examples include the UserFTP, LibraryImport, UserLibraryImport, etc.
+    """
 
 
 class FilesSourceProperties(TypedDict):
@@ -234,6 +269,7 @@ class FilesSource(SingleFileSource, SupportsBrowsing):
 
 class BaseFilesSource(FilesSource):
     plugin_type: ClassVar[str]
+    plugin_kind: ClassVar[PluginKind] = PluginKind.rfs  # Remote File Source by default, override in subclasses
 
     def get_browsable(self) -> bool:
         # Check whether the list method has been overridden
