@@ -57,12 +57,12 @@
                                         v-model="username"
                                         name="username"
                                         type="text" />
-                                    <b-form-text v-localize
+                                    <GFormText v-localize
                                         >Your public name is an identifier that will be used to generate addresses for
                                         information you share publicly. Public names must be at least three characters
                                         in length and contain only lower-case letters, numbers, dots, underscores, and
                                         dashes ('.', '_', '-').
-                                    </b-form-text>
+                                    </GFormText>
                                 </GFormGroup>
                                 <GFormGroup
                                     v-if="mailingJoinAddr && serverMailConfigured"
@@ -115,6 +115,7 @@ import {
     GCollapse,
     GEmbed,
     GFormGroup,
+    GFormText,
     GInput,
 } from "@/component-library";
 
@@ -130,6 +131,7 @@ export default {
         GCollapse,
         GEmbed,
         GFormGroup,
+        GFormText,
         GInput,
     },
     props: {

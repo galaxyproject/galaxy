@@ -40,7 +40,7 @@
                                             v-model="password"
                                             name="password"
                                             type="password" />
-                                        <b-form-text>
+                                        <GFormText>
                                             <span v-localize>Forgot password?</span>
                                             <a
                                                 v-localize
@@ -49,7 +49,7 @@
                                                 @click.prevent="resetLogin">
                                                 Click here to reset your password.
                                             </a>
-                                        </b-form-text>
+                                        </GFormText>
                                     </GFormGroup>
                                     <GButton v-localize name="login" type="submit">Login</GButton>
                                 </div>
@@ -115,6 +115,7 @@ import {
     GCardHeader,
     GEmbed,
     GFormGroup,
+    GFormText,
     GInput,
 } from "@/component-library";
 
@@ -131,6 +132,7 @@ export default {
         GCardHeader,
         GEmbed,
         GFormGroup,
+        GFormText,
         GInput,
         NewUserConfirmation,
     },
