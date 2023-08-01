@@ -30,6 +30,7 @@ export { default as GFormCheckboxGroup } from "./GFormCheckboxGroup.vue";
 export { default as GFormDatepicker } from "./GFormDatepicker.vue";
 export { default as GFormFile } from "./GFormFile.vue";
 export { default as GFormGroup } from "./GFormGroup.vue";
+export { default as GFormInvalidFeedback } from "./GFormInvalidFeedback.vue";
 export { default as GFormRadio } from "./GFormRadio.vue";
 export { default as GFormRadioGroup } from "./GFormRadioGroup.vue";
 export { default as GFormSelect } from "./GFormSelect.vue";

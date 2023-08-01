@@ -17,9 +17,9 @@
             <b-form v-if="!loading">
                 <GFormGroup label="Enter a title for the new history" label-for="copy-modal-title">
                     <GInput id="copy-modal-title" v-model="name" :state="newNameValid" required />
-                    <b-form-invalid-feedback :state="newNameValid">
+                    <GFormInvalidFeedback :state="newNameValid">
                         Please enter a valid history title.
-                    </b-form-invalid-feedback>
+                    </GFormInvalidFeedback>
                 </GFormGroup>
 
                 <GFormGroup label="Choose which datasets from the original history to include.">
@@ -45,7 +45,7 @@
 <script>
 import { mapActions, mapState } from "pinia";
 
-import { GAlert, GButton, GFormGroup, GFormRadio, GInput, GModal } from "@/component-library";
+import { GAlert, GButton, GFormGroup, GFormInvalidFeedback, GFormRadio, GInput, GModal } from "@/component-library";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
@@ -54,6 +54,7 @@ export default {
         GAlert,
         GButton,
         GFormGroup,
+        GFormInvalidFeedback,
         GFormRadio,
         GInput,
         GModal,
