@@ -13,6 +13,8 @@ export { default as GCardHeader } from "./GCardHeader.vue";
 export { default as GCardImg } from "./GCardImg.vue";
 export { default as GCardText } from "./GCardText.vue";
 export { default as GCardTitle } from "./GCardTitle.vue";
+export { default as GCarousel } from "./GCarousel.vue";
+export { default as GCarouselSlide } from "./GCarouselSlide.vue";
 export { default as GCol } from "./GCol.vue";
 export { default as GCollapse } from "./GCollapse.vue";
 export { default as GContainer } from "./GContainer.vue";

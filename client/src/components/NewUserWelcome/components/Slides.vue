@@ -4,7 +4,7 @@
             {{ header }}
         </h1>
         <hr />
-        <b-carousel
+        <GCarousel
             indicators
             controls
             :interval="0"
@@ -12,17 +12,17 @@
             no-animation
             align="center"
             position="float">
-            <b-carousel-slide v-for="(slide, idx) in slides" :key="idx">
+            <GCarouselSlide v-for="(slide, idx) in slides" :key="idx">
                 <h2 class="carousel-caption h-md">
                     {{ slide.text | localize }}
                 </h2>
                 <img class="carousel-fig" :src="imgUrl(slide.file)" :class="slide.size" :alt="slide.alt" />
-            </b-carousel-slide>
-            <b-carousel-slide>
+            </GCarouselSlide>
+            <GCarouselSlide>
                 <h2 class="h-md">{{ "Enjoy using Galaxy!" | localize }}</h2>
                 <img class="large-img" :src="imgUrl('sections/galaxy_logo.png')" alt="Galaxy logo" />
-            </b-carousel-slide>
-        </b-carousel>
+            </GCarouselSlide>
+        </GCarousel>
         <div class="button-housing">
             <GButton class="mt-auto carousel-button new-user-welcome-return" variant="primary" @click="$emit('back')">
                 Return
@@ -33,11 +33,13 @@
 <script>
 import { getAppRoot } from "onload/loadConfig";
 
-import { GButton } from "@/component-library";
+import { GButton, GCarousel, GCarouselSlide } from "@/component-library";
 
 export default {
     components: {
         GButton,
+        GCarousel,
+        GCarouselSlide,
     },
     props: {
         header: { type: String, required: true },
