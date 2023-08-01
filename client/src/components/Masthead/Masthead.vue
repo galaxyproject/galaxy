@@ -5,7 +5,7 @@ import { withPrefix } from "utils/redirect";
 import { onBeforeMount, onMounted, reactive, ref, watch } from "vue";
 import { useRoute } from "vue-router/composables";
 
-import { GNavbar, GNavbarBrand, GNavbarNav } from "@/component-library";
+import { GNavbar, GNavbarBrand, GNavbarNav, GNavItem } from "@/component-library";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 
@@ -138,11 +138,11 @@ onMounted(() => {
                 :active-tab="activeTab"
                 @open-url="emit('open-url', $event)" />
             <MastheadItem v-if="windowTab" :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
-            <BNavItem
+            <GNavItem
                 v-if="!isAnonymous && config.enable_notification_system && !showActivityBar"
                 id="notifications-bell">
                 <NotificationsBell tooltip-placement="bottom" />
-            </BNavItem>
+            </GNavItem>
         </GNavbarNav>
         <QuotaMeter />
     </GNavbar>

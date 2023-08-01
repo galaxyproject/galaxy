@@ -2,10 +2,10 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBell } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BNavItem } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router/composables";
 
+import { GNavItem } from "@/component-library";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 
 import Popper from "components/Popper/Popper.vue";
@@ -30,12 +30,12 @@ function onClick() {
 <template>
     <Popper :placement="tooltipPlacement">
         <template v-slot:reference>
-            <BNavItem id="activity-notifications" @click="onClick">
+            <GNavItem id="activity-notifications" @click="onClick">
                 <span class="position-relative">
                     <span v-if="!!totalUnreadCount" class="indicator"> </span>
                     <FontAwesomeIcon class="nav-icon" :icon="faBell" />
                 </span>
-            </BNavItem>
+            </GNavItem>
         </template>
         <div class="px-2 py-1">
             {{
