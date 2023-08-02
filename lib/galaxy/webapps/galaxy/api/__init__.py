@@ -498,11 +498,11 @@ def as_form(cls: Type[BaseModel]):
     """
     new_params = [
         inspect.Parameter(
-            field.alias,
+            field_name,
             inspect.Parameter.POSITIONAL_ONLY,
-            default=(Form(field.default) if not field.required else Form(...)),
+            default=(Form(field.default) if not field.is_required() else Form(...)),
         )
-        for field in cls.__fields__.values()
+        for field_name, field in cls.model_fields.items()
     ]
 
     async def _as_form(**data):
