@@ -62,7 +62,7 @@
         </header>
 
         <div class="scroll-container">
-            <b-list-group>
+            <GListGroup>
                 <transition-group name="fade">
                     <CloudAuthItem
                         v-for="credential in filteredItems"
@@ -73,7 +73,7 @@
                         @save="onSave"
                         @expand="expand(credential, $event)" />
                 </transition-group>
-            </b-list-group>
+            </GListGroup>
         </div>
 
         <GModal
@@ -93,7 +93,7 @@
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
-import { GAlert, GButtonGroup, GFormGroup, GInput, GModal } from "@/component-library";
+import { GAlert, GButtonGroup, GFormGroup, GInput, GListGroup, GModal } from "@/component-library";
 
 import CloudAuthItem from "./CloudAuthItem";
 import { Credential } from "./model";
@@ -108,6 +108,7 @@ export default {
         GButtonGroup,
         GFormGroup,
         GInput,
+        GListGroup,
         GModal,
     },
     data() {

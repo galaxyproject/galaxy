@@ -18,11 +18,11 @@
         </div>
         <div v-if="hasParameters" id="workflow-parameters-area" class="mt-2">
             <b>Parameters</b>
-            <b-list-group>
+            <GListGroup>
                 <GListGroupItem v-for="[key, p] in parameters.parameters.entries()" :key="key">
                     {{ key + 1 }}: {{ p.name }}
                 </GListGroupItem>
-            </b-list-group>
+            </GListGroup>
         </div>
         <div id="workflow-annotation-area" class="mt-2">
             <b>Annotation</b>
@@ -58,7 +58,7 @@ import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import { Services } from "components/Workflow/services";
 import { format, parseISO } from "date-fns";
 
-import { GAlert, GFormSelect, GFormSelectOption, GInput, GListGroupItem } from "@/component-library";
+import { GAlert, GFormSelect, GFormSelectOption, GInput, GListGroup, GListGroupItem } from "@/component-library";
 
 import { UntypedParameters } from "./modules/parameters";
 
@@ -70,6 +70,7 @@ export default {
         GFormSelect,
         GFormSelectOption,
         GInput,
+        GListGroup,
         GListGroupItem,
         LicenseSelector,
         StatelessTags,

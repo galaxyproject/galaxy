@@ -173,11 +173,11 @@
                                     </GButton>
                                 </GCardHeader>
                                 <GCollapse id="can-share" visible accordion="can-share-accordion" role="tabpanel">
-                                    <b-list-group>
+                                    <GListGroup>
                                         <GListGroupItem v-for="dataset in item.extra.can_change" :key="dataset.id">
                                             {{ dataset.name }}
                                         </GListGroupItem>
-                                    </b-list-group>
+                                    </GListGroup>
                                 </GCollapse>
                             </GCard>
                         </GCol>
@@ -189,11 +189,11 @@
                                     </GButton>
                                 </GCardHeader>
                                 <GCollapse id="cannot-share" visible accordion="cannot-accordion2" role="tabpanel">
-                                    <b-list-group>
+                                    <GListGroup>
                                         <GListGroupItem v-for="dataset in item.extra.cannot_change" :key="dataset.id">
                                             {{ dataset.name }}
                                         </GListGroupItem>
-                                    </b-list-group>
+                                    </GListGroup>
                                 </GCollapse>
                             </GCard>
                         </GCol>
@@ -274,6 +274,7 @@ import {
     GCol,
     GCollapse,
     GFormCheckbox,
+    GListGroup,
     GListGroupItem,
     GRow,
     GTooltip,
@@ -295,7 +296,8 @@ const defaultExtra = () => {
 
 export default {
     components: {
-        GListGroupItem,
+        ErrorMessage,
+        FontAwesomeIcon,
         GAlert,
         GButton,
         GCard,
@@ -303,12 +305,12 @@ export default {
         GCol,
         GCollapse,
         GFormCheckbox,
+        GListGroup,
+        GListGroupItem,
         GRow,
         GTooltip,
-        ErrorMessage,
-        FontAwesomeIcon,
-        SlugInput,
         Multiselect,
+        SlugInput,
     },
     props: {
         id: {

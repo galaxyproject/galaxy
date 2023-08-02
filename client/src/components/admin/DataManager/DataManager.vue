@@ -26,7 +26,7 @@
             </GContainer>
             <GCardGroup columns>
                 <GCard id="data-managers-card" no-body header="Installed Data Managers">
-                    <b-list-group flush>
+                    <GListGroup flush>
                         <GListGroupItem v-for="(dataManager, index) in dataManagersFiltered" :key="index">
                             <GButtonGroup vertical>
                                 <GButton
@@ -49,10 +49,10 @@
                                 </GButton>
                             </GButtonGroup>
                         </GListGroupItem>
-                    </b-list-group>
+                    </GListGroup>
                 </GCard>
                 <GCard no-body header="Tool Data Tables">
-                    <b-list-group flush>
+                    <GListGroup flush>
                         <GListGroupItem
                             v-for="(dataTable, index) in dataTablesFiltered"
                             :id="kebabCase(dataTable['name']) + '-table'"
@@ -64,7 +64,7 @@
                                 <span class="fa fa-exchange" />
                             </GBadge>
                         </GListGroupItem>
-                    </b-list-group>
+                    </GListGroup>
                 </GCard>
             </GCardGroup>
         </div>
@@ -89,6 +89,7 @@ import {
     GInput,
     GInputGroup,
     GInputGroupAppend,
+    GListGroup,
     GListGroupItem,
     GRow,
 } from "@/component-library";
@@ -107,6 +108,7 @@ export default {
         GInput,
         GInputGroup,
         GInputGroupAppend,
+        GListGroup,
         GListGroupItem,
         GRow,
     },

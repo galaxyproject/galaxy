@@ -2,11 +2,10 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCopy, faEye, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BListGroup } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { GAlert, GBadge, GButton, GButtonGroup, GListGroupItem, GPagination } from "@/component-library";
+import { GAlert, GBadge, GButton, GButtonGroup, GListGroup, GListGroupItem, GPagination } from "@/component-library";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useToast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -153,7 +152,7 @@ async function onImportCopy(history: ArchivedHistorySummary) {
                 You do not have any archived histories. You can select the 'Archive History' option from the history
                 menu to archive a history.
             </GAlert>
-            <BListGroup v-else>
+            <GListGroup v-else>
                 <GListGroupItem v-for="history in archivedHistories" :key="history.id" :data-pk="history.id">
                     <div class="d-flex justify-content-between align-items-center">
                         <Heading h3 inline bold size="sm">
@@ -230,7 +229,7 @@ async function onImportCopy(history: ArchivedHistorySummary) {
 
                     <StatelessTags class="my-1" :value="history.tags" :disabled="true" :max-visible-tags="10" />
                 </GListGroupItem>
-            </BListGroup>
+            </GListGroup>
             <GPagination
                 v-if="showPagination"
                 v-model="currentPage"

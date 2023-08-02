@@ -1,5 +1,5 @@
 <template>
-    <b-list-group id="input-choices-menu" ref="menu" role="menu" @keyup.down="increment" @keyup.up="decrement">
+    <GListGroup id="input-choices-menu" role="menu" @keyup.down="increment" @keyup.up="decrement">
         <template v-if="allElements.length === 0">
             <GListGroupItem ref="menuItem" tabindex="0" role="menuitem">
                 No compatible input found in workflow
@@ -19,12 +19,12 @@
                 {{ input.connected ? "Disconnect from" : "Connect to" }} {{ input.inputLabel }}
             </GListGroupItem>
         </template>
-    </b-list-group>
+    </GListGroup>
 </template>
 <script setup lang="ts">
 import { computed, type ComputedRef, onMounted, ref, watch } from "vue";
 
-import { GListGroupItem } from "@/component-library";
+import { GListGroup, GListGroupItem } from "@/component-library";
 import { useFocusWithin } from "@/composables/useActiveElement";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import { assertDefined } from "@/utils/assertions";

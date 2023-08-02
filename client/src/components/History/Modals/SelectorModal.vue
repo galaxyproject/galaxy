@@ -4,13 +4,22 @@ import { faListAlt } from "@fortawesome/free-regular-svg-icons";
 import { faArrowDown, faColumns, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useInfiniteScroll } from "@vueuse/core";
-import { BListGroup } from "bootstrap-vue";
 import isEqual from "lodash.isequal";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, onUnmounted, type PropType, type Ref, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { GAlert, GBadge, GButton, GButtonGroup, GFormGroup, GInput, GListGroupItem, GModal } from "@/component-library";
+import {
+    GAlert,
+    GBadge,
+    GButton,
+    GButtonGroup,
+    GFormGroup,
+    GInput,
+    GListGroup,
+    GListGroupItem,
+    GModal,
+} from "@/component-library";
 import type { components } from "@/schema";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
@@ -220,7 +229,7 @@ async function loadMore(noScroll = false) {
             <GAlert v-else-if="!busy && hasNoResults" variant="danger" show>No histories found.</GAlert>
 
             <div ref="scrollableDiv" class="history-selector-modal-list">
-                <BListGroup>
+                <GListGroup>
                     <GListGroupItem
                         v-for="history in filtered"
                         :key="history.id"
@@ -297,7 +306,7 @@ async function loadMore(noScroll = false) {
                         </div>
                         <b-overlay :show="busy" opacity="0.5" />
                     </div>
-                </BListGroup>
+                </GListGroup>
             </div>
 
             <template v-slot:modal-footer>
