@@ -22,13 +22,14 @@ class Security:
     security: IdEncodingHelper
 
 
-def ensure_valid_id(v: str):
+def ensure_valid_id(v: str) -> str:
     len_v = len(v)
     if len_v % ENCODED_ID_LENGTH_MULTIPLE:
         raise ValueError("Invalid id length, must be multiple of 16")
     m = ENCODED_DATABASE_ID_PATTERN.fullmatch(v.lower())
     if not m:
         raise ValueError("Invalid characters in encoded ID")
+    return v
 
 
 def ensure_valid_folder_id(v):
