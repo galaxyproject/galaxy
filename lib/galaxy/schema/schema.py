@@ -2104,7 +2104,7 @@ class Thing(Model):
     )
 
 
-class Creator(Model):
+class Creator(Thing):
     class_: str = Field(..., alias="class", title="Class", description="The class representing this creator.")
 
 
