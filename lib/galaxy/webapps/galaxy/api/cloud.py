@@ -9,7 +9,6 @@ from fastapi import (
     Response,
     status,
 )
-from pydantic import Required
 
 from galaxy.managers.cloud import CloudManager
 from galaxy.managers.context import ProvidesHistoryContext
@@ -57,7 +56,7 @@ class FastAPICloudController:
     )
     def get(
         self,
-        payload: CloudObjects = Body(default=Required),
+        payload: CloudObjects = Body(default=...),
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> DatasetSummaryList:
         datasets = self.cloud_manager.get(
@@ -80,7 +79,7 @@ class FastAPICloudController:
     )
     def send(
         self,
-        payload: CloudDatasets = Body(default=Required),
+        payload: CloudDatasets = Body(default=...),
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> CloudDatasetsResponse:
         log.info(
