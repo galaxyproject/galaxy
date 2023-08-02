@@ -640,26 +640,21 @@ class TestYamlLoader(BaseLoaderTestCase):
             "person": {
                 "givenName": "Björn",
                 "familyName": "Grüning",
-                "identifier": "http://orcid.org/0000-0002-3079-6586"
+                "identifier": "http://orcid.org/0000-0002-3079-6586",
             }
         }
 
-        assert creators[1] == {
-            "organization": {
-                "name": "Galaxy IUC",
-                "url": "https://galaxyproject.org/iuc/"
-            }
-        }
+        assert creators[1] == {"organization": {"name": "Galaxy IUC", "url": "https://galaxyproject.org/iuc/"}}
 
     def test_parse_funding(self):
         funding = self._tool_source.parse_funding()
         assert len(funding) == 1
-        
+
         assert funding[0] == {
             "grant": {
                 "name": "EuroScienceGateway",
                 "identifier": "101057388",
-                "url": "https://cordis.europa.eu/project/id/101057388"
+                "url": "https://cordis.europa.eu/project/id/101057388",
             }
         }
 
