@@ -584,11 +584,6 @@ class Visualization(Model):  # TODO annotate this model
     model_config = ConfigDict(
         use_enum_values=True,
         populate_by_name=True,
-        json_encoders={
-            # This will ensure all IDs are encoded when serialized to JSON
-            DecodedDatabaseIdField: lambda v: DecodedDatabaseIdField.encode(v),
-            LibraryFolderDatabaseIdField: lambda v: LibraryFolderDatabaseIdField.encode(v),
-        },
     )
 
 
