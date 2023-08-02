@@ -2,7 +2,6 @@ import json
 from typing import (
     Dict,
     List,
-    Optional,
 )
 
 import packaging.version
@@ -69,11 +68,13 @@ class YamlToolSource(ToolSource):
         xrefs = self.root_dict.get("xrefs", [])
         return [dict(value=xref["value"], reftype=xref["type"]) for xref in xrefs if xref["type"]]
 
-    def parse_creator(self) -> Optional[List[Dict[str, Dict[str, str]]]]:
-        return self.root_dict.get("creator")
+    def parse_creator(self) -> List[Dict[str, Dict[str, str]]]:
+        creator = self.root_dict.get("creator")
+        return creator if creator else []
 
-    def parse_funding(self) -> Optional[List[Dict[str, Dict[str, str]]]]:
-        return self.root_dict.get("funding")
+    def parse_funding(self) -> List[Dict[str, Dict[str, str]]]:
+        funding = self.root_dict.get("funding")
+        return funding if funding else []
 
     def parse_sanitize(self):
         return self.root_dict.get("sanitize", True)

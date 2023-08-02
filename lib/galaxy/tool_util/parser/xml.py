@@ -588,7 +588,7 @@ class XmlToolSource(ToolSource):
     def parse_creator(self):
         creators_el = self.root.find("creator")
         if creators_el is None:
-            return None
+            return []
 
         creators = []
         for creator_el in creators_el:
@@ -612,7 +612,7 @@ class XmlToolSource(ToolSource):
         """
         funding_el = self.root.find("funding")
         if funding_el is None:
-            return None
+            return []
 
         funding = []
         for grant_el in funding_el:
