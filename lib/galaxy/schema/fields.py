@@ -48,6 +48,10 @@ DecodedDatabaseIdField = Annotated[
         {"type": "string", "example": "0123456789ABCDEF", "pattern": "[0-9a-fA-F]+", "minLength": 16},
         mode="serialization",
     ),
+    WithJsonSchema(
+        {"type": "string", "example": "0123456789ABCDEF", "pattern": "[0-9a-fA-F]+", "minLength": 16},
+        mode="validation",
+    ),
 ]
 
 EncodedDatabaseIdField = Annotated[
@@ -56,6 +60,10 @@ EncodedDatabaseIdField = Annotated[
     WithJsonSchema(
         {"type": "string", "example": "0123456789ABCDEF", "pattern": "[0-9a-fA-F]+", "minLength": 16},
         mode="serialization",
+    ),
+    WithJsonSchema(
+        {"type": "string", "example": "0123456789ABCDEF", "pattern": "[0-9a-fA-F]+", "minLength": 16},
+        mode="validation",
     ),
 ]
 
@@ -67,14 +75,22 @@ LibraryFolderDatabaseIdField = Annotated[
         {"type": "string", "example": "0123456789ABCDEF", "pattern": "[0-9a-fA-F]+", "minLength": 16},
         mode="serialization",
     ),
+    WithJsonSchema(
+        {"type": "string", "example": "0123456789ABCDEF", "pattern": "[0-9a-fA-F]+", "minLength": 16},
+        mode="validation",
+    ),
 ]
 
-EncodedLibraryFolderDatabaseIdField = Annotated[
+_EncodedLibraryFolderDatabaseIdField = Annotated[
     str,
     BeforeValidator(lambda database_id: Security.security.encode_id(f"F{database_id}")),
     WithJsonSchema(
         {"type": "string", "example": "0123456789ABCDEF", "pattern": "[0-9a-fA-F]+", "minLength": 16},
         mode="serialization",
+    ),
+    WithJsonSchema(
+        {"type": "string", "example": "0123456789ABCDEF", "pattern": "[0-9a-fA-F]+", "minLength": 16},
+        mode="validation",
     ),
 ]
 
