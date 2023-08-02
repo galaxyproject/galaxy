@@ -2,16 +2,12 @@
 import { BModal } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-const props = defineProps({
-    value: {
-        type: Boolean,
-        default: null,
-    },
-    visible: {
-        type: Boolean,
-        default: null,
-    },
-});
+interface Props {
+    value?: boolean;
+    visible?: boolean;
+}
+
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "input", value: boolean): void;
