@@ -6,6 +6,7 @@ import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 import * as tus from "tus-js-client";
 import _ from "underscore";
+import { uploadModelsToPayload } from "@/components/Upload/helpers";
 
 function submitPayload(payload, cnf) {
     axios
@@ -98,7 +99,6 @@ export function submitUpload(config) {
         progress: () => {},
         attempts: 70000,
         timeout: 5000,
-        url: null,
         error_file: "File not provided.",
         error_attempt: "Maximum number of attempts reached.",
         error_tool: "Tool submission failed.",
@@ -145,10 +145,8 @@ function isUrl(pasted_item) {
 export class UploadQueue {
     constructor(options) {
         this.opts = {
-            dragover: () => {},
-            dragleave: () => {},
             announce: (d) => {},
-            initialize: (d) => {},
+            get: (d) => {},
             progress: (d, m) => {},
             success: (d, m) => {},
             warning: (d, m) => {},
@@ -239,15 +237,12 @@ export class UploadQueue {
             this.isRunning = true;
         }
         const index = this._firstItemIndex();
+        const data = uploadModelsToPayload([this.opts.get(index)], this.opts.historyId);
         this.remove(index);
-        this._submitUpload(index);
-    }
 
-    // create and submit data
-    _submitUpload(index) {
+        // create and submit data
         submitUpload({
-            url: this.opts.url,
-            data: this.opts.initialize(index),
+            data: data,
             success: (message) => {
                 this.opts.success(index, message);
                 this._process();

@@ -4,7 +4,7 @@ import { BButton } from "bootstrap-vue";
 import { getAppRoot } from "onload";
 import { filesDialog } from "utils/data";
 import { UploadQueue } from "utils/uploadbox";
-import Vue, { computed,ref } from "vue";
+import Vue, { computed, ref } from "vue";
 
 import { defaultNewFileName, uploadModelsToPayload } from "./helpers";
 import { defaultModel } from "./model.js";
@@ -49,11 +49,10 @@ const running = ref(false);
 const uploadCompleted = ref(0);
 const uploadList = ref({});
 const uploadSize = ref(0);
-const uploadUrl = ref(null);
 
 const showHelper = computed(() => Object.keys(uploadList.value).length === 0);
 const listExtensions = computed(() => props.details.effectiveExtensions.filter((ext) => !ext.composite_files));
-const history_id = computed(() => props.details.history_id);
+const historyId = computed(() => props.details.history_id);
 const counterNonRunning = computed(() => counterAnnounce.value + counterSuccess.value + counterError.value);
 const enableReset = computed(() => counterRunning.value == 0 && counterNonRunning.value > 0);
 const enableStart = computed(() => counterRunning.value == 0 && counterAnnounce.value > 0);
@@ -78,15 +77,10 @@ const topInfo = computed(() => {
 });
 
 const queue = new UploadQueue({
-    initUrl: (index) => {
-        if (!uploadUrl.value) {
-            uploadUrl.value = `${getAppRoot()}api/tools/fetch`;
-        }
-        return uploadUrl.value;
-    },
+    historyId: historyId.value,
+    get: (index) => uploadList.value[index],
     multiple: props.multiple,
     announce: _eventAnnounce,
-    initialize: (index) => uploadModelsToPayload([uploadList.value[index]], history_id.value),
     progress: _eventProgress,
     success: _eventSuccess,
     error: _eventError,
@@ -172,7 +166,7 @@ function _uploadFtp() {
         }
     });
     if (list.length > 0) {
-        const data = uploadModelsToPayload(list, props.details.history_id);
+        const data = uploadModelsToPayload(list, historyId.value);
         axios
             .post(`${getAppRoot()}api/tools/fetch`, data)
             .then((message) => {
