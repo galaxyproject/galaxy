@@ -11,15 +11,11 @@
     </div>
 </template>
 <script>
-import BootstrapVue from "bootstrap-vue";
 import LoadingSpan from "components/LoadingSpan";
-import Vue from "vue";
 
 import { GLink, GTable } from "@/component-library";
 
 import { Services } from "../services";
-
-Vue.use(BootstrapVue);
 
 export default {
     components: {

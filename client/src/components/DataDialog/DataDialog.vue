@@ -39,7 +39,6 @@
 </template>
 
 <script>
-import BootstrapVue from "bootstrap-vue";
 import SelectionDialogMixin from "components/SelectionDialog/SelectionDialogMixin";
 import { useGlobalUploadModal } from "composables/globalUploadModal";
 import { getAppRoot } from "onload/loadConfig";
@@ -51,8 +50,6 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import { Model } from "./model";
 import { Services } from "./services";
 import { UrlTracker } from "./utilities";
-
-Vue.use(BootstrapVue);
 
 export default {
     components: {

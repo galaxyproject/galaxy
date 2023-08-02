@@ -27,16 +27,12 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEye, faSave } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import BootstrapVue from "bootstrap-vue";
 import MarkdownEditor from "components/Markdown/MarkdownEditor";
 import { Toast } from "composables/toast";
-import Vue from "vue";
 
 import { GButton } from "@/component-library";
 
 import { save } from "./util";
-
-Vue.use(BootstrapVue);
 
 library.add(faEye, faSave);
 

@@ -51,7 +51,7 @@
                 title="Disconnect Identity?"
                 size="sm"
                 @ok="disconnectID"
-                @cancel="doomedItem = null"></GModal>
+                @cancel="doomedItem = null" />
 
             <GModal
                 id="disconnectAndResetModal"
@@ -82,19 +82,15 @@
 
 <script>
 import { getGalaxyInstance } from "app";
-import BootstrapVue from "bootstrap-vue";
 import { Toast } from "composables/toast";
 import { sanitize } from "dompurify";
 import { userLogout } from "utils/logout";
-import Vue from "vue";
 
 import { GAlert, GButton, GModal } from "@/component-library";
 
 import svc from "./service";
 
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin.vue";
-
-Vue.use(BootstrapVue);
 
 export default {
     components: {

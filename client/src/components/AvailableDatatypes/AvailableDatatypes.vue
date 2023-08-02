@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref } from "vue";
 
+import { GTable } from "@/component-library";
 import { type DetailedDatatypes, useDetailedDatatypes } from "@/composables/datatypes";
 import { useFilterObjectArray } from "@/composables/filter";
 
-import { GTable } from "@/component-library";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 
 const filter = ref("");

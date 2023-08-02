@@ -2,18 +2,15 @@
     <GInputGroup>
         <GInput v-model="filter" :placeholder="placeholder" />
         <GInputGroupAppend>
-            <GButton :disabled="!filter" @click="filter = ''"><i class="fa fa-times" /></GButton>
+            <GButton :disabled="!filter" @click="filter = ''">
+                <i class="fa fa-times" />
+            </GButton>
         </GInputGroupAppend>
     </GInputGroup>
 </template>
 
 <script>
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
-
 import { GButton, GInput, GInputGroup, GInputGroupAppend } from "@/component-library";
-
-Vue.use(BootstrapVue);
 
 export default {
     components: {

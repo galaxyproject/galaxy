@@ -118,14 +118,12 @@
 <script>
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
-import BootstrapVue from "bootstrap-vue";
 import { initTopBarIcons } from "components/Libraries/icons";
 import FolderDetails from "components/Libraries/LibraryFolder/FolderDetails/FolderDetails";
 import LibraryBreadcrumb from "components/Libraries/LibraryFolder/LibraryBreadcrumb";
 import { Toast } from "composables/toast";
 import { getAppRoot } from "onload/loadConfig";
 import mod_utils from "utils/utils";
-import Vue from "vue";
 
 import { GButton, GFormCheckbox } from "@/component-library";
 
@@ -138,8 +136,6 @@ import mod_import_collection from "./import-to-history/import-collection";
 import mod_import_dataset from "./import-to-history/import-dataset";
 
 initTopBarIcons();
-
-Vue.use(BootstrapVue);
 
 export default {
     name: "FolderTopBar",

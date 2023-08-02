@@ -1,12 +1,8 @@
 <script setup>
-import { VBPopoverPlugin, VBTooltipPlugin } from "bootstrap-vue";
 import { withPrefix } from "utils/redirect";
-import Vue, { computed, getCurrentInstance, ref } from "vue";
+import { computed, getCurrentInstance, ref } from "vue";
 
 import { GDropdownItem, GNavItem, GNavItemDropdown } from "@/component-library";
-
-Vue.use(VBPopoverPlugin);
-Vue.use(VBTooltipPlugin);
 
 const instance = getCurrentInstance().proxy;
 const emit = defineEmits(["click", "open-url"]);

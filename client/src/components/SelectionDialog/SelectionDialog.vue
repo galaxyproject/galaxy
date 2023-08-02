@@ -35,12 +35,8 @@
 
 <script>
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
 
 import { GAlert, GButton, GModal } from "@/component-library";
-
-Vue.use(BootstrapVue);
 
 export default {
     components: {

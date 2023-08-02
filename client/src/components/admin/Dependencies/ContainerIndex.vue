@@ -38,7 +38,7 @@
                         id="manage-filter-container-type"
                         v-model="filterContainerType"
                         class="mb-2 mr-sm-2 mb-sm-0"
-                        :options="containerTypeOptions"></GFormSelect>
+                        :options="containerTypeOptions" />
                     <label v-if="filterResolution != 'unresolved'" class="mr-sm-2" for="manage-filter-resolver-type">
                         Resolvers of type
                     </label>
@@ -47,7 +47,7 @@
                         id="manage-filter-resolver-type"
                         v-model="filterResolverType"
                         class="mb-2 mr-sm-2 mb-sm-0"
-                        :options="resolverTypeOptions"></GFormSelect>
+                        :options="resolverTypeOptions" />
                 </GForm>
             </GRow>
         </template>
@@ -63,7 +63,7 @@
         <template v-slot:body>
             <GTable id="containers-table" :fields="fields" :items="items" striped @row-clicked="showRowDetails">
                 <template v-slot:cell(selected)="data">
-                    <GFormCheckbox v-model="data.item.selected"></GFormCheckbox>
+                    <GFormCheckbox v-model="data.item.selected" />
                 </template>
                 <template v-slot:cell(requirement)="row">
                     <requirements :requirements="row.item.requirements" />

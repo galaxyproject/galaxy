@@ -43,7 +43,6 @@ import { GButton, GInput, GInputGroup, GInputGroupAppend } from "@/component-lib
 
 export default {
     components: {
-        GInput,
         GButton,
         GInput,
         GInputGroup,

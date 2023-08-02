@@ -52,18 +52,14 @@
     </div>
 </template>
 <script>
-import BootstrapVue from "bootstrap-vue";
 import LoadingSpan from "components/LoadingSpan";
 import { getAppRoot } from "onload/loadConfig";
-import Vue from "vue";
 
 import { GAlert, GBadge, GLink, GTable } from "@/component-library";
 
 import { Services } from "../services";
 import RepositoryDetails from "./Details";
 import Monitor from "./Monitor";
-
-Vue.use(BootstrapVue);
 
 export default {
     components: {

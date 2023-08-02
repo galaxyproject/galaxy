@@ -30,9 +30,7 @@
         <template v-slot:body>
             <GTable id="requirements-table" :fields="fields" :items="items" striped @row-clicked="showRowDetails">
                 <template v-slot:cell(selected)="data">
-                    <GFormCheckbox
-                        v-model="data.item.selected"
-                        @change="changeToggleCheckboxState($event)"></GFormCheckbox>
+                    <GFormCheckbox v-model="data.item.selected" @change="changeToggleCheckboxState($event)" />
                 </template>
                 <template v-slot:head(selected)="">
                     <GFormCheckbox v-model="toggleState" @change="toggleSelectAll" />

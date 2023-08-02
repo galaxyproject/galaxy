@@ -64,11 +64,9 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faDownload, faEdit } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import BootstrapVue from "bootstrap-vue";
 import MarkdownIt from "markdown-it";
 import markdownItRegexp from "markdown-it-regexp";
 import store from "store";
-import Vue from "vue";
 
 import { GAlert, GBadge, GButton } from "@/component-library";
 
@@ -87,8 +85,6 @@ const mdNewline = markdownItRegexp(/<br>/, () => {
 
 const md = MarkdownIt();
 md.use(mdNewline);
-
-Vue.use(BootstrapVue);
 
 library.add(faDownload, faEdit);
 

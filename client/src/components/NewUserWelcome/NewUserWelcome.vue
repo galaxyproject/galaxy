@@ -27,7 +27,6 @@
 </template>
 
 <script>
-import { BButton } from "bootstrap-vue";
 import Heading from "components/Common/Heading";
 import Slides from "components/NewUserWelcome/components/Slides";
 import Subtopics from "components/NewUserWelcome/components/Subtopics";
@@ -42,7 +41,6 @@ import { getResource } from "./getResource";
 export default {
     components: {
         Heading,
-        BButton,
         GCard,
         GCol,
         GRow,

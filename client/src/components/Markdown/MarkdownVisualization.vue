@@ -21,16 +21,12 @@
 </template>
 
 <script>
-import BootstrapVue from "bootstrap-vue";
 import DataDialog from "components/DataDialog/DataDialog";
 import FormDisplay from "components/Form/FormDisplay";
-import Vue from "vue";
 
 import { GModal } from "@/component-library";
 
 import MarkdownSelector from "./MarkdownSelector";
-
-Vue.use(BootstrapVue);
 
 export default {
     components: {

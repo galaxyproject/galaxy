@@ -58,9 +58,7 @@
 </template>
 <script>
 import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
 import { withPrefix } from "utils/redirect";
-import Vue from "vue";
 
 import {
     GAlert,
@@ -73,8 +71,6 @@ import {
     GFormCheckbox,
     GFormGroup,
 } from "@/component-library";
-
-Vue.use(BootstrapVue);
 
 export default {
     components: {

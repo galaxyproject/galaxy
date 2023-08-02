@@ -8,16 +8,11 @@
 </template>
 
 <script>
-import { VBTooltip } from "bootstrap-vue";
-
 import { GButton } from "@/component-library";
 
 export default {
     components: {
         GButton,
-    },
-    directives: {
-        VBTooltip,
     },
     props: {
         id: {

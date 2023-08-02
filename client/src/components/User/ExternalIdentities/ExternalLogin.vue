@@ -98,15 +98,11 @@
 <script>
 import { getGalaxyInstance } from "app";
 import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
 import LoadingSpan from "components/LoadingSpan";
 import { getAppRoot } from "onload";
-import Vue from "vue";
 import Multiselect from "vue-multiselect";
 
 import { GAlert, GButton, GForm, GFormCheckbox, GFormGroup } from "@/component-library";
-
-Vue.use(BootstrapVue);
 
 export default {
     components: {

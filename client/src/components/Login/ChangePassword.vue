@@ -19,13 +19,9 @@
 </template>
 <script>
 import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
 import { withPrefix } from "utils/redirect";
-import Vue from "vue";
 
 import { GAlert, GButton, GCard, GForm, GFormGroup, GInput } from "@/component-library";
-
-Vue.use(BootstrapVue);
 
 export default {
     components: {

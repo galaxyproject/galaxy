@@ -2,11 +2,17 @@
     <GCard :title="title" class="mx-4 icon-card">
         <GContainer class="p-0">
             <GRow>
-                <GCol>{{ description }}</GCol>
-                <GCol cols="auto"><i :class="icon"></i></GCol>
+                <GCol>
+                    {{ description }}
+                </GCol>
+                <GCol cols="auto">
+                    <i :class="icon" />
+                </GCol>
             </GRow>
         </GContainer>
-        <GButton variant="primary" @click="onButtonClick">{{ buttonText }}</GButton>
+        <GButton variant="primary" @click="onButtonClick">
+            {{ buttonText }}
+        </GButton>
     </GCard>
 </template>
 

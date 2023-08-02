@@ -4,15 +4,18 @@ import { ref } from "vue";
 
 const listGroupRef = ref();
 
-function focus() {
-    listGroupRef.value.focus();
-}
-
 function blur() {
     listGroupRef.value.blur();
 }
 
-defineExpose({});
+function focus() {
+    listGroupRef.value.focus();
+}
+
+defineExpose({
+    blur,
+    focus,
+});
 </script>
 
 <template>

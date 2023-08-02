@@ -96,9 +96,9 @@ async function handleSubmit(preferredObjectStoreId: string) {
                             :variant="variant(null)"
                             class="preferred-object-store-select-button"
                             data-object-store-id="__null__"
-                            @click="handleSubmit(null)"
-                            ><i>{{ defaultOptionTitle | localize }}</i></GButton
-                        >
+                            @click="handleSubmit(null)">
+                            <i>{{ defaultOptionTitle | localize }}</i>
+                        </GButton>
                         <GButton
                             v-for="object_store in objectStores"
                             :id="`preferred-object-store-button-${object_store.object_store_id}`"

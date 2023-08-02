@@ -9,7 +9,7 @@
                 {{ l(errorMessage) }}
             </GAlert>
         </div>
-        <b-tabs content-class="mt-3">
+        <GTabs content-class="mt-3">
             <GTab
                 title-link-class="collection-edit-change-genome-nav"
                 @click="updateInfoMessage(newCollectionMessage + ' ' + noQuotaIncreaseMessage)">
@@ -54,7 +54,7 @@
                     </div>
                 </DatatypesProvider>
             </GTab>
-        </b-tabs>
+        </GTabs>
     </div>
 </template>
 
@@ -63,13 +63,11 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBars, faCog, faDatabase, faTable, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
 import { mapState } from "pinia";
 import { prependPath } from "utils/redirect";
 import { errorMessageAsString } from "utils/simple-error";
-import Vue from "vue";
 
-import { GAlert, GSpinner, GTab } from "@/component-library";
+import { GAlert, GSpinner, GTab, GTabs } from "@/component-library";
 import { useConfig } from "@/composables/config";
 import { useHistoryStore } from "@/stores/historyStore";
 
@@ -82,7 +80,6 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 
 library.add(faDatabase, faTable, faBars, faUser, faCog);
 
-Vue.use(BootstrapVue);
 export default {
     components: {
         ChangeDatatypeTab,
@@ -91,8 +88,9 @@ export default {
         DbKeyProvider,
         FontAwesomeIcon,
         GAlert,
-        GTab,
         GSpinner,
+        GTab,
+        GTabs,
         LoadingSpan,
         SuitableConvertersProvider,
         SuitableConvertersTab,

@@ -41,16 +41,12 @@
 
 <script>
 import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
 import ToolSection from "components/Panels/Common/ToolSection";
 import { getAppRoot } from "onload/loadConfig";
-import Vue from "vue";
 
 import { GAlert } from "@/component-library";
 
 import MarkdownDialog from "./MarkdownDialog";
-
-Vue.use(BootstrapVue);
 
 const historySharedElements = [
     {

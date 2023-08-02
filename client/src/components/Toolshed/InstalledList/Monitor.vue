@@ -29,15 +29,10 @@
     </div>
 </template>
 <script>
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
-
 import { GAlert, GCard, GLink, GTable } from "@/component-library";
 
 import InstallationActions from "../RepositoryDetails/InstallationActions";
 import { Services } from "../services";
-
-Vue.use(BootstrapVue);
 
 export default {
     components: {

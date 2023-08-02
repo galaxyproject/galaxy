@@ -202,10 +202,8 @@ import "ui/hoverhighlight";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faSortAlphaDown, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import BootstrapVue from "bootstrap-vue";
 import STATES from "mvc/dataset/states";
 import _l from "utils/localization";
-import Vue from "vue";
 import draggable from "vuedraggable";
 
 import { GAlert, GButton } from "@/component-library";
@@ -215,7 +213,6 @@ import DatasetCollectionElementView from "./ListDatasetCollectionElementView";
 
 library.add(faSortAlphaDown, faUndo);
 
-Vue.use(BootstrapVue);
 export default {
     components: {
         GAlert,

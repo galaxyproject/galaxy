@@ -13,7 +13,7 @@
                 :type="attribute.type" />
         </div>
         <div role="group" class="form-group">
-            <GFormSelect v-model="addAttribute" :options="addAttributes" size="sm"></GFormSelect>
+            <GFormSelect v-model="addAttribute" :options="addAttributes" size="sm" />
         </div>
         <GButton type="submit" variant="primary">Save</GButton>
         <GButton type="reset" variant="danger">Cancel</GButton>

@@ -10,7 +10,6 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faStar as farStar } from "@fortawesome/free-regular-svg-icons";
 import { faStar } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { VBTooltip } from "bootstrap-vue";
 
 import { GLink } from "@/component-library";
 
@@ -23,9 +22,6 @@ export default {
     components: {
         GLink,
         FontAwesomeIcon,
-    },
-    directives: {
-        VBTooltip,
     },
     props: {
         checked: {

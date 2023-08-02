@@ -149,16 +149,13 @@
 </template>
 
 <script>
-import BootstrapVue from "bootstrap-vue";
 import STATES from "mvc/dataset/states";
 import _l from "utils/localization";
-import Vue from "vue";
 
 import { GAlert } from "@/component-library";
 
 import mixin from "./common/mixin";
 
-Vue.use(BootstrapVue);
 export default {
     components: {
         GAlert,

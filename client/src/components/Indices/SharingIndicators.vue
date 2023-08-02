@@ -2,7 +2,6 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faGlobe, faLink, faShareAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { VBTooltip } from "bootstrap-vue";
 
 import { GButton } from "@/component-library";
 

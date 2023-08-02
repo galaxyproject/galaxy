@@ -6,7 +6,7 @@
         <template v-slot:body>
             <GTable id="unused-paths-table" :fields="fields" :items="items" striped>
                 <template v-slot:cell(selected)="data">
-                    <GFormCheckbox v-model="data.item.selected"></GFormCheckbox>
+                    <GFormCheckbox v-model="data.item.selected" />
                 </template>
             </GTable>
         </template>

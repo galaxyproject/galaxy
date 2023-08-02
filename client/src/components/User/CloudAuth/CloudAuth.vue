@@ -90,16 +90,11 @@
 </template>
 
 <script>
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
-
 import { GAlert, GButtonGroup, GFormGroup, GInput, GListGroup, GModal } from "@/component-library";
 
 import CloudAuthItem from "./CloudAuthItem";
 import { Credential } from "./model";
 import svc from "./model/service";
-
-Vue.use(BootstrapVue);
 
 export default {
     components: {

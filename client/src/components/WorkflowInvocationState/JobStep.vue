@@ -23,16 +23,12 @@
     </GCard>
 </template>
 <script>
-import BootstrapVue from "bootstrap-vue";
 import JobInformation from "components/JobInformation/JobInformation";
 import JobParameters from "components/JobParameters/JobParameters";
 import { JobProvider } from "components/providers";
 import UtcDate from "components/UtcDate";
-import Vue from "vue";
 
 import { GCard, GSpinner, GTable } from "@/component-library";
-
-Vue.use(BootstrapVue);
 
 export default {
     components: {

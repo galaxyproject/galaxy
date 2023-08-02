@@ -1,12 +1,9 @@
 <script setup lang="ts">
-import BootstrapVue from "bootstrap-vue";
-import Vue, { computed } from "vue";
+import { computed } from "vue";
 
 import { GButton } from "@/component-library";
 
 import { getZoomInLevel, getZoomOutLevel, isMaxZoom, isMinZoom } from "./modules/zoomLevels";
-
-Vue.use(BootstrapVue);
 
 const props = defineProps({
     zoomLevel: { type: Number, default: 1 },

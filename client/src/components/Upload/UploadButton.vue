@@ -26,7 +26,6 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { VBTooltip } from "bootstrap-vue";
 import { useGlobalUploadModal } from "composables/globalUploadModal";
 import Query from "utils/query-string-parsing";
 
@@ -35,9 +34,9 @@ import { GButton } from "@/component-library";
 library.add(faUpload);
 
 export default {
-    components: { FontAwesomeIcon, GButton },
-    directives: {
-        "v-b-tooltip": VBTooltip,
+    components: {
+        FontAwesomeIcon,
+        GButton,
     },
     props: {
         title: { type: String, default: "Download from URL or upload files from disk" },

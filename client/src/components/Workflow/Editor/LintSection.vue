@@ -34,10 +34,6 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheck, faExclamationTriangle, faMagic, faPencilAlt, faSearch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
-
-Vue.use(BootstrapVue);
 
 library.add(faMagic);
 library.add(faSearch);
