@@ -170,11 +170,6 @@ export class UploadQueue {
         this.isPaused = false;
     }
 
-    // Open file browser for selection
-    select() {
-        this.uploadinput.dialog();
-    }
-
     // Remove all entries from queue
     reset() {
         this.queue.clear();

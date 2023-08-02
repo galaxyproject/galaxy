@@ -116,6 +116,16 @@ export async function getRemoteEntriesAt(target) {
     }
 }
 
+export function openFileDialog(callback, multiple = false) {
+    const fileInput = document.createElement("input");
+    fileInput.setAttribute("type", "file");
+    fileInput.setAttribute("multiple", multiple);
+    fileInput.click();
+    fileInput.addEventListener("change", (evt) => {
+        callback(evt.target.files);
+    });
+}
+
 export default {
     AUTO_EXTENSION,
     DEFAULT_DBKEY,

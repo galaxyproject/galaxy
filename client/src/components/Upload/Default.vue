@@ -3,7 +3,7 @@
         <div class="upload-top">
             <div class="upload-top-info" v-html="topInfo" />
         </div>
-        <UploadBox @add="addFiles">
+        <UploadBox :multiple="true" @add="addFiles">
             <div v-show="showHelper" class="upload-helper"><i class="fa fa-files-o" />Drop files here</div>
             <div v-show="!showHelper" class="upload-table ui-table-striped">
                 <DefaultRow
@@ -94,7 +94,7 @@ import { filesDialog } from "utils/data";
 import { UploadQueue } from "utils/uploadbox";
 
 import { defaultNewFileName, uploadModelsToPayload } from "./helpers";
-import { findExtension } from "./utils";
+import { findExtension, openFileDialog } from "./utils";
 
 import { BButton } from "bootstrap-vue";
 import DefaultRow from "./DefaultRow.vue";
@@ -195,6 +195,9 @@ export default {
     methods: {
         /** Add files to queue */
         addFiles: function (files) {
+            files.forEach((file) => {
+                file.chunk_mode = true;
+            });
             this.queue.add(files);
         },
         /** Update model */
@@ -252,7 +255,7 @@ export default {
             });
         },
         uploadSelect: function () {
-            //this.queue.select();
+            openFileDialog(this.addFiles, true);
         },
 
         /** Start upload process */
