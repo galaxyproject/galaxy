@@ -45,6 +45,7 @@ export default {
     components: {
         GInput,
         GButton,
+        GInput,
         GInputGroup,
         GInputGroupAppend,
     },

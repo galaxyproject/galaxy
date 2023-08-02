@@ -18,9 +18,9 @@ Vue.use(BootstrapVue);
 export default {
     components: {
         GButton,
+        GInput,
         GInputGroup,
         GInputGroupAppend,
-        GInput,
     },
     props: {
         value: {

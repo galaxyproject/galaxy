@@ -28,10 +28,10 @@ import { GAlert, GCol, GInput, GRow } from "@/component-library";
 
 export default {
     components: {
-        GRow,
-        GCol,
         GAlert,
+        GCol,
         GInput,
+        GRow,
     },
     props: {
         value: {

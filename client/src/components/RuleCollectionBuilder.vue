@@ -608,10 +608,10 @@ const deferredToPromise = (d) => {
 
 export default {
     components: {
-        GRow,
         GAlert,
         GButton,
         GInput,
+        GRow,
         TooltipOnHover,
         HotTable,
         RuleComponent,

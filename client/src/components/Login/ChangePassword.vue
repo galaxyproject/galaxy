@@ -7,9 +7,13 @@
             <GFormGroup v-if="expiredUser" label="Current Password">
                 <GInput v-model="current" type="password" />
             </GFormGroup>
-            <GFormGroup label="New Password"> <GInput v-model="password" type="password" /> </GFormGroup>
-            <GFormGroup label="Confirm password"> <GInput v-model="confirm" type="password" /> </GFormGroup>
-            <GButton type="submit">Save new password</GButton>
+            <GFormGroup label="New Password">
+                <GInput v-model="password" type="password" />
+            </GFormGroup>
+            <GFormGroup label="Confirm password">
+                <GInput v-model="confirm" type="password" />
+            </GFormGroup>
+            <GButton type="submit"> Save new password </GButton>
         </GCard>
     </GForm>
 </template>
