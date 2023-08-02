@@ -17,7 +17,7 @@ from fastapi import (
     Path,
     Query,
 )
-from pydantic.error_wrappers import ValidationError
+from pydantic import ValidationError
 from starlette import status
 from starlette.responses import (
     Response,
