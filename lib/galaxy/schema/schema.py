@@ -230,11 +230,11 @@ ContentsUrlField = Field(
 UserIdField = Field(title="ID", description="Encoded ID of the user")
 UserEmailField = Field(title="Email", description="Email of the user")
 UserDescriptionField = Field(title="Description", description="Description of the user")
-UserNameField = Field(default=Required, title="user_name", description="The name of the user.")
+UserNameField = Field(default=..., title="user_name", description="The name of the user.")
 QuotaPercentField = Field(
     default=None, title="Quota percent", description="Percentage of the storage quota applicable to the user."
 )
-UserDeletedField = Field(default=Required, title="Deleted", description=" User is deleted")
+UserDeletedField = Field(default=..., title="Deleted", description=" User is deleted")
 PreferredObjectStoreIdField = Field(
     default=None,
     title="Preferred Object Store ID",
@@ -242,12 +242,12 @@ PreferredObjectStoreIdField = Field(
 )
 
 TotalDiskUsageField = Field(
-    default=Required,
+    default=...,
     title="Total disk usage",
     description="Size of all non-purged, unique datasets of the user in bytes.",
 )
 NiceTotalDiskUsageField = Field(
-    default=Required,
+    default=...,
     title="Nice total disc usage",
     description="Size of all non-purged, unique datasets of the user in a nice format.",
 )
@@ -331,19 +331,17 @@ class AnonUserModel(DiskUsageUserModel):
 
 
 class DetailedUserModel(BaseUserModel, AnonUserModel):
-    is_admin: bool = Field(default=Required, title="Is admin", description="User is admin")
-    purged: bool = Field(default=Required, title="Purged", description="User is purged")
-    preferences: Dict[Any, Any] = Field(default=Required, title="Preferences", description="Preferences of the user")
+    is_admin: bool = Field(default=..., title="Is admin", description="User is admin")
+    purged: bool = Field(default=..., title="Purged", description="User is purged")
+    preferences: Dict[Any, Any] = Field(default=..., title="Preferences", description="Preferences of the user")
     preferred_object_store_id: Optional[str] = PreferredObjectStoreIdField
-    quota: str = Field(default=Required, title="Quota", description="Quota applicable to the user")
-    quota_bytes: Any = Field(
-        default=Required, title="Quota in bytes", description="Quota applicable to the user in bytes."
-    )
-    tags_used: List[str] = Field(default=Required, title="Tags used", description="Tags used by the user")
+    quota: str = Field(default=..., title="Quota", description="Quota applicable to the user")
+    quota_bytes: Any = Field(default=..., title="Quota in bytes", description="Quota applicable to the user in bytes.")
+    tags_used: List[str] = Field(default=..., title="Tags used", description="Tags used by the user")
 
 
 class UserCreationPayload(Model):
-    password: str = Field(default=Required, title="user_password", description="The password of the user.")
+    password: str = Field(default=..., title="user_password", description="The password of the user.")
     email: str = UserEmailField
     username: str = UserNameField
 
@@ -353,19 +351,17 @@ class RemoteUserCreationPayload(Model):
 
 
 class UserDeletionPayload(Model):
-    purge: bool = Field(default=Required, title="Purge user", description="Purge the user")
+    purge: bool = Field(default=..., title="Purge user", description="Purge the user")
 
 
 class FavoriteObject(Model):
     object_id: str = Field(
-        default=Required, title="Object ID", description="The id of an object the user wants to favorite."
+        default=..., title="Object ID", description="The id of an object the user wants to favorite."
     )
 
 
 class FavoriteObjectsSummary(Model):
-    tools: List[str] = Field(
-        default=Required, title="Favorite tools", description="The name of the tools the user favored."
-    )
+    tools: List[str] = Field(default=..., title="Favorite tools", description="The name of the tools the user favored.")
 
 
 class FavoriteObjectType(str, Enum):
@@ -374,12 +370,12 @@ class FavoriteObjectType(str, Enum):
 
 class DeletedCustomBuild(Model):
     message: str = Field(
-        default=Required, title="Deletion message", description="Confirmation of the custom build deletion."
+        default=..., title="Deletion message", description="Confirmation of the custom build deletion."
     )
 
 
 class CustomBuildBaseModel(Model):
-    name: str = Field(default=Required, title="Name", description="The name of the custom build.")
+    name: str = Field(default=..., title="Name", description="The name of the custom build.")
 
 
 class CustomBuildLenType(str, Enum):
@@ -391,13 +387,13 @@ class CustomBuildLenType(str, Enum):
 # TODO Evaluate if the titles and descriptions are fitting
 class CustomBuildCreationPayload(CustomBuildBaseModel):
     len_type: CustomBuildLenType = Field(
-        default=Required,
+        default=...,
         alias="len|type",
         title="Length type",
         description="The type of the len file.",
     )
     len_value: str = Field(
-        default=Required,
+        default=...,
         alias="len|value",
         title="Length value",
         description="The content of the length file.",
@@ -405,7 +401,7 @@ class CustomBuildCreationPayload(CustomBuildBaseModel):
 
 
 class CreatedCustomBuild(CustomBuildBaseModel):
-    len: EncodedDatabaseIdField = Field(default=Required, title="Length", description="The primary id of the len file.")
+    len: EncodedDatabaseIdField = Field(default=..., title="Length", description="The primary id of the len file.")
     count: Optional[str] = Field(default=None, title="Count", description="The number of chromosomes/contigs.")
     fasta: Optional[EncodedDatabaseIdField] = Field(
         default=None, title="Fasta", description="The primary id of the fasta file from a history."
@@ -416,12 +412,12 @@ class CreatedCustomBuild(CustomBuildBaseModel):
 
 
 class CustomBuildModel(CreatedCustomBuild):
-    id: str = Field(default=Required, title="ID", description="The ID of the custom build.")
+    id: str = Field(default=..., title="ID", description="The ID of the custom build.")
 
 
-class CustomBuildsCollection(Model):
-    __root__: List[CustomBuildModel] = Field(
-        default=Required, title="Custom builds collection", description="The custom builds associated with the user."
+class CustomBuildsCollection(RootModel):
+    root: List[CustomBuildModel] = Field(
+        default=..., title="Custom builds collection", description="The custom builds associated with the user."
     )
 
 

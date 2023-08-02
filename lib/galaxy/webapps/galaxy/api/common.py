@@ -66,8 +66,8 @@ DatasetCollectionElementIdPathParam = TypeAliasType(
 )
 
 
-UserIDPathParam = TypeAliasType(
-    "UserIDPathParam",
+UserIdPathParam = TypeAliasType(
+    "UserIdPathParam",
     Annotated[
         DecodedDatabaseIdField,
         Path(..., title="User ID", description="The ID of the user."),
