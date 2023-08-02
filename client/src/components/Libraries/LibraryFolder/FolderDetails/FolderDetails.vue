@@ -18,7 +18,7 @@
             <div>
                 <GAlert :show="hasError" variant="danger" data-testid="error-alert"> {{ error }} </GAlert>
                 <div v-if="libraryDetails">
-                    <b-table-lite
+                    <GTableLite
                         :fields="fields"
                         :items="libraryDetails"
                         striped
@@ -31,10 +31,10 @@
                                 <b>{{ libraryHeader }}</b>
                             </h2>
                         </template>
-                    </b-table-lite>
+                    </GTableLite>
                 </div>
                 <div>
-                    <b-table-lite
+                    <GTableLite
                         :fields="fields"
                         :items="folderDetails"
                         striped
@@ -53,7 +53,7 @@
                             </div>
                             <div v-else>{{ row.item.value }}</div>
                         </template>
-                    </b-table-lite>
+                    </GTableLite>
                 </div>
             </div>
         </GModal>
@@ -70,7 +70,7 @@ import UtcDate from "components/UtcDate";
 import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 
-import { GAlert, GButton, GModal } from "@/component-library";
+import { GAlert, GButton, GModal, GTableLite } from "@/component-library";
 
 library.add(faInfoCircle);
 
@@ -80,6 +80,7 @@ export default {
         GAlert,
         GButton,
         GModal,
+        GTableLite,
         UtcDate,
     },
     props: {

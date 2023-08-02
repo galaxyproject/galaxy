@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 
-import { GAlert, GModal, GSpinner } from "@/component-library";
+import { GAlert, GModal, GSpinner, GTableLite } from "@/component-library";
 import localize from "@/utils/localization";
 
 import type { CleanupResult } from "./model";
@@ -71,7 +71,7 @@ defineExpose({
                         </h3>
                     </GAlert>
                 </div>
-                <b-table-lite
+                <GTableLite
                     v-if="result.hasSomeErrors"
                     :fields="errorFields"
                     :items="result.errors"

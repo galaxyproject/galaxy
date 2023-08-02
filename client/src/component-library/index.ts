@@ -62,6 +62,7 @@ export { default as GProgressBar } from "./GProgressBar.vue";
 export { default as GRow } from "./GRow.vue";
 export { default as GSpinner } from "./GSpinner.vue";
 export { default as GTab } from "./GTab.vue";
+export { default as GTableLite } from "./GTableLite.vue";
 export { default as GTableSimple } from "./GTableSimple.vue";
 export { default as GTabs } from "./GTabs.vue";
 export { default as GTooltip } from "./GTooltip.vue";
