@@ -427,6 +427,13 @@ def get_default_personal_notification_preferences() -> PersonalNotificationPrefe
     return {category: NotificationCategorySettings() for category in PersonalNotificationCategory.__members__.values()}
 
 
+def get_default_personal_notification_preferences_example() -> Dict[str, Any]:
+    return {
+        category: NotificationCategorySettings().model_dump()
+        for category in PersonalNotificationCategory.__members__.values()
+    }
+
+
 class UserNotificationPreferences(Model):
     """Contains the full notification preferences of a user."""
 
@@ -457,9 +464,11 @@ class UserNotificationPreferences(Model):
 
     model_config = ConfigDict(
         json_schema_extra={
-            "example": {
-                "preferences": get_default_personal_notification_preferences(),
-            }
+            "examples": [
+                {
+                    "preferences": get_default_personal_notification_preferences_example(),
+                }
+            ]
         }
     )
 
@@ -474,8 +483,10 @@ class UpdateUserNotificationPreferencesRequest(Model):
     )
     model_config = ConfigDict(
         json_schema_extra={
-            "example": {
-                "preferences": get_default_personal_notification_preferences(),
-            }
+            "examples": [
+                {
+                    "preferences": get_default_personal_notification_preferences_example(),
+                }
+            ]
         }
     )
