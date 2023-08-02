@@ -10,12 +10,10 @@ from typing import (
 
 from fastapi import (
     Body,
-    Path,
     Query,
 )
 
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     CreateLibrariesFromStore,
     CreateLibraryPayload,
@@ -36,6 +34,7 @@ from galaxy.webapps.galaxy.api import (
     DependsOnTrans,
     Router,
 )
+from galaxy.webapps.galaxy.api.common import LibraryIdPathParam
 from galaxy.webapps.galaxy.services.libraries import LibrariesService
 
 log = logging.getLogger(__name__)
@@ -44,10 +43,6 @@ router = Router(tags=["libraries"])
 
 DeletedQueryParam: Optional[bool] = Query(
     default=None, title="Display deleted", description="Whether to include deleted libraries in the result."
-)
-
-LibraryIdPathParam: DecodedDatabaseIdField = Path(
-    ..., title="Library ID", description="The encoded identifier of the Library."
 )
 
 UndeleteQueryParam: Optional[bool] = Query(
@@ -88,8 +83,8 @@ class FastAPILibraries:
     )
     def show(
         self,
+        id: LibraryIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = LibraryIdPathParam,
     ) -> LibrarySummary:
         """Returns summary information about a particular library."""
         return self.service.show(trans, id)
@@ -125,8 +120,8 @@ class FastAPILibraries:
     )
     def update(
         self,
+        id: LibraryIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = LibraryIdPathParam,
         payload: UpdateLibraryPayload = Body(...),
     ) -> LibrarySummary:
         """
@@ -141,8 +136,8 @@ class FastAPILibraries:
     )
     def delete(
         self,
+        id: LibraryIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = LibraryIdPathParam,
         undelete: Optional[bool] = UndeleteQueryParam,
         payload: Optional[DeleteLibraryPayload] = Body(default=None),
     ) -> LibrarySummary:
@@ -158,8 +153,8 @@ class FastAPILibraries:
     )
     def get_permissions(
         self,
+        id: LibraryIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = LibraryIdPathParam,
         scope: Optional[LibraryPermissionScope] = Query(
             None,
             title="Scope",
@@ -198,8 +193,8 @@ class FastAPILibraries:
     )
     def set_permissions(
         self,
+        id: LibraryIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = LibraryIdPathParam,
         action: Optional[LibraryPermissionAction] = Query(
             default=None,
             title="Action",

@@ -21,6 +21,10 @@ from galaxy.webapps.galaxy.api import (
     DependsOnTrans,
     Router,
 )
+from galaxy.webapps.galaxy.api.common import (
+    DatasetCollectionElementIdPathParam,
+    HistoryHDCAIDPathParam,
+)
 from galaxy.webapps.galaxy.services.dataset_collections import (
     DatasetCollectionAttributesResult,
     DatasetCollectionContentElements,
@@ -33,14 +37,6 @@ log = getLogger(__name__)
 
 router = Router(tags=["dataset collections"])
 
-DatasetCollectionIdPathParam: DecodedDatabaseIdField = Path(
-    ..., description="The encoded identifier of the dataset collection."
-)
-
-
-DatasetCollectionElementIdPathParam: DecodedDatabaseIdField = Path(
-    ..., description="The encoded identifier of the dataset collection element."
-)
 
 InstanceTypeQueryParam: DatasetCollectionInstanceType = Query(
     default="history",
@@ -69,8 +65,8 @@ class FastAPIDatasetCollections:
     )
     def copy(
         self,
+        id: HistoryHDCAIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = Path(..., description="The ID of the dataset collection to copy."),
         payload: UpdateCollectionAttributePayload = Body(...),
     ):
         self.service.copy(trans, id, payload)
@@ -81,8 +77,8 @@ class FastAPIDatasetCollections:
     )
     def attributes(
         self,
+        id: HistoryHDCAIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = DatasetCollectionIdPathParam,
         instance_type: DatasetCollectionInstanceType = InstanceTypeQueryParam,
     ) -> DatasetCollectionAttributesResult:
         return self.service.attributes(trans, id, instance_type)
@@ -93,8 +89,8 @@ class FastAPIDatasetCollections:
     )
     def suitable_converters(
         self,
+        id: HistoryHDCAIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = DatasetCollectionIdPathParam,
         instance_type: DatasetCollectionInstanceType = InstanceTypeQueryParam,
     ) -> SuitableConverters:
         return self.service.suitable_converters(trans, id, instance_type)
@@ -105,8 +101,8 @@ class FastAPIDatasetCollections:
     )
     def show(
         self,
+        id: HistoryHDCAIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = DatasetCollectionIdPathParam,
         instance_type: DatasetCollectionInstanceType = InstanceTypeQueryParam,
     ) -> AnyHDCA:
         return self.service.show(trans, id, instance_type)
@@ -118,8 +114,8 @@ class FastAPIDatasetCollections:
     )
     def contents(
         self,
+        hdca_id: HistoryHDCAIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        hdca_id: DecodedDatabaseIdField = DatasetCollectionIdPathParam,
         parent_id: DecodedDatabaseIdField = Path(
             ...,
             description="Parent collection ID describing what collection the contents belongs to.",
@@ -139,7 +135,7 @@ class FastAPIDatasetCollections:
     @router.get("/api/dataset_collection_element/{dce_id}")
     def content(
         self,
+        dce_id: DatasetCollectionElementIdPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        dce_id: DecodedDatabaseIdField = DatasetCollectionElementIdPathParam,
     ) -> DCESummary:
         return self.service.dce_content(trans, dce_id)
