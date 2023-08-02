@@ -175,17 +175,30 @@ help:
 |
     This is HELP TEXT2!!!
 tests:
-   - inputs:
-       foo: 5
-     outputs:
-       out1: moo.txt
-   - inputs:
-       foo:
-         value: 5
-     outputs:
-       out1:
-         lines_diff: 4
-         compare: sim_size
+    - inputs:
+        foo: 5
+      outputs:
+        out1: moo.txt
+    - inputs:
+        foo:
+          value: 5
+      outputs:
+        out1:
+          lines_diff: 4
+          compare: sim_size
+creator:
+    - person:
+        givenName: Björn
+        familyName: Grüning
+        identifier: http://orcid.org/0000-0002-3079-6586
+    - organization:
+        name: Galaxy IUC
+        url: https://galaxyproject.org/iuc/
+funding:
+    - grant:
+        name: EuroScienceGateway
+        identifier: '101057388'
+        url: https://cordis.europa.eu/project/id/101057388
 """
 
 TOOL_EXPRESSION_XML_1 = """
@@ -619,6 +632,36 @@ class TestYamlLoader(BaseLoaderTestCase):
 
     def test_sanitize(self):
         assert self._tool_source.parse_sanitize() is True
+
+    def test_parse_creator(self):
+        creators = self._tool_source.parse_creator()
+        assert len(creators) == 2
+        assert creators[0] == {
+            "person": {
+                "givenName": "Björn",
+                "familyName": "Grüning",
+                "identifier": "http://orcid.org/0000-0002-3079-6586"
+            }
+        }
+
+        assert creators[1] == {
+            "organization": {
+                "name": "Galaxy IUC",
+                "url": "https://galaxyproject.org/iuc/"
+            }
+        }
+
+    def test_parse_funding(self):
+        funding = self._tool_source.parse_funding()
+        assert len(funding) == 1
+        
+        assert funding[0] == {
+            "grant": {
+                "name": "EuroScienceGateway",
+                "identifier": "101057388",
+                "url": "https://cordis.europa.eu/project/id/101057388"
+            }
+        }
 
 
 class TestDataSourceLoader(BaseLoaderTestCase):
