@@ -70,3 +70,4 @@ export { default as GTd } from "./GTd.vue";
 export { default as GTh } from "./GTh.vue";
 export { default as GThead } from "./GThead.vue";
 export { default as GTooltip } from "./GTooltip.vue";
+export { default as GTr } from "./GTr.vue";
