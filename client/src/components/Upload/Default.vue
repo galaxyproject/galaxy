@@ -94,7 +94,7 @@ import { filesDialog } from "utils/data";
 import { UploadQueue } from "utils/uploadbox";
 
 import { defaultNewFileName, uploadModelsToPayload } from "./helpers";
-import { findExtension, openFileDialog } from "./utils";
+import { findExtension, hasBrowserSupport, openFileDialog } from "./utils";
 
 import { BButton } from "bootstrap-vue";
 import DefaultRow from "./DefaultRow.vue";
@@ -167,12 +167,12 @@ export default {
         topInfo() {
             var message = "";
             if (this.counterAnnounce == 0) {
-                //TODO: if (this.queue.compatible()) {
-                message = "&nbsp;";
-                //} else {
-                //    message =
-                //        "Browser does not support Drag & Drop. Try Firefox 4+, Chrome 7+, IE 10+, Opera 12+ or Safari 6+.";
-                //}
+                if (hasBrowserSupport) {
+                    message = "&nbsp;";
+                } else {
+                    message =
+                        "Browser does not support Drag & Drop. Try Firefox 4+, Chrome 7+, IE 10+, Opera 12+ or Safari 6+.";
+                }
             } else {
                 if (this.counterRunning == 0) {
                     message = `You added ${this.counterAnnounce} file(s) to the queue. Add more files or click 'Start' to proceed.`;

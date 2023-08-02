@@ -116,6 +116,10 @@ export async function getRemoteEntriesAt(target) {
     }
 }
 
+export function hasBrowserSupport() {
+    return window.File && window.FormData && window.XMLHttpRequest && window.FileList;
+}
+
 export function openFileDialog(callback, multiple = false) {
     const fileInput = document.createElement("input");
     fileInput.setAttribute("type", "file");

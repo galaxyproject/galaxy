@@ -195,11 +195,6 @@ export class UploadQueue {
         return this.opts;
     }
 
-    // Verify browser compatibility
-    compatible() {
-        return window.File && window.FormData && window.XMLHttpRequest && window.FileList;
-    }
-
     // Add new files to upload queue
     add(files) {
         if (files && files.length && !this.isRunning) {
