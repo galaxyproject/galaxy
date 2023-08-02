@@ -3,7 +3,6 @@ API operations on Quota objects.
 """
 import logging
 
-from fastapi import Path
 from fastapi.param_functions import Body
 
 from galaxy.managers.context import ProvidesUserContext
@@ -15,23 +14,18 @@ from galaxy.quota._schema import (
     QuotaSummaryList,
     UpdateQuotaParams,
 )
-from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
     Router,
 )
+from galaxy.webapps.galaxy.api.common import QuotaIdPathParam
 from galaxy.webapps.galaxy.services.quotas import QuotasService
 
 log = logging.getLogger(__name__)
 
 
 router = Router(tags=["quotas"])
-
-
-QuotaIdPathParam: DecodedDatabaseIdField = Path(
-    ..., title="Quota ID", description="The encoded identifier of the Quota."  # Required
-)
 
 
 @router.cbv
@@ -69,7 +63,9 @@ class FastAPIQuota:
         require_admin=True,
     )
     def show(
-        self, trans: ProvidesUserContext = DependsOnTrans, id: DecodedDatabaseIdField = QuotaIdPathParam
+        self,
+        id: QuotaIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
     ) -> QuotaDetails:
         """Displays details on a particular active quota."""
         return self.service.show(trans, id)
@@ -82,8 +78,8 @@ class FastAPIQuota:
     )
     def show_deleted(
         self,
+        id: QuotaIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = QuotaIdPathParam,
     ) -> QuotaDetails:
         """Displays details on a particular quota that has been deleted."""
         return self.service.show(trans, id, deleted=True)
@@ -108,8 +104,8 @@ class FastAPIQuota:
     )
     def update(
         self,
+        id: QuotaIdPathParam,
         payload: UpdateQuotaParams,
-        id: DecodedDatabaseIdField = QuotaIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> str:
         """Updates an existing quota."""
@@ -122,7 +118,7 @@ class FastAPIQuota:
     )
     def delete(
         self,
-        id: DecodedDatabaseIdField = QuotaIdPathParam,
+        id: QuotaIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
         payload: DeleteQuotaPayload = Body(None),  # Optional
     ) -> str:
@@ -144,7 +140,7 @@ class FastAPIQuota:
     )
     def undelete(
         self,
-        id: DecodedDatabaseIdField = QuotaIdPathParam,
+        id: QuotaIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> str:
         """Restores a previously deleted quota."""

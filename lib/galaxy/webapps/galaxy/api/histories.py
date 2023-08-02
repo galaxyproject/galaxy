@@ -22,7 +22,6 @@ from fastapi import (
 )
 from pydantic.fields import Field
 from pydantic.main import BaseModel
-from typing_extensions import Annotated
 
 from galaxy.managers.context import (
     ProvidesHistoryContext,
@@ -70,20 +69,11 @@ from galaxy.webapps.galaxy.api.common import (
     query_serialization_params,
 )
 from galaxy.webapps.galaxy.services.histories import HistoriesService
+from .common import HistoryIDPathParam
 
 log = logging.getLogger(__name__)
 
 router = Router(tags=["histories"])
-
-from typing_extensions import TypeAliasType
-
-HistoryIDPathParam = TypeAliasType(
-    "HistoryIDPathParam",
-    Annotated[
-        DecodedDatabaseIdField,
-        Path(..., title="History ID", description="The encoded database identifier of the History."),
-    ],
-)
 
 
 JehaIDPathParam: Union[DecodedDatabaseIdField, LatestLiteral] = Path(

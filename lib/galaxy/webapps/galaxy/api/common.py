@@ -8,8 +8,13 @@ from typing import (
 )
 
 from fastapi import (
+    Path,
     Query,
     Request,
+)
+from typing_extensions import (
+    Annotated,
+    TypeAliasType,
 )
 
 from galaxy.schema import (
@@ -17,8 +22,106 @@ from galaxy.schema import (
     SerializationParams,
     ValueFilterQueryParams,
 )
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import UpdateDatasetPermissionsPayload
 from galaxy.util import listify
+
+HistoryIDPathParam = TypeAliasType(
+    "HistoryIDPathParam",
+    Annotated[
+        DecodedDatabaseIdField,
+        Path(..., title="History ID", description="The encoded database identifier of the History."),
+    ],
+)
+
+HistoryDatasetIDPathParam = TypeAliasType(
+    "HistoryDatasetIDPathParam",
+    Annotated[
+        DecodedDatabaseIdField, Path(..., title="History Dataset ID", description="The ID of the History Dataset.")
+    ],
+)
+
+HistoryItemIDPathParam = TypeAliasType(
+    "HistoryItemIDPathParam",
+    Annotated[
+        DecodedDatabaseIdField, Path(..., title="History Item ID", description="The ID of the item (`HDA`/`HDCA`)")
+    ],
+)
+
+HistoryHDCAIDPathParam = TypeAliasType(
+    "HistoryHDCAIDPathParam",
+    Annotated[
+        DecodedDatabaseIdField, Path(..., title="History Dataset Collection ID", description="The ID of the `HDCA`.")
+    ],
+)
+
+DatasetCollectionElementIdPathParam = TypeAliasType(
+    "DatasetCollectionElementIdPathParam",
+    Annotated[
+        DecodedDatabaseIdField,
+        Path(
+            ..., title="Dataset Collection Element ID", description="The encoded ID of the dataset collection element."
+        ),
+    ],
+)
+
+
+UserIDPathParam = TypeAliasType(
+    "UserIDPathParam",
+    Annotated[
+        DecodedDatabaseIdField,
+        Path(..., title="User ID", description="The ID of the user."),
+    ],
+)
+
+
+GroupIDPathParam = TypeAliasType(
+    "GroupIDPathParam",
+    Annotated[
+        DecodedDatabaseIdField,
+        Path(..., title="Group ID", description="The ID of the group."),
+    ],
+)
+
+RoleIDPathParam = TypeAliasType(
+    "RoleIDPathParam",
+    Annotated[
+        DecodedDatabaseIdField,
+        Path(..., title="Role ID", description="The ID of the role."),
+    ],
+)
+
+LibraryIdPathParam = TypeAliasType(
+    "LibraryIdPathParam",
+    Annotated[
+        DecodedDatabaseIdField,
+        Path(..., title="Library ID", description="The ID of the Library."),
+    ],
+)
+
+NotificationIdPathParam = TypeAliasType(
+    "NotificationIdPathParam",
+    Annotated[
+        DecodedDatabaseIdField,
+        Path(..., title="Notification ID", description="The ID of the Notification."),
+    ],
+)
+
+PageIdPathParam = TypeAliasType(
+    "PageIdPathParam",
+    Annotated[
+        DecodedDatabaseIdField,
+        Path(..., title="Page ID", description="The ID of the Page."),
+    ],
+)
+
+QuotaIdPathParam = TypeAliasType(
+    "QuotaIdPathParam",
+    Annotated[
+        DecodedDatabaseIdField,
+        Path(..., title="Quota ID", description="The ID of the Quota."),
+    ],
+)
 
 SerializationViewQueryParam: Optional[str] = Query(
     None,
