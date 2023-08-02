@@ -4,6 +4,10 @@ import { BInputGroup } from "bootstrap-vue";
 
 <template>
     <BInputGroup v-bind="$attrs" v-on="$listeners">
+        <template v-slot:append>
+            <slot name="append"></slot>
+        </template>
+
         <slot></slot>
     </BInputGroup>
 </template>
