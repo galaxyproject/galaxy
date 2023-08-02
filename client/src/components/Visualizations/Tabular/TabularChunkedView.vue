@@ -4,7 +4,7 @@ import axios from "axios";
 import { parse } from "csv-parse/sync";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
-import { GTableSimple, GTd, GTh, GThead, GTr } from "@/component-library";
+import { GTableSimple, GTbody, GTd, GTh, GThead, GTr } from "@/component-library";
 import { getAppRoot } from "@/onload/loadConfig";
 
 interface TabularChunk {
@@ -181,7 +181,7 @@ onMounted(() => {
                     <GTh v-for="(column, index) in columns" :key="column">{{ column || `Column ${index + 1}` }}</GTh>
                 </GTr>
             </GThead>
-            <b-tbody>
+            <GTbody>
                 <GTr v-for="(row, index) in tabularData.rows" :key="index">
                     <GTd
                         v-for="(element, elementIndex) in row.slice(0, -1)"
@@ -193,7 +193,7 @@ onMounted(() => {
                         {{ row.slice(-1)[0] }}
                     </GTd>
                 </GTr>
-            </b-tbody>
+            </GTbody>
         </GTableSimple>
     </div>
 </template>

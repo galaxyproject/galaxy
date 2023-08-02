@@ -66,6 +66,7 @@ export { default as GTable } from "./GTable.vue";
 export { default as GTableLite } from "./GTableLite.vue";
 export { default as GTableSimple } from "./GTableSimple.vue";
 export { default as GTabs } from "./GTabs.vue";
+export { default as GTbody } from "./GTbody.vue";
 export { default as GTd } from "./GTd.vue";
 export { default as GTh } from "./GTh.vue";
 export { default as GThead } from "./GThead.vue";
