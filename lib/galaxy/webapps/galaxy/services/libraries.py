@@ -15,7 +15,10 @@ from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.roles import RoleManager
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    Security,
+)
 from galaxy.schema.schema import (
     BasicRoleModel,
     CreateLibrariesFromStore,
@@ -171,7 +174,7 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
 
             return_roles = []
             for role in roles:
-                role_id = DecodedDatabaseIdField.encode(role.id)
+                role_id = Security.security.encode_id(role.id)
                 return_roles.append(BasicRoleModel(id=role_id, name=role.name, type=role.type))
             return LibraryAvailablePermissions.construct(
                 roles=return_roles, page=page, page_limit=page_limit, total=total_roles

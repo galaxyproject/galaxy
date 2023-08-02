@@ -44,7 +44,7 @@ from galaxy.managers.base import (
 )
 from galaxy.managers.export_tracker import StoreExportTracker
 from galaxy.model.base import transaction
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import Security
 from galaxy.schema.schema import (
     ExportObjectMetadata,
     ExportObjectType,
@@ -580,8 +580,8 @@ class HistoryExportManager:
     def serialize(self, trans, history_id: int, jeha: model.JobExportHistoryArchive) -> dict:
         rval = jeha.to_dict()
         rval["type"] = "job"
-        encoded_jeha_id = DecodedDatabaseIdField.encode(jeha.id)
-        encoded_history_id = DecodedDatabaseIdField.encode(history_id)
+        encoded_jeha_id = Security.security.encode_id(jeha.id)
+        encoded_history_id = Security.security.encode_id(history_id)
         api_url = trans.url_builder("history_archive_download", history_id=encoded_history_id, jeha_id=encoded_jeha_id)
         external_url = trans.url_builder(
             "history_archive_download", history_id=encoded_history_id, jeha_id="latest", qualified=True

@@ -13,8 +13,8 @@ from galaxy.exceptions import (
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.roles import RoleManager
 from galaxy.schema.fields import (
-    DecodedDatabaseIdField,
     LibraryFolderDatabaseIdField,
+    Security,
 )
 from galaxy.schema.schema import (
     BasicRoleModel,
@@ -119,7 +119,7 @@ class LibraryFoldersService(ServiceBase):
             roles, total_roles = trans.app.security_agent.get_valid_roles(trans, folder, query, page, page_limit)
             return_roles = []
             for role in roles:
-                role_id = DecodedDatabaseIdField.encode(role.id)
+                role_id = Security.security.encode_id(role.id)
                 return_roles.append(BasicRoleModel(id=role_id, name=role.name, type=role.type))
             return LibraryAvailablePermissions.construct(
                 roles=return_roles, page=page, page_limit=page_limit, total=total_roles

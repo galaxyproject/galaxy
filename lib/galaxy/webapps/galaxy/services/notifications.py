@@ -15,7 +15,7 @@ from galaxy.exceptions import (
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.notification import NotificationManager
 from galaxy.model import User
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import Security
 from galaxy.schema.notifications import (
     BroadcastNotificationCreateRequest,
     BroadcastNotificationListResponse,
@@ -226,5 +226,5 @@ class NotificationService(ServiceBase):
 
     def _raise_notification_not_found(self, notification_id: int) -> NoReturn:
         raise ObjectNotFound(
-            f"The requested notification with id '{DecodedDatabaseIdField.encode(notification_id)}' was not found."
+            f"The requested notification with id '{Security.security.encode_id(notification_id)}' was not found."
         )

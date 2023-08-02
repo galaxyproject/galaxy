@@ -17,8 +17,8 @@ from galaxy.managers.context import ProvidesAppContext
 from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.fields import (
-    DecodedDatabaseIdField,
     EncodedDatabaseIdField,
+    Security,
 )
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.web import url_for
@@ -36,8 +36,8 @@ class GroupsManager:
         """
         rval = []
         for group in trans.sa_session.query(model.Group).filter(model.Group.deleted == false()):
-            item = group.to_dict(value_mapper={"id": DecodedDatabaseIdField.encode})
-            encoded_id = DecodedDatabaseIdField.encode(group.id)
+            item = group.to_dict(value_mapper={"id": Security.security.encode_id})
+            encoded_id = Security.security.encode_id(group.id)
             item["url"] = url_for("group", id=encoded_id)
             rval.append(item)
         return rval
@@ -62,8 +62,8 @@ class GroupsManager:
         with transaction(sa_session):
             sa_session.commit()
 
-        encoded_id = DecodedDatabaseIdField.encode(group.id)
-        item = group.to_dict(view="element", value_mapper={"id": DecodedDatabaseIdField.encode})
+        encoded_id = Security.security.encode_id(group.id)
+        item = group.to_dict(view="element", value_mapper={"id": Security.security.encode_id})
         item["url"] = url_for("group", id=encoded_id)
         return [item]
 
@@ -71,9 +71,9 @@ class GroupsManager:
         """
         Displays information about a group.
         """
-        encoded_id = DecodedDatabaseIdField.encode(group_id)
+        encoded_id = Security.security.encode_id(group_id)
         group = self._get_group(trans.sa_session, group_id)
-        item = group.to_dict(view="element", value_mapper={"id": DecodedDatabaseIdField.encode})
+        item = group.to_dict(view="element", value_mapper={"id": Security.security.encode_id})
         item["url"] = url_for("group", id=encoded_id)
         item["users_url"] = url_for("group_users", group_id=encoded_id)
         item["roles_url"] = url_for("group_roles", group_id=encoded_id)

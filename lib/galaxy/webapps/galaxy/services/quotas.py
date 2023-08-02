@@ -21,7 +21,10 @@ from galaxy.quota._schema import (
     QuotaSummaryList,
     UpdateQuotaParams,
 )
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    Security,
+)
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.web import url_for
 from galaxy.webapps.galaxy.services.base import ServiceBase
@@ -47,8 +50,8 @@ class QuotasService(ServiceBase):
             route = "quota"
             query = query.filter(model.Quota.deleted == false())
         for quota in query:
-            item = quota.to_dict(value_mapper={"id": DecodedDatabaseIdField.encode})
-            encoded_id = DecodedDatabaseIdField.encode(quota.id)
+            item = quota.to_dict(value_mapper={"id": Security.security.encode_id})
+            encoded_id = Security.security.encode_id(quota.id)
             item["url"] = url_for(route, id=encoded_id)
             rval.append(item)
         return QuotaSummaryList.construct(__root__=rval)
@@ -57,7 +60,7 @@ class QuotasService(ServiceBase):
         """Displays information about a quota."""
         quota = self.quota_manager.get_quota(trans, id, deleted=deleted)
         rval = quota.to_dict(
-            view="element", value_mapper={"id": DecodedDatabaseIdField.encode, "total_disk_usage": float}
+            view="element", value_mapper={"id": Security.security.encode_id, "total_disk_usage": float}
         )
         return QuotaDetails.construct(**rval)
 
@@ -66,8 +69,8 @@ class QuotasService(ServiceBase):
         payload = params.dict()
         self.validate_in_users_and_groups(trans, payload)
         quota, message = self.quota_manager.create_quota(payload)
-        item = quota.to_dict(value_mapper={"id": DecodedDatabaseIdField.encode})
-        item["url"] = url_for("quota", id=DecodedDatabaseIdField.encode(quota.id))
+        item = quota.to_dict(value_mapper={"id": Security.security.encode_id})
+        item["url"] = url_for("quota", id=Security.security.encode_id(quota.id))
         item["message"] = message
         return CreateQuotaResult.construct(**item)
 
