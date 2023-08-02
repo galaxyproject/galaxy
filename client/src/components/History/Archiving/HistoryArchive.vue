@@ -2,11 +2,11 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCopy, faEye, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BListGroup, BListGroupItem } from "bootstrap-vue";
+import { BListGroup } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { GAlert, GBadge, GButton, GButtonGroup, GPagination } from "@/component-library";
+import { GAlert, GBadge, GButton, GButtonGroup, GListGroupItem, GPagination } from "@/component-library";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useToast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -154,7 +154,7 @@ async function onImportCopy(history: ArchivedHistorySummary) {
                 menu to archive a history.
             </GAlert>
             <BListGroup v-else>
-                <BListGroupItem v-for="history in archivedHistories" :key="history.id" :data-pk="history.id">
+                <GListGroupItem v-for="history in archivedHistories" :key="history.id" :data-pk="history.id">
                     <div class="d-flex justify-content-between align-items-center">
                         <Heading h3 inline bold size="sm">
                             {{ history.name }}
@@ -229,7 +229,7 @@ async function onImportCopy(history: ArchivedHistorySummary) {
                     <p v-if="history.annotation" class="my-1">{{ history.annotation }}</p>
 
                     <StatelessTags class="my-1" :value="history.tags" :disabled="true" :max-visible-tags="10" />
-                </BListGroupItem>
+                </GListGroupItem>
             </BListGroup>
             <GPagination
                 v-if="showPagination"

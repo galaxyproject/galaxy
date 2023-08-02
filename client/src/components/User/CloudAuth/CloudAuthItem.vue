@@ -1,5 +1,5 @@
 <template>
-    <b-list-group-item class="cloud-auth-key" :class="statusClasses" :variant="variant" :button="!expanded">
+    <GListGroupItem class="cloud-auth-key" :class="statusClasses" :variant="variant" :button="!expanded">
         <header>
             <hgroup>
                 <h2 class="h-sm" @click.prevent="expand()">{{ credential.title }}</h2>
@@ -48,16 +48,19 @@
             @save="$emit('save', credential)"
             @delete="$emit('delete', credential)" />
         <!-- eslint-enable vue/no-mutating-props-->
-    </b-list-group-item>
+    </GListGroupItem>
 </template>
 
 <script>
+import { GListGroupItem } from "@/component-library";
+
 import CredentialForm from "./CredentialForm";
 import { Credential } from "./model";
 
 export default {
     components: {
         CredentialForm,
+        GListGroupItem,
     },
     props: {
         credential: { type: Credential, required: true },

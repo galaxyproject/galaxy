@@ -45,6 +45,7 @@ export { default as GInputGroup } from "./GInputGroup.vue";
 export { default as GInputGroupAppend } from "./GInputGroupAppend.vue";
 export { default as GInputGroupText } from "./GInputGroupText.vue";
 export { default as GLink } from "./GLink.vue";
+export { default as GListGroupItem } from "./GListGroupItem.vue";
 export { default as GModal } from "./GModal.vue";
 export { default as GNav } from "./GNav.vue";
 export { default as GNavbar } from "./GNavbar.vue";

@@ -174,9 +174,9 @@
                                 </GCardHeader>
                                 <GCollapse id="can-share" visible accordion="can-share-accordion" role="tabpanel">
                                     <b-list-group>
-                                        <b-list-group-item v-for="dataset in item.extra.can_change" :key="dataset.id">
+                                        <GListGroupItem v-for="dataset in item.extra.can_change" :key="dataset.id">
                                             {{ dataset.name }}
-                                        </b-list-group-item>
+                                        </GListGroupItem>
                                     </b-list-group>
                                 </GCollapse>
                             </GCard>
@@ -190,11 +190,9 @@
                                 </GCardHeader>
                                 <GCollapse id="cannot-share" visible accordion="cannot-accordion2" role="tabpanel">
                                     <b-list-group>
-                                        <b-list-group-item
-                                            v-for="dataset in item.extra.cannot_change"
-                                            :key="dataset.id"
-                                            >{{ dataset.name }}</b-list-group-item
-                                        >
+                                        <GListGroupItem v-for="dataset in item.extra.cannot_change" :key="dataset.id">
+                                            {{ dataset.name }}
+                                        </GListGroupItem>
                                     </b-list-group>
                                 </GCollapse>
                             </GCard>
@@ -276,6 +274,7 @@ import {
     GCol,
     GCollapse,
     GFormCheckbox,
+    GListGroupItem,
     GRow,
     GTooltip,
 } from "@/component-library";
@@ -296,6 +295,7 @@ const defaultExtra = () => {
 
 export default {
     components: {
+        GListGroupItem,
         GAlert,
         GButton,
         GCard,

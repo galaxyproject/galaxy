@@ -4,13 +4,13 @@ import { faListAlt } from "@fortawesome/free-regular-svg-icons";
 import { faArrowDown, faColumns, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useInfiniteScroll } from "@vueuse/core";
-import { BListGroup, BListGroupItem } from "bootstrap-vue";
+import { BListGroup } from "bootstrap-vue";
 import isEqual from "lodash.isequal";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, onUnmounted, type PropType, type Ref, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { GAlert, GBadge, GButton, GButtonGroup, GFormGroup, GInput, GModal } from "@/component-library";
+import { GAlert, GBadge, GButton, GButtonGroup, GFormGroup, GInput, GListGroupItem, GModal } from "@/component-library";
 import type { components } from "@/schema";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
@@ -221,7 +221,7 @@ async function loadMore(noScroll = false) {
 
             <div ref="scrollableDiv" class="history-selector-modal-list">
                 <BListGroup>
-                    <BListGroupItem
+                    <GListGroupItem
                         v-for="history in filtered"
                         :key="history.id"
                         :data-pk="history.id"
@@ -289,7 +289,7 @@ async function loadMore(noScroll = false) {
                                 </GButton>
                             </GButtonGroup>
                         </div>
-                    </BListGroupItem>
+                    </GListGroupItem>
                     <div>
                         <div v-if="allLoaded || filter !== ''" class="list-end my-2">
                             <span v-if="filtered.length == 1">- {{ filtered.length }} history loaded -</span>
