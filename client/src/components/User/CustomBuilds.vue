@@ -7,7 +7,7 @@
         </GRow>
         <GRow>
             <GCol>
-                <b-table small show-empty class="grid" :items="customBuilds" :fields="fields">
+                <GTable :fields="fields" :items="customBuilds" class="grid" show-empty small>
                     <template v-slot:cell(action)="row">
                         <a
                             v-b-tooltip.bottom.hover
@@ -17,7 +17,7 @@
                             <i class="icon fa fa-lg fa-trash-o" />
                         </a>
                     </template>
-                </b-table>
+                </GTable>
             </GCol>
         </GRow>
         <template v-if="installedBuilds.length > 0">
@@ -163,6 +163,7 @@ import {
     GInput,
     GProgress,
     GRow,
+    GTable,
 } from "@/component-library";
 
 export default {
@@ -180,6 +181,7 @@ export default {
         GInput,
         GProgress,
         GRow,
+        GTable,
         Multiselect,
     },
     data() {

@@ -1,13 +1,13 @@
 <template>
     <div>
-        <b-table
+        <GTable
             v-if="directoryContent && !errorMessage"
             thead-class="hidden_header"
             striped
             hover
             :fields="fields"
             :items="directoryContent">
-        </b-table>
+        </GTable>
         <div v-if="errorMessage">
             <b v-if="path">{{ path }}</b> {{ errorMessage }}
         </div>
@@ -17,7 +17,12 @@
 <script>
 import { mapCacheActions } from "vuex-cache";
 
+import { GTable } from "@/component-library";
+
 export default {
+    components: {
+        GTable,
+    },
     props: {
         history_dataset_id: {
             type: String,

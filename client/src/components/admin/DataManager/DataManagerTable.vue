@@ -26,12 +26,7 @@
                                 </GRow>
                             </GContainer>
                         </template>
-                        <b-table
-                            :fields="fields(dataTable['columns'])"
-                            :items="dataTable['data']"
-                            small
-                            hover
-                            striped />
+                        <GTable :fields="fields(dataTable['columns'])" :items="dataTable['data']" hover small striped />
                     </GCard>
                 </GCol>
             </GRow>
@@ -43,17 +38,18 @@
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 
-import { GAlert, GBreadcrumb, GButton, GCard, GCol, GContainer, GRow } from "@/component-library";
+import { GAlert, GBreadcrumb, GButton, GCard, GCol, GContainer, GRow, GTable } from "@/component-library";
 
 export default {
     components: {
-        GBreadcrumb,
-        GContainer,
-        GCard,
-        GRow,
-        GCol,
         GAlert,
+        GBreadcrumb,
         GButton,
+        GCard,
+        GCol,
+        GContainer,
+        GRow,
+        GTable,
     },
     props: {
         name: {

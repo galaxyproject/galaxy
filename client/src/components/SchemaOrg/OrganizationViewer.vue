@@ -6,7 +6,7 @@
             :placement="hoverPlacement"
             :target="$refs['button'] || 'works-lazily'"
             title="Organization">
-            <b-table striped :items="items"> </b-table>
+            <GTable :items="items" striped />
         </GPopover>
         <span v-if="name">
             <span itemprop="name">{{ name }}</span>
@@ -36,7 +36,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBuilding, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-import { GPopover } from "@/component-library";
+import { GPopover, GTable } from "@/component-library";
 
 import ThingViewerMixin from "./ThingViewerMixin";
 
@@ -46,6 +46,7 @@ export default {
     components: {
         FontAwesomeIcon,
         GPopover,
+        GTable,
     },
     mixins: [ThingViewerMixin],
     props: {

@@ -15,7 +15,7 @@
             @deleteFromTable="deleteFromTable"
             @setBusy="setBusy($event)"
             @newFolder="newFolder" />
-        <b-table
+        <GTable
             id="folder_list_body"
             ref="folder_content_table"
             striped
@@ -217,7 +217,7 @@
                     </button>
                 </div>
             </template>
-        </b-table>
+        </GTable>
         <!-- hide pagination if the table is loading-->
         <GContainer>
             <GRow align-v="center" class="justify-content-md-center">
@@ -271,7 +271,7 @@ import { mapState } from "pinia";
 import Utils from "utils/utils";
 import Vue from "vue";
 
-import { GButton, GCol, GContainer, GInput, GLink, GPagination, GRow, GSpinner } from "@/component-library";
+import { GButton, GCol, GContainer, GInput, GLink, GPagination, GRow, GSpinner, GTable } from "@/component-library";
 import { useUserStore } from "@/stores/userStore";
 
 import { Services } from "./services";
@@ -302,6 +302,7 @@ export default {
         GPagination,
         GRow,
         GSpinner,
+        GTable,
         UtcDate,
     },
     beforeRouteUpdate(to, from, next) {

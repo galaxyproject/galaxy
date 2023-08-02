@@ -30,7 +30,7 @@
                         </template>
                         <GCard v-for="(hda, i) in hdaInfo" :id="'data-card-' + i" :key="i" class="mb-4">
                             <template v-slot:header>
-                                <b-table :fields="fields" :items="[hda]" caption-top small stacked>
+                                <GTable :fields="fields" :items="[hda]" caption-top small stacked>
                                     <template v-slot:table-caption>
                                         <GContainer>
                                             <GRow align-v="center">
@@ -49,9 +49,9 @@
                                             </GRow>
                                         </GContainer>
                                     </template>
-                                </b-table>
+                                </GTable>
                             </template>
-                            <b-table
+                            <GTable
                                 v-for="(output, j) in dataManagerOutput[i]"
                                 :key="j"
                                 :fields="outputFields(output[1][0])"
@@ -63,7 +63,7 @@
                                 <template v-slot:table-caption>
                                     Data Table: <b>{{ output[0] }}</b>
                                 </template>
-                            </b-table>
+                            </GTable>
                         </GCard>
                     </GCard>
                 </GCol>
@@ -76,17 +76,18 @@
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 
-import { GAlert, GBreadcrumb, GButton, GCard, GCol, GContainer, GRow } from "@/component-library";
+import { GAlert, GBreadcrumb, GButton, GCard, GCol, GContainer, GRow, GTable } from "@/component-library";
 
 export default {
     components: {
-        GBreadcrumb,
-        GContainer,
-        GCard,
-        GRow,
-        GCol,
         GAlert,
+        GBreadcrumb,
         GButton,
+        GCard,
+        GCol,
+        GContainer,
+        GRow,
+        GTable,
     },
     props: {
         id: {

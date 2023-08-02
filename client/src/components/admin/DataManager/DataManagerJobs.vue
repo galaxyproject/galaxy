@@ -27,14 +27,7 @@
                     </GCol>
                 </GRow>
             </GContainer>
-            <b-table
-                id="jobs-table"
-                :fields="tableFields"
-                :items="tableItems"
-                :filter="filter"
-                hover
-                responsive
-                striped>
+            <GTable id="jobs-table" :fields="tableFields" :filter="filter" :items="tableItems" hover responsive striped>
                 <template v-slot:cell(actions)="row">
                     <GButtonGroup>
                         <GButton v-b-tooltip.hover title="Rerun" target="_top" :href="jobs[row.index]['runUrl']">
@@ -64,7 +57,7 @@
                         </template>
                     </GCard>
                 </template>
-            </b-table>
+            </GTable>
         </div>
     </div>
 </template>
@@ -86,6 +79,7 @@ import {
     GInputGroup,
     GInputGroupAppend,
     GRow,
+    GTable,
 } from "@/component-library";
 
 export default {
@@ -102,6 +96,7 @@ export default {
         GInputGroup,
         GInputGroupAppend,
         GRow,
+        GTable,
     },
     props: {
         id: {

@@ -7,7 +7,7 @@ import UtcDate from "components/UtcDate";
 import Filtering, { contains, expandNameTag } from "utils/filtering";
 import { computed, ref, watch } from "vue";
 
-import { GAlert, GButton, GInput, GInputGroup, GInputGroupAppend, GPagination } from "@/component-library";
+import { GAlert, GButton, GInput, GInputGroup, GInputGroupAppend, GPagination, GTable } from "@/component-library";
 
 import { getPublishedHistories, updateTags } from "./services";
 
@@ -192,7 +192,7 @@ watch([filterText, sortBy, sortDesc], () => {
                 <LoadingSpan message="Loading published histories" />
             </GAlert>
 
-            <b-table
+            <GTable
                 v-if="items.length"
                 id="published-histories-table"
                 no-sort-reset
@@ -221,7 +221,7 @@ watch([filterText, sortBy, sortDesc], () => {
                 <template v-slot:cell(update_time)="data">
                     <UtcDate :date="data.value" mode="elapsed" />
                 </template>
-            </b-table>
+            </GTable>
 
             <GPagination
                 v-if="items.length > perPage"

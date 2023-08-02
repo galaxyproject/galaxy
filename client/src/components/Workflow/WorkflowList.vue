@@ -15,7 +15,7 @@
                 <WorkflowIndexActions :root="root" class="float-right"></WorkflowIndexActions>
             </GCol>
         </GRow>
-        <b-table v-model="workflowItemsModel" v-bind="{ ...defaultTableAttrs, ...indexTableAttrs }">
+        <GTable v-model="workflowItemsModel" v-bind="{ ...defaultTableAttrs, ...indexTableAttrs }">
             <template v-slot:empty>
                 <loading-span v-if="loading" message="Loading workflows" />
                 <GAlert v-else id="no-workflows" variant="info" show>
@@ -77,7 +77,7 @@
                     <p class="workflow-dropdown-description">{{ data.item.description }}</p>
                 </GCard>
             </template>
-        </b-table>
+        </GTable>
         <GPagination
             v-show="rows >= perPage"
             v-model="currentPage"
@@ -94,14 +94,14 @@ import UtcDate from "components/UtcDate";
 import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 
-import { GAlert, GCard, GCol, GPagination, GRow } from "@/component-library";
+import { GAlert, GCard, GCol, GPagination, GRow, GTable } from "@/component-library";
 
 import paginationMixin from "./paginationMixin";
 import { Services } from "./services";
 import WorkflowBookmark from "./WorkflowBookmark";
 import WorkflowDropdown from "./WorkflowDropdown";
-import WorkflowIndexActions from "./WorkflowIndexActions";
 
+import WorkflowIndexActions from "./WorkflowIndexActions";
 import WorkflowRunButton from "./WorkflowRunButton.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
@@ -168,17 +168,18 @@ const PUBLISHED_FIELDS = [NAME_FIELD, TAGS_FIELD, UPDATED_FIELD, OWNER_FIELD];
 
 export default {
     components: {
-        GPagination,
-        GCard,
-        GRow,
-        GCol,
         GAlert,
-        UtcDate,
+        GCard,
+        GCol,
+        GPagination,
+        GRow,
+        GTable,
+        SharingIndicators,
         StatelessTags,
+        UtcDate,
         WorkflowDropdown,
         WorkflowBookmark,
         WorkflowIndexActions,
-        SharingIndicators,
         WorkflowRunButton,
     },
     mixins: [paginationMixin, filtersMixin],

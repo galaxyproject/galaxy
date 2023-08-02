@@ -14,7 +14,7 @@
                     {{ error }}
                 </GAlert>
                 <div v-else class="border rounded">
-                    <b-table borderless :items="repoTable" :fields="repoFields" class="text-center m-0">
+                    <GTable borderless :items="repoTable" :fields="repoFields" class="text-center m-0">
                         <template v-slot:cell(numeric_revision)="data">
                             <span class="font-weight-bold">{{ data.value }}</span>
                         </template>
@@ -43,7 +43,7 @@
                                 @onInstall="setupRepository(row.item)"
                                 @onUninstall="uninstallRepository(row.item)" />
                         </template>
-                    </b-table>
+                    </GTable>
                     <ToolPanelViewProvider v-slot="{ currentPanel }" :panel-view="`default`" :set-default="false">
                         <InstallationSettings
                             v-if="showSettings"
@@ -63,13 +63,11 @@
 </template>
 
 <script>
-import BootstrapVue from "bootstrap-vue";
 import ToolPanelViewProvider from "components/providers/ToolPanelViewProvider";
-import Vue from "vue";
 
 import { useConfig } from "@/composables/config";
 
-import { GAlert, GCard, GLink } from "@/component-library";
+import { GAlert, GCard, GLink, GTable } from "@/component-library";
 
 import { Services } from "../services";
 
@@ -77,17 +75,16 @@ import InstallationActions from "./InstallationActions.vue";
 import InstallationSettings from "./InstallationSettings.vue";
 import RepositoryTools from "./RepositoryTools.vue";
 
-Vue.use(BootstrapVue);
-
 export default {
     components: {
+        GAlert,
         GCard,
         GLink,
-        GAlert,
-        ToolPanelViewProvider,
+        GTable,
         InstallationSettings,
         InstallationActions,
         RepositoryTools,
+        ToolPanelViewProvider,
     },
     props: {
         repo: {

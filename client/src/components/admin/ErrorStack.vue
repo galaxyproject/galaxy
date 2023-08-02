@@ -2,17 +2,18 @@
     <div>
         <GAlert :show="messageVisible" variant="danger"> {{ messageText }} </GAlert>
         <GAlert :show="infoVisible" variant="info"> No errors available. </GAlert>
-        <b-table v-if="errorStackVisible" striped :fields="errorStackAttributes" :items="errorStack" />
+        <GTable v-if="errorStackVisible" :fields="errorStackAttributes" :items="errorStack" striped />
     </div>
 </template>
 <script>
-import { GAlert } from "@/component-library";
+import { GAlert, GTable } from "@/component-library";
 
 import { getErrorStack } from "./AdminServices";
 
 export default {
     components: {
         GAlert,
+        GTable,
     },
     data() {
         return {

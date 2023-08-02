@@ -4,7 +4,7 @@
         <div v-else>
             <GAlert :variant="messageVariant" :show="showMessage">{{ message }}</GAlert>
             <DelayedInput class="m-1 mb-3" placeholder="Search Datasets" @change="onQuery" />
-            <b-table
+            <GTable
                 id="dataset-table"
                 striped
                 no-sort-reset
@@ -27,7 +27,7 @@
                 <template v-slot:cell(update_time)="data">
                     <UtcDate :date="data.value" mode="elapsed" />
                 </template>
-            </b-table>
+            </GTable>
             <LoadingSpan v-if="loading" message="Loading datasets" />
             <div v-if="showNotFound">
                 No matching entries found for: <span class="font-weight-bold">{{ query }}</span
@@ -45,7 +45,7 @@ import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import UtcDate from "components/UtcDate";
 import { mapActions } from "pinia";
 
-import { GAlert } from "@/component-library";
+import { GAlert, GTable } from "@/component-library";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import DatasetHistory from "./DatasetHistory";
@@ -54,13 +54,14 @@ import { copyDataset, getDatasets, updateTags } from "./services";
 
 export default {
     components: {
-        GAlert,
         DatasetHistory,
         DatasetName,
-        LoadingSpan,
         DelayedInput,
-        UtcDate,
+        GAlert,
+        GTable,
+        LoadingSpan,
         StatelessTags,
+        UtcDate,
     },
     data() {
         return {

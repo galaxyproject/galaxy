@@ -2,7 +2,7 @@
     <div>
         <!-- todo: rewrite this to send events up instead of two way prop binding -->
         <!-- eslint-disable vue/no-mutating-props-->
-        <b-table
+        <GTable
             small
             hover
             :items="items"
@@ -49,7 +49,7 @@
             <template v-slot:cell(time)="data">
                 {{ data.value ? data.value : "-" }}
             </template>
-        </b-table>
+        </GTable>
         <div v-if="isBusy" class="text-center">
             <GSpinner small type="grow" />
             <GSpinner small type="grow" />
@@ -78,7 +78,7 @@ import { faFolder } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { selectionStates } from "components/SelectionDialog/selectionStates";
 
-import { GLink, GPagination, GSpinner } from "@/component-library";
+import { GLink, GPagination, GSpinner, GTable } from "@/component-library";
 
 library.add(faCheckSquare, faSquare, faFolder, faMinusSquare);
 
@@ -93,6 +93,7 @@ export default {
         GLink,
         GPagination,
         GSpinner,
+        GTable,
     },
     props: {
         items: {

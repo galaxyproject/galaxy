@@ -12,7 +12,7 @@
                 <PageIndexActions class="float-right" />
             </GCol>
         </GRow>
-        <b-table v-model="pageItemsModel" v-bind="{ ...defaultTableAttrs, ...indexTableAttrs }">
+        <GTable v-model="pageItemsModel" v-bind="{ ...defaultTableAttrs, ...indexTableAttrs }">
             <template v-slot:empty>
                 <loading-span v-if="loading" message="Loading pages" />
                 <GAlert v-else id="no-pages" variant="info" show>
@@ -69,7 +69,7 @@
             <template v-slot:cell(update_time)="data">
                 <UtcDate :date="data.value" mode="elapsed" />
             </template>
-        </b-table>
+        </GTable>
         <GPagination
             v-if="rows >= perPage"
             v-model="currentPage"
@@ -91,7 +91,7 @@ import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 import { useRouter } from "vue-router/composables";
 
-import { GAlert, GCol, GPagination, GRow } from "@/component-library";
+import { GAlert, GCol, GPagination, GRow, GTable } from "@/component-library";
 import { absPath } from "@/utils/redirect";
 
 import PageDropdown from "./PageDropdown";
@@ -139,17 +139,18 @@ const PUBLISHED_FIELDS = [TITLE_FIELD, TAGS_FIELD, OWNER_FIELD, UPDATED_FIELD];
 
 export default {
     components: {
+        CopyToClipboard,
         GAlert,
         GCol,
         GPagination,
         GRow,
-        UtcDate,
-        StatelessTags,
+        GTable,
+        IndexFilter,
+        PageDropdown,
         PageIndexActions,
         SharingIndicators,
-        PageDropdown,
-        IndexFilter,
-        CopyToClipboard,
+        StatelessTags,
+        UtcDate,
     },
     mixins: [paginationMixin, filtersMixin],
     props: {

@@ -58,7 +58,7 @@
                 title="Copy link to this dataset " />
         </div>
         <!-- Table -->
-        <b-table
+        <GTable
             v-if="table_items"
             :fields="fields"
             :items="table_items"
@@ -110,7 +110,7 @@
                     <div>{{ row.item.value }}</div>
                 </div>
             </template>
-        </b-table>
+        </GTable>
         <!-- Edit Controls -->
         <div v-if="isEditMode">
             <GButton class="mr-1 mb-2" @click="isEditMode = false">
@@ -144,20 +144,21 @@ import SingleItemSelector from "components/SingleItemSelector";
 import { Toast } from "composables/toast";
 import { mapState } from "pinia";
 
-import { GButton, GInput } from "@/component-library";
+import { GButton, GInput, GTable } from "@/component-library";
 import { useUserStore } from "@/stores/userStore";
 
 library.add(faUsers, faRedo, faBook, faDownload, faPencilAlt, faTimes, faSave);
 
 export default {
     components: {
-        LibraryBreadcrumb,
         CopyToClipboard,
-        FontAwesomeIcon,
-        DbKeyProvider,
         DatatypesProvider,
+        DbKeyProvider,
+        FontAwesomeIcon,
         GButton,
         GInput,
+        GTable,
+        LibraryBreadcrumb,
         SingleItemSelector,
     },
     props: {

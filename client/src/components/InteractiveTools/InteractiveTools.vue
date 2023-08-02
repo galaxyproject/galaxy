@@ -14,7 +14,7 @@
                     type="text" />
             </GCol>
         </GRow>
-        <b-table
+        <GTable
             id="interactive-tool-table"
             striped
             :fields="fields"
@@ -47,7 +47,7 @@
             <template v-slot:cell(last_updated)="row">
                 <UtcDate :date="row.item.modified_time" mode="elapsed" />
             </template>
-        </b-table>
+        </GTable>
         <label v-if="isActiveToolsListEmpty">You do not have active interactive tools yet </label>
         <div v-if="showNotFound">
             No matching entries found for: <span class="font-weight-bold">{{ filter }}</span
@@ -72,7 +72,7 @@ import UtcDate from "components/UtcDate";
 import { getAppRoot } from "onload/loadConfig";
 import { mapActions, mapState } from "pinia";
 
-import { GAlert, GButton, GCol, GFormCheckbox, GInput, GRow } from "@/component-library";
+import { GAlert, GButton, GCol, GFormCheckbox, GInput, GRow, GTable } from "@/component-library";
 
 import { useEntryPointStore } from "../../stores/entryPointStore";
 import { Services } from "./services";
@@ -88,6 +88,7 @@ export default {
         GFormCheckbox,
         GInput,
         GRow,
+        GTable,
         UtcDate,
     },
     data() {

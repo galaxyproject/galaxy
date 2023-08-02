@@ -28,7 +28,7 @@
             </GRow>
         </template>
         <template v-slot:body>
-            <b-table id="requirements-table" striped :fields="fields" :items="items" @row-clicked="showRowDetails">
+            <GTable id="requirements-table" :fields="fields" :items="items" striped @row-clicked="showRowDetails">
                 <template v-slot:cell(selected)="data">
                     <GFormCheckbox
                         v-model="data.item.selected"
@@ -52,7 +52,7 @@
                 <template v-slot:row-details="row">
                     <ResolutionDetails :resolution="row.item" />
                 </template>
-            </b-table>
+            </GTable>
         </template>
         <template v-slot:actions>
             <GRow class="m-1">
@@ -81,7 +81,7 @@
 <script>
 import _ from "underscore";
 
-import { GButton, GForm, GFormCheckbox, GFormSelect, GRow } from "@/component-library";
+import { GButton, GForm, GFormCheckbox, GFormSelect, GRow, GTable } from "@/component-library";
 
 import { getToolboxDependencies, installDependencies, uninstallDependencies } from "../AdminServices";
 import DependencyIndexMixin from "./DependencyIndexMixin";
@@ -107,6 +107,7 @@ export default {
         GFormCheckbox,
         GFormSelect,
         GRow,
+        GTable,
         ResolutionDetails,
     },
     mixins: [DependencyIndexMixin],

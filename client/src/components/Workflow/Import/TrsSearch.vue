@@ -3,7 +3,7 @@ import axios from "axios";
 import { computed, type Ref, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { GAlert, GButton, GCard, GInput, GInputGroup, GInputGroupAppend } from "@/component-library";
+import { GAlert, GButton, GCard, GInput, GInputGroup, GInputGroupAppend, GTable } from "@/component-library";
 import { withPrefix } from "@/utils/redirect";
 
 import { getRedirectOnImportPath } from "../redirectPath";
@@ -164,7 +164,7 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
             <GAlert v-else-if="results.length == 0" variant="info" show>
                 No search results found, refine your search.
             </GAlert>
-            <b-table
+            <GTable
                 v-else
                 :fields="fields"
                 :items="itemsComputed"
@@ -183,7 +183,7 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
                             @onImport="(versionId) => importVersion(trsSelection?.id, row.item.data.id, versionId)" />
                     </GCard>
                 </template>
-            </b-table>
+            </GTable>
         </div>
     </GCard>
 </template>

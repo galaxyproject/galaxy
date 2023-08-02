@@ -7,7 +7,7 @@
             {{ headerMessage }}
         </GAlert>
         <GAlert v-bind="alertAttrs">{{ message }}</GAlert>
-        <b-table
+        <GTable
             v-bind="indexTableAttrs"
             v-model="invocationItemsModel"
             no-sort-reset
@@ -76,7 +76,7 @@
                     :id="getStoredWorkflowIdByInstanceId(data.item.workflow_id)"
                     :root="root" />
             </template>
-        </b-table>
+        </GTable>
         <GPagination
             v-if="rows >= perPage"
             v-model="currentPage"
@@ -92,7 +92,7 @@ import UtcDate from "components/UtcDate";
 import WorkflowInvocationState from "components/WorkflowInvocationState/WorkflowInvocationState";
 import { mapActions, mapState } from "pinia";
 
-import { GAlert, GCard, GLink, GPagination } from "@/component-library";
+import { GAlert, GCard, GLink, GPagination, GTable } from "@/component-library";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 
@@ -102,10 +102,11 @@ import WorkflowRunButton from "./WorkflowRunButton.vue";
 
 export default {
     components: {
-        GPagination,
+        GAlert,
         GCard,
         GLink,
-        GAlert,
+        GPagination,
+        GTable,
         UtcDate,
         WorkflowInvocationState,
         WorkflowRunButton,

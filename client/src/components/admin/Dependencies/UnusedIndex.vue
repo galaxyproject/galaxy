@@ -4,11 +4,11 @@
         :error="error"
         loading-message="Loading tool dependency resolver information">
         <template v-slot:body>
-            <b-table id="unused-paths-table" striped :fields="fields" :items="items">
+            <GTable id="unused-paths-table" :fields="fields" :items="items" striped>
                 <template v-slot:cell(selected)="data">
                     <GFormCheckbox v-model="data.item.selected"></GFormCheckbox>
                 </template>
-            </b-table>
+            </GTable>
         </template>
         <template v-slot:actions>
             <div>
@@ -18,7 +18,7 @@
     </DependencyIndexWrapper>
 </template>
 <script>
-import { GButton, GFormCheckbox } from "@/component-library";
+import { GButton, GFormCheckbox, GTable } from "@/component-library";
 
 import { deletedUnusedPaths, getDependencyUnusedPaths } from "../AdminServices";
 import DependencyIndexWrapper from "./DependencyIndexWrapper";
@@ -28,6 +28,7 @@ export default {
         DependencyIndexWrapper,
         GButton,
         GFormCheckbox,
+        GTable,
     },
     data() {
         return {

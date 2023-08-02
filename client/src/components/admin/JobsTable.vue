@@ -1,6 +1,6 @@
 <template>
     <div class="jobs-table-wrapper">
-        <b-table
+        <GTable
             v-model="innerValue"
             :fields="fields"
             :items="items"
@@ -63,7 +63,7 @@
             <template v-for="(index, name) in $scopedSlots" v-slot:[name]="data">
                 <slot :name="name" v-bind="data"></slot>
             </template>
-        </b-table>
+        </GTable>
     </div>
 </template>
 
@@ -72,14 +72,15 @@ import JobDetails from "components/JobInformation/JobDetails";
 import LoadingSpan from "components/LoadingSpan";
 import UtcDate from "components/UtcDate";
 
-import { GAlert } from "@/component-library";
+import { GAlert, GTable } from "@/component-library";
 
 export default {
     components: {
         GAlert,
-        UtcDate,
+        GTable,
         JobDetails,
         LoadingSpan,
+        UtcDate,
     },
     props: {
         tableCaption: {

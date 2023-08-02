@@ -5,7 +5,7 @@
         </GAlert>
         <GCard v-if="showItems" no-body class="my-2">
             <h2 class="m-3 h-text">Currently installing...</h2>
-            <b-table
+            <GTable
                 class="mx-3 mb-0"
                 sticky-header
                 thead-class="installation-monitor-header"
@@ -23,7 +23,7 @@
                         :status="row.item.status"
                         @onUninstall="uninstallRepository(row.item)" />
                 </template>
-            </b-table>
+            </GTable>
         </GCard>
         <GAlert v-if="showEmpty" variant="info" show> Currently there are no installing repositories. </GAlert>
     </div>
@@ -32,7 +32,7 @@
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
-import { GAlert, GCard, GLink } from "@/component-library";
+import { GAlert, GCard, GLink, GTable } from "@/component-library";
 
 import InstallationActions from "../RepositoryDetails/InstallationActions";
 import { Services } from "../services";
@@ -41,9 +41,10 @@ Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GAlert,
         GCard,
         GLink,
-        GAlert,
+        GTable,
         InstallationActions,
     },
     data() {

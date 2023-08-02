@@ -42,7 +42,7 @@
                 </GForm>
             </GCard>
         </GCollapse>
-        <b-table
+        <GTable
             id="libraries_list"
             ref="libraries_list"
             no-sort-reset
@@ -143,7 +143,7 @@
                     {{ titleDelete }}
                 </GButton>
             </template>
-        </b-table>
+        </GTable>
 
         <GContainer>
             <GRow class="justify-content-md-center">
@@ -203,6 +203,7 @@ import {
     GLink,
     GPagination,
     GRow,
+    GTable,
 } from "@/component-library";
 import { useUserStore } from "@/stores/userStore";
 
@@ -226,6 +227,7 @@ export default {
         GLink,
         GPagination,
         GRow,
+        GTable,
         LibraryEditField,
         SearchField,
     },

@@ -61,7 +61,7 @@
             </GRow>
         </template>
         <template v-slot:body>
-            <b-table id="containers-table" striped :fields="fields" :items="items" @row-clicked="showRowDetails">
+            <GTable id="containers-table" :fields="fields" :items="items" striped @row-clicked="showRowDetails">
                 <template v-slot:cell(selected)="data">
                     <GFormCheckbox v-model="data.item.selected"></GFormCheckbox>
                 </template>
@@ -83,14 +83,14 @@
                 <template v-slot:row-details="row">
                     <ContainerResolutionDetails :resolution="row.item" />
                 </template>
-            </b-table>
+            </GTable>
         </template>
     </dependency-index-wrapper>
 </template>
 <script>
 import _ from "underscore";
 
-import { GButton, GForm, GFormCheckbox, GFormSelect, GRow } from "@/component-library";
+import { GButton, GForm, GFormCheckbox, GFormSelect, GRow, GTable } from "@/component-library";
 
 import { getContainerResolutionToolbox, resolveContainersWithInstall } from "../AdminServices";
 import ContainerResolutionDetails from "./ContainerResolutionDetails";
@@ -102,12 +102,13 @@ RESOLVER_TYPE_OPTIONS.splice(0, 0, { value: null, text: "*any*" });
 
 export default {
     components: {
+        ContainerResolutionDetails,
         GButton,
         GForm,
         GFormCheckbox,
         GFormSelect,
         GRow,
-        ContainerResolutionDetails,
+        GTable,
     },
     mixins: [DependencyIndexMixin],
     data() {
