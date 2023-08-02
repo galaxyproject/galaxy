@@ -337,14 +337,9 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         return response.json()
 
     def _get_request_headers(self, user_context: OptionalUserContext):
-        token = self.get_authorization_token(user_context)
+        token = self.plugin.get_authorization_token(user_context)
         headers = {"Authorization": f"Bearer {token}"} if token else {}
         return headers
-
-    def get_authorization_token(self, user_context) -> str:
-        vault = user_context.user_vault if user_context else None
-        token = vault.read_secret(f"preferences/{self.plugin.id}/token") if vault else None
-        return token
 
     def _ensure_response_has_expected_status_code(self, response, expected_status_code: int):
         if response.status_code != expected_status_code:

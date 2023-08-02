@@ -8,6 +8,7 @@ from typing import (
 
 from typing_extensions import Unpack
 
+from galaxy.exceptions import AuthenticationRequired
 from galaxy.files import ProvidesUserFileSourcesUserContext
 from galaxy.files.sources import (
     BaseFilesSource,
@@ -24,6 +25,7 @@ OptionalUserContext = Optional[ProvidesUserFileSourcesUserContext]
 
 class RDMFilesSourceProperties(FilesSourceProperties):
     url: str
+    token: str
 
 
 class RecordFilename(NamedTuple):
@@ -38,12 +40,12 @@ class RDMRepositoryInteractor:
     by file sources that interact with RDM repositories.
     """
 
-    def __init__(self, repository_url: str, plugin: BaseFilesSource):
+    def __init__(self, repository_url: str, plugin: "RDMFilesSource"):
         self._repository_url = repository_url
         self._plugin = plugin
 
     @property
-    def plugin(self) -> BaseFilesSource:
+    def plugin(self) -> "RDMFilesSource":
         """Returns the plugin associated with this repository interactor."""
         return self._plugin
 
@@ -140,12 +142,17 @@ class RDMFilesSource(BaseFilesSource):
         if not base_url:
             raise Exception("URL for RDM repository must be provided in configuration")
         self._repository_url = base_url
+        self._token = props.get("token", None)
         self._props = props
         self._repository_interactor = self.get_repository_interactor(base_url)
 
     @property
     def repository(self) -> RDMRepositoryInteractor:
         return self._repository_interactor
+
+    @property
+    def token(self) -> Optional[str]:
+        return self._token if self._token and not self._token.startswith("$") else None
 
     def get_repository_interactor(self, repository_url: str) -> RDMRepositoryInteractor:
         """Returns an interactor compatible with the given repository URL.
@@ -164,4 +171,14 @@ class RDMFilesSource(BaseFilesSource):
         for key, val in self._props.items():
             effective_props[key] = self._evaluate_prop(val, user_context=user_context)
         effective_props["url"] = self._repository_url
+        effective_props["token"] = self.get_authorization_token(user_context)
         return cast(RDMFilesSourceProperties, effective_props)
+
+    def get_authorization_token(self, user_context: OptionalUserContext) -> str:
+        token = self.token
+        if not token and user_context:
+            vault = user_context.user_vault if user_context else None
+            token = vault.read_secret(f"preferences/{self.id}/token") if vault else None
+        if token is None:
+            raise AuthenticationRequired(f"No authorization token provided in user's settings for '{self.label}'")
+        return token
