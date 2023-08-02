@@ -9,7 +9,7 @@
 
         <transition name="fade">
             <div v-if="loading" class="d-flex justify-content-center mb-3">
-                <b-spinner label="Copying History..."></b-spinner>
+                <GSpinner label="Copying History..." />
             </div>
         </transition>
 
@@ -54,6 +54,7 @@ import {
     GFormRadio,
     GInput,
     GModal,
+    GSpinner,
 } from "@/component-library";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
@@ -68,6 +69,7 @@ export default {
         GFormRadio,
         GInput,
         GModal,
+        GSpinner,
     },
     props: {
         history: { type: Object, required: true },

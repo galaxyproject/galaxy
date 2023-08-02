@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 
-import { GAlert, GModal } from "@/component-library";
+import { GAlert, GModal, GSpinner } from "@/component-library";
 import localize from "@/utils/localization";
 
 import type { CleanupResult } from "./model";
@@ -52,7 +52,7 @@ defineExpose({
             <GAlert
                 variant="info"
                 message="After the operation, the storage space that will be freed up will only be for the unique items. This means that some items may not free up any storage space because they are duplicates of other items." />
-            <b-spinner v-if="isLoading" class="mx-auto" data-test-id="loading-spinner" />
+            <GSpinner v-if="isLoading" class="mx-auto" data-test-id="loading-spinner" />
             <div v-else>
                 <GAlert v-if="result.hasFailed" show variant="danger" data-test-id="error-alert">
                     {{ result.errorMessage }}

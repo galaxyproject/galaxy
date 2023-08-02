@@ -16,7 +16,7 @@
                 <template v-slot:title> <FontAwesomeIcon icon="table" /> &nbsp; {{ l("Database/Build") }}</template>
                 <DbKeyProvider v-slot="{ item, loading }">
                     <div v-if="loading">
-                        <b-spinner label="Loading Database/Builds..."></b-spinner>
+                        <GSpinner label="Loading Database/Builds..." />
                     </div>
                     <div v-else>
                         <DatabaseEditTab
@@ -69,7 +69,7 @@ import { prependPath } from "utils/redirect";
 import { errorMessageAsString } from "utils/simple-error";
 import Vue from "vue";
 
-import { GAlert, GTab } from "@/component-library";
+import { GAlert, GSpinner, GTab } from "@/component-library";
 import { useConfig } from "@/composables/config";
 import { useHistoryStore } from "@/stores/historyStore";
 
@@ -85,16 +85,17 @@ library.add(faDatabase, faTable, faBars, faUser, faCog);
 Vue.use(BootstrapVue);
 export default {
     components: {
+        ChangeDatatypeTab,
         DatabaseEditTab,
-        SuitableConvertersTab,
+        DatatypesProvider,
+        DbKeyProvider,
         FontAwesomeIcon,
         GAlert,
         GTab,
-        DbKeyProvider,
-        SuitableConvertersProvider,
-        ChangeDatatypeTab,
-        DatatypesProvider,
+        GSpinner,
         LoadingSpan,
+        SuitableConvertersProvider,
+        SuitableConvertersTab,
     },
     props: {
         collectionId: {

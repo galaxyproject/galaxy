@@ -31,7 +31,7 @@
             @row-clicked="onRowClick">
             <template v-slot:empty>
                 <div v-if="isBusy" class="text-center my-2">
-                    <b-spinner class="align-middle"></b-spinner>
+                    <GSpinner class="align-middle" />
                     <strong>Loading...</strong>
                 </div>
                 <div v-else class="empty-folder-message">
@@ -223,9 +223,9 @@
             <GRow align-v="center" class="justify-content-md-center">
                 <GCol md="auto">
                     <div v-if="isBusy">
-                        <b-spinner small type="grow"></b-spinner>
-                        <b-spinner small type="grow"></b-spinner>
-                        <b-spinner small type="grow"></b-spinner>
+                        <GSpinner small type="grow" />
+                        <GSpinner small type="grow" />
+                        <GSpinner small type="grow" />
                     </div>
                     <GPagination
                         v-else
@@ -260,7 +260,6 @@
 
 <script>
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import BootstrapVue from "bootstrap-vue";
 import { initFolderTableIcons } from "components/Libraries/icons";
 import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH } from "components/Libraries/library-utils";
 import UtcDate from "components/UtcDate";
@@ -272,7 +271,7 @@ import { mapState } from "pinia";
 import Utils from "utils/utils";
 import Vue from "vue";
 
-import { GButton, GCol, GContainer, GInput, GLink, GPagination, GRow } from "@/component-library";
+import { GButton, GCol, GContainer, GInput, GLink, GPagination, GRow, GSpinner } from "@/component-library";
 import { useUserStore } from "@/stores/userStore";
 
 import { Services } from "./services";
@@ -280,8 +279,6 @@ import { fields } from "./table-fields";
 import FolderTopBar from "./TopToolbar/FolderTopBar";
 
 initFolderTableIcons();
-
-Vue.use(BootstrapVue);
 
 function initialFolderState() {
     return {
@@ -295,15 +292,16 @@ function initialFolderState() {
 }
 export default {
     components: {
-        GContainer,
-        GPagination,
-        GRow,
-        GCol,
-        GLink,
         FolderTopBar,
         FontAwesomeIcon,
         GButton,
+        GCol,
+        GContainer,
         GInput,
+        GLink,
+        GPagination,
+        GRow,
+        GSpinner,
         UtcDate,
     },
     beforeRouteUpdate(to, from, next) {

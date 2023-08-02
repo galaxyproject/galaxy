@@ -20,7 +20,7 @@
                 size="sm"
                 pill
                 @click="onRefresh">
-                <b-spinner v-if="isRecalculating" small />
+                <GSpinner v-if="isRecalculating" small />
                 <span v-else>Refresh</span>
             </button>
             <GAlert
@@ -46,7 +46,7 @@ import _l from "utils/localization";
 import { rethrowSimple } from "utils/simple-error";
 import { bytesToString } from "utils/utils";
 
-import { GAlert, GContainer, GRow } from "@/component-library";
+import { GAlert, GContainer, GRow, GSpinner } from "@/component-library";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 
@@ -54,9 +54,10 @@ import { QuotaUsage } from "./Quota/model";
 
 export default {
     components: {
+        GAlert,
         GContainer,
         GRow,
-        GAlert,
+        GSpinner,
         QuotaUsageSummary,
     },
     setup() {

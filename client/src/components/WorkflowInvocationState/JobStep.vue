@@ -3,7 +3,9 @@
         <b-table small caption-top :items="jobsProvider" :fields="fields" primary-key="id" @row-clicked="toggleDetails">
             <template v-slot:row-details="row">
                 <JobProvider :id="row.item.id" v-slot="{ item, loading }">
-                    <div v-if="loading"><b-spinner label="Loading Job..."></b-spinner></div>
+                    <div v-if="loading">
+                        <GSpinner label="Loading Job..." />
+                    </div>
                     <div v-else>
                         <JobInformation v-if="item" :job_id="item.id" />
                         <p></p>
@@ -28,14 +30,15 @@ import { JobProvider } from "components/providers";
 import UtcDate from "components/UtcDate";
 import Vue from "vue";
 
-import { GCard } from "@/component-library";
+import { GCard, GSpinner } from "@/component-library";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
-        GCard,
         UtcDate,
+        GCard,
+        GSpinner,
         JobProvider,
         JobParameters,
         JobInformation,

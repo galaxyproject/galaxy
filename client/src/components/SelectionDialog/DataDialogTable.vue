@@ -51,9 +51,9 @@
             </template>
         </b-table>
         <div v-if="isBusy" class="text-center">
-            <b-spinner small type="grow"></b-spinner>
-            <b-spinner small type="grow"></b-spinner>
-            <b-spinner small type="grow"></b-spinner>
+            <GSpinner small type="grow" />
+            <GSpinner small type="grow" />
+            <GSpinner small type="grow" />
         </div>
         <div v-if="nItems === 0">
             <div v-if="filter">
@@ -76,13 +76,10 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheckSquare, faMinusSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
 import { faFolder } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import BootstrapVue from "bootstrap-vue";
 import { selectionStates } from "components/SelectionDialog/selectionStates";
-import Vue from "vue";
 
-import { GLink, GPagination } from "@/component-library";
+import { GLink, GPagination, GSpinner } from "@/component-library";
 
-Vue.use(BootstrapVue);
 library.add(faCheckSquare, faSquare, faFolder, faMinusSquare);
 
 const LABEL_FIELD = { key: "label", sortable: true };
@@ -92,9 +89,10 @@ const SELECT_ICON_FIELD = { key: "select_icon", label: "", sortable: false };
 
 export default {
     components: {
-        GPagination,
-        GLink,
         FontAwesomeIcon,
+        GLink,
+        GPagination,
+        GSpinner,
     },
     props: {
         items: {

@@ -42,7 +42,7 @@
                     </template>
                     <GDropdownText>
                         <div v-if="historiesLoading">
-                            <b-spinner v-if="historiesLoading" small />
+                            <GSpinner v-if="historiesLoading" small />
                             <span>Fetching histories from server</span>
                         </div>
                         <span v-else>You have {{ totalHistoryCount }} histories.</span>
@@ -212,12 +212,14 @@ import {
     GDropdownItem,
     GDropdownText,
     GModal,
+    GSpinner,
 } from "@/component-library";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
 export default {
     components: {
+        CopyModal,
         GButton,
         GButtonGroup,
         GDropdown,
@@ -225,7 +227,7 @@ export default {
         GDropdownItem,
         GDropdownText,
         GModal,
-        CopyModal,
+        GSpinner,
         SelectorModal,
     },
     mixins: [legacyNavigationMixin],

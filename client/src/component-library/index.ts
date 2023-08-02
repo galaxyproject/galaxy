@@ -60,6 +60,7 @@ export { default as GPopover } from "./GPopover.vue";
 export { default as GProgress } from "./GProgress.vue";
 export { default as GProgressBar } from "./GProgressBar.vue";
 export { default as GRow } from "./GRow.vue";
+export { default as GSpinner } from "./GSpinner.vue";
 export { default as GTab } from "./GTab.vue";
 export { default as GTabs } from "./GTabs.vue";
 export { default as GTooltip } from "./GTooltip.vue";
