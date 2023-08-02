@@ -21,7 +21,7 @@
             @open="() => onOpen(item)" />
         <div>
             <div v-if="allLoaded" class="list-end my-2">- End of search results -</div>
-            <b-overlay :show="busy" opacity="0.5" />
+            <GOverlay :show="busy" opacity="0.5" />
         </div>
     </div>
 </template>
@@ -31,6 +31,8 @@ import { useGlobalUploadModal } from "composables/globalUploadModal";
 import Vue from "vue";
 import infiniteScroll from "vue-infinite-scroll";
 
+import { GOverlay } from "@/component-library";
+
 import { fetchData } from "./services";
 import ToolsListItem from "./ToolsListItem";
 
@@ -38,7 +40,10 @@ const defaultBufferLen = 4;
 const loadTimeout = 100;
 
 export default {
-    components: { ToolsListItem },
+    components: {
+        GOverlay,
+        ToolsListItem,
+    },
     directives: { infiniteScroll },
     props: {
         tools: {

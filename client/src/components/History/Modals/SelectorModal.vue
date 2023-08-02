@@ -19,6 +19,7 @@ import {
     GListGroup,
     GListGroupItem,
     GModal,
+    GOverlay,
 } from "@/component-library";
 import type { components } from "@/schema";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -304,7 +305,7 @@ async function loadMore(noScroll = false) {
                             <span v-if="filtered.length == 1">- {{ filtered.length }} history loaded -</span>
                             <span v-else-if="filtered.length > 1">- All {{ filtered.length }} histories loaded -</span>
                         </div>
-                        <b-overlay :show="busy" opacity="0.5" />
+                        <GOverlay :show="busy" opacity="0.5" />
                     </div>
                 </GListGroup>
             </div>
