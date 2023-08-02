@@ -5,6 +5,8 @@ import os
 import re
 import uuid
 from typing import (
+    Any,
+    Dict,
     List,
     Optional,
 )
@@ -603,7 +605,12 @@ class XmlToolSource(ToolSource):
             creators.append(creator_as_dict)
         return creators
 
-    def parse_funding(self):
+    def parse_funding(self) -> List[Dict[str, str]]:
+        """Parse the funding information from the XML tool file.
+
+        Returns:
+            funding: dict with array of grants holding the funding information
+        """
         funding_el = self.root.find("funding")
         if funding_el is None:
             return None
