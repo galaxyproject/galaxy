@@ -11,6 +11,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    RootModel,
 )
 from pydantic.utils import GetterDict
 from typing_extensions import (
@@ -205,6 +206,6 @@ InvocationMessageResponseUnion = Annotated[
 ]
 
 
-class InvocationMessageResponseModel(BaseModel):
-    __root__: InvocationMessageResponseUnion
+class InvocationMessageResponseModel(RootModel):
+    root: InvocationMessageResponseUnion
     model_config = ConfigDict(from_attributes=True)

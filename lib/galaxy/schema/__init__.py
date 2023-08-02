@@ -10,15 +10,14 @@ from typing import (
 from pydantic import (
     BaseModel,
     Field,
-    Required,
 )
 
 
 class BootstrapAdminUser(BaseModel):
-    id = 0
+    id: int = 0
     email: Optional[str] = None
     preferences: Dict[str, str] = {}
-    bootstrap_admin_user = True
+    bootstrap_admin_user: bool = True
 
     def all_roles(*args) -> list:
         return []
@@ -109,7 +108,5 @@ class PdfDocumentType(str, Enum):
 
 
 class APIKeyModel(BaseModel):
-    key: str = Field(Required, title="Key", description="API key to interact with the Galaxy API")
-    create_time: datetime = Field(
-        Required, title="Create Time", description="The time and date this API key was created."
-    )
+    key: str = Field(..., title="Key", description="API key to interact with the Galaxy API")
+    create_time: datetime = Field(..., title="Create Time", description="The time and date this API key was created.")

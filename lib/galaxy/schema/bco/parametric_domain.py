@@ -10,6 +10,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    RootModel,
 )
 
 
@@ -28,14 +29,14 @@ class ParametricDomainItem(BaseModel):
     step: str = Field(
         ...,
         description="Refers to the specific step of the workflow relevant to the parameters specified in 'param' and 'value'",
-        example=["1"],
+        examples=["1"],
         pattern="^(.*)$",
         title="step",
     )
 
 
-class ParametricDomain(BaseModel):
-    __root__: List[ParametricDomainItem] = Field(
+class ParametricDomain(RootModel):
+    root: List[ParametricDomainItem] = Field(
         ...,
         description="This represents the list of NON-default parameters customizing the computational flow which can affect the output of the calculations. These fields can be custom to each kind of analysis and are tied to a particular pipeline implementation",
         title="Parametric Domain",

@@ -7,6 +7,7 @@ from typing import (
 from pydantic import (
     BaseModel,
     Field,
+    RootModel,
 )
 
 
@@ -25,8 +26,8 @@ class ToolDataEntry(BaseModel):
     )
 
 
-class ToolDataEntryList(BaseModel):
-    __root__: List[ToolDataEntry] = Field(
+class ToolDataEntryList(RootModel):
+    root: List[ToolDataEntry] = Field(
         title="A list with details on individual data tables.",
     )
 

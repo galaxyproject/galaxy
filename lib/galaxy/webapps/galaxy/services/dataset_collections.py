@@ -10,6 +10,7 @@ from typing import (
 from pydantic import (
     ConfigDict,
     Field,
+    RootModel,
     ValidationError,
 )
 from typing_extensions import Literal
@@ -77,16 +78,16 @@ class SuitableConverter(Model):
     original_type: str = Field(..., description="The type to convert from.")
 
 
-class SuitableConverters(Model):
+class SuitableConverters(RootModel):
     """Collection of converters that can be used on a particular dataset collection."""
 
-    __root__: List[SuitableConverter]
+    root: List[SuitableConverter]
 
 
-class DatasetCollectionContentElements(Model):
+class DatasetCollectionContentElements(RootModel):
     """Represents a collection of elements contained in the dataset collection."""
 
-    __root__: List[DCESummary]
+    root: List[DCESummary]
 
 
 class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):

@@ -4,7 +4,10 @@ from typing import (
     Optional,
 )
 
-from pydantic import Field
+from pydantic import (
+    Field,
+    RootModel,
+)
 from typing_extensions import Literal
 
 from galaxy.schema.fields import (
@@ -125,8 +128,8 @@ class QuotaSummary(QuotaBase):
     )
 
 
-class QuotaSummaryList(Model):
-    __root__: List[QuotaSummary] = Field(
+class QuotaSummaryList(RootModel):
+    root: List[QuotaSummary] = Field(
         default=[],
         title="List with summary information of Quotas.",
     )

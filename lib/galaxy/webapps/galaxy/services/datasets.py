@@ -16,6 +16,7 @@ from typing import (
 from pydantic import (
     ConfigDict,
     Field,
+    RootModel,
 )
 from starlette.datastructures import URL
 
@@ -158,8 +159,8 @@ class DatasetInheritanceChainEntry(Model):
     )
 
 
-class DatasetInheritanceChain(Model):
-    __root__: List[DatasetInheritanceChainEntry] = Field(
+class DatasetInheritanceChain(RootModel):
+    root: List[DatasetInheritanceChainEntry] = Field(
         default=[],
         title="Dataset inheritance chain",
     )
@@ -192,10 +193,10 @@ class DatasetTextContentDetails(Model):
     )
 
 
-class ConvertedDatasetsMap(Model):
+class ConvertedDatasetsMap(RootModel):
     """Map of `file extension` -> `converted dataset encoded id`"""
 
-    __root__: Dict[str, DecodedDatabaseIdField]  # extension -> dataset ID
+    root: Dict[str, DecodedDatabaseIdField]  # extension -> dataset ID
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
