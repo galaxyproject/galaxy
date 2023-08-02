@@ -190,8 +190,6 @@ class ToolEvaluator:
         param_dict["__datatypes_config__"] = param_dict["GALAXY_DATATYPES_CONF_FILE"] = os.path.join(
             job_working_directory, "registry.xml"
         )
-        if self.job.tool_id == "upload1":
-            param_dict["paramfile"] = os.path.join(job_working_directory, "upload_params.json")
         if self._history:
             param_dict["__history_id__"] = self.app.security.encode_id(self._history.id)
         param_dict["__galaxy_url__"] = self.compute_environment.galaxy_url()
@@ -208,6 +206,11 @@ class ToolEvaluator:
         self.__sanitize_param_dict(param_dict)
         # Parameters added after this line are not sanitized
         self.__populate_non_job_params(param_dict)
+
+        # MinimalJobWrapper.__prepare_upload_paramfile copies the paramfile to the job working directory
+        # so we should use it (otherwise the upload tool does not work in real user setups)
+        if self.job.tool_id == "upload1":
+            param_dict["paramfile"] = os.path.join(job_working_directory, "upload_params.json")
 
         # Return the dictionary of parameters
         return param_dict
