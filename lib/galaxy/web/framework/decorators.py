@@ -5,8 +5,10 @@ from json import loads
 from traceback import format_exc
 
 import paste.httpexceptions
-from pydantic import BaseModel
-from pydantic.error_wrappers import ValidationError
+from pydantic import (
+    BaseModel,
+    ValidationError,
+)
 
 from galaxy.exceptions import (
     error_codes,
@@ -390,9 +392,9 @@ def validation_error_to_message_exception(e: ValidationError) -> MessageExceptio
         elif error["type"].startswith("type_error"):
             invalid_found = True
     if missing_found and not invalid_found:
-        return RequestParameterMissingException(str(e), validation_errors=loads(e.json()))
+        return RequestParameterMissingException(e.title, validation_errors=e.errors())
     else:
-        return RequestParameterInvalidException(str(e), validation_errors=loads(e.json()))
+        return RequestParameterInvalidException(e.title, validation_errors=e.errors())
 
 
 def api_error_message(trans, **kwds):
