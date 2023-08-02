@@ -276,7 +276,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
 
         rval = [serialize_element(el) for el in contents]
         try:
-            return DatasetCollectionContentElements.construct(__root__=rval)
+            return DatasetCollectionContentElements.model_construct(root=rval)
         except ValidationError:
             log.exception(
                 f"Serializing DatasetCollectionContentsElements failed. Collection is populated: {hdca.collection.populated}"

@@ -124,7 +124,7 @@ class RemoteFilesManager:
             user_context=user_file_source_context, browsable_only=True if browsable_only is None else browsable_only
         )
         plugins = [FilesSourcePlugin(**plugin_dict) for plugin_dict in plugins_dict]
-        return FilesSourcePluginList.construct(__root__=plugins)
+        return FilesSourcePluginList.model_construct(root=plugins)
 
     @property
     def _file_sources(self) -> ConfiguredFileSources:

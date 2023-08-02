@@ -70,7 +70,7 @@ class FastAPICloudController:
         rtv = []
         for dataset in datasets:
             rtv.append(self.datasets_serializer.serialize_to_view(dataset, view="summary"))
-        return DatasetSummaryList.construct(__root__=rtv)
+        return DatasetSummaryList.model_construct(root=rtv)
 
     @router.post(
         "/api/cloud/storage/send",

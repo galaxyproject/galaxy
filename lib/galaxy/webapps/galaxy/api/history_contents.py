@@ -757,7 +757,7 @@ class FastAPIHistoryContents:
         will be made to the items.
         """
         result = self.service.update_batch(trans, history_id, payload, serialization_params)
-        return HistoryContentsResult.construct(__root__=result)
+        return HistoryContentsResult.model_construct(root=result)
 
     @router.put(
         "/api/histories/{history_id}/contents/bulk",
@@ -805,7 +805,7 @@ class FastAPIHistoryContents:
     ) -> AnyHistoryContentItem:
         """Updates the values for the history content item with the given ``ID``."""
         return self.service.update(
-            trans, history_id, id, payload.dict(exclude_unset=True), serialization_params, contents_type=type
+            trans, history_id, id, payload.model_dump(exclude_unset=True), serialization_params, contents_type=type
         )
 
     @router.put(
@@ -825,7 +825,7 @@ class FastAPIHistoryContents:
     ) -> AnyHistoryContentItem:
         """Updates the values for the history content item with the given ``ID``."""
         return self.service.update(
-            trans, history_id, id, payload.dict(exclude_unset=True), serialization_params, contents_type=type
+            trans, history_id, id, payload.model_dump(exclude_unset=True), serialization_params, contents_type=type
         )
 
     @router.delete(

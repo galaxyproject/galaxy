@@ -920,7 +920,7 @@ class ToolDataTableManager(Dictifiable):
 
     def index(self) -> ToolDataEntryList:
         data_tables = [ToolDataEntry(**table.to_dict()) for table in self.data_tables.values()]
-        return ToolDataEntryList.construct(__root__=data_tables)
+        return ToolDataEntryList.model_construct(root=data_tables)
 
     def __getitem__(self, key: str) -> ToolDataTable:
         return self.data_tables.__getitem__(key)
