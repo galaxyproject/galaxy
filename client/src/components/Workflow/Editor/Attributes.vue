@@ -27,7 +27,7 @@
         <div id="workflow-annotation-area" class="mt-2">
             <b>Annotation</b>
             <meta itemprop="description" :content="annotationCurrent" />
-            <b-textarea
+            <GFormTextarea
                 id="workflow-annotation"
                 v-model="annotationCurrent"
                 @keyup="$emit('update:annotationCurrent', annotationCurrent)" />
@@ -58,7 +58,15 @@ import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import { Services } from "components/Workflow/services";
 import { format, parseISO } from "date-fns";
 
-import { GAlert, GFormSelect, GFormSelectOption, GInput, GListGroup, GListGroupItem } from "@/component-library";
+import {
+    GAlert,
+    GFormSelect,
+    GFormSelectOption,
+    GFormTextarea,
+    GInput,
+    GListGroup,
+    GListGroupItem,
+} from "@/component-library";
 
 import { UntypedParameters } from "./modules/parameters";
 
@@ -69,6 +77,7 @@ export default {
         GAlert,
         GFormSelect,
         GFormSelectOption,
+        GFormTextarea,
         GInput,
         GListGroup,
         GListGroupItem,

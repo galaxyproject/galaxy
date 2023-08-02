@@ -33,7 +33,7 @@
                 @keyup.esc="onToggle"
                 @focus="selectText"
                 @blur="textSelected = false" />
-            <b-textarea
+            <GFormTextarea
                 v-if="showAnnotation"
                 v-model="localProps.annotation"
                 class="mb-2"
@@ -69,7 +69,7 @@
 <script>
 import { mapState } from "pinia";
 
-import { GButton, GInput } from "@/component-library";
+import { GButton, GFormTextarea, GInput } from "@/component-library";
 import short from "@/components/plugins/short.js";
 import { useUserStore } from "@/stores/userStore";
 
@@ -78,6 +78,7 @@ import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 export default {
     components: {
         GButton,
+        GFormTextarea,
         GInput,
         StatelessTags,
     },
