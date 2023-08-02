@@ -12,12 +12,11 @@ from typing import (
 
 from pydantic import (
     BaseModel,
-    Extra,
     ConfigDict,
     Field,
-    Required,
     UUID1,
     UUID4,
+    RootModel,
 )
 from pydantic.utils import GetterDict
 from typing_extensions import (
@@ -251,8 +250,8 @@ InvocationMessageResponseUnion = Annotated[
 ]
 
 
-class InvocationMessageResponseModel(BaseModel):
-    __root__: InvocationMessageResponseUnion
+class InvocationMessageResponseModel(RootModel):
+    root: InvocationMessageResponseUnion
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -410,11 +409,7 @@ class InvocationReport(Model):
     )
     generate_time: Optional[str] = schema.GenerateTimeField
     generate_version: Optional[str] = schema.GenerateVersionField
-
-    class Config:
-        # Galaxy Report/Page response can contain many extra_rendering_data
-        # Allow any other extra fields
-        extra = Extra.allow
+    model_config = ConfigDict(extra="allow")
 
 
 class InvocationUpdatePayload(Model):

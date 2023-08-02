@@ -9,7 +9,7 @@ from typing import (
 from pydantic import (
     ConfigDict,
     Field,
-    Required,
+    RootModel,
 )
 from typing_extensions import (
     Annotated,
@@ -95,11 +95,11 @@ class BrowsableFilesSourcePlugin(FilesSourcePlugin):
     model_config = ConfigDict(extra="allow")
 
 
-class FilesSourcePluginList(Model):
-    __root__: List[Union[BrowsableFilesSourcePlugin, FilesSourcePlugin]] = Field(
+class FilesSourcePluginList(RootModel):
+    root: List[Union[BrowsableFilesSourcePlugin, FilesSourcePlugin]] = Field(
         default=[],
         title="List of files source plugins",
-        example=[
+        examples=[
             {
                 "id": "_import",
                 "type": "gximport",

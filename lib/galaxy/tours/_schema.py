@@ -9,6 +9,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    RootModel,
 )
 
 
@@ -32,8 +33,8 @@ class Tour(TourCore):
     id: str = Field(title="Identifier", description="Tour identifier")
 
 
-class TourList(BaseModel):
-    __root__: List[Tour] = Field(title="List of tours", default=[])
+class TourList(RootModel):
+    root: List[Tour] = Field(title="List of tours", default=[])
 
 
 class TourStep(BaseModel):

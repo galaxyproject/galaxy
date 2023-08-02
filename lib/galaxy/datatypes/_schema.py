@@ -8,6 +8,7 @@ from pydantic import (
     BaseModel,
     Field,
     HttpUrl,
+    RootModel,
 )
 
 
@@ -101,8 +102,8 @@ class DatatypeConverter(BaseModel):
     )
 
 
-class DatatypeConverterList(BaseModel):
-    __root__: List[DatatypeConverter] = Field(title="List of data type converters", default=[])
+class DatatypeConverterList(RootModel):
+    root: List[DatatypeConverter] = Field(title="List of data type converters", default=[])
 
 
 class DatatypeEDAMDetails(BaseModel):
@@ -124,8 +125,8 @@ class DatatypeEDAMDetails(BaseModel):
     )
 
 
-class DatatypesEDAMDetailsDict(BaseModel):
-    __root__: Dict[str, DatatypeEDAMDetails] = Field(
+class DatatypesEDAMDetailsDict(RootModel):
+    root: Dict[str, DatatypeEDAMDetails] = Field(
         title="Dict of EDAM details for formats",
         default={},
     )

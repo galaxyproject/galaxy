@@ -18,6 +18,7 @@ from pydantic import (
     ConfigDict,
     EmailStr,
     Field,
+    RootModel,
 )
 
 
@@ -47,8 +48,8 @@ class Uri(BaseModel):
     )
 
 
-class ObjectId(BaseModel):
-    __root__: str = Field(
+class ObjectId(RootModel):
+    root: str = Field(
         ...,
         description="A unique identifier that should be applied to each IEEE-2791 Object instance, generated and assigned by a IEEE-2791 database engine. IDs should never be reused",
     )

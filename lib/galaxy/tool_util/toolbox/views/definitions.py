@@ -56,7 +56,7 @@ class Label(BaseModel):
 
 
 class LabelShortcut(BaseModel):
-    content_type = "simple_label"
+    content_type: Literal["simple_label"] = "simple_label"
     label: str
 
 
@@ -67,7 +67,7 @@ class Workflow(BaseModel):
 
 
 class ItemsFrom(BaseModel):
-    content_type = "items_from"
+    content_type: Literal["items_from"] = "items_from"
     items_from: str
     excludes: OptionalExclusionList
 
@@ -123,13 +123,13 @@ class Section(BaseModel, HasItems):
 
 
 class SectionAlias(BaseModel):
-    content_type = "section_alias"
+    content_type: Literal["section_alias"] = "section_alias"
     section: str
     excludes: OptionalExclusionList
 
 
 class SectionAliases(BaseModel):
-    content_type = "section_aliases"
+    content_type: Literal["section_aliases"] = "section_aliases"
     sections: List[str]
     excludes: OptionalExclusionList
 

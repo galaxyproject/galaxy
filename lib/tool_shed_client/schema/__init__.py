@@ -12,6 +12,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    RootModel,
 )
 from typing_extensions import (
     Literal,
@@ -92,8 +93,8 @@ class GetOrderedInstallableRevisionsRequest(BaseModel):
     owner: str
 
 
-class OrderedInstallableRevisions(BaseModel):
-    __root__: List[str]
+class OrderedInstallableRevisions(RootModel):
+    root: List[str]
 
 
 RepositoryType = Literal[
@@ -126,8 +127,8 @@ class RepositoryUpdateRequest(BaseModel):
     commit_message: Optional[str] = None
 
 
-class RepositoryUpdate(BaseModel):
-    __root__: Union[ValidRepostiroyUpdateMessage, FailedRepositoryUpdateMessage]
+class RepositoryUpdate(RootModel):
+    root: Union[ValidRepostiroyUpdateMessage, FailedRepositoryUpdateMessage]
 
     @property
     def is_ok(self):
@@ -180,12 +181,12 @@ class RepositoryDependency(RepositoryRevisionMetadata):
 RepositoryRevisionMetadata.update_forward_refs()
 
 
-class RepositoryMetadata(BaseModel):
-    __root__: Dict[str, RepositoryRevisionMetadata]
+class RepositoryMetadata(RootModel):
+    root: Dict[str, RepositoryRevisionMetadata]
 
     @property
     def latest_revision(self) -> RepositoryRevisionMetadata:
-        return list(self.__root__.values())[-1]
+        return list(self.root.values())[-1]
 
     @property
     def tip(self) -> str:
@@ -265,8 +266,8 @@ class RepositoriesByCategory(BaseModel):
     repositories: List[Repository]
 
 
-class RepositoryIndexResponse(BaseModel):
-    __root__: List[Repository]
+class RepositoryIndexResponse(RootModel):
+    root: List[Repository]
 
 
 class RepositorySearchRequest(BaseModel):

@@ -1,6 +1,5 @@
 """This module contains general pydantic models and common schema field annotations for them."""
 
-import re
 from datetime import (
     date,
     datetime,
@@ -22,9 +21,9 @@ from pydantic import (
     AnyUrl,
     BaseModel,
     ConfigDict,
-    ConstrainedStr,
     Field,
     Json,
+    RootModel,
     UUID4,
 )
 from typing_extensions import (
@@ -506,14 +505,13 @@ class HistoryContentSource(str, Enum):
 DatasetCollectionInstanceType = Literal["history", "library"]
 
 
-class TagItem(ConstrainedStr):
-    regex = re.compile(r"^([^\s.:])+(.[^\s.:]+)*(:[^\s.:]+)?$")
+TagItem = Annotated[str, Field(..., pattern=r"^([^\s.:])+(.[^\s.:]+)*(:[^\s.:]+)?$")]
 
 
-class TagCollection(Model):
+class TagCollection(RootModel):
     """Represents the collection of tags associated with an item."""
 
-    __root__: List[TagItem] = Field(
+    root: List[TagItem] = Field(
         default=...,
         title="Tags",
         description="The collection of tags associated with an item.",
@@ -683,7 +681,6 @@ class HDAInaccessible(HDACommon):
 
 HdaLddaField = Field(
     DatasetSourceType.hda,
-    const=True,
     title="HDA or LDDA",
     description="Whether this dataset belongs to a history (HDA) or a library (LDDA).",
     deprecated=False,  # TODO Should this field be deprecated in favor of model_class?
@@ -1736,12 +1733,12 @@ class ObjectExportTaskResponse(ObjectExportResponseBase):
     export_metadata: Optional[ExportObjectMetadata] = None
 
 
-class JobExportHistoryArchiveListResponse(Model):
-    __root__: List[JobExportHistoryArchiveModel]
+class JobExportHistoryArchiveListResponse(RootModel):
+    root: List[JobExportHistoryArchiveModel]
 
 
-class ExportTaskListResponse(Model):
-    __root__: List[ObjectExportTaskResponse]
+class ExportTaskListResponse(RootModel):
+    root: List[ObjectExportTaskResponse]
     __accept_type__ = "application/vnd.galaxy.task.export+json"
 
 
@@ -2019,10 +2016,10 @@ class JobMetric(Model):
     )
 
 
-class JobMetricCollection(Model):
+class JobMetricCollection(RootModel):
     """Represents a collection of metrics associated with a Job."""
 
-    __root__: List[JobMetric] = Field(
+    root: List[JobMetric] = Field(
         [],
         title="Job Metrics",
         description="Collections of metrics provided by `JobInstrumenter` plugins on a particular job.",
@@ -2216,37 +2213,33 @@ class ToolBasedWorkflowStep(WorkflowStepBase):
 
 class InputDataStep(ToolBasedWorkflowStep):
     type: WorkflowModuleType = Field(
-        WorkflowModuleType.data_input, const=True, title="Type", description="The type of workflow module."
+        WorkflowModuleType.data_input, title="Type", description="The type of workflow module."
     )
 
 
 class InputDataCollectionStep(ToolBasedWorkflowStep):
     type: WorkflowModuleType = Field(
-        WorkflowModuleType.data_collection_input, const=True, title="Type", description="The type of workflow module."
+        WorkflowModuleType.data_collection_input, title="Type", description="The type of workflow module."
     )
 
 
 class InputParameterStep(ToolBasedWorkflowStep):
     type: WorkflowModuleType = Field(
-        WorkflowModuleType.parameter_input, const=True, title="Type", description="The type of workflow module."
+        WorkflowModuleType.parameter_input, title="Type", description="The type of workflow module."
     )
 
 
 class PauseStep(WorkflowStepBase):
-    type: WorkflowModuleType = Field(
-        WorkflowModuleType.pause, const=True, title="Type", description="The type of workflow module."
-    )
+    type: WorkflowModuleType = Field(WorkflowModuleType.pause, title="Type", description="The type of workflow module.")
 
 
 class ToolStep(ToolBasedWorkflowStep):
-    type: WorkflowModuleType = Field(
-        WorkflowModuleType.tool, const=True, title="Type", description="The type of workflow module."
-    )
+    type: WorkflowModuleType = Field(WorkflowModuleType.tool, title="Type", description="The type of workflow module.")
 
 
 class SubworkflowStep(WorkflowStepBase):
     type: WorkflowModuleType = Field(
-        WorkflowModuleType.subworkflow, const=True, title="Type", description="The type of workflow module."
+        WorkflowModuleType.subworkflow, title="Type", description="The type of workflow module."
     )
     workflow_id: DecodedDatabaseIdField = Field(
         ..., title="Workflow ID", description="The encoded ID of the workflow that will be run on this step."
@@ -2292,7 +2285,6 @@ class Creator(Model):
 class Organization(Creator):
     class_: str = Field(
         "Organization",
-        const=True,
         alias="class",
     )
 
@@ -2300,7 +2292,6 @@ class Organization(Creator):
 class Person(Creator):
     class_: str = Field(
         "Person",
-        const=True,
         alias="class",
     )
     family_name: Optional[str] = Field(
@@ -2576,8 +2567,8 @@ class RoleDefinitionModel(Model):
     group_ids: Optional[List[DecodedDatabaseIdField]] = Field(title="Group IDs", default=[])
 
 
-class RoleListResponse(Model):
-    __root__: List[RoleModelResponse]
+class RoleListResponse(RootModel):
+    root: List[RoleModelResponse]
 
 
 # The tuple should probably be another proper model instead?
@@ -2594,8 +2585,8 @@ class GroupRoleResponse(Model):
     url: RelativeUrl = RelativeUrlField
 
 
-class GroupRoleListResponse(Model):
-    __root__: List[GroupRoleResponse]
+class GroupRoleListResponse(RootModel):
+    root: List[GroupRoleResponse]
 
 
 # Users -----------------------------------------------------------------------
@@ -2608,8 +2599,8 @@ class GroupUserResponse(Model):
     url: RelativeUrl = RelativeUrlField
 
 
-class GroupUserListResponse(Model):
-    __root__: List[GroupUserResponse]
+class GroupUserListResponse(RootModel):
+    root: List[GroupUserResponse]
 
 
 class ImportToolDataBundleUriSource(Model):
@@ -2687,8 +2678,8 @@ class InstalledToolShedRepository(Model):
     )
 
 
-class InstalledToolShedRepositories(Model):
-    __root__: List[InstalledToolShedRepository]
+class InstalledToolShedRepositories(RootModel):
+    root: List[InstalledToolShedRepository]
 
 
 CheckForUpdatesResponseStatusT = Literal["ok", "error"]
@@ -2777,8 +2768,8 @@ class LibrarySummary(LibraryLegacySummary):
     )
 
 
-class LibrarySummaryList(Model):
-    __root__: List[LibrarySummary] = Field(
+class LibrarySummaryList(RootModel):
+    root: List[LibrarySummary] = Field(
         default=[],
         title="List with summary information of Libraries.",
     )
@@ -3263,7 +3254,7 @@ class DeleteHistoryContentResult(CustomHistoryItem):
     )
 
 
-class HistoryContentsArchiveDryRunResult(Model):
+class HistoryContentsArchiveDryRunResult(RootModel):
     """
     Contains a collection of filepath/filename entries that represent
     the contents that would have been included in the archive.
@@ -3273,7 +3264,7 @@ class HistoryContentsArchiveDryRunResult(Model):
     This is used for debugging purposes.
     """
 
-    __root__: List[Tuple[str, str]]
+    root: List[Tuple[str, str]]
 
 
 class HistoryContentStats(Model):
@@ -3284,12 +3275,12 @@ class HistoryContentStats(Model):
     )
 
 
-class HistoryContentsResult(Model):
+class HistoryContentsResult(RootModel):
     """List of history content items.
     Can contain different views and kinds of items.
     """
 
-    __root__: List[AnyHistoryContentItem]
+    root: List[AnyHistoryContentItem]
 
 
 class HistoryContentsWithStatsResult(Model):
@@ -3634,8 +3625,8 @@ class PageDetails(PageSummary):
     model_config = ConfigDict(extra="allow")
 
 
-class PageSummaryList(Model):
-    __root__: List[PageSummary] = Field(
+class PageSummaryList(RootModel):
+    root: List[PageSummary] = Field(
         default=[],
         title="List with summary information of Pages.",
     )
