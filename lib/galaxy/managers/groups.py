@@ -17,8 +17,8 @@ from galaxy.managers.users import get_users_by_ids
 from galaxy.model import Group
 from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
-from galaxy.schema.groups import GroupCreatePayload
 from galaxy.schema.fields import Security
+from galaxy.schema.groups import GroupCreatePayload
 from galaxy.structured_app import MinimalManagerApp
 
 

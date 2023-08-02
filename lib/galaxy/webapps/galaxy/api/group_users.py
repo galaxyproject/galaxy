@@ -17,7 +17,7 @@ from galaxy.webapps.galaxy.api import (
 )
 from galaxy.webapps.galaxy.api.common import (
     GroupIDPathParam,
-    UserIDPathParam,
+    UserIdPathParam,
 )
 
 log = logging.getLogger(__name__)
@@ -64,7 +64,7 @@ class FastAPIGroupUsers:
     def show(
         self,
         group_id: GroupIDPathParam,
-        user_id: UserIDPathParam,
+        user_id: UserIdPathParam,
         trans: ProvidesAppContext = DependsOnTrans,
     ) -> GroupUserResponse:
         """
@@ -82,7 +82,7 @@ class FastAPIGroupUsers:
     def update(
         self,
         group_id: GroupIDPathParam,
-        user_id: UserIDPathParam,
+        user_id: UserIdPathParam,
         trans: ProvidesAppContext = DependsOnTrans,
     ) -> GroupUserResponse:
         """
@@ -101,7 +101,7 @@ class FastAPIGroupUsers:
     def delete(
         self,
         group_id: GroupIDPathParam,
-        user_id: UserIDPathParam,
+        user_id: UserIdPathParam,
         trans: ProvidesAppContext = DependsOnTrans,
     ) -> GroupUserResponse:
         """

@@ -340,9 +340,7 @@ class DetailedUserModel(BaseUserModel, AnonUserModel):
     preferences: Dict[Any, Any] = Field(default=..., title="Preferences", description="Preferences of the user")
     preferred_object_store_id: Optional[str] = PreferredObjectStoreIdField
     quota: str = Field(default=..., title="Quota", description="Quota applicable to the user")
-    quota_bytes: Any = Field(
-        default=..., title="Quota in bytes", description="Quota applicable to the user in bytes."
-    )
+    quota_bytes: Any = Field(default=..., title="Quota in bytes", description="Quota applicable to the user in bytes.")
     tags_used: List[str] = Field(default=..., title="Tags used", description="Tags used by the user")
 
 
@@ -367,9 +365,7 @@ class FavoriteObject(Model):
 
 
 class FavoriteObjectsSummary(Model):
-    tools: List[str] = Field(
-        default=..., title="Favorite tools", description="The name of the tools the user favored."
-    )
+    tools: List[str] = Field(default=..., title="Favorite tools", description="The name of the tools the user favored.")
 
 
 class FavoriteObjectType(str, Enum):
@@ -423,8 +419,8 @@ class CustomBuildModel(CreatedCustomBuild):
     id: str = Field(default=..., title="ID", description="The ID of the custom build.")
 
 
-class CustomBuildsCollection(Model):
-    __root__: List[CustomBuildModel] = Field(
+class CustomBuildsCollection(RootModel):
+    root: List[CustomBuildModel] = Field(
         default=..., title="Custom builds collection", description="The custom builds associated with the user."
     )
 

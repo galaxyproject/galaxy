@@ -74,9 +74,7 @@ class MessageNotificationContentBase(Model):
 class ActionLink(Model):
     """An action link to be displayed in the notification as a button."""
 
-    action_name: str = Field(
-        ..., title="Action name", description="The name of the action, will be the button title."
-    )
+    action_name: str = Field(..., title="Action name", description="The name of the action, will be the button title.")
     link: AbsoluteOrRelativeUrl = Field(
         ..., title="Link", description="The link to be opened when the button is clicked."
     )
