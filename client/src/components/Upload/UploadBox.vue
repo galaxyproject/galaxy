@@ -1,10 +1,23 @@
 <script setup>
-import { UploadQueue } from "utils/uploadbox";
+import { ref } from "vue";
 
-const props = defineProps({});
-
+const props = defineProps({
+    multiple: Boolean,
+});
+const isDragging = ref(false);
 const emit = defineEmits();
 
+/** Handle files dropped into the upload box **/
+function onDrop(evt) {
+    isDragging.value = false;
+    if (evt.dataTransfer) {
+        const files = evt.dataTransfer.files;
+        files.forEach((file) => {
+            file.chunk_mode = true;
+        });
+        emit("add", files);
+    }
+}
 /*
 (($) => {
     // add event properties
@@ -14,19 +27,6 @@ const emit = defineEmits();
         Handles the upload events drag/drop etc.
     /
     $.fn.uploadinput = function (options) {
-        // initialize
-        var el = this;
-        var opts = $.extend(
-            {},
-            {
-                ondragover: () => {},
-                ondragleave: () => {},
-                onchange: () => {},
-                multiple: false,
-            },
-            options
-        );
-
         // append hidden upload field
         var $input = $(`<input type="file" style="display: none" ${(opts.multiple && "multiple") || ""}/>`);
         el.append(
@@ -36,24 +36,6 @@ const emit = defineEmits();
             })
         );
 
-        // drag/drop events
-        const element = el.get(0);
-        element.addEventListener("drop", (e) => {
-            opts.ondragleave(e);
-            if (e.dataTransfer) {
-                opts.onchange(e.dataTransfer.files);
-                e.preventDefault();
-            }
-        });
-        element.addEventListener("dragover", (e) => {
-            e.preventDefault();
-            opts.ondragover(e);
-        });
-        element.addEventListener("dragleave", (e) => {
-            e.stopPropagation();
-            opts.ondragleave(e);
-        });
-
         // exports
         return {
             dialog: () => {
@@ -62,24 +44,16 @@ const emit = defineEmits();
         };
     };
 })(jQuery);
-
-// Element
-this.uploadinput = $(options.$uploadBox).uploadinput({
-    multiple: this.opts.multiple,
-    onchange: (files) => {
-        _.each(files, (file) => {
-            file.chunk_mode = true;
-        });
-        this.add(files);
-    },
-    ondragover: options.ondragover,
-    ondragleave: options.ondragleave,
-});
 */
 </script>
 
 <template>
-    <div class="upload-box upload-box-with-footer" :class="{ highlight: true }">
+    <div
+        class="upload-box upload-box-with-footer"
+        :class="{ highlight: isDragging }"
+        @dragover.prevent="isDragging = true"
+        @dragleave.prevent="isDragging = false"
+        @drop.prevent="onDrop">
         <slot />
     </div>
 </template>

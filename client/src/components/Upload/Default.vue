@@ -3,7 +3,7 @@
         <div class="upload-top">
             <div class="upload-top-info" v-html="topInfo" />
         </div>
-        <UploadBox>
+        <UploadBox @add="addFiles">
             <div v-show="showHelper" class="upload-helper"><i class="fa fa-files-o" />Drop files here</div>
             <div v-show="!showHelper" class="upload-table ui-table-striped">
                 <DefaultRow
@@ -193,6 +193,10 @@ export default {
         this.initUploadQueue();
     },
     methods: {
+        /** Add files to queue */
+        addFiles: function (files) {
+            this.queue.add(files);
+        },
         /** Update model */
         _eventInput: function (index, newData) {
             const it = this.uploadList[index];
@@ -244,12 +248,6 @@ export default {
                 error: this._eventError,
                 warning: this._eventWarning,
                 complete: this._eventComplete,
-                ondragover: () => {
-                    this.highlightBox = true;
-                },
-                ondragleave: () => {
-                    this.highlightBox = false;
-                },
                 chunkSize: this.details.chunkUploadSize,
             });
         },
