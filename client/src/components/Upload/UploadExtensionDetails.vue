@@ -1,10 +1,12 @@
 <script setup>
-import { computed } from "vue";
-import Popper from "@/components/Popper/Popper.vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faSearch } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { computed } from "vue";
+
 import { findExtension } from "./utils";
+
+import Popper from "@/components/Popper/Popper.vue";
 
 library.add(faSearch);
 

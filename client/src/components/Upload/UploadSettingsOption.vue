@@ -1,8 +1,8 @@
 <script setup>
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCheckSquare } from "@fortawesome/free-solid-svg-icons";
 import { faSquare } from "@fortawesome/free-regular-svg-icons";
+import { faCheckSquare } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 library.add(faCheckSquare, faSquare);
 
@@ -18,8 +18,8 @@ const emit = defineEmits();
 <template>
     <tr @click="emit('click')">
         <td>
-            <FontAwesomeIcon class="px-2" v-if="value" icon="fas fa-check-square" fa-fw />
-            <FontAwesomeIcon class="px-2" v-else icon="far fa-square" fa-fw />
+            <FontAwesomeIcon v-if="value" class="px-2" icon="fas fa-check-square" fa-fw />
+            <FontAwesomeIcon v-else class="px-2" icon="far fa-square" fa-fw />
         </td>
         <td class="text-left">
             <span v-localize class="pr-2">{{ title }}</span>

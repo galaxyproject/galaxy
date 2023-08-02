@@ -1,9 +1,10 @@
 <script setup>
-import Popper from "@/components/Popper/Popper.vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCog } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+
 import UploadSettingsOption from "./UploadSettingsOption.vue";
+import Popper from "@/components/Popper/Popper.vue";
 
 library.add(faCog);
 

@@ -21,8 +21,8 @@ const currentValue = computed({
 
 <template>
     <Multiselect
-        class="upload-settings-select"
         v-model="currentValue"
+        class="upload-settings-select"
         deselect-label=""
         label="text"
         :options="options"

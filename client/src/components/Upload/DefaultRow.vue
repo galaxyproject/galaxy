@@ -1,13 +1,14 @@
 <script setup>
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faEdit, faFolderOpen,faLaptop } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { bytesToString } from "utils/utils";
 import { computed, ref } from "vue";
-import Popper from "@/components/Popper/Popper.vue";
+
 import UploadExtensionDetails from "./UploadExtensionDetails.vue";
 import UploadSettings from "./UploadSettings.vue";
 import UploadSettingsSelect from "./UploadSettingsSelect.vue";
-import { bytesToString } from "utils/utils";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faEdit, faLaptop, faFolderOpen } from "@fortawesome/free-solid-svg-icons";
+import Popper from "@/components/Popper/Popper.vue";
 
 library.add(faEdit, faLaptop, faFolderOpen);
 

@@ -23,11 +23,11 @@
 </template>
 
 <script lang="ts">
-import type { PropType, UnwrapRef } from "vue";
-import { defineComponent, ref, toRef, watch } from "vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTimesCircle } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import type { PropType, UnwrapRef } from "vue";
+import { defineComponent, ref, toRef, watch } from "vue";
 
 import { usePopperjs } from "./usePopper";
 

@@ -1,3 +1,320 @@
+<script setup>
+import axios from "axios";
+import { BButton } from "bootstrap-vue";
+import { getAppRoot } from "onload";
+import { filesDialog } from "utils/data";
+import { UploadQueue } from "utils/uploadbox";
+import Vue, { computed,ref } from "vue";
+
+import { defaultNewFileName, uploadModelsToPayload } from "./helpers";
+import { defaultModel } from "./model.js";
+import { findExtension, hasBrowserSupport, openFileDialog } from "./utils";
+
+import DefaultRow from "./DefaultRow.vue";
+import UploadBox from "./UploadBox.vue";
+import UploadExtensionDetails from "./UploadExtensionDetails.vue";
+import UploadSettingsSelect from "./UploadSettingsSelect.vue";
+
+const props = defineProps({
+    multiple: {
+        type: Boolean,
+        default: true,
+    },
+    lazyLoadMax: {
+        type: Number,
+        default: null,
+    },
+    selectable: {
+        type: Boolean,
+        default: false,
+    },
+    hasCallback: {
+        type: Boolean,
+        default: false,
+    },
+    details: {
+        type: Object,
+        required: true,
+    },
+});
+
+const counterAnnounce = ref(0);
+const counterError = ref(0);
+const counterRunning = ref(0);
+const counterSuccess = ref(0);
+const extension = ref(props.details.defaultExtension);
+const genome = ref(props.details.defaultDbKey);
+const highlightBox = ref(false);
+const running = ref(false);
+const uploadCompleted = ref(0);
+const uploadList = ref({});
+const uploadSize = ref(0);
+const uploadUrl = ref(null);
+
+const showHelper = computed(() => Object.keys(uploadList.value).length === 0);
+const listExtensions = computed(() => props.details.effectiveExtensions.filter((ext) => !ext.composite_files));
+const history_id = computed(() => props.details.history_id);
+const counterNonRunning = computed(() => counterAnnounce.value + counterSuccess.value + counterError.value);
+const enableReset = computed(() => counterRunning.value == 0 && counterNonRunning.value > 0);
+const enableStart = computed(() => counterRunning.value == 0 && counterAnnounce.value > 0);
+const enableSources = computed(() => counterRunning.value == 0 && (props.multiple || counterNonRunning.value == 0));
+const topInfo = computed(() => {
+    let message = "";
+    if (counterAnnounce.value == 0) {
+        if (hasBrowserSupport) {
+            message = "&nbsp;";
+        } else {
+            message =
+                "Browser does not support Drag & Drop. Try Firefox 4+, Chrome 7+, IE 10+, Opera 12+ or Safari 6+.";
+        }
+    } else {
+        if (counterRunning.value == 0) {
+            message = `You added ${counterAnnounce.value} file(s) to the queue. Add more files or click 'Start' to proceed.`;
+        } else {
+            message = `Please wait...${counterAnnounce.value} out of ${counterRunning.value} remaining.`;
+        }
+    }
+    return message;
+});
+
+const queue = new UploadQueue({
+    initUrl: (index) => {
+        if (!uploadUrl.value) {
+            uploadUrl.value = `${getAppRoot()}api/tools/fetch`;
+        }
+        return uploadUrl.value;
+    },
+    multiple: props.multiple,
+    announce: _eventAnnounce,
+    initialize: (index) => uploadModelsToPayload([uploadList.value[index]], history_id.value),
+    progress: _eventProgress,
+    success: _eventSuccess,
+    error: _eventError,
+    warning: _eventWarning,
+    complete: _eventComplete,
+    chunkSize: props.details.chunkUploadSize,
+});
+
+/** Add files to queue */
+function addFiles(files) {
+    files.forEach((file) => {
+        file.chunk_mode = true;
+    });
+    queue.add(files);
+}
+
+/** Update model */
+function _eventInput(index, newData) {
+    const it = uploadList.value[index];
+    Object.entries(newData).forEach(([key, value]) => {
+        it[key] = value;
+    });
+}
+
+/** Success */
+function _eventSuccess(index) {
+    var it = uploadList.value[index];
+    it.percentage = 100;
+    it.status = "success";
+    props.details.model.set("percentage", _uploadPercentage(100, it.file_size));
+    uploadCompleted.value += it.file_size * 100;
+    counterAnnounce.value--;
+    counterSuccess.value++;
+}
+
+/** Remove all */
+function _eventReset() {
+    if (counterRunning.value === 0) {
+        counterAnnounce.value = 0;
+        counterSuccess.value = 0;
+        counterError.value = 0;
+        counterRunning.value = 0;
+        queue.reset();
+        uploadList.value = {};
+        extension.value = props.details.defaultExtension;
+        genome.value = props.details.defaultDbKey;
+        props.details.model.set("percentage", 0);
+    }
+}
+
+function uploadSelect() {
+    openFileDialog(addFiles, true);
+}
+
+/** Start upload process */
+function _eventStart() {
+    if (counterAnnounce.value == 0 || counterRunning.value > 0) {
+        return;
+    }
+    uploadSize.value = 0;
+    uploadCompleted.value = 0;
+    Object.values(uploadList.value).forEach((model) => {
+        if (model.status === "init") {
+            model.status = "queued";
+            uploadSize.value += model.file_size;
+        }
+    });
+    props.details.model.set({ percentage: 0, status: "success" });
+    counterRunning.value = counterAnnounce.value;
+
+    // package ftp files separately, and remove them from queue
+    _uploadFtp();
+    queue.start();
+}
+
+/** Package and upload ftp files in a single request */
+function _uploadFtp() {
+    const list = [];
+    Object.values(uploadList.value).forEach((model) => {
+        if (model.status === "queued" && model.file_mode === "ftp") {
+            queue.remove(model.id);
+            list.push(model);
+        }
+    });
+    if (list.length > 0) {
+        const data = uploadModelsToPayload(list, props.details.history_id);
+        axios
+            .post(`${getAppRoot()}api/tools/fetch`, data)
+            .then((message) => {
+                list.forEach((model) => {
+                    _eventSuccess(model.id, message);
+                });
+            })
+            .catch((message) => {
+                list.forEach((model) => {
+                    _eventError(model.id, message);
+                });
+            });
+    }
+}
+
+/** Progress */
+function _eventProgress(index, percentage) {
+    const it = uploadList.value[index];
+    it.percentage = percentage;
+    props.details.model.set("percentage", _uploadPercentage(percentage, it.file_size));
+}
+
+/** Calculate percentage of all queued uploads */
+function _uploadPercentage(percentage, size) {
+    return (uploadCompleted.value + percentage * size) / uploadSize.value;
+}
+
+/** A new file has been dropped/selected through the uploadbox plugin */
+function _eventAnnounce(index, file) {
+    counterAnnounce.value++;
+    const uploadModel = {
+        ...defaultModel,
+        id: index,
+        file_name: file.name,
+        file_size: file.size,
+        file_mode: file.mode || "local",
+        file_path: file.path,
+        file_uri: file.uri,
+        file_data: file,
+    };
+    Vue.set(uploadList.value, index, uploadModel);
+}
+
+/** Error */
+function _eventError(index, message) {
+    var it = uploadList.value[index];
+    it.percentage = 100;
+    it.status = "error";
+    it.info = message;
+    props.details.model.set({
+        percentage: _uploadPercentage(100, it.file_size),
+        status: "danger",
+    });
+    uploadCompleted.value += it.file_size * 100;
+    counterAnnounce.value--;
+    counterError.value++;
+}
+
+/** Queue is done */
+function _eventComplete() {
+    Object.values(uploadList.value).forEach((model) => {
+        if (model.status === "queued") {
+            model.status = "init";
+        }
+    });
+    counterRunning.value = 0;
+}
+
+/** Remove model from upload list */
+function _eventRemove(index) {
+    const it = uploadList.value[index];
+    var status = it.status;
+    if (status == "success") {
+        counterSuccess.value--;
+    } else if (status == "error") {
+        counterError.value--;
+    } else {
+        counterAnnounce.value--;
+    }
+    Vue.delete(uploadList.value, index);
+    queue.remove(index);
+}
+
+/** Show remote files dialog or FTP files */
+function _eventRemoteFiles() {
+    filesDialog(
+        (items) => {
+            queue.add(
+                items.map((item) => {
+                    const rval = {
+                        mode: "ftp",
+                        name: item.label,
+                        size: item.size,
+                        path: item.url,
+                    };
+                    return rval;
+                })
+            );
+        },
+        { multiple: true }
+    );
+}
+
+/** Create a new file */
+function _eventCreate() {
+    queue.add([{ name: defaultNewFileName, size: 0, mode: "new" }]);
+}
+
+/** Pause upload process */
+function _eventStop() {
+    if (counterRunning.value > 0) {
+        props.details.model.set("status", "info");
+        topInfo.value = "Queue will pause after completing the current file...";
+        queue.stop();
+    }
+}
+
+function _eventWarning(index, message) {
+    const it = uploadList.value[index];
+    it.status = "warning";
+    it.info = message;
+}
+
+/* update un-modified default values when globals change */
+function updateExtension(newExtension) {
+    extension.value = newExtension;
+    Object.values(uploadList.value).forEach((model) => {
+        if (model.status === "init" && model.extension === props.details.defaultExtension) {
+            model.extension = newExtension;
+        }
+    });
+}
+
+function updateGenome(newGenome) {
+    Object.values(uploadList.value).forEach((model) => {
+        if (model.status === "init" && model.genome === props.details.defaultDbKey) {
+            model.genome = newGenome;
+        }
+    });
+}
+</script>
+
 <template>
     <div class="upload-view-default">
         <div class="upload-top">
@@ -17,8 +334,8 @@
                     :file-name="uploadItem.file_name"
                     :file-size="uploadItem.file_size"
                     :genome="uploadItem.genome"
-                    :listExtensions="listExtensions"
-                    :listGenomes="listGenomes"
+                    :list-extensions="listExtensions"
+                    :list-genomes="details.listGenomes"
                     :percentage="uploadItem.percentage"
                     :space_to_tab="uploadItem.space_to_tab"
                     :status="uploadItem.status"
@@ -39,7 +356,7 @@
             <span class="upload-footer-title">Reference (set all):</span>
             <UploadSettingsSelect
                 :value="genome"
-                :options="listGenomes"
+                :options="details.listGenomes"
                 :disabled="running"
                 placeholder="Select Reference"
                 @input="updateGenome" />
@@ -50,7 +367,7 @@
                 <span v-localize>Choose local files</span>
             </BButton>
             <BButton
-                v-if="!fileSourcesConfigured || !!ftpUploadSite"
+                v-if="!details.fileSourcesConfigured || !!details.currentFtp"
                 id="btn-remote-files"
                 :disabled="!enableSources"
                 @click="_eventRemoteFiles">
@@ -82,342 +399,3 @@
         </div>
     </div>
 </template>
-
-<script>
-import Vue from "vue";
-import axios from "axios";
-import UploadSettingsSelect from "./UploadSettingsSelect.vue";
-import UploadExtensionDetails from "./UploadExtensionDetails.vue";
-import UploadBox from "./UploadBox.vue";
-import { getAppRoot } from "onload";
-import { filesDialog } from "utils/data";
-import { UploadQueue } from "utils/uploadbox";
-
-import { defaultNewFileName, uploadModelsToPayload } from "./helpers";
-import { findExtension, hasBrowserSupport, openFileDialog } from "./utils";
-
-import { BButton } from "bootstrap-vue";
-import DefaultRow from "./DefaultRow.vue";
-import { defaultModel } from "./model.js";
-
-export default {
-    components: { BButton, DefaultRow, UploadExtensionDetails, UploadSettingsSelect, UploadBox },
-    props: {
-        multiple: {
-            type: Boolean,
-            default: true,
-        },
-        lazyLoadMax: {
-            type: Number,
-            default: null,
-        },
-        selectable: {
-            type: Boolean,
-            default: false,
-        },
-        hasCallback: {
-            type: Boolean,
-            default: false,
-        },
-        details: {
-            type: Object,
-            required: true,
-        },
-    },
-    data() {
-        return {
-            allExtensions: [],
-            counterAnnounce: 0,
-            counterError: 0,
-            counterRunning: 0,
-            counterSuccess: 0,
-            extension: this.details.defaultExtension,
-            genome: this.details.defaultDbKey,
-            highlightBox: false,
-            listGenomes: [],
-            running: false,
-            uploadCompleted: 0,
-            uploadList: {},
-            uploadSize: 0,
-            uploadUrl: null,
-        };
-    },
-    computed: {
-        showHelper() {
-            return Object.keys(this.uploadList).length === 0;
-        },
-        listExtensions() {
-            return this.allExtensions.filter((ext) => !ext.composite_files);
-        },
-        history_id() {
-            return this.details.history_id;
-        },
-        counterNonRunning() {
-            return this.counterAnnounce + this.counterSuccess + this.counterError;
-        },
-        enableReset() {
-            return this.counterRunning == 0 && this.counterNonRunning > 0;
-        },
-        enableStart() {
-            return this.counterRunning == 0 && this.counterAnnounce > 0;
-        },
-        enableSources() {
-            return this.counterRunning == 0 && (this.multiple || this.counterNonRunning == 0);
-        },
-        topInfo() {
-            var message = "";
-            if (this.counterAnnounce == 0) {
-                if (hasBrowserSupport) {
-                    message = "&nbsp;";
-                } else {
-                    message =
-                        "Browser does not support Drag & Drop. Try Firefox 4+, Chrome 7+, IE 10+, Opera 12+ or Safari 6+.";
-                }
-            } else {
-                if (this.counterRunning == 0) {
-                    message = `You added ${this.counterAnnounce} file(s) to the queue. Add more files or click 'Start' to proceed.`;
-                } else {
-                    message = `Please wait...${this.counterAnnounce} out of ${this.counterRunning} remaining.`;
-                }
-            }
-            return message;
-        },
-    },
-    created() {
-        this.allExtensions = this.details.effectiveExtensions;
-        this.listGenomes = this.details.listGenomes;
-        this.ftpUploadSite = this.details.currentFtp;
-        this.fileSourcesConfigured = this.details.fileSourcesConfigured;
-    },
-    mounted() {
-        this.initUploadQueue();
-    },
-    methods: {
-        /** Add files to queue */
-        addFiles: function (files) {
-            files.forEach((file) => {
-                file.chunk_mode = true;
-            });
-            this.queue.add(files);
-        },
-        /** Update model */
-        _eventInput: function (index, newData) {
-            const it = this.uploadList[index];
-            Object.entries(newData).forEach(([key, value]) => {
-                it[key] = value;
-            });
-        },
-
-        /** Success */
-        _eventSuccess: function (index) {
-            var it = this.uploadList[index];
-            it.percentage = 100;
-            it.status = "success";
-            this.details.model.set("percentage", this._uploadPercentage(100, it.file_size));
-            this.uploadCompleted += it.file_size * 100;
-            this.counterAnnounce--;
-            this.counterSuccess++;
-        },
-
-        /** Remove all */
-        _eventReset: function () {
-            if (this.counterRunning === 0) {
-                this.counterAnnounce = 0;
-                this.counterSuccess = 0;
-                this.counterError = 0;
-                this.counterRunning = 0;
-                this.queue.reset();
-                this.uploadList = {};
-                this.extension = this.details.defaultExtension;
-                this.genome = this.details.defaultDbKey;
-                this.details.model.set("percentage", 0);
-            }
-        },
-        initUploadQueue() {
-            this.queue = new UploadQueue({
-                initUrl: (index) => {
-                    if (!this.uploadUrl) {
-                        this.uploadUrl = `${getAppRoot()}api/tools/fetch`;
-                    }
-                    return this.uploadUrl;
-                },
-                multiple: this.multiple,
-                announce: this._eventAnnounce,
-                initialize: (index) => {
-                    return uploadModelsToPayload([this.uploadList[index]], this.history_id);
-                },
-                progress: this._eventProgress,
-                success: this._eventSuccess,
-                error: this._eventError,
-                warning: this._eventWarning,
-                complete: this._eventComplete,
-                chunkSize: this.details.chunkUploadSize,
-            });
-        },
-        uploadSelect: function () {
-            openFileDialog(this.addFiles, true);
-        },
-
-        /** Start upload process */
-        _eventStart: function () {
-            if (this.counterAnnounce == 0 || this.counterRunning > 0) {
-                return;
-            }
-            this.uploadSize = 0;
-            this.uploadCompleted = 0;
-            Object.values(this.uploadList).forEach((model) => {
-                if (model.status === "init") {
-                    model.status = "queued";
-                    this.uploadSize += model.file_size;
-                }
-            });
-            this.details.model.set({ percentage: 0, status: "success" });
-            this.counterRunning = this.counterAnnounce;
-
-            // package ftp files separately, and remove them from queue
-            this._uploadFtp();
-            this.queue.start();
-        },
-
-        /** Package and upload ftp files in a single request */
-        _uploadFtp: function () {
-            const list = [];
-            Object.values(this.uploadList).forEach((model) => {
-                if (model.status === "queued" && model.file_mode === "ftp") {
-                    this.queue.remove(model.id);
-                    list.push(model);
-                }
-            });
-            if (list.length > 0) {
-                const data = uploadModelsToPayload(list, this.details.history_id);
-                axios
-                    .post(`${getAppRoot()}api/tools/fetch`, data)
-                    .then((message) => {
-                        list.forEach((model) => {
-                            this._eventSuccess(model.id, message);
-                        });
-                    })
-                    .catch((message) => {
-                        list.forEach((model) => {
-                            this._eventError(model.id, message);
-                        });
-                    });
-            }
-        },
-        /** Progress */
-        _eventProgress: function (index, percentage) {
-            const it = this.uploadList[index];
-            it.percentage = percentage;
-            this.details.model.set("percentage", this._uploadPercentage(percentage, it.file_size));
-        },
-        /** Calculate percentage of all queued uploads */
-        _uploadPercentage: function (percentage, size) {
-            return (this.uploadCompleted + percentage * size) / this.uploadSize;
-        },
-        /** A new file has been dropped/selected through the uploadbox plugin */
-        _eventAnnounce: function (index, file) {
-            this.counterAnnounce++;
-            const uploadModel = {
-                ...defaultModel,
-                id: index,
-                file_name: file.name,
-                file_size: file.size,
-                file_mode: file.mode || "local",
-                file_path: file.path,
-                file_uri: file.uri,
-                file_data: file,
-            };
-            Vue.set(this.uploadList, index, uploadModel);
-        },
-        /** Error */
-        _eventError: function (index, message) {
-            var it = this.uploadList[index];
-            it.percentage = 100;
-            it.status = "error";
-            it.info = message;
-            this.details.model.set({
-                percentage: this._uploadPercentage(100, it.file_size),
-                status: "danger",
-            });
-            this.uploadCompleted += it.file_size * 100;
-            this.counterAnnounce--;
-            this.counterError++;
-        },
-        /** Queue is done */
-        _eventComplete: function () {
-            Object.values(this.uploadList).forEach((model) => {
-                if (model.status === "queued") {
-                    model.status = "init";
-                }
-            });
-            this.counterRunning = 0;
-        },
-        /** Remove model from upload list */
-        _eventRemove: function (index) {
-            const it = this.uploadList[index];
-            var status = it.status;
-            if (status == "success") {
-                this.counterSuccess--;
-            } else if (status == "error") {
-                this.counterError--;
-            } else {
-                this.counterAnnounce--;
-            }
-            Vue.delete(this.uploadList, index);
-            this.queue.remove(index);
-        },
-        /** Show remote files dialog or FTP files */
-        _eventRemoteFiles: function () {
-            filesDialog(
-                (items) => {
-                    this.queue.add(
-                        items.map((item) => {
-                            const rval = {
-                                mode: "ftp",
-                                name: item.label,
-                                size: item.size,
-                                path: item.url,
-                            };
-                            return rval;
-                        })
-                    );
-                },
-                { multiple: true }
-            );
-        },
-        /** Create a new file */
-        _eventCreate: function () {
-            this.queue.add([{ name: defaultNewFileName, size: 0, mode: "new" }]);
-        },
-        /** Pause upload process */
-        _eventStop: function () {
-            if (this.counterRunning > 0) {
-                this.details.model.set("status", "info");
-                this.topInfo = "Queue will pause after completing the current file...";
-                this.queue.stop();
-            }
-        },
-        _eventWarning: function (index, message) {
-            const it = this.uploadList[index];
-            it.status = "warning";
-            it.info = message;
-        },
-        /* update un-modified default values when globals change */
-        updateExtension(newExtension) {
-            this.extension = newExtension;
-            Object.values(this.uploadList).forEach((model) => {
-                if (model.status === "init" && model.extension === this.details.defaultExtension) {
-                    model.extension = newExtension;
-                }
-            });
-        },
-        updateGenome: function (newGenome) {
-            Object.values(this.uploadList).forEach((model) => {
-                if (model.status === "init" && model.genome === this.details.defaultDbKey) {
-                    model.genome = newGenome;
-                }
-            });
-        },
-    },
-};
-</script>
