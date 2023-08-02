@@ -56,7 +56,6 @@ from galaxy import (
 from galaxy.model import tool_shed_install
 from galaxy.model.base import transaction
 from galaxy.schema import ValueFilterQueryParams
-from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.storage_cleaner import (
     CleanableItemsSummary,
     StorageItemsCleanupResult,
@@ -147,13 +146,10 @@ def get_class(class_name):
     return item_class
 
 
-def decode_id(app: BasicSharedApp, id: Any, kind: Optional[str] = None):
+def decode_id(app: BasicSharedApp, id: Any, kind: Optional[str] = None) -> int:
     # note: use str - occasionally a fully numeric id will be placed in post body and parsed as int via JSON
     #   resulting in error for valid id
-    if isinstance(id, DecodedDatabaseIdField):
-        return int(id)
-    else:
-        return decode_with_security(app.security, id, kind=kind)
+    return decode_with_security(app.security, id, kind=kind)
 
 
 def decode_with_security(security: IdEncodingHelper, id: Any, kind: Optional[str] = None):
