@@ -671,7 +671,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
                 self.hda_serializer.serialize_to_view(hda, user=trans.user, trans=trans, **serialization_params.dict())
             )
         for hdca_id in hdca_ids:
-            self.__update_dataset_collection(trans, hdca_id, payload.dict(exclude_defaults=True))
+            self.__update_dataset_collection(trans, hdca_id, payload.model_dump(exclude_defaults=True))
             dataset_collection_instance = self.__get_accessible_collection(trans, hdca_id)
             rval.append(self.__collection_dict(trans, dataset_collection_instance, view="summary"))
         return rval
@@ -842,7 +842,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
 
         # if dry_run, return the structure as json for debugging
         if dry_run:
-            return HistoryContentsArchiveDryRunResult.construct(__root__=paths_and_files)
+            return HistoryContentsArchiveDryRunResult.model_construct(root=paths_and_files)
 
         # create the archive, add the dataset files, then stream the archive as a download
         archive = ZipstreamWrapper(
@@ -930,7 +930,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
     ) -> HistoryContentsResult:
         """Legacy implementation of the `index` action."""
         history = self._get_history(trans, history_id)
-        legacy_params_dict = legacy_params.dict(exclude_defaults=True)
+        legacy_params_dict = legacy_params.model_dump(exclude_defaults=True)
         if ids := legacy_params_dict.get("ids"):
             legacy_params_dict["ids"] = self.decode_ids(ids)
 
@@ -944,7 +944,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             self._serialize_legacy_content_item(trans, content, legacy_params_dict.get("dataset_details"))
             for content in contents
         ]
-        return HistoryContentsResult.construct(__root__=items)
+        return HistoryContentsResult.model_construct(root=items)
 
     def __index_v2(
         self,
@@ -997,7 +997,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             )
             stats = HistoryContentStats.construct(total_matches=total_matches)
             return HistoryContentsWithStatsResult.construct(contents=items, stats=stats)
-        return HistoryContentsResult.construct(__root__=items)
+        return HistoryContentsResult.model_construct(root=items)
 
     def _handle_extra_serialization_for_media_type(
         self,

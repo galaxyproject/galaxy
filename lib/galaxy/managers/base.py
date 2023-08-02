@@ -1051,7 +1051,7 @@ class ModelFilterParser(HasAModelManager):
         Builds a list of tuples containing filtering information in the form of (attribute, operator, value).
         """
         DEFAULT_OP = "eq"
-        qdict = query_params.dict(exclude_defaults=True)
+        qdict = query_params.model_dump(exclude_defaults=True)
         if filter_attr_key not in qdict:
             return []
         # precondition: attrs/value pairs are in-order in the qstring

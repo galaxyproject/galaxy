@@ -55,7 +55,7 @@ class QuotasService(ServiceBase):
             encoded_id = Security.security.encode_id(quota.id)
             item["url"] = url_for(route, id=encoded_id)
             rval.append(item)
-        return QuotaSummaryList.construct(__root__=rval)
+        return QuotaSummaryList.model_construct(root=rval)
 
     def show(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField, deleted: bool = False) -> QuotaDetails:
         """Displays information about a quota."""
