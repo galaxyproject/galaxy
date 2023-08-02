@@ -74,7 +74,7 @@
             </div>
         </div>
         <span class="border-top"></span>
-        <div v-if="helpModeOn" class="unified-panel-body d-flex justify-content-between">
+        <div v-if="status.helpmodestatus" class="unified-panel-body d-flex justify-content-between">
             <div class="helpModeContainer">
                 {{ "IN HELP MODE" }}
             </div>
@@ -88,6 +88,8 @@ import UploadButton from "components/Upload/UploadButton";
 import { useGlobalUploadModal } from "composables/globalUploadModal";
 import { getAppRoot } from "onload";
 import _l from "utils/localization";
+
+import { useHelpModeStatusStore } from "@/stores/helpmode/helpModeStatusStore";
 
 import FavoritesButton from "./Buttons/FavoritesButton";
 import PanelViewButton from "./Buttons/PanelViewButton";
@@ -121,7 +123,7 @@ export default {
     },
     data() {
         return {
-            helpModeOn: true,
+            status: useHelpModeStatusStore(),
             closestTerm: null,
             query: null,
             results: null,

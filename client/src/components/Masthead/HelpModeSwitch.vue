@@ -1,18 +1,24 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed } from "vue";
+
+import { useHelpModeStatusStore } from "@/stores/helpmode/helpModeStatusStore";
 
 const tooltip = "Enable/Disable Help Mode";
 
-export interface HelpModeSwitchProps {
-    value: boolean;
-}
+const statusStore = useHelpModeStatusStore();
 
-const enabled = ref(false);
-
+const enabledStatus = computed({
+    get() {
+        return statusStore.helpmodestatus;
+    },
+    set(value: boolean) {
+        statusStore.setHelpModeStatus(value);
+    },
+});
 </script>
 
 <template>
     <div>
-        <b-form-checkbox v-model="enabled" class="no-highlight" switch :title="tooltip"> </b-form-checkbox>
+        <b-form-checkbox v-model="enabledStatus" class="no-highlight" switch :title="tooltip"> </b-form-checkbox>
     </div>
 </template>
