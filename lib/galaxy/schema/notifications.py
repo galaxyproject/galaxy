@@ -78,7 +78,7 @@ class ActionLink(Model):
         ..., title="Action name", description="The name of the action, will be the button title."
     )
     link: AbsoluteOrRelativeUrl = Field(
-        ..., title="Linklib/galaxy/schema/notifications.py", description="The link to be opened when the button is clicked."
+        ..., title="Link", description="The link to be opened when the button is clicked."
     )
 
 

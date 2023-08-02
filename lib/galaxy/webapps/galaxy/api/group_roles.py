@@ -8,7 +8,10 @@ from fastapi import Path
 
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.group_roles import GroupRolesManager
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    Security,
+)
 from galaxy.schema.schema import (
     GroupRoleListResponse,
     GroupRoleResponse,
@@ -29,8 +32,8 @@ RoleIDParam: DecodedDatabaseIdField = Path(..., title="RoleID", description="The
 
 
 def group_role_to_model(trans, group_id: int, role) -> GroupRoleResponse:
-    encoded_group_id = DecodedDatabaseIdField.encode(group_id)
-    encoded_role_id = DecodedDatabaseIdField.encode(role.id)
+    encoded_group_id = Security.security.encode_id(group_id)
+    encoded_role_id = Security.security.encode_id(role.id)
     url = trans.url_builder("group_role", group_id=encoded_group_id, role_id=encoded_role_id)
     return GroupRoleResponse(id=role.id, name=role.name, url=url)
 

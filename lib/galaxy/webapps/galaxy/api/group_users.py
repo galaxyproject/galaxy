@@ -7,7 +7,10 @@ from fastapi import Path
 
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.group_users import GroupUsersManager
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    Security,
+)
 from galaxy.schema.schema import (
     GroupUserListResponse,
     GroupUserResponse,
@@ -28,8 +31,8 @@ UserIDParam: DecodedDatabaseIdField = Path(..., title="UserID", description="The
 
 
 def group_user_to_model(trans, group_id, user) -> GroupUserResponse:
-    encoded_group_id = DecodedDatabaseIdField.encode(group_id)
-    encoded_user_id = DecodedDatabaseIdField.encode(user.id)
+    encoded_group_id = Security.security.encode_id(group_id)
+    encoded_user_id = Security.security.encode_id(user.id)
     url = trans.url_builder("group_user", group_id=encoded_group_id, user_id=encoded_user_id)
     return GroupUserResponse(id=user.id, email=user.email, url=url)
 
