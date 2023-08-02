@@ -14,13 +14,13 @@
                             {{ filterCount }}
                             {{ filterCount === 1 ? "filter" : "filters" }}.
                         </GButton>
-                        <b-popover target="popover-filters" triggers="hover focus" placement="bottom">
+                        <GPopover target="popover-filters" triggers="hover focus" placement="bottom">
                             <template v-slot:title>Filters</template>
                             <div v-for="(value, filter) in filterSettings" :key="filter">
                                 <b>{{ filter }}</b
                                 >: {{ value }}
                             </div>
-                        </b-popover>
+                        </GPopover>
                         <GButton variant="link" size="sm" @click.stop="showAllTools">
                             <FontAwesomeIcon icon="fa-times" />
                             Clear filters
@@ -56,7 +56,7 @@ import { ToolsProvider } from "components/providers/storeProviders";
 import { useAnimationFrameScroll } from "composables/sensors/animationFrameScroll";
 import { ref } from "vue";
 
-import { GAlert, GButton } from "@/component-library";
+import { GAlert, GButton, GPopover } from "@/component-library";
 
 import ScrollToTopButton from "./ScrollToTopButton";
 import ToolsListTable from "./ToolsListTable";
@@ -65,13 +65,14 @@ library.add(faTimes);
 
 export default {
     components: {
+        FontAwesomeIcon,
         GAlert,
         GButton,
+        GPopover,
         LoadingSpan,
+        ScrollToTopButton,
         ToolsListTable,
         ToolsProvider,
-        ScrollToTopButton,
-        FontAwesomeIcon,
     },
     props: {
         name: {

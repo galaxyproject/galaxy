@@ -56,6 +56,7 @@ export { default as GNavItem } from "./GNavItem.vue";
 export { default as GNavItemDropdown } from "./GNavItemDropdown.vue";
 export { default as GOverlay } from "./GOverlay.vue";
 export { default as GPagination } from "./GPagination.vue";
+export { default as GPopover } from "./GPopover.vue";
 export { default as GProgress } from "./GProgress.vue";
 export { default as GProgressBar } from "./GProgressBar.vue";
 export { default as GRow } from "./GRow.vue";

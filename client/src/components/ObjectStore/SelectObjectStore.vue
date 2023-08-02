@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
 
-import { GAlert, GButton, GButtonGroup, GCol, GRow } from "@/component-library";
+import { GAlert, GButton, GButtonGroup, GCol, GPopover, GRow } from "@/component-library";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { getSelectableObjectStores } from "./services";
@@ -120,13 +120,13 @@ async function handleSubmit(preferredObjectStoreId: string) {
                     </p>
                 </GCol>
             </GRow>
-            <b-popover target="no-preferred-object-store-button" triggers="hover" v-bind="popoverProps">
+            <GPopover target="no-preferred-object-store-button" triggers="hover" v-bind="popoverProps">
                 <template v-slot:title>
                     <span v-localize>{{ defaultOptionTitle }}</span>
                 </template>
                 <span v-localize>{{ defaultOptionDescription }}</span>
-            </b-popover>
-            <b-popover
+            </GPopover>
+            <GPopover
                 v-for="object_store in objectStores"
                 :key="object_store.object_store_id"
                 :target="`preferred-object-store-button-${object_store.object_store_id}`"
@@ -134,7 +134,7 @@ async function handleSubmit(preferredObjectStoreId: string) {
                 v-bind="popoverProps">
                 <template v-slot:title>{{ object_store.name }}</template>
                 <DescribeObjectStore :what="forWhat" :storage-info="object_store"> </DescribeObjectStore>
-            </b-popover>
+            </GPopover>
         </div>
     </div>
 </template>

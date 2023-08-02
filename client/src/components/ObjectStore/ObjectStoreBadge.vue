@@ -4,6 +4,7 @@ import "./badgeIcons";
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
+import { GPopover } from "@/component-library";
 import type { components } from "@/schema";
 
 import ConfigurationMarkdown from "./ConfigurationMarkdown.vue";
@@ -127,7 +128,7 @@ const message = computed(() => {
                 <FontAwesomeIcon v-if="badgeType == 'cloud'" icon="cloud" :class="neutral" />
             </FontAwesomeLayers>
         </span>
-        <b-popover
+        <GPopover
             v-if="moreOnHover"
             :target="
                 () => {
@@ -139,7 +140,7 @@ const message = computed(() => {
             class="object-store-badge-popover">
             <p v-localize>{{ stockMessage }}</p>
             <ConfigurationMarkdown v-if="message" :markdown="message" :admin="true" />
-        </b-popover>
+        </GPopover>
     </span>
 </template>
 

@@ -43,7 +43,7 @@
                     aria-label="tool recommendations">
                     <i class="fa fa-arrow-right" />
                 </GButton>
-                <b-popover
+                <GPopover
                     v-if="isEnabled"
                     :target="popoverId"
                     triggers="hover"
@@ -56,7 +56,7 @@
                             :datatypes-mapper="datatypesMapper"
                             @onCreate="onCreate" />
                     </div>
-                </b-popover>
+                </GPopover>
             </GButtonGroup>
             <i :class="iconClass" />
             <span v-if="step.when" v-b-tooltip.hover title="This step is conditionally executed.">
@@ -117,7 +117,7 @@ import type { PropType, Ref } from "vue";
 import Vue, { computed, reactive, ref } from "vue";
 
 import { getGalaxyInstance } from "@/app";
-import { GAlert, GButton, GButtonGroup } from "@/component-library";
+import { GAlert, GButton, GButtonGroup, GPopover } from "@/component-library";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useNodePosition } from "@/components/Workflow/Editor/composables/useNodePosition";
 import WorkflowIcons from "@/components/Workflow/icons";
