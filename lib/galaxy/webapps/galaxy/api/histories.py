@@ -22,6 +22,7 @@ from fastapi import (
 )
 from pydantic.fields import Field
 from pydantic.main import BaseModel
+from typing_extensions import Annotated
 
 from galaxy.managers.context import (
     ProvidesHistoryContext,
@@ -74,9 +75,16 @@ log = logging.getLogger(__name__)
 
 router = Router(tags=["histories"])
 
-HistoryIDPathParam: DecodedDatabaseIdField = Path(
-    ..., title="History ID", description="The encoded database identifier of the History."
+from typing_extensions import TypeAliasType
+
+HistoryIDPathParam = TypeAliasType(
+    "HistoryIDPathParam",
+    Annotated[
+        DecodedDatabaseIdField,
+        Path(..., title="History ID", description="The encoded database identifier of the History."),
+    ],
 )
+
 
 JehaIDPathParam: Union[DecodedDatabaseIdField, LatestLiteral] = Path(
     title="Job Export History ID",
@@ -221,8 +229,8 @@ class FastAPIHistories:
     )
     def show(
         self,
+        history_id: HistoryIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
         serialization_params: SerializationParams = Depends(query_serialization_params),
     ) -> AnyHistoryView:
         return self.service.show(trans, serialization_params, history_id)
@@ -233,8 +241,8 @@ class FastAPIHistories:
     )
     def prepare_store_download(
         self,
+        history_id: HistoryIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
         payload: StoreExportPayload = Body(...),
     ) -> AsyncFile:
         return self.service.prepare_download(
@@ -249,8 +257,8 @@ class FastAPIHistories:
     )
     def write_store(
         self,
+        history_id: HistoryIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
         payload: WriteStoreToPayload = Body(...),
     ) -> AsyncTaskResultSummary:
         return self.service.write_store(
@@ -265,8 +273,8 @@ class FastAPIHistories:
     )
     def citations(
         self,
+        history_id: HistoryIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
     ) -> List[Any]:
         return self.service.citations(trans, history_id)
 
@@ -298,8 +306,8 @@ class FastAPIHistories:
     )
     def delete(
         self,
+        history_id: HistoryIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
         serialization_params: SerializationParams = Depends(query_serialization_params),
         purge: bool = Query(default=False),
         payload: Optional[DeleteHistoryPayload] = Body(default=None),
@@ -314,8 +322,8 @@ class FastAPIHistories:
     )
     def undelete(
         self,
+        history_id: HistoryIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
         serialization_params: SerializationParams = Depends(query_serialization_params),
     ) -> AnyHistoryView:
         return self.service.undelete(trans, history_id, serialization_params)
@@ -326,8 +334,8 @@ class FastAPIHistories:
     )
     def update(
         self,
+        history_id: HistoryIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
         payload: Any = Body(
             ...,
             description="Object containing any of the editable fields of the history.",
@@ -379,8 +387,8 @@ class FastAPIHistories:
     )
     def index_exports(
         self,
+        history_id: HistoryIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
         limit: Optional[int] = LimitQueryParam,
         offset: Optional[int] = OffsetQueryParam,
         accept: str = Header(default="application/json", include_in_schema=False),
@@ -412,8 +420,8 @@ class FastAPIHistories:
     def archive_export(
         self,
         response: Response,
+        history_id: HistoryIDPathParam,
         trans=DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
         payload: Optional[ExportHistoryArchivePayload] = Body(None),
     ) -> HistoryArchiveExportResult:
         """This will start a job to create a history export archive.
@@ -448,8 +456,8 @@ class FastAPIHistories:
     )
     def archive_download(
         self,
+        history_id: HistoryIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
         jeha_id: Union[DecodedDatabaseIdField, LatestLiteral] = JehaIDPathParam,
     ):
         """
@@ -475,8 +483,8 @@ class FastAPIHistories:
     )
     def get_custom_builds_metadata(
         self,
+        history_id: HistoryIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
     ) -> CustomBuildsMetadataResponse:
         return self.service.get_custom_builds_metadata(trans, history_id)
 
@@ -486,8 +494,8 @@ class FastAPIHistories:
     )
     def archive_history(
         self,
+        history_id: HistoryIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
         payload: Optional[ArchiveHistoryRequestPayload] = Body(default=None),
     ) -> AnyArchivedHistoryView:
         """Marks the given history as 'archived' and returns the history.
@@ -513,8 +521,8 @@ class FastAPIHistories:
     )
     def restore_archived_history(
         self,
+        history_id: HistoryIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
         force: Optional[bool] = Query(
             default=None,
             description="If true, the history will be un-archived even if it has an associated archive export record and was purged.",
@@ -536,8 +544,8 @@ class FastAPIHistories:
     )
     def sharing(
         self,
+        history_id: HistoryIDPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
     ) -> SharingStatus:
         """Return the sharing status of the item."""
         return self.service.shareable_service.sharing(trans, history_id)
@@ -548,8 +556,8 @@ class FastAPIHistories:
     )
     def enable_link_access(
         self,
+        history_id: HistoryIDPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
     ) -> SharingStatus:
         """Makes this item accessible by a URL link and return the current sharing status."""
         return self.service.shareable_service.enable_link_access(trans, history_id)
@@ -560,8 +568,8 @@ class FastAPIHistories:
     )
     def disable_link_access(
         self,
+        history_id: HistoryIDPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
     ) -> SharingStatus:
         """Makes this item inaccessible by a URL link and return the current sharing status."""
         return self.service.shareable_service.disable_link_access(trans, history_id)
@@ -572,8 +580,8 @@ class FastAPIHistories:
     )
     def publish(
         self,
+        history_id: HistoryIDPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
     ) -> SharingStatus:
         """Makes this item publicly available by a URL link and return the current sharing status."""
         return self.service.shareable_service.publish(trans, history_id)
@@ -584,8 +592,8 @@ class FastAPIHistories:
     )
     def unpublish(
         self,
+        history_id: HistoryIDPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
     ) -> SharingStatus:
         """Removes this item from the published list and return the current sharing status."""
         return self.service.shareable_service.unpublish(trans, history_id)
@@ -596,8 +604,8 @@ class FastAPIHistories:
     )
     def share_with_users(
         self,
+        history_id: HistoryIDPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
         payload: ShareWithPayload = Body(...),
     ) -> ShareWithStatus:
         """Shares this item with specific users and return the current sharing status."""
@@ -610,8 +618,8 @@ class FastAPIHistories:
     )
     def set_slug(
         self,
+        history_id: HistoryIDPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
         payload: SetSlugPayload = Body(...),
     ):
         """Sets a new slug to access this item by URL. The new slug must be unique."""
