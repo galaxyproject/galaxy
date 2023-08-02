@@ -44,8 +44,8 @@ def ensure_valid_folder_id(v):
 
 DecodedDatabaseIdField = Annotated[
     int,
-    BeforeValidator(ensure_valid_id),
     BeforeValidator(lambda database_id: Security.security.decode_id(database_id)),
+    BeforeValidator(ensure_valid_id),
     WithJsonSchema(
         {"type": "string", "example": "0123456789ABCDEF", "pattern": "[0-9a-fA-F]+", "minLength": 16},
         mode="serialization",
@@ -83,7 +83,7 @@ LibraryFolderDatabaseIdField = Annotated[
     ),
 ]
 
-_EncodedLibraryFolderDatabaseIdField = Annotated[
+EncodedLibraryFolderDatabaseIdField = Annotated[
     str,
     BeforeValidator(lambda database_id: Security.security.encode_id(f"F{database_id}")),
     WithJsonSchema(
