@@ -4,6 +4,7 @@ import axios from "axios";
 import { parse } from "csv-parse/sync";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
+import { GTableSimple } from "@/component-library";
 import { getAppRoot } from "@/onload/loadConfig";
 
 interface TabularChunk {
@@ -174,7 +175,7 @@ onMounted(() => {
 <template>
     <div>
         <!-- TODO loading spinner locked to top right -->
-        <b-table-simple hover small striped>
+        <GTableSimple hover small striped>
             <b-thead head-variant="dark">
                 <b-tr>
                     <b-th v-for="(column, index) in columns" :key="column">{{ column || `Column ${index + 1}` }}</b-th>
@@ -193,7 +194,7 @@ onMounted(() => {
                     </b-td>
                 </b-tr>
             </b-tbody>
-        </b-table-simple>
+        </GTableSimple>
     </div>
 </template>
 
