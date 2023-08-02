@@ -31,7 +31,7 @@ class Metric(BaseModel):
         ...,  # Required
         title="Timestamp",
         description="The timestamp in ISO format.",
-        example=SOME_EXAMPLE_DATE,
+        examples=[SOME_EXAMPLE_DATE],
     )
     level: int = Field(
         ...,  # Required
@@ -49,7 +49,9 @@ class CreateMetricsPayload(BaseModel):
     metrics: List[Metric] = Field(
         default=[],
         title="List of metrics to be recorded.",
-        example=[Metric(namespace="test-source", time=SOME_EXAMPLE_DATE, level=0, args='{"test":"value"}')],
+        examples=[
+            Metric(namespace="test-source", time=SOME_EXAMPLE_DATE, level=0, args='{"test":"value"}').model_dump()
+        ],
     )
 
 
