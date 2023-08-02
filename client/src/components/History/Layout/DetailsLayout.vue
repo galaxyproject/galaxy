@@ -21,7 +21,7 @@
 
         <!-- edit form, change title, annotation, or tags -->
         <div v-else class="mt-3" data-description="edit form">
-            <b-input
+            <GInput
                 ref="name"
                 v-model="localProps.name"
                 class="mb-2"
@@ -69,7 +69,7 @@
 <script>
 import { mapState } from "pinia";
 
-import { GButton } from "@/component-library";
+import { GButton, GInput } from "@/component-library";
 import short from "@/components/plugins/short.js";
 import { useUserStore } from "@/stores/userStore";
 
@@ -78,6 +78,7 @@ import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 export default {
     components: {
         GButton,
+        GInput,
         StatelessTags,
     },
     directives: {

@@ -4,7 +4,7 @@
         <h1 id="interactive-tools-heading" class="h-lg">Active Interactive Tools</h1>
         <GRow class="mb-3">
             <GCol cols="6">
-                <b-input
+                <GInput
                     id="interactivetool-search"
                     v-model="filter"
                     class="m-1"
@@ -72,7 +72,7 @@ import UtcDate from "components/UtcDate";
 import { getAppRoot } from "onload/loadConfig";
 import { mapActions, mapState } from "pinia";
 
-import { GAlert, GButton, GCol, GFormCheckbox, GRow } from "@/component-library";
+import { GAlert, GButton, GCol, GFormCheckbox, GInput, GRow } from "@/component-library";
 
 import { useEntryPointStore } from "../../stores/entryPointStore";
 import { Services } from "./services";
@@ -81,13 +81,14 @@ library.add(faExternalLinkAlt);
 
 export default {
     components: {
+        FontAwesomeIcon,
         GAlert,
         GButton,
         GCol,
         GFormCheckbox,
+        GInput,
         GRow,
         UtcDate,
-        FontAwesomeIcon,
     },
     data() {
         return {

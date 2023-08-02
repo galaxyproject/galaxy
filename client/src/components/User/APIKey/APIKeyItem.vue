@@ -7,6 +7,7 @@ import { ref } from "vue";
 import {
     GButton,
     GCard,
+    GInput,
     GInputGroup,
     GInputGroupAppend,
     GInputGroupPrepend,
@@ -57,7 +58,7 @@ const deleteKey = () => {
                         </GInputGroupText>
                     </GInputGroupPrepend>
 
-                    <b-input
+                    <GInput
                         :type="hover ? 'text' : 'password'"
                         :value="item.key"
                         disabled

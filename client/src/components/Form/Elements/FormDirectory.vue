@@ -20,7 +20,7 @@
                 </GButton>
             </GBreadcrumbItem>
             <GBreadcrumbItem class="directory-input-field align-items-center">
-                <b-input
+                <GInput
                     id="path-input-breadcrumb"
                     v-model="currentDirectoryName"
                     aria-describedby="input-live-help input-live-feedback"
@@ -42,7 +42,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { FilesDialog } from "components/FilesDialog";
 import _l from "utils/localization";
 
-import { GBreadcrumb, GBreadcrumbItem, GButton } from "@/component-library";
+import { GBreadcrumb, GBreadcrumbItem, GButton, GInput } from "@/component-library";
 
 library.add(faFolder, faFolderOpen);
 
@@ -55,11 +55,12 @@ const getDefaultValues = () => ({
 
 export default {
     components: {
-        GBreadcrumb,
-        GBreadcrumbItem,
         FontAwesomeIcon,
         FilesDialog,
+        GBreadcrumb,
+        GBreadcrumbItem,
         GButton,
+        GInput,
     },
     data() {
         return { ...getDefaultValues(), modalKey: 0, selectText: _l("Select") };

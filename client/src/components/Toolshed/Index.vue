@@ -3,7 +3,7 @@
         <div v-if="error" class="alert alert-danger">{{ error }}</div>
         <div v-else>
             <GInputGroup class="mb-3">
-                <b-input
+                <GInput
                     id="toolshed-repo-search"
                     v-model="queryInput"
                     placeholder="Search Repositories"
@@ -29,7 +29,7 @@
 <script>
 import _l from "utils/localization";
 
-import { GButton, GFormRadioGroup, GInputGroup, GInputGroupAppend } from "@/component-library";
+import { GButton, GFormRadioGroup, GInput, GInputGroup, GInputGroupAppend } from "@/component-library";
 
 import InstalledList from "./InstalledList/Index.vue";
 import SearchList from "./SearchList/Index.vue";
@@ -38,10 +38,11 @@ export default {
     components: {
         GButton,
         GFormRadioGroup,
+        GInput,
         GInputGroup,
         GInputGroupAppend,
-        SearchList,
         InstalledList,
+        SearchList,
     },
     data() {
         return {
