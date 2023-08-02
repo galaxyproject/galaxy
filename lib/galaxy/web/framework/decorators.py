@@ -386,15 +386,17 @@ def format_return_as_json(rval, jsonp_callback=None, pretty=False):
 def validation_error_to_message_exception(e: ValidationError) -> MessageException:
     invalid_found = False
     missing_found = False
+    messages = []
     for error in e.errors():
+        messages.append(error["msg"])
         if error["type"] == "value_error.missing" or error["type"] == "type_error.none.not_allowed":
             missing_found = True
         elif error["type"].startswith("type_error"):
             invalid_found = True
     if missing_found and not invalid_found:
-        return RequestParameterMissingException(e.title, validation_errors=e.errors())
+        return RequestParameterMissingException("\n".join(messages), validation_errors=e.errors())
     else:
-        return RequestParameterInvalidException(e.title, validation_errors=e.errors())
+        return RequestParameterInvalidException("\n".join(messages), validation_errors=e.errors())
 
 
 def __api_error_dict(trans, **kwds):
