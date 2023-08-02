@@ -24,7 +24,7 @@
             </GAlert>
         </div>
         <div v-else>
-            <b-form @submit.prevent="submit">
+            <GForm @submit.prevent="submit">
                 <GFormGroup v-slot="{ ariaDescribedby }" label="How would you like to specify the history archive?">
                     <GFormRadioGroup
                         v-model="importType"
@@ -69,7 +69,7 @@
                 <GButton class="import-button" variant="primary" type="submit" :disabled="!importReady">
                     Import history
                 </GButton>
-            </b-form>
+            </GForm>
         </div>
     </div>
 </template>
@@ -87,7 +87,16 @@ import { getAppRoot } from "onload/loadConfig";
 import { errorMessageAsString } from "utils/simple-error";
 import { ref, watch } from "vue";
 
-import { GAlert, GButton, GFormFile, GFormGroup, GFormRadio, GFormRadioGroup, GInput } from "@/component-library";
+import {
+    GAlert,
+    GButton,
+    GForm,
+    GFormFile,
+    GFormGroup,
+    GFormRadio,
+    GFormRadioGroup,
+    GInput,
+} from "@/component-library";
 import { getFileSources } from "@/components/FilesDialog/services";
 
 import ExternalLink from "./ExternalLink";
@@ -105,6 +114,7 @@ export default {
         FontAwesomeIcon,
         GAlert,
         GButton,
+        GForm,
         GFormFile,
         GFormGroup,
         GFormRadio,

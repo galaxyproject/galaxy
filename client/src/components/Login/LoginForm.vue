@@ -11,7 +11,7 @@
                         >. In order to associate this account with <i>{{ connectExternalLabel }}</i
                         >, you must first login to your existing account.
                     </GAlert>
-                    <b-form id="login" @submit.prevent="submitLogin()">
+                    <GForm id="login" @submit.prevent="submitLogin()">
                         <GCard no-body>
                             <GCardHeader v-if="!connectExternalProvider">
                                 <span>{{ headerWelcome }}</span>
@@ -84,7 +84,7 @@
                                 </span>
                             </GCardFooter>
                         </GCard>
-                    </b-form>
+                    </GForm>
                 </div>
             </template>
             <template v-else>
@@ -114,6 +114,7 @@ import {
     GCardFooter,
     GCardHeader,
     GEmbed,
+    GForm,
     GFormGroup,
     GFormText,
     GInput,
@@ -131,6 +132,7 @@ export default {
         GCardFooter,
         GCardHeader,
         GEmbed,
+        GForm,
         GFormGroup,
         GFormText,
         GInput,

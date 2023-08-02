@@ -14,7 +14,7 @@
         </transition>
 
         <transition>
-            <b-form v-if="!loading">
+            <GForm v-if="!loading">
                 <GFormGroup label="Enter a title for the new history" label-for="copy-modal-title">
                     <GInput id="copy-modal-title" v-model="name" :state="newNameValid" required />
                     <GFormInvalidFeedback :state="newNameValid">
@@ -28,7 +28,7 @@
                     </GFormRadio>
                     <GFormRadio v-model="copyAll" :value="true"> Copy all datasets including deleted ones. </GFormRadio>
                 </GFormGroup>
-            </b-form>
+            </GForm>
         </transition>
 
         <div slot="modal-footer" slot-scope="{ ok, cancel }">
@@ -45,7 +45,16 @@
 <script>
 import { mapActions, mapState } from "pinia";
 
-import { GAlert, GButton, GFormGroup, GFormInvalidFeedback, GFormRadio, GInput, GModal } from "@/component-library";
+import {
+    GAlert,
+    GButton,
+    GForm,
+    GFormGroup,
+    GFormInvalidFeedback,
+    GFormRadio,
+    GInput,
+    GModal,
+} from "@/component-library";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
@@ -53,6 +62,7 @@ export default {
     components: {
         GAlert,
         GButton,
+        GForm,
         GFormGroup,
         GFormInvalidFeedback,
         GFormRadio,

@@ -22,7 +22,7 @@
                         contained in it.
                     </b>
                 </p>
-                <b-form ref="form" @submit.prevent="handleSubmit">
+                <GForm ref="form" @submit.prevent="handleSubmit">
                     <GFormGroup
                         :state="nameState"
                         label="Enter your user email for this account as confirmation."
@@ -30,7 +30,7 @@
                         invalid-feedback="Incorrect email">
                         <GInput id="name-input" v-model="name" :state="nameState" required />
                     </GFormGroup>
-                </b-form>
+                </GForm>
             </GModal>
         </div>
     </GRow>
@@ -41,11 +41,12 @@ import axios from "axios";
 import { userLogoutClient } from "utils/logout";
 import { withPrefix } from "utils/redirect";
 
-import { GAlert, GFormGroup, GInput, GModal, GRow } from "@/component-library";
+import { GAlert, GForm, GFormGroup, GInput, GModal, GRow } from "@/component-library";
 
 export default {
     components: {
         GAlert,
+        GForm,
         GFormGroup,
         GInput,
         GModal,

@@ -5,7 +5,7 @@
         loading-message="Loading container resolution information">
         <template v-slot:header>
             <GRow class="m-1">
-                <b-form inline>
+                <GForm inline>
                     <b>Resolution:</b>
                     <label class="mr-sm-2" for="manage-container-type">Resolve containers of type</label>
                     <GFormSelect
@@ -19,10 +19,10 @@
                         v-model="resolverType"
                         class="mb-2 mr-sm-2 mb-sm-0"
                         :options="resolverTypeOptions" />
-                </b-form>
+                </GForm>
             </GRow>
             <GRow class="m-1">
-                <b-form inline>
+                <GForm inline>
                     <b>Filter:</b>
                     <label class="mr-sm-2" for="manage-filter-resolution">Resolution</label>
                     <GFormSelect id="manage-filter-resolution" v-model="filterResolution" class="mb-2 mr-sm-2 mb-sm-0">
@@ -48,7 +48,7 @@
                         v-model="filterResolverType"
                         class="mb-2 mr-sm-2 mb-sm-0"
                         :options="resolverTypeOptions"></GFormSelect>
-                </b-form>
+                </GForm>
             </GRow>
         </template>
         <template v-slot:actions>
@@ -90,7 +90,7 @@
 <script>
 import _ from "underscore";
 
-import { GButton, GFormCheckbox, GFormSelect, GRow } from "@/component-library";
+import { GButton, GForm, GFormCheckbox, GFormSelect, GRow } from "@/component-library";
 
 import { getContainerResolutionToolbox, resolveContainersWithInstall } from "../AdminServices";
 import ContainerResolutionDetails from "./ContainerResolutionDetails";
@@ -103,6 +103,7 @@ RESOLVER_TYPE_OPTIONS.splice(0, 0, { value: null, text: "*any*" });
 export default {
     components: {
         GButton,
+        GForm,
         GFormCheckbox,
         GFormSelect,
         GRow,

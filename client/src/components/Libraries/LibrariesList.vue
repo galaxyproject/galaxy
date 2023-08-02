@@ -27,7 +27,7 @@
         </div>
         <GCollapse id="collapse-2" v-model="isNewLibFormVisible">
             <GCard>
-                <b-form @submit.prevent="newLibrary">
+                <GForm @submit.prevent="newLibrary">
                     <GInputGroup class="mb-2 new-row">
                         <GInput v-model="newLibraryForm.name" required :placeholder="titleName" />
                         <GInput v-model="newLibraryForm.description" required :placeholder="titleDescription" />
@@ -39,7 +39,7 @@
                             </GButton>
                         </template>
                     </GInputGroup>
-                </b-form>
+                </GForm>
             </GCard>
         </GCollapse>
         <b-table
@@ -196,6 +196,7 @@ import {
     GCol,
     GCollapse,
     GContainer,
+    GForm,
     GFormCheckbox,
     GInput,
     GInputGroup,
@@ -218,6 +219,7 @@ export default {
         GCol,
         GCollapse,
         GContainer,
+        GForm,
         GFormCheckbox,
         GInput,
         GInputGroup,

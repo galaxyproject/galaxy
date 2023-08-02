@@ -3,7 +3,7 @@ import axios, { type AxiosError } from "axios";
 import { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { GAlert, GButton, GFormFile, GFormGroup, GInput } from "@/component-library";
+import { GAlert, GButton, GForm, GFormFile, GFormGroup, GInput } from "@/component-library";
 import { withPrefix } from "@/utils/redirect";
 
 import { getRedirectOnImportPath } from "../redirectPath";
@@ -76,7 +76,7 @@ async function submit(ev: SubmitEvent) {
 </script>
 
 <template>
-    <b-form class="mt-4 workflow-import-file" @submit="submit">
+    <GForm class="mt-4 workflow-import-file" @submit="submit">
         <h2 class="h-sm">Import from a Galaxy workflow export URL or a workflow file</h2>
         <GFormGroup label="Archived Workflow URL">
             <GInput id="workflow-import-url-input" v-model="sourceURL" aria-label="Workflow Import URL" type="url" />
@@ -98,5 +98,5 @@ async function submit(ev: SubmitEvent) {
             variant="primary">
             Import workflow
         </GButton>
-    </b-form>
+    </GForm>
 </template>

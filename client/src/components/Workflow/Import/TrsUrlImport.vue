@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 
-import { GButton, GFormGroup, GInput } from "@/component-library";
+import { GButton, GForm, GFormGroup, GInput } from "@/component-library";
 
 const props = defineProps({
     queryTrsUrl: {
@@ -36,7 +36,7 @@ if (trsUrl.value) {
 </script>
 
 <template>
-    <b-form class="mt-4" @submit="submit">
+    <GForm class="mt-4" @submit="submit">
         <h2 class="h-sm">alternatively, provide a TRS URL directly</h2>
         <GFormGroup label="TRS URL:" label-class="font-weight-bold">
             <GInput id="trs-import-url-input" v-model="trsUrl" aria-label="TRS URL" type="url" />
@@ -50,5 +50,5 @@ if (trsUrl.value) {
             variant="primary">
             Import workflow
         </GButton>
-    </b-form>
+    </GForm>
 </template>

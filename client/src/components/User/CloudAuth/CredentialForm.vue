@@ -1,5 +1,5 @@
 <template>
-    <b-form :validated="credential.isValid">
+    <GForm :validated="credential.isValid">
         <!-- user label -->
         <GFormGroup label="Description" label-for="credentialDescription" label-cols-lg="3">
             <GInput
@@ -44,11 +44,11 @@
                 {{ saveButtonTitle }}
             </GButton>
         </footer>
-    </b-form>
+    </GForm>
 </template>
 
 <script>
-import { GButton, GFormGroup, GFormSelect, GInput } from "@/component-library";
+import { GButton, GForm, GFormGroup, GFormSelect, GInput } from "@/component-library";
 
 import CredentialConfig from "./CredentialConfig";
 import { Credential, ResourceProviders } from "./model";
@@ -58,6 +58,7 @@ export default {
     components: {
         CredentialConfig,
         GButton,
+        GForm,
         GFormGroup,
         GFormSelect,
         GInput,

@@ -1,5 +1,5 @@
 <template>
-    <b-form @submit.prevent="submit">
+    <GForm @submit.prevent="submit">
         <GAlert v-if="!!message" :variant="variant" show>
             {{ message }}
         </GAlert>
@@ -11,7 +11,7 @@
             <GFormGroup label="Confirm password"> <GInput v-model="confirm" type="password" /> </GFormGroup>
             <GButton type="submit">Save new password</GButton>
         </GCard>
-    </b-form>
+    </GForm>
 </template>
 <script>
 import axios from "axios";
@@ -19,7 +19,7 @@ import BootstrapVue from "bootstrap-vue";
 import { withPrefix } from "utils/redirect";
 import Vue from "vue";
 
-import { GAlert, GButton, GCard, GFormGroup, GInput } from "@/component-library";
+import { GAlert, GButton, GCard, GForm, GFormGroup, GInput } from "@/component-library";
 
 Vue.use(BootstrapVue);
 
@@ -28,6 +28,7 @@ export default {
         GAlert,
         GButton,
         GCard,
+        GForm,
         GFormGroup,
         GInput,
     },

@@ -25,6 +25,7 @@ export { default as GDropdownGroup } from "./GDropdownGroup.vue";
 export { default as GDropdownItem } from "./GDropdownItem.vue";
 export { default as GDropdownText } from "./GDropdownText.vue";
 export { default as GEmbed } from "./GEmbed.vue";
+export { default as GForm } from "./GForm.vue";
 export { default as GFormCheckbox } from "./GFormCheckbox.vue";
 export { default as GFormCheckboxGroup } from "./GFormCheckboxGroup.vue";
 export { default as GFormDatalist } from "./GFormDatalist.vue";

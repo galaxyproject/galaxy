@@ -8,7 +8,7 @@
                 <GAlert :show="!!messageText" :variant="messageVariant">
                     {{ messageText }}
                 </GAlert>
-                <b-form id="registration" @submit.prevent="submit()">
+                <GForm id="registration" @submit.prevent="submit()">
                     <GCard no-body>
                         <!-- OIDC and Custos enabled and prioritized: encourage users to use it instead of local registration -->
                         <span v-if="custosPreferred">
@@ -57,8 +57,8 @@
                                         v-model="username"
                                         name="username"
                                         type="text" />
-                                    <GFormText v-localize
-                                        >Your public name is an identifier that will be used to generate addresses for
+                                    <GFormText v-localize>
+                                        Your public name is an identifier that will be used to generate addresses for
                                         information you share publicly. Public names must be at least three characters
                                         in length and contain only lower-case letters, numbers, dots, underscores, and
                                         dashes ('.', '_', '-').
@@ -91,7 +91,7 @@
                             </a>
                         </GCardFooter>
                     </GCard>
-                </b-form>
+                </GForm>
             </div>
             <div v-if="termsUrl" class="col">
                 <GEmbed type="iframe" :src="termsUrl" aspect="1by1" />
@@ -114,6 +114,7 @@ import {
     GCardHeader,
     GCollapse,
     GEmbed,
+    GForm,
     GFormGroup,
     GFormText,
     GInput,
@@ -130,6 +131,7 @@ export default {
         GCardHeader,
         GCollapse,
         GEmbed,
+        GForm,
         GFormGroup,
         GFormText,
         GInput,

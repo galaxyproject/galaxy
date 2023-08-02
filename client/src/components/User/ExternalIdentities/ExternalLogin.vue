@@ -3,7 +3,7 @@
         <GAlert :show="messageShow" :variant="messageVariant">
             {{ messageText }}
         </GAlert>
-        <b-form id="externalLogin">
+        <GForm id="externalLogin">
             <!-- OIDC login-->
             <hr class="my-4" />
             <div v-if="cilogonListShow" class="cilogon">
@@ -91,7 +91,7 @@
                     </GButton>
                 </span>
             </div>
-        </b-form>
+        </GForm>
     </div>
 </template>
 
@@ -104,7 +104,7 @@ import { getAppRoot } from "onload";
 import Vue from "vue";
 import Multiselect from "vue-multiselect";
 
-import { GAlert, GButton, GFormCheckbox, GFormGroup } from "@/component-library";
+import { GAlert, GButton, GForm, GFormCheckbox, GFormGroup } from "@/component-library";
 
 Vue.use(BootstrapVue);
 
@@ -112,6 +112,7 @@ export default {
     components: {
         GAlert,
         GButton,
+        GForm,
         GFormCheckbox,
         GFormGroup,
         Multiselect,

@@ -58,7 +58,7 @@
                         {{ alertMessage }}
                     </GAlert>
 
-                    <b-form @submit.prevent="save">
+                    <GForm @submit.prevent="save">
                         <GFormGroup label="Name" description="Specify a build name, e.g. Hamster." label-for="name">
                             <GInput id="name" v-model="form.name" tour_id="name" required />
                         </GFormGroup>
@@ -98,7 +98,7 @@
                             title="Create new build">
                             <i class="icon fa fa-save" /> Save
                         </GButton>
-                    </b-form>
+                    </GForm>
                 </GCard>
             </GCol>
             <GCol>
@@ -155,6 +155,7 @@ import {
     GCard,
     GCol,
     GContainer,
+    GForm,
     GFormFile,
     GFormGroup,
     GFormSelect,
@@ -171,6 +172,7 @@ export default {
         GCard,
         GCol,
         GContainer,
+        GForm,
         GFormFile,
         GFormGroup,
         GFormSelect,

@@ -8,7 +8,7 @@
                 <GAlert :show="!!messageText" :variant="messageVariant">
                     {{ messageText }}
                 </GAlert>
-                <b-form id="confirmation" @submit.prevent="submit()">
+                <GForm id="confirmation" @submit.prevent="submit()">
                     <GCard no-body header="Confirm new account creation">
                         <GCardBody>
                             <p>Looks like you are about to create a new account!</p>
@@ -48,7 +48,7 @@
                             </a>
                         </GCardFooter>
                     </GCard>
-                </b-form>
+                </GForm>
             </div>
             <div v-if="termsUrl" class="col">
                 <GEmbed type="iframe" :src="termsUrlwithRoot" aspect="1by1" />
@@ -62,7 +62,17 @@ import BootstrapVue from "bootstrap-vue";
 import { withPrefix } from "utils/redirect";
 import Vue from "vue";
 
-import { GAlert, GButton, GCard, GCardBody, GCardFooter, GEmbed, GFormCheckbox, GFormGroup } from "@/component-library";
+import {
+    GAlert,
+    GButton,
+    GCard,
+    GCardBody,
+    GCardFooter,
+    GEmbed,
+    GForm,
+    GFormCheckbox,
+    GFormGroup,
+} from "@/component-library";
 
 Vue.use(BootstrapVue);
 
@@ -74,6 +84,7 @@ export default {
         GCardFooter,
         GCardBody,
         GEmbed,
+        GForm,
         GFormCheckbox,
         GFormGroup,
     },

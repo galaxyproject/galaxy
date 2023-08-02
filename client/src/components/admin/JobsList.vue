@@ -24,7 +24,7 @@
                         {{ showAllRunning ? "Showing all unfinished jobs" : "Time cutoff applied to query" }}
                     </GFormCheckbox>
                 </GFormGroup>
-                <b-form name="jobs" @submit.prevent="onRefresh">
+                <GForm name="jobs" @submit.prevent="onRefresh">
                     <GFormGroup
                         v-show="!showAllRunning"
                         id="cutoff"
@@ -34,14 +34,14 @@
                             <GInput id="cutoff" v-model="cutoffMin" type="number" />
                         </GInputGroup>
                     </GFormGroup>
-                </b-form>
+                </GForm>
                 <GFormGroup description="Use strings or regular expressions to search jobs.">
                     <IndexFilter v-bind="filterAttrs" id="job-search" v-model="filter" />
                 </GFormGroup>
             </GCol>
         </GRow>
         <transition name="fade">
-            <b-form v-if="unfinishedJobs.length && selectedStopJobIds.length" @submit.prevent="onStopJobs">
+            <GForm v-if="unfinishedJobs.length && selectedStopJobIds.length" @submit.prevent="onStopJobs">
                 <GFormGroup label="Stop Selected Jobs" description="Stop message will be displayed to the user">
                     <GInputGroup>
                         <GInput id="stop-message" v-model="stopMessage" placeholder="Stop message" required />
@@ -50,7 +50,7 @@
                         </GInputGroupAppend>
                     </GInputGroup>
                 </GFormGroup>
-            </b-form>
+            </GForm>
         </transition>
         <h3 class="mb-0 h-sm">Unfinished Jobs</h3>
         <JobsTable
@@ -105,6 +105,7 @@ import {
     GAlert,
     GButton,
     GCol,
+    GForm,
     GFormCheckbox,
     GFormGroup,
     GInput,
@@ -152,6 +153,7 @@ export default {
         GAlert,
         GButton,
         GCol,
+        GForm,
         GFormCheckbox,
         GFormGroup,
         GInput,

@@ -1,6 +1,6 @@
 <!-- https://schema.org/Person -->
 <template>
-    <b-form @submit="onSave" @reset="onReset">
+    <GForm @submit="onSave" @reset="onReset">
         <div v-for="attribute in displayedAttributes" :key="attribute.key" role="group" class="form-group">
             <label :for="attribute.key">{{ attribute.label }}</label>
             <span v-b-tooltip.hover title="Hide Attribute">
@@ -17,7 +17,7 @@
         </div>
         <GButton type="submit" variant="primary">Save</GButton>
         <GButton type="reset" variant="danger">Cancel</GButton>
-    </b-form>
+    </GForm>
 </template>
 
 <script>
@@ -25,7 +25,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEyeSlash, faLink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-import { GButton, GFormSelect, GInput } from "@/component-library";
+import { GButton, GForm, GFormSelect, GInput } from "@/component-library";
 
 import ThingFormMixin from "./ThingFormMixin";
 
@@ -53,6 +53,7 @@ export default {
     components: {
         FontAwesomeIcon,
         GButton,
+        GForm,
         GFormSelect,
         GInput,
     },
