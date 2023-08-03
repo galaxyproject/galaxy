@@ -4,6 +4,7 @@ from pydantic import (
     BeforeValidator,
     Field,
     WithJsonSchema,
+    PlainSerializer,
 )
 from typing_extensions import (
     Annotated,
@@ -45,6 +46,7 @@ _DecodedDatabaseIdField = Annotated[
     int,
     BeforeValidator(lambda database_id: Security.security.decode_id(database_id)),
     BeforeValidator(ensure_valid_id),
+    PlainSerializer(lambda database_id: Security.security.encode_id(database_id), return_type=str, when_used="json"),
     WithJsonSchema(
         {"type": "string", "example": "0123456789ABCDEF", "pattern": "[0-9a-fA-F]+", "minLength": 16},
         mode="serialization",
