@@ -600,7 +600,7 @@ class FastAPIUsers:
                 user = self.service.user_manager.create(email=email, username=username, password=password)
         else:
             raise exceptions.NotImplemented()
-        item = user.to_dict(view="element", value_mapper={"id": trans.security.encode_id, "total_disk_usage": float})
+        item = user.to_dict(view="element", value_mapper={"total_disk_usage": float})
         return item
 
     @router.get(
