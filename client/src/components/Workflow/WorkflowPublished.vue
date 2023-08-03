@@ -22,6 +22,7 @@ import License from "@/components/License/License.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
+import UtcDate from "@/components/UtcDate.vue";
 
 library.add(faSpinner, faUser, faBuilding, faPlay, faEdit);
 
@@ -35,6 +36,7 @@ const workflowInfo = ref<
           [key: string]: unknown;
           license?: string;
           tags?: string[];
+          update_time: string;
       }
     | undefined
 >();
@@ -128,79 +130,86 @@ const publishedByUser = computed(() => `/workflows/list_published?f-username=${w
                 <b-alert v-else show variant="danger"> Unknown Error </b-alert>
             </div>
             <div v-else-if="workflowInfo" class="published-workflow">
-                <div class="workflow-information">
-                    <div class="workflow-preview d-flex flex-column">
-                        <span class="d-flex w-100 flex-gapx-1 align-items-center mb-2">
-                            <Heading h1 separator inline size="xl" class="flex-grow-1 mb-0">Workflow Preview</Heading>
-                            <b-button variant="secondary" size="md">
-                                <FontAwesomeIcon icon="fa-edit" />
-                                Import and Edit
-                            </b-button>
-                            <b-button variant="primary" size="md">
-                                <FontAwesomeIcon icon="fa-play" />
-                                Run
-                            </b-button>
-                        </span>
+                <div class="workflow-preview d-flex flex-column">
+                    <span class="d-flex w-100 flex-gapx-1 align-items-center mb-2">
+                        <Heading h1 separator inline size="xl" class="flex-grow-1 mb-0">Workflow Preview</Heading>
+                        <b-button variant="secondary" size="md">
+                            <FontAwesomeIcon icon="fa-edit" />
+                            Import and Edit
+                        </b-button>
+                        <b-button variant="primary" size="md">
+                            <FontAwesomeIcon icon="fa-play" />
+                            Run
+                        </b-button>
+                    </span>
 
-                        <b-card class="workflow-card">
-                            <WorkflowGraph
-                                v-if="workflow && datatypesMapper"
-                                :steps="workflow.steps"
-                                :datatypes-mapper="datatypesMapper"
-                                readonly />
-                        </b-card>
-                    </div>
+                    <b-card class="workflow-card">
+                        <WorkflowGraph
+                            v-if="workflow && datatypesMapper"
+                            :steps="workflow.steps"
+                            :datatypes-mapper="datatypesMapper"
+                            readonly />
+                    </b-card>
+                </div>
 
-                    <aside class="d-flex flex-column align-items-start justify-content-start align-self-start">
+                <aside class="workflow-information">
+                    <hgroup>
+                        <Heading h2 size="xl" class="mb-0">About This Workflow</Heading>
+                        <span class="ml-2">{{ workflowInfo.name }} - Version {{ workflowInfo.version }}</span>
+                    </hgroup>
+
+                    <div class="workflow-info-box">
                         <hgroup class="mb-2">
-                            <Heading h2 size="xl" class="mb-0">About This Workflow</Heading>
-                            <span class="ml-2">{{ workflowInfo.name }} - Version {{ workflowInfo.version }}</span>
+                            <Heading h3 size="md" class="mb-0">Author</Heading>
+                            <span class="ml-2">{{ workflowInfo.owner }}</span>
                         </hgroup>
 
-                        <div class="mb-2 d-flex flex-column align-items-start">
-                            <hgroup class="mb-2">
-                                <Heading h3 size="md" class="mb-0">Author</Heading>
-                                <span class="ml-2">{{ workflowInfo.owner }}</span>
-                            </hgroup>
+                        <img alt="User Avatar" :src="gravatarSource" class="mb-2" />
+                        <router-link :to="publishedByUser">
+                            All published Workflows by {{ workflowInfo.owner }}
+                        </router-link>
+                    </div>
 
-                            <img alt="User Avatar" :src="gravatarSource" class="mb-2" />
-                            <router-link :to="publishedByUser">
-                                All published Workflows by {{ workflowInfo.owner }}
-                            </router-link>
-                        </div>
+                    <div v-if="workflow?.creator" class="workflow-info-box">
+                        <Heading h3 size="md" class="mb-0">Creators</Heading>
 
-                        <div v-if="workflow?.creator" class="mb-2 d-flex flex-column align-items-start">
-                            <Heading h3 size="md" class="mb-0">Creators</Heading>
-                            <span v-for="(creator, index) in workflow.creator" :key="index">
+                        <ul class="list-unstyled mb-0">
+                            <li v-for="(creator, index) in workflow.creator" :key="index">
                                 <FontAwesomeIcon v-if="creator.class === 'Person'" icon="fa-user" />
                                 <FontAwesomeIcon v-if="creator.class === 'Organization'" icon="fa-building" />
                                 {{ creator.name }}
-                            </span>
-                        </div>
+                            </li>
+                        </ul>
+                    </div>
 
-                        <div class="mb-2 d-flex flex-column align-items-start">
-                            <Heading h3 size="md" class="mb-0">Description</Heading>
+                    <div class="workflow-info-box">
+                        <Heading h3 size="md" class="mb-0">Description</Heading>
 
-                            <p v-if="workflowInfo.annotation" class="mb-0">
-                                {{ workflowInfo.annotation }}
-                            </p>
-                            <p v-else class="mb-0">This Workflow has no description.</p>
-                        </div>
+                        <p v-if="workflowInfo.annotation" class="mb-0">
+                            {{ workflowInfo.annotation }}
+                        </p>
+                        <p v-else class="mb-0">This Workflow has no description.</p>
+                    </div>
 
-                        <div v-if="workflowInfo?.tags" class="mb-2 d-flex flex-column align-items-start">
-                            <Heading h3 size="md" class="mb-0">Tags</Heading>
+                    <div v-if="workflowInfo?.tags" class="workflow-info-box">
+                        <Heading h3 size="md" class="mb-0">Tags</Heading>
 
-                            <StatelessTags class="tags mt-2" :value="workflowInfo.tags" disabled />
-                        </div>
+                        <StatelessTags class="tags mt-2" :value="workflowInfo.tags" disabled />
+                    </div>
 
-                        <div class="mb-2 d-flex flex-column align-items-start">
-                            <Heading h3 size="md" class="mb-0">License</Heading>
+                    <div class="workflow-info-box">
+                        <Heading h3 size="md" class="mb-0">License</Heading>
 
-                            <License v-if="workflowInfo.license" :license-id="workflowInfo.license" />
-                            <span v-else>No License specified</span>
-                        </div>
-                    </aside>
-                </div>
+                        <License v-if="workflowInfo.license" :license-id="workflowInfo.license" />
+                        <span v-else>No License specified</span>
+                    </div>
+
+                    <div class="workflow-info-box">
+                        <Heading h3 size="md" class="mb-0">Last Updated</Heading>
+
+                        <UtcDate :date="workflowInfo.update_time" mode="pretty" />
+                    </div>
+                </aside>
             </div>
         </div>
     </div>
@@ -208,11 +217,6 @@ const publishedByUser = computed(() => `/workflows/list_published?f-username=${w
 
 <style scoped lang="scss">
 .published-workflow {
-    display: flex;
-    flex-grow: 1;
-}
-
-.workflow-information {
     display: flex;
     flex-grow: 1;
     gap: 1rem;
@@ -225,11 +229,6 @@ const publishedByUser = computed(() => `/workflows/list_published?f-username=${w
         }
     }
 
-    aside {
-        flex-grow: 1;
-        max-width: 500px;
-    }
-
     @media only screen and (max-width: 1100px) {
         flex-direction: column;
 
@@ -240,6 +239,23 @@ const publishedByUser = computed(() => `/workflows/list_published?f-username=${w
         aside {
             max-width: unset;
         }
+    }
+}
+
+.workflow-information {
+    flex-grow: 1;
+    max-width: 500px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: start;
+    justify-content: start;
+    align-self: flex-start;
+
+    .workflow-info-box {
+        display: flex;
+        flex-direction: column;
+        align-items: start;
     }
 }
 </style>
