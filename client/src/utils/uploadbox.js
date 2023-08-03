@@ -8,6 +8,24 @@ import * as tus from "tus-js-client";
 
 import { uploadModelsToPayload } from "@/components/Upload/helpers";
 
+function buildFingerprint(cnf) {
+    return async (file) => {
+        return ["tus-br", file.name, file.type, file.size, file.lastModified, cnf.data.history_id].join("-");
+    };
+}
+
+function hasFiles(data) {
+    return data.files.length;
+}
+
+function isComposite(data) {
+    return data.targets.length && data.targets[0].items && data.targets[0].items[0].composite;
+}
+
+function isUrl(pasted_item) {
+    return pasted_item.src == "url";
+}
+
 function submitPayload(payload, cnf) {
     axios
         .post(`${getAppRoot()}api/tools/fetch`, payload)
@@ -17,14 +35,6 @@ function submitPayload(payload, cnf) {
         .catch((error) => {
             cnf.error(error.response?.data.err_msg || "Request failed.");
         });
-}
-
-function buildFingerprint(cnf) {
-    async function customFingerprint(file) {
-        return ["tus-br", file.name, file.type, file.size, file.lastModified, cnf.data.history_id].join("-");
-    }
-
-    return customFingerprint;
 }
 
 function tusUpload(uploadables, index, data, tusEndpoint, cnf) {
@@ -53,7 +63,7 @@ function tusUpload(uploadables, index, data, tusEndpoint, cnf) {
                 // 🎵 Never gonna give you up 🎵
                 console.log(`Failed because: ${err}\n, will retry in 10 seconds`);
 
-                setTimeout(() => startTusUpload(upload), 10000);
+                setTimeout(() => tusUploadStart(upload), 10000);
             }
         },
         onChunkComplete: function (chunkSize, bytesAccepted, bytesTotal) {
@@ -72,10 +82,10 @@ function tusUpload(uploadables, index, data, tusEndpoint, cnf) {
             tusUpload(uploadables, index + 1, data, tusEndpoint, cnf);
         },
     });
-    startTusUpload(upload);
+    tusUploadStart(upload);
 }
 
-function startTusUpload(upload) {
+function tusUploadStart(upload) {
     // Check if there are any previous uploads to continue.
     upload.findPreviousUploads().then(function (previousUploads) {
         // Found previous uploads so we select the first one.
@@ -105,15 +115,14 @@ export function submitUpload(config) {
         chunkSize: 10485760,
         ...config,
     };
-
     // initial validation
     var data = cnf.data;
     if (data.error_message) {
         cnf.error(data.error_message);
         return;
     }
+    // execute upload
     const tusEndpoint = `${getAppRoot()}api/upload/resumable_upload/`;
-
     if (hasFiles(data) || isComposite(data)) {
         return tusUpload(data.files, 0, data, tusEndpoint, cnf);
     } else {
@@ -128,18 +137,6 @@ export function submitUpload(config) {
             }
         }
     }
-}
-
-function hasFiles(data) {
-    return data.files.length;
-}
-
-function isComposite(data) {
-    return data.targets.length && data.targets[0].items && data.targets[0].items[0].composite;
-}
-
-function isUrl(pasted_item) {
-    return pasted_item.src == "url";
 }
 
 export class UploadQueue {
@@ -160,18 +157,49 @@ export class UploadQueue {
         this.queue = new Map(); // items stored by key (referred to as index)
         this.nextIndex = 0;
         this.fileSet = new Set(); // Used for fast duplicate checking
-        this._initFlags();
-    }
-
-    _initFlags() {
         this.isRunning = false;
         this.isPaused = false;
+    }
+
+    // Add new files to upload queue
+    add(files) {
+        if (files && files.length && !this.isRunning) {
+            files.forEach((file) => {
+                const fileSetKey = file.name + file.size; // Concat name and size to create a "file signature".
+                if (file.mode === "new" || !this.fileSet.has(fileSetKey)) {
+                    this.fileSet.add(fileSetKey);
+                    const index = String(this.nextIndex++);
+                    this.queue.set(index, file);
+                    this.opts.announce(index, file);
+                }
+            });
+        }
+        // Returns last added file index.
+        return String(parseInt(this.nextIndex) - 1);
+    }
+
+    // Set options
+    configure(options) {
+        this.opts = Object.assign(this.opts, options);
+        return this.opts;
+    }
+
+    // Remove file from queue and file set by index
+    remove(index) {
+        const file = this.queue.get(index);
+        const fileSetKey = file.name + file.size;
+        this.queue.delete(index) && this.fileSet.delete(fileSetKey);
     }
 
     // Remove all entries from queue
     reset() {
         this.queue.clear();
         this.fileSet.clear();
+    }
+
+    // Returns queue size
+    get size() {
+        return this.queue.size;
     }
 
     // Initiate upload process
@@ -212,60 +240,23 @@ export class UploadQueue {
         this.isPaused = true;
     }
 
-    // Set options
-    configure(options) {
-        this.opts = Object.assign(this.opts, options);
-        return this.opts;
-    }
-
-    // Add new files to upload queue
-    add(files) {
-        if (files && files.length && !this.isRunning) {
-            files.forEach((file) => {
-                const fileSetKey = file.name + file.size; // Concat name and size to create a "file signature".
-                if (file.mode === "new" || !this.fileSet.has(fileSetKey)) {
-                    this.fileSet.add(fileSetKey);
-                    const index = String(this.nextIndex++);
-                    this.queue.set(index, file);
-                    this.opts.announce(index, file);
-                }
-            });
-        }
-        // Returns last added file index.
-        return String(parseInt(this.nextIndex) - 1);
-    }
-
-    // Remove file from queue and file set by index
-    remove(index) {
-        const file = this.queue.get(index);
-        const fileSetKey = file.name + file.size;
-        this.queue.delete(index) && this.fileSet.delete(fileSetKey);
-    }
-
-    get size() {
-        return this.queue.size;
-    }
-
-    _firstItemIndex() {
-        // Return index to first item in queue (in FIFO order).
-        // If queue is empty, return undefined.
-        return this.queue.keys().next().value;
-    }
-
     // Process an upload, recursive
     _process() {
         if (this.size === 0 || this.isPaused) {
-            this._initFlags();
+            this.isRunning = false;
+            this.isPaused = false;
             this.opts.complete();
             return;
         } else {
             this.isRunning = true;
         }
-        const index = this._firstItemIndex();
+        // Return index to first item in queue (in FIFO order).
+        const index = this.queue.keys().next().value;
+        // Collect upload request data
         const data = uploadModelsToPayload([this.opts.get(index)], this.opts.historyId);
+        // Remove item from queue
         this.remove(index);
-
-        // create and submit data
+        // Submit request data
         submitUpload({
             data: data,
             success: (message) => {

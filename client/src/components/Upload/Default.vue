@@ -198,10 +198,11 @@ function eventReset() {
 }
 
 /** Success */
-function eventSuccess(index) {
+function eventSuccess(index, incoming) {
     var it = uploadList.value[index];
     it.percentage = 100;
     it.status = "success";
+    it.outputs = incoming.outputs || incoming.data.outputs || {};
     props.details.model.set("percentage", uploadPercentage(100, it.file_size));
     uploadCompleted.value += it.file_size * 100;
     counterAnnounce.value--;
