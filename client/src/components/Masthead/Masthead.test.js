@@ -2,10 +2,10 @@ import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import { WindowManager } from "layout/window-manager";
 import { PiniaVuePlugin, setActivePinia } from "pinia";
-import { configStore } from "store/configStore";
 import { useEntryPointStore } from "stores/entryPointStore";
-import { getLocalVue, mockModule } from "tests/jest/helpers";
-import Vuex from "vuex";
+import { getLocalVue } from "tests/jest/helpers";
+
+import { mockFetcher } from "@/schema/__mocks__";
 
 import { loadWebhookMenuItems } from "./_webhooks";
 import { getActiveTab } from "./utilities";
@@ -17,13 +17,13 @@ jest.mock("./_webhooks");
 jest.mock("vue-router/composables", () => ({
     useRoute: jest.fn(() => ({ name: "Home" })),
 }));
+jest.mock("@/schema");
 
 describe("Masthead.vue", () => {
     let wrapper;
     let localVue;
     let windowManager;
     let tabs;
-    let store;
     let testPinia;
 
     function stubLoadWebhooks(items) {
@@ -41,11 +41,7 @@ describe("Masthead.vue", () => {
         localVue = getLocalVue();
         localVue.use(PiniaVuePlugin);
         testPinia = createTestingPinia();
-        store = new Vuex.Store({
-            modules: {
-                config: mockModule(configStore),
-            },
-        });
+        mockFetcher.path("/api/configuration").method("get").mock({ data: {} });
 
         tabs = [
             // Main Analysis Tab..
@@ -79,8 +75,6 @@ describe("Masthead.vue", () => {
                 windowTab,
                 initialActiveTab,
             },
-            store,
-            provide: { store },
             localVue,
             pinia: testPinia,
         });
