@@ -225,7 +225,7 @@ class CollectionElementIdentifier(Model):
 
 # Required for self-referencing models
 # See https://pydantic-docs.helpmanual.io/usage/postponed_annotations/#self-referencing-models
-CollectionElementIdentifier.update_forward_refs()
+CollectionElementIdentifier.model_rebuild()
 
 
 class CreateHistoryContentFromStore(StoreContentSource):

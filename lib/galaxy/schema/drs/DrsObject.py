@@ -134,4 +134,4 @@ class Model(BaseModel):
     )
 
 
-ContentsObject.update_forward_refs()
+ContentsObject.model_rebuild()

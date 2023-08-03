@@ -893,7 +893,7 @@ class DCESummary(Model):
     )
 
 
-DCObject.update_forward_refs()
+DCObject.model_rebuild()
 
 
 class DCDetailed(DCSummary):
