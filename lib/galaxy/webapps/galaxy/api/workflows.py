@@ -1238,91 +1238,91 @@ class FastAPIWorkflows:
         return workflows
 
     @router.get(
-        "/api/workflows/{id}/sharing",
+        "/api/workflows/{workflow_id}/sharing",
         summary="Get the current sharing status of the given item.",
     )
     def sharing(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ) -> SharingStatus:
         """Return the sharing status of the item."""
-        return self.service.shareable_service.sharing(trans, id)
+        return self.service.shareable_service.sharing(trans, workflow_id)
 
     @router.put(
-        "/api/workflows/{id}/enable_link_access",
+        "/api/workflows/{workflow_id}/enable_link_access",
         summary="Makes this item accessible by a URL link.",
     )
     def enable_link_access(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ) -> SharingStatus:
         """Makes this item accessible by a URL link and return the current sharing status."""
-        return self.service.shareable_service.enable_link_access(trans, id)
+        return self.service.shareable_service.enable_link_access(trans, workflow_id)
 
     @router.put(
-        "/api/workflows/{id}/disable_link_access",
+        "/api/workflows/{workflow_id}/disable_link_access",
         summary="Makes this item inaccessible by a URL link.",
     )
     def disable_link_access(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ) -> SharingStatus:
         """Makes this item inaccessible by a URL link and return the current sharing status."""
-        return self.service.shareable_service.disable_link_access(trans, id)
+        return self.service.shareable_service.disable_link_access(trans, workflow_id)
 
     @router.put(
-        "/api/workflows/{id}/publish",
+        "/api/workflows/{workflow_id}/publish",
         summary="Makes this item public and accessible by a URL link.",
     )
     def publish(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ) -> SharingStatus:
         """Makes this item publicly available by a URL link and return the current sharing status."""
-        return self.service.shareable_service.publish(trans, id)
+        return self.service.shareable_service.publish(trans, workflow_id)
 
     @router.put(
-        "/api/workflows/{id}/unpublish",
+        "/api/workflows/{workflow_id}/unpublish",
         summary="Removes this item from the published list.",
     )
     def unpublish(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ) -> SharingStatus:
         """Removes this item from the published list and return the current sharing status."""
-        return self.service.shareable_service.unpublish(trans, id)
+        return self.service.shareable_service.unpublish(trans, workflow_id)
 
     @router.put(
-        "/api/workflows/{id}/share_with_users",
+        "/api/workflows/{workflow_id}/share_with_users",
         summary="Share this item with specific users.",
     )
     def share_with_users(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
         payload: ShareWithPayload = Body(...),
     ) -> ShareWithStatus:
         """Shares this item with specific users and return the current sharing status."""
-        return self.service.shareable_service.share_with_users(trans, id, payload)
+        return self.service.shareable_service.share_with_users(trans, workflow_id, payload)
 
     @router.put(
-        "/api/workflows/{id}/slug",
+        "/api/workflows/{workflow_id}/slug",
         summary="Set a new slug for this shared item.",
         status_code=status.HTTP_204_NO_CONTENT,
     )
     def set_slug(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
         payload: SetSlugPayload = Body(...),
     ):
         """Sets a new slug to access this item by URL. The new slug must be unique."""
-        self.service.shareable_service.set_slug(trans, id, payload)
+        self.service.shareable_service.set_slug(trans, workflow_id, payload)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.delete(
