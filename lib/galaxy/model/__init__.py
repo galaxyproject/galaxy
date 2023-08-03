@@ -3413,7 +3413,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
                     Dataset.table.c.object_store_id.in_(kwds.get("object_store_ids"))
                 )
             # else ignoring object_store_ids on HDCAs...
-        if "ids" in kwds:
+        if kwds.get("ids"):
             assert "object_store_ids" not in kwds
             ids = kwds["ids"]
             max_in_filter_length = kwds.get("max_in_filter_length", MAX_IN_FILTER_LENGTH)
