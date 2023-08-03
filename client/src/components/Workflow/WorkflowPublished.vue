@@ -1,17 +1,19 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faBuilding, faEdit, faPlay, faSpinner, faUser } from "@fortawesome/free-solid-svg-icons";
+import { faBuilding, faDownload, faEdit, faPlay, faSpinner, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios, { type AxiosError } from "axios";
 import { computed, onUnmounted, ref, watch } from "vue";
 
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { usePanels } from "@/composables/usePanels";
+import { useUserStore } from "@/stores/userStore";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import type { Workflow } from "@/stores/workflowStore";
 import { assertDefined } from "@/utils/assertions";
+import { withPrefix } from "@/utils/redirect";
 
 import { fromSimple } from "./Editor/modules/model";
 
@@ -24,7 +26,7 @@ import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
-library.add(faSpinner, faUser, faBuilding, faPlay, faEdit);
+library.add(faSpinner, faUser, faBuilding, faPlay, faEdit, faDownload);
 
 const props = defineProps<{
     id: string;
@@ -105,6 +107,20 @@ const gravatarSource = computed(
 );
 
 const publishedByUser = computed(() => `/workflows/list_published?f-username=${workflowInfo.value?.owner}`);
+
+const downloadUrl = computed(() => withPrefix(`/api/workflows/${props.id}/download?format=json-download`));
+const importUrl = computed(() => withPrefix(`/workflow/imp?id=${props.id}`));
+const runUrl = computed(() => withPrefix(`/workflows/run?id=${props.id}`));
+
+const userStore = useUserStore();
+
+function logInTitle(title: string) {
+    if (userStore.isAnonymous) {
+        return `Log in to ${title}`;
+    } else {
+        return title;
+    }
+}
 </script>
 
 <template>
@@ -131,16 +147,36 @@ const publishedByUser = computed(() => `/workflows/list_published?f-username=${w
             </div>
             <div v-else-if="workflowInfo" class="published-workflow">
                 <div class="workflow-preview d-flex flex-column">
-                    <span class="d-flex w-100 flex-gapx-1 align-items-center mb-2">
+                    <span class="d-flex w-100 flex-gapx-1 flex-wrap justify-content-center align-items-center mb-2">
                         <Heading h1 separator inline size="xl" class="flex-grow-1 mb-0">Workflow Preview</Heading>
-                        <b-button variant="secondary" size="md">
-                            <FontAwesomeIcon icon="fa-edit" />
-                            Import and Edit
-                        </b-button>
-                        <b-button variant="primary" size="md">
-                            <FontAwesomeIcon icon="fa-play" />
-                            Run
-                        </b-button>
+
+                        <span>
+                            <b-button :to="downloadUrl" title="Download Workflow" variant="secondary" size="md">
+                                <FontAwesomeIcon icon="fa-download" />
+                                Download
+                            </b-button>
+
+                            <b-button
+                                :href="importUrl"
+                                :disabled="userStore.isAnonymous"
+                                :title="logInTitle('Import Workflow')"
+                                target="blank"
+                                variant="secondary"
+                                size="md">
+                                <FontAwesomeIcon icon="fa-edit" />
+                                Import
+                            </b-button>
+
+                            <b-button
+                                :to="runUrl"
+                                :disabled="userStore.isAnonymous"
+                                :title="logInTitle('Run Workflow')"
+                                variant="primary"
+                                size="md">
+                                <FontAwesomeIcon icon="fa-play" />
+                                Run
+                            </b-button>
+                        </span>
                     </span>
 
                     <b-card class="workflow-card">
@@ -165,6 +201,7 @@ const publishedByUser = computed(() => `/workflows/list_published?f-username=${w
                         </hgroup>
 
                         <img alt="User Avatar" :src="gravatarSource" class="mb-2" />
+
                         <router-link :to="publishedByUser">
                             All published Workflows by {{ workflowInfo.owner }}
                         </router-link>
@@ -220,6 +257,7 @@ const publishedByUser = computed(() => `/workflows/list_published?f-username=${w
     display: flex;
     flex-grow: 1;
     gap: 1rem;
+    height: 100%;
 
     .workflow-preview {
         flex-grow: 1;
@@ -229,8 +267,14 @@ const publishedByUser = computed(() => `/workflows/list_published?f-username=${w
         }
     }
 
+    aside {
+        max-width: 500px;
+        height: 100%;
+    }
+
     @media only screen and (max-width: 1100px) {
         flex-direction: column;
+        height: unset;
 
         .workflow-preview {
             height: 450px;
@@ -238,19 +282,20 @@ const publishedByUser = computed(() => `/workflows/list_published?f-username=${w
 
         aside {
             max-width: unset;
+            height: unset;
         }
     }
 }
 
 .workflow-information {
     flex-grow: 1;
-    max-width: 500px;
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
     align-items: start;
     justify-content: start;
     align-self: flex-start;
+    overflow-y: scroll;
 
     .workflow-info-box {
         display: flex;
