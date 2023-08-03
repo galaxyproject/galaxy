@@ -1,6 +1,8 @@
 import { map, pluck } from "rxjs/operators";
 
-export function syncConfigToGalaxy(galaxy$, store) {
+import { useConfigStore } from "@/stores/configurationStore";
+
+export function syncConfigToGalaxy(galaxy$) {
     const cfg$ = galaxy$.pipe(
         pluck("config"),
         // make sure we're not operating on that config by reference.
@@ -9,7 +11,10 @@ export function syncConfigToGalaxy(galaxy$, store) {
     );
 
     return cfg$.subscribe(
-        (cfg) => store.commit("config/setConfigs", cfg),
+        (cfg) => {
+            const configStore = useConfigStore();
+            configStore.setConfiguration(cfg);
+        },
         (err) => console.log("syncConfigToGalaxy error", err),
         () => console.log("syncConfigToGalaxy complete")
     );

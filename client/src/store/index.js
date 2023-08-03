@@ -10,7 +10,6 @@ import createCache from "vuex-cache";
 import VuexPersistence from "vuex-persist";
 
 import { collectionAttributesStore } from "./collectionAttributesStore";
-import { configStore } from "./configStore";
 import { datasetExtFilesStore } from "./datasetExtFilesStore";
 import { datasetPathDestinationStore } from "./datasetPathDestinationStore";
 import { gridSearchStore } from "./gridSearchStore";
@@ -49,7 +48,6 @@ export function createStore() {
         modules: {
             collectionAttributesStore: collectionAttributesStore,
             collectionElements: collectionElementsStore,
-            config: configStore,
             destinationParameters: jobDestinationParametersStore,
             dataset: datasetStore,
             datasetExtFiles: datasetExtFilesStore,
