@@ -74,11 +74,7 @@
             </div>
         </div>
         <span class="border-top"></span>
-        <div v-if="status.helpmodestatus" class="unified-panel-body d-flex justify-content-between">
-            <div class="helpModeContainer">
-                {{ "IN HELP MODE" }}
-            </div>
-        </div>
+        <HelpModeText v-if="status.helpmodestatus" />
     </div>
 </template>
 
@@ -95,6 +91,7 @@ import FavoritesButton from "./Buttons/FavoritesButton";
 import PanelViewButton from "./Buttons/PanelViewButton";
 import ToolSearch from "./Common/ToolSearch";
 import ToolSection from "./Common/ToolSection";
+import HelpModeText from "./HelpModeText";
 import { filterTools, filterToolSections, hasResults, hideToolsSection } from "./utilities";
 
 export default {
@@ -104,6 +101,7 @@ export default {
         PanelViewButton,
         ToolSection,
         ToolSearch,
+        HelpModeText,
     },
     props: {
         toolbox: {
