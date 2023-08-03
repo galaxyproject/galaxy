@@ -29,6 +29,13 @@ import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 jest.mock("app");
 jest.mock("@/schema");
 
+jest.mock("@/composables/config", () => ({
+    useConfig: jest.fn(() => ({
+        config: { ftp_upload_site: "Test ftp upload site" },
+        isLoaded: true,
+    })),
+}));
+
 interface RemoteFilesParams {
     target: string;
     recursive: boolean;
