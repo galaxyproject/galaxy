@@ -2,11 +2,9 @@ import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { createPinia } from "pinia";
-import { configStore } from "store/configStore";
 import { useHistoryStore } from "stores/historyStore";
 import { useUserStore } from "stores/userStore";
-import { getLocalVue, mockModule } from "tests/jest/helpers";
-import Vuex from "vuex";
+import { getLocalVue } from "tests/jest/helpers";
 
 import { getDatatypes, getGenomes } from "./services";
 import UploadModal from "./UploadModal";
@@ -14,6 +12,14 @@ import UploadModalContent from "./UploadModalContent";
 
 jest.mock("app");
 jest.mock("./services");
+jest.mock("@/schema");
+
+jest.mock("@/composables/config", () => ({
+    useConfig: jest.fn(() => ({
+        config: {},
+        isLoaded: true,
+    })),
+}));
 
 const fastaResponse = {
     description_url: "https://wiki.galaxyproject.org/Learn/Datatypes#Fasta",
@@ -38,14 +44,6 @@ const propsData = {
     fileSourcesConfigured: true,
 };
 
-const createStore = () => {
-    return new Vuex.Store({
-        modules: {
-            config: mockModule(configStore, { config: {} }),
-        },
-    });
-};
-
 describe("UploadModal.vue", () => {
     let wrapper;
     let axiosMock;
@@ -58,11 +56,8 @@ describe("UploadModal.vue", () => {
 
         const localVue = getLocalVue();
         const pinia = createPinia();
-        const store = createStore();
 
         wrapper = mount(UploadModal, {
-            store,
-            provide: { store },
             propsData,
             localVue,
             stubs: {
