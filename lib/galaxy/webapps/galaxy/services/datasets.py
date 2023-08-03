@@ -213,9 +213,9 @@ class DataMode(str, Enum):
 
 class DataResult(Model):
     data: List[Any]
-    dataset_type: Optional[str]
-    message: Optional[str]
-    extra_info: Optional[Any]  # Seems to be always None, deprecate?
+    dataset_type: Optional[str] = None
+    message: Optional[str] = None
+    extra_info: Optional[Any] = None  # Seems to be always None, deprecate?
 
 
 class BamDataResult(DataResult):
