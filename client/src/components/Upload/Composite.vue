@@ -66,10 +66,25 @@ import _l from "utils/localization";
 import { submitUpload } from "utils/uploadbox";
 
 import { uploadModelsToPayload } from "./helpers";
-import UploadBoxMixin from "./UploadBoxMixin";
+import UploadWrapper from "./UploadWrapper";
+import UploadModel from "mvc/upload/upload-model";
+import Select2 from "components/Select2";
 
 export default {
-    mixins: [UploadBoxMixin],
+    components: {
+        UploadWrapper,
+        Select2,
+    },
+    props: {
+        hasCallback: {
+            type: Boolean,
+            default: false,
+        },
+        details: {
+            type: Object,
+            required: true,
+        },
+    },
     data() {
         return {
             extension: "_select_",
@@ -89,6 +104,9 @@ export default {
             result.unshift({ id: "_select_", text: "Select" });
             return result;
         },
+        btnCloseTitle() {
+            return this.hasCallback ? "Cancel" : "Close";
+        },
     },
     watch: {
         extension: function (value) {
@@ -106,11 +124,10 @@ export default {
         },
     },
     created() {
-        this.initCollection();
-        this.initAppProperties();
+        this.collection = new UploadModel.Collection();
+        this.ftpUploadSite = this.details.currentFtp;
     },
     mounted() {
-        this.initExtensionInfo();
         // listener for collection triggers on change in composite datatype and extension selection
         this.collection.on("add", (model) => {
             this._eventAnnounce(model);
