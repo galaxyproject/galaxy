@@ -1,17 +1,17 @@
-import { createLocalVue, mount } from "@vue/test-utils";
+import { mount, Wrapper } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import raw from "components/providers/test/json/Dataset.json";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { configStore } from "store/configStore";
-import Vuex from "vuex";
 
-import JobParameters from "./JobParameters";
+import raw from "@/components/providers/test/json/Dataset.json";
+
 import paramResponse from "./parameters-response.json";
 
+import JobParameters from "./JobParameters.vue";
+
 const JOB_ID = "foo";
-const DatasetProvider = {
+const DatasetProvider: any = {
     render() {
         return this.$scopedSlots.default({
             loading: false,
@@ -19,31 +19,18 @@ const DatasetProvider = {
         });
     },
 };
-const localVue = createLocalVue();
 const pinia = createPinia();
-localVue.use(Vuex);
 
 describe("JobParameters/JobParameters.vue", () => {
-    let actions;
-    let state;
-    let store;
-
-    const linkParam = paramResponse.parameters.find((element) => Array.isArray(element.value));
-    let axiosMock;
+    const linkParam = paramResponse.parameters.find((element) => Array.isArray(element.value)) ?? {
+        text: "Test Parameter not found",
+        value: "NOT FOUND",
+    };
+    let axiosMock: MockAdapter;
 
     beforeEach(() => {
         axiosMock = new MockAdapter(axios);
         axiosMock.onGet(`/api/jobs/${JOB_ID}/parameters_display`).reply(200, paramResponse);
-        store = new Vuex.Store({
-            modules: {
-                config: {
-                    state,
-                    actions,
-                    getters: configStore.getters,
-                    namespaced: true,
-                },
-            },
-        });
     });
 
     afterEach(() => {
@@ -57,7 +44,6 @@ describe("JobParameters/JobParameters.vue", () => {
 
         const wrapper = mount(JobParameters, {
             propsData,
-            store,
             stubs: {
                 DatasetProvider: DatasetProvider,
             },
@@ -65,7 +51,12 @@ describe("JobParameters/JobParameters.vue", () => {
         });
         await flushPromises();
 
-        const checkTableParameter = (element, expectedTitle, expectedValue, link) => {
+        const checkTableParameter = (
+            element: Wrapper<any>,
+            expectedTitle: string,
+            expectedValue: string,
+            link?: string
+        ) => {
             const tds = element.findAll("td");
             expect(tds.at(0).text()).toBe(expectedTitle);
             expect(tds.at(1).text()).toContain(expectedValue);
@@ -82,9 +73,9 @@ describe("JobParameters/JobParameters.vue", () => {
         const elements = tbody.findAll("tr");
         expect(elements.length).toBe(3);
 
-        checkTableParameter(elements.at(0), "Add this value", "22");
-        checkTableParameter(elements.at(1), linkParam.text, `${raw.hid}: ${raw.name}`);
-        checkTableParameter(elements.at(2), "Iterate?", "NO");
+        checkTableParameter(elements.at(0), "Add this value", "22", undefined);
+        checkTableParameter(elements.at(1), linkParam.text, `${raw.hid}: ${raw.name}`, undefined);
+        checkTableParameter(elements.at(2), "Iterate?", "NO", undefined);
     });
 
     it("should show only single parameter", async () => {
@@ -93,7 +84,7 @@ describe("JobParameters/JobParameters.vue", () => {
             param: "Iterate?",
         };
 
-        const getSingleParam = async (propsData) => {
+        const getSingleParam = async (propsData: { jobId: string; param: string }) => {
             const wrapper = mount(JobParameters, {
                 propsData,
                 stubs: {
