@@ -219,14 +219,14 @@ class ToolShedPopulator:
     def get_ordered_installable_revisions(self, owner: str, name: str) -> OrderedInstallableRevisions:
         request = GetOrderedInstallableRevisionsRequest(owner=owner, name=name)
         revisions_response = self._api_interactor.get(
-            "repositories/get_ordered_installable_revisions", params=request.dict()
+            "repositories/get_ordered_installable_revisions", params=request.model_dump()
         )
         api_asserts.assert_status_code_is_ok(revisions_response)
         return OrderedInstallableRevisions(root=revisions_response.json())
 
     def assert_has_n_installable_revisions(self, repository: Repository, n: int):
         revisions = self.get_ordered_installable_revisions(repository.owner, repository.name)
-        actual_n = len(revisions.__root__)
+        actual_n = len(revisions.root)
         assert actual_n == n, f"Expected {n} repository revisions, found {actual_n} for {repository}"
 
     def get_repository_for(self, owner: str, name: str, deleted: str = "false") -> Optional[Repository]:
@@ -236,7 +236,7 @@ class ToolShedPopulator:
             deleted=deleted,
         )
         index = self.repository_index(request)
-        return index.__root__[0] if index.__root__ else None
+        return index.root[0] if index.root else None
 
     def repository_index(self, request: Optional[RepositoryIndexRequest]) -> RepositoryIndexResponse:
         repository_response = self._api_interactor.get("repositories", params=(request.dict() if request else {}))

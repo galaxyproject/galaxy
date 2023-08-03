@@ -8,7 +8,7 @@ class TestShedGalaxyInstallApi(ShedApiTestCase):
         owner = repository.owner
         name = repository.name
         installable_revisions = populator.get_ordered_installable_revisions(owner, name)
-        latest_install_revision = installable_revisions.__root__[-1]
+        latest_install_revision = installable_revisions.root[-1]
         self.install_repository(owner, name, latest_install_revision, tool_shed_url=self.url)
         response = self.galaxy_interactor._get("tools?in_panel=False")
         response.raise_for_status()
@@ -22,7 +22,7 @@ class TestShedGalaxyInstallApi(ShedApiTestCase):
         owner = repository.owner
         name = repository.name
         installable_revisions = populator.get_ordered_installable_revisions(owner, name)
-        latest_install_revision = installable_revisions.__root__[-1]
+        latest_install_revision = installable_revisions.root[-1]
         metadata_response = populator.reset_metadata(repository)
         assert metadata_response.status == "ok"
         self.install_repository(owner, name, latest_install_revision, tool_shed_url=self.url)

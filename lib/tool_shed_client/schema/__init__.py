@@ -110,7 +110,7 @@ class RepositoryUpdate(RootModel):
 
     @property
     def is_ok(self):
-        return isinstance(self.__root__, ValidRepostiroyUpdateMessage)
+        return isinstance(self.root, ValidRepostiroyUpdateMessage)
 
 
 class RepositoryDependency(BaseModel):
@@ -146,7 +146,7 @@ class RepositoryMetadata(RootModel):
 
     @property
     def latest_revision(self) -> RepositoryRevisionMetadata:
-        return list(self.__root__.values())[-1]
+        return list(self.root.values())[-1]
 
     @property
     def tip(self) -> str:
@@ -157,7 +157,7 @@ class RepositoryMetadata(RootModel):
 
     @property
     def is_new(self) -> bool:
-        return len(self.__root__) == 0
+        return len(self.root) == 0
 
 
 class ResetMetadataOnRepositoryRequest(BaseModel):

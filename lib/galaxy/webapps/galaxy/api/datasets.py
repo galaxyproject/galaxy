@@ -420,7 +420,7 @@ class FastAPIDatasets:
         To get more information please check the source code.
         """
         exclude_params = {"hda_ldda", "data_type"}
-        exclude_params.update(SerializationParams.__fields__.keys())
+        exclude_params.update(SerializationParams.model_fields.keys())
         extra_params = get_query_parameters_from_request_excluding(request, exclude_params)
 
         return self.service.show(trans, dataset_id, hda_ldda, serialization_params, data_type, **extra_params)

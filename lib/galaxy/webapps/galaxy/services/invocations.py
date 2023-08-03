@@ -202,7 +202,7 @@ class InvocationsService(ServiceBase):
         as_dict = invocation.to_dict(view.value, step_details=step_details, legacy_job_state=legacy_job_state)
         as_dict = self.security.encode_all_ids(as_dict, recursive=True)
         as_dict["messages"] = [
-            InvocationMessageResponseModel.parse_obj(message).__root__.dict() for message in invocation.messages
+            InvocationMessageResponseModel.model_validate(message).root.model_dump() for message in invocation.messages
         ]
         return as_dict
 

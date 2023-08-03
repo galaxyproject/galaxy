@@ -919,7 +919,7 @@ class ShedTwillTestCase(ShedApiTestCase):
 
     def _get_metadata_revision_count(self, repository: Repository) -> int:
         repostiory_metadata: RepositoryMetadata = self.populator.get_metadata(repository, downloadable_only=False)
-        return len(repostiory_metadata.__root__)
+        return len(repostiory_metadata.root)
 
     def get_tools_from_repository_metadata(self, repository, include_invalid=False):
         """Get a list of valid and (optionally) invalid tool dicts from the repository metadata."""
