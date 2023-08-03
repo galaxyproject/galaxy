@@ -9,7 +9,7 @@
  */
 
 import './styles.css';
-import React, { StrictMode } from 'react'
+import React from 'react'
 import {render as reactRender} from 'react-dom'
 import {App, H5GroveProvider} from '@h5web/app'
 
