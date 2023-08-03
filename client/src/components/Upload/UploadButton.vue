@@ -1,7 +1,7 @@
 <template>
     <b-button
         id="activity-upload"
-        v-b-tooltip.hover.bottom
+        v-b-tooltip.hover.noninteractive.bottom
         :aria-label="title | localize"
         :title="title | localize"
         class="upload-button"

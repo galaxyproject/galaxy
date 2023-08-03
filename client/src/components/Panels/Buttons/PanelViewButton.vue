@@ -1,6 +1,6 @@
 <template>
     <b-dropdown
-        v-b-tooltip.hover
+        v-b-tooltip.hover.noninteractive
         right
         title="Show panel options"
         variant="link"
