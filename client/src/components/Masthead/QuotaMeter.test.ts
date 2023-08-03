@@ -1,37 +1,28 @@
+import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
-import { createPinia } from "pinia";
-import { configStore } from "store/configStore";
-import { useUserStore } from "stores/userStore";
+import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
-import Vuex from "vuex";
+
+import { mockFetcher } from "@/schema/__mocks__";
+import { useUserStore } from "@/stores/userStore";
 
 import QuotaMeter from "./QuotaMeter.vue";
 
+jest.mock("@/schema");
+
 const localVue = getLocalVue();
 
-const createStore = (config) => {
-    return new Vuex.Store({
-        modules: {
-            config: {
-                state: {
-                    config,
-                },
-                getters: configStore.getters,
-                namespaced: true,
-            },
-        },
-    });
-};
-
-async function createWrapper(component, localVue, store, userData) {
-    const pinia = createPinia();
-    const wrapper = mount(component, {
-        localVue,
-        pinia,
-        store,
-    });
+async function createQuotaMeterWrapper(config: any, userData: any) {
+    mockFetcher.path("/api/configuration").method("get").mock({ data: config });
+    const pinia = createTestingPinia();
     const userStore = useUserStore();
     userStore.currentUser = { ...userStore.currentUser, ...userData };
+
+    const wrapper = mount(QuotaMeter, {
+        localVue,
+        pinia,
+    });
+    await flushPromises();
     return wrapper;
 }
 
@@ -43,8 +34,7 @@ describe("QuotaMeter.vue", () => {
         };
 
         const config = { enable_quotas: true };
-        const store = createStore(config);
-        const wrapper = await createWrapper(QuotaMeter, localVue, store, user);
+        const wrapper = await createQuotaMeterWrapper(config, user);
 
         expect(wrapper.find(".quota-progress > span").text()).toBe("Using 50%");
     });
@@ -54,24 +44,21 @@ describe("QuotaMeter.vue", () => {
 
         {
             const user = { quota_percent: 30 };
-            const store = createStore(config);
-            const wrapper = await createWrapper(QuotaMeter, localVue, store, user);
+            const wrapper = await createQuotaMeterWrapper(config, user);
 
             expect(wrapper.find(".quota-progress .progress-bar").classes()).toContain("bg-success");
         }
 
         {
             const user = { quota_percent: 80 };
-            const store = createStore(config);
-            const wrapper = await createWrapper(QuotaMeter, localVue, store, user);
+            const wrapper = await createQuotaMeterWrapper(config, user);
 
             expect(wrapper.find(".quota-progress .progress-bar").classes()).toContain("bg-warning");
         }
 
         {
             const user = { quota_percent: 95 };
-            const store = createStore(config);
-            const wrapper = await createWrapper(QuotaMeter, localVue, store, user);
+            const wrapper = await createQuotaMeterWrapper(config, user);
 
             expect(wrapper.find(".quota-progress .progress-bar").classes()).toContain("bg-danger");
         }
@@ -79,8 +66,7 @@ describe("QuotaMeter.vue", () => {
 
     it("prompts user to log in", async () => {
         const config = { enable_quotas: true };
-        const store = createStore(config);
-        const wrapper = await createWrapper(QuotaMeter, localVue, store, {});
+        const wrapper = await createQuotaMeterWrapper(config, {});
 
         expect(wrapper.find(".quota-meter > a").attributes("title")).toContain("Log in");
     });
@@ -88,8 +74,7 @@ describe("QuotaMeter.vue", () => {
     it("shows total usage in title", async () => {
         const user = { total_disk_usage: 9216 };
         const config = { enable_quotas: true };
-        const store = createStore(config);
-        const wrapper = await createWrapper(QuotaMeter, localVue, store, user);
+        const wrapper = await createQuotaMeterWrapper(config, user);
 
         expect(wrapper.find(".quota-progress").attributes("title")).toContain("9 KB");
     });
@@ -98,8 +83,7 @@ describe("QuotaMeter.vue", () => {
         {
             const user = { total_disk_usage: 7168 };
             const config = { enable_quotas: false };
-            const store = createStore(config);
-            const wrapper = await createWrapper(QuotaMeter, localVue, store, user);
+            const wrapper = await createQuotaMeterWrapper(config, user);
 
             expect(wrapper.find(".quota-text > a").text()).toBe("Using 7 KB");
             expect(wrapper.find(".quota-text > a").attributes("title")).not.toContain("7 KB");
@@ -112,8 +96,7 @@ describe("QuotaMeter.vue", () => {
             };
 
             const config = { enable_quotas: true };
-            const store = createStore(config);
-            const wrapper = await createWrapper(QuotaMeter, localVue, store, user);
+            const wrapper = await createQuotaMeterWrapper(config, user);
 
             expect(wrapper.find(".quota-text > a").text()).toBe("Using 21 KB");
             expect(wrapper.find(".quota-text > a").attributes("title")).not.toContain("21 KB");
