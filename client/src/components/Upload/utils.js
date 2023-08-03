@@ -13,6 +13,18 @@ export const AUTO_EXTENSION = {
 };
 export const DEFAULT_DBKEY = "?";
 export const DEFAULT_EXTENSION = "auto";
+export const DEFAULT_FILE_NAME = "New File";
+export const URI_PREFIXES = [
+    "http://",
+    "https://",
+    "ftp://",
+    "file://",
+    "gxfiles://",
+    "gximport://",
+    "gxuserimport://",
+    "gxftp://",
+    "drs://",
+];
 
 /**
  * Local cache.

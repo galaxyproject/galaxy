@@ -1,14 +1,11 @@
 <script setup>
-import axios from "axios";
 import { BButton } from "bootstrap-vue";
-import { getAppRoot } from "onload";
 import { filesDialog } from "utils/data";
 import { UploadQueue } from "utils/uploadbox";
 import Vue, { computed, ref } from "vue";
 
-import { defaultNewFileName, uploadModelsToPayload } from "./helpers";
 import { defaultModel } from "./model.js";
-import { findExtension, hasBrowserSupport, openFileDialog } from "./utils";
+import { DEFAULT_FILE_NAME, findExtension, hasBrowserSupport, openFileDialog } from "./utils";
 
 import DefaultRow from "./DefaultRow.vue";
 import UploadBox from "./UploadBox.vue";
@@ -77,16 +74,16 @@ const topInfo = computed(() => {
 });
 
 const queue = new UploadQueue({
+    announce: eventAnnounce,
+    chunkSize: props.details.chunkUploadSize,
+    complete: eventComplete,
     historyId: historyId.value,
+    error: eventError,
     get: (index) => uploadList.value[index],
     multiple: props.multiple,
-    announce: _eventAnnounce,
-    progress: _eventProgress,
-    success: _eventSuccess,
-    error: _eventError,
-    warning: _eventWarning,
-    complete: _eventComplete,
-    chunkSize: props.details.chunkUploadSize,
+    progress: eventProgress,
+    success: eventSuccess,
+    warning: eventWarning,
 });
 
 /** Add files to queue */
@@ -97,105 +94,8 @@ function addFiles(files) {
     queue.add(files);
 }
 
-/** Update model */
-function _eventInput(index, newData) {
-    const it = uploadList.value[index];
-    Object.entries(newData).forEach(([key, value]) => {
-        it[key] = value;
-    });
-}
-
-/** Success */
-function _eventSuccess(index) {
-    var it = uploadList.value[index];
-    it.percentage = 100;
-    it.status = "success";
-    props.details.model.set("percentage", _uploadPercentage(100, it.file_size));
-    uploadCompleted.value += it.file_size * 100;
-    counterAnnounce.value--;
-    counterSuccess.value++;
-}
-
-/** Remove all */
-function _eventReset() {
-    if (counterRunning.value === 0) {
-        counterAnnounce.value = 0;
-        counterSuccess.value = 0;
-        counterError.value = 0;
-        counterRunning.value = 0;
-        queue.reset();
-        uploadList.value = {};
-        extension.value = props.details.defaultExtension;
-        genome.value = props.details.defaultDbKey;
-        props.details.model.set("percentage", 0);
-    }
-}
-
-function uploadSelect() {
-    openFileDialog(addFiles, true);
-}
-
-/** Start upload process */
-function _eventStart() {
-    if (counterAnnounce.value == 0 || counterRunning.value > 0) {
-        return;
-    }
-    uploadSize.value = 0;
-    uploadCompleted.value = 0;
-    Object.values(uploadList.value).forEach((model) => {
-        if (model.status === "init") {
-            model.status = "queued";
-            uploadSize.value += model.file_size;
-        }
-    });
-    props.details.model.set({ percentage: 0, status: "success" });
-    counterRunning.value = counterAnnounce.value;
-
-    // package ftp files separately, and remove them from queue
-    _uploadFtp();
-    queue.start();
-}
-
-/** Package and upload ftp files in a single request */
-function _uploadFtp() {
-    const list = [];
-    Object.values(uploadList.value).forEach((model) => {
-        if (model.status === "queued" && model.file_mode === "ftp") {
-            queue.remove(model.id);
-            list.push(model);
-        }
-    });
-    if (list.length > 0) {
-        const data = uploadModelsToPayload(list, historyId.value);
-        axios
-            .post(`${getAppRoot()}api/tools/fetch`, data)
-            .then((message) => {
-                list.forEach((model) => {
-                    _eventSuccess(model.id, message);
-                });
-            })
-            .catch((message) => {
-                list.forEach((model) => {
-                    _eventError(model.id, message);
-                });
-            });
-    }
-}
-
-/** Progress */
-function _eventProgress(index, percentage) {
-    const it = uploadList.value[index];
-    it.percentage = percentage;
-    props.details.model.set("percentage", _uploadPercentage(percentage, it.file_size));
-}
-
-/** Calculate percentage of all queued uploads */
-function _uploadPercentage(percentage, size) {
-    return (uploadCompleted.value + percentage * size) / uploadSize.value;
-}
-
 /** A new file has been dropped/selected through the uploadbox plugin */
-function _eventAnnounce(index, file) {
+function eventAnnounce(index, file) {
     counterAnnounce.value++;
     const uploadModel = {
         ...defaultModel,
@@ -210,23 +110,8 @@ function _eventAnnounce(index, file) {
     Vue.set(uploadList.value, index, uploadModel);
 }
 
-/** Error */
-function _eventError(index, message) {
-    var it = uploadList.value[index];
-    it.percentage = 100;
-    it.status = "error";
-    it.info = message;
-    props.details.model.set({
-        percentage: _uploadPercentage(100, it.file_size),
-        status: "danger",
-    });
-    uploadCompleted.value += it.file_size * 100;
-    counterAnnounce.value--;
-    counterError.value++;
-}
-
 /** Queue is done */
-function _eventComplete() {
+function eventComplete() {
     Object.values(uploadList.value).forEach((model) => {
         if (model.status === "queued") {
             model.status = "init";
@@ -235,8 +120,43 @@ function _eventComplete() {
     counterRunning.value = 0;
 }
 
+/** Create a new file */
+function eventCreate() {
+    queue.add([{ name: DEFAULT_FILE_NAME, size: 0, mode: "new" }]);
+}
+
+/** Error */
+function eventError(index, message) {
+    var it = uploadList.value[index];
+    it.percentage = 100;
+    it.status = "error";
+    it.info = message;
+    props.details.model.set({
+        percentage: uploadPercentage(100, it.file_size),
+        status: "danger",
+    });
+    uploadCompleted.value += it.file_size * 100;
+    counterAnnounce.value--;
+    counterError.value++;
+}
+
+/** Update model */
+function eventInput(index, newData) {
+    const it = uploadList.value[index];
+    Object.entries(newData).forEach(([key, value]) => {
+        it[key] = value;
+    });
+}
+
+/** Reflect upload progress */
+function eventProgress(index, percentage) {
+    const it = uploadList.value[index];
+    it.percentage = percentage;
+    props.details.model.set("percentage", _uploadPercentage(percentage, it.file_size));
+}
+
 /** Remove model from upload list */
-function _eventRemove(index) {
+function eventRemove(index) {
     const it = uploadList.value[index];
     var status = it.status;
     if (status == "success") {
@@ -251,7 +171,7 @@ function _eventRemove(index) {
 }
 
 /** Show remote files dialog or FTP files */
-function _eventRemoteFiles() {
+function eventRemoteFiles() {
     filesDialog(
         (items) => {
             queue.add(
@@ -270,13 +190,52 @@ function _eventRemoteFiles() {
     );
 }
 
-/** Create a new file */
-function _eventCreate() {
-    queue.add([{ name: defaultNewFileName, size: 0, mode: "new" }]);
+/** Remove all */
+function eventReset() {
+    if (counterRunning.value === 0) {
+        counterAnnounce.value = 0;
+        counterSuccess.value = 0;
+        counterError.value = 0;
+        counterRunning.value = 0;
+        queue.reset();
+        uploadList.value = {};
+        extension.value = props.details.defaultExtension;
+        genome.value = props.details.defaultDbKey;
+        props.details.model.set("percentage", 0);
+    }
+}
+
+/** Success */
+function eventSuccess(index) {
+    var it = uploadList.value[index];
+    it.percentage = 100;
+    it.status = "success";
+    props.details.model.set("percentage", uploadPercentage(100, it.file_size));
+    uploadCompleted.value += it.file_size * 100;
+    counterAnnounce.value--;
+    counterSuccess.value++;
+}
+
+/** Start upload process */
+function eventStart() {
+    if (counterAnnounce.value == 0 || counterRunning.value > 0) {
+        return;
+    }
+    uploadSize.value = 0;
+    uploadCompleted.value = 0;
+    Object.values(uploadList.value).forEach((model) => {
+        if (model.status === "init") {
+            model.status = "queued";
+            uploadSize.value += model.file_size;
+        }
+    });
+    props.details.model.set({ percentage: 0, status: "success" });
+    counterRunning.value = counterAnnounce.value;
+    queue.start(true);
 }
 
 /** Pause upload process */
-function _eventStop() {
+function eventStop() {
     if (counterRunning.value > 0) {
         props.details.model.set("status", "info");
         topInfo.value = "Queue will pause after completing the current file...";
@@ -284,13 +243,14 @@ function _eventStop() {
     }
 }
 
-function _eventWarning(index, message) {
+/** Display warning */
+function eventWarning(index, message) {
     const it = uploadList.value[index];
     it.status = "warning";
     it.info = message;
 }
 
-/* update un-modified default values when globals change */
+/* Update extension type for all entries */
 function updateExtension(newExtension) {
     extension.value = newExtension;
     Object.values(uploadList.value).forEach((model) => {
@@ -300,12 +260,23 @@ function updateExtension(newExtension) {
     });
 }
 
+/** Update reference dataset for all entries */
 function updateGenome(newGenome) {
     Object.values(uploadList.value).forEach((model) => {
         if (model.status === "init" && model.genome === props.details.defaultDbKey) {
             model.genome = newGenome;
         }
     });
+}
+
+/** Calculate percentage of all queued uploads */
+function uploadPercentage(percentage, size) {
+    return (uploadCompleted.value + percentage * size) / uploadSize.value;
+}
+
+/** Open file dialog */
+function uploadSelect() {
+    openFileDialog(addFiles, true);
 }
 </script>
 
@@ -334,8 +305,8 @@ function updateGenome(newGenome) {
                     :space_to_tab="uploadItem.space_to_tab"
                     :status="uploadItem.status"
                     :to_posix_lines="uploadItem.to_posix_lines"
-                    @remove="_eventRemove"
-                    @input="_eventInput" />
+                    @remove="eventRemove"
+                    @input="eventInput" />
             </div>
         </UploadBox>
         <div class="upload-footer text-center">
@@ -364,11 +335,11 @@ function updateGenome(newGenome) {
                 v-if="!details.fileSourcesConfigured || !!details.currentFtp"
                 id="btn-remote-files"
                 :disabled="!enableSources"
-                @click="_eventRemoteFiles">
+                @click="eventRemoteFiles">
                 <span class="fa fa-folder-open"></span>
                 <span v-localize>Choose remote files</span>
             </BButton>
-            <BButton id="btn-new" title="Paste/Fetch data" :disabled="!enableSources" @click="_eventCreate">
+            <BButton id="btn-new" title="Paste/Fetch data" :disabled="!enableSources" @click="eventCreate">
                 <span class="fa fa-edit"></span>
                 <span v-localize>Paste/Fetch data</span>
             </BButton>
@@ -377,13 +348,13 @@ function updateGenome(newGenome) {
                 :disabled="!enableStart"
                 title="Start"
                 :variant="enableStart ? 'primary' : ''"
-                @click="_eventStart">
+                @click="eventStart">
                 <span v-localize>Start</span>
             </BButton>
-            <BButton id="btn-stop" title="Pause" :disabled="counterRunning == 0" @click="_eventStop">
+            <BButton id="btn-stop" title="Pause" :disabled="counterRunning == 0" @click="eventStop">
                 <span v-localize>Pause</span>
             </BButton>
-            <BButton id="btn-reset" title="Reset" :disabled="!enableReset" @click="_eventReset">
+            <BButton id="btn-reset" title="Reset" :disabled="!enableReset" @click="eventReset">
                 <span v-localize>Reset</span>
             </BButton>
             <BButton id="btn-close" title="Close" @click="$emit('dismiss')">

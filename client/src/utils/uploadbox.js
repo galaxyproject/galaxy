@@ -6,6 +6,7 @@ import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 import * as tus from "tus-js-client";
 import _ from "underscore";
+
 import { uploadModelsToPayload } from "@/components/Upload/helpers";
 
 function submitPayload(payload, cnf) {
@@ -175,7 +176,32 @@ export class UploadQueue {
     }
 
     // Initiate upload process
-    start() {
+    start(ftpBatch = false) {
+        if (ftpBatch) {
+            // package ftp files separately, and remove them from queue
+            const list = [];
+            Object.entries(this.queue).forEach(([key, model]) => {
+                if (model.status === "queued" && model.file_mode === "ftp") {
+                    queue.remove(model.id);
+                    list.push(this.opts.get(key));
+                }
+            });
+            if (list.length > 0) {
+                const data = uploadModelsToPayload(list, opts.historyId);
+                axios
+                    .post(`${getAppRoot()}api/tools/fetch`, data)
+                    .then((message) => {
+                        list.forEach((model) => {
+                            this.opts.success(model.id, message);
+                        });
+                    })
+                    .catch((message) => {
+                        list.forEach((model) => {
+                            this.opts.error(model.id, message);
+                        });
+                    });
+            }
+        }
         if (!this.isRunning) {
             this.isRunning = true;
             this._process();

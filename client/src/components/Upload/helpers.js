@@ -1,16 +1,5 @@
-export const defaultNewFileName = "New File";
+import { DEFAULT_FILE_NAME, URI_PREFIXES } from "./utils";
 
-const URI_PREFIXES = [
-    "http://",
-    "https://",
-    "ftp://",
-    "file://",
-    "gxfiles://",
-    "gximport://",
-    "gxuserimport://",
-    "gxftp://",
-    "drs://",
-];
 function itemIsUrl(item) {
     return URI_PREFIXES.some((prefix) => item.url_paste.startsWith(prefix));
 }
@@ -25,7 +14,7 @@ export function uploadModelsToPayload(items, history_id, composite = false) {
             let src;
             let pasteContent = null;
             let fileName = item.file_name;
-            if (fileName === defaultNewFileName) {
+            if (fileName === DEFAULT_FILE_NAME) {
                 fileName = null;
             }
             const url = (item.file_uri || item.file_path || item.url_paste).trim();
