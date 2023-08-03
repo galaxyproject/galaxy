@@ -1,21 +1,23 @@
 <template>
-    <UploadWrapper wrapper-class="upload-view-composite">
-        <div v-show="showHelper" class="upload-helper">Select a composite type</div>
-        <table v-show="!showHelper" ref="uploadTable" class="upload-table ui-table-striped">
-            <thead>
-                <tr>
-                    <th />
-                    <th />
-                    <th>Description</th>
-                    <th>Name</th>
-                    <th>Size</th>
-                    <th>Settings</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody />
-        </table>
-        <template v-slot:footer>
+    <div class="upload-view-composite">
+        <div class="upload-box" :style="{ height: '335px' }">
+            <div v-show="showHelper" class="upload-helper">Select a composite type</div>
+            <table v-show="!showHelper" ref="uploadTable" class="upload-table ui-table-striped">
+                <thead>
+                    <tr>
+                        <th />
+                        <th />
+                        <th>Description</th>
+                        <th>Name</th>
+                        <th>Size</th>
+                        <th>Settings</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody />
+            </table>
+        </div>
+        <div class="upload-footer">
             <span class="upload-footer-title">Composite Type:</span>
             <Select2
                 ref="footerExtension"
@@ -31,8 +33,8 @@
                     {{ listGenome.text }}
                 </option>
             </Select2>
-        </template>
-        <template v-slot:buttons>
+        </div>
+        <div class="upload-buttons">
             <b-button ref="btnClose" class="ui-button-default" :title="btnCloseTitle" @click="$emit('dismiss')">
                 {{ btnCloseTitle | localize }}
             </b-button>
@@ -54,8 +56,8 @@
                 @click="_eventReset">
                 {{ btnResetTitle }}
             </b-button>
-        </template>
-    </UploadWrapper>
+        </div>
+    </div>
 </template>
 
 <script>
@@ -67,11 +69,9 @@ import { submitUpload } from "utils/uploadbox";
 
 import { uploadModelsToPayload } from "./helpers";
 import UploadModel from "./upload-model";
-import UploadWrapper from "./UploadWrapper";
 
 export default {
     components: {
-        UploadWrapper,
         Select2,
     },
     props: {
