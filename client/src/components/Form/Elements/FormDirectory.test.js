@@ -2,6 +2,7 @@ import { mount } from "@vue/test-utils";
 import FilesDialog from "components/FilesDialog/FilesDialog";
 import { rootResponse } from "components/FilesDialog/testingData";
 import flushPromises from "flush-promises";
+import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
 import { mockFetcher } from "@/schema/__mocks__";
@@ -52,12 +53,16 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         spyOnUpdateURL = jest.spyOn(FormDirectory.methods, "updateURL");
 
         mockFetcher.path("/api/remote_files/plugins").method("get").mock({ data: rootResponse });
+        mockFetcher.path("/api/configuration").method("get").mock({ data: {} });
+
+        const pinia = createPinia();
 
         wrapper = mount(FormDirectory, {
             propsData: {
                 callback: () => {},
             },
             localVue: localVue,
+            pinia,
         });
         await flushPromises();
         await init();
