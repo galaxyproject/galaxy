@@ -1,46 +1,51 @@
 <template>
-    <UploadWrapper ref="wrapper" :top-info="topInfo | l">
-        <span style="width: 25%; display: inline; height: 100%" class="float-left">
-            <div class="upload-rule-option">
-                <div class="upload-rule-option-title">{{ "Upload data as" | l }}</div>
-                <div class="rule-data-type">
-                    <Select2 v-model="dataType" container-class="upload-footer-selection">
-                        <option value="datasets">Datasets</option>
-                        <option value="collections">Collection(s)</option>
-                    </Select2>
+    <div class="upload-view-default">
+        <div class="upload-top">
+            <div class="upload-top-info" v-html="topInfo"></div>
+        </div>
+        <div ref="uploadBox" class="upload-box" :style="{ height: '335px' }">
+            <span style="width: 25%; display: inline; height: 100%" class="float-left">
+                <div class="upload-rule-option">
+                    <div class="upload-rule-option-title">{{ "Upload data as" | l }}</div>
+                    <div class="rule-data-type">
+                        <Select2 v-model="dataType" container-class="upload-footer-selection">
+                            <option value="datasets">Datasets</option>
+                            <option value="collections">Collection(s)</option>
+                        </Select2>
+                    </div>
                 </div>
-            </div>
-            <div class="upload-rule-option">
-                <div class="upload-rule-option-title">{{ "Load tabular data from" | l }}</div>
-                <div class="rule-select-type">
-                    <Select2 v-model="selectionType" container-class="upload-footer-selection">
-                        <option value="paste">{{ "Pasted Table" | l }}</option>
-                        <option value="dataset">{{ "History Dataset" | l }}</option>
-                        <option v-if="ftpUploadSite" value="ftp">{{ "FTP Directory" | l }}</option>
-                        <option value="remote_files">{{ "Remote Files Directory" | l }}</option>
-                    </Select2>
+                <div class="upload-rule-option">
+                    <div class="upload-rule-option-title">{{ "Load tabular data from" | l }}</div>
+                    <div class="rule-select-type">
+                        <Select2 v-model="selectionType" container-class="upload-footer-selection">
+                            <option value="paste">{{ "Pasted Table" | l }}</option>
+                            <option value="dataset">{{ "History Dataset" | l }}</option>
+                            <option v-if="ftpUploadSite" value="ftp">{{ "FTP Directory" | l }}</option>
+                            <option value="remote_files">{{ "Remote Files Directory" | l }}</option>
+                        </Select2>
+                    </div>
                 </div>
-            </div>
-            <div v-if="selectionType == 'dataset'" id="upload-rule-dataset-option" class="upload-rule-option">
-                <div class="upload-rule-option-title">History dataset</div>
-                <div>
-                    <BLink v-if="selectedDatasetName == null" @click="onSelectDataset">
-                        {{ "Select" | l }}
-                    </BLink>
-                    <span v-else>
-                        {{ selectedDatasetName }} <FontAwesomeIcon icon="edit" @click="onSelectDataset" />
-                    </span>
+                <div v-if="selectionType == 'dataset'" id="upload-rule-dataset-option" class="upload-rule-option">
+                    <div class="upload-rule-option-title">History dataset</div>
+                    <div>
+                        <BLink v-if="selectedDatasetName == null" @click="onSelectDataset">
+                            {{ "Select" | l }}
+                        </BLink>
+                        <span v-else>
+                            {{ selectedDatasetName }} <FontAwesomeIcon icon="edit" @click="onSelectDataset" />
+                        </span>
+                    </div>
                 </div>
-            </div>
-        </span>
-        <span style="display: inline; float: right; width: 75%; height: 300px">
-            <textarea
-                v-model="sourceContent"
-                class="upload-rule-source-content form-control"
-                style="height: 100%"
-                :disabled="selectionType != 'paste'"></textarea>
-        </span>
-        <template v-slot:buttons>
+            </span>
+            <span style="display: inline; float: right; width: 75%; height: 300px">
+                <textarea
+                    v-model="sourceContent"
+                    class="upload-rule-source-content form-control"
+                    style="height: 100%"
+                    :disabled="selectionType != 'paste'"></textarea>
+            </span>
+        </div>
+        <div class="upload-buttons">
             <BButton
                 id="btn-close"
                 ref="btnClose"
@@ -68,8 +73,8 @@
                 @click="_eventReset">
                 {{ btnResetTitle | l }}
             </BButton>
-        </template>
-    </UploadWrapper>
+        </div>
+    </div>
 </template>
 
 <script>
@@ -85,12 +90,11 @@ import { getAppRoot } from "onload/loadConfig";
 import { filesDialog } from "utils/data";
 
 import UploadModel from "./upload-model";
-import UploadWrapper from "./UploadWrapper";
 
 library.add(faEdit);
 
 export default {
-    components: { BLink, BButton, FontAwesomeIcon, Select2, UploadWrapper },
+    components: { BLink, BButton, FontAwesomeIcon, Select2 },
     props: {
         hasCallback: {
             type: Boolean,
