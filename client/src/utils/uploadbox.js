@@ -5,7 +5,6 @@
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 import * as tus from "tus-js-client";
-import _ from "underscore";
 
 import { uploadModelsToPayload } from "@/components/Upload/helpers";
 
@@ -182,12 +181,12 @@ export class UploadQueue {
             const list = [];
             Object.entries(this.queue).forEach(([key, model]) => {
                 if (model.status === "queued" && model.file_mode === "ftp") {
-                    queue.remove(model.id);
+                    this.queue.remove(model.id);
                     list.push(this.opts.get(key));
                 }
             });
             if (list.length > 0) {
-                const data = uploadModelsToPayload(list, opts.historyId);
+                const data = uploadModelsToPayload(list, this.opts.historyId);
                 axios
                     .post(`${getAppRoot()}api/tools/fetch`, data)
                     .then((message) => {

@@ -1,5 +1,5 @@
 <template>
-    <upload-wrapper wrapper-class="upload-view-composite">
+    <UploadWrapper wrapper-class="upload-view-composite">
         <div v-show="showHelper" class="upload-helper">Select a composite type</div>
         <table v-show="!showHelper" ref="uploadTable" class="upload-table ui-table-striped">
             <thead>
@@ -17,20 +17,20 @@
         </table>
         <template v-slot:footer>
             <span class="upload-footer-title">Composite Type:</span>
-            <select2
+            <Select2
                 ref="footerExtension"
                 v-model="extension"
                 container-class="upload-footer-extension"
                 :enabled="!running">
                 <option v-for="(ext, index) in extensions" :key="index" :value="ext.id">{{ ext.text }}</option>
-            </select2>
+            </Select2>
             <span ref="footerExtensionInfo" class="upload-footer-extension-info upload-icon-button fa fa-search" />
             <span class="upload-footer-title">Genome/Build:</span>
-            <select2 ref="footerGenome" v-model="genome" container-class="upload-footer-genome" :enabled="!running">
+            <Select2 ref="footerGenome" v-model="genome" container-class="upload-footer-genome" :enabled="!running">
                 <option v-for="(listGenome, index) in listGenomes" :key="index" :value="listGenome.id">
                     {{ listGenome.text }}
                 </option>
-            </select2>
+            </Select2>
         </template>
         <template v-slot:buttons>
             <b-button ref="btnClose" class="ui-button-default" :title="btnCloseTitle" @click="$emit('dismiss')">
@@ -55,20 +55,19 @@
                 {{ btnResetTitle }}
             </b-button>
         </template>
-    </upload-wrapper>
+    </UploadWrapper>
 </template>
 
 <script>
-import UploadRow from "mvc/upload/composite/composite-row";
+import Select2 from "components/Select2";
 import _ from "underscore";
 import { refreshContentsWrapper } from "utils/data";
 import _l from "utils/localization";
 import { submitUpload } from "utils/uploadbox";
 
 import { uploadModelsToPayload } from "./helpers";
+import UploadModel from "./upload-model";
 import UploadWrapper from "./UploadWrapper";
-import UploadModel from "mvc/upload/upload-model";
-import Select2 from "components/Select2";
 
 export default {
     components: {
@@ -163,10 +162,10 @@ export default {
 
         /** Builds the basic ui with placeholder rows for each composite data type file */
         _eventAnnounce: function (model) {
-            var upload_row = new UploadRow(this, { model: model });
+            /*var upload_row = new UploadRow(this, { model: model });
             this.$uploadTable().find("tbody:first").append(upload_row.$el);
             this.showHelper = this.collection.length == 0;
-            upload_row.render();
+            upload_row.render();*/
         },
 
         /** Start upload process */

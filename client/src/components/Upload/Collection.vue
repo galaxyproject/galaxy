@@ -1,10 +1,9 @@
 <script setup>
+import { getGalaxyInstance } from "app";
 import { BButton } from "bootstrap-vue";
 import { filesDialog } from "utils/data";
 import { UploadQueue } from "utils/uploadbox";
 import Vue, { computed, ref } from "vue";
-
-import { getGalaxyInstance } from "app";
 
 import { defaultModel } from "./model.js";
 import { DEFAULT_FILE_NAME, findExtension, hasBrowserSupport, openFileDialog } from "./utils";

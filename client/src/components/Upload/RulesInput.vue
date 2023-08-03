@@ -1,24 +1,24 @@
 <template>
-    <upload-wrapper ref="wrapper" :top-info="topInfo | l">
+    <UploadWrapper ref="wrapper" :top-info="topInfo | l">
         <span style="width: 25%; display: inline; height: 100%" class="float-left">
             <div class="upload-rule-option">
                 <div class="upload-rule-option-title">{{ "Upload data as" | l }}</div>
                 <div class="rule-data-type">
-                    <select2 v-model="dataType" container-class="upload-footer-selection">
+                    <Select2 v-model="dataType" container-class="upload-footer-selection">
                         <option value="datasets">Datasets</option>
                         <option value="collections">Collection(s)</option>
-                    </select2>
+                    </Select2>
                 </div>
             </div>
             <div class="upload-rule-option">
                 <div class="upload-rule-option-title">{{ "Load tabular data from" | l }}</div>
                 <div class="rule-select-type">
-                    <select2 v-model="selectionType" container-class="upload-footer-selection">
+                    <Select2 v-model="selectionType" container-class="upload-footer-selection">
                         <option value="paste">{{ "Pasted Table" | l }}</option>
                         <option value="dataset">{{ "History Dataset" | l }}</option>
                         <option v-if="ftpUploadSite" value="ftp">{{ "FTP Directory" | l }}</option>
                         <option value="remote_files">{{ "Remote Files Directory" | l }}</option>
-                    </select2>
+                    </Select2>
                 </div>
             </div>
             <div v-if="selectionType == 'dataset'" id="upload-rule-dataset-option" class="upload-rule-option">
@@ -69,7 +69,7 @@
                 {{ btnResetTitle | l }}
             </BButton>
         </template>
-    </upload-wrapper>
+    </UploadWrapper>
 </template>
 
 <script>
@@ -79,14 +79,13 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
 import { BButton, BLink } from "bootstrap-vue";
+import Select2 from "components/Select2";
 import UploadUtils from "components/Upload/utils";
 import { getAppRoot } from "onload/loadConfig";
 import { filesDialog } from "utils/data";
 
+import UploadModel from "./upload-model";
 import UploadWrapper from "./UploadWrapper";
-import UploadModel from "mvc/upload/upload-model";
-
-import Select2 from "components/Select2";
 
 library.add(faEdit);
 
