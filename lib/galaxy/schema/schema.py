@@ -171,6 +171,15 @@ CollectionTypeField = Field(
     ),
 )
 
+OptionalCollectionTypeField = Field(
+    None,
+    title="Collection Type",
+    description=(
+        "The type of the collection, can be `list`, `paired`, or define subcollections using `:` "
+        "as separator like `list:paired` or `list:list`."
+    ),
+)
+
 PopulatedStateField: DatasetCollectionPopulatedState = Field(
     ...,
     title="Populated State",
@@ -1494,7 +1503,7 @@ class CollectionElementIdentifier(Model):
         title="ID",
         description="The encoded ID of the element.",
     )
-    collection_type: Optional[CollectionType] = CollectionTypeField
+    collection_type: Optional[CollectionType] = OptionalCollectionTypeField
     element_identifiers: Optional[List["CollectionElementIdentifier"]] = Field(
         default=None,
         title="Element Identifiers",
@@ -1513,7 +1522,7 @@ CollectionElementIdentifier.update_forward_refs()
 
 
 class CreateNewCollectionPayload(Model):
-    collection_type: Optional[CollectionType] = CollectionTypeField
+    collection_type: Optional[CollectionType] = OptionalCollectionTypeField
     element_identifiers: Optional[List[CollectionElementIdentifier]] = Field(
         default=None,
         title="Element Identifiers",
