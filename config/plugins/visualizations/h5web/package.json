@@ -9,6 +9,7 @@
     "license": "AFL-3.0",
     "dependencies": {
         "@h5web/app": "^8.0.0",
+        "buffer": "^6.0.3",
         "normalize.css": "^8.0.1",
         "react": "18.2.0",
         "react-dom": "18.2.0"
