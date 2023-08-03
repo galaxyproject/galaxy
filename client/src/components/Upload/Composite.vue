@@ -1,3 +1,130 @@
+<script setup>
+import { refreshContentsWrapper } from "utils/data";
+import { submitUpload } from "utils/uploadbox";
+import { computed, ref } from "vue";
+
+import { uploadModelsToPayload } from "./helpers";
+import UploadModel from "./upload-model";
+
+import UploadSettingsSelect from "./UploadSettingsSelect.vue";
+
+const props = defineProps({
+    hasCallback: {
+        type: Boolean,
+        default: false,
+    },
+    details: {
+        type: Object,
+        required: true,
+    },
+});
+
+const extension = ref("_select_");
+const genome = ref(props.details.defaultDbKey);
+const listExtensions = ref([]);
+const listGenomes = ref([]);
+const uploadItems = ref({});
+
+const extensions = computed(() => {
+    return [];
+    const result = listExtensions.value.filter((ext) => ext.composite_files);
+    result.unshift({ id: "_select_", text: "Select" });
+    return result;
+});
+
+const running = computed(() => {
+    /*var model = this.collection.first();
+    if (model && model.get("status") == "running") {
+        this.running = true;
+    } else {
+        this.running = false;
+    }*/
+    return true;
+});
+const readyStart = computed(() => {
+    return true;
+    /*const readyStates = this.collection.where({ status: "ready" }).length;
+    const optionalStates = this.collection.where({ optional: true }).length;
+    return readyStates + optionalStates == this.collection.length && this.collection.length > 0;*/
+});
+const showHelper = computed(() => Object.keys(uploadItems.value).length === 0);
+
+function changeType(newType) {
+    uploadItems.value = {};
+    /*const details = this.extensionDetails(value);
+    if (details && details.composite_files) {
+        _.each(details.composite_files, (item) => {
+            this.collection.add({
+                id: this.collection.size(),
+                file_desc: item.description || item.name,
+                optional: item.optional,
+            });
+        });
+    }*/
+}
+
+/** Builds the basic ui with placeholder rows for each composite data type file */
+function eventAnnounce(model) {
+    /*var upload_row = new UploadRow(this, { model: model });
+    this.$uploadTable().find("tbody:first").append(upload_row.$el);
+    this.showHelper = this.collection.length == 0;
+    upload_row.render();*/
+}
+
+/** Refresh error state */
+function eventError(message) {
+    /*this.collection.each((it) => {
+        it.set({ status: "error", info: message });
+    });*/
+}
+
+/** Refresh progress state */
+function eventProgress(percentage) {
+    /*this.collection.each((it) => {
+        it.set("percentage", percentage);
+    });*/
+}
+
+/** Remove all */
+function eventReset() {
+    /*if (this.collection.where({ status: "running" }).length == 0) {
+        this.collection.reset();
+        this.extension = this.details.defaultExtension;
+        this.genome = this.details.defaultDbKey;
+        this.renderNonReactiveComponents();
+    }*/
+}
+/** Start upload process */
+function eventStart() {
+    this.collection.each((model) => {
+        model.set({
+            genome: this.genome,
+            extension: this.extension,
+        });
+    });
+    submitUpload({
+        url: props.details.uploadPath,
+        //data: uploadModelsToPayload(this.collection.filter(), this.history_id, true),
+        success: (message) => {
+            eventSuccess(message);
+        },
+        error: (message) => {
+            eventError(message);
+        },
+        progress: (percentage) => {
+            _eventProgress(percentage);
+        },
+    });
+}
+
+/** Refresh success state */
+function eventSuccess(message) {
+    /*this.collection.each((it) => {
+        it.set("status", "success");
+    });*/
+}
+</script>
+
 <template>
     <div class="upload-view-composite">
         <div class="upload-box" :style="{ height: '335px' }">
@@ -19,209 +146,29 @@
         </div>
         <div class="upload-footer">
             <span class="upload-footer-title">Composite Type:</span>
-            <Select2
-                ref="footerExtension"
-                v-model="extension"
-                container-class="upload-footer-extension"
-                :enabled="!running">
-                <option v-for="(ext, index) in extensions" :key="index" :value="ext.id">{{ ext.text }}</option>
-            </Select2>
+            <UploadSettingsSelect :value="extension" :options="extensions" :disabled="running" />
             <span ref="footerExtensionInfo" class="upload-footer-extension-info upload-icon-button fa fa-search" />
             <span class="upload-footer-title">Genome/Build:</span>
-            <Select2 ref="footerGenome" v-model="genome" container-class="upload-footer-genome" :enabled="!running">
-                <option v-for="(listGenome, index) in listGenomes" :key="index" :value="listGenome.id">
-                    {{ listGenome.text }}
-                </option>
-            </Select2>
+            <UploadSettingsSelect :value="genome" :options="listGenomes" :disabled="running" />
         </div>
         <div class="upload-buttons">
-            <b-button ref="btnClose" class="ui-button-default" :title="btnCloseTitle" @click="$emit('dismiss')">
-                {{ btnCloseTitle | localize }}
+            <b-button ref="btnClose" class="ui-button-default" title="Close" @click="$emit('dismiss')">
+                <span v-if="hasCallback" v-localize>Close</span>
+                <span v-else v-localize>Cancel</span>
             </b-button>
             <b-button
                 id="btn-start"
                 ref="btnStart"
                 class="ui-button-default"
                 :disabled="!readyStart"
-                :title="btnStartTitle"
+                title="Start"
                 :variant="readyStart ? 'primary' : ''"
-                @click="_eventStart">
-                {{ btnStartTitle }}
+                @click="eventStart">
+                <span v-localize>Start</span>
             </b-button>
-            <b-button
-                id="btn-reset"
-                ref="btnReset"
-                class="ui-button-default"
-                :title="btnResetTitle"
-                @click="_eventReset">
-                {{ btnResetTitle }}
+            <b-button id="btn-reset" ref="btnReset" class="ui-button-default" title="Reset" @click="eventReset">
+                <span v-localize>Reset</span>
             </b-button>
         </div>
     </div>
 </template>
-
-<script>
-import Select2 from "components/Select2";
-import _ from "underscore";
-import { refreshContentsWrapper } from "utils/data";
-import _l from "utils/localization";
-import { submitUpload } from "utils/uploadbox";
-
-import { uploadModelsToPayload } from "./helpers";
-import UploadModel from "./upload-model";
-
-export default {
-    components: {
-        Select2,
-    },
-    props: {
-        hasCallback: {
-            type: Boolean,
-            default: false,
-        },
-        details: {
-            type: Object,
-            required: true,
-        },
-    },
-    data() {
-        return {
-            extension: "_select_",
-            genome: this.details.defaultDbKey,
-            listExtensions: [],
-            listGenomes: [],
-            running: false,
-            showHelper: true,
-            btnResetTitle: _l("Reset"),
-            btnStartTitle: _l("Start"),
-            readyStart: false,
-        };
-    },
-    computed: {
-        extensions() {
-            const result = _.filter(this.listExtensions, (ext) => ext.composite_files);
-            result.unshift({ id: "_select_", text: "Select" });
-            return result;
-        },
-        btnCloseTitle() {
-            return this.hasCallback ? "Cancel" : "Close";
-        },
-    },
-    watch: {
-        extension: function (value) {
-            this.collection.reset();
-            const details = this.extensionDetails(value);
-            if (details && details.composite_files) {
-                _.each(details.composite_files, (item) => {
-                    this.collection.add({
-                        id: this.collection.size(),
-                        file_desc: item.description || item.name,
-                        optional: item.optional,
-                    });
-                });
-            }
-        },
-    },
-    created() {
-        this.collection = new UploadModel.Collection();
-        this.ftpUploadSite = this.details.currentFtp;
-    },
-    mounted() {
-        // listener for collection triggers on change in composite datatype and extension selection
-        this.collection.on("add", (model) => {
-            this._eventAnnounce(model);
-        });
-        this.collection.on("change add", () => {
-            this.renderNonReactiveComponents();
-        });
-        this.renderNonReactiveComponents();
-    },
-    methods: {
-        renderNonReactiveComponents: function () {
-            var model = this.collection.first();
-            if (model && model.get("status") == "running") {
-                this.running = true;
-            } else {
-                this.running = false;
-            }
-            if (
-                this.collection.where({ status: "ready" }).length + this.collection.where({ optional: true }).length ==
-                    this.collection.length &&
-                this.collection.length > 0
-            ) {
-                this.readyStart = true;
-            } else {
-                this.readyStart = false;
-            }
-            this.showHelper = this.collection.length == 0;
-        },
-
-        //
-        // upload events / process pipeline
-        //
-
-        /** Builds the basic ui with placeholder rows for each composite data type file */
-        _eventAnnounce: function (model) {
-            /*var upload_row = new UploadRow(this, { model: model });
-            this.$uploadTable().find("tbody:first").append(upload_row.$el);
-            this.showHelper = this.collection.length == 0;
-            upload_row.render();*/
-        },
-
-        /** Start upload process */
-        _eventStart: function () {
-            this.collection.each((model) => {
-                model.set({
-                    genome: this.genome,
-                    extension: this.extension,
-                });
-            });
-            submitUpload({
-                url: this.details.uploadPath,
-                data: uploadModelsToPayload(this.collection.filter(), this.history_id, true),
-                success: (message) => {
-                    this._eventSuccess(message);
-                },
-                error: (message) => {
-                    this._eventError(message);
-                },
-                progress: (percentage) => {
-                    this._eventProgress(percentage);
-                },
-            });
-        },
-
-        /** Remove all */
-        _eventReset: function () {
-            if (this.collection.where({ status: "running" }).length == 0) {
-                this.collection.reset();
-                this.extension = this.details.defaultExtension;
-                this.genome = this.details.defaultDbKey;
-                this.renderNonReactiveComponents();
-            }
-        },
-
-        /** Refresh progress state */
-        _eventProgress: function (percentage) {
-            this.collection.each((it) => {
-                it.set("percentage", percentage);
-            });
-        },
-
-        /** Refresh success state */
-        _eventSuccess: function (message) {
-            this.collection.each((it) => {
-                it.set("status", "success");
-            });
-            refreshContentsWrapper();
-        },
-
-        /** Refresh error state */
-        _eventError: function (message) {
-            this.collection.each((it) => {
-                it.set({ status: "error", info: message });
-            });
-        },
-    },
-};
-</script>
