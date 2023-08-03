@@ -448,7 +448,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         for dep in inherit_chain:
             result.append(DatasetInheritanceChainEntry(name=f"{dep[0].name}", dep=dep[1]))
 
-        return DatasetInheritanceChain(__root__=result)
+        return DatasetInheritanceChain(root=result)
 
     def compute_hash(
         self,
