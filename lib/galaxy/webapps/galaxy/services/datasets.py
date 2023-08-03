@@ -409,7 +409,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         quota = ConcreteObjectStoreQuotaSourceDetails(
             source=quota_source.label,
             enabled=quota_source.use,
-        )
+        ).model_dump()  # TODO: could we bypass the dump?
 
         dataset_state = dataset.state
         hashes = [h.to_dict() for h in dataset.hashes]
