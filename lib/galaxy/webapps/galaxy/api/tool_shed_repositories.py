@@ -142,9 +142,7 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
         irm = InstallRepositoryManager(self.app)
         installed_tool_shed_repositories = irm.install(tool_shed_url, name, owner, changeset_revision, payload)
         if installed_tool_shed_repositories:
-            return InstalledToolShedRepositories(
-                __root__=list(map(self.service._show, installed_tool_shed_repositories))
-            )
+            return InstalledToolShedRepositories(root=list(map(self.service._show, installed_tool_shed_repositories)))
         message = "No repositories were installed, possibly because the selected repository has already been installed."
         return dict(status="ok", message=message)
 
@@ -245,7 +243,7 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
                 return installed_tool_shed_repositories
             elif isinstance(installed_tool_shed_repositories, InstalledToolShedRepositories):
                 all_installed_tool_shed_repositories.extend(installed_tool_shed_repositories.__root__)
-        return InstalledToolShedRepositories(__root__=all_installed_tool_shed_repositories)
+        return InstalledToolShedRepositories(root=all_installed_tool_shed_repositories)
 
     @require_admin
     @expose_api

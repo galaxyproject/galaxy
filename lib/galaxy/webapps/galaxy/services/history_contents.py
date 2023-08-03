@@ -594,7 +594,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         :raises: RequestParameterInvalidException, ObjectNotFound, InsufficientPermissionsException, InternalServerError
                     RequestParameterMissingException
         """
-        payload_dict = payload.dict(by_alias=True)
+        payload_dict = payload.model_dump(by_alias=True)
         hda = self.hda_manager.get_owned(history_content_id, trans.user, current_history=trans.history, trans=trans)
         assert hda is not None
         self.history_manager.error_unless_mutable(hda.history)
