@@ -17,14 +17,6 @@ const props = defineProps({
         type: Boolean,
         default: true,
     },
-    lazyLoadMax: {
-        type: Number,
-        default: null,
-    },
-    selectable: {
-        type: Boolean,
-        default: false,
-    },
     hasCallback: {
         type: Boolean,
         default: false,

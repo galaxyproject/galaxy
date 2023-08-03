@@ -1,301 +1,415 @@
+<script setup>
+import { BButton } from "bootstrap-vue";
+import { filesDialog } from "utils/data";
+import { UploadQueue } from "utils/uploadbox";
+import Vue, { computed, ref } from "vue";
+
+import { getGalaxyInstance } from "app";
+
+import { defaultModel } from "./model.js";
+import { DEFAULT_FILE_NAME, findExtension, hasBrowserSupport, openFileDialog } from "./utils";
+
+import DefaultRow from "./DefaultRow.vue";
+import UploadBox from "./UploadBox.vue";
+import UploadExtensionDetails from "./UploadExtensionDetails.vue";
+import UploadSettingsSelect from "./UploadSettingsSelect.vue";
+
+const props = defineProps({
+    multiple: {
+        type: Boolean,
+        default: true,
+    },
+    hasCallback: {
+        type: Boolean,
+        default: false,
+    },
+    details: {
+        type: Object,
+        required: true,
+    },
+});
+
+const collectionType = ref("list");
+const counterAnnounce = ref(0);
+const counterError = ref(0);
+const counterRunning = ref(0);
+const counterSuccess = ref(0);
+const extension = ref(props.details.defaultExtension);
+const genome = ref(props.details.defaultDbKey);
+const highlightBox = ref(false);
+const listCollections = [
+    { id: "list", text: "List" },
+    { id: "paired", text: "Pair" },
+    { id: "list:paired", text: "List of Pairs" },
+];
+const running = ref(false);
+const uploadCompleted = ref(0);
+const uploadList = ref({});
+const uploadSize = ref(0);
+
+const showHelper = computed(() => Object.keys(uploadList.value).length === 0);
+const listExtensions = computed(() => props.details.effectiveExtensions.filter((ext) => !ext.composite_files));
+const historyId = computed(() => props.details.history_id);
+const counterNonRunning = computed(() => counterAnnounce.value + counterSuccess.value + counterError.value);
+const enableBuild = computed(
+    () => counterRunning.value == 0 && counterAnnounce.value == 0 && counterSuccess.value > 0 && counterError.value == 0
+);
+const enableReset = computed(() => counterRunning.value == 0 && counterNonRunning.value > 0);
+const enableStart = computed(() => counterRunning.value == 0 && counterAnnounce.value > 0);
+const enableSources = computed(() => counterRunning.value == 0 && (props.multiple || counterNonRunning.value == 0));
+const topInfo = computed(() => {
+    let message = "";
+    if (counterAnnounce.value == 0) {
+        if (hasBrowserSupport) {
+            message = "&nbsp;";
+        } else {
+            message =
+                "Browser does not support Drag & Drop. Try Firefox 4+, Chrome 7+, IE 10+, Opera 12+ or Safari 6+.";
+        }
+    } else {
+        if (counterRunning.value == 0) {
+            message = `You added ${counterAnnounce.value} file(s) to the queue. Add more files or click 'Start' to proceed.`;
+        } else {
+            message = `Please wait...${counterAnnounce.value} out of ${counterRunning.value} remaining.`;
+        }
+    }
+    return message;
+});
+
+const queue = new UploadQueue({
+    announce: eventAnnounce,
+    chunkSize: props.details.chunkUploadSize,
+    complete: eventComplete,
+    historyId: historyId.value,
+    error: eventError,
+    get: (index) => uploadList.value[index],
+    multiple: props.multiple,
+    progress: eventProgress,
+    success: eventSuccess,
+    warning: eventWarning,
+});
+
+/** Add files to queue */
+function addFiles(files) {
+    files.forEach((file) => {
+        file.chunk_mode = true;
+    });
+    queue.add(files);
+}
+
+/** A new file has been dropped/selected through the uploadbox plugin */
+function eventAnnounce(index, file) {
+    counterAnnounce.value++;
+    const uploadModel = {
+        ...defaultModel,
+        id: index,
+        file_name: file.name,
+        file_size: file.size,
+        file_mode: file.mode || "local",
+        file_path: file.path,
+        file_uri: file.uri,
+        file_data: file,
+    };
+    Vue.set(uploadList.value, index, uploadModel);
+}
+
+/** Queue is done */
+function eventComplete() {
+    Object.values(uploadList.value).forEach((model) => {
+        if (model.status === "queued") {
+            model.status = "init";
+        }
+    });
+    counterRunning.value = 0;
+}
+
+/** Create a new file */
+function eventCreate() {
+    queue.add([{ name: DEFAULT_FILE_NAME, size: 0, mode: "new" }]);
+}
+
+function eventBuild() {
+    const Galaxy = getGalaxyInstance();
+    const models = {};
+    Object.values(uploadList.value).forEach((model) => {
+        const outputs = model.outputs;
+        if (outputs) {
+            Object.entries(outputs).forEach((output) => {
+                const outputDetails = output[1];
+                models[outputDetails.id] = outputDetails;
+            });
+        } else {
+            console.debug("Warning, upload response does not contain outputs.", model);
+        }
+    });
+    // Build selection object
+    const selection = {
+        models: Object.values(models),
+        historyId: Galaxy.currHistoryPanel.model.id,
+    };
+    Galaxy.currHistoryPanel.buildCollection(collectionType.value, selection);
+    counterRunning.value = 0;
+    eventReset();
+    emit("dismiss");
+}
+
+/** Error */
+function eventError(index, message) {
+    var it = uploadList.value[index];
+    it.percentage = 100;
+    it.status = "error";
+    it.info = message;
+    props.details.model.set({
+        percentage: uploadPercentage(100, it.file_size),
+        status: "danger",
+    });
+    uploadCompleted.value += it.file_size * 100;
+    counterAnnounce.value--;
+    counterError.value++;
+}
+
+/** Update model */
+function eventInput(index, newData) {
+    const it = uploadList.value[index];
+    Object.entries(newData).forEach(([key, value]) => {
+        it[key] = value;
+    });
+}
+
+/** Reflect upload progress */
+function eventProgress(index, percentage) {
+    const it = uploadList.value[index];
+    it.percentage = percentage;
+    props.details.model.set("percentage", _uploadPercentage(percentage, it.file_size));
+}
+
+/** Remove model from upload list */
+function eventRemove(index) {
+    const it = uploadList.value[index];
+    var status = it.status;
+    if (status == "success") {
+        counterSuccess.value--;
+    } else if (status == "error") {
+        counterError.value--;
+    } else {
+        counterAnnounce.value--;
+    }
+    Vue.delete(uploadList.value, index);
+    queue.remove(index);
+}
+
+/** Show remote files dialog or FTP files */
+function eventRemoteFiles() {
+    filesDialog(
+        (items) => {
+            queue.add(
+                items.map((item) => {
+                    const rval = {
+                        mode: "ftp",
+                        name: item.label,
+                        size: item.size,
+                        path: item.url,
+                    };
+                    return rval;
+                })
+            );
+        },
+        { multiple: true }
+    );
+}
+
+/** Remove all */
+function eventReset() {
+    if (counterRunning.value === 0) {
+        counterAnnounce.value = 0;
+        counterSuccess.value = 0;
+        counterError.value = 0;
+        counterRunning.value = 0;
+        queue.reset();
+        uploadList.value = {};
+        extension.value = props.details.defaultExtension;
+        genome.value = props.details.defaultDbKey;
+        props.details.model.set("percentage", 0);
+    }
+}
+
+/** Success */
+function eventSuccess(index, incoming) {
+    var it = uploadList.value[index];
+    it.percentage = 100;
+    it.status = "success";
+    it.outputs = incoming.outputs || incoming.data.outputs || {};
+    props.details.model.set("percentage", uploadPercentage(100, it.file_size));
+    uploadCompleted.value += it.file_size * 100;
+    counterAnnounce.value--;
+    counterSuccess.value++;
+}
+
+/** Start upload process */
+function eventStart() {
+    if (counterAnnounce.value == 0 || counterRunning.value > 0) {
+        return;
+    }
+    uploadSize.value = 0;
+    uploadCompleted.value = 0;
+    Object.values(uploadList.value).forEach((model) => {
+        if (model.status === "init") {
+            model.status = "queued";
+            uploadSize.value += model.file_size;
+        }
+    });
+    props.details.model.set({ percentage: 0, status: "success" });
+    counterRunning.value = counterAnnounce.value;
+    queue.start(true);
+}
+
+/** Pause upload process */
+function eventStop() {
+    if (counterRunning.value > 0) {
+        props.details.model.set("status", "info");
+        topInfo.value = "Queue will pause after completing the current file...";
+        queue.stop();
+    }
+}
+
+/** Display warning */
+function eventWarning(index, message) {
+    const it = uploadList.value[index];
+    it.status = "warning";
+    it.info = message;
+}
+
+/** Update collection type */
+function updateCollectionType(newCollectionType) {
+    collectionType.value = newCollectionType;
+}
+
+/* Update extension type for all entries */
+function updateExtension(newExtension) {
+    extension.value = newExtension;
+    Object.values(uploadList.value).forEach((model) => {
+        if (model.status === "init" && model.extension === props.details.defaultExtension) {
+            model.extension = newExtension;
+        }
+    });
+}
+
+/** Update reference dataset for all entries */
+function updateGenome(newGenome) {
+    Object.values(uploadList.value).forEach((model) => {
+        if (model.status === "init" && model.genome === props.details.defaultDbKey) {
+            model.genome = newGenome;
+        }
+    });
+}
+
+/** Calculate percentage of all queued uploads */
+function uploadPercentage(percentage, size) {
+    return (uploadCompleted.value + percentage * size) / uploadSize.value;
+}
+
+/** Open file dialog */
+function uploadSelect() {
+    openFileDialog(addFiles, true);
+}
+</script>
+
 <template>
-    <upload-wrapper ref="wrapper" :top-info="topInfo" :highlight-box="highlightBox">
-        <div v-show="showHelper" class="upload-helper"><i class="fa fa-files-o" />Drop files here</div>
-        <table v-show="!showHelper" ref="uploadTable" class="upload-table ui-table-striped">
-            <thead>
-                <tr>
-                    <th>Size</th>
-                    <th>Status</th>
-                    <th />
-                </tr>
-            </thead>
-            <tbody />
-        </table>
-        <template v-slot:footer>
-            <span class="upload-footer-title">Collection Type:</span>
-            <select2
-                ref="footerCollectionType"
-                v-model="collectionType"
-                container-class="upload-footer-collection-type"
-                :enabled="!running">
-                <option value="list">List</option>
-                <option value="paired">Pair</option>
-                <option value="list:paired">List of Pairs</option>
-            </select2>
-            <span class="upload-footer-title">File Type:</span>
-            <select2
-                ref="footerExtension"
-                v-model="extension"
-                container-class="upload-footer-extension"
-                :enabled="!running">
-                <option v-for="(ext, index) in extensions" :key="index" :value="ext.id">{{ ext.text }}</option>
-            </select2>
-            <span class="upload-footer-extension-info upload-icon-button fa fa-search" />
-            <span class="upload-footer-title">Genome (set all):</span>
-            <select2 ref="footerGenome" v-model="genome" container-class="upload-footer-genome" :enabled="!running">
-                <option v-for="(listGenome, index) in listGenomes" :key="index" :value="listGenome.id">
-                    {{ listGenome.text }}
-                </option>
-            </select2>
-        </template>
-        <template v-slot:buttons>
-            <BButton
-                id="btn-close"
-                ref="btnClose"
-                class="ui-button-default"
-                :title="btnCloseTitle"
-                @click="$emit('dismiss')">
-                {{ btnCloseTitle | localize }}
+    <div class="upload-view-default">
+        <div class="upload-top">
+            <div class="upload-top-info" v-html="topInfo" />
+        </div>
+        <UploadBox :multiple="true" @add="addFiles">
+            <div v-show="showHelper" class="upload-helper"><i class="fa fa-files-o" />Drop files here</div>
+            <div v-show="!showHelper" class="upload-table ui-table-striped">
+                <DefaultRow
+                    v-for="(uploadItem, uploadIndex) in uploadList"
+                    :key="uploadIndex"
+                    :index="uploadIndex"
+                    :deferred="uploadItem.deferred"
+                    :extension="uploadItem.extension"
+                    :file-content="uploadItem.file_content"
+                    :file-mode="uploadItem.file_mode"
+                    :file-name="uploadItem.file_name"
+                    :file-size="uploadItem.file_size"
+                    :genome="uploadItem.genome"
+                    :list-extensions="listExtensions"
+                    :list-genomes="details.listGenomes"
+                    :percentage="uploadItem.percentage"
+                    :space_to_tab="uploadItem.space_to_tab"
+                    :status="uploadItem.status"
+                    :to_posix_lines="uploadItem.to_posix_lines"
+                    @remove="eventRemove"
+                    @input="eventInput" />
+            </div>
+        </UploadBox>
+        <div class="upload-footer text-center">
+            <span class="upload-footer-title">Collection:</span>
+            <UploadSettingsSelect
+                :value="collectionType"
+                :options="listCollections"
+                placeholder="Select Type"
+                :enabled="!running"
+                @input="updateCollectionType" />
+            <span class="upload-footer-title">Type (set all):</span>
+            <UploadSettingsSelect
+                :value="extension"
+                :options="listExtensions"
+                placeholder="Select Type"
+                :disabled="running"
+                @input="updateExtension" />
+            <UploadExtensionDetails :extension="extension" :list-extensions="listExtensions" />
+            <span class="upload-footer-title">Reference (set all):</span>
+            <UploadSettingsSelect
+                :value="genome"
+                :options="details.listGenomes"
+                :disabled="running"
+                placeholder="Select Reference"
+                @input="updateGenome" />
+        </div>
+        <div class="upload-buttons d-flex justify-content-end">
+            <BButton id="btn-local" title="Choose local files" :disabled="!enableSources" @click="uploadSelect">
+                <span class="fa fa-laptop"></span>
+                <span v-localize>Choose local files</span>
             </BButton>
             <BButton
-                id="btn-reset"
-                ref="btnReset"
-                class="ui-button-default"
-                :title="btnResetTitle"
-                :disabled="!enableReset"
-                @click="_eventReset">
-                {{ btnResetTitle }}
+                v-if="!details.fileSourcesConfigured || !!details.currentFtp"
+                id="btn-remote-files"
+                :disabled="!enableSources"
+                @click="eventRemoteFiles">
+                <span class="fa fa-folder-open"></span>
+                <span v-localize>Choose remote files</span>
             </BButton>
-            <BButton
-                id="btn-stop"
-                ref="btnStop"
-                class="ui-button-default"
-                :title="btnStopTitle"
-                :disabled="counterRunning == 0"
-                @click="_eventStop">
-                {{ btnStopTitle }}
-            </BButton>
-            <BButton
-                id="btn-build"
-                ref="btnBuild"
-                class="ui-button-default"
-                :disabled="!enableBuild"
-                :title="btnBuildTitle"
-                :variant="enableBuild ? 'primary' : ''"
-                @click="_eventBuild">
-                {{ btnBuildTitle }}
+            <BButton id="btn-new" title="Paste/Fetch data" :disabled="!enableSources" @click="eventCreate">
+                <span class="fa fa-edit"></span>
+                <span v-localize>Paste/Fetch data</span>
             </BButton>
             <BButton
                 id="btn-start"
-                ref="btnStart"
-                class="ui-button-default"
-                :title="btnStartTitle"
                 :disabled="!enableStart"
+                title="Start"
                 :variant="enableStart ? 'primary' : ''"
-                @click="_eventStart">
-                {{ btnStartTitle }}
+                @click="eventStart">
+                <span v-localize>Start</span>
             </BButton>
             <BButton
-                id="btn-new"
-                ref="btnCreate"
-                class="ui-button-default"
-                :title="btnCreateTitle"
-                :disabled="!enableSources"
-                @click="_eventCreate()">
-                <span class="fa fa-edit"></span>{{ btnCreateTitle }}
+                id="btn-build"
+                :disabled="!enableBuild"
+                title="Build"
+                :variant="enableBuild ? 'primary' : ''"
+                @click="eventBuild">
+                <span v-localize>Build</span>
             </BButton>
-            <BButton
-                v-if="remoteFiles"
-                id="btn-ftp"
-                ref="btnFtp"
-                class="ui-button-default"
-                :disabled="!enableSources"
-                @click="_eventRemoteFiles">
-                <span class="fa fa-folder-open-o"></span>{{ btnFilesTitle }}
+            <BButton id="btn-stop" title="Pause" :disabled="counterRunning == 0" @click="eventStop">
+                <span v-localize>Pause</span>
             </BButton>
-            <BButton
-                id="btn-local"
-                ref="btnLocal"
-                class="ui-button-default"
-                :title="btnLocalTitle"
-                :disabled="!enableSources"
-                @click="uploadSelect">
-                <span class="fa fa-laptop"></span>{{ btnLocalTitle }}
+            <BButton id="btn-reset" title="Reset" :disabled="!enableReset" @click="eventReset">
+                <span v-localize>Reset</span>
             </BButton>
-        </template>
-    </upload-wrapper>
+            <BButton id="btn-close" title="Close" @click="$emit('dismiss')">
+                <span v-if="hasCallback" v-localize>Cancel</span>
+                <span v-else v-localize>Close</span>
+            </BButton>
+        </div>
+    </div>
 </template>
-
-<script>
-import { getGalaxyInstance } from "app";
-import { BButton } from "bootstrap-vue";
-import UploadRow from "mvc/upload/collection/collection-row";
-import _ from "underscore";
-import { refreshContentsWrapper } from "utils/data";
-import _l from "utils/localization";
-
-import { uploadModelsToPayload } from "./helpers";
-import UploadBoxMixin from "./UploadBoxMixin";
-
-export default {
-    components: { BButton },
-    mixins: [UploadBoxMixin],
-    data() {
-        return {
-            uploadUrl: null,
-            topInfo: "",
-            showHelper: true,
-            extension: this.details.defaultExtension,
-            genome: this.details.defaultDbKey,
-            collectionType: "list",
-            listExtensions: [],
-            listGenomes: [],
-            running: false,
-            multiple: true, // needed for uploadbox stuff - always allow multiple uploads for collections
-            counterAnnounce: 0,
-            counterSuccess: 0,
-            counterError: 0,
-            counterRunning: 0,
-            uploadSize: 0,
-            uploadCompleted: 0,
-            enableReset: false,
-            enableStart: false,
-            enableSources: false,
-            enableBuild: false,
-            highlightBox: false,
-            rowUploadModel: UploadRow,
-            btnLocalTitle: _l("Choose local files"),
-            btnCreateTitle: _l("Paste/Fetch data"),
-            btnFtpTitle: _l("Choose FTP files"),
-            btnStartTitle: _l("Start"),
-            btnBuildTitle: _l("Build"),
-            btnStopTitle: _l("Pause"),
-            btnResetTitle: _l("Reset"),
-        };
-    },
-    computed: {
-        extensions() {
-            const result = _.filter(this.listExtensions, (ext) => !ext.composite_files);
-            return result;
-        },
-        appModel() {
-            return this.details.model;
-        },
-    },
-    watch: {
-        extension: function (value) {
-            this.updateExtension(value);
-        },
-        genome: function (value) {
-            this.updateGenome(value);
-        },
-    },
-    created() {
-        this.initCollection();
-        this.initAppProperties();
-    },
-    mounted() {
-        this.initExtensionInfo();
-        this.initFtpPopover();
-        // file upload
-        this.initUploadbox({
-            initUrl: (index) => {
-                if (!this.uploadUrl) {
-                    this.uploadUrl = this.getRequestUrl([this.collection.get(index)], this.history_id);
-                }
-                return this.uploadUrl;
-            },
-            announce: (index, file) => {
-                this._eventAnnounce(index, file);
-            },
-            initialize: (index) => {
-                return uploadModelsToPayload([this.collection.get(index)], this.history_id);
-            },
-            progress: (index, percentage) => {
-                this._eventProgress(index, percentage);
-            },
-            success: (index, message) => {
-                this._eventSuccess(index, message);
-            },
-            warning: (index, message) => {
-                this._eventWarning(index, message);
-            },
-            error: (index, message) => {
-                this._eventError(index, message);
-            },
-            complete: () => {
-                this._eventComplete();
-            },
-            ondragover: () => {
-                this.highlightBox = true;
-            },
-            ondragleave: () => {
-                this.highlightBox = false;
-            },
-            chunkSize: this.details.chunkUploadSize,
-        });
-        this.collection.on("remove", (model) => {
-            this._eventRemove(model);
-        });
-        this._updateStateForCounters();
-    },
-    methods: {
-        _newUploadModelProps: function (index, file) {
-            return {
-                id: index,
-                file_name: file.name,
-                file_size: file.size,
-                file_mode: file.mode || "local",
-                file_path: file.path,
-                file_data: file,
-                file_uri: file.uri,
-                extension: this.extension,
-                genome: this.genome,
-            };
-        },
-
-        /** Success */
-        _eventSuccess: function (index, incoming) {
-            var it = this.collection.get(index);
-            console.debug("Incoming upload response.", incoming);
-            // accounts for differences in the response format between upload methods
-            const outputs = incoming.outputs || incoming.data.outputs || {};
-            it.set({ percentage: 100, status: "success", outputs });
-            this._updateStateForSuccess(it);
-            refreshContentsWrapper();
-        },
-
-        _eventBuild: function () {
-            const Galaxy = getGalaxyInstance();
-            const models = {};
-            this.collection.models.forEach((model) => {
-                const outputs = model.get("outputs");
-                if (outputs) {
-                    Object.entries(outputs).forEach((output) => {
-                        const outputDetails = output[1];
-                        models[outputDetails.id] = outputDetails;
-                    });
-                } else {
-                    console.debug("Warning, upload response does not contain outputs.", model);
-                }
-            });
-            // Build selection object
-            const selection = {
-                models: Object.values(models),
-                historyId: Galaxy.currHistoryPanel.model.id,
-            };
-            Galaxy.currHistoryPanel.buildCollection(this.collectionType, selection);
-            this.counterRunning = 0;
-            this._updateStateForCounters();
-            this._eventReset();
-            this.$emit("dismiss");
-        },
-
-        /** Remove all */
-        _eventReset: function () {
-            if (this.counterRunning == 0) {
-                this.collection.reset();
-                this.counterAnnounce = 0;
-                this.counterSuccess = 0;
-                this.counterError = 0;
-                this.counterRunning = 0;
-                this.uploadbox.reset();
-                this.extension = this.details.defaultExtension;
-                this.genome = this.details.defaultDbKey;
-                this.appModel.set("percentage", 0);
-                this._updateStateForCounters();
-            }
-        },
-    },
-};
-</script>
