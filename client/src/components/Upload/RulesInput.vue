@@ -83,17 +83,30 @@ import UploadUtils from "components/Upload/utils";
 import { getAppRoot } from "onload/loadConfig";
 import { filesDialog } from "utils/data";
 
-import UploadBoxMixin from "./UploadBoxMixin";
+import UploadWrapper from "./UploadWrapper";
+import UploadModel from "mvc/upload/upload-model";
+
+import Select2 from "components/Select2";
 
 library.add(faEdit);
 
 export default {
-    components: { BLink, BButton, FontAwesomeIcon },
-    mixins: [UploadBoxMixin],
+    components: { BLink, BButton, FontAwesomeIcon, Select2, UploadWrapper },
+    props: {
+        hasCallback: {
+            type: Boolean,
+            default: false,
+        },
+        details: {
+            type: Object,
+            required: true,
+        },
+    },
     data() {
         return {
             datasets: [],
             ftpFiles: [],
+            ftpUploadSite: null,
             uris: [],
             topInfo: "Tabular source data to extract collection files and metadata from",
             enableBuild: false,
@@ -109,6 +122,9 @@ export default {
     computed: {
         enableReset: function () {
             return this.sourceContent.length > 0;
+        },
+        btnCloseTitle() {
+            return this.hasCallback ? "Cancel" : "Close";
         },
     },
     watch: {
@@ -147,8 +163,8 @@ export default {
         },
     },
     created() {
-        this.initCollection();
-        this.initAppProperties();
+        this.collection = new UploadModel.Collection();
+        this.ftpUploadSite = this.details.currentFtp;
     },
     methods: {
         _eventReset: function () {
