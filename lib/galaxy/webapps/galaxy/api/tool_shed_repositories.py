@@ -242,7 +242,7 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
                 # We encountered an error.
                 return installed_tool_shed_repositories
             elif isinstance(installed_tool_shed_repositories, InstalledToolShedRepositories):
-                all_installed_tool_shed_repositories.extend(installed_tool_shed_repositories.__root__)
+                all_installed_tool_shed_repositories.extend(installed_tool_shed_repositories.root)
         return InstalledToolShedRepositories(root=all_installed_tool_shed_repositories)
 
     @require_admin
