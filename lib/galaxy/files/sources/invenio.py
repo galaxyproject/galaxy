@@ -132,7 +132,7 @@ class InvenioRDMFilesSource(RDMFilesSource):
         is_root_path = path == "/"
         if is_root_path:
             return self.repository.get_records(writeable, user_context)
-        record_id, _ = self.parse_path(path)
+        record_id = self.get_record_id_from_path(path)
         return self.repository.get_files_in_record(record_id, writeable, user_context)
 
     def _create_entry(

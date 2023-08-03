@@ -160,11 +160,21 @@ class RDMFilesSource(BaseFilesSource):
         This must be implemented by subclasses."""
         raise NotImplementedError()
 
-    def parse_path(self, source_path: str) -> RecordFilename:
-        # source_path has always the format: '/{record_id}/{file_name}'
-        record_id = source_path.split("/")[1]
-        filename = source_path.split("/")[-1]
-        return RecordFilename(record_id=record_id, filename=filename)
+    def parse_path(self, source_path: str, record_id_only: bool = False) -> RecordFilename:
+        if not source_path.startswith("/"):
+            raise ValueError(f"Invalid source path: '{source_path}'. Must start with '/'")
+        parts = source_path[1:].split("/", 2)
+        if record_id_only:
+            if len(parts) != 1:
+                raise ValueError(f"Invalid source path: '{source_path}'. Must have the format '/<record_id>'.")
+            return RecordFilename(record_id=parts[0], filename="")
+        if len(parts) != 2:
+            raise ValueError(f"Invalid source path: '{source_path}'. Must have the format '/<record_id>/<file_name>'.")
+        record_id, file_name = parts
+        return RecordFilename(record_id=record_id, filename=file_name)
+
+    def get_record_id_from_path(self, source_path: str) -> str:
+        return self.parse_path(source_path, record_id_only=True).record_id
 
     def _serialization_props(self, user_context: OptionalUserContext = None) -> RDMFilesSourceProperties:
         effective_props = {}
