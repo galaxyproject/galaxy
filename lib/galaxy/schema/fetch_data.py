@@ -180,7 +180,7 @@ class CompositeItems(FetchBaseModel):
     ] = Field(..., alias="elements")
 
 
-CompositeDataElement.update_forward_refs()
+CompositeDataElement.model_rebuild()
 
 
 class NestedElement(BaseDataElement):
@@ -215,7 +215,7 @@ AnyElement2 = Annotated[
     Field(default_factory=None, discriminator="src"),
 ]
 
-NestedElement.update_forward_refs()
+NestedElement.model_rebuild()
 
 
 class BaseDataTarget(BaseFetchDataTarget):

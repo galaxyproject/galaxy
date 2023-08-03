@@ -35,4 +35,4 @@ class Model(BaseModel):
     )
 
 
-Model.update_forward_refs()
+Model.model_rebuild()
