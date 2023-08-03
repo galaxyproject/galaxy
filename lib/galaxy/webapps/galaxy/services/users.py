@@ -192,7 +192,7 @@ class UsersService(ServiceBase):
         self,
         user: User,
     ) -> DetailedUserModel:
-        user_response = self.user_serializer.serialize_to_view(user, view="detailed")
+        user_response = self.user_serializer.serialize_to_view(user, view="detailed", encode_id=False)
         return DetailedUserModel(**user_response)
 
     def get_index(
@@ -237,11 +237,11 @@ class UsersService(ServiceBase):
                 and not trans.app.config.expose_user_name
                 and not trans.app.config.expose_user_email
             ):
-                item = trans.user.to_dict(value_mapper={"id": trans.security.encode_id})
+                item = trans.user.to_dict()
                 return [item]
             query = query.filter(User.table.c.deleted == false())
         for user in query:
-            item = user.to_dict(value_mapper={"id": trans.security.encode_id})
+            item = user.to_dict()
             # If NOT configured to expose_email, do not expose email UNLESS the user is self, or
             # the user is an admin
             if user is not trans.user and not trans.user_is_admin:

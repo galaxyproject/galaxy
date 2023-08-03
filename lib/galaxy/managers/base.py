@@ -761,13 +761,13 @@ class ModelSerializer(HasAModelManager[T]):
         date = getattr(item, key)
         return date.isoformat() if date is not None else None
 
-    def serialize_id(self, item: Any, key: str, **context):
+    def serialize_id(self, item: Any, key: str, encode_id=True, **context):
         """
         Serialize an id attribute of `item`.
         """
         id = getattr(item, key)
         # Note: it may not be best to encode the id at this layer
-        return self.app.security.encode_id(id) if id is not None else None
+        return self.app.security.encode_id(id) if id is not None and encode_id else id
 
     def serialize_type_id(self, item: Any, key: str, **context):
         """
