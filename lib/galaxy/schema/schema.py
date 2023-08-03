@@ -203,6 +203,7 @@ ElementCountField: Optional[int] = Field(
 )
 
 PopulatedField: bool = Field(
+    None,
     title="Populated",
     description="Whether the dataset collection elements (and any subcollections elements) were successfully populated.",
 )
@@ -232,6 +233,7 @@ GenomeBuildField: Optional[str] = Field(
 )
 
 ContentsUrlField = Field(
+    None,
     title="Contents URL",
     description="The relative URL to access the contents of this History.",
 )
@@ -1353,19 +1355,19 @@ class InvocationSortByEnum(str, Enum):
 
 class InvocationIndexQueryPayload(Model):
     workflow_id: Optional[DecodedDatabaseIdField] = Field(
-        title="Workflow ID", description="Return only invocations for this Workflow ID"
+        None, title="Workflow ID", description="Return only invocations for this Workflow ID"
     )
     history_id: Optional[DecodedDatabaseIdField] = Field(
-        title="History ID", description="Return only invocations for this History ID"
+        None, title="History ID", description="Return only invocations for this History ID"
     )
     job_id: Optional[DecodedDatabaseIdField] = Field(
-        title="Job ID", description="Return only invocations for this Job ID"
+        None, title="Job ID", description="Return only invocations for this Job ID"
     )
     user_id: Optional[DecodedDatabaseIdField] = Field(
-        title="User ID", description="Return invocations for this User ID"
+        None, title="User ID", description="Return invocations for this User ID"
     )
     sort_by: Optional[InvocationSortByEnum] = Field(
-        title="Sort By", description="Sort Workflow Invocations by this attribute"
+        None, title="Sort By", description="Sort Workflow Invocations by this attribute"
     )
     sort_desc: bool = Field(default=False, description="Sort in descending order?")
     include_terminal: bool = Field(default=True, description="Set to false to only include terminal Invocations.")
