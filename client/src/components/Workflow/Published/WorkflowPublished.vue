@@ -16,13 +16,11 @@ import type { Workflow } from "@/stores/workflowStore";
 import { assertDefined } from "@/utils/assertions";
 import { withPrefix } from "@/utils/redirect";
 
+import WorkflowInformation from "./WorkflowInformation.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import Heading from "@/components/Common/Heading.vue";
-import License from "@/components/License/License.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
-import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
-import UtcDate from "@/components/UtcDate.vue";
 import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
 
 library.add(faSpinner, faUser, faBuilding, faPlay, faEdit, faDownload);
@@ -100,12 +98,6 @@ watch(
 );
 
 const { showActivityBar, showToolbox } = usePanels();
-
-const gravatarSource = computed(
-    () => `https://secure.gravatar.com/avatar/${workflowInfo.value?.email_hash}?d=identicon`
-);
-
-const publishedByUser = computed(() => `/workflows/list_published?f-username=${workflowInfo.value?.owner}`);
 
 const downloadUrl = computed(() => withPrefix(`/api/workflows/${props.id}/download?format=json-download`));
 const importUrl = computed(() => withPrefix(`/workflow/imp?id=${props.id}`));
@@ -187,65 +179,7 @@ function logInTitle(title: string) {
                     </b-card>
                 </div>
 
-                <aside class="workflow-information">
-                    <hgroup>
-                        <Heading h2 size="xl" class="mb-0">About This Workflow</Heading>
-                        <span class="ml-2">{{ workflowInfo.name }} - Version {{ workflowInfo.version }}</span>
-                    </hgroup>
-
-                    <div class="workflow-info-box">
-                        <hgroup class="mb-2">
-                            <Heading h3 size="md" class="mb-0">Author</Heading>
-                            <span class="ml-2">{{ workflowInfo.owner }}</span>
-                        </hgroup>
-
-                        <img alt="User Avatar" :src="gravatarSource" class="mb-2" />
-
-                        <router-link :to="publishedByUser">
-                            All published Workflows by {{ workflowInfo.owner }}
-                        </router-link>
-                    </div>
-
-                    <div v-if="workflow?.creator" class="workflow-info-box">
-                        <Heading h3 size="md" class="mb-0">Creators</Heading>
-
-                        <ul class="list-unstyled mb-0">
-                            <li v-for="(creator, index) in workflow.creator" :key="index">
-                                <FontAwesomeIcon v-if="creator.class === 'Person'" icon="fa-user" />
-                                <FontAwesomeIcon v-if="creator.class === 'Organization'" icon="fa-building" />
-                                {{ creator.name }}
-                            </li>
-                        </ul>
-                    </div>
-
-                    <div class="workflow-info-box">
-                        <Heading h3 size="md" class="mb-0">Description</Heading>
-
-                        <p v-if="workflowInfo.annotation" class="mb-0">
-                            {{ workflowInfo.annotation }}
-                        </p>
-                        <p v-else class="mb-0">This Workflow has no description.</p>
-                    </div>
-
-                    <div v-if="workflowInfo?.tags" class="workflow-info-box">
-                        <Heading h3 size="md" class="mb-0">Tags</Heading>
-
-                        <StatelessTags class="tags mt-2" :value="workflowInfo.tags" disabled />
-                    </div>
-
-                    <div class="workflow-info-box">
-                        <Heading h3 size="md" class="mb-0">License</Heading>
-
-                        <License v-if="workflowInfo.license" :license-id="workflowInfo.license" />
-                        <span v-else>No License specified</span>
-                    </div>
-
-                    <div class="workflow-info-box">
-                        <Heading h3 size="md" class="mb-0">Last Updated</Heading>
-
-                        <UtcDate :date="workflowInfo.update_time" mode="pretty" />
-                    </div>
-                </aside>
+                <WorkflowInformation v-if="workflowInfo" :workflow-info="workflowInfo" />
             </div>
         </div>
     </div>
@@ -266,7 +200,7 @@ function logInTitle(title: string) {
         }
     }
 
-    aside {
+    &:deep(.workflow-information) {
         max-width: 500px;
         height: 100%;
     }
@@ -279,27 +213,10 @@ function logInTitle(title: string) {
             height: 450px;
         }
 
-        aside {
+        &:deep(.workflow-information) {
             max-width: unset;
             height: unset;
         }
-    }
-}
-
-.workflow-information {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    align-items: start;
-    justify-content: start;
-    align-self: flex-start;
-    overflow-y: scroll;
-
-    .workflow-info-box {
-        display: flex;
-        flex-direction: column;
-        align-items: start;
     }
 }
 </style>
