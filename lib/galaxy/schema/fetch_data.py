@@ -82,9 +82,9 @@ class LibraryFolderDestination(FetchBaseModel):
 
 class BaseCollectionTarget(BaseFetchDataTarget):
     destination: HdcaDestination
-    collection_type: Optional[str]
-    tags: Optional[List[str]]
-    name: Optional[str]
+    collection_type: Optional[str] = None
+    tags: Optional[List[str]] = None
+    name: Optional[str] = None
 
 
 class LibraryDestination(FetchBaseModel):
@@ -95,7 +95,7 @@ class LibraryDestination(FetchBaseModel):
 
 
 class ExtraFiles(FetchBaseModel):
-    items_from: Optional[str]
+    items_from: Optional[str] = None
     src: Src
     fuzzy_root: Optional[bool] = Field(
         True,
@@ -104,20 +104,20 @@ class ExtraFiles(FetchBaseModel):
 
 
 class BaseDataElement(FetchBaseModel):
-    name: Optional[str]
+    name: Optional[str] = None
     dbkey: str = Field("?")
-    info: Optional[str]
+    info: Optional[str] = None
     ext: str = Field("auto")
     space_to_tab: bool = False
     to_posix_lines: bool = False
     deferred: bool = False
-    tags: Optional[List[str]]
-    created_from_basename: Optional[str]
-    extra_files: Optional[ExtraFiles]
+    tags: Optional[List[str]] = None
+    created_from_basename: Optional[str] = None
+    extra_files: Optional[ExtraFiles] = None
     auto_decompress: bool = AutoDecompressField
-    items_from: Optional[ElementsFromType] = Field(alias="elements_from")
-    collection_type: Optional[str]
-    MD5: Optional[str]
+    items_from: Optional[ElementsFromType] = Field(None, alias="elements_from")
+    collection_type: Optional[str] = None
+    MD5: Optional[str] = None
     model_config = ConfigDict(extra="forbid")
 
 
@@ -138,36 +138,34 @@ class UrlDataElement(BaseDataElement):
 class ServerDirElement(BaseDataElement):
     src: Literal["server_dir"]
     server_dir: str
-    link_data_only: Optional[bool]
+    link_data_only: Optional[bool] = None
 
 
 class FtpImportElement(BaseDataElement):
     src: Literal["ftp_import"]
     ftp_path: str
-    items_from: Optional[ElementsFromType] = Field(alias="elements_from")
-    name: Optional[str]
-    collection_type: Optional[str]
+    collection_type: Optional[str] = None
 
 
 class ItemsFromModel(Model):
     src: ItemsFromSrc
-    path: Optional[str]
-    ftp_path: Optional[str]
-    server_dir: Optional[str]
-    url: Optional[str]
+    path: Optional[str] = None
+    ftp_path: Optional[str] = None
+    server_dir: Optional[str] = None
+    url: Optional[str] = None
 
 
 class FtpImportTarget(BaseCollectionTarget):
     src: Literal["ftp_import"]
     ftp_path: str
-    items_from: Optional[ElementsFromType] = Field(alias="elements_from")
+    items_from: Optional[ElementsFromType] = Field(None, alias="elements_from")
 
 
 class PathDataElement(BaseDataElement):
     src: Literal["path"]
     path: str
-    items_from: Optional[ElementsFromType] = Field(alias="elements_from")
-    link_data_only: Optional[bool]
+    items_from: Optional[ElementsFromType] = Field(None, alias="elements_from")
+    link_data_only: Optional[bool] = None
 
 
 class CompositeDataElement(BaseDataElement):
