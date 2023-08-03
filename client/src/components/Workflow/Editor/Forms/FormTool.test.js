@@ -2,12 +2,18 @@ import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import MockConfigProvider from "components/providers/MockConfigProvider";
-import { configStore } from "store/configStore";
-import { getLocalVue, mockModule } from "tests/jest/helpers";
-import Vuex from "vuex";
+import { getLocalVue } from "tests/jest/helpers";
 
 import FormTool from "./FormTool";
+
+jest.mock("@/schema");
+
+jest.mock("@/composables/config", () => ({
+    useConfig: jest.fn(() => ({
+        config: { enable_tool_source_display: false },
+        isLoaded: true,
+    })),
+}));
 
 const localVue = getLocalVue();
 
@@ -16,12 +22,6 @@ describe("FormTool", () => {
     axiosMock.onGet(`/api/webhooks`).reply(200, []);
 
     function mountTarget() {
-        const store = new Vuex.Store({
-            modules: {
-                config: mockModule(configStore),
-            },
-        });
-
         return mount(FormTool, {
             propsData: {
                 id: "input",
@@ -45,11 +45,9 @@ describe("FormTool", () => {
             },
             localVue,
             stubs: {
-                ConfigProvider: MockConfigProvider({ id: "fakeconfig" }),
                 ToolFooter: { template: "<div>tool-footer</div>" },
             },
             pinia: createTestingPinia(),
-            provide: { store },
         });
     }
 
