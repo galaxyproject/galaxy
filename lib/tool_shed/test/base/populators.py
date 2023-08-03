@@ -166,7 +166,7 @@ class ToolShedPopulator:
                 assert_msg = f"Updating repository [{repository}] with path [{path}] and commit_message {commit_message} failed to update repository contents, no changes found. Response: [{response_json}]"
                 raise AssertionError(assert_msg)
             api_asserts.assert_status_code_is_ok(response)
-        return RepositoryUpdate(__root__=response.json())
+        return RepositoryUpdate(root=response.json())
 
     def new_repository(self, category_id, prefix=DEFAULT_PREFIX) -> Repository:
         name = random_name(prefix=prefix)
@@ -222,7 +222,7 @@ class ToolShedPopulator:
             "repositories/get_ordered_installable_revisions", params=request.dict()
         )
         api_asserts.assert_status_code_is_ok(revisions_response)
-        return OrderedInstallableRevisions(__root__=revisions_response.json())
+        return OrderedInstallableRevisions(root=revisions_response.json())
 
     def assert_has_n_installable_revisions(self, repository: Repository, n: int):
         revisions = self.get_ordered_installable_revisions(repository.owner, repository.name)
@@ -241,7 +241,7 @@ class ToolShedPopulator:
     def repository_index(self, request: Optional[RepositoryIndexRequest]) -> RepositoryIndexResponse:
         repository_response = self._api_interactor.get("repositories", params=(request.dict() if request else {}))
         api_asserts.assert_status_code_is_ok(repository_response)
-        return RepositoryIndexResponse(__root__=repository_response.json())
+        return RepositoryIndexResponse(root=repository_response.json())
 
     def get_metadata(self, repository: HasRepositoryId, downloadable_only=True) -> RepositoryMetadata:
         repository_id = self._repository_id(repository)
@@ -249,7 +249,7 @@ class ToolShedPopulator:
             f"repositories/{repository_id}/metadata?downloadable_only={downloadable_only}"
         )
         api_asserts.assert_status_code_is_ok(metadata_response)
-        return RepositoryMetadata(__root__=metadata_response.json())
+        return RepositoryMetadata(root=metadata_response.json())
 
     def reset_metadata(self, repository: HasRepositoryId) -> ResetMetadataOnRepositoryResponse:
         repository_id = self._repository_id(repository)

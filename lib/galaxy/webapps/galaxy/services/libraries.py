@@ -77,7 +77,7 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
         for library in query:
             library_dict = self.library_manager.get_library_dict(trans, library, prefetched_ids)
             libraries.append(LibrarySummary(**library_dict))
-        return LibrarySummaryList(__root__=libraries)
+        return LibrarySummaryList(root=libraries)
 
     def show(self, trans, id: DecodedDatabaseIdField) -> LibrarySummary:
         """Returns detailed information about a library."""

@@ -76,9 +76,7 @@ class PagesService(ServiceBase):
 
         pages, total_matches = self.manager.index_query(trans, payload, include_total_count)
         return (
-            PageSummaryList.construct(
-                __root__=[trans.security.encode_all_ids(p.to_dict(), recursive=True) for p in pages]
-            ),
+            PageSummaryList.construct(root=[trans.security.encode_all_ids(p.to_dict(), recursive=True) for p in pages]),
             total_matches,
         )
 

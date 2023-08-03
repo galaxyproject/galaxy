@@ -92,9 +92,9 @@ class NotificationService(ServiceBase):
         """
         self.notification_manager.ensure_notifications_enabled()
         if user_context.anonymous:
-            return UserNotificationListResponse(__root__=[])
+            return UserNotificationListResponse(root=[])
         user_notifications = self._get_user_notifications(user_context, limit, offset)
-        return UserNotificationListResponse(__root__=user_notifications)
+        return UserNotificationListResponse(root=user_notifications)
 
     def get_broadcasted_notification(
         self, user_context: ProvidesUserContext, notification_id: int
@@ -118,7 +118,7 @@ class NotificationService(ServiceBase):
         self.notification_manager.ensure_notifications_enabled()
         active_only = not user_context.user_is_admin
         broadcasted_notifications = self._get_all_broadcasted(active_only=active_only)
-        return BroadcastNotificationListResponse(__root__=broadcasted_notifications)
+        return BroadcastNotificationListResponse(root=broadcasted_notifications)
 
     def get_user_notification(self, user: User, notification_id: int) -> UserNotificationResponse:
         """Gets the information of the notification received by the user with the given ID."""

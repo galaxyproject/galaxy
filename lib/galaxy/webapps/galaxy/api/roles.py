@@ -45,7 +45,7 @@ class FastAPIRoles:
     @router.get("/api/roles")
     def index(self, trans: ProvidesUserContext = DependsOnTrans) -> RoleListResponse:
         roles = self.role_manager.list_displayable_roles(trans)
-        return RoleListResponse(__root__=[role_to_model(r) for r in roles])
+        return RoleListResponse(root=[role_to_model(r) for r in roles])
 
     @router.get("/api/roles/{id}")
     def show(self, id: DecodedDatabaseIdField, trans: ProvidesUserContext = DependsOnTrans) -> RoleModelResponse:

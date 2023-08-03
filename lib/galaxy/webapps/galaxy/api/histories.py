@@ -391,8 +391,8 @@ class FastAPIHistories:
         use_tasks = accept == ExportTaskListResponse.__accept_type__
         exports = self.service.index_exports(trans, history_id, use_tasks, limit, offset)
         if use_tasks:
-            return ExportTaskListResponse(__root__=exports)
-        return JobExportHistoryArchiveListResponse(__root__=exports)
+            return ExportTaskListResponse(root=exports)
+        return JobExportHistoryArchiveListResponse(root=exports)
 
     @router.put(  # PUT instead of POST because multiple requests should just result in one object being created.
         "/api/histories/{history_id}/exports",
