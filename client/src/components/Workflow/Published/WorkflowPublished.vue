@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios, { type AxiosError } from "axios";
 import { computed, onUnmounted, ref, watch } from "vue";
 
+import { fromSimple } from "@/components/Workflow/Editor/modules/model";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { usePanels } from "@/composables/usePanels";
 import { useUserStore } from "@/stores/userStore";
@@ -15,9 +16,6 @@ import type { Workflow } from "@/stores/workflowStore";
 import { assertDefined } from "@/utils/assertions";
 import { withPrefix } from "@/utils/redirect";
 
-import { fromSimple } from "./Editor/modules/model";
-
-import WorkflowGraph from "./Editor/WorkflowGraph.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import Heading from "@/components/Common/Heading.vue";
 import License from "@/components/License/License.vue";
@@ -25,6 +23,7 @@ import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import UtcDate from "@/components/UtcDate.vue";
+import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
 
 library.add(faSpinner, faUser, faBuilding, faPlay, faEdit, faDownload);
 
