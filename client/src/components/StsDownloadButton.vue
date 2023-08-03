@@ -1,18 +1,16 @@
 <template>
-    <ConfigProvider v-slot="{ config, loading }">
-        <BButton
-            v-if="!loading && canDownload(config)"
-            v-b-tooltip.hover.bottom
-            :title="title"
-            :variant="variant"
-            :size="size"
-            role="button"
-            @click="onDownload(config)">
-            Generate
-            <FontAwesomeIcon v-if="waiting" icon="spinner" spin />
-            <FontAwesomeIcon v-else icon="download" />
-        </BButton>
-    </ConfigProvider>
+    <BButton
+        v-if="isConfigLoaded && canDownload(config)"
+        v-b-tooltip.hover.bottom
+        :title="title"
+        :variant="variant"
+        :size="size"
+        role="button"
+        @click="onDownload(config)">
+        Generate
+        <FontAwesomeIcon v-if="waiting" icon="spinner" spin />
+        <FontAwesomeIcon v-else icon="download" />
+    </BButton>
 </template>
 
 <script>
@@ -25,15 +23,15 @@ import { faDownload, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 import { BButton } from "bootstrap-vue";
-import ConfigProvider from "components/providers/ConfigProvider";
 import { Toast } from "composables/toast";
 import { getAppRoot } from "onload/loadConfig";
 import { withPrefix } from "utils/redirect";
 
+import { useConfig } from "@/composables/config";
+
 library.add(faDownload, faSpinner);
 export default {
     components: {
-        ConfigProvider,
         FontAwesomeIcon,
         BButton,
     },
@@ -64,6 +62,10 @@ export default {
             type: String,
             default: "md",
         },
+    },
+    setup() {
+        const { config, isLoaded: isConfigLoaded } = useConfig(true);
+        return { config, isConfigLoaded };
     },
     data() {
         return {
