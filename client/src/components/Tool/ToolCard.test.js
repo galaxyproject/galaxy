@@ -2,22 +2,21 @@ import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { createPinia } from "pinia";
-import { configStore } from "store/configStore";
 import { useUserStore } from "stores/userStore";
-import { getLocalVue, mockModule } from "tests/jest/helpers";
-import Vuex from "vuex";
+import { getLocalVue } from "tests/jest/helpers";
 
 import ToolCard from "./ToolCard";
 
-const localVue = getLocalVue();
+jest.mock("@/schema");
 
-const createStore = () => {
-    return new Vuex.Store({
-        modules: {
-            config: mockModule(configStore, { config: {} }),
-        },
-    });
-};
+jest.mock("@/composables/config", () => ({
+    useConfig: jest.fn(() => ({
+        config: { enable_tool_source_display: false },
+        isLoaded: true,
+    })),
+}));
+
+const localVue = getLocalVue();
 
 describe("ToolCard", () => {
     let wrapper;
@@ -29,7 +28,6 @@ describe("ToolCard", () => {
         axiosMock.onGet(`/api/webhooks`).reply(200, []);
 
         const pinia = createPinia();
-        const store = createStore();
 
         wrapper = mount(ToolCard, {
             propsData: {
@@ -53,9 +51,7 @@ describe("ToolCard", () => {
                 ToolSourceMenuItem: { template: "<div></div>" },
             },
             localVue,
-            store,
             pinia,
-            provide: { store },
         });
         userStore = useUserStore();
         userStore.currentUser = {
