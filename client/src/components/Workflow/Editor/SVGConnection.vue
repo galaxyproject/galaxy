@@ -2,10 +2,9 @@
 import { curveBasis, line } from "d3";
 import { computed, type PropType } from "vue";
 
+import { useWorkflowStores } from "@/composables/workflowStores";
 import { type Connection, getConnectionId } from "@/stores/workflowConnectionStore";
-import { useConnectionStore } from "@/stores/workflowConnectionStore";
-import { type TerminalPosition, useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+import type { TerminalPosition } from "@/stores/workflowEditorStateStore";
 
 const props = defineProps({
     id: String,
@@ -23,9 +22,7 @@ const ribbonMargin = 4;
 
 const curve = line().curve(curveBasis);
 
-const stateStore = useWorkflowStateStore();
-const connectionStore = useConnectionStore();
-const stepStore = useWorkflowStepStore();
+const { connectionStore, stateStore, stepStore } = useWorkflowStores();
 
 const outputPos = computed(() => {
     if (props.terminalPosition) {

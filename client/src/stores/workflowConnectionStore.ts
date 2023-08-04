@@ -42,82 +42,88 @@ interface TerminalToOutputTerminals {
     [index: string]: OutputTerminal[];
 }
 
-export const useConnectionStore = defineStore("workflowConnectionStore", {
-    state: (): State => ({
-        connections: [] as Array<Readonly<Connection>>,
-        invalidConnections: {} as InvalidConnections,
-        inputTerminalToOutputTerminals: {} as TerminalToOutputTerminals,
-        terminalToConnection: {} as { [index: string]: Connection[] },
-        stepToConnections: {} as { [index: number]: Connection[] },
-    }),
-    getters: {
-        getOutputTerminalsForInputTerminal(state: State) {
-            return (terminalId: string): OutputTerminal[] => {
-                return state.inputTerminalToOutputTerminals[terminalId] || [];
-            };
-        },
-        getConnectionsForTerminal(state: State) {
-            return (terminalId: string): Connection[] => {
-                return state.terminalToConnection[terminalId] || [];
-            };
-        },
-        getConnectionsForStep(state: State) {
-            return (stepId: number): Connection[] => state.stepToConnections[stepId] || [];
-        },
-    },
-    actions: {
-        addConnection(this, _connection: Connection) {
-            const connection = Object.freeze(_connection);
-            this.connections.push(connection);
-            const stepStore = useWorkflowStepStore();
-            stepStore.addConnection(connection);
-            this.terminalToConnection = updateTerminalToConnection(this.connections);
-            this.inputTerminalToOutputTerminals = updateTerminalToTerminal(this.connections);
-            this.stepToConnections = updateStepToConnections(this.connections);
-        },
-        markInvalidConnection(this: State, connectionId: string, reason: string) {
-            Vue.set(this.invalidConnections, connectionId, reason);
-        },
-        dropFromInvalidConnections(this: State, connectionId: string) {
-            Vue.delete(this.invalidConnections, connectionId);
-        },
-        removeConnection(this, terminal: InputTerminal | OutputTerminal | ConnectionId) {
-            const stepStore = useWorkflowStepStore();
-            this.connections = this.connections.filter((connection) => {
-                const id = getConnectionId(connection);
+export const useConnectionStore = (workflowId: string) => {
+    if (!workflowId) {
+        throw new Error("WorkflowId is undefined");
+    }
 
-                if (typeof terminal === "string") {
-                    if (id === terminal) {
-                        stepStore.removeConnection(connection);
-                        Vue.delete(this.invalidConnections, id);
-                        return false;
-                    } else {
-                        return true;
-                    }
-                } else if (terminal.connectorType === "input") {
-                    if (connection.input.stepId == terminal.stepId && connection.input.name == terminal.name) {
-                        stepStore.removeConnection(connection);
-                        Vue.delete(this.invalidConnections, id);
-                        return false;
-                    } else {
-                        return true;
-                    }
-                } else {
-                    if (connection.output.stepId == terminal.stepId && connection.output.name == terminal.name) {
-                        stepStore.removeConnection(connection);
-                        Vue.delete(this.invalidConnections, id);
-                        return false;
-                    } else {
-                        return true;
-                    }
-                }
-            });
-            this.terminalToConnection = updateTerminalToConnection(this.connections);
-            this.inputTerminalToOutputTerminals = updateTerminalToTerminal(this.connections);
-            this.stepToConnections = updateStepToConnections(this.connections);
+    return defineStore(`workflowConnectionStore${workflowId}`, {
+        state: (): State => ({
+            connections: [] as Array<Readonly<Connection>>,
+            invalidConnections: {} as InvalidConnections,
+            inputTerminalToOutputTerminals: {} as TerminalToOutputTerminals,
+            terminalToConnection: {} as { [index: string]: Connection[] },
+            stepToConnections: {} as { [index: number]: Connection[] },
+        }),
+        getters: {
+            getOutputTerminalsForInputTerminal(state: State) {
+                return (terminalId: string): OutputTerminal[] => {
+                    return state.inputTerminalToOutputTerminals[terminalId] || [];
+                };
+            },
+            getConnectionsForTerminal(state: State) {
+                return (terminalId: string): Connection[] => {
+                    return state.terminalToConnection[terminalId] || [];
+                };
+            },
+            getConnectionsForStep(state: State) {
+                return (stepId: number): Connection[] => state.stepToConnections[stepId] || [];
+            },
         },
-    },
-});
+        actions: {
+            addConnection(this, _connection: Connection) {
+                const connection = Object.freeze(_connection);
+                this.connections.push(connection);
+                const stepStore = useWorkflowStepStore(workflowId);
+                stepStore.addConnection(connection);
+                this.terminalToConnection = updateTerminalToConnection(this.connections);
+                this.inputTerminalToOutputTerminals = updateTerminalToTerminal(this.connections);
+                this.stepToConnections = updateStepToConnections(this.connections);
+            },
+            markInvalidConnection(this: State, connectionId: string, reason: string) {
+                Vue.set(this.invalidConnections, connectionId, reason);
+            },
+            dropFromInvalidConnections(this: State, connectionId: string) {
+                Vue.delete(this.invalidConnections, connectionId);
+            },
+            removeConnection(this, terminal: InputTerminal | OutputTerminal | ConnectionId) {
+                const stepStore = useWorkflowStepStore(workflowId);
+                this.connections = this.connections.filter((connection) => {
+                    const id = getConnectionId(connection);
+
+                    if (typeof terminal === "string") {
+                        if (id === terminal) {
+                            stepStore.removeConnection(connection);
+                            Vue.delete(this.invalidConnections, id);
+                            return false;
+                        } else {
+                            return true;
+                        }
+                    } else if (terminal.connectorType === "input") {
+                        if (connection.input.stepId == terminal.stepId && connection.input.name == terminal.name) {
+                            stepStore.removeConnection(connection);
+                            Vue.delete(this.invalidConnections, id);
+                            return false;
+                        } else {
+                            return true;
+                        }
+                    } else {
+                        if (connection.output.stepId == terminal.stepId && connection.output.name == terminal.name) {
+                            stepStore.removeConnection(connection);
+                            Vue.delete(this.invalidConnections, id);
+                            return false;
+                        } else {
+                            return true;
+                        }
+                    }
+                });
+                this.terminalToConnection = updateTerminalToConnection(this.connections);
+                this.inputTerminalToOutputTerminals = updateTerminalToTerminal(this.connections);
+                this.stepToConnections = updateStepToConnections(this.connections);
+            },
+        },
+    })();
+};
 
 function updateTerminalToTerminal(connections: Connection[]) {
     const inputTerminalToOutputTerminals: TerminalToOutputTerminals = {};

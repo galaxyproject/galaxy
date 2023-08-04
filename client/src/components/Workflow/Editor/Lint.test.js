@@ -100,7 +100,7 @@ describe("Lint", () => {
             localVue,
             pinia: createTestingPinia({ stubActions: false }),
         });
-        stepStore = useWorkflowStepStore();
+        stepStore = useWorkflowStepStore("mock-store");
         Object.values(steps).map((step) => stepStore.addStep(step));
     });
 

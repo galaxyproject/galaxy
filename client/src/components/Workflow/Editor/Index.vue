@@ -166,11 +166,9 @@ import Vue, { computed, onUnmounted, ref } from "vue";
 import { getUntypedWorkflowParameters } from "@/components/Workflow/Editor/modules/parameters";
 import { ConfirmDialog } from "@/composables/confirmDialog";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
+import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { hide_modal } from "@/layout/modal";
 import { getAppRoot } from "@/onload/loadConfig";
-import { useConnectionStore } from "@/stores/workflowConnectionStore";
-import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { LastQueue } from "@/utils/promise-queue";
 
 import { defaultPosition } from "./composables/useDefaultStepPosition";
@@ -235,10 +233,10 @@ export default {
     },
     setup(props, { emit }) {
         const { datatypes, datatypesMapper, datatypesMapperLoading } = useDatatypesMapper();
-        const connectionsStore = useConnectionStore();
-        const stepStore = useWorkflowStepStore();
+
+        const { connectionStore, stepStore, stateStore } = provideScopedWorkflowStores(props.id);
+
         const { getStepIndex, steps } = storeToRefs(stepStore);
-        const stateStore = useWorkflowStateStore();
         const { activeNodeId } = storeToRefs(stateStore);
         const activeStep = computed(() => {
             if (activeNodeId.value !== null) {
@@ -248,14 +246,14 @@ export default {
         });
 
         const hasChanges = ref(false);
-        const hasInvalidConnections = computed(() => Object.keys(connectionsStore.invalidConnections).length > 0);
+        const hasInvalidConnections = computed(() => Object.keys(connectionStore.invalidConnections).length > 0);
 
         stepStore.$subscribe((mutation, state) => {
             hasChanges.value = true;
         });
 
         function resetStores() {
-            connectionsStore.$reset();
+            connectionStore.$reset();
             stepStore.$reset();
             stateStore.$reset();
         }
@@ -264,7 +262,7 @@ export default {
             emit("update:confirmation", false);
         });
         return {
-            connectionsStore,
+            connectionStore,
             hasChanges,
             hasInvalidConnections,
             stepStore,
@@ -360,7 +358,7 @@ export default {
             this.onUpdateStep(step);
         },
         onConnect(connection) {
-            this.connectionsStore.addConnection(connection);
+            this.connectionStore.addConnection(connection);
         },
         onAttemptRefactor(actions) {
             if (this.hasChanges) {
@@ -406,7 +404,7 @@ export default {
         },
         async onRefactor(response) {
             this.resetStores();
-            await fromSimple(response.workflow);
+            await fromSimple(this.id, response.workflow);
             this._loadEditorData(response.workflow);
         },
         onUpdate(step) {
@@ -471,7 +469,7 @@ export default {
             // Load workflow definition
             this.onWorkflowMessage("Importing workflow", "progress");
             loadWorkflow({ id }).then((data) => {
-                fromSimple(data, true, defaultPosition(this.graphOffset, this.transform));
+                fromSimple(id, data, true, defaultPosition(this.graphOffset, this.transform));
                 // Determine if any parameters were 'upgraded' and provide message
                 const insertedStateMessages = getStateUpgradeMessages(data);
                 this.onInsertedStateMessages(insertedStateMessages);
@@ -523,7 +521,7 @@ export default {
         },
         onLayout() {
             return import(/* webpackChunkName: "workflowLayout" */ "./modules/layout.ts").then((layout) => {
-                layout.autoLayout(this.steps).then((newSteps) => {
+                layout.autoLayout(this.id, this.steps).then((newSteps) => {
                     newSteps.map((step) => this.onUpdateStep(step));
                 });
             });
@@ -691,7 +689,7 @@ export default {
             this.lastQueue
                 .enqueue(loadWorkflow, { id, version })
                 .then((data) => {
-                    fromSimple(data);
+                    fromSimple(id, data);
                     this._loadEditorData(data);
                 })
                 .catch((response) => {

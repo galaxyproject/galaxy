@@ -25,7 +25,7 @@
 import { computed, type ComputedRef, onMounted, ref, watch } from "vue";
 
 import { useFocusWithin } from "@/composables/useActiveElement";
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+import { useWorkflowStores } from "@/composables/workflowStores";
 import { assertDefined } from "@/utils/assertions";
 
 import {
@@ -62,7 +62,7 @@ watch(focused, (focused) => {
     }
 });
 
-const stepStore = useWorkflowStepStore();
+const { connectionStore, stepStore } = useWorkflowStores();
 
 interface InputObject {
     stepId: number;
@@ -97,7 +97,7 @@ function inputObjectToTerminal(inputObject: InputObject): InputTerminals {
     const step = stepStore.getStep(inputObject.stepId);
     assertDefined(step);
     const inputSource = step.inputs.find((input) => input.name == inputObject.inputName)!;
-    return terminalFactory(inputObject.stepId, inputSource, props.terminal.datatypesMapper);
+    return terminalFactory(inputObject.stepId, inputSource, props.terminal.datatypesMapper, connectionStore, stepStore);
 }
 
 const validInputs: ComputedRef<InputObject[]> = computed(() => {

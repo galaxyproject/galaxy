@@ -39,7 +39,7 @@ describe("FormOutputLabel", () => {
             localVue,
             pinia,
         });
-        stepStore = useWorkflowStepStore();
+        stepStore = useWorkflowStepStore("mock-workflow");
         stepStore.addStep(stepOne);
         stepStore.addStep(stepTwo);
     });

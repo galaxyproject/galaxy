@@ -33,9 +33,9 @@ interface NewGraph {
     edges: GraphEdge[];
 }
 
-export async function autoLayout(steps: { [index: string]: Step }) {
-    const stateStore = useWorkflowStateStore();
-    const connectionStore = useConnectionStore();
+export async function autoLayout(id: string, steps: { [index: string]: Step }) {
+    const connectionStore = useConnectionStore(id);
+    const stateStore = useWorkflowStateStore(id);
 
     // Convert this to ELK compat.
     const newGraph: NewGraph = {

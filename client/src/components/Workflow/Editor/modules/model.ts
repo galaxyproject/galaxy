@@ -10,8 +10,13 @@ interface Workflow {
     steps: Steps;
 }
 
-export async function fromSimple(data: Workflow, appendData = false, defaultPosition = { top: 0, left: 0 }) {
-    const stepStore = useWorkflowStepStore();
+export async function fromSimple(
+    id: string,
+    data: Workflow,
+    appendData = false,
+    defaultPosition = { top: 0, left: 0 }
+) {
+    const stepStore = useWorkflowStepStore(id);
     const stepIdOffset = stepStore.getStepIndex + 1;
     Object.values(data.steps).forEach((step) => {
         // If workflow being copied into another, wipe UUID and let
