@@ -1,6 +1,8 @@
 <script setup>
 import { submitUpload } from "utils/uploadbox";
-import { computed, ref } from "vue";
+import Vue, { computed, ref } from "vue";
+
+import { defaultModel } from "./model.js";
 
 import CompositeRow from "./CompositeRow.vue";
 import UploadSettingsSelect from "./UploadSettingsSelect.vue";
@@ -58,6 +60,14 @@ function eventError(info) {
     });
 }
 
+/** Update model */
+function eventInput(index, newData) {
+    const it = uploadItems.value[index];
+    Object.entries(newData).forEach(([key, value]) => {
+        it[key] = value;
+    });
+}
+
 /** Refresh progress state */
 function eventProgress(percentage) {
     UploadValues.value.forEach((model) => {
@@ -96,24 +106,25 @@ function eventSuccess() {
     });
 }
 
+function inputDbkey(newDbkey) {
+    genome.value = newDbkey;
+}
+
 function inputExtension(newExtension) {
     uploadItems.value = {};
     let uploadCount = 0;
     const extensionDetails = listExtensions.value.find((v) => v.id === newExtension);
     if (extensionDetails && extensionDetails.composite_files) {
         extensionDetails.composite_files.forEach((item) => {
-            const newUploadId = String(uploadCount++);
-            uploadItems.value[newUploadId] = {
-                id: newUploadId,
+            const index = String(uploadCount++);
+            const uploadModel = {
+                ...defaultModel,
                 description: item.description || item.name,
                 optional: item.optional,
             };
+            Vue.set(uploadItems.value, index, uploadModel);
         });
     }
-}
-
-function inputDbkey(newDbkey) {
-    genome.value = newDbkey;
 }
 </script>
 
@@ -133,7 +144,8 @@ function inputDbkey(newDbkey) {
                     :percentage="uploadItem.percentage"
                     :space_to_tab="uploadItem.space_to_tab"
                     :status="uploadItem.status"
-                    :to_posix_lines="uploadItem.to_posix_lines" />
+                    :to_posix_lines="uploadItem.to_posix_lines"
+                    @input="eventInput" />
             </div>
         </div>
         <div class="upload-footer">

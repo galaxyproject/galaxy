@@ -9,9 +9,18 @@ import Popper from "@/components/Popper/Popper.vue";
 library.add(faCog);
 
 const props = defineProps({
-    deferred: Boolean,
-    space_to_tab: Boolean,
-    to_posix_lines: Boolean,
+    deferred: {
+        type: Boolean,
+        default: null,
+    },
+    space_to_tab: {
+        type: Boolean,
+        default: null,
+    },
+    to_posix_lines: {
+        type: Boolean,
+        default: null,
+    },
 });
 
 const emit = defineEmits();
@@ -34,6 +43,7 @@ const emit = defineEmits();
                         :value="to_posix_lines"
                         @click="emit('input', 'to_posix_lines')" />
                     <UploadSettingsOption
+                        v-if="deferred !== null"
                         title="Defer dataset resolution"
                         :value="deferred"
                         @click="emit('input', 'deferred')" />

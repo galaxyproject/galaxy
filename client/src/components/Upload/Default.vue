@@ -40,10 +40,10 @@ const genome = ref(props.details.defaultDbKey);
 const highlightBox = ref(false);
 const running = ref(false);
 const uploadCompleted = ref(0);
-const uploadList = ref({});
+const uploadItems = ref({});
 const uploadSize = ref(0);
 
-const showHelper = computed(() => Object.keys(uploadList.value).length === 0);
+const showHelper = computed(() => Object.keys(uploadItems.value).length === 0);
 const listExtensions = computed(() => props.effectiveExtensions.filter((ext) => !ext.composite_files));
 const historyId = computed(() => props.details.history_id);
 const counterNonRunning = computed(() => counterAnnounce.value + counterSuccess.value + counterError.value);
@@ -75,7 +75,7 @@ const queue = new UploadQueue({
     complete: eventComplete,
     historyId: historyId.value,
     error: eventError,
-    get: (index) => uploadList.value[index],
+    get: (index) => uploadItems.value[index],
     multiple: props.multiple,
     progress: eventProgress,
     success: eventSuccess,
@@ -103,12 +103,12 @@ function eventAnnounce(index, file) {
         file_uri: file.uri,
         file_data: file,
     };
-    Vue.set(uploadList.value, index, uploadModel);
+    Vue.set(uploadItems.value, index, uploadModel);
 }
 
 /** Queue is done */
 function eventComplete() {
-    Object.values(uploadList.value).forEach((model) => {
+    Object.values(uploadItems.value).forEach((model) => {
         if (model.status === "queued") {
             model.status = "init";
         }
@@ -123,7 +123,7 @@ function eventCreate() {
 
 /** Error */
 function eventError(index, message) {
-    var it = uploadList.value[index];
+    var it = uploadItems.value[index];
     it.percentage = 100;
     it.status = "error";
     it.info = message;
@@ -138,7 +138,7 @@ function eventError(index, message) {
 
 /** Update model */
 function eventInput(index, newData) {
-    const it = uploadList.value[index];
+    const it = uploadItems.value[index];
     Object.entries(newData).forEach(([key, value]) => {
         it[key] = value;
     });
@@ -146,14 +146,14 @@ function eventInput(index, newData) {
 
 /** Reflect upload progress */
 function eventProgress(index, percentage) {
-    const it = uploadList.value[index];
+    const it = uploadItems.value[index];
     it.percentage = percentage;
     props.details.model.set("percentage", _uploadPercentage(percentage, it.file_size));
 }
 
 /** Remove model from upload list */
 function eventRemove(index) {
-    const it = uploadList.value[index];
+    const it = uploadItems.value[index];
     var status = it.status;
     if (status == "success") {
         counterSuccess.value--;
@@ -162,7 +162,7 @@ function eventRemove(index) {
     } else {
         counterAnnounce.value--;
     }
-    Vue.delete(uploadList.value, index);
+    Vue.delete(uploadItems.value, index);
     queue.remove(index);
 }
 
@@ -194,7 +194,7 @@ function eventReset() {
         counterError.value = 0;
         counterRunning.value = 0;
         queue.reset();
-        uploadList.value = {};
+        uploadItems.value = {};
         extension.value = props.details.defaultExtension;
         genome.value = props.details.defaultDbKey;
         props.details.model.set("percentage", 0);
@@ -203,7 +203,7 @@ function eventReset() {
 
 /** Success */
 function eventSuccess(index, incoming) {
-    var it = uploadList.value[index];
+    var it = uploadItems.value[index];
     it.percentage = 100;
     it.status = "success";
     it.outputs = incoming.outputs || incoming.data.outputs || {};
@@ -220,7 +220,7 @@ function eventStart() {
     }
     uploadSize.value = 0;
     uploadCompleted.value = 0;
-    Object.values(uploadList.value).forEach((model) => {
+    Object.values(uploadItems.value).forEach((model) => {
         if (model.status === "init") {
             model.status = "queued";
             uploadSize.value += model.file_size;
@@ -242,7 +242,7 @@ function eventStop() {
 
 /** Display warning */
 function eventWarning(index, message) {
-    const it = uploadList.value[index];
+    const it = uploadItems.value[index];
     it.status = "warning";
     it.info = message;
 }
@@ -250,7 +250,7 @@ function eventWarning(index, message) {
 /* Update extension type for all entries */
 function updateExtension(newExtension) {
     extension.value = newExtension;
-    Object.values(uploadList.value).forEach((model) => {
+    Object.values(uploadItems.value).forEach((model) => {
         if (model.status === "init" && model.extension === props.details.defaultExtension) {
             model.extension = newExtension;
         }
@@ -259,7 +259,7 @@ function updateExtension(newExtension) {
 
 /** Update reference dataset for all entries */
 function updateGenome(newGenome) {
-    Object.values(uploadList.value).forEach((model) => {
+    Object.values(uploadItems.value).forEach((model) => {
         if (model.status === "init" && model.genome === props.details.defaultDbKey) {
             model.genome = newGenome;
         }
@@ -286,7 +286,7 @@ function uploadSelect() {
             <div v-show="showHelper" class="upload-helper"><i class="fa fa-files-o" />Drop files here</div>
             <div v-show="!showHelper" class="upload-table ui-table-striped">
                 <DefaultRow
-                    v-for="(uploadItem, uploadIndex) in uploadList"
+                    v-for="(uploadItem, uploadIndex) in uploadItems"
                     :key="uploadIndex"
                     :index="uploadIndex"
                     :deferred="uploadItem.deferred"

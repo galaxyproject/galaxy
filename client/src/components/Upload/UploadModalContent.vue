@@ -3,7 +3,7 @@
         <BTab v-if="showRegular" id="regular" title="Regular" button-id="tab-title-link-regular">
             <Default
                 ref="regular"
-                :effectiveExtensions="details.effectiveExtensions"
+                :effective-extensions="details.effectiveExtensions"
                 :details="details"
                 :has-callback="hasCallback"
                 :multiple="multiple"
@@ -11,7 +11,7 @@
         </BTab>
         <BTab v-if="showComposite" id="composite" title="Composite" button-id="tab-title-link-composite">
             <Composite
-                :effectiveExtensions="details.effectiveExtensions"
+                :effective-extensions="details.effectiveExtensions"
                 :details="details"
                 :has-callback="hasCallback"
                 :list-genomes="details.listGenomes"

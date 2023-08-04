@@ -11,7 +11,6 @@ import UploadSettingsSelect from "./UploadSettingsSelect.vue";
 library.add(faCheck, faExclamation);
 
 const props = defineProps({
-    deferred: Boolean,
     extension: String,
     fileContent: String,
     fileDescription: String,
@@ -69,11 +68,7 @@ function removeUpload() {
             <div class="upload-size">
                 {{ bytesToString(fileSize) }}
             </div>
-            <UploadSettings
-                :deferred="deferred"
-                :to_posix_lines="to_posix_lines"
-                :space_to_tab="space_to_tab"
-                @input="inputSettings" />
+            <UploadSettings :to_posix_lines="to_posix_lines" :space_to_tab="space_to_tab" @input="inputSettings" />
             <div class="upload-info">
                 <div class="upload-info-text" />
                 <div class="upload-info-progress progress">
