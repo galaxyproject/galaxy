@@ -72,8 +72,11 @@ _EncodedDatabaseIdField = Annotated[
 
 _LibraryFolderDatabaseIdField = Annotated[
     int,
-    BeforeValidator(ensure_valid_folder_id),
     BeforeValidator(lambda database_id: Security.security.decode_id(database_id)),
+    BeforeValidator(ensure_valid_folder_id),
+    PlainSerializer(
+        lambda database_id: f"F{Security.security.encode_id(database_id)}", return_type=str, when_used="json"
+    ),
     WithJsonSchema(
         {"type": "string", "example": "0123456789ABCDEF", "pattern": "[0-9a-fA-F]+", "minLength": 16},
         mode="serialization",
@@ -86,7 +89,7 @@ _LibraryFolderDatabaseIdField = Annotated[
 
 _EncodedLibraryFolderDatabaseIdField = Annotated[
     str,
-    BeforeValidator(lambda database_id: Security.security.encode_id(f"F{database_id}")),
+    BeforeValidator(lambda database_id: f"F{Security.security.encode_id(database_id)}"),
     WithJsonSchema(
         {"type": "string", "example": "0123456789ABCDEF", "pattern": "[0-9a-fA-F]+", "minLength": 16},
         mode="serialization",
