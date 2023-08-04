@@ -1,35 +1,33 @@
 <template>
-    <ConfigProvider v-slot="{ config, loading }">
-        <Published :item="page">
-            <template v-slot>
-                <div v-if="!loading">
-                    <Markdown
-                        v-if="page.content_format == 'markdown'"
-                        :markdown-config="page"
-                        :enable_beta_markdown_export="config.enable_beta_markdown_export"
-                        :download-endpoint="stsUrl(config)"
-                        :export-link="exportUrl"
-                        @onEdit="onEdit" />
-                    <PageHtml v-else :page="page" />
-                </div>
-                <b-alert v-else variant="info" show>Unsupported page format.</b-alert>
-            </template>
-        </Published>
-    </ConfigProvider>
+    <Published :item="page">
+        <template v-slot>
+            <div v-if="isConfigLoaded">
+                <Markdown
+                    v-if="page.content_format == 'markdown'"
+                    :markdown-config="page"
+                    :enable_beta_markdown_export="config.enable_beta_markdown_export"
+                    :download-endpoint="stsUrl(config)"
+                    :export-link="exportUrl"
+                    @onEdit="onEdit" />
+                <PageHtml v-else :page="page" />
+            </div>
+            <b-alert v-else variant="info" show>Unsupported page format.</b-alert>
+        </template>
+    </Published>
 </template>
 
 <script>
 import Published from "components/Common/Published";
 import Markdown from "components/Markdown/Markdown";
-import ConfigProvider from "components/providers/ConfigProvider";
 import { withPrefix } from "utils/redirect";
 import { urlData } from "utils/url";
+
+import { useConfig } from "@/composables/config";
 
 import PageHtml from "./PageHtml";
 
 export default {
     components: {
-        ConfigProvider,
         Markdown,
         PageHtml,
         Published,
@@ -39,6 +37,10 @@ export default {
             type: String,
             required: true,
         },
+    },
+    setup() {
+        const { config, isLoaded: isConfigLoaded } = useConfig(true);
+        return { config, isConfigLoaded };
     },
     data() {
         return {
