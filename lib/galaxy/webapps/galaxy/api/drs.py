@@ -14,8 +14,8 @@ from galaxy.exceptions import ObjectNotFound
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.schema.drs import (
     DrsObject,
+    Organization,
     Service,
-    ServiceOrganization,
     ServiceType,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
@@ -54,7 +54,7 @@ class DrsApi:
         organization_name = config.organization_name or organization_id
         organization_url = config.organization_url or f"{components.scheme}://{components.netloc}"
 
-        organization = ServiceOrganization(
+        organization = Organization(
             url=organization_url,
             name=organization_name,
         )

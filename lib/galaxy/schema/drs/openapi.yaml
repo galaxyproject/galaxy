@@ -1,0 +1,1731 @@
+openapi: 3.0.3
+info:
+  title: Data Repository Service
+  version: 1.3.0
+  x-logo:
+    url: >-
+      https://www.ga4gh.org/wp-content/themes/ga4gh-theme/gfx/GA-logo-horizontal-tag-RGB.svg
+  termsOfService: https://www.ga4gh.org/terms-and-conditions/
+  contact:
+    name: GA4GH Cloud Work Stream
+    email: ga4gh-cloud@ga4gh.org
+  license:
+    name: Apache 2.0
+    url: >-
+      https://raw.githubusercontent.com/ga4gh/data-repository-service-schemas/master/LICENSE
+servers:
+  - url: https://{serverURL}/ga4gh/drs/v1
+    variables:
+      serverURL:
+        default: drs.example.org
+        description: >
+          DRS server endpoints MUST be prefixed by the '/ga4gh/drs/v1' endpoint
+          path
+security:
+  - {}
+  - BasicAuth: []
+  - BearerAuth: []
+tags:
+  - name: Introduction
+    description: >
+      The Data Repository Service (DRS) API provides a generic interface to data
+      repositories so data consumers, including workflow systems, can access
+      data objects in a single, standard way regardless of where they are stored
+      and how they are managed. The primary functionality of DRS is to map a
+      logical ID to a means for physically retrieving the data represented by
+      the ID. The sections below describe the characteristics of those IDs, the
+      types of data supported, how they can be pointed to using URIs, and how
+      clients can use these URIs to ultimately make successful DRS API requests.
+      This document also describes the DRS API in detail and provides
+      information on the specific endpoints, request formats, and responses.
+      This specification is intended for developers of DRS-compatible services
+      and of clients that will call these DRS services.
+
+
+      The key words MUST, MUST NOT, REQUIRED, SHALL, SHALL NOT, SHOULD, SHOULD
+      NOT, RECOMMENDED, MAY, and OPTIONAL in this document are to be interpreted
+      as described in [RFC 2119](https://datatracker.ietf.org/doc/html/rfc2119).
+  - name: DRS API Principles
+    description: >
+      ## DRS IDs
+
+
+      Each implementation of DRS can choose its own id scheme, as long as it
+      follows these guidelines:
+
+
+      * DRS IDs are strings made up of uppercase and lowercase letters, decimal
+      digits, hyphen, period, underscore and tilde [A-Za-z0-9.-_~]. See [RFC
+      3986 § 2.3](https://datatracker.ietf.org/doc/html/rfc3986#section-2.3).
+
+      * DRS IDs can contain other characters, but they MUST be encoded into
+      valid DRS IDs whenever they are used in API calls. This is because
+      non-encoded IDs may interfere with the interpretation of the
+      objects/{id}/access endpoint. To overcome this limitation use
+      percent-encoding of the ID, see [RFC 3986 §
+      2.4](https://datatracker.ietf.org/doc/html/rfc3986#section-2.4)
+
+      * One DRS ID MUST always return the same object data (or, in the case of a
+      collection, the same set of objects). This constraint aids with
+      reproducibility.
+
+      * DRS implementations MAY have more than one ID that maps to the same
+      object.
+
+      * DRS version 1.x does NOT support semantics around multiple versions of
+      an object. (For example, there’s no notion of “get latest version” or
+      “list all versions”.) Individual implementations MAY choose an ID scheme
+      that includes version hints.
+
+
+      ## DRS URIs
+
+
+      For convenience, including when passing content references to a [WES
+      server](https://github.com/ga4gh/workflow-execution-service-schemas), we
+      define a [URI
+      scheme](https://en.wikipedia.org/wiki/Uniform_Resource_Identifier#Generic_syntax)
+      for DRS-accessible content. This section documents the syntax of DRS URIs,
+      and the rules clients follow for translating a DRS URI into a URL that
+      they use for making the DRS API calls described in this spec.
+
+
+      There are two styles of DRS URIs, Hostname-based and Compact
+      Identifier-based, both using the `drs://` URI scheme. DRS servers may
+      choose either style when exposing references to their content;. DRS
+      clients MUST support resolving both styles.
+
+
+      Tip:
+
+      > See [Appendix: Background Notes on DRS
+      URIs](#tag/Background-Notes-on-DRS-URIs) for more information on our
+      design motivations for DRS URIs.
+
+
+      ### Hostname-based DRS URIs
+
+
+      Hostname-based DRS URIs are simpler than compact identifier-based URIs.
+      They contain the DRS server name and the DRS ID only and can be converted
+      directly into a fetchable URL based on a simple rule. They take the form:
+
+
+      ```
+
+      drs://<hostname>/<id>
+
+      ```
+
+
+      DRS URIs of this form mean *\"you can fetch the content with DRS id \<id\>
+      from the DRS server at \<hostname\>\"*.
+
+      For example, here are the client resolution steps if the URI is:
+
+
+      ```
+
+      drs://drs.example.org/314159
+
+      ```
+
+
+      1. The client parses the string to extract the hostname of
+      “drs.example.org” and the id of “314159”.
+
+      2. The client makes a GET request to the DRS server, using the standard
+      DRS URL syntax:
+
+
+      ```
+
+      GET https://drs.example.org/ga4gh/drs/v1/objects/314159
+
+      ```
+
+
+      The protocol is always https and the port is always the standard 443 SSL
+      port. It is invalid to include a different port in a DRS hostname-based
+      URI.
+
+
+      Tip:
+
+      > See the [Appendix: Hostname-Based URIs](#tag/Hostname-Based-URIs) for
+      information on how hostname-based DRS URI resolution to URLs is likely to
+      change in the future, when the DRS v2 major release happens.
+
+
+      ### Compact Identifier-based DRS URIs
+
+
+      Compact Identifier-based DRS URIs use resolver registry services
+      (specifically, [identifiers.org](https://identifiers.org/) and [n2t.net
+      (Name-To-Thing)](https://n2t.net/)) to provide a layer of indirection
+      between the DRS URI and the DRS server name — the actual DNS name of the
+      DRS server is not present in the URI. This approach is based on the Joint
+      Declaration of Data Citation Principles as detailed by [Wimalaratne et al
+      (2018)](https://www.nature.com/articles/sdata201829).
+
+
+      For more information, see the document [More Background on Compact
+      Identifiers](./more-background-on-compact-identifiers.html).
+
+
+      Compact Identifiers take the form:
+
+
+      ```
+
+      drs://[provider_code/]namespace:accession
+
+      ```
+
+
+      Together, provider code and the namespace are referred to as the `prefix`.
+      The provider code is optional and is used by identifiers.org/n2t.net for
+      compact identifier resolver mirrors. Both the `provider_code` and
+      `namespace` disallow spaces or punctuation, only lowercase alphanumerical
+      characters, underscores and dots are allowed (e.g. [A-Za-z0-9._]).
+
+
+      Tip:
+
+      > See the [Appendix: Compact Identifier-Based
+      URIs](#tag/Compact-Identifier-Based-URIs) for more background on Compact
+      Identifiers and resolver registry services like identifiers.org/n2t.net
+      (aka meta-resolvers), how to register prefixes, possible caching
+      strategies, and security considerations.
+
+
+      #### For DRS Servers
+
+
+      If your DRS implementation will issue DRS URIs based *on your own* compact
+      identifiers, you MUST first register a new prefix with identifiers.org
+      (which is automatically mirrored to n2t.net). You will also need to
+      include a provider resolver resource in this registration which links the
+      prefix to your DRS server, so that DRS clients can get sufficient
+      information to make a successful DRS GET request. For clarity, we
+      recommend you choose a namespace beginning with `drs`.
+
+
+      #### For DRS Clients
+
+
+      A DRS client parses the DRS URI compact identifier components to extract
+      the prefix and the accession, and then uses meta-resolver APIs to locate
+      the actual DRS server. For example, here are the client resolution steps
+      if the URI is:
+
+
+      ```
+
+      drs://drs.42:314159
+
+      ```
+
+
+      1. The client parses the string to extract the prefix of `drs.42` and the
+      accession of `314159`, using the first occurrence of a colon (":")
+      character after the initial `drs://` as a delimiter. (The colon character
+      is not allowed in a Hostname-based DRS URI, making it easy to tell them
+      apart.)
+
+
+      2. The client makes API calls to a meta-resolver to look up the URL
+      pattern for the namespace. (See [Calling Meta-Resolver APIs for Compact
+      Identifier-Based DRS
+      URIs](#section/Calling-Meta-Resolver-APIs-for-Compact-Identifier-Based-DRS-URIs)
+      for details.) The URL pattern is a string containing a `{$id}` parameter,
+      such as:
+
+
+      ```
+
+      https://drs.myexample.org/ga4gh/drs/v1/objects/{$id}
+
+      ```
+
+
+      3. The client generates a DRS URL from the URL template by replacing {$id}
+      with the accession it extracted in step 1. It then makes a GET request to
+      the DRS server:
+
+
+      ```
+
+      GET https://drs.myexample.org/ga4gh/drs/v1/objects/314159
+
+      ```
+
+
+      4. The client follows any HTTP redirects returned in step 3, in case the
+      resolver goes through an extra layer of redirection.
+
+
+      For performance reasons, DRS clients SHOULD cache the URL pattern returned
+      in step 2, with a suggested 24 hour cache life.
+
+
+      ### Choosing a URI Style
+
+
+      DRS servers can choose to issue either hostname-based or compact
+      identifier-based DRS URIs, and can be confident that compliant DRS clients
+      will support both. DRS clients must be able to accommodate both URI types.
+      Tradeoffs that DRS server builders, and third parties who need to cite DRS
+      objects in datasets, workflows or elsewhere, may want to consider include:
+
+
+      *Table 1: Choosing a URI Style*
+
+
+      |                   | Hostname-based | Compact Identifier-based |
+
+      |-------------------|----------------|--------------------------|
+
+      | URI Durability    | URIs are valid for as long as the server operator
+      maintains ownership of the published DNS address. (They can of course
+      point that address at different physical serving infrastructure as often
+      as they would like.) | URIs are valid for as long as the server operator
+      maintains ownership of the published compact identifier resolver
+      namespace. (They also depend on the meta-resolvers like
+      identifiers.org/n2t.net remaining operational, which is intended to be
+      essentially forever.) |
+
+      | Client Efficiency | URIs require minimal client logic, and no network
+      requests, to resolve. | URIs require small client logic, and 1-2 cacheable
+      network requests, to resolve. |
+
+      | Security          | Servers have full control over their own security
+      practices. | Server operators, in addition to maintaining their own
+      security practices, should confirm they are comfortable with the resolver
+      registry security practices, including protection against denial of
+      service and namespace-hijacking attacks. (See the [Appendix: Compact
+      Identifier-Based URIs](#tag/Compact-Identifier-Based-URIs) for more
+      information on resolver registry security.) |
+
+
+      ## DRS Datatypes
+
+
+      DRS v1 supports two types of content:
+
+
+      * a *blob* is like a file — it’s a single blob of bytes, represented by a
+      `DrsObject` without a `contents` array
+
+      * a *bundle* is like a folder — it’s a collection of other DRS content
+      (either blobs or bundles), represented by a `DrsObject` with a `contents`
+      array
+
+
+      ## Read-only
+
+
+      DRS v1 is a read-only API. We expect that each implementation will define
+      its own mechanisms and interfaces (graphical and/or programmatic) for
+      adding and updating data.
+
+
+      ## Standards
+
+
+      The DRS API specification is written in OpenAPI and embodies a RESTful
+      service philosophy. It uses JSON in requests and responses and standard
+      HTTPS on port 443 for information transport.  Optionally, it
+
+      supports authentication and authorization using the [GA4GH
+      Passport](https://github.com/ga4gh-duri/ga4gh-duri.github.io/tree/master/researcher_ids)
+      standard.
+  - name: Authorization & Authentication
+    description: >
+      ## Making DRS Requests
+
+
+      The DRS implementation is responsible for defining and enforcing an
+      authorization policy that determines which users are allowed to make which
+      requests. GA4GH recommends that DRS implementations use an OAuth 2.0
+      [bearer token](https://oauth.net/2/bearer-tokens/) or a [GA4GH
+      Passport](https://github.com/ga4gh-duri/ga4gh-duri.github.io/tree/master/researcher_ids),
+      although they can choose other mechanisms if appropriate.
+
+
+      ## Fetching DRS Objects
+
+
+      The DRS API allows implementers to support a variety of different content
+      access policies, depending on what `AccessMethod` records they return.
+      Implementers have a choice to make the
+
+      GET /objects/{object_id} and GET /objects/{object_id}/access/{access_id}
+      calls open or requiring a Basic, Bearer, or Passport token (Passport
+      requiring a POST).  The following describes the
+
+      various access approaches following a successful GET/POST
+      /objects/{object_id} request in order to them obtain access to the bytes
+      for a given object ID/access ID:
+
+
+      * public content:
+          * server provides an `access_url` with a `url` and no `headers`
+          * caller fetches the object bytes without providing any auth info
+      * private content that requires the caller to have out-of-band auth
+      knowledge (e.g. service account credentials):
+          * server provides an `access_url` with a `url` and no `headers`
+          * caller fetches the object bytes, passing the auth info they obtained out-of-band
+      * private content that requires the caller to pass an Authorization token:
+          * server provides an `access_url` with a `url` and `headers`
+          * caller fetches the object bytes, passing auth info via the specified header(s)
+      * private content that uses an expensive-to-generate auth mechanism (e.g.
+      a signed URL):
+          * server provides an `access_id`
+          * caller passes the `access_id` to the `/access` endpoint
+          * server provides an `access_url` with the generated mechanism (e.g. a signed URL in the `url` field)
+          * caller fetches the object bytes from the `url` (passing auth info from the specified headers, if any)
+
+      In the approaches above [GA4GH
+      Passports](https://github.com/ga4gh-duri/ga4gh-duri.github.io/tree/master/researcher_ids)
+      are not mentioned and that is on purpose.  A DRS server may return a
+      Bearer token or other platform-specific token in a header in response to a
+      valid Bearer token or GA4GH Passport (Option 3 above).  But it is not the
+      responsibility of a DRS server to return a Passport, that is the
+      responsibility of a Passport Broker and outside the scope of DRS.
+
+
+      DRS implementers should ensure their solutions restrict access to targets
+      as much as possible, detect attempts to exploit through log monitoring,
+      and they are prepared to take action if an exploit in their DRS
+      implementation is detected.
+
+
+      ## Authentication
+
+
+      ### Discovery
+
+
+      The APIs to fetch [DrsObjects](#tag/DrsObjectModel) and
+      [AccessURLs](#tag/AccessURLModel) may require authorization. The
+      authorization mode may vary between DRS objects hosted by a service. The
+      authorization mode may vary between the APIs to fetch a
+      [DrsObject](#tag/DrsObjectModel) and an associated
+      [AccessURL](#tag/AccessURLModel). Implementers should indicate how to
+      authenticate to fetch a [DrsObject](#tag/DrsObjectModel) by implementing
+      the [OptionsOjbect](#operation/OptionsObject) API. Implementers should
+      indicate how to authenticate to fetch an [AccessURL](#tag/AccessURLModel)
+      within a [DrsObject](#tag/DrsObjectModel).
+
+
+      ### Modes
+
+
+      #### BasicAuth
+
+
+      A valid authorization token must be passed in the 'Authorization' header,
+      e.g. "Basic ${token_string}"
+
+
+      | Security Scheme Type | HTTP |
+
+      |----------------------|------|
+
+      | **HTTP Authorization Scheme** | basic |
+
+
+      #### BearerAuth
+
+
+      A valid authorization token must be passed in the 'Authorization' header,
+      e.g. "Bearer ${token_string}"
+
+
+      | Security Scheme Type | HTTP |
+
+      |----------------------|------|
+
+      | **HTTP Authorization Scheme** | bearer |
+
+
+      #### PassportAuth
+
+
+      A valid authorization [GA4GH
+      Passport](https://github.com/ga4gh-duri/ga4gh-duri.github.io/tree/master/researcher_ids)
+      token must be passed in the body of a POST request
+
+
+      | Security Scheme Type | HTTP |
+
+      |----------------------|------|
+
+      | **HTTP POST** | tokens[] |
+  - name: Objects
+  - name: Service Info
+  - name: AccessMethodModel
+    x-displayName: AccessMethod
+    description: |
+      <SchemaDefinition schemaRef="#/components/schemas/AccessMethod" />
+  - name: AccessURLModel
+    x-displayName: AccessURL
+    description: |
+      <SchemaDefinition schemaRef="#/components/schemas/AccessURL" />
+  - name: ChecksumModel
+    x-displayName: Checksum
+    description: |
+      <SchemaDefinition schemaRef="#/components/schemas/Checksum" />
+  - name: ContentsObjectModel
+    x-displayName: ContentsObject
+    description: |
+      <SchemaDefinition schemaRef="#/components/schemas/ContentsObject" />
+  - name: DrsObjectModel
+    x-displayName: DrsObject
+    description: |
+      <SchemaDefinition schemaRef="#/components/schemas/DrsObject" />
+  - name: ErrorModel
+    x-displayName: Error
+    description: |
+      <SchemaDefinition schemaRef="#/components/schemas/Error" />
+  - name: Motivation
+    description: >
+      <table style="width:100%">
+        <tr>
+          <td style="width:40%">
+            Data sharing requires portable data, consistent with the FAIR data principles (findable, accessible, interoperable, reusable). Today’s researchers and clinicians are surrounded by potentially useful data, but often need bespoke tools and processes to work with each dataset. Today’s data publishers don’t have a reliable way to make their data useful to all (and only) the people they choose. And today’s data controllers are tasked with implementing standard controls of non-standard mechanisms for data access.
+          </td>
+          <td style="width:60%">
+              <img src="/data-repository-service-schemas/public/img/figure1.png">
+              <em>
+                Figure 1: there’s an ocean of data, with many different tools to drink from it, but no guarantee that any tool will work with any subset of the data
+              </em>
+          </td>
+        </tr>
+      </table>
+
+
+      <table style="width:100%">
+        <tr>
+          <td style="width:40%">
+            We need a standard way for data producers to make their data available to data consumers, that supports the control needs of the former and the access needs of the latter. And we need it to be interoperable, so anyone who builds access tools and systems can be confident they’ll work with all the data out there, and anyone who publishes data can be confident it will work with all the tools out there.
+          </td>
+          <td style="width:60%">
+              <img src="/data-repository-service-schemas/public/img/figure2.png">
+              <em>
+                Figure 2: by defining a standard Data Repository API, and adapting tools to use it, every data publisher can now make their data useful to every data consumer
+              </em>
+          </td>
+        </tr>
+      </table>
+
+
+      <table style="width:100%">
+        <tr>
+          <td style="width:75%">
+            We envision a world where:
+            <ul>
+              <li>
+                there are many many <strong>data consumers</strong>, working in research and in care, who can use the tools of their choice to access any and all data that they have permission to see
+              </li>
+              <li>
+                there are many <strong>data access tools</strong> and platforms, supporting discovery, visualization, analysis, and collaboration
+              </li>
+              <li>
+                there are many <strong>data repositories</strong>, each with their own policies and characteristics, which can be accessed by a variety of tools
+              </li>
+              <li>
+                there are many <strong>data publishing tools</strong> and platforms, supporting a variety of data lifecycles and formats
+              </li>
+              <li>
+                there are many many <strong>data producers</strong>, generating data of all types, who can use the tools of their choice to make their data as widely available as is appropriate
+              </li>
+            </ul>
+          </td>
+          <td style="width:25%">
+              <img src="/data-repository-service-schemas/public/img/figure3.png">
+              <em>
+                Figure 3: a standard Data Repository API enables an ecosystem of data producers and consumers
+              </em>
+          </td>
+        </tr>
+      </table>
+
+
+      This spec defines a standard **Data Repository Service (DRS) API** (“the
+      yellow box”), to enable that ecosystem of data producers and consumers.
+      Our goal is that the only thing data consumers need to know about a data
+      repo is *\"here’s the DRS endpoint to access it\"*, and the only thing
+      data publishers need to know to tap into the world of consumption tools is
+      *\"here’s how to tell it where my DRS endpoint lives\"*.
+
+
+      ## Federation
+
+
+      The world’s biomedical data is controlled by groups with very different
+      policies and restrictions on where their data lives and how it can be
+      accessed. A primary purpose of DRS is to support unified access to
+      disparate and distributed data. (As opposed to the alternative centralized
+      model of "let’s just bring all the data into one single data repository”,
+      which would be technically easier but is no more realistic than “let’s
+      just bring all the websites into one single web host”.)
+
+
+      In a DRS-enabled world, tool builders don’t have to worry about where the
+      data their tools operate on lives — they can count on DRS to give them
+      access. And tool users only need to know which DRS server is managing the
+      data they need, and whether they have permission to access it; they don’t
+      have to worry about how to physically get access to, or (worse) make a
+      copy of the data. For example, if I have appropriate permissions, I can
+      run a pooled analysis where I run a single tool across data managed by
+      different DRS servers, potentially in different locations.
+  - name: Background Notes on DRS URIs
+    description: >
+      ## Design Motivation
+
+
+      DRS URIs are aligned with the [FAIR data
+      principles](https://www.nature.com/articles/sdata201618) and the [Joint
+      Declaration of Data Citation
+      Principles](https://www.nature.com/articles/sdata20182) — both
+      hostname-based and compact identifier-based URIs provide globally unique,
+      machine-resolvable, persistent identifiers for data.
+
+
+      * We require all URIs to begin with `drs://` as a signal to humans and
+      systems consuming these URIs that the response they will ultimately
+      receive, after transforming the URI to a fetchable URL, will be a DRS JSON
+      packet. This signal differentiates DRS URIs from the wide variety of other
+      entities (HTML documents, PDFs, ontology notes, etc.) that can be
+      represented by compact identifiers.
+
+      * We support hostname-based URIs because of their simplicity and
+      efficiency for server and client implementers.
+
+      * We support compact identifier-based URIs, and the meta-resolver services
+      of identifiers.org and n2t.net (Name-to-Thing), because of the wide
+      adoption of compact identifiers in the research community. as detailed by
+      [Wimalaratne et al (2018)](https://www.nature.com/articles/sdata201829) in
+      "Uniform resolution of compact identifiers for biomedical data."
+  - name: Compact Identifier-Based URIs
+    description: >
+      **Note: Identifiers.org/n2t.net API Changes**
+
+
+      The examples below show the current API interactions with
+      [n2t.net](https://n2t.net/e/compact_ids.html) and
+      [identifiers.org](https://docs.identifiers.org/) which may change over
+      time. Please refer to the documentation from each site for the most
+      up-to-date information. We will make best efforts to keep the DRS
+      specification current but DRS clients MUST maintain their ability to use
+      either the identifiers.org or n2t.net APIs to resolve compact
+      identifier-based DRS URIs.
+
+
+      ## Registering a DRS Server on a Meta-Resolver
+
+
+      See the documentation on the [n2t.net](https://n2t.net/e/compact_ids.html)
+      and [identifiers.org](https://docs.identifiers.org/) meta-resolvers for
+      adding your own compact identifier type and registering your DRS server as
+      a resolver. You can register new prefixes (or mirrors by adding resource
+      provider codes) for free using a simple online form. For more information
+      see [More Background on Compact
+      Identifiers](./more-background-on-compact-identifiers.html).
+
+
+      ## Calling Meta-Resolver APIs for Compact Identifier-Based DRS URIs
+
+
+      Clients resolving Compact Identifier-based URIs need to convert a prefix
+      (e.g. “drs.42”) into a URL pattern. They can do so by calling either the
+      identifiers.org or the n2t.net API, since the two meta-resolvers keep
+      their mapping databases in sync.
+
+
+      ### Calling the identifiers.org API as a Client
+
+
+      It takes two API calls to get the URL pattern.
+
+
+      1. The client makes a GET request to identifiers.org to find information
+      about the prefix:
+
+
+      ```
+
+      GET
+      https://registry.api.identifiers.org/restApi/namespaces/search/findByPrefix?prefix=drs.42
+
+      ```
+
+
+      This request returns a JSON structure including various URLs containing an
+      embedded namespace id, such as:
+
+
+      ```
+
+      "namespace" : {
+        "href":"https://registry.api.identifiers.org/restApi/namespaces/1234"
+      }
+
+      ```
+
+
+      2. The client extracts the namespace id (in this example 1234), and uses
+      it to make a second GET request to identifiers.org to find information
+      about the namespace:
+
+
+      ```
+
+      GET
+      https://registry.api.identifiers.org/restApi/resources/search/findAllByNamespaceId?id=1234
+
+      ```
+
+
+      This request returns a JSON structure including an urlPattern field, whose
+      value is a URL pattern containing a ${id} parameter, such as:
+
+
+      ```
+
+      "urlPattern" : "https://drs.myexample.org/ga4gh/drs/v1/objects/{$id}"
+
+      ```
+
+
+      ### Calling the n2t.net API as a Client
+
+
+      It takes one API call to get the URL pattern.
+
+
+      The client makes a GET request to n2t.net to find information about the
+      namespace. (Note the trailing colon.)
+
+
+      ```
+
+      GET https://n2t.net/drs.42:
+
+      ```
+
+
+      This request returns a text structure including a redirect field, whose
+      value is a URL pattern containing an `$id` parameter, such as:
+
+
+      ```
+
+      redirect: https://drs.myexample.org/ga4gh/drs/v1/objects/$id
+
+      ```
+
+
+      ## Caching with Compact Identifiers
+
+
+      Identifiers.org/n2t.net compact identifier resolver records do not change
+      frequently. This reality is useful for caching resolver records and their
+      URL patterns for performance reasons. Builders of systems that use compact
+      identifier-based DRS URIs should cache prefix resolver records from
+      identifiers.org/n2t.net and occasionally refresh the records (such as
+      every 24 hours). This approach will reduce the burden on these community
+      services since we anticipate many DRS URIs will be regularly resolved in
+      workflow systems. Alternatively, system builders may decide to directly
+      mirror the registries themselves, instructions are provided on the
+      identifiers.org/n2t.net websites.
+
+
+      ## Security with Compact Identifiers
+
+
+      As mentioned earlier, identifiers.org/n2t.net performs some basic
+      verification of new prefixes and provider code mirror registrations on
+      their sites. However, builders of systems that consume and resolve DRS
+      URIs may have certain security compliance requirements and regulations
+      that prohibit relying on an external site for resolving compact
+      identifiers. In this case, systems under these security and compliance
+      constraints may wish to whitelist certain compact identifier resolvers
+      and/or vet records from identifiers.org/n2t.net before enabling in their
+      systems.
+
+
+      ## Accession Encoding to Valid DRS IDs
+
+
+      The compact identifier format used by identifiers.org/n2t.net does not
+      percent-encode reserved URI characters but, instead, relies on the first
+      ":" character to separate prefix from accession. Since these accessions
+      can contain any characters, and characters like "/" will interfere with
+      DRS API calls, you *must* percent encode the accessions extracted from DRS
+      compact identifier-based URIs when using as DRS IDs in subsequent DRS GET
+      requests. An easy way for a DRS client to handle this is to get the
+      initial DRS object JSON response from whatever redirects the compact
+      identifier resolves to, then look for the `self_uri` in the JSON, which
+      will give you the correctly percent-encoded DRS ID for subsequent DRS API
+      calls such as the `access` method.
+
+
+      ## Additional Examples
+
+
+      For additional examples, see the document [More Background on Compact
+      Identifiers](./more-background-on-compact-identifiers.html).
+  - name: Hostname-Based URIs
+    description: >
+      ## Encoding DRS IDs
+
+
+      In hostname-based DRS URIs, the ID is always percent-encoded to ensure
+      special characters do not interfere with subsequent DRS endpoint calls. As
+      such, ":" is not allowed in the URI and is a convenient way of
+      differentiating from a compact identifier-based DRS URI. Also, if a given
+      DRS service implementation uses compact identifier accessions as their DRS
+      IDs, they must be percent encoded before using them as DRS IDs in
+      hostname-based DRS URIs and subsequent GET requests to a DRS service
+      endpoint.
+  - name: GA4GH Service Registry
+    description: >
+      The [GA4GH Service Registry API
+      specification](https://github.com/ga4gh-discovery/ga4gh-service-registry)
+      allows information about GA4GH-compliant web services, including DRS
+      services, to be aggregated into registries and made available via a
+      standard API. The following considerations should be followed when
+      registering DRS services within a service registry.
+
+
+      * The DRS service attributes returned by `/service-info` (i.e. `id`,
+      `name`, `description`, etc.) should have the same values as the registry
+      entry for that service.
+
+      * The value of the `type` object's `artifact` property should be `drs`
+      (i.e. the same as it appears in `service-info`)
+
+      * Each entry in a Service Registry must have a `url`, indicating the base
+      URL to the web service. For DRS services, the registered `url` must
+      include everything up to
+
+      the standardized `/ga4gh/drs/v1` path. Clients should be able to assume
+      that:
+          + Adding `/ga4gh/drs/v1/objects/{object_id}` to the registered `url` will hit the `DrsObject` endpoint
+          + Adding `/ga4gh/drs/v1/service-info` to the registered `url` will hit the Service Info endpoint
+
+      Example listing of a DRS API registration from a service registry's
+      `/services` endpoint:
+
+
+      ```
+
+      [
+          {
+              "id": "com.example.drs",
+              "name": "Example DRS API",
+              "type": {
+                  "group": "org.ga4gh",
+                  "artifact": "drs",
+                  "version": "1.3.0"
+              },
+              "description": "The Data Repository Service (DRS) API ...",
+              "organization": {
+                  "id": "com.example",
+                  "name": "Example Company"
+              },
+              "contactUrl": "mailto:support@example.com",
+              "documentationUrl": "https://docs.example.com/docs/drs",
+              "createdAt": "2021-08-09T00:00:00Z",
+              "updatedAt": "2021-08-09T12:30:00Z",
+              "environment": "production",
+              "version": "1.13.4",
+              "url": "https://drs-service.example.com"
+          }
+      ]
+
+      ```
+x-tagGroups:
+  - name: Overview
+    tags:
+      - Introduction
+      - DRS API Principles
+      - Authorization & Authentication
+  - name: Operations
+    tags:
+      - Objects
+      - Service Info
+  - name: Models
+    tags:
+      - AccessMethodModel
+      - AccessURLModel
+      - ChecksumModel
+      - ContentsObjectModel
+      - DrsObjectModel
+      - ErrorModel
+  - name: Appendices
+    tags:
+      - Motivation
+      - Background Notes on DRS URIs
+      - Compact Identifier-Based URIs
+      - Hostname-Based URIs
+      - GA4GH Service Registry
+paths:
+  /service-info:
+    get:
+      summary: Retrieve information about this service
+      description: >-
+        Returns information about the DRS service
+
+
+        Extends the
+
+        [v1.0.0 GA4GH Service Info
+        specification](https://github.com/ga4gh-discovery/ga4gh-service-info)
+
+        as the standardized format for GA4GH web services to self-describe.
+
+
+        According to the
+
+        [service-info type
+        registry](https://github.com/ga4gh/TASC/blob/master/service-info/ga4gh-service-info.json)
+
+        maintained by the [Technical Alignment Sub Committee
+        (TASC)](https://github.com/ga4gh/TASC),
+
+        a DRS service MUST have:
+          * a `type.group` value of `org.ga4gh`
+          * a `type.artifact` value of `drs`
+
+        e.g.
+
+        ```
+
+        {
+            "id": "com.example.drs",
+            "description": "Serves data according to DRS specification",
+            ...
+            "type": {
+                "group": "org.ga4gh",
+                "artifact": "drs"
+            }
+            ...
+        }
+
+        ```
+
+
+        See the [Service Registry Appendix](#tag/GA4GH-Service-Registry) for
+        more information on how to register a DRS service with a service
+        registry.
+      operationId: GetServiceInfo
+      responses:
+        '200':
+          $ref: '#/components/responses/200ServiceInfo'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+      tags:
+        - Service Info
+  /objects/{object_id}:
+    options:
+      summary: Get Authorization info about a DrsObject.
+      security:
+        - {}
+      description: >-
+        Returns a list of `Authorizations` that can be used to determine how to
+        authorize requests to `GetObject` or `PostObject`.
+      operationId: OptionsObject
+      parameters:
+        - $ref: '#/components/parameters/ObjectId'
+      responses:
+        '200':
+          $ref: '#/components/responses/200OkAuthorizations'
+        '204':
+          $ref: '#/components/responses/AuthorizationsNotSupported'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          $ref: '#/components/responses/404NotFoundDrsObject'
+        '405':
+          $ref: '#/components/responses/AuthorizationsNotSupported'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+      tags:
+        - Objects
+      x-swagger-router-controller: ga4gh.drs.server
+    get:
+      summary: Get info about a DrsObject.
+      description: >-
+        Returns object metadata, and a list of access methods that can be used
+        to fetch object bytes.
+      operationId: GetObject
+      parameters:
+        - $ref: '#/components/parameters/ObjectId'
+        - $ref: '#/components/parameters/Expand'
+      responses:
+        '200':
+          $ref: '#/components/responses/200OkDrsObject'
+        '202':
+          $ref: '#/components/responses/202Accepted'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFoundDrsObject'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+      tags:
+        - Objects
+      x-swagger-router-controller: ga4gh.drs.server
+    post:
+      summary: Get info about a DrsObject through POST'ing a Passport.
+      description: >-
+        Returns object metadata, and a list of access methods that can be used
+        to fetch object bytes.
+
+        Method is a POST to accommodate a JWT GA4GH Passport sent in the
+        formData in order to authorize access.
+      operationId: PostObject
+      security:
+        - PassportAuth: []
+      responses:
+        '200':
+          $ref: '#/components/responses/200OkDrsObject'
+        '202':
+          $ref: '#/components/responses/202Accepted'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFoundAccess'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+      tags:
+        - Objects
+      x-swagger-router-controller: ga4gh.drs.server
+      parameters:
+        - $ref: '#/components/parameters/ObjectId'
+      requestBody:
+        $ref: '#/components/requestBodies/PostObjectBody'
+  /objects/{object_id}/access/{access_id}:
+    get:
+      summary: Get a URL for fetching bytes
+      description: >-
+        Returns a URL that can be used to fetch the bytes of a `DrsObject`.
+
+        This method only needs to be called when using an `AccessMethod` that
+        contains an `access_id` (e.g., for servers that use signed URLs for
+        fetching object bytes).
+      operationId: GetAccessURL
+      responses:
+        '200':
+          $ref: '#/components/responses/200OkAccess'
+        '202':
+          $ref: '#/components/responses/202Accepted'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFoundAccess'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+      tags:
+        - Objects
+      x-swagger-router-controller: ga4gh.drs.server
+      parameters:
+        - $ref: '#/components/parameters/ObjectId'
+        - $ref: '#/components/parameters/AccessId'
+    post:
+      summary: Get a URL for fetching bytes through POST'ing a Passport
+      description: >-
+        Returns a URL that can be used to fetch the bytes of a `DrsObject`.
+
+        This method only needs to be called when using an `AccessMethod` that
+        contains an `access_id` (e.g., for servers that use signed URLs for
+        fetching object bytes).
+
+        Method is a POST to accommodate a JWT GA4GH Passport sent in the
+        formData in order to authorize access.
+      operationId: PostAccessURL
+      security:
+        - PassportAuth: []
+      responses:
+        '200':
+          $ref: '#/components/responses/200OkAccess'
+        '202':
+          $ref: '#/components/responses/202Accepted'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403Forbidden'
+        '404':
+          $ref: '#/components/responses/404NotFoundAccess'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+      tags:
+        - Objects
+      x-swagger-router-controller: ga4gh.drs.server
+      parameters:
+        - $ref: '#/components/parameters/ObjectId'
+        - $ref: '#/components/parameters/AccessId'
+      requestBody:
+        $ref: '#/components/requestBodies/Passports'
+components:
+  securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
+      description: >
+        A valid authorization token must be passed in the 'Authorization'
+        header,
+
+        e.g. "Basic ${token_string}"
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: >-
+        A valid authorization token must be passed in the 'Authorization'
+        header, e.g. "Bearer ${token_string}"
+    PassportAuth:
+      type: http
+      scheme: bearer
+      x-in: body
+      bearerFormat: JWT
+      description: >-
+        A valid GA4GH Passport must be passed in the body of an HTTP POST
+        request as a tokens[] array.
+  schemas:
+    ServiceType:
+      description: Type of a GA4GH service
+      type: object
+      required:
+        - group
+        - artifact
+        - version
+      properties:
+        group:
+          type: string
+          description: >-
+            Namespace in reverse domain name format. Use `org.ga4gh` for
+            implementations compliant with official GA4GH specifications. For
+            services with custom APIs not standardized by GA4GH, or
+            implementations diverging from official GA4GH specifications, use a
+            different namespace (e.g. your organization's reverse domain name).
+          example: org.ga4gh
+        artifact:
+          type: string
+          description: >-
+            Name of the API or GA4GH specification implemented. Official GA4GH
+            types should be assigned as part of standards approval process.
+            Custom artifacts are supported.
+          example: beacon
+        version:
+          type: string
+          description: >-
+            Version of the API or specification. GA4GH specifications use
+            semantic versioning.
+          example: 1.0.0
+    Service:
+      description: GA4GH service
+      type: object
+      required:
+        - id
+        - name
+        - type
+        - organization
+        - version
+      properties:
+        id:
+          type: string
+          description: >-
+            Unique ID of this service. Reverse domain name notation is
+            recommended, though not required. The identifier should attempt to
+            be globally unique so it can be used in downstream aggregator
+            services e.g. Service Registry.
+          example: org.ga4gh.myservice
+        name:
+          type: string
+          description: Name of this service. Should be human readable.
+          example: My project
+        type:
+          $ref: '#/components/schemas/ServiceType'
+        description:
+          type: string
+          description: >-
+            Description of the service. Should be human readable and provide
+            information about the service.
+          example: This service provides...
+        organization:
+          type: object
+          description: Organization providing the service
+          required:
+            - name
+            - url
+          properties:
+            name:
+              type: string
+              description: Name of the organization responsible for the service
+              example: My organization
+            url:
+              type: string
+              format: uri
+              description: URL of the website of the organization (RFC 3986 format)
+              example: https://example.com
+        contactUrl:
+          type: string
+          format: uri
+          description: >-
+            URL of the contact for the provider of this service, e.g. a link to
+            a contact form (RFC 3986 format), or an email (RFC 2368 format).
+          example: mailto:support@example.com
+        documentationUrl:
+          type: string
+          format: uri
+          description: >-
+            URL of the documentation of this service (RFC 3986 format). This
+            should help someone learn how to use your service, including any
+            specifics required to access data, e.g. authentication.
+          example: https://docs.myservice.example.com
+        createdAt:
+          type: string
+          format: date-time
+          description: >-
+            Timestamp describing when the service was first deployed and
+            available (RFC 3339 format)
+          example: '2019-06-04T12:58:19Z'
+        updatedAt:
+          type: string
+          format: date-time
+          description: >-
+            Timestamp describing when the service was last updated (RFC 3339
+            format)
+          example: '2019-06-04T12:58:19Z'
+        environment:
+          type: string
+          description: >-
+            Environment the service is running in. Use this to distinguish
+            between production, development and testing/staging deployments.
+            Suggested values are prod, test, dev, staging. However this is
+            advised and not enforced.
+          example: test
+        version:
+          type: string
+          description: >-
+            Version of the service being described. Semantic versioning is
+            recommended, but other identifiers, such as dates or commit hashes,
+            are also allowed. The version should be changed whenever the service
+            is updated.
+          example: 1.0.0
+    DrsService:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: object
+          required:
+            - artifact
+          properties:
+            artifact:
+              type: string
+              enum:
+                - drs
+              example: drs
+    Error:
+      type: object
+      description: An object that can optionally include information about the error.
+      properties:
+        msg:
+          type: string
+          description: A detailed error message.
+        status_code:
+          type: integer
+          description: The integer representing the HTTP status code (e.g. 200, 404).
+    Checksum:
+      type: object
+      required:
+        - checksum
+        - type
+      properties:
+        checksum:
+          type: string
+          description: The hex-string encoded checksum for the data
+        type:
+          type: string
+          description: >-
+            The digest method used to create the checksum.
+
+            The value (e.g. `sha-256`) SHOULD be listed as `Hash Name String` in
+            the
+            https://www.iana.org/assignments/named-information/named-information.xhtml#hash-alg[IANA
+            Named Information Hash Algorithm Registry]. Other values MAY be
+            used, as long as implementors are aware of the issues discussed in
+            https://tools.ietf.org/html/rfc6920#section-9.4[RFC6920].
+
+            GA4GH may provide more explicit guidance for use of
+            non-IANA-registered algorithms in the future. Until then, if
+            implementers do choose such an algorithm (e.g. because it's
+            implemented by their storage provider), they SHOULD use an existing
+            standard `type` value such as `md5`, `etag`, `crc32c`, `trunc512`,
+            or `sha1`.
+          example: sha-256
+    AccessURL:
+      type: object
+      required:
+        - url
+      properties:
+        url:
+          type: string
+          description: >-
+            A fully resolvable URL that can be used to fetch the actual object
+            bytes.
+        headers:
+          type: array
+          items:
+            type: string
+          description: >-
+            An optional list of headers to include in the HTTP request to `url`.
+            These headers can be used to provide auth tokens required to fetch
+            the object bytes.
+          example: 'Authorization: Basic Z2E0Z2g6ZHJz'
+    Authorizations:
+      type: object
+      properties:
+        supported_types:
+          type: array
+          items:
+            type: string
+            enum:
+              - None
+              - BasicAuth
+              - BearerAuth
+              - PassportAuth
+          description: >-
+            An Optional list of support authorization types. More than one can
+            be supported and tried in sequence. Defaults to `None` if empty or
+            missing.
+        passport_auth_issuers:
+          type: array
+          items:
+            type: string
+          description: >-
+            If authorizations contain `PassportAuth` this is a required list of
+            visa issuers (as found in a visa's `iss` claim) that may authorize
+            access to this object. The caller must only provide passports that
+            contain visas from this list. It is strongly recommended that the
+            caller validate that it is appropriate to send the requested
+            passport/visa to the DRS server to mitigate attacks by malicious DRS
+            servers requesting credentials they should not have.
+        bearer_auth_issuers:
+          type: array
+          items:
+            type: string
+          description: >-
+            If authorizations contain `BearerAuth` this is an optional list of
+            issuers that may authorize access to this object. The caller must
+            provide a token from one of these issuers. If this is empty or
+            missing it assumed the caller knows which token to send via other
+            means. It is strongly recommended that the caller validate that it
+            is appropriate to send the requested token to the DRS server to
+            mitigate attacks by malicious DRS servers requesting credentials
+            they should not have.
+    AccessMethod:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - s3
+            - gs
+            - ftp
+            - gsiftp
+            - globus
+            - htsget
+            - https
+            - file
+          description: Type of the access method.
+        access_url:
+          allOf:
+            - $ref: '#/components/schemas/AccessURL'
+            - description: >-
+                An `AccessURL` that can be used to fetch the actual object
+                bytes. Note that at least one of `access_url` and `access_id`
+                must be provided.
+        access_id:
+          type: string
+          description: >-
+            An arbitrary string to be passed to the `/access` method to get an
+            `AccessURL`. This string must be unique within the scope of a single
+            object. Note that at least one of `access_url` and `access_id` must
+            be provided.
+        region:
+          type: string
+          description: >-
+            Name of the region in the cloud service provider that the object
+            belongs to.
+          example: us-east-1
+        authorizations:
+          allOf:
+            - $ref: '#/components/schemas/Authorizations'
+            - description: >-
+                When `access_id` is provided, `authorizations` provides
+                information about how to authorize the `/access` method.
+    ContentsObject:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: >-
+            A name declared by the bundle author that must be used when
+            materialising this object, overriding any name directly associated
+            with the object itself. The name must be unique within the
+            containing bundle. This string is made up of uppercase and lowercase
+            letters, decimal digits, hyphen, period, and underscore
+            [A-Za-z0-9.-_]. See
+            http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html#tag_03_282[portable
+            filenames].
+        id:
+          type: string
+          description: >-
+            A DRS identifier of a `DrsObject` (either a single blob or a nested
+            bundle). If this ContentsObject is an object within a nested bundle,
+            then the id is optional. Otherwise, the id is required.
+        drs_uri:
+          type: array
+          description: >-
+            A list of full DRS identifier URI paths that may be used to obtain
+            the object. These URIs may be external to this DRS instance.
+          example: drs://drs.example.org/314159
+          items:
+            type: string
+        contents:
+          type: array
+          description: >-
+            If this ContentsObject describes a nested bundle and the caller
+            specified "?expand=true" on the request, then this contents array
+            must be present and describe the objects within the nested bundle.
+          items:
+            $ref: '#/components/schemas/ContentsObject'
+    DrsObject:
+      type: object
+      required:
+        - id
+        - self_uri
+        - size
+        - created_time
+        - checksums
+      properties:
+        id:
+          type: string
+          description: An identifier unique to this `DrsObject`
+        name:
+          type: string
+          description: >-
+            A string that can be used to name a `DrsObject`.
+
+            This string is made up of uppercase and lowercase letters, decimal
+            digits, hyphen, period, and underscore [A-Za-z0-9.-_]. See
+            http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html#tag_03_282[portable
+            filenames].
+        self_uri:
+          type: string
+          description: >-
+            A drs:// hostname-based URI, as defined in the DRS documentation,
+            that tells clients how to access this object.
+
+            The intent of this field is to make DRS objects self-contained, and
+            therefore easier for clients to store and pass around.  For example,
+            if you arrive at this DRS JSON by resolving a compact
+            identifier-based DRS URI, the `self_uri` presents you with a
+            hostname and properly encoded DRS ID for use in subsequent `access`
+            endpoint calls.
+          example: drs://drs.example.org/314159
+        size:
+          type: integer
+          format: int64
+          description: >-
+            For blobs, the blob size in bytes.
+
+            For bundles, the cumulative size, in bytes, of items in the
+            `contents` field.
+        created_time:
+          type: string
+          format: date-time
+          description: >-
+            Timestamp of content creation in RFC3339.
+
+            (This is the creation time of the underlying content, not of the
+            JSON object.)
+        updated_time:
+          type: string
+          format: date-time
+          description: >-
+            Timestamp of content update in RFC3339, identical to `created_time`
+            in systems that do not support updates. (This is the update time of
+            the underlying content, not of the JSON object.)
+        version:
+          type: string
+          description: >-
+            A string representing a version.
+
+            (Some systems may use checksum, a RFC3339 timestamp, or an
+            incrementing version number.)
+        mime_type:
+          type: string
+          description: A string providing the mime-type of the `DrsObject`.
+          example: application/json
+        checksums:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/Checksum'
+          description: >-
+            The checksum of the `DrsObject`. At least one checksum must be
+            provided.
+
+            For blobs, the checksum is computed over the bytes in the blob.
+
+            For bundles, the checksum is computed over a sorted concatenation of
+            the checksums of its top-level contained objects (not recursive,
+            names not included). The list of checksums is sorted alphabetically
+            (hex-code) before concatenation and a further checksum is performed
+            on the concatenated checksum value.
+
+            For example, if a bundle contains blobs with the following
+            checksums:
+
+            md5(blob1) = 72794b6d
+
+            md5(blob2) = 5e089d29
+
+            Then the checksum of the bundle is:
+
+            md5( concat( sort( md5(blob1), md5(blob2) ) ) )
+
+            = md5( concat( sort( 72794b6d, 5e089d29 ) ) )
+
+            = md5( concat( 5e089d29, 72794b6d ) )
+
+            = md5( 5e089d2972794b6d )
+
+            = f7a29a04
+        access_methods:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/AccessMethod'
+          description: >-
+            The list of access methods that can be used to fetch the
+            `DrsObject`.
+
+            Required for single blobs; optional for bundles.
+        contents:
+          type: array
+          description: >-
+            If not set, this `DrsObject` is a single blob.
+
+            If set, this `DrsObject` is a bundle containing the listed
+            `ContentsObject` s (some of which may be further nested).
+          items:
+            $ref: '#/components/schemas/ContentsObject'
+        description:
+          type: string
+          description: A human readable description of the `DrsObject`.
+        aliases:
+          type: array
+          items:
+            type: string
+          description: >-
+            A list of strings that can be used to find other metadata about this
+            `DrsObject` from external metadata sources. These aliases can be
+            used to represent secondary accession numbers or external GUIDs.
+  responses:
+    200ServiceInfo:
+      description: Retrieve info about the DRS service
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Service'
+              - $ref: '#/components/schemas/DrsService'
+    500InternalServerError:
+      description: An unexpected error occurred.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    200OkDrsObject:
+      description: The `DrsObject` was found successfully
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DrsObject'
+    202Accepted:
+      description: >
+        The operation is delayed and will continue asynchronously. The client
+        should retry this same request after the delay specified by Retry-After
+        header.
+      headers:
+        Retry-After:
+          description: >
+            Delay in seconds. The client should retry this same request after
+            waiting for this duration. To simplify client response processing,
+            this must be an integral relative time in seconds. This value SHOULD
+            represent the minimum duration the client should wait before
+            attempting the operation again with a reasonable expectation of
+            success. When it is not feasible for the server to determine the
+            actual expected delay, the server may return a brief, fixed value
+            instead.
+          schema:
+            type: integer
+            format: int64
+    400BadRequest:
+      description: The request is malformed.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    401Unauthorized:
+      description: The request is unauthorized.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    403Forbidden:
+      description: The requester is not authorized to perform this action.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    404NotFoundDrsObject:
+      description: The requested `DrsObject` wasn't found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    404NotFoundAccess:
+      description: The requested `AccessURL` wasn't found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    200OkAuthorizations:
+      description: '`Authorizations` were found successfully'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Authorizations'
+    AuthorizationsNotSupported:
+      description: '`Authorizations` are not supported for this object. Default to `None`.'
+    200OkAccess:
+      description: The `AccessURL` was found successfully
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AccessURL'
+  parameters:
+    ObjectId:
+      in: path
+      name: object_id
+      required: true
+      description: '`DrsObject` identifier'
+      schema:
+        type: string
+    Expand:
+      in: query
+      name: expand
+      schema:
+        type: boolean
+      example: false
+      description: >-
+        If false and the object_id refers to a bundle, then the ContentsObject
+        array contains only those objects directly contained in the bundle. That
+        is, if the bundle contains other bundles, those other bundles are not
+        recursively included in the result.
+
+        If true and the object_id refers to a bundle, then the entire set of
+        objects in the bundle is expanded. That is, if the bundle contains other
+        bundles, then those other bundles are recursively expanded and included
+        in the result. Recursion continues through the entire sub-tree of the
+        bundle.
+
+        If the object_id refers to a blob, then the query parameter is ignored.
+    AccessId:
+      in: path
+      name: access_id
+      required: true
+      description: An `access_id` from the `access_methods` list of a `DrsObject`
+      schema:
+        type: string
+  requestBodies:
+    PostObjectBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              expand:
+                type: boolean
+                example: false
+                description: >-
+                  If false and the object_id refers to a bundle, then the
+                  ContentsObject array contains only those objects directly
+                  contained in the bundle. That is, if the bundle contains other
+                  bundles, those other bundles are not recursively included in
+                  the result.
+
+                  If true and the object_id refers to a bundle, then the entire
+                  set of objects in the bundle is expanded. That is, if the
+                  bundle contains other bundles, then those other bundles are
+                  recursively expanded and included in the result. Recursion
+                  continues through the entire sub-tree of the bundle.
+
+                  If the object_id refers to a blob, then the query parameter is
+                  ignored.
+              passports:
+                type: array
+                items:
+                  type: string
+                  example: >-
+                    eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJnYTRnaF9wYXNzcG9ydF92MSI6W119.JJ5rN0ktP0qwyZmIPpxmF_p7JsxAZH6L6brUxtad3CM
+                description: >-
+                  the encoded JWT GA4GH Passport that contains embedded Visas.
+                  The overall JWT is signed as are the individual Passport
+                  Visas.
+    Passports:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              passports:
+                type: array
+                items:
+                  type: string
+                  example: >-
+                    eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJnYTRnaF9wYXNzcG9ydF92MSI6W119.JJ5rN0ktP0qwyZmIPpxmF_p7JsxAZH6L6brUxtad3CM
+                description: >-
+                  the encoded JWT GA4GH Passport that contains embedded Visas.
+                  The overall JWT is signed as are the individual Passport
+                  Visas.
