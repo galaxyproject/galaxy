@@ -1,80 +1,75 @@
 <template>
     <section v-if="hasSelection">
-        <ConfigProvider v-slot="{ config }">
-            <b-dropdown text="Selection" size="sm" variant="primary" data-description="selected content menu" no-flip>
-                <template v-slot:button-content>
-                    <span v-if="selectionMatchesQuery" data-test-id="all-filter-selected">
-                        All <b>{{ totalItemsInQuery }}</b> selected
-                    </span>
-                    <span v-else data-test-id="num-active-selected">
-                        <b>{{ selectionSize }}</b> of {{ totalItemsInQuery }} selected
-                    </span>
-                </template>
-                <b-dropdown-text>
-                    <span v-localize data-description="selected count">With {{ numSelected }} selected...</span>
-                </b-dropdown-text>
-                <b-dropdown-item v-if="showHidden" v-b-modal:show-selected-content data-description="unhide option">
-                    <span v-localize>Unhide</span>
-                </b-dropdown-item>
-                <b-dropdown-item v-else v-b-modal:hide-selected-content data-description="hide option">
-                    <span v-localize>Hide</span>
-                </b-dropdown-item>
-                <b-dropdown-item
-                    v-if="canUndeleteSelection"
-                    v-b-modal:restore-selected-content
-                    data-description="undelete option">
-                    <span v-localize>Undelete</span>
-                </b-dropdown-item>
-                <b-dropdown-item v-if="!showDeleted" v-b-modal:delete-selected-content data-description="delete option">
-                    <span v-localize>Delete</span>
-                </b-dropdown-item>
-                <b-dropdown-item v-b-modal:purge-selected-content data-description="purge option">
-                    <span v-localize>Delete (permanently)</span>
-                </b-dropdown-item>
-                <b-dropdown-divider v-if="showBuildOptions" />
-                <b-dropdown-item v-if="showBuildOptions" data-description="build list" @click="buildDatasetList">
-                    <span v-localize>Build Dataset List</span>
-                </b-dropdown-item>
-                <b-dropdown-item v-if="showBuildOptions" data-description="build pair" @click="buildDatasetPair">
-                    <span v-localize>Build Dataset Pair</span>
-                </b-dropdown-item>
-                <b-dropdown-item
-                    v-if="showBuildOptions"
-                    data-description="build list of pairs"
-                    @click="buildListOfPairs">
-                    <span v-localize>Build List of Dataset Pairs</span>
-                </b-dropdown-item>
-                <b-dropdown-item
-                    v-if="showBuildOptions"
-                    data-description="build collection from rules"
-                    @click="buildCollectionFromRules">
-                    <span v-localize>Build Collection from Rules</span>
-                </b-dropdown-item>
-                <b-dropdown-divider v-if="showBuildOptionForAll" />
-                <b-dropdown-item
-                    v-if="showBuildOptionForAll"
-                    data-description="build list all"
-                    @click="buildDatasetListAll">
-                    <span v-localize>Build Dataset List</span>
-                </b-dropdown-item>
-                <b-dropdown-divider />
-                <b-dropdown-item v-b-modal:change-dbkey-of-selected-content data-description="change database build">
-                    <span v-localize>Change Database/Build</span>
-                </b-dropdown-item>
-                <b-dropdown-item
-                    v-if="config.enable_celery_tasks"
-                    v-b-modal:change-datatype-of-selected-content
-                    data-description="change data type">
-                    <span v-localize>Change data type</span>
-                </b-dropdown-item>
-                <b-dropdown-item v-b-modal:add-tags-to-selected-content data-description="add tags">
-                    <span v-localize>Add tags</span>
-                </b-dropdown-item>
-                <b-dropdown-item v-b-modal:remove-tags-from-selected-content data-description="remove tags">
-                    <span v-localize>Remove tags</span>
-                </b-dropdown-item>
-            </b-dropdown>
-        </ConfigProvider>
+        <b-dropdown text="Selection" size="sm" variant="primary" data-description="selected content menu" no-flip>
+            <template v-slot:button-content>
+                <span v-if="selectionMatchesQuery" data-test-id="all-filter-selected">
+                    All <b>{{ totalItemsInQuery }}</b> selected
+                </span>
+                <span v-else data-test-id="num-active-selected">
+                    <b>{{ selectionSize }}</b> of {{ totalItemsInQuery }} selected
+                </span>
+            </template>
+            <b-dropdown-text>
+                <span v-localize data-description="selected count">With {{ numSelected }} selected...</span>
+            </b-dropdown-text>
+            <b-dropdown-item v-if="showHidden" v-b-modal:show-selected-content data-description="unhide option">
+                <span v-localize>Unhide</span>
+            </b-dropdown-item>
+            <b-dropdown-item v-else v-b-modal:hide-selected-content data-description="hide option">
+                <span v-localize>Hide</span>
+            </b-dropdown-item>
+            <b-dropdown-item
+                v-if="canUndeleteSelection"
+                v-b-modal:restore-selected-content
+                data-description="undelete option">
+                <span v-localize>Undelete</span>
+            </b-dropdown-item>
+            <b-dropdown-item v-if="!showDeleted" v-b-modal:delete-selected-content data-description="delete option">
+                <span v-localize>Delete</span>
+            </b-dropdown-item>
+            <b-dropdown-item v-b-modal:purge-selected-content data-description="purge option">
+                <span v-localize>Delete (permanently)</span>
+            </b-dropdown-item>
+            <b-dropdown-divider v-if="showBuildOptions" />
+            <b-dropdown-item v-if="showBuildOptions" data-description="build list" @click="buildDatasetList">
+                <span v-localize>Build Dataset List</span>
+            </b-dropdown-item>
+            <b-dropdown-item v-if="showBuildOptions" data-description="build pair" @click="buildDatasetPair">
+                <span v-localize>Build Dataset Pair</span>
+            </b-dropdown-item>
+            <b-dropdown-item v-if="showBuildOptions" data-description="build list of pairs" @click="buildListOfPairs">
+                <span v-localize>Build List of Dataset Pairs</span>
+            </b-dropdown-item>
+            <b-dropdown-item
+                v-if="showBuildOptions"
+                data-description="build collection from rules"
+                @click="buildCollectionFromRules">
+                <span v-localize>Build Collection from Rules</span>
+            </b-dropdown-item>
+            <b-dropdown-divider v-if="showBuildOptionForAll" />
+            <b-dropdown-item
+                v-if="showBuildOptionForAll"
+                data-description="build list all"
+                @click="buildDatasetListAll">
+                <span v-localize>Build Dataset List</span>
+            </b-dropdown-item>
+            <b-dropdown-divider />
+            <b-dropdown-item v-b-modal:change-dbkey-of-selected-content data-description="change database build">
+                <span v-localize>Change Database/Build</span>
+            </b-dropdown-item>
+            <b-dropdown-item
+                v-if="isConfigLoaded && config.enable_celery_tasks"
+                v-b-modal:change-datatype-of-selected-content
+                data-description="change data type">
+                <span v-localize>Change data type</span>
+            </b-dropdown-item>
+            <b-dropdown-item v-b-modal:add-tags-to-selected-content data-description="add tags">
+                <span v-localize>Add tags</span>
+            </b-dropdown-item>
+            <b-dropdown-item v-b-modal:remove-tags-from-selected-content data-description="remove tags">
+                <span v-localize>Remove tags</span>
+            </b-dropdown-item>
+        </b-dropdown>
 
         <b-modal id="hide-selected-content" title="Hide Selected Content?" title-tag="h2" @ok="hideSelected">
             <p v-localize>Really hide {{ numSelected }} content items?</p>
@@ -162,9 +157,10 @@ import {
 } from "components/History/model/crud";
 import { createDatasetCollection, getHistoryContent } from "components/History/model/queries";
 import { DatatypesProvider, DbKeyProvider } from "components/providers";
-import ConfigProvider from "components/providers/ConfigProvider";
 import SingleItemSelector from "components/SingleItemSelector";
 import { StatelessTags } from "components/Tags";
+
+import { useConfig } from "@/composables/config";
 
 export default {
     components: {
@@ -172,7 +168,6 @@ export default {
         DatatypesProvider,
         SingleItemSelector,
         StatelessTags,
-        ConfigProvider,
     },
     props: {
         history: { type: Object, required: true },
@@ -181,6 +176,10 @@ export default {
         selectionSize: { type: Number, required: true },
         isQuerySelection: { type: Boolean, required: true },
         totalItemsInQuery: { type: Number, default: 0 },
+    },
+    setup() {
+        const { config, isLoaded: isConfigLoaded } = useConfig(true);
+        return { config, isConfigLoaded };
     },
     data: function () {
         return {
