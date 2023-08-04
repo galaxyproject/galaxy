@@ -25,7 +25,7 @@
                     </div>
                 </DbKeyProvider>
             </b-tab>
-            <SuitableConvertersProvider :id="collection_id" v-slot="{ item }">
+            <SuitableConvertersProvider :id="collectionId" v-slot="{ item }">
                 <b-tab
                     v-if="item && item.length"
                     title-link-class="collection-edit-convert-datatype-nav"
@@ -93,7 +93,7 @@ export default {
         LoadingSpan,
     },
     props: {
-        collection_id: {
+        collectionId: {
             type: String,
             required: true,
         },
@@ -128,15 +128,15 @@ export default {
             this.infoMessage = strMessage;
         },
         getCollectionDataAndAttributes: async function () {
-            let attributesGet = this.$store.getters.getCollectionAttributes(this.collection_id);
+            let attributesGet = this.$store.getters.getCollectionAttributes(this.collectionId);
             if (attributesGet == null) {
-                await this.$store.dispatch("fetchCollectionAttributes", this.collection_id);
-                attributesGet = this.$store.getters.getCollectionAttributes(this.collection_id);
+                await this.$store.dispatch("fetchCollectionAttributes", this.collectionId);
+                attributesGet = this.$store.getters.getCollectionAttributes(this.collectionId);
             }
             this.attributesData = attributesGet;
         },
         clickedSave: function (attribute, newValue) {
-            const url = prependPath(`/api/dataset_collections/${this.collection_id}/copy`);
+            const url = prependPath(`/api/dataset_collections/${this.collectionId}/copy`);
             const data = {};
             if (attribute == "dbkey") {
                 data["dbkey"] = newValue.id;
@@ -151,7 +151,7 @@ export default {
             const url = prependPath(`/api/tools/${selectedConverter.tool_id}/convert`);
             const data = {
                 src: "hdca",
-                id: this.collection_id,
+                id: this.collectionId,
                 source_type: selectedConverter.original_type,
                 target_type: selectedConverter.target_type,
             };
@@ -164,7 +164,7 @@ export default {
                 items: [
                     {
                         history_content_type: "dataset_collection",
-                        id: this.collection_id,
+                        id: this.collectionId,
                     },
                 ],
                 params: {
