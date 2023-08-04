@@ -3,12 +3,14 @@ import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
-import MockConfigProvider from "@/components/providers/MockConfigProvider";
 import MockCurrentUser from "@/components/providers/MockCurrentUser";
 import MockProvider from "@/components/providers/MockProvider";
+import { mockFetcher } from "@/schema/__mocks__";
 import { useUserStore } from "@/stores/userStore";
 
 import DiskUsageSummary from "./DiskUsageSummary.vue";
+
+jest.mock("@/schema");
 
 const localVue = getLocalVue();
 
@@ -25,12 +27,13 @@ const QuotaUsageProviderMock = MockProvider({
 const QuotaUsageSummaryMock = { template: `<div id='${quotaUsageSummaryComponentId}'/>` };
 
 async function mountDiskUsageSummaryWrapper(enableQuotas: boolean) {
+    mockFetcher
+        .path("/api/configuration")
+        .method("get")
+        .mock({ data: { enable_quotas: enableQuotas } });
     const pinia = createPinia();
     const wrapper = mount(DiskUsageSummary, {
         stubs: {
-            ConfigProvider: MockConfigProvider({
-                enable_quotas: enableQuotas,
-            }),
             CurrentUser: CurrentUserMock,
             QuotaUsageProvider: QuotaUsageProviderMock,
             QuotaUsageSummary: QuotaUsageSummaryMock,

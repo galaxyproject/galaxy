@@ -1,47 +1,44 @@
 <template>
-    <ConfigProvider v-slot="{ config }">
-        <div>
-            <b-alert v-if="errorMessage" variant="danger" show>
-                <h2 class="alert-heading h-sm">{{ errorMessageTitle }}</h2>
-                {{ errorMessage }}
+    <div>
+        <b-alert v-if="errorMessage" variant="danger" show>
+            <h2 class="alert-heading h-sm">{{ errorMessageTitle }}</h2>
+            {{ errorMessage }}
+        </b-alert>
+        <b-container v-if="currentUser">
+            <b-row v-if="isConfigLoaded && config.enable_quotas" class="justify-content-md-center">
+                <QuotaUsageSummary v-if="quotaUsages" :quota-usages="quotaUsages" />
+            </b-row>
+            <h2 v-else id="basic-disk-usage-summary" class="text-center my-3">
+                You're using <b>{{ getTotalDiskUsage(currentUser) }}</b> of disk space.
+            </h2>
+        </b-container>
+        <b-container class="text-center mb-5 w-75">
+            <button
+                title="Recalculate disk usage"
+                :disabled="isRecalculating"
+                variant="outline-secondary"
+                size="sm"
+                pill
+                @click="onRefresh">
+                <b-spinner v-if="isRecalculating" small />
+                <span v-else>Refresh</span>
+            </button>
+            <b-alert
+                v-if="isRecalculating"
+                class="mt-2"
+                variant="info"
+                dismissible
+                fade
+                :show="dismissCountDown"
+                @dismiss-count-down="countDownChanged">
+                Recalculating disk usage... this may take some time, please check back later.
             </b-alert>
-            <b-container v-if="currentUser">
-                <b-row v-if="config.enable_quotas" class="justify-content-md-center">
-                    <QuotaUsageSummary v-if="quotaUsages" :quota-usages="quotaUsages" />
-                </b-row>
-                <h2 v-else id="basic-disk-usage-summary" class="text-center my-3">
-                    You're using <b>{{ getTotalDiskUsage(currentUser) }}</b> of disk space.
-                </h2>
-            </b-container>
-            <b-container class="text-center mb-5 w-75">
-                <button
-                    title="Recalculate disk usage"
-                    :disabled="isRecalculating"
-                    variant="outline-secondary"
-                    size="sm"
-                    pill
-                    @click="onRefresh">
-                    <b-spinner v-if="isRecalculating" small />
-                    <span v-else>Refresh</span>
-                </button>
-                <b-alert
-                    v-if="isRecalculating"
-                    class="mt-2"
-                    variant="info"
-                    dismissible
-                    fade
-                    :show="dismissCountDown"
-                    @dismiss-count-down="countDownChanged">
-                    Recalculating disk usage... this may take some time, please check back later.
-                </b-alert>
-            </b-container>
-        </div>
-    </ConfigProvider>
+        </b-container>
+    </div>
 </template>
 
 <script>
 import axios from "axios";
-import ConfigProvider from "components/providers/ConfigProvider";
 import QuotaUsageSummary from "components/User/DiskUsage/Quota/QuotaUsageSummary";
 import { getAppRoot } from "onload/loadConfig";
 import { mapActions, mapState } from "pinia";
@@ -49,14 +46,18 @@ import _l from "utils/localization";
 import { rethrowSimple } from "utils/simple-error";
 import { bytesToString } from "utils/utils";
 
+import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 
 import { QuotaUsage } from "./Quota/model";
 
 export default {
     components: {
-        ConfigProvider,
         QuotaUsageSummary,
+    },
+    setup() {
+        const { config, isLoaded: isConfigLoaded } = useConfig(true);
+        return { config, isConfigLoaded };
     },
     data() {
         return {
