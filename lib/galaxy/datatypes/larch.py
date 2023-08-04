@@ -82,24 +82,26 @@ class AthenaProject(Text):
         """
         Extract metadata from @args
         """
+        def extract_arg(args: "list[str]", arg_name: str):
+            try:
+                index = args.index(f"'{arg_name}'")
+                setattr(dataset.metadata, arg_name, args[index + 1].replace("'", ""))
+            except ValueError:
+                return
+
         headers = get_headers(dataset.file_name, sep=" = ", count=3, comment_designator="#")
+        args = []
         for header in headers:
             if header[0] == "@args":
                 args = header[1][1:-2].split(",")
                 break
 
-        index = args.index("'atsym'")
-        dataset.metadata.atsym = args[index + 1][1:-1]
-        index = args.index("'bkg_e0'")
-        dataset.metadata.bkg_e0 = args[index + 1][1:-1]
-        index = args.index("'edge'")
-        dataset.metadata.edge = args[index + 1][1:-1]
-        index = args.index("'npts'")
-        dataset.metadata.npts = args[index + 1][1:-1]
-        index = args.index("'xmax'")
-        dataset.metadata.xmax = args[index + 1][1:-1]
-        index = args.index("'xmin'")
-        dataset.metadata.xmin = args[index + 1][1:-1]
+        extract_arg(args, "atsym")
+        extract_arg(args, "bkg_e0")
+        extract_arg(args, "edge")
+        extract_arg(args, "npts")
+        extract_arg(args, "xmax")
+        extract_arg(args, "xmin")
 
     def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         if not dataset.dataset.purged:
