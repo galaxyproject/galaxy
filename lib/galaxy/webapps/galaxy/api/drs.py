@@ -18,7 +18,6 @@ from galaxy.schema.drs import (
     Service,
     ServiceType,
 )
-from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.version import VERSION
 from galaxy.webapps.galaxy.services.datasets import DatasetsService
 from . import (
@@ -105,7 +104,7 @@ class DrsApi:
     def download(self, trans: ProvidesHistoryContext = DependsOnTrans, object_id: str = ObjectIDParam):
         decoded_object_id, hda_ldda = self.service.drs_dataset_instance(object_id)
         display_data, headers = self.service.display(
-            trans, DecodedDatabaseIdField(decoded_object_id), hda_ldda=hda_ldda, filename=None, raw=True
+            trans, decoded_object_id, hda_ldda=hda_ldda, filename=None, raw=True
         )
         data_io = cast(IOBase, display_data)
         return FileResponse(getattr(data_io, "name", "unnamed_file"), headers=headers)
