@@ -114,7 +114,7 @@ class FastAPIPages:
         search: Optional[str] = SearchQueryParam,
     ) -> PageSummaryList:
         """Get a list with summary information of all Pages available to the user."""
-        payload = PageIndexQueryPayload.construct(
+        payload = PageIndexQueryPayload.model_construct(
             deleted=deleted,
             user_id=user_id,
             show_published=show_published,

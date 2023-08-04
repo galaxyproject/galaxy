@@ -1050,7 +1050,7 @@ class FastAPIWorkflows:
         skip_step_counts: bool = SkipStepCountsQueryParam,
     ) -> List[Dict[str, Any]]:
         """Lists stored workflows viewable by the user."""
-        payload = WorkflowIndexPayload.construct(
+        payload = WorkflowIndexPayload.model_construct(
             show_published=show_published,
             show_hidden=show_hidden,
             show_deleted=show_deleted,

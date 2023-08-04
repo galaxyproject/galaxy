@@ -74,7 +74,9 @@ class PagesService(ServiceBase):
 
         pages, total_matches = self.manager.index_query(trans, payload, include_total_count)
         return (
-            PageSummaryList.construct(root=[trans.security.encode_all_ids(p.to_dict(), recursive=True) for p in pages]),
+            PageSummaryList.model_construct(
+                root=[trans.security.encode_all_ids(p.to_dict(), recursive=True) for p in pages]
+            ),
             total_matches,
         )
 
@@ -86,7 +88,7 @@ class PagesService(ServiceBase):
         rval = trans.security.encode_all_ids(page.to_dict(), recursive=True)
         rval["content"] = page.latest_revision.content
         self.manager.rewrite_content_for_export(trans, rval)
-        return PageSummary.construct(**rval)
+        return PageSummary.model_construct(**rval)
 
     def delete(self, trans, id: DecodedDatabaseIdField):
         """
@@ -113,7 +115,7 @@ class PagesService(ServiceBase):
         rval["content"] = page.latest_revision.content
         rval["content_format"] = page.latest_revision.content_format
         self.manager.rewrite_content_for_export(trans, rval)
-        return PageDetails.construct(**rval)
+        return PageDetails.model_construct(**rval)
 
     def show_pdf(self, trans, id: DecodedDatabaseIdField):
         """

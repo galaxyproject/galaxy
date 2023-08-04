@@ -77,7 +77,7 @@ class NotificationManagerBaseTestCase(NotificationsBaseTestCase):
         notification_data = NotificationCreateData(**data)
 
         request = NotificationCreateRequest(
-            recipients=NotificationRecipients.construct(
+            recipients=NotificationRecipients.model_construct(
                 user_ids=[user.id for user in users],
             ),
             notification=notification_data,
@@ -412,7 +412,7 @@ class TestNotificationRecipientResolver(NotificationsBaseTestCase):
             groups=[group1],
         )
 
-        recipients = NotificationRecipients.construct(
+        recipients = NotificationRecipients.model_construct(
             user_ids=[users[9].id],
             group_ids=[group3.id],
             role_ids=[role3.id],

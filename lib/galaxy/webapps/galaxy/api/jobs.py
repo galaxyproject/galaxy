@@ -222,7 +222,7 @@ class FastAPIJobs:
         limit: int = LimitQueryParam,
         offset: int = OffsetQueryParam,
     ) -> List[Dict[str, Any]]:
-        payload = JobIndexPayload.construct(
+        payload = JobIndexPayload.model_construct(
             states=states,
             user_details=user_details,
             user_id=user_id,

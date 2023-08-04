@@ -600,7 +600,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         self.history_manager.error_unless_mutable(hda.history)
         self.hda_manager.update_permissions(trans, hda, **payload_dict)
         roles = self.hda_manager.serialize_dataset_association_roles(trans, hda)
-        return DatasetAssociationRoles.construct(**roles)
+        return DatasetAssociationRoles.model_construct(**roles)
 
     def update(
         self,
@@ -702,7 +702,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         with transaction(trans.sa_session):
             trans.sa_session.commit()
         success_count = len(contents) - len(errors)
-        return HistoryContentBulkOperationResult.construct(success_count=success_count, errors=errors)
+        return HistoryContentBulkOperationResult.model_construct(success_count=success_count, errors=errors)
 
     def validate(self, trans, history_id: DecodedDatabaseIdField, history_content_id: DecodedDatabaseIdField):
         """
@@ -995,8 +995,8 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
                 history,
                 filters=filters,
             )
-            stats = HistoryContentStats.construct(total_matches=total_matches)
-            return HistoryContentsWithStatsResult.construct(contents=items, stats=stats)
+            stats = HistoryContentStats.model_construct(total_matches=total_matches)
+            return HistoryContentsWithStatsResult.model_construct(contents=items, stats=stats)
         return HistoryContentsResult.model_construct(root=items)
 
     def _handle_extra_serialization_for_media_type(

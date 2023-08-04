@@ -535,7 +535,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         Updates permissions of a dataset.
         """
         self.check_user_is_authenticated(trans)
-        payload_dict = payload.dict(by_alias=True)
+        payload_dict = payload.model_dump(by_alias=True)
         dataset_manager = self.dataset_manager_by_type[hda_ldda]
         dataset = dataset_manager.get_accessible(dataset_id, trans.user)
         dataset_manager.update_permissions(trans, dataset, **payload_dict)
@@ -721,7 +721,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         if success_count:
             with transaction(trans.sa_session):
                 trans.sa_session.commit()
-        return DeleteDatasetBatchResult.construct(success_count=success_count, errors=errors)
+        return DeleteDatasetBatchResult.model_construct(success_count=success_count, errors=errors)
 
     def get_structured_content(
         self,

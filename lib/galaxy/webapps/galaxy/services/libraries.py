@@ -165,7 +165,7 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
 
         if scope == LibraryPermissionScope.current or scope is None:
             roles = self.library_manager.get_current_roles(trans, library)
-            return LibraryCurrentPermissions.construct(**roles)
+            return LibraryCurrentPermissions.model_construct(**roles)
 
         #  Return roles that are available to select.
         elif scope == LibraryPermissionScope.available:
@@ -177,7 +177,7 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
             for role in roles:
                 role_id = Security.security.encode_id(role.id)
                 return_roles.append(BasicRoleModel(id=role_id, name=role.name, type=role.type))
-            return LibraryAvailablePermissions.construct(
+            return LibraryAvailablePermissions.model_construct(
                 roles=return_roles, page=page, page_limit=page_limit, total=total_roles
             )
         else:
@@ -314,7 +314,7 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
                 'Allowed values are: "remove_restrictions", set_permissions"'
             )
         roles = self.library_manager.get_current_roles(trans, library)
-        return LibraryCurrentPermissions.construct(**roles)
+        return LibraryCurrentPermissions.model_construct(**roles)
 
     def set_permissions_old(self, trans, library, payload: Dict[str, Any]) -> LibraryLegacySummary:
         """
