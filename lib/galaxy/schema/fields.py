@@ -4,8 +4,8 @@ import typing
 from pydantic import (
     BeforeValidator,
     Field,
-    WithJsonSchema,
     PlainSerializer,
+    WithJsonSchema,
 )
 from typing_extensions import (
     Annotated,
