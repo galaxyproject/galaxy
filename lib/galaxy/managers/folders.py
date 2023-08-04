@@ -186,10 +186,6 @@ class FolderManager:
 
         """
         folder_dict = folder.to_dict(view="element")
-        folder_dict = trans.security.encode_all_ids(folder_dict, True)
-        folder_dict["id"] = f"F{folder_dict['id']}"
-        if folder_dict["parent_id"] is not None:
-            folder_dict["parent_id"] = f"F{folder_dict['parent_id']}"
         folder_dict["update_time"] = folder.update_time
         return folder_dict
 
