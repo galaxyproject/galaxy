@@ -47,8 +47,8 @@ from galaxy.schema.schema import (
     JobExportHistoryArchiveListResponse,
     JobImportHistoryResponse,
     SetSlugPayload,
+    ShareHistoryWithStatus,
     ShareWithPayload,
-    ShareWithStatus,
     SharingStatus,
     StoreExportPayload,
     WriteStoreToPayload,
@@ -597,7 +597,7 @@ class FastAPIHistories:
         history_id: HistoryIDPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
         payload: ShareWithPayload = Body(...),
-    ) -> ShareWithStatus:
+    ) -> ShareHistoryWithStatus:
         """Shares this item with specific users and return the current sharing status."""
         return self.service.shareable_service.share_with_users(trans, history_id, payload)
 

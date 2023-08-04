@@ -60,6 +60,8 @@ class ShareableService:
     and have a compatible SharableModelSerializer implementation.
     """
 
+    share_with_status_cls = ShareWithStatus
+
     def __init__(
         self,
         manager: SharableModelManager,
@@ -112,8 +114,7 @@ class ShareableService:
         users, errors = self._get_users(trans, payload.user_ids)
         extra, users_to_notify = self._share_with_options(trans, item, users, errors, payload.share_option)
         base_status = self._get_sharing_status(trans, item)
-        status = ShareWithStatus.construct(**base_status.dict())
-        status.extra = extra
+        status = self.share_with_status_cls.model_construct(**base_status.model_dump(), extra=extra)
         status.errors.extend(errors)
         self._send_notification_to_users(users_to_notify, item, status)
         return status
@@ -139,12 +140,11 @@ class ShareableService:
         return item
 
     def _get_sharing_status(self, trans, item):
-        status = self.serializer.serialize_to_view(item, user=trans.user, trans=trans, default_view="sharing")
-        status["users_shared_with"] = [
-            {"id": self.manager.app.security.encode_id(a.user.id), "email": a.user.email}
-            for a in item.users_shared_with
-        ]
-        return SharingStatus.construct(**status)
+        status = self.serializer.serialize_to_view(
+            item, user=trans.user, trans=trans, default_view="sharing", encode_id=False
+        )
+        status["users_shared_with"] = [{"id": a.user.id, "email": a.user.email} for a in item.users_shared_with]
+        return SharingStatus(**status)
 
     def _get_users(self, trans, emails_or_ids: List[UserIdentifier]) -> Tuple[Set[User], Set[str]]:
         send_to_users: Set[User] = set()

@@ -286,7 +286,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
 
     def get_sharing_extra_information(
         self, trans, item, users: Set[model.User], errors: Set[str], option: Optional[sharable.SharingOptions] = None
-    ) -> Optional[sharable.ShareWithExtra]:
+    ) -> ShareHistoryExtra:
         """Returns optional extra information about the datasets of the history that can be accessed by the users."""
         extra = ShareHistoryExtra()
         history = cast(model.History, item)
@@ -322,7 +322,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
                     elif option == sharable.SharingOptions.make_public:
                         trans.app.security_agent.make_dataset_public(hda.dataset)
                 else:
-                    hda_id = trans.security.encode_id(hda.id)
+                    hda_id = hda.id
                     hda_info = HDABasicInfo(id=hda_id, name=hda.name)
                     if owner_can_manage_dataset:
                         can_change_dict[hda_id] = hda_info
