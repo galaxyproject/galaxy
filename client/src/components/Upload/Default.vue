@@ -21,6 +21,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    effectiveExtensions: {
+        type: Array,
+        required: true,
+    },
     details: {
         type: Object,
         required: true,
@@ -40,7 +44,7 @@ const uploadList = ref({});
 const uploadSize = ref(0);
 
 const showHelper = computed(() => Object.keys(uploadList.value).length === 0);
-const listExtensions = computed(() => props.details.effectiveExtensions.filter((ext) => !ext.composite_files));
+const listExtensions = computed(() => props.effectiveExtensions.filter((ext) => !ext.composite_files));
 const historyId = computed(() => props.details.history_id);
 const counterNonRunning = computed(() => counterAnnounce.value + counterSuccess.value + counterError.value);
 const enableReset = computed(() => counterRunning.value == 0 && counterNonRunning.value > 0);

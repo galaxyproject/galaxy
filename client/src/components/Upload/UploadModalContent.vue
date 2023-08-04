@@ -3,15 +3,19 @@
         <BTab v-if="showRegular" id="regular" title="Regular" button-id="tab-title-link-regular">
             <Default
                 ref="regular"
+                :effectiveExtensions="details.effectiveExtensions"
                 :details="details"
-                :lazy-load-max="50"
-                :multiple="multiple"
                 :has-callback="hasCallback"
-                :selectable="selectable"
+                :multiple="multiple"
                 v-on="$listeners" />
         </BTab>
         <BTab v-if="showComposite" id="composite" title="Composite" button-id="tab-title-link-composite">
-            <Composite :details="details" :has-callback="hasCallback" :selectable="selectable" v-on="$listeners" />
+            <Composite
+                :effectiveExtensions="details.effectiveExtensions"
+                :details="details"
+                :has-callback="hasCallback"
+                :list-genomes="details.listGenomes"
+                v-on="$listeners" />
         </BTab>
         <BTab v-if="showCollection" id="collection" title="Collection" button-id="tab-title-link-collection">
             <Collection :details="details" :has-callback="hasCallback" :selectable="selectable" v-on="$listeners" />
