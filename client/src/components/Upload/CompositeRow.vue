@@ -1,27 +1,25 @@
 <script setup>
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faEdit, faFolderOpen, faLaptop } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faExclamation } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { bytesToString } from "utils/utils";
 import { computed, ref } from "vue";
 
-import UploadExtensionDetails from "./UploadExtensionDetails.vue";
 import UploadSettings from "./UploadSettings.vue";
 import UploadSettingsSelect from "./UploadSettingsSelect.vue";
 
-library.add(faEdit, faLaptop, faFolderOpen);
+library.add(faCheck, faExclamation);
 
 const props = defineProps({
     deferred: Boolean,
     extension: String,
     fileContent: String,
+    fileDescription: String,
     fileMode: String,
     fileName: String,
     fileSize: Number,
     genome: String,
     index: String,
-    listGenomes: Array,
-    listExtensions: Array,
     percentage: Number,
     space_to_tab: Boolean,
     status: String,
@@ -31,7 +29,6 @@ const props = defineProps({
 const emit = defineEmits();
 
 const percentageInt = computed(() => parseInt(props.percentage || 0));
-const removeIcon = computed(() => status_classes[props.status] || status_classes.init);
 
 /** Dictionary of upload states and associated icons */
 const status_classes = {
@@ -42,20 +39,8 @@ const status_classes = {
     error: "cursor-pointer fa fa-exclamation-triangle",
 };
 
-function inputExtension(newExtension) {
-    emit("input", props.index, { extension: newExtension });
-}
-
 function inputFileContent(newFileContent) {
     emit("input", props.index, { file_content: newFileContent, file_size: newFileContent.length });
-}
-
-function inputFileName(newFileName) {
-    emit("input", props.index, { file_name: newFileName });
-}
-
-function inputGenome(newGenome) {
-    emit("input", props.index, { genome: newGenome });
 }
 
 function inputSettings(settingId) {
@@ -75,25 +60,15 @@ function removeUpload() {
     <div :id="`upload-row-${index}`" class="upload-row p-2">
         <div class="d-flex justify-content-around">
             <div>
-                <FontAwesomeIcon v-if="fileMode == 'new'" icon="fa-edit" />
-                <FontAwesomeIcon v-if="fileMode == 'local'" icon="fa-laptop" />
-                <FontAwesomeIcon v-if="fileMode == 'ftp'" icon="fa-folder-open" />
+                <FontAwesomeIcon v-if="fileSize > 0" icon="fa-check" />
+                <FontAwesomeIcon v-else icon="fa-exclamation" class="text-primary" />
             </div>
-            <b-input :value="fileName" class="upload-title p-1 border rounded" @input="inputFileName" />
+            <div class="upload-title">
+                {{ fileDescription }}
+            </div>
             <div class="upload-size">
                 {{ bytesToString(fileSize) }}
             </div>
-            <UploadSettingsSelect
-                :value="extension"
-                :options="listExtensions"
-                placeholder="Select Type"
-                @input="inputExtension" />
-            <UploadExtensionDetails :extension="extension" :list-extensions="listExtensions" />
-            <UploadSettingsSelect
-                :value="genome"
-                :options="listGenomes"
-                placeholder="Select Reference"
-                @input="inputGenome" />
             <UploadSettings
                 :deferred="deferred"
                 :to_posix_lines="to_posix_lines"
@@ -107,9 +82,6 @@ function removeUpload() {
                         :style="{ width: `${percentageInt}%` }" />
                     <div class="upload-percentage">{{ percentageInt }}%</div>
                 </div>
-            </div>
-            <div>
-                <div class="upload-symbol" :class="removeIcon" @click="removeUpload" />
             </div>
         </div>
         <div v-if="fileMode == 'new'" class="upload-text">

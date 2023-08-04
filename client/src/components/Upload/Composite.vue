@@ -2,6 +2,7 @@
 import { submitUpload } from "utils/uploadbox";
 import { computed, ref } from "vue";
 
+import CompositeRow from "./CompositeRow.vue";
 import UploadSettingsSelect from "./UploadSettingsSelect.vue";
 
 const props = defineProps({
@@ -48,14 +49,6 @@ const showHelper = computed(() => uploadKeys.value.length === 0);
 
 const uploadValues = computed(() => Object.values(uploadItems.value));
 const uploadKeys = computed(() => Object.keys(uploadItems.value));
-
-/** Builds the basic ui with placeholder rows for each composite data type file */
-function eventAnnounce(model) {
-    /*var upload_row = new UploadRow(this, { model: model });
-    this.$uploadTable().find("tbody:first").append(upload_row.$el);
-    this.showHelper = this.collection.length == 0;
-    upload_row.render();*/
-}
 
 /** Refresh error state */
 function eventError(info) {
@@ -112,7 +105,7 @@ function inputExtension(newExtension) {
             const newUploadId = String(uploadCount++);
             uploadItems.value[newUploadId] = {
                 id: newUploadId,
-                file_desc: item.description || item.name,
+                description: item.description || item.name,
                 optional: item.optional,
             };
         });
@@ -128,20 +121,20 @@ function inputDbkey(newDbkey) {
     <div class="upload-view-composite">
         <div class="upload-box" :style="{ height: '335px' }">
             <div v-show="showHelper" class="upload-helper">Select a composite type</div>
-            <table v-show="!showHelper" ref="uploadTable" class="upload-table ui-table-striped">
-                <thead>
-                    <tr>
-                        <th />
-                        <th />
-                        <th>Description</th>
-                        <th>Name</th>
-                        <th>Size</th>
-                        <th>Settings</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody />
-            </table>
+            <div v-show="!showHelper" class="upload-table ui-table-striped">
+                <CompositeRow
+                    v-for="(uploadItem, uploadIndex) in uploadItems"
+                    :key="uploadIndex"
+                    :index="uploadIndex"
+                    :file-description="uploadItem.description"
+                    :file-content="uploadItem.file_content"
+                    :file-name="uploadItem.file_name"
+                    :file-size="uploadItem.file_size"
+                    :percentage="uploadItem.percentage"
+                    :space_to_tab="uploadItem.space_to_tab"
+                    :status="uploadItem.status"
+                    :to_posix_lines="uploadItem.to_posix_lines" />
+            </div>
         </div>
         <div class="upload-footer">
             <span class="upload-footer-title">Composite Type:</span>
@@ -150,7 +143,6 @@ function inputDbkey(newDbkey) {
                 :options="listExtensions"
                 :disabled="running"
                 @input="inputExtension" />
-            <span ref="footerExtensionInfo" class="upload-footer-extension-info upload-icon-button fa fa-search" />
             <span class="upload-footer-title">Genome/Build:</span>
             <UploadSettingsSelect :value="genome" :options="listGenomes" :disabled="running" @input="inputDbkey" />
         </div>
