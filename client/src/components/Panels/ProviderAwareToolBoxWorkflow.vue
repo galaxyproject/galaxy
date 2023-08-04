@@ -1,37 +1,35 @@
 <template>
-    <ConfigProvider v-slot="{ config }" class="d-flex flex-column">
-        <ToolPanelViewProvider
-            v-if="config.default_panel_view"
-            v-slot="{ currentPanel, currentPanelView }"
-            :panel-view="config.default_panel_view">
-            <ToolBoxWorkflow
-                v-if="currentPanelView"
-                :toolbox="currentPanel"
-                :panel-views="config.panel_views"
-                :current-panel-view="currentPanelView"
-                :workflows="workflows"
-                :data-managers="dataManagers"
-                :module-sections="moduleSections"
-                @updatePanelView="updatePanelView"
-                @onInsertTool="onInsertTool"
-                @onInsertModule="onInsertModule"
-                @onInsertWorkflow="onInsertWorkflow"
-                @onInsertWorkflowSteps="onInsertWorkflowSteps">
-            </ToolBoxWorkflow>
-        </ToolPanelViewProvider>
-    </ConfigProvider>
+    <ToolPanelViewProvider
+        v-if="isConfigLoaded && config.default_panel_view"
+        v-slot="{ currentPanel, currentPanelView }"
+        :panel-view="config.default_panel_view">
+        <ToolBoxWorkflow
+            v-if="currentPanelView"
+            :toolbox="currentPanel"
+            :panel-views="config.panel_views"
+            :current-panel-view="currentPanelView"
+            :workflows="workflows"
+            :data-managers="dataManagers"
+            :module-sections="moduleSections"
+            @updatePanelView="updatePanelView"
+            @onInsertTool="onInsertTool"
+            @onInsertModule="onInsertModule"
+            @onInsertWorkflow="onInsertWorkflow"
+            @onInsertWorkflowSteps="onInsertWorkflowSteps">
+        </ToolBoxWorkflow>
+    </ToolPanelViewProvider>
 </template>
 
 <script>
-import ConfigProvider from "components/providers/ConfigProvider";
 import ToolPanelViewProvider from "components/providers/ToolPanelViewProvider";
 import { mapActions } from "vuex";
+
+import { useConfig } from "@/composables/config";
 
 import ToolBoxWorkflow from "./ToolBoxWorkflow";
 
 export default {
     components: {
-        ConfigProvider,
         ToolBoxWorkflow,
         ToolPanelViewProvider,
     },
@@ -48,6 +46,10 @@ export default {
             type: Array,
             required: true,
         },
+    },
+    setup() {
+        const { config, isLoaded: isConfigLoaded } = useConfig(true);
+        return { config, isConfigLoaded };
     },
     methods: {
         updatePanelView(panelView) {
