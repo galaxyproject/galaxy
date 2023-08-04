@@ -47,15 +47,13 @@
             title="Manage Cloud Authorization"
             description="Add or modify the configuration that grants Galaxy to access your cloud-based resources."
             to="/user/cloud_auth" />
-        <ConfigProvider v-slot="{ config }">
-            <UserPreferencesElement
-                v-if="config.enable_oidc"
-                id="manage-third-party-identities"
-                icon="fa-id-card-o"
-                title="Manage Third-Party Identities"
-                description="Connect or disconnect access to your third-party identities."
-                to="/user/external_ids" />
-        </ConfigProvider>
+        <UserPreferencesElement
+            v-if="isConfigLoaded && config.enable_oidc"
+            id="manage-third-party-identities"
+            icon="fa-id-card-o"
+            title="Manage Third-Party Identities"
+            description="Connect or disconnect access to your third-party identities."
+            to="/user/external_ids" />
         <UserPreferencesElement
             id="edit-preferences-custom-builds"
             icon="fa-cubes"
@@ -83,33 +81,25 @@
                 <ThemeSelector />
             </b-collapse>
         </UserPreferencesElement>
-        <ConfigProvider v-slot="{ config }">
-            <UserPreferencesElement
-                v-if="!config.single_user"
-                id="edit-preferences-make-data-private"
-                icon="fa-lock"
-                title="Make All Data Private"
-                description="Click here to make all data private."
-                @click="makeDataPrivate" />
-        </ConfigProvider>
-        <ConfigProvider v-slot="{ config }">
-            <UserBeaconSettings v-if="config && config.enable_beacon_integration" :user-id="userId">
-            </UserBeaconSettings>
-        </ConfigProvider>
-        <ConfigProvider v-slot="{ config }">
-            <UserPreferredObjectStore
-                v-if="config && config.object_store_allows_id_selection && currentUser"
-                :preferred-object-store-id="currentUser.preferred_object_store_id"
-                :user-id="userId">
-            </UserPreferredObjectStore>
-        </ConfigProvider>
-        <ConfigProvider v-slot="{ config }">
-            <UserDeletion
-                v-if="config && !config.single_user && config.enable_account_interface"
-                :email="email"
-                :user-id="userId">
-            </UserDeletion>
-        </ConfigProvider>
+        <UserPreferencesElement
+            v-if="isConfigLoaded && !config.single_user"
+            id="edit-preferences-make-data-private"
+            icon="fa-lock"
+            title="Make All Data Private"
+            description="Click here to make all data private."
+            @click="makeDataPrivate" />
+        <UserBeaconSettings v-if="isConfigLoaded && config.enable_beacon_integration" :user-id="userId">
+        </UserBeaconSettings>
+        <UserPreferredObjectStore
+            v-if="isConfigLoaded && config.object_store_allows_id_selection && currentUser"
+            :preferred-object-store-id="currentUser.preferred_object_store_id"
+            :user-id="userId">
+        </UserPreferredObjectStore>
+        <UserDeletion
+            v-if="isConfigLoaded && !config.single_user && config.enable_account_interface"
+            :email="email"
+            :user-id="userId">
+        </UserDeletion>
         <UserPreferencesElement
             v-if="hasLogout"
             id="edit-preferences-sign-out"
@@ -124,7 +114,6 @@
 import { getGalaxyInstance } from "app";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
-import ConfigProvider from "components/providers/ConfigProvider";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
 import { mapState } from "pinia";
 import _l from "utils/localization";
@@ -133,6 +122,7 @@ import QueryStringParsing from "utils/query-string-parsing";
 import { withPrefix } from "utils/redirect";
 import Vue from "vue";
 
+import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 
 import UserActivityBarSettings from "./UserActivityBarSettings";
@@ -147,7 +137,6 @@ Vue.use(BootstrapVue);
 
 export default {
     components: {
-        ConfigProvider,
         UserActivityBarSettings,
         UserDeletion,
         UserPreferencesElement,
@@ -164,6 +153,10 @@ export default {
             type: Boolean,
             required: true,
         },
+    },
+    setup() {
+        const { config, isLoaded: isConfigLoaded } = useConfig(true);
+        return { config, isConfigLoaded };
     },
     data() {
         return {
@@ -187,11 +180,10 @@ export default {
         },
         hasLogout() {
             const Galaxy = getGalaxyInstance();
-            return !!Galaxy.session_csrf_token && !Galaxy.config.single_user;
+            return !!Galaxy.session_csrf_token && !this.config.single_user;
         },
         hasThemes() {
-            const Galaxy = getGalaxyInstance();
-            const themes = Object.keys(Galaxy.config.themes);
+            const themes = Object.keys(this.config.themes);
             return themes?.length > 1 ?? false;
         },
     },
@@ -227,7 +219,7 @@ export default {
                 axios.post(withPrefix(`/history/make_private?all_histories=true`)).then((response) => {
                     Galaxy.modal.show({
                         title: _l("Datasets are now private"),
-                        body: `All of your histories and datsets have been made private.  If you'd like to make all *future* histories private please use the <a href="${withPrefix(
+                        body: `All of your histories and datasets have been made private.  If you'd like to make all *future* histories private please use the <a href="${withPrefix(
                             "/user/permissions"
                         )}">User Permissions</a> interface.`,
                         buttons: {
