@@ -1,29 +1,27 @@
 <template>
-    <ConfigProvider v-slot="{ config, loading }">
-        <Markdown
-            v-if="!loading"
-            :markdown-config="markdownConfig"
-            :enable_beta_markdown_export="config.enable_beta_markdown_export"
-            :export-link="exportUrl"
-            :download-endpoint="stsUrl(config)"
-            @onEdit="onEdit" />
-    </ConfigProvider>
+    <Markdown
+        v-if="isConfigLoaded"
+        :markdown-config="markdownConfig"
+        :enable_beta_markdown_export="config.enable_beta_markdown_export"
+        :export-link="exportUrl"
+        :download-endpoint="stsUrl(config)"
+        @onEdit="onEdit" />
 </template>
 
 <script>
 import BootstrapVue from "bootstrap-vue";
 import Markdown from "components/Markdown/Markdown";
-import ConfigProvider from "components/providers/ConfigProvider";
 import { Toast } from "composables/toast";
 import { withPrefix } from "utils/redirect";
 import { urlData } from "utils/url";
 import Vue from "vue";
 
+import { useConfig } from "@/composables/config";
+
 Vue.use(BootstrapVue);
 
 export default {
     components: {
-        ConfigProvider,
         Markdown,
     },
     props: {
@@ -31,6 +29,10 @@ export default {
             type: String,
             required: true,
         },
+    },
+    setup() {
+        const { config, isLoaded: isConfigLoaded } = useConfig(true);
+        return { config, isConfigLoaded };
     },
     data() {
         return {
