@@ -1,14 +1,15 @@
 <script setup>
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCheck, faExclamation } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faEdit, faExclamation, faFolderOpen, faLaptop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BDropdown, BDropdownItem } from "bootstrap-vue";
 import { bytesToString } from "utils/utils";
 import { computed, ref } from "vue";
 
 import UploadSettings from "./UploadSettings.vue";
 import UploadSettingsSelect from "./UploadSettingsSelect.vue";
 
-library.add(faCheck, faExclamation);
+library.add(faCheck, faEdit, faExclamation, faFolderOpen, faLaptop);
 
 const props = defineProps({
     extension: String,
@@ -58,6 +59,16 @@ function removeUpload() {
 <template>
     <div :id="`upload-row-${index}`" class="upload-row p-2">
         <div class="d-flex justify-content-around">
+            <BDropdown :id="`upload-type-${index}`" text="Select" size="sm">
+                <BDropdownItem>
+                    <FontAwesomeIcon icon="fa-laptop" />
+                    <span v-localize>Choose local file</span>
+                </BDropdownItem>
+                <BDropdownItem>
+                    <FontAwesomeIcon icon="fa-edit" />
+                    <span v-localize>Paste/Fetch data</span>
+                </BDropdownItem>
+            </BDropdown>
             <div>
                 <FontAwesomeIcon v-if="fileSize > 0" icon="fa-check" />
                 <FontAwesomeIcon v-else icon="fa-exclamation" class="text-primary" />
