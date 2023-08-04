@@ -1,30 +1,28 @@
 <template>
     <div class="new-user-welcome">
-        <ConfigProvider v-slot="config">
-            <component
-                :is="viewElement"
-                v-if="loaded === true"
-                v-bind="currentNode"
-                :image-loc="config.welcome_directory"
-                @select="down"
-                @back="up">
-            </component>
-            <div v-else-if="loaded === false">
-                <!--
-                    this shouldn't ever show unless the load actually fails,
-                    which shouldn't happen -- just a barebones failsafe 
-                -->
-                <Heading h1>Welcome to Galaxy!</Heading>
-                <p>
-                    Galaxy is web-based platform for reproducible computational analysis. Research in Galaxy is
-                    supported by 3 pillars: data, tools, and workflows.
-                </p>
-                <p>
-                    If this is your first time using Galaxy we strongly recommend looking at the introductory materials
-                    available at <a href="https://training.galaxyproject.org">training.galaxyproject.org</a>.
-                </p>
-            </div>
-        </ConfigProvider>
+        <component
+            :is="viewElement"
+            v-if="loaded === true"
+            v-bind="currentNode"
+            :image-loc="isConfigLoaded && config.welcome_directory"
+            @select="down"
+            @back="up">
+        </component>
+        <div v-else-if="loaded === false">
+            <!--
+                this shouldn't ever show unless the load actually fails,
+                which shouldn't happen -- just a barebones failsafe 
+            -->
+            <Heading h1>Welcome to Galaxy!</Heading>
+            <p>
+                Galaxy is web-based platform for reproducible computational analysis. Research in Galaxy is supported by
+                3 pillars: data, tools, and workflows.
+            </p>
+            <p>
+                If this is your first time using Galaxy we strongly recommend looking at the introductory materials
+                available at <a href="https://training.galaxyproject.org">training.galaxyproject.org</a>.
+            </p>
+        </div>
     </div>
 </template>
 <script>
@@ -33,8 +31,9 @@ import Heading from "components/Common/Heading";
 import Slides from "components/NewUserWelcome/components/Slides";
 import Subtopics from "components/NewUserWelcome/components/Subtopics";
 import Topics from "components/NewUserWelcome/components/Topics";
-import ConfigProvider from "components/providers/ConfigProvider";
 import { getAppRoot } from "onload/loadConfig";
+
+import { useConfig } from "@/composables/config";
 
 import { getResource } from "./getResource";
 
@@ -53,7 +52,10 @@ export default {
         Topics,
         Subtopics,
         Slides,
-        ConfigProvider,
+    },
+    setup() {
+        const { config, isLoaded: isConfigLoaded } = useConfig(true);
+        return { config, isConfigLoaded };
     },
     data() {
         return {
