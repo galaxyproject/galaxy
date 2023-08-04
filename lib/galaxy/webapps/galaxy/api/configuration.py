@@ -14,6 +14,7 @@ from fastapi import Path
 
 from galaxy.managers.configuration import ConfigurationManager
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.schema.configuration import GalaxyConfigModel
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import UserModel
 from galaxy.webapps.galaxy.api import (
@@ -62,7 +63,7 @@ class FastAPIConfiguration:
         trans: ProvidesUserContext = DependsOnTrans,
         view: Optional[str] = SerializationViewQueryParam,
         keys: Optional[str] = SerializationKeysQueryParam,
-    ) -> Dict[str, Any]:
+    ) -> GalaxyConfigModel:
         """
         Return an object containing exposable configuration settings.
 
