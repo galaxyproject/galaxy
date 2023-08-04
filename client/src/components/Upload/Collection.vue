@@ -332,8 +332,6 @@ function uploadSelect() {
                     :file-name="uploadItem.file_name"
                     :file-size="uploadItem.file_size"
                     :genome="uploadItem.genome"
-                    :list-extensions="listExtensions"
-                    :list-genomes="details.listGenomes"
                     :percentage="uploadItem.percentage"
                     :space_to_tab="uploadItem.space_to_tab"
                     :status="uploadItem.status"

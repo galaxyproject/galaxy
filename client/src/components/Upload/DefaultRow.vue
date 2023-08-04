@@ -20,8 +20,14 @@ const props = defineProps({
     fileSize: Number,
     genome: String,
     index: String,
-    listGenomes: Array,
-    listExtensions: Array,
+    listGenomes: {
+        type: Array,
+        default: null,
+    },
+    listExtensions: {
+        type: Array,
+        default: null,
+    },
     percentage: Number,
     space_to_tab: Boolean,
     status: String,
@@ -84,12 +90,14 @@ function removeUpload() {
                 {{ bytesToString(fileSize) }}
             </div>
             <UploadSettingsSelect
+                v-if="listExtensions !== null"
                 :value="extension"
                 :options="listExtensions"
                 placeholder="Select Type"
                 @input="inputExtension" />
             <UploadExtensionDetails :extension="extension" :list-extensions="listExtensions" />
             <UploadSettingsSelect
+                v-if="listGenomes !== null"
                 :value="genome"
                 :options="listGenomes"
                 placeholder="Select Reference"

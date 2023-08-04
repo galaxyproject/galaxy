@@ -59,16 +59,22 @@ function removeUpload() {
 <template>
     <div :id="`upload-row-${index}`" class="upload-row p-2">
         <div class="d-flex justify-content-around">
-            <BDropdown :id="`upload-type-${index}`" text="Select" size="sm">
-                <BDropdownItem>
-                    <FontAwesomeIcon icon="fa-laptop" />
-                    <span v-localize>Choose local file</span>
-                </BDropdownItem>
-                <BDropdownItem>
-                    <FontAwesomeIcon icon="fa-edit" />
-                    <span v-localize>Paste/Fetch data</span>
-                </BDropdownItem>
-            </BDropdown>
+            <div>
+                <BDropdown
+                    :id="`upload-type-${index}`"
+                    text="Select"
+                    size="sm"
+                    button-class="upload-type-dropdown py-0 px-1">
+                    <BDropdownItem>
+                        <FontAwesomeIcon icon="fa-laptop" />
+                        <span v-localize>Choose local file</span>
+                    </BDropdownItem>
+                    <BDropdownItem>
+                        <FontAwesomeIcon icon="fa-edit" />
+                        <span v-localize>Paste/Fetch data</span>
+                    </BDropdownItem>
+                </BDropdown>
+            </div>
             <div>
                 <FontAwesomeIcon v-if="fileSize > 0" icon="fa-check" />
                 <FontAwesomeIcon v-else icon="fa-exclamation" class="text-primary" />
@@ -101,6 +107,10 @@ function removeUpload() {
 
 <style scoped lang="scss">
 @import "theme/blue.scss";
+button {
+    padding: 20px !important;
+    font-size: $h2-font-size !important;
+}
 .upload-text-content {
     width: 100%;
     height: 80px;
