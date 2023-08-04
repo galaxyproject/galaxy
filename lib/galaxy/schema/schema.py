@@ -3290,7 +3290,6 @@ class ShareWithExtra(Model):
         title="Can Share",
         description="Indicates whether the resource can be directly shared or requires further actions.",
     )
-    model_config = ConfigDict(extra="allow")
 
 
 UserIdentifier = Union[DecodedDatabaseIdField, str]
@@ -3326,7 +3325,7 @@ class SetSlugPayload(Model):
 
 
 class UserEmail(Model):
-    id: DecodedDatabaseIdField = Field(
+    id: EncodedDatabaseIdField = Field(
         ...,
         title="User ID",
         description="The encoded ID of the user.",
@@ -3347,7 +3346,7 @@ class UserBeaconSetting(Model):
 
 
 class SharingStatus(Model):
-    id: DecodedDatabaseIdField = Field(
+    id: EncodedDatabaseIdField = Field(
         ...,
         title="ID",
         description="The encoded ID of the resource to be shared.",
@@ -3389,24 +3388,8 @@ class SharingStatus(Model):
     )
 
 
-class ShareWithStatus(SharingStatus):
-    errors: List[str] = Field(
-        [],
-        title="Errors",
-        description="Collection of messages indicating that the resource was not shared with some (or all users) due to an error.",
-    )
-    extra: Optional[ShareWithExtra] = Field(
-        None,
-        title="Extra",
-        description=(
-            "Optional extra information about this shareable resource that may be of interest. "
-            "The contents of this field depend on the particular resource."
-        ),
-    )
-
-
 class HDABasicInfo(Model):
-    id: DecodedDatabaseIdField
+    id: EncodedDatabaseIdField
     name: str
 
 
@@ -3431,6 +3414,33 @@ class ShareHistoryExtra(ShareWithExtra):
         0,
         title="Accessible Count",
         description=("The number of datasets in the history that are public or accessible by all the target users."),
+    )
+
+
+class ShareWithStatus(SharingStatus):
+    errors: List[str] = Field(
+        [],
+        title="Errors",
+        description="Collection of messages indicating that the resource was not shared with some (or all users) due to an error.",
+    )
+    extra: Optional[ShareWithExtra] = Field(
+        None,
+        title="Extra",
+        description=(
+            "Optional extra information about this shareable resource that may be of interest. "
+            "The contents of this field depend on the particular resource."
+        ),
+    )
+
+
+class ShareHistoryWithStatus(ShareWithStatus):
+    extra: ShareHistoryExtra = Field(
+        ...,
+        title="Extra",
+        description=(
+            "Optional extra information about this shareable resource that may be of interest. "
+            "The contents of this field depend on the particular resource."
+        ),
     )
 
 

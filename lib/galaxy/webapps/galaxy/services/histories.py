@@ -8,6 +8,7 @@ from tempfile import (
     SpooledTemporaryFile,
 )
 from typing import (
+    cast,
     List,
     Optional,
     Tuple,
@@ -66,6 +67,8 @@ from galaxy.schema.schema import (
     JobIdResponse,
     JobImportHistoryResponse,
     LabelValuePair,
+    ShareHistoryWithStatus,
+    ShareWithPayload,
     StoreExportPayload,
     WriteStoreToPayload,
 )
@@ -90,6 +93,13 @@ from galaxy.webapps.galaxy.services.sharable import ShareableService
 log = logging.getLogger(__name__)
 
 DEFAULT_ORDER_BY = "create_time-dsc"
+
+
+class ShareableHistoryService(ShareableService):
+    share_with_status_cls = ShareHistoryWithStatus
+
+    def share_with_users(self, trans, id: DecodedDatabaseIdField, payload: ShareWithPayload) -> ShareHistoryWithStatus:
+        return cast(ShareHistoryWithStatus, super().share_with_users(trans, id, payload))
 
 
 class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
@@ -120,7 +130,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         self.citations_manager = citations_manager
         self.history_export_manager = history_export_manager
         self.filters = filters
-        self.shareable_service = ShareableService(self.manager, self.serializer, notification_manager)
+        self.shareable_service = ShareableHistoryService(self.manager, self.serializer, notification_manager)
         self.short_term_storage_allocator = short_term_storage_allocator
 
     def index(
