@@ -206,7 +206,7 @@ class FastAPILibraries:
         ] = Body(...),
     ) -> Union[LibraryLegacySummary, LibraryCurrentPermissions]:  # Old legacy response
         """Sets the permissions to access and manipulate a library."""
-        payload_dict = payload.dict(by_alias=True)
+        payload_dict = payload.model_dump(by_alias=True)
         if isinstance(payload, LibraryPermissionsPayload) and action is not None:
             payload_dict["action"] = action
         return self.service.set_permissions(trans, id, payload_dict)

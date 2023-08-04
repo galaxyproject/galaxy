@@ -91,7 +91,7 @@ class UsersService(ServiceBase):
         """Returns the current API key or None if the user doesn't have any valid API key."""
         user = self.get_user(trans, user_id)
         api_key = self.api_key_manager.get_api_key(user)
-        return APIKeyModel.construct(key=api_key.key, create_time=api_key.create_time) if api_key else None
+        return APIKeyModel.model_construct(key=api_key.key, create_time=api_key.create_time) if api_key else None
 
     def get_or_create_api_key(self, trans: ProvidesUserContext, user_id: int) -> str:
         """Returns the current API key (as plain string) or creates a new one."""
@@ -102,7 +102,7 @@ class UsersService(ServiceBase):
         """Creates a new API key for the given user"""
         user = self.get_user(trans, user_id)
         api_key = self.api_key_manager.create_api_key(user)
-        result = APIKeyModel.construct(key=api_key.key, create_time=api_key.create_time)
+        result = APIKeyModel.model_construct(key=api_key.key, create_time=api_key.create_time)
         return result
 
     def delete_api_key(self, trans: ProvidesUserContext, user_id: int) -> None:

@@ -62,7 +62,7 @@ class QuotasService(ServiceBase):
         rval = quota.to_dict(
             view="element", value_mapper={"id": Security.security.encode_id, "total_disk_usage": float}
         )
-        return QuotaDetails.construct(**rval)
+        return QuotaDetails.model_construct(**rval)
 
     def create(self, trans: ProvidesUserContext, params: CreateQuotaParams) -> CreateQuotaResult:
         """Creates a new quota."""
@@ -72,7 +72,7 @@ class QuotasService(ServiceBase):
         item = quota.to_dict(value_mapper={"id": Security.security.encode_id})
         item["url"] = url_for("quota", id=Security.security.encode_id(quota.id))
         item["message"] = message
-        return CreateQuotaResult.construct(**item)
+        return CreateQuotaResult.model_construct(**item)
 
     def update(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField, params: UpdateQuotaParams) -> str:
         """Modifies a quota."""

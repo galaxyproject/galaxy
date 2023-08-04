@@ -194,7 +194,7 @@ class SharedItemNotificationFactory:
     ) -> NotificationCreateRequest:
         user_ids = [user.id for user in users_to_notify]
         request = NotificationCreateRequest(
-            recipients=NotificationRecipients.construct(user_ids=user_ids),
+            recipients=NotificationRecipients.model_construct(user_ids=user_ids),
             notification=NotificationCreateData(
                 source=SharedItemNotificationFactory.source,
                 variant="info",

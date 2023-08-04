@@ -179,7 +179,7 @@ class ToolShedPopulator:
         return self.create_repository(request)
 
     def create_repository(self, request: CreateRepositoryRequest) -> Repository:
-        response = self._api_interactor.post("repositories", json=request.dict(by_alias=True))
+        response = self._api_interactor.post("repositories", json=request.model_dump(by_alias=True))
         api_asserts.assert_status_code_is_ok(response)
         return Repository(**response.json())
 

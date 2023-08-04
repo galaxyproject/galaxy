@@ -121,7 +121,9 @@ class FastAPIConfiguration:
 
 def _user_to_model(user):
     if user:
-        return UserModel.construct(**user.to_dict(view="element", value_mapper={"id": Security.security.encode_id}))
+        return UserModel.model_construct(
+            **user.to_dict(view="element", value_mapper={"id": Security.security.encode_id})
+        )
     return None
 
 

@@ -154,7 +154,7 @@ class FastAPILibraryFolders:
         payload: LibraryFolderPermissionsPayload = Body(...),
     ) -> LibraryFolderCurrentPermissions:
         """Sets the permissions to manage a library folder."""
-        payload_dict = payload.dict(by_alias=True)
+        payload_dict = payload.model_dump(by_alias=True)
         if isinstance(payload, LibraryFolderPermissionsPayload) and action is not None:
             payload_dict["action"] = action
         return self.service.set_permissions(trans, id, payload_dict)
