@@ -34,24 +34,22 @@
                     <SuitableConvertersTab :suitable-converters="item" @clicked-convert="clickedConvert" />
                 </b-tab>
             </SuitableConvertersProvider>
-            <ConfigProvider v-slot="{ config }">
-                <b-tab
-                    v-if="config.enable_celery_tasks"
-                    title-link-class="collection-edit-change-datatype-nav"
-                    @click="updateInfoMessage(expectWaitTimeMessage)">
-                    <template v-slot:title> <FontAwesomeIcon icon="database" /> &nbsp; {{ l("Datatypes") }} </template>
-                    <DatatypesProvider v-slot="{ item, loading }">
-                        <div v-if="loading"><LoadingSpan :message="loadingString" /></div>
-                        <div v-else>
-                            <ChangeDatatypeTab
-                                v-if="item && datatypeFromElements"
-                                :datatype-from-elements="datatypeFromElements"
-                                :datatypes="item"
-                                @clicked-save="clickedDatatypeChange" />
-                        </div>
-                    </DatatypesProvider>
-                </b-tab>
-            </ConfigProvider>
+            <b-tab
+                v-if="isConfigLoaded && config.enable_celery_tasks"
+                title-link-class="collection-edit-change-datatype-nav"
+                @click="updateInfoMessage(expectWaitTimeMessage)">
+                <template v-slot:title> <FontAwesomeIcon icon="database" /> &nbsp; {{ l("Datatypes") }} </template>
+                <DatatypesProvider v-slot="{ item, loading }">
+                    <div v-if="loading"><LoadingSpan :message="loadingString" /></div>
+                    <div v-else>
+                        <ChangeDatatypeTab
+                            v-if="item && datatypeFromElements"
+                            :datatype-from-elements="datatypeFromElements"
+                            :datatypes="item"
+                            @clicked-save="clickedDatatypeChange" />
+                    </div>
+                </DatatypesProvider>
+            </b-tab>
         </b-tabs>
     </div>
 </template>
@@ -62,12 +60,12 @@ import { faBars, faCog, faDatabase, faTable, faUser } from "@fortawesome/free-so
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
-import ConfigProvider from "components/providers/ConfigProvider";
 import { mapState } from "pinia";
 import { prependPath } from "utils/redirect";
 import { errorMessageAsString } from "utils/simple-error";
 import Vue from "vue";
 
+import { useConfig } from "@/composables/config";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import { DatatypesProvider, DbKeyProvider, SuitableConvertersProvider } from "../../providers";
@@ -87,7 +85,6 @@ export default {
         FontAwesomeIcon,
         DbKeyProvider,
         SuitableConvertersProvider,
-        ConfigProvider,
         ChangeDatatypeTab,
         DatatypesProvider,
         LoadingSpan,
@@ -97,6 +94,10 @@ export default {
             type: String,
             required: true,
         },
+    },
+    setup() {
+        const { config, isLoaded: isConfigLoaded } = useConfig(true);
+        return { config, isConfigLoaded };
     },
     data: function () {
         return {
