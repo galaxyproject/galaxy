@@ -320,7 +320,7 @@ function uploadSelect() {
         </div>
         <UploadBox :multiple="true" @add="addFiles">
             <div v-show="showHelper" class="upload-helper"><i class="fa fa-files-o" />Drop files here</div>
-            <div v-show="!showHelper" class="upload-table ui-table-striped">
+            <div v-show="!showHelper">
                 <DefaultRow
                     v-for="(uploadItem, uploadIndex) in uploadList"
                     :key="uploadIndex"

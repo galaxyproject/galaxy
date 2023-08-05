@@ -139,7 +139,7 @@ function inputExtension(newExtension) {
     <div class="upload-view-default">
         <div class="upload-box" :style="{ height: '335px' }">
             <div v-show="showHelper" class="upload-helper">Select a composite type</div>
-            <div v-show="!showHelper" class="upload-table ui-table-striped">
+            <div v-show="!showHelper">
                 <CompositeRow
                     v-for="(uploadItem, uploadIndex) in uploadItems"
                     :key="uploadIndex"

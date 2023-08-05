@@ -35,7 +35,7 @@ const emit = defineEmits();
         <template v-slot:reference>
             <FontAwesomeIcon class="cursor-pointer" icon="fa-cog" />
         </template>
-        <div class="upload-settings px-2 py-2">
+        <div class="upload-settings px-2 py-2 no-highlight">
             <table class="upload-settings-table grid">
                 <tbody>
                     <UploadSettingsOption
@@ -53,19 +53,31 @@ const emit = defineEmits();
                         @click="emit('input', 'deferred')" />
                 </tbody>
             </table>
-            <div v-if="disabled" class="upload-cover" />
+            <div v-if="disabled" class="upload-settings-cover" />
         </div>
     </Popper>
 </template>
 
-<style>
-.upload-cover {
-    background: white;
-    height: 100%;
-    left: 0;
-    opacity: 0.25;
-    position: absolute;
-    top: 0;
-    width: 100%;
+<style lang="scss">
+@import "theme/blue.scss";
+.upload-settings {
+    .upload-settings-cover {
+        background: $white;
+        cursor: no-drop;
+        height: 100%;
+        left: 0;
+        opacity: 0.25;
+        position: absolute;
+        top: 0;
+        width: 100%;
+    }
+    .upload-settings-table {
+        tr {
+            cursor: pointer;
+        }
+        tr:hover {
+            background-color: lighten($brand-success, 20%);
+        }
+    }
 }
 </style>
