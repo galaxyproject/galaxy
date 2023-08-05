@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
 import { fetcher } from "@/schema";
 
@@ -10,16 +10,20 @@ const fetchConfiguration = fetcher.path("/api/configuration").method("get").crea
 
 export const useConfigStore = defineStore("configurationStore", () => {
     const config = ref<GalaxyConfiguration>(null);
-    const isLoaded = ref(false);
+    const isLoading = ref(false);
+    const isLoaded = computed(() => !!config.value);
 
     async function loadConfig() {
-        if (!config.value) {
+        if (!isLoaded.value && !isLoading.value) {
+            isLoading.value = true;
             try {
                 const { data } = await fetchConfiguration({});
                 config.value = data;
-                isLoaded.value = true;
+                console.debug("Galaxy configuration loaded", config.value);
             } catch (err) {
-                console.warn("Error loading Galaxy configuration", err);
+                console.error("Error loading Galaxy configuration", err);
+            } finally {
+                isLoading.value = false;
             }
         }
     }
