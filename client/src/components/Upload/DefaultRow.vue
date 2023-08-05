@@ -38,7 +38,7 @@ const props = defineProps({
 const emit = defineEmits();
 
 const percentageInt = computed(() => parseInt(props.percentage || 0));
-
+const isDisabled = computed(() => props.status !== "init");
 function inputExtension(newExtension) {
     emit("input", props.index, { extension: newExtension });
 }
@@ -69,20 +69,25 @@ function removeUpload() {
 </script>
 
 <template>
-    <div :id="`upload-row-${index}`" class="upload-row rounded p-2" :class="`upload-${status}`">
+    <div :id="`upload-row-${index}`" class="upload-row rounded my-1 p-2" :class="`upload-${status}`">
         <div class="d-flex justify-content-around">
             <div>
                 <FontAwesomeIcon v-if="fileMode == 'new'" icon="fa-edit" />
                 <FontAwesomeIcon v-if="fileMode == 'local'" icon="fa-laptop" />
                 <FontAwesomeIcon v-if="fileMode == 'ftp'" icon="fa-folder-open" />
             </div>
-            <b-input :value="fileName" class="upload-title p-1 border rounded" @input="inputFileName" />
+            <b-input
+                :value="fileName"
+                class="upload-title p-1 border rounded"
+                :disabled="isDisabled"
+                @input="inputFileName" />
             <div class="upload-size">
                 {{ bytesToString(fileSize) }}
             </div>
             <UploadSettingsSelect
                 v-if="listExtensions !== null"
                 :value="extension"
+                :disabled="isDisabled"
                 :options="listExtensions"
                 placeholder="Select Type"
                 @input="inputExtension" />
@@ -90,11 +95,13 @@ function removeUpload() {
             <UploadSettingsSelect
                 v-if="listGenomes !== null"
                 :value="genome"
+                :disabled="isDisabled"
                 :options="listGenomes"
                 placeholder="Select Reference"
                 @input="inputGenome" />
             <UploadSettings
                 :deferred="deferred"
+                :disabled="isDisabled"
                 :to_posix_lines="to_posix_lines"
                 :space_to_tab="space_to_tab"
                 @input="inputSettings" />

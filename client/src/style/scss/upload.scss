@@ -114,8 +114,7 @@
         .upload-success {
             background: $state-success-bg;
         }
-        .upload-running,
-        .upload-queued {
+        .upload-running {
             background: $state-running-bg;
         }
         .upload-row {
@@ -204,23 +203,6 @@
         padding-top: 30px;
         button {
             @extend .ml-1;
-        }
-    }
-}
-
-.upload-view-composite {
-    @extend .upload-view-default;
-    .upload-box {
-        .upload-row {
-            .upload-title {
-                width: 175px;
-            }
-            .upload-source {
-                width: 80px;
-                .btn {
-                    padding: 0px 10px;
-                }
-            }
         }
     }
 }

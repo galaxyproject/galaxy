@@ -13,6 +13,10 @@ const props = defineProps({
         type: Boolean,
         default: null,
     },
+    disabled: {
+        type: Boolean,
+        default: false,
+    },
     space_to_tab: {
         type: Boolean,
         default: null,
@@ -49,6 +53,19 @@ const emit = defineEmits();
                         @click="emit('input', 'deferred')" />
                 </tbody>
             </table>
+            <div v-if="disabled" class="upload-cover" />
         </div>
     </Popper>
 </template>
+
+<style>
+.upload-cover {
+    background: white;
+    height: 100%;
+    left: 0;
+    opacity: 0.25;
+    position: absolute;
+    top: 0;
+    width: 100%;
+}
+</style>

@@ -48,7 +48,7 @@ const running = computed(() => {
 });
 
 const readyStart = computed(() => {
-    const readyStates = uploadValues.value.filter((v) => v.status === "ready").length;
+    const readyStates = uploadValues.value.filter((v) => v.file_size > 0).length;
     const optionalStates = uploadValues.value.filter((v) => v.optional === true).length;
     return readyStates + optionalStates == uploadValues.value.length && uploadValues.value.length > 0;
 });
@@ -71,9 +71,6 @@ function eventInput(index, newData) {
     const it = uploadItems.value[index];
     Object.entries(newData).forEach(([key, value]) => {
         it[key] = value;
-    });
-    uploadValues.value.forEach((model) => {
-        model.status = model.file_size > 0 ? "ready" : "init";
     });
 }
 
@@ -139,7 +136,7 @@ function inputExtension(newExtension) {
 </script>
 
 <template>
-    <div class="upload-view-composite">
+    <div class="upload-view-default">
         <div class="upload-box" :style="{ height: '335px' }">
             <div v-show="showHelper" class="upload-helper">Select a composite type</div>
             <div v-show="!showHelper" class="upload-table ui-table-striped">

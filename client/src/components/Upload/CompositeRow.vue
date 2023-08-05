@@ -32,6 +32,7 @@ const emit = defineEmits();
 const fileMode = ref("");
 
 const percentageInt = computed(() => parseInt(props.percentage || 0));
+const isDisabled = computed(() => props.status !== "init");
 
 function inputFileContent(newFileContent) {
     emit("input", props.index, { file_content: newFileContent, file_size: newFileContent.length });
@@ -69,7 +70,7 @@ function removeUpload() {
 </script>
 
 <template>
-    <div :id="`upload-row-${index}`" class="upload-row rounded p-2" :class="`upload-${status}`">
+    <div :id="`upload-row-${index}`" class="upload-row rounded my-1 p-2" :class="`upload-${status}`">
         <div class="d-flex justify-content-around">
             <div>
                 <BDropdown
@@ -93,7 +94,11 @@ function removeUpload() {
             <div class="upload-size">
                 {{ bytesToString(fileSize) }}
             </div>
-            <UploadSettings :to_posix_lines="to_posix_lines" :space_to_tab="space_to_tab" @input="inputSettings" />
+            <UploadSettings
+                :disabled="isDisabled"
+                :to_posix_lines="to_posix_lines"
+                :space_to_tab="space_to_tab"
+                @input="inputSettings" />
             <div class="upload-progress">
                 <div class="progress">
                     <div
@@ -134,5 +139,14 @@ button {
     color: $text-color;
     white-space: pre;
     overflow: auto;
+}
+.upload-title {
+    width: 275px;
+}
+.upload-type-dropdown {
+    .btn {
+        padding: 0;
+        margin: 0;
+    }
 }
 </style>

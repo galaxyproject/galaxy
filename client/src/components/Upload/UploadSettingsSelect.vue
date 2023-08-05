@@ -24,6 +24,7 @@ const currentValue = computed({
         v-model="currentValue"
         class="upload-settings-select"
         deselect-label=""
+        :disabled="disabled"
         label="text"
         :options="options"
         :placeholder="placeholder"
