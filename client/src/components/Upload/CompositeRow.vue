@@ -20,6 +20,7 @@ const props = defineProps({
     fileSize: Number,
     genome: String,
     index: String,
+    info: String,
     percentage: Number,
     space_to_tab: Boolean,
     status: String,
@@ -107,7 +108,9 @@ function removeUpload() {
             </div>
             <UploadSettings :to_posix_lines="to_posix_lines" :space_to_tab="space_to_tab" @input="inputSettings" />
             <div class="upload-info">
-                <div class="upload-info-text" />
+                <div v-if="info" class="upload-info-text" v-localize>
+                    {{ info }}
+                </div>
                 <div class="upload-info-progress progress">
                     <div
                         class="upload-progress-bar progress-bar progress-bar-success"

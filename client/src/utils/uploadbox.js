@@ -14,18 +14,6 @@ function buildFingerprint(cnf) {
     };
 }
 
-function hasFiles(data) {
-    return data.files.length;
-}
-
-function isComposite(data) {
-    return data.targets.length && data.targets[0].items && data.targets[0].items[0].composite;
-}
-
-function isUrl(pasted_item) {
-    return pasted_item.src == "url";
-}
-
 function submitPayload(payload, cnf) {
     axios
         .post(`${getAppRoot()}api/tools/fetch`, payload)
@@ -113,6 +101,7 @@ export function submitUpload(config) {
         error_attempt: "Maximum number of attempts reached.",
         error_tool: "Tool submission failed.",
         chunkSize: 10485760,
+        isComposite: false,
         ...config,
     };
     // initial validation
@@ -123,12 +112,12 @@ export function submitUpload(config) {
     }
     // execute upload
     const tusEndpoint = `${getAppRoot()}api/upload/resumable_upload/`;
-    if (hasFiles(data) || isComposite(data)) {
+    if (data.files.length || cnf.isComposite) {
         return tusUpload(data.files, 0, data, tusEndpoint, cnf);
     } else {
         if (data.targets.length && data.targets[0].elements.length) {
             const pasted = data.targets[0].elements[0];
-            if (isUrl(pasted)) {
+            if (pasted.src == "url") {
                 return submitPayload(data, cnf);
             } else {
                 const blob = new Blob([pasted.paste_content]);

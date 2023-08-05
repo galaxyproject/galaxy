@@ -5,6 +5,7 @@ import Vue, { computed, ref } from "vue";
 
 import { defaultModel } from "./model.js";
 
+import { uploadModelsToPayload } from "@/components/Upload/helpers";
 import CompositeRow from "./CompositeRow.vue";
 import UploadSettingsSelect from "./UploadSettingsSelect.vue";
 
@@ -17,6 +18,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    historyId: {
+        type: String,
+        default: null,
+    },
     listGenomes: {
         type: Array,
         required: true,
@@ -27,13 +32,13 @@ const props = defineProps({
     },
 });
 
-const extension = ref("_select_");
+const extension = ref(null);
 const genome = ref(props.details.defaultDbKey);
 const uploadItems = ref({});
 
 const listExtensions = computed(() => {
     const result = props.effectiveExtensions.filter((ext) => ext.composite_files);
-    result.unshift({ id: "_select_", text: "Select" });
+    result.unshift({ id: null, text: "Select" });
     return result;
 });
 
@@ -54,9 +59,9 @@ const uploadValues = computed(() => Object.values(uploadItems.value));
 const uploadKeys = computed(() => Object.keys(uploadItems.value));
 
 /** Refresh error state */
-function eventError(info) {
+function eventError(message) {
     uploadValues.value.forEach((model) => {
-        model.info = info;
+        model.info = message;
         model.status = "error";
     });
 }
@@ -94,11 +99,11 @@ function eventStart() {
         model.extension = extension.value;
     });
     submitUpload({
-        //url: props.details.uploadPath,
-        //data: uploadModelsToPayload(this.collection.filter(), this.history_id, true),
-        error: eventError(message),
-        progress: eventProgress(percentage),
+        data: uploadModelsToPayload(uploadValues.value, props.historyId, true),
+        error: eventError,
+        progress: eventProgress,
         success: eventSuccess,
+        isComposite: true,
     });
 }
 
@@ -114,6 +119,7 @@ function inputDbkey(newDbkey) {
 }
 
 function inputExtension(newExtension) {
+    extension.value = newExtension;
     uploadItems.value = {};
     let uploadCount = 0;
     const extensionDetails = listExtensions.value.find((v) => v.id === newExtension);
@@ -144,6 +150,7 @@ function inputExtension(newExtension) {
                     :file-content="uploadItem.file_content"
                     :file-name="uploadItem.file_name"
                     :file-size="uploadItem.file_size"
+                    :info="uploadItem.info"
                     :percentage="uploadItem.percentage"
                     :space_to_tab="uploadItem.space_to_tab"
                     :status="uploadItem.status"
@@ -153,11 +160,7 @@ function inputExtension(newExtension) {
         </div>
         <div class="upload-footer">
             <span class="upload-footer-title">Composite Type:</span>
-            <UploadSettingsSelect
-                :value="extension"
-                :options="listExtensions"
-                :disabled="running"
-                @input="inputExtension" />
+            <UploadSettingsSelect :value="null" :options="listExtensions" :disabled="running" @input="inputExtension" />
             <span class="upload-footer-title">Genome/Build:</span>
             <UploadSettingsSelect :value="genome" :options="listGenomes" :disabled="running" @input="inputDbkey" />
         </div>

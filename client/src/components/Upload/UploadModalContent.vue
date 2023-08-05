@@ -14,6 +14,7 @@
                 :effective-extensions="details.effectiveExtensions"
                 :details="details"
                 :has-callback="hasCallback"
+                :history-id="details.history_id"
                 :list-genomes="details.listGenomes"
                 v-on="$listeners" />
         </BTab>

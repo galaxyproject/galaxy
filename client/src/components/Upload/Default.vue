@@ -295,6 +295,7 @@ function uploadSelect() {
                     :file-mode="uploadItem.file_mode"
                     :file-name="uploadItem.file_name"
                     :file-size="uploadItem.file_size"
+                    :info="uploadItem.info"
                     :genome="uploadItem.genome"
                     :list-extensions="listExtensions"
                     :list-genomes="details.listGenomes"
