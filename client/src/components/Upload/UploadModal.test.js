@@ -17,7 +17,7 @@ jest.mock("@/schema");
 jest.mock("@/composables/config", () => ({
     useConfig: jest.fn(() => ({
         config: {},
-        isLoaded: true,
+        isConfigLoaded: true,
     })),
 }));
 

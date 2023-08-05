@@ -12,7 +12,7 @@ jest.mock("@/schema");
 jest.mock("@/composables/config", () => ({
     useConfig: jest.fn(() => ({
         config: { enable_tool_source_display: false },
-        isLoaded: true,
+        isConfigLoaded: true,
     })),
 }));
 

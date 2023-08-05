@@ -102,10 +102,10 @@ export default {
         },
     },
     setup() {
-        const { config, isLoaded } = useConfig();
+        const { config, isConfigLoaded } = useConfig();
         return {
             config,
-            isLoaded,
+            isConfigLoaded,
         };
     },
     data() {
@@ -136,7 +136,7 @@ export default {
             // the order set and hope for the best from the integrated
             // panel.
             if (
-                this.isLoaded &&
+                this.isConfigLoaded &&
                 this.config.toolbox_auto_sort === true &&
                 this.sortItems === true &&
                 !this.category.elems.some((el) => el.text !== undefined && el.text !== "")

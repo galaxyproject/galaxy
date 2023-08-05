@@ -91,7 +91,7 @@ export default {
         },
     },
     setup() {
-        const { config, isLoaded: isConfigLoaded } = useConfig(true);
+        const { config, isConfigLoaded } = useConfig(true);
         return { config, isConfigLoaded };
     },
     computed: {
