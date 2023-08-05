@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BDropdown, BDropdownItem } from "bootstrap-vue";
 import { bytesToString } from "utils/utils";
 import { computed, ref } from "vue";
+import { openFileDialog } from "./utils";
 
 import UploadSettings from "./UploadSettings.vue";
 import UploadSettingsSelect from "./UploadSettingsSelect.vue";
@@ -15,7 +16,6 @@ const props = defineProps({
     extension: String,
     fileContent: String,
     fileDescription: String,
-    fileMode: String,
     fileName: String,
     fileSize: Number,
     genome: String,
@@ -27,6 +27,8 @@ const props = defineProps({
 });
 
 const emit = defineEmits();
+
+const fileMode = ref("");
 
 const percentageInt = computed(() => parseInt(props.percentage || 0));
 
@@ -41,6 +43,24 @@ const status_classes = {
 
 function inputFileContent(newFileContent) {
     emit("input", props.index, { file_content: newFileContent, file_size: newFileContent.length });
+}
+
+function inputDialog(index) {
+    openFileDialog((files) => {
+        if (props.status !== "running" && files && files.length > 0) {
+            emit("input", index, {
+                chunk_mode: true,
+                file_data: files[0],
+                file_name: files[0].name,
+                file_size: files[0].size,
+                file_mode: files[0].mode || "local",
+            });
+        }
+    });
+}
+
+function inputPaste() {
+    fileMode.value = "new";
 }
 
 function inputSettings(settingId) {
@@ -65,18 +85,18 @@ function removeUpload() {
                     text="Select"
                     size="sm"
                     button-class="upload-type-dropdown py-0 px-1">
-                    <BDropdownItem>
+                    <BDropdownItem @click="inputDialog(index)">
                         <FontAwesomeIcon icon="fa-laptop" />
                         <span v-localize>Choose local file</span>
                     </BDropdownItem>
-                    <BDropdownItem>
+                    <BDropdownItem @click="inputPaste">
                         <FontAwesomeIcon icon="fa-edit" />
                         <span v-localize>Paste/Fetch data</span>
                     </BDropdownItem>
                 </BDropdown>
             </div>
             <div>
-                <FontAwesomeIcon v-if="fileSize > 0" icon="fa-check" />
+                <FontAwesomeIcon v-if="fileSize > 0" icon="fa-check" class="text-success" />
                 <FontAwesomeIcon v-else icon="fa-exclamation" class="text-primary" />
             </div>
             <div class="upload-title">

@@ -1,4 +1,5 @@
 <script setup>
+import { BButton } from "bootstrap-vue";
 import { submitUpload } from "utils/uploadbox";
 import Vue, { computed, ref } from "vue";
 
@@ -54,7 +55,7 @@ const uploadKeys = computed(() => Object.keys(uploadItems.value));
 
 /** Refresh error state */
 function eventError(info) {
-    UploadValues.value.forEach((model) => {
+    uploadValues.value.forEach((model) => {
         model.info = info;
         model.status = "error";
     });
@@ -66,18 +67,21 @@ function eventInput(index, newData) {
     Object.entries(newData).forEach(([key, value]) => {
         it[key] = value;
     });
+    uploadValues.value.forEach((model) => {
+        model.status = model.file_size > 0 ? "ready" : "init";
+    });
 }
 
 /** Refresh progress state */
 function eventProgress(percentage) {
-    UploadValues.value.forEach((model) => {
+    uploadValues.value.forEach((model) => {
         model.percentage = percentage;
     });
 }
 
 /** Remove all */
 function eventReset() {
-    if (UploadValues.value.filter((v) => v.status === "running").length > 0) {
+    if (uploadValues.value.filter((v) => v.status === "running").length > 0) {
         uploadItems.value = {};
         extension.value = props.details.defaultExtension;
         genome.value = props.details.defaultDbKey;
@@ -86,7 +90,7 @@ function eventReset() {
 
 /** Start upload process */
 function eventStart() {
-    uploadItems.value.forEach((model) => {
+    uploadValues.value.forEach((model) => {
         model.genome = genome.value;
         model.extension = extension.value;
     });
@@ -101,7 +105,7 @@ function eventStart() {
 
 /** Refresh success state */
 function eventSuccess() {
-    UploadValues.value.forEach((model) => {
+    uploadValues.value.forEach((model) => {
         model.status = "success";
     });
 }
@@ -158,24 +162,22 @@ function inputExtension(newExtension) {
             <span class="upload-footer-title">Genome/Build:</span>
             <UploadSettingsSelect :value="genome" :options="listGenomes" :disabled="running" @input="inputDbkey" />
         </div>
-        <div class="upload-buttons">
-            <b-button ref="btnClose" class="ui-button-default" title="Close" @click="$emit('dismiss')">
-                <span v-if="hasCallback" v-localize>Close</span>
-                <span v-else v-localize>Cancel</span>
-            </b-button>
-            <b-button
+        <div class="upload-buttons d-flex justify-content-end">
+            <BButton
                 id="btn-start"
-                ref="btnStart"
-                class="ui-button-default"
                 :disabled="!readyStart"
                 title="Start"
                 :variant="readyStart ? 'primary' : ''"
                 @click="eventStart">
                 <span v-localize>Start</span>
-            </b-button>
-            <b-button id="btn-reset" ref="btnReset" class="ui-button-default" title="Reset" @click="eventReset">
+            </BButton>
+            <BButton id="btn-reset" title="Reset" @click="eventReset">
                 <span v-localize>Reset</span>
-            </b-button>
+            </BButton>
+            <BButton title="Close" @click="$emit('dismiss')">
+                <span v-if="hasCallback" v-localize>Close</span>
+                <span v-else v-localize>Cancel</span>
+            </BButton>
         </div>
     </div>
 </template>
