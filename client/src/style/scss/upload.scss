@@ -108,6 +108,16 @@
                 font-size: inherit;
             }
         }
+        .upload-error {
+            background: $state-danger-bg;
+        }
+        .upload-success {
+            background: $state-success-bg;
+        }
+        .upload-running,
+        .upload-queued {
+            background: $state-running-bg;
+        }
         .upload-row {
             @extend .upload-select2;
             .upload-title {
@@ -156,7 +166,7 @@
                     }
                 }
             }
-            .upload-info {
+            .upload-progress {
                 width: 130px;
                 line-height: $font-size-base;
                 .progress {

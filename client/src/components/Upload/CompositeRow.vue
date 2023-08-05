@@ -33,15 +33,6 @@ const fileMode = ref("");
 
 const percentageInt = computed(() => parseInt(props.percentage || 0));
 
-/** Dictionary of upload states and associated icons */
-const status_classes = {
-    init: "cursor-pointer fa fa-trash-o",
-    queued: "fa fa-spinner fa-spin",
-    running: "fa fa-spinner fa-spin",
-    success: "cursor-pointer fa fa-check",
-    error: "cursor-pointer fa fa-exclamation-triangle",
-};
-
 function inputFileContent(newFileContent) {
     emit("input", props.index, { file_content: newFileContent, file_size: newFileContent.length });
 }
@@ -78,7 +69,7 @@ function removeUpload() {
 </script>
 
 <template>
-    <div :id="`upload-row-${index}`" class="upload-row p-2">
+    <div :id="`upload-row-${index}`" class="upload-row rounded p-2" :class="`upload-${status}`">
         <div class="d-flex justify-content-around">
             <div>
                 <BDropdown
@@ -96,10 +87,6 @@ function removeUpload() {
                     </BDropdownItem>
                 </BDropdown>
             </div>
-            <div>
-                <FontAwesomeIcon v-if="fileSize > 0" icon="fa-check" class="text-success" />
-                <FontAwesomeIcon v-else icon="fa-exclamation" class="text-primary" />
-            </div>
             <div class="upload-title">
                 {{ fileDescription }}
             </div>
@@ -107,17 +94,23 @@ function removeUpload() {
                 {{ bytesToString(fileSize) }}
             </div>
             <UploadSettings :to_posix_lines="to_posix_lines" :space_to_tab="space_to_tab" @input="inputSettings" />
-            <div class="upload-info">
-                <div v-if="info" class="upload-info-text" v-localize>
-                    {{ info }}
-                </div>
-                <div class="upload-info-progress progress">
+            <div class="upload-progress">
+                <div class="progress">
                     <div
                         class="upload-progress-bar progress-bar progress-bar-success"
                         :style="{ width: `${percentageInt}%` }" />
                     <div class="upload-percentage">{{ percentageInt }}%</div>
                 </div>
             </div>
+            <div>
+                <FontAwesomeIcon v-if="['running', 'queued'].includes(status)" icon="fa-spinner" spin />
+                <FontAwesomeIcon v-else-if="status === 'error'" icon="fa-exclamation-triangle" />
+                <FontAwesomeIcon v-else-if="fileSize > 0" icon="fa-check" />
+                <FontAwesomeIcon v-else icon="fa-exclamation" />
+            </div>
+        </div>
+        <div v-if="info" class="upload-info-text" v-localize>
+            {{ info }}
         </div>
         <div v-if="fileMode == 'new'" class="upload-text">
             <div class="upload-text-info">

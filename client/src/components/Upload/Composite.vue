@@ -110,6 +110,7 @@ function eventStart() {
 /** Refresh success state */
 function eventSuccess() {
     uploadValues.value.forEach((model) => {
+        model.percentage = 100;
         model.status = "success";
     });
 }
