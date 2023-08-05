@@ -5,7 +5,7 @@ import Vue, { computed, ref } from "vue";
 
 import { defaultModel } from "./model.js";
 
-import { uploadModelsToPayload } from "@/components/Upload/helpers";
+import { uploadPayload } from "@/utils/uploadpayload.js";
 import CompositeRow from "./CompositeRow.vue";
 import UploadSettingsSelect from "./UploadSettingsSelect.vue";
 
@@ -96,7 +96,7 @@ function eventStart() {
         model.extension = extension.value;
     });
     submitUpload({
-        data: uploadModelsToPayload(uploadValues.value, props.historyId, true),
+        data: uploadPayload(uploadValues.value, props.historyId, true),
         error: eventError,
         progress: eventProgress,
         success: eventSuccess,

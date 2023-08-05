@@ -46,7 +46,7 @@ import {
 import Collection from "./Collection";
 import Composite from "./Composite";
 import Default from "./Default";
-import { uploadModelsToPayload } from "./helpers";
+import { uploadPayload } from "@/utils/uploadpayload.js";
 import RulesInput from "./RulesInput";
 
 export default {
@@ -207,7 +207,7 @@ export default {
          * @param{Array} items - Upload items/rows filtered from a collection
          */
         toData: function (items, history_id, composite = false) {
-            return uploadModelsToPayload(items, history_id, composite);
+            return uploadPayload(items, history_id, composite);
         },
         immediateUpload: function (files) {
             this.$refs.regular?.addFiles(files);

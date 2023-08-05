@@ -6,7 +6,7 @@ import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 import * as tus from "tus-js-client";
 
-import { uploadModelsToPayload } from "@/components/Upload/helpers";
+import { uploadPayload } from "@/utils/uploadpayload.js";
 
 function buildFingerprint(cnf) {
     return async (file) => {
@@ -203,7 +203,7 @@ export class UploadQueue {
                 }
             });
             if (list.length > 0) {
-                const data = uploadModelsToPayload(list, this.opts.historyId);
+                const data = uploadPayload(list, this.opts.historyId);
                 axios
                     .post(`${getAppRoot()}api/tools/fetch`, data)
                     .then((message) => {
@@ -242,7 +242,7 @@ export class UploadQueue {
         // Return index to first item in queue (in FIFO order).
         const index = this.queue.keys().next().value;
         // Collect upload request data
-        const data = uploadModelsToPayload([this.opts.get(index)], this.opts.historyId);
+        const data = uploadPayload([this.opts.get(index)], this.opts.historyId);
         // Remove item from queue
         this.remove(index);
         // Submit request data

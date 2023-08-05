@@ -1,10 +1,17 @@
-import { DEFAULT_FILE_NAME, URI_PREFIXES } from "./utils";
+export const DEFAULT_FILE_NAME = "New File";
+export const URI_PREFIXES = [
+    "http://",
+    "https://",
+    "ftp://",
+    "file://",
+    "gxfiles://",
+    "gximport://",
+    "gxuserimport://",
+    "gxftp://",
+    "drs://",
+];
 
-function itemIsUrl(item) {
-    return URI_PREFIXES.some((prefix) => item.url_paste.startsWith(prefix));
-}
-
-export function uploadModelsToPayload(items, history_id, composite = false) {
+export function uploadPayload(items, history_id, composite = false) {
     const files = [];
     const elements = items
         .map((item) => {
@@ -25,9 +32,10 @@ export function uploadModelsToPayload(items, history_id, composite = false) {
                 to_posix_lines: item.to_posix_lines,
                 deferred: item.deferred,
             };
+            const isUrl = URI_PREFIXES.some((prefix) => item.url_paste.startsWith(prefix));
             switch (item.file_mode) {
                 case "new":
-                    if (itemIsUrl(item)) {
+                    if (isUrl) {
                         src = "url";
                         /* Could be multiple URLs pasted in.
                           TODO: eliminate backbone models,

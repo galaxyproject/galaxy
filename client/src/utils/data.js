@@ -1,7 +1,7 @@
 import { getGalaxyInstance } from "app";
 import axios from "axios";
 import { FilesDialog } from "components/FilesDialog";
-import { uploadModelsToPayload } from "components/Upload/helpers";
+import { uploadPayload } from "@/utils/uploadpayload.js";
 import { useGlobalUploadModal } from "composables/globalUploadModal";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
@@ -105,7 +105,7 @@ export function create(options) {
             },
             error: options.error,
             data: {
-                payload: uploadModelsToPayload([options], history_id),
+                payload: uploadPayload([options], history_id),
             },
         });
     });

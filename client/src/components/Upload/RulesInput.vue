@@ -89,8 +89,6 @@ import UploadUtils from "components/Upload/utils";
 import { getAppRoot } from "onload/loadConfig";
 import { filesDialog } from "utils/data";
 
-import UploadModel from "./upload-model";
-
 library.add(faEdit);
 
 export default {
@@ -166,7 +164,6 @@ export default {
         },
     },
     created() {
-        this.collection = new UploadModel.Collection();
         this.ftpUploadSite = this.details.currentFtp;
     },
     methods: {
