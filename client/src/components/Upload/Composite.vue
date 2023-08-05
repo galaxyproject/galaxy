@@ -81,9 +81,8 @@ function eventProgress(percentage) {
 
 /** Remove all */
 function eventReset() {
-    if (uploadValues.value.filter((v) => v.status === "running").length > 0) {
+    if (!uploadValues.value.find((v) => v.status === "running")) {
         uploadItems.value = {};
-        extension.value = props.details.defaultExtension;
         genome.value = props.details.defaultDbKey;
     }
 }
