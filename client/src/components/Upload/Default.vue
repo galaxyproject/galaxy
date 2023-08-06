@@ -1,4 +1,7 @@
 <script setup>
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faEdit, faFolderOpen, faLaptop } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
 import { BButton } from "bootstrap-vue";
 import { filesDialog } from "utils/data";
@@ -12,6 +15,8 @@ import DefaultRow from "./DefaultRow.vue";
 import UploadBox from "./UploadBox.vue";
 import UploadExtensionDetails from "./UploadExtensionDetails.vue";
 import UploadSettingsSelect from "./UploadSettingsSelect.vue";
+
+library.add(faEdit, faFolderOpen, faLaptop);
 
 const props = defineProps({
     multiple: {
@@ -381,15 +386,15 @@ defineExpose({
         </div>
         <div class="upload-buttons d-flex justify-content-end">
             <BButton id="btn-local" title="Choose local files" :disabled="!enableSources" @click="uploadSelect">
-                <span class="fa fa-laptop"></span>
+                <FontAwesomeIcon icon="fa-laptop" />
                 <span v-localize>Choose local files</span>
             </BButton>
             <BButton v-if="hasRemoteFiles" id="btn-remote-files" :disabled="!enableSources" @click="eventRemoteFiles">
-                <span class="fa fa-folder-open"></span>
+                <FontAwesomeIcon icon="fa-folder-open" />
                 <span v-localize>Choose remote files</span>
             </BButton>
             <BButton id="btn-new" title="Paste/Fetch data" :disabled="!enableSources" @click="eventCreate">
-                <span class="fa fa-edit"></span>
+                <FontAwesomeIcon icon="fa-edit" />
                 <span v-localize>Paste/Fetch data</span>
             </BButton>
             <BButton
