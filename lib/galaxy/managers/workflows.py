@@ -808,7 +808,7 @@ class WorkflowContentsManager(UsesAnnotations):
                     trans, step_dict, subworkflow_id_map, workflow_state_resolution_options, dry_run=dry_run
                 )
 
-        module_kwds = workflow_state_resolution_options.dict()
+        module_kwds = workflow_state_resolution_options.model_dump()
         module_kwds.update(kwds)  # TODO: maybe drop this?
         for step_dict in self.__walk_step_dicts(data):
             module, step = self.__module_from_dict(trans, steps, steps_by_external_id, step_dict, **module_kwds)

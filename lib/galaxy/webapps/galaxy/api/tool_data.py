@@ -69,7 +69,7 @@ class FastAPIToolData:
         self, tool_data_file_path=None, import_bundle_model: ImportToolDataBundle = Body(...)
     ) -> AsyncTaskResultSummary:
         source = import_bundle_model.source
-        result = import_data_bundle.delay(tool_data_file_path=tool_data_file_path, **source.dict())
+        result = import_data_bundle.delay(tool_data_file_path=tool_data_file_path, **source.model_dump())
         summary = async_task_summary(result)
         return summary
 

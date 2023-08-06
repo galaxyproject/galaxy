@@ -65,7 +65,7 @@ def galaxy_execution_domain(
 def write_to_file(object_id: str, core_object: BioComputeObjectCore, output: StrOrBytesPath) -> None:
     # core_dict = core_object.dict()
     etag = hashlib.sha256(core_object.json(indent=4, sort_keys=True).encode()).hexdigest()
-    object = BioComputeObject(object_id=object_id, etag=etag, **core_object.dict())
+    object = BioComputeObject(object_id=object_id, etag=etag, **core_object.model_dump())
     with open(output, "w") as f:
         f.write(object.json(indent=4, sort_keys=True, exclude_none=True))
 

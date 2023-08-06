@@ -1014,7 +1014,7 @@ class FastAPIHistoryContents:
         materialize_api_payload: MaterializeDatasetInstanceAPIRequest = Body(...),
     ) -> AsyncTaskResultSummary:
         materialize_request: MaterializeDatasetInstanceRequest = MaterializeDatasetInstanceRequest.model_construct(
-            history_id=history_id, **materialize_api_payload.dict()
+            history_id=history_id, **materialize_api_payload.model_dump()
         )
         rval = self.service.materialize(trans, materialize_request)
         return rval
