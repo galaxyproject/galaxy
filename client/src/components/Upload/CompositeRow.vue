@@ -3,6 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheck, faEdit, faExclamation, faFolderOpen, faLaptop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BDropdown, BDropdownItem } from "bootstrap-vue";
+import { filesDialog } from "utils/data";
 import { bytesToString } from "utils/utils";
 import { computed, ref } from "vue";
 import { openFileDialog } from "./utils";
@@ -22,6 +23,7 @@ const props = defineProps({
     genome: String,
     index: String,
     info: String,
+    hasRemoteFiles: Boolean,
     percentage: Number,
     space_to_tab: Boolean,
     status: String,
@@ -37,10 +39,10 @@ function inputFileContent(newFileContent) {
     emit("input", props.index, { file_content: newFileContent, file_size: newFileContent.length });
 }
 
-function inputDialog(index) {
+function inputDialog() {
     openFileDialog((files) => {
         if (props.status !== "running" && files && files.length > 0) {
-            emit("input", index, {
+            emit("input", props.index, {
                 chunk_mode: true,
                 file_data: files[0],
                 file_name: files[0].name,
@@ -53,6 +55,21 @@ function inputDialog(index) {
 
 function inputPaste() {
     emit("input", props.index, { file_mode: "new" });
+}
+
+/** Show remote files dialog or FTP files */
+function inputRemoteFiles() {
+    filesDialog(
+        (item) => {
+            emit("input", props.index, {
+                file_name: item.label,
+                file_path: item.url,
+                file_size: item.size,
+                file_mode: "ftp",
+            });
+        },
+        { multiple: false }
+    );
 }
 
 function inputSettings(settingId) {
@@ -77,9 +94,13 @@ function removeUpload() {
                     text="Select"
                     size="sm"
                     button-class="upload-type-dropdown py-0 px-1">
-                    <BDropdownItem @click="inputDialog(index)">
+                    <BDropdownItem @click="inputDialog">
                         <FontAwesomeIcon icon="fa-laptop" />
                         <span v-localize>Choose local file</span>
+                    </BDropdownItem>
+                    <BDropdownItem v-if="hasRemoteFiles" @click="inputRemoteFiles">
+                        <FontAwesomeIcon icon="fa-folder-open" />
+                        <span v-localize>Choose remote file</span>
                     </BDropdownItem>
                     <BDropdownItem @click="inputPaste">
                         <FontAwesomeIcon icon="fa-edit" />

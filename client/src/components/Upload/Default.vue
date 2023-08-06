@@ -43,13 +43,14 @@ const uploadCompleted = ref(0);
 const uploadItems = ref({});
 const uploadSize = ref(0);
 
-const showHelper = computed(() => Object.keys(uploadItems.value).length === 0);
-const listExtensions = computed(() => props.effectiveExtensions.filter((ext) => !ext.composite_files));
-const historyId = computed(() => props.details.history_id);
 const counterNonRunning = computed(() => counterAnnounce.value + counterSuccess.value + counterError.value);
 const enableReset = computed(() => counterRunning.value == 0 && counterNonRunning.value > 0);
 const enableStart = computed(() => counterRunning.value == 0 && counterAnnounce.value > 0);
 const enableSources = computed(() => counterRunning.value == 0 && (props.multiple || counterNonRunning.value == 0));
+const listExtensions = computed(() => props.effectiveExtensions.filter((ext) => !ext.composite_files));
+const hasRemoteFiles = computed(() => !props.details.fileSourcesConfigured || !!props.details.currentFtp);
+const historyId = computed(() => props.details.history_id);
+const showHelper = computed(() => Object.keys(uploadItems.value).length === 0);
 const topInfo = computed(() => {
     let message = "";
     if (counterAnnounce.value == 0) {
@@ -329,11 +330,7 @@ function uploadSelect() {
                 <span class="fa fa-laptop"></span>
                 <span v-localize>Choose local files</span>
             </BButton>
-            <BButton
-                v-if="!details.fileSourcesConfigured || !!details.currentFtp"
-                id="btn-remote-files"
-                :disabled="!enableSources"
-                @click="eventRemoteFiles">
+            <BButton v-if="hasRemoteFiles" id="btn-remote-files" :disabled="!enableSources" @click="eventRemoteFiles">
                 <span class="fa fa-folder-open"></span>
                 <span v-localize>Choose remote files</span>
             </BButton>

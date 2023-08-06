@@ -36,6 +36,8 @@ const extension = ref(null);
 const genome = ref(props.details.defaultDbKey);
 const uploadItems = ref({});
 
+const hasRemoteFiles = computed(() => !props.details.fileSourcesConfigured || !!props.details.currentFtp);
+
 const listExtensions = computed(() => {
     const result = props.effectiveExtensions.filter((ext) => ext.composite_files);
     result.unshift({ id: null, text: "Select" });
@@ -150,6 +152,7 @@ function inputExtension(newExtension) {
                     :file-name="uploadItem.file_name"
                     :file-size="uploadItem.file_size"
                     :info="uploadItem.info"
+                    :has-remote-files="hasRemoteFiles"
                     :percentage="uploadItem.percentage"
                     :space_to_tab="uploadItem.space_to_tab"
                     :status="uploadItem.status"
