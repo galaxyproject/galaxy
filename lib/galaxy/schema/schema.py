@@ -3505,7 +3505,7 @@ class AsyncFile(Model):
 
 
 class PageSummary(PageSummaryBase):
-    id: DecodedDatabaseIdField = Field(
+    id: EncodedDatabaseIdField = Field(
         ...,  # Required
         title="ID",
         description="Encoded ID of the Page.",
@@ -3536,18 +3536,18 @@ class PageSummary(PageSummaryBase):
         title="Deleted",
         description="Whether this Page has been deleted.",
     )
-    latest_revision_id: DecodedDatabaseIdField = Field(
+    latest_revision_id: EncodedDatabaseIdField = Field(
         ...,  # Required
         title="Latest revision ID",
         description="The encoded ID of the last revision of this Page.",
     )
-    revision_ids: List[DecodedDatabaseIdField] = Field(
+    revision_ids: List[EncodedDatabaseIdField] = Field(
         ...,  # Required
         title="List of revisions",
         description="The history with the encoded ID of each revision of the Page.",
     )
-    create_time: Optional[datetime] = CreateTimeField
-    update_time: Optional[datetime] = UpdateTimeField
+    create_time: datetime = CreateTimeField
+    update_time: datetime = UpdateTimeField
     tags: TagCollection
 
 
