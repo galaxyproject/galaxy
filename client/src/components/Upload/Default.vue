@@ -276,6 +276,10 @@ function uploadPercentage(percentage, size) {
 function uploadSelect() {
     openBrowserDialog(addFiles, true);
 }
+
+defineExpose({
+    addFiles,
+});
 </script>
 
 <template>
