@@ -8,8 +8,9 @@
     <tool file="param_text_option.xml" />
     <tool file="column_param.xml" />
   </section>
-  <tool file="ucsc_tablebrowser.xml" />
-  <tool file="test_data_source.xml" />
+  <tool file="output_format_input.xml"/>
+  <tool file="ucsc_tablebrowser.xml"/>
+  <tool file="test_data_source.xml"/>
   <tool file="simple_constructs.xml" />
   <tool file="color_param.xml" />
   <tool file="inheritance_simple.xml" />
