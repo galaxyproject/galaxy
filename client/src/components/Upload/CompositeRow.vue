@@ -16,6 +16,7 @@ const props = defineProps({
     extension: String,
     fileContent: String,
     fileDescription: String,
+    fileMode: String,
     fileName: String,
     fileSize: Number,
     genome: String,
@@ -28,8 +29,6 @@ const props = defineProps({
 });
 
 const emit = defineEmits();
-
-const fileMode = ref("");
 
 const percentageInt = computed(() => parseInt(props.percentage || 0));
 const isDisabled = computed(() => props.status !== "init");
@@ -46,14 +45,14 @@ function inputDialog(index) {
                 file_data: files[0],
                 file_name: files[0].name,
                 file_size: files[0].size,
-                file_mode: files[0].mode || "local",
+                file_mode: "local",
             });
         }
     });
 }
 
 function inputPaste() {
-    fileMode.value = "new";
+    emit("input", props.index, { file_mode: "new" });
 }
 
 function inputSettings(settingId) {

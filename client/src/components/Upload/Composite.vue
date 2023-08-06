@@ -146,6 +146,7 @@ function inputExtension(newExtension) {
                     :index="uploadIndex"
                     :file-description="uploadItem.description"
                     :file-content="uploadItem.file_content"
+                    :file-mode="uploadItem.file_mode"
                     :file-name="uploadItem.file_name"
                     :file-size="uploadItem.file_size"
                     :info="uploadItem.info"
