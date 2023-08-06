@@ -19,7 +19,15 @@
                 v-on="$listeners" />
         </BTab>
         <BTab v-if="showCollection" id="collection" title="Collection" button-id="tab-title-link-collection">
-            <Collection :details="details" :has-callback="hasCallback" :selectable="selectable" v-on="$listeners" />
+            <Default
+                :effective-extensions="details.effectiveExtensions"
+                :details="details"
+                :has-callback="hasCallback"
+                :history-id="details.history_id"
+                :is-collection="true"
+                :list-genomes="details.listGenomes"
+                :multiple="true"
+                v-on="$listeners" />
         </BTab>
         <BTab v-if="showRules" id="rule-based" title="Rule-based" button-id="tab-title-link-rule-based">
             <RulesInput :details="details" :has-callback="hasCallback" :selectable="selectable" v-on="$listeners" />
@@ -45,14 +53,12 @@ import {
 
 import { uploadPayload } from "@/utils/uploadpayload.js";
 
-import Collection from "./Collection";
 import Composite from "./Composite";
 import Default from "./Default";
 import RulesInput from "./RulesInput";
 
 export default {
     components: {
-        Collection,
         Composite,
         Default,
         RulesInput,

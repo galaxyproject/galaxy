@@ -91,7 +91,10 @@ function removeUpload() {
                 :options="listExtensions"
                 placeholder="Select Type"
                 @input="inputExtension" />
-            <UploadExtensionDetails :extension="extension" :list-extensions="listExtensions" />
+            <UploadExtensionDetails
+                v-if="listExtensions !== null"
+                :extension="extension"
+                :list-extensions="listExtensions" />
             <UploadSettingsSelect
                 v-if="listGenomes !== null"
                 :value="genome"

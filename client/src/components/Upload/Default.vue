@@ -1,11 +1,12 @@
 <script setup>
+import { getGalaxyInstance } from "app";
 import { BButton } from "bootstrap-vue";
 import { filesDialog } from "utils/data";
 import { UploadQueue } from "utils/uploadbox";
 import Vue, { computed, ref } from "vue";
 
 import { defaultModel } from "./model.js";
-import { DEFAULT_FILE_NAME, findExtension, hasBrowserSupport, openBrowserDialog } from "./utils";
+import { COLLECTION_TYPES, DEFAULT_FILE_NAME, findExtension, hasBrowserSupport, openBrowserDialog } from "./utils";
 
 import DefaultRow from "./DefaultRow.vue";
 import UploadBox from "./UploadBox.vue";
@@ -29,8 +30,13 @@ const props = defineProps({
         type: Object,
         required: true,
     },
+    isCollection: {
+        type: Boolean,
+        default: false,
+    },
 });
 
+const collectionType = ref("list");
 const counterAnnounce = ref(0);
 const counterError = ref(0);
 const counterRunning = ref(0);
@@ -44,6 +50,9 @@ const uploadItems = ref({});
 const uploadSize = ref(0);
 
 const counterNonRunning = computed(() => counterAnnounce.value + counterSuccess.value + counterError.value);
+const enableBuild = computed(
+    () => counterRunning.value == 0 && counterAnnounce.value == 0 && counterSuccess.value > 0 && counterError.value == 0
+);
 const enableReset = computed(() => counterRunning.value == 0 && counterNonRunning.value > 0);
 const enableStart = computed(() => counterRunning.value == 0 && counterAnnounce.value > 0);
 const enableSources = computed(() => counterRunning.value == 0 && (props.multiple || counterNonRunning.value == 0));
@@ -105,6 +114,34 @@ function eventAnnounce(index, file) {
         file_data: file,
     };
     Vue.set(uploadItems.value, index, uploadModel);
+}
+
+/** Populates collection builder with uploaded files */
+function eventBuild() {
+    const Galaxy = getGalaxyInstance();
+    const models = {};
+    Object.values(uploadItems.value).forEach((model) => {
+        model.extension = extension.value;
+        model.genome = genome.value;
+        const outputs = model.outputs;
+        if (outputs) {
+            Object.entries(outputs).forEach((output) => {
+                const outputDetails = output[1];
+                models[outputDetails.id] = outputDetails;
+            });
+        } else {
+            console.debug("Warning, upload response does not contain outputs.", model);
+        }
+    });
+    // Build selection object
+    const selection = {
+        models: Object.values(models),
+        historyId: Galaxy.currHistoryPanel.model.id,
+    };
+    Galaxy.currHistoryPanel.buildCollection(collectionType.value, selection);
+    counterRunning.value = 0;
+    eventReset();
+    emit("dismiss");
 }
 
 /** Queue is done */
@@ -248,6 +285,11 @@ function eventWarning(index, message) {
     it.info = message;
 }
 
+/** Update collection type */
+function updateCollectionType(newCollectionType) {
+    collectionType.value = newCollectionType;
+}
+
 /* Update extension type for all entries */
 function updateExtension(newExtension) {
     extension.value = newExtension;
@@ -302,8 +344,8 @@ defineExpose({
                     :file-size="uploadItem.file_size"
                     :info="uploadItem.info"
                     :genome="uploadItem.genome"
-                    :list-extensions="listExtensions"
-                    :list-genomes="details.listGenomes"
+                    :list-extensions="isCollection ? null : listExtensions"
+                    :list-genomes="isCollection ? null : details.listGenomes"
                     :percentage="uploadItem.percentage"
                     :space_to_tab="uploadItem.space_to_tab"
                     :status="uploadItem.status"
@@ -313,6 +355,14 @@ defineExpose({
             </div>
         </UploadBox>
         <div class="upload-footer text-center">
+            <span v-if="isCollection" class="upload-footer-title">Collection:</span>
+            <UploadSettingsSelect
+                v-if="isCollection"
+                :value="collectionType"
+                :options="COLLECTION_TYPES"
+                placeholder="Select Type"
+                :enabled="!running"
+                @input="updateCollectionType" />
             <span class="upload-footer-title">Type (set all):</span>
             <UploadSettingsSelect
                 :value="extension"
@@ -346,9 +396,18 @@ defineExpose({
                 id="btn-start"
                 :disabled="!enableStart"
                 title="Start"
-                :variant="enableStart ? 'primary' : ''"
+                :variant="enableStart ? 'primary' : null"
                 @click="eventStart">
                 <span v-localize>Start</span>
+            </BButton>
+            <BButton
+                v-if="isCollection"
+                id="btn-build"
+                :disabled="!enableBuild"
+                title="Build"
+                :variant="enableBuild ? 'primary' : null"
+                @click="eventBuild">
+                <span v-localize>Build</span>
             </BButton>
             <BButton id="btn-stop" title="Pause" :disabled="counterRunning == 0" @click="eventStop">
                 <span v-localize>Pause</span>

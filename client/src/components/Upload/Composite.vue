@@ -172,7 +172,7 @@ function inputExtension(newExtension) {
                 id="btn-start"
                 :disabled="!readyStart"
                 title="Start"
-                :variant="readyStart ? 'primary' : ''"
+                :variant="readyStart ? 'primary' : null"
                 @click="eventStart">
                 <span v-localize>Start</span>
             </BButton>
