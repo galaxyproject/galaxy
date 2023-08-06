@@ -85,10 +85,10 @@ class PagesService(ServiceBase):
         Create a page and return Page summary
         """
         page = self.manager.create_page(trans, payload)
-        rval = trans.security.encode_all_ids(page.to_dict(), recursive=True)
+        rval = page.to_dict()
         rval["content"] = page.latest_revision.content
         self.manager.rewrite_content_for_export(trans, rval)
-        return PageSummary.model_construct(**rval)
+        return PageSummary(**rval)
 
     def delete(self, trans, id: DecodedDatabaseIdField):
         """
