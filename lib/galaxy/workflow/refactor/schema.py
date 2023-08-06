@@ -11,7 +11,10 @@ from pydantic import (
     BaseModel,
     Field,
 )
-from typing_extensions import Literal
+from typing_extensions import (
+    Annotated,
+    Literal,
+)
 
 LABEL_DESCRIPTION = "The unique label of the step being referenced."
 INPUT_NAME_DESCRIPTION = "The input name as defined by the workflow module corresponding to the step being referenced. For Galaxy tool steps these inputs should be normalized using '|' (e.g. 'cond|repeat_0|input')."
@@ -265,7 +268,7 @@ for action_class in union_action_classes.__args__:  # type: ignore[attr-defined]
 
 
 class RefactorActions(BaseModel):
-    actions: List[Action]
+    actions: List[Annotated[union_action_classes, Field(discriminator="action_type")]]
     dry_run: bool = False
 
 
@@ -319,5 +322,5 @@ side of the connection that was dropped.""",
 
 
 class RefactorActionExecution(BaseModel):
-    action: Action
+    action: union_action_classes
     messages: List[RefactorActionExecutionMessage]
