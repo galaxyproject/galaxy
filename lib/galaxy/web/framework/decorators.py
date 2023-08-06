@@ -389,14 +389,17 @@ def validation_error_to_message_exception(e: ValidationError) -> MessageExceptio
     messages = []
     clean_validation_errors = []
     for error in e.errors():
-        messages.append(error["msg"])
-        if error["type"] == "value_error.missing" or error["type"] == "type_error.none.not_allowed":
+        messages.append(f"{error['msg']} in {error['loc']}")
+        if error["type"] == "missing" or error["type"] == "type_error.none.not_allowed":
             missing_found = True
         elif error["type"].startswith("type_error"):
             invalid_found = True
         # ctx contains data that can't be serialized, like exception instances
         error.pop("ctx", None)
-        clean_validation_errors.append(safe_dumps(error))
+        try:
+            clean_validation_errors.append(safe_dumps(error))
+        except TypeError:
+            pass
     if missing_found and not invalid_found:
         return RequestParameterMissingException("\n".join(messages), validation_errors=clean_validation_errors)
     else:
