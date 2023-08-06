@@ -6,7 +6,8 @@ import { BDropdown, BDropdownItem } from "bootstrap-vue";
 import { filesDialog } from "utils/data";
 import { bytesToString } from "utils/utils";
 import { computed, ref } from "vue";
-import { openFileDialog } from "./utils";
+
+import { DEFAULT_FILE_NAME, openBrowserDialog } from "./utils";
 
 import UploadSettings from "./UploadSettings.vue";
 import UploadSettingsSelect from "./UploadSettingsSelect.vue";
@@ -36,11 +37,14 @@ const percentageInt = computed(() => parseInt(props.percentage || 0));
 const isDisabled = computed(() => props.status !== "init");
 
 function inputFileContent(newFileContent) {
-    emit("input", props.index, { file_content: newFileContent, file_size: newFileContent.length });
+    emit("input", props.index, {
+        file_content: newFileContent,
+        file_size: newFileContent.length,
+    });
 }
 
 function inputDialog() {
-    openFileDialog((files) => {
+    openBrowserDialog((files) => {
         if (props.status !== "running" && files && files.length > 0) {
             emit("input", props.index, {
                 chunk_mode: true,
@@ -54,7 +58,10 @@ function inputDialog() {
 }
 
 function inputPaste() {
-    emit("input", props.index, { file_mode: "new" });
+    emit("input", props.index, {
+        file_name: DEFAULT_FILE_NAME,
+        file_mode: "new",
+    });
 }
 
 /** Show remote files dialog or FTP files */
@@ -111,6 +118,9 @@ function removeUpload() {
             <div class="upload-title">
                 {{ fileDescription }}
             </div>
+            <div class="upload-title">
+                {{ fileName || "-" }}
+            </div>
             <div class="upload-size">
                 {{ bytesToString(fileSize) }}
             </div>
@@ -134,7 +144,7 @@ function removeUpload() {
                 <FontAwesomeIcon v-else icon="fa-exclamation" />
             </div>
         </div>
-        <div v-if="info" class="upload-info-text" v-localize>
+        <div v-if="info" v-localize class="upload-info-text">
             {{ info }}
         </div>
         <div v-if="fileMode == 'new'" class="upload-text">

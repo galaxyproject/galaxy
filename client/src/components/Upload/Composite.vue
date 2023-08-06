@@ -3,9 +3,10 @@ import { BButton } from "bootstrap-vue";
 import { submitUpload } from "utils/uploadbox";
 import Vue, { computed, ref } from "vue";
 
+import { uploadPayload } from "@/utils/uploadpayload.js";
+
 import { defaultModel } from "./model.js";
 
-import { uploadPayload } from "@/utils/uploadpayload.js";
 import CompositeRow from "./CompositeRow.vue";
 import UploadSettingsSelect from "./UploadSettingsSelect.vue";
 

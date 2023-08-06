@@ -133,7 +133,7 @@ function removeUpload() {
                 <FontAwesomeIcon v-else icon="fa-exclamation" />
             </div>
         </div>
-        <div v-if="info" class="upload-info-text" v-localize>
+        <div v-if="info" v-localize class="upload-info-text">
             {{ info }}
         </div>
         <div v-if="fileMode == 'new'" class="upload-text">

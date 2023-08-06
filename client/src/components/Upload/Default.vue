@@ -5,7 +5,7 @@ import { UploadQueue } from "utils/uploadbox";
 import Vue, { computed, ref } from "vue";
 
 import { defaultModel } from "./model.js";
-import { DEFAULT_FILE_NAME, findExtension, hasBrowserSupport, openFileDialog } from "./utils";
+import { DEFAULT_FILE_NAME, findExtension, hasBrowserSupport, openBrowserDialog } from "./utils";
 
 import DefaultRow from "./DefaultRow.vue";
 import UploadBox from "./UploadBox.vue";
@@ -274,7 +274,7 @@ function uploadPercentage(percentage, size) {
 
 /** Open file dialog */
 function uploadSelect() {
-    openFileDialog(addFiles, true);
+    openBrowserDialog(addFiles, true);
 }
 </script>
 

@@ -1,13 +1,14 @@
 import { getGalaxyInstance } from "app";
 import axios from "axios";
 import { FilesDialog } from "components/FilesDialog";
-import { uploadPayload } from "@/utils/uploadpayload.js";
 import { useGlobalUploadModal } from "composables/globalUploadModal";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import { rewatchHistory } from "store/historyStore/model/watchHistory";
 import { submitUpload } from "utils/uploadbox";
 import Vue from "vue";
+
+import { uploadPayload } from "@/utils/uploadpayload.js";
 
 import DataDialog from "components/DataDialog/DataDialog.vue";
 import DatasetCollectionDialog from "components/SelectionDialog/DatasetCollectionDialog.vue";

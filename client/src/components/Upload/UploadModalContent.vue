@@ -43,10 +43,11 @@ import {
     getUploadDbKeys,
 } from "components/Upload/utils";
 
+import { uploadPayload } from "@/utils/uploadpayload.js";
+
 import Collection from "./Collection";
 import Composite from "./Composite";
 import Default from "./Default";
-import { uploadPayload } from "@/utils/uploadpayload.js";
 import RulesInput from "./RulesInput";
 
 export default {
