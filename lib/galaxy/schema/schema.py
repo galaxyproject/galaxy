@@ -23,6 +23,7 @@ from pydantic import (
     ConfigDict,
     Field,
     Json,
+    model_validator,
     RootModel,
     UUID4,
 )
@@ -268,11 +269,7 @@ FlexibleUserIdType = Union[DecodedDatabaseIdField, Literal["current"]]
 class Model(BaseModel):
     """Base model definition with common configuration used by all derived models."""
 
-    # TODO[pydantic]: We couldn't refactor this class, please create the `model_config` manually.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
-    class Config:
-        use_enum_values = True  # when using .dict()
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True, use_enum_values=True)
 
 
 class BaseUserModel(Model):
@@ -2807,6 +2804,12 @@ class LegacyLibraryPermissionsPayload(Model):
         description="A list of role encoded IDs defining roles that should have modify permission on the library.",
     )
 
+    @model_validator(mode="after")
+    def check_some_ids_passed(self):
+        if not self.model_fields_set:
+            raise ValueError("Specify at least one ID to apply actions to")
+        return self
+
 
 class LibraryPermissionAction(str, Enum):
     set_permissions = "set_permissions"
@@ -2841,8 +2844,7 @@ class LibraryPermissionsPayloadBase(Model):
 
 
 class LibraryPermissionsPayload(LibraryPermissionsPayloadBase):
-    action: Optional[LibraryPermissionAction] = Field(
-        None,
+    action: LibraryPermissionAction = Field(
         title="Action",
         description="Indicates what action should be performed on the Library.",
     )
